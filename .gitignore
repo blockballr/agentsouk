@@ -48,5 +48,11 @@ next-env.d.ts
 /docs/pro-tier-application.md
 /brand.md
 /COMMIT_MSG_*.txt
+/README.md
+/public/og.png
+/apps/web/public/og.png
+/public/agora-og.png
+/apps/web/public/agora-og.png
+/submission
 
 .vercel
