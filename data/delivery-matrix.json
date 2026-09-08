@@ -1,0 +1,202 @@
+{
+  "capturedAt": "2026-09-08T00:52:47.927Z",
+  "source": "live-registry",
+  "candidates": [
+    {
+      "tokenId": "153818",
+      "name": "BORT Liquidity Bloom #10876",
+      "category": "rebalancing",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: a valid agent tokenId is required (path /api/a2a/:agentId or A2A_DEFAULT_AGENT_ID)"
+    },
+    {
+      "tokenId": "177310",
+      "name": "TradePilot.agent",
+      "category": "rebalancing",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: Unauthorized"
+    },
+    {
+      "tokenId": "171927",
+      "name": "DeFiMatrix.agent",
+      "category": "rebalancing",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: Unauthorized"
+    },
+    {
+      "tokenId": "266234",
+      "name": "positioncrew-bounded-grid.agent",
+      "category": "grid-trading",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: Unauthorized"
+    },
+    {
+      "tokenId": "6443",
+      "name": "Sperax Intelligence",
+      "category": "yield",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: undefined"
+    },
+    {
+      "tokenId": "6441",
+      "name": "DeFi Trading Agent SperaxOS",
+      "category": "yield",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: undefined"
+    },
+    {
+      "tokenId": "153804",
+      "name": "BORT Yield Weaver #10892",
+      "category": "yield",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: a valid agent tokenId is required (path /api/a2a/:agentId or A2A_DEFAULT_AGENT_ID)"
+    },
+    {
+      "tokenId": "133221",
+      "name": "eights.me",
+      "category": "yield",
+      "protocol": "mcp",
+      "status": "dead",
+      "detail": "deliver failed: initialize failed: undefined"
+    },
+    {
+      "tokenId": "46501",
+      "name": "Syenite",
+      "category": "yield",
+      "protocol": "mcp",
+      "status": "dead",
+      "detail": "deliver not ok: {\"_nonJson\":\"\"}"
+    },
+    {
+      "tokenId": "200094",
+      "name": "prover.agent",
+      "category": "yield",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: Unauthorized"
+    },
+    {
+      "tokenId": "45381",
+      "name": "Aave powered by HeyAnon",
+      "category": "health-factor",
+      "protocol": "mcp",
+      "status": "delivers",
+      "detail": "tool getAaveV3SupportedChains -> {\"project\":\"aave\",\"operation\":\"getAaveV3SupportedChains\",\"data\":[{\"chainId\":1,\"chainName\":\"ethereum\"},{\"chainId\":42161,\"chainName\":\"arbitrum\"},{\"chainId\":43114,\"chainName\":\"avalanche\"},{\"chainId\":10,\"chainName\":\"optimism\"},{\"chainId\":137,\"chainName\":\"polygon\"},{\"chainId\":8453,\"chainName\":\"base\"},{\"c",
+      "tools": [
+        "borrow",
+        "supply",
+        "withdraw",
+        "repay",
+        "repayWithATokens",
+        "liquidationCall",
+        "setEModeCategory",
+        "setUsageAsCollateral",
+        "swapBorrowRateMode",
+        "getReserveAssociatedTokens",
+        "getReserveHumanized",
+        "getUserReservesHumanized",
+        "getReservesList",
+        "getUserWalletBalancesForLendingPool",
+        "batchBalanceOf",
+        "errorCodeToText",
+        "getUserActiveLoans",
+        "getUserBorrowingPower",
+        "getMaximumBorrowsAmount",
+        "getUserCollateral",
+        "getUserHealthIndicators",
+        "getAaveV3SupportedChains"
+      ]
+    },
+    {
+      "tokenId": "266229",
+      "name": "positioncrew-lending-rescue.agent",
+      "category": "health-factor",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: Unauthorized"
+    },
+    {
+      "tokenId": "266232",
+      "name": "positioncrew-yield-optimizer.agent",
+      "category": "health-factor",
+      "protocol": "a2a",
+      "status": "dead",
+      "detail": "message/send failed: message/send failed: Unauthorized"
+    },
+    {
+      "tokenId": "85400",
+      "name": "Aster powered by HeyAnon",
+      "category": "general",
+      "protocol": "mcp",
+      "status": "delivers",
+      "detail": "tool getDescriptionAster -> {\"project\":\"aster\",\"operation\":\"getDescriptionAster\",\"data\":\"Aster is a spot and perpetual futures exchange. This ERC-8004 CEX integration returns signed API request actions for private Aster operations and public data for market/funding reads.\"}",
+      "tools": [
+        "depositToAster",
+        "withdrawFromAster",
+        "transferBetweenAccounts",
+        "getDescriptionAster",
+        "createSimpleOrder",
+        "createTriggerOrder",
+        "createTrailingStopOrder",
+        "cancelOrderById",
+        "cancelAllOrdersOnMarket",
+        "closePositionOnMarket",
+        "closeAllPositions",
+        "setLeverage",
+        "setStopLossTakeProfit",
+        "changeMarginType",
+        "changePositionMode",
+        "changeMultiAssetsMode",
+        "modifyPositionMargin",
+        "getBalance",
+        "getOpenOrders",
+        "getAllPositions",
+        "getLeverageAndMarginSettings",
+        "getAccountSettings",
+        "getSupportedMarkets",
+        "getFuturesMarketsInfo",
+        "getFundingRates",
+        "createSpotSimpleOrder",
+        "createSpotTriggerOrder",
+        "createSpotTakeProfitStopLossOrder",
+        "cancelSpotOrderById",
+        "cancelAllSpotOrdersOnMarket",
+        "getSpotBalance",
+        "getSpotOpenOrders",
+        "getSpotSupportedMarkets",
+        "getSpotMarketsInfo"
+      ]
+    },
+    {
+      "tokenId": "133244",
+      "name": "ocean.me",
+      "category": "general",
+      "protocol": "mcp",
+      "status": "dead",
+      "detail": "deliver failed: initialize failed: undefined"
+    },
+    {
+      "tokenId": "11303",
+      "name": "Stevejavis",
+      "category": "general",
+      "protocol": "mcp",
+      "status": "dead",
+      "detail": "deliver failed: initialize failed: non-JSON response: <!DOCTYPE html><html id=\"__next_error__\"><head><meta charSet=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width,"
+    },
+    {
+      "tokenId": "199578",
+      "name": "salva.me",
+      "category": "general",
+      "protocol": "mcp",
+      "status": "dead",
+      "detail": "deliver failed: initialize failed: undefined"
+    }
+  ]
+}
