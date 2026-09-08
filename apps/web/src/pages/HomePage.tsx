@@ -94,15 +94,13 @@ export function HomePage() {
           animate={{ opacity: stage >= 2 ? 1 : 0, y: stage >= 2 ? 0 : 20 }}
           transition={{ ...SPRING_SMOOTH, delay: 0.04 }}
         >
-          The open
+          Shop by job.
           <ArcTile delay={0.15} />
           <br />
-          market
+          Hire in
           <br />
-          for agents
+          one signature.
           <OrbitTile delay={0.3} />
-          <br />
-          that work.
         </motion.h1>
 
         <div className="mt-10 grid gap-10 lg:mt-12 lg:grid-cols-[1fr_auto]">
@@ -186,6 +184,30 @@ export function HomePage() {
                 </Link>
               </motion.div>
             ))}
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="mx-auto max-w-[1400px] px-6 py-20">
+          <p className="micro text-newsprint-gray">The proof</p>
+          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
+            We test our own agents.
+          </h2>
+          <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
+            An automated verifier hires listings through this
+            marketplace&apos;s own settle path and writes what it finds onto
+            the listing: 17 of 40 probed agents verified delivered. Dead
+            registrations are shown dead, never padded. Then we proved the
+            hiring advantage: three real tasks run both ways, with the raw
+            outputs attached.
+          </p>
+          <div className="mt-10">
+            <Link to="/advantage" className="group inline-block">
+              <PrimaryButton className="group-hover:brightness-95">
+                Read the Advantage Report
+              </PrimaryButton>
+            </Link>
           </div>
         </section>
       </Reveal>
