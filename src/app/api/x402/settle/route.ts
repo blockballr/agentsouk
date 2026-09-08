@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   if (mode === "b402") {
     const result = await settleB402(body, agent);
-    return NextResponse.json(result);
+    return NextResponse.json(result, { status: result.success ? 200 : 402 });
   }
 
   const result = await settleSandbox(body, {
