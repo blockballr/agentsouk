@@ -105,7 +105,7 @@ async function main() {
       accepted: pr,
     },
     paymentRequirements: pr,
-    agent: { chainId: 56, tokenId, name: "Aave powered by HeyAnon", symbol: "USDC" },
+    agent: { chainId: 56, tokenId, name: "Aave powered by HeyAnon", symbol: "U" },
   };
 
   // 3. Settle through the facilitator (prod relay).

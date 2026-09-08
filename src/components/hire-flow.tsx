@@ -52,7 +52,7 @@ export function HireFlow({
 
   const [step, setStep] = useState<Step>("loading");
   const [requirements, setRequirements] = useState<PaymentRequirements | null>(null);
-  const [symbol, setSymbol] = useState("USDC");
+  const [symbol, setSymbol] = useState("U");
   const [receipt, setReceipt] = useState<SettleResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 

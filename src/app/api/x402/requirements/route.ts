@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   }
 
   const priceUsd = body.amountUsd ?? DEFAULT_HIRE_PRICE_USD;
-  const token = BSC_TOKENS.USDC;
+  const token = BSC_TOKENS.U;
   const amountRaw = parseUnits(String(priceUsd), token.decimals).toString();
   // wallets reject non-checksummed addresses in typed data, and the registry
   // stores them lowercase
@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
     payTo,
     maxTimeoutSeconds: 300,
     extra: {
-      name: "USD Coin",
-      version: "2",
+      name: "United Stables",
+      version: "1",
       assetTransferMethod: "eip3009",
       signerAddress: body.client,
       resourceUrl: resource.url,

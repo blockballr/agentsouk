@@ -44,7 +44,7 @@ const steps = [
   },
   {
     title: 'Hire with x402',
-    body: 'Sign one gasless authorization for about $2 USDC. No deposits, no custodian holding funds.',
+    body: 'Sign one gasless authorization for about $2 U. No deposits, no custodian holding funds.',
   },
   {
     title: 'Get the receipt',

@@ -4,12 +4,14 @@ export const BSC_REGISTRY_ADDRESS =
   "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432";
 
 // BSC mainnet token contracts
-// USDC implements EIP-3009 (transferWithAuthorization), which x402 uses for
-// gasless stablecoin payments
+// $U (United Stables) implements EIP-3009 (transferWithAuthorization), which
+// x402 uses for gasless stablecoin payments. Verified on-chain 2026-09-08:
+// vrs selector 0xe3ee160e present, DOMAIN_SEPARATOR matches
+// ("United Stables", "1", chainId 56), decimals 18
 export const BSC_TOKENS = {
-  USDC: {
-    symbol: "USDC",
-    address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+  U: {
+    symbol: "U",
+    address: "0xcE24439F2D9C6a2289F741120FE202248B666666",
     decimals: 18,
   },
   USDT: {

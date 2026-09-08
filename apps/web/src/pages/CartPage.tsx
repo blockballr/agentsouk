@@ -184,7 +184,7 @@ export function CartPage() {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-press-black">{item.name}</p>
                       <p className="micro mt-1 text-newsprint-gray">
-                        {item.category || 'General'} - about ${PRICE_USD} USDC per hire
+                        {item.category || 'General'} - about ${PRICE_USD} U per hire
                       </p>
                     </div>
                   </div>
@@ -218,7 +218,7 @@ export function CartPage() {
             <p className="text-sm text-press-black">
               Total{' '}
               <span className="font-medium tabular-nums">
-                ${(items.length * PRICE_USD).toFixed(0)} USDC
+                ${(items.length * PRICE_USD).toFixed(0)} U
               </span>{' '}
               <span className="text-newsprint-gray">
                 ({items.length} agent{items.length === 1 ? '' : 's'} x ${PRICE_USD})

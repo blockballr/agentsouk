@@ -208,9 +208,13 @@ export function getSandboxReceipt(paymentId: string): Receipt | undefined {
 
 // prod settlement: relay the buyer's EIP-3009 authorization on BNB Chain
 // mainnet. the relay wallet pays gas; the buyer signs only, and no buyer key
-// is ever held. the 5 USDC cap is enforced before any broadcast.
-const PROD_CAP_RAW = 5n * 10n ** 18n; // 5 USDC, 18 decimals
-const USDC_BSC = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
+// is ever held. the 5 U cap is enforced before any broadcast.
+const PROD_CAP_RAW = 5n * 10n ** 18n; // 5 U, 18 decimals
+// United Stables $U, EIP-3009 verified on-chain 2026-09-08: vrs selector
+// 0xe3ee160e present (the variant settleProd broadcasts), DOMAIN_SEPARATOR
+// present and matching ("United Stables", "1", chainId 56), name() =
+// "United Stables", decimals = 18
+const U_BSC = "0xcE24439F2D9C6a2289F741120FE202248B666666";
 const BSC_RPC = "https://bsc-dataseed.binance.org";
 
 // per-process, bounded in-memory replay guard: a restart clears it and other
@@ -253,13 +257,13 @@ export async function settleProd(
   }
 
   if (checks.message.value > PROD_CAP_RAW) {
-    return fail("Amount exceeds the 5 USDC prod cap");
+    return fail("Amount exceeds the 5 U prod cap");
   }
 
-  // only broadcast USDC on BSC: the EIP-3009 domain is verified against the
+  // only broadcast $U on BSC: the EIP-3009 domain is verified against the
   // client-supplied pr.asset, and a mismatched contract would revert on-chain
   // and burn relay gas
-  if (normalizeAddress(pr.asset) !== normalizeAddress(USDC_BSC)) {
+  if (normalizeAddress(pr.asset) !== normalizeAddress(U_BSC)) {
     return fail("Unsupported settlement asset");
   }
 
@@ -312,7 +316,7 @@ export async function settleProd(
     });
 
     const hash = await walletClient.sendTransaction({
-      to: USDC_BSC as `0x${string}`,
+      to: U_BSC as `0x${string}`,
       data,
     });
     // race: if this wait times out but the tx still lands on-chain, funds
