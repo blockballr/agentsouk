@@ -47,6 +47,41 @@ export class WalletUnavailableError extends Error {
   }
 }
 
+export class SmartWalletUnsupportedError extends Error {
+  constructor() {
+    super(
+      "Smart wallet detected. Hiring currently supports standard (EOA) wallets only — please connect with MetaMask or another standard wallet. Smart wallet support is coming soon.",
+    );
+  }
+}
+
+// rdns values that always route through a smart account (ERC-4337): their
+// typed-data signatures validate on-chain via ERC-1271 and our facilitator
+// can only verify plain EOA ECDSA signatures today
+const KNOWN_SMART_WALLET_RDNS = new Set(["com.coinbase.wallet"]);
+
+// best-effort smart-account detection: known rdns, else a contract-code probe
+// on the connected address (misses counterfactual accounts that are not yet
+// deployed on the current chain — the known-rdns list covers those)
+export async function isSmartWalletConnected(): Promise<boolean> {
+  const rdns = readStoredRdns();
+  if (rdns && rdns !== LEGACY_RDNS && rdns !== WALLETCONNECT_RDNS && KNOWN_SMART_WALLET_RDNS.has(rdns)) {
+    return true;
+  }
+  try {
+    const provider = getProvider();
+    const accounts = (await provider.request({ method: "eth_accounts" })) as string[];
+    if (!accounts?.length) return false;
+    const code = (await provider.request({
+      method: "eth_getCode",
+      params: [accounts[0], "latest"],
+    })) as string;
+    return typeof code === "string" && code.length > 2;
+  } catch {
+    return false;
+  }
+}
+
 // a wallet the picker can offer; rdns is the announced rdns, 'legacy' for an
 // older injected wallet that does not announce, or 'walletconnect'
 export interface WalletOption {

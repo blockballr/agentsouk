@@ -6,7 +6,7 @@
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
 import { getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
-import { WalletUnavailableError, signTransferAuthorization } from './wallet'
+import { SmartWalletUnsupportedError, WalletUnavailableError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
 
 export type HireRequirementsData = X402Requirements['data']
 
@@ -70,6 +70,10 @@ export async function signAndSettleHire(
 ): Promise<HireOutcome> {
   const pr = data.paymentRequirements
   try {
+    // honest limitation: smart-account (ERC-4337) signatures validate on-chain
+    // via ERC-1271, which our facilitator cannot verify — fail early with a
+    // clear message instead of an opaque signature-verification error
+    if (await isSmartWalletConnected()) throw new SmartWalletUnsupportedError()
     onPhase('signing')
     const now = Math.floor(Date.now() / 1000)
     const message = {

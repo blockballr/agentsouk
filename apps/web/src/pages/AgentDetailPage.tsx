@@ -9,7 +9,13 @@ import {
   timeAgo,
 } from '@agora/core'
 import { deliverTask, getAgentDetail, type DeliverData, type DeliverTool } from '../lib/api'
-import { changeWallet, connectWallet, ensureBscChain } from '../lib/wallet'
+import {
+  SmartWalletUnsupportedError,
+  changeWallet,
+  connectWallet,
+  ensureBscChain,
+  isSmartWalletConnected,
+} from '../lib/wallet'
 import {
   fetchHireRequirements,
   hireErrorText,
@@ -276,6 +282,8 @@ function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: strin
     try {
       const addr = await connectWallet()
       await ensureBscChain()
+      // fail at connect time with the honest message instead of after preview
+      if (await isSmartWalletConnected()) throw new SmartWalletUnsupportedError()
       setAccount(addr)
       const data = await fetchHireRequirements(
         { chainId: Number(chainId), tokenId: Number(tokenId), name },
