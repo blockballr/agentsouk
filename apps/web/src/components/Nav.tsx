@@ -4,6 +4,7 @@ import { Wordmark } from './Wordmark'
 const links = [
   { to: '/agents', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
+  { to: '/advantage', label: 'Advantage' },
 ]
 
 export function Nav() {
