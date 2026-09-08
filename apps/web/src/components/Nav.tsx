@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { Wordmark } from './Wordmark'
 import { ThemeToggle } from './ThemeToggle'
+import { cartCount, subscribe } from '../lib/cart'
 
 const links = [
   { to: '/agents', label: 'Marketplace' },
@@ -32,6 +34,7 @@ export function Nav() {
             ))}
           </ul>
           <ThemeToggle />
+          <CartLink />
           <Link
             to="/agents"
             aria-label="Open the market"
@@ -42,6 +45,37 @@ export function Nav() {
         </nav>
       </div>
     </header>
+  )
+}
+
+function CartLink() {
+  const [count, setCount] = useState(() => cartCount())
+  useEffect(() => subscribe(() => setCount(cartCount())), [])
+  return (
+    <Link
+      to="/cart"
+      aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
+      className="micro flex items-center gap-2 rounded-[4px] border hairline border-slate-verdant/40 px-2.5 py-1.5 text-newsprint-gray transition-colors hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+    >
+      <CartGlyph />
+      {count > 0 ? <span className="tabular-nums text-press-black">{count}</span> : null}
+    </Link>
+  )
+}
+
+function CartGlyph() {
+  return (
+    <svg width="16" height="14" viewBox="0 0 16 14" fill="none" aria-hidden="true">
+      <path
+        d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="6.2" cy="12.8" r="1.1" fill="currentColor" />
+      <circle cx="12.2" cy="12.8" r="1.1" fill="currentColor" />
+    </svg>
   )
 }
 

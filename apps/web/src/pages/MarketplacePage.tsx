@@ -5,6 +5,7 @@ import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core
 import { CompareBar } from '../components/CompareBar'
 import { getAgents } from '../lib/api'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
+import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
 
 const sorts = [
   { key: 'score', label: 'Score' },
@@ -25,6 +26,29 @@ export function MarketplacePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [shortlist, setShortlist] = useState<string[]>(() => getShortlist())
+  const [cartKeys, setCartKeys] = useState<string[]>(() => getCart().map((c) => cartKeyOf(c.chainId, c.tokenId)))
+  const [cartFull, setCartFull] = useState(false)
+
+  useEffect(() => subscribe(() => {
+    setCartKeys(getCart().map((c) => cartKeyOf(c.chainId, c.tokenId)))
+    setCartFull(false)
+  }), [])
+
+  function handleToggleCart(key: string) {
+    const agent = result?.items.find((a) => `${a.chain_id}/${a.token_id}` === key)
+    if (!agent) return
+    if (isInCart(agent.chain_id, Number(agent.token_id))) {
+      removeFromCart(agent.chain_id, Number(agent.token_id))
+    } else {
+      const res = addToCart({
+        chainId: agent.chain_id,
+        tokenId: Number(agent.token_id),
+        name: agent.name,
+        category: agent.category ?? '',
+      })
+      if (res === 'full') setCartFull(true)
+    }
+  }
 
   function handleToggle(key: string) {
     setShortlist(toggleShortlist(key))
@@ -145,6 +169,12 @@ export function MarketplacePage() {
         </div>
       </div>
 
+      {cartFull ? (
+        <p className="micro mt-6 text-newsprint-gray">
+          The cart holds 8 agents at most. Remove one to add another.
+        </p>
+      ) : null}
+
       <div className="mt-14">
         {error ? (
           <ErrorState onRetry={() => setSp(new URLSearchParams(sp))} />
@@ -155,6 +185,8 @@ export function MarketplacePage() {
             items={result.items}
             shortlist={shortlist}
             onToggle={handleToggle}
+            cartKeys={cartKeys}
+            onToggleCart={handleToggleCart}
           />
         ) : (
           <EmptyState
@@ -258,10 +290,14 @@ function AgentGrid({
   items,
   shortlist,
   onToggle,
+  cartKeys,
+  onToggleCart,
 }: {
   items: AgentSummary[]
   shortlist: string[]
   onToggle: (key: string) => void
+  cartKeys: string[]
+  onToggleCart: (key: string) => void
 }) {
   return (
     <div className="grid grid-cols-1 bg-bone-white pl-px pt-px sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -271,6 +307,8 @@ function AgentGrid({
           agent={a}
           checked={shortlist.includes(`${a.chain_id}/${a.token_id}`)}
           onToggle={onToggle}
+          inCart={cartKeys.includes(cartKeyOf(a.chain_id, a.token_id))}
+          onToggleCart={onToggleCart}
         />
       ))}
     </div>
@@ -281,10 +319,14 @@ function AgentCard({
   agent,
   checked,
   onToggle,
+  inCart,
+  onToggleCart,
 }: {
   agent: AgentSummary
   checked: boolean
   onToggle: (key: string) => void
+  inCart: boolean
+  onToggleCart: (key: string) => void
 }) {
   const img = agent.image_url ?? '/inserts/arc.svg'
   const key = `${agent.chain_id}/${agent.token_id}`
@@ -367,6 +409,28 @@ function AgentCard({
           View agent →
         </span>
       </Link>
+
+      <button
+        type="button"
+        onClick={() => onToggleCart(key)}
+        aria-label={inCart ? `Remove ${agent.name} from cart` : `Add ${agent.name} to cart`}
+        title={inCart ? 'In cart' : 'Add to cart'}
+        className={`absolute right-[38px] top-3 z-10 flex h-[18px] w-[18px] items-center justify-center rounded-full border hairline transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-highlighter-green ${
+          inCart
+            ? 'border-highlighter-green bg-highlighter-green text-typesetter-ink'
+            : 'border-slate-verdant/30 bg-bone-white/90 text-newsprint-gray hover:border-highlighter-green'
+        }`}
+      >
+        <svg width="10" height="9" viewBox="0 0 16 14" fill="none" aria-hidden="true">
+          <path
+            d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
 
       <label
         className={`absolute right-3 top-3 z-10 flex h-[18px] w-[18px] cursor-pointer items-center justify-center rounded-full border hairline transition-colors duration-150 focus-within:outline-2 focus-within:outline-highlighter-green ${
