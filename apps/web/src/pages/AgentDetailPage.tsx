@@ -2,33 +2,20 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { AgentDetail, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import {
-  X402_VERSION,
   formatDate,
   formatNumber,
   formatScore,
-  randomNonce,
   shortAddress,
   timeAgo,
-  x402Domain,
 } from '@agora/core'
+import { deliverTask, getAgentDetail, type DeliverData, type DeliverTool } from '../lib/api'
+import { connectWallet, ensureBscChain } from '../lib/wallet'
 import {
-  deliverTask,
-  getAgentDetail,
-  getHireRequirements,
-  getReceipt,
-  settleHire,
-  type DeliverData,
-  type DeliverTool,
-  type X402Requirements,
-} from '../lib/api'
-import {
-  WalletUnavailableError,
-  connectWallet,
-  ensureBscChain,
-  signTransferAuthorization,
-} from '../lib/wallet'
-
-type HireRequirements = X402Requirements['data']
+  fetchHireRequirements,
+  hireErrorText,
+  signAndSettleHire,
+  type HireRequirementsData,
+} from '../lib/hire'
 
 const verificationTone: Record<string, string> = {
   delivered: 'border-highlighter-green/50 text-highlighter-green',
@@ -273,24 +260,13 @@ export function AgentDetailPage() {
 
 type HireStep = 'idle' | 'connecting' | 'preview' | 'signing' | 'settling' | 'hired'
 
-function hireErrorText(e: unknown): string {
-  if (e instanceof WalletUnavailableError) return e.message
-  const code = (e as { code?: number }).code
-  if (code === 4001) return 'Request cancelled in the wallet.'
-  const msg = (e as Error)?.message ?? 'Something went wrong.'
-  if (msg.includes('user rejected') || msg.includes('User denied')) {
-    return 'Request cancelled in the wallet.'
-  }
-  return msg
-}
-
 function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: string; name: string }) {
   const [step, setStep] = useState<HireStep>('idle')
   const [error, setError] = useState<string | null>(null)
   const [account, setAccount] = useState<string | null>(null)
   const [requirements, setRequirements] = useState<PaymentRequirements | null>(null)
   const [preview, setPreview] = useState<PreviewResult | null>(null)
-  const [agent, setAgent] = useState<HireRequirements['agent'] | null>(null)
+  const [agent, setAgent] = useState<HireRequirementsData['agent'] | null>(null)
   const [result, setResult] = useState<SettleResult | null>(null)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
 
@@ -301,7 +277,10 @@ function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: strin
       const addr = await connectWallet()
       await ensureBscChain()
       setAccount(addr)
-      const data = await getHireRequirements(chainId, tokenId, addr)
+      const data = await fetchHireRequirements(
+        { chainId: Number(chainId), tokenId: Number(tokenId), name },
+        { address: addr },
+      )
       setRequirements(data.paymentRequirements)
       setPreview(data.preview)
       setAgent(data.agent)
@@ -314,40 +293,17 @@ function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: strin
 
   async function signAndSettle() {
     if (!requirements || !preview || !agent || !account) return
-    const pr = requirements
     setError(null)
-    setStep('signing')
-    try {
-      const now = Math.floor(Date.now() / 1000)
-      const message = {
-        from: account,
-        to: pr.payTo,
-        value: pr.amount,
-        validAfter: String(now - 60),
-        validBefore: String(now + pr.maxTimeoutSeconds),
-        nonce: randomNonce(),
-      }
-      const signature = await signTransferAuthorization(account, x402Domain(pr), message)
-      setStep('settling')
-      const resource = preview.resource
-      const settle = await settleHire({
-        paymentId: preview.paymentId,
-        paymentRequirements: pr,
-        paymentPayload: {
-          x402Version: X402_VERSION,
-          payload: { authorization: { ...message, signature }, resource },
-          resource,
-          accepted: pr,
-        },
-        agent: { ...agent },
-      })
-      if (!settle.success) throw new Error(settle.error ?? 'Settlement failed.')
-      setResult(settle)
-      setStep('hired')
-      const stored = await getReceipt(settle.paymentId)
-      if (stored) setReceipt(stored)
-    } catch (e) {
-      setError(hireErrorText(e))
+    const outcome = await signAndSettleHire(
+      { paymentRequirements: requirements, preview, agent },
+      account,
+      (phase) => setStep(phase),
+    )
+    if (outcome.success && outcome.settle) {
+      setResult(outcome.settle)
+      if (outcome.receipt) setReceipt(outcome.receipt)
+    } else {
+      setError(outcome.error ?? 'Something went wrong.')
       setStep('preview')
     }
   }
