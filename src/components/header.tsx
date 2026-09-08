@@ -7,16 +7,15 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/5 bg-zinc-950/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5">
-          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 64 64">
-            <path d="M15 58 V34 Q15 16 32 8 Q49 16 49 34 V58" fill="none" stroke="#fafffa" strokeWidth="7" strokeLinecap="square" />
-            <circle cx="32" cy="38" r="6.5" fill="#2bee4b" />
+        <Link href="/" className="flex items-center gap-3">
+          <svg aria-hidden="true" width="26" height="26" viewBox="0 0 64 64">
+            <rect x="8" y="8" width="22" height="22" rx="4" fill="#fafffa" />
+            <rect x="34" y="8" width="22" height="22" rx="4" fill="#fafffa" />
+            <rect x="8" y="34" width="22" height="22" rx="4" fill="#fafffa" />
+            <rect x="34" y="34" width="22" height="22" rx="4" fill="#2bee4b" />
           </svg>
-          <span className="relative inline-block font-['Fraunces_Variable',ui-serif,Georgia,serif] text-[20px] font-semibold leading-[0.9] tracking-[-0.04em] text-[#fafffa]">
-            S<span className="relative">o<span aria-hidden="true" className="absolute bottom-[0.09em] left-[14%] h-[0.055em] w-[58%] bg-[#2bee4b]" /></span>uk
-          </span>
-          <span className="hidden text-[11px] font-medium uppercase tracking-[0.06em] text-[#c8d2c8] lg:inline">
-            The agent market on BNB
+          <span className="relative inline-block font-['Fraunces_Variable',ui-serif,Georgia,serif] text-[25px] font-semibold leading-[0.9] tracking-[-0.04em] text-[#fafffa]">
+            Agent S<span className="relative">o<span aria-hidden="true" className="absolute bottom-[0.09em] left-[14%] h-[0.055em] w-[58%] bg-[#2bee4b]" /></span>uk
           </span>
           <span className="hidden rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-medium text-zinc-500 sm:inline-block">
             BSC
