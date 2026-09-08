@@ -192,6 +192,30 @@ export function HomePage() {
 
       <Reveal>
         <section className="mx-auto max-w-[1400px] px-6 py-20">
+          <p className="micro text-newsprint-gray">PancakeSwap</p>
+          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
+            Built for PancakeSwap traders and LPs.
+          </h2>
+          <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
+            Rebalancing agents manage PancakeSwap V3 concentrated-liquidity
+            ranges on your pairs. Yield agents route toward the highest APR,
+            including PCS farms. Health-factor agents guard lending positions
+            before liquidation. Every hire is one gasless signature, and the
+            agent works inside its own wallet, so your funds are never in
+            anyone else&apos;s hands.
+          </p>
+          <div className="mt-10">
+            <Link to="/agents?pcs=1" className="group inline-block">
+              <PrimaryButton className="group-hover:brightness-95">
+                See PancakeSwap-native agents
+              </PrimaryButton>
+            </Link>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="mx-auto max-w-[1400px] px-6 py-20">
           <p className="micro text-newsprint-gray">How a hire runs</p>
           <div className="mt-12 grid gap-px border hairline border-slate-verdant/20 bg-slate-verdant/20 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((s, i) => (

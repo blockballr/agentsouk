@@ -20,8 +20,9 @@ export function MarketplacePage() {
   const category = sp.get('category') ?? 'all'
   const q = sp.get('q') ?? ''
   const sort = (sp.get('sort') ?? 'score') as (typeof sorts)[number]['key']
+  const pcs = sp.get('pcs') === '1'
 
-  const [result, setResult] = useState<{ items: AgentSummary[]; snapshotTotal: number | null } | null>(null)
+  const [result, setResult] = useState<{ items: AgentSummary[]; snapshotTotal: number | null; total: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [shortlist, setShortlist] = useState<string[]>(() => getShortlist())
@@ -39,9 +40,9 @@ export function MarketplacePage() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getAgents({ category, q, sort, limit: 48 })
+    getAgents({ category, q, sort, limit: 48, pcs })
       .then((r) => {
-        if (!cancelled) setResult({ items: r.items, snapshotTotal: r.snapshotTotal })
+        if (!cancelled) setResult({ items: r.items, snapshotTotal: r.snapshotTotal, total: r.total })
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e))
@@ -52,7 +53,7 @@ export function MarketplacePage() {
     return () => {
       cancelled = true
     }
-  }, [category, q, sort])
+  }, [category, q, sort, pcs])
 
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(sp)
@@ -92,6 +93,17 @@ export function MarketplacePage() {
               {c.label}
             </FilterChip>
           ))}
+          <FilterChip
+            active={pcs}
+            onClick={() => setParam('pcs', pcs ? '' : '1')}
+          >
+            PancakeSwap
+          </FilterChip>
+          {pcs && result ? (
+            <span className="micro text-newsprint-gray">
+              {result.total} PancakeSwap-native
+            </span>
+          ) : null}
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-6">
@@ -259,6 +271,14 @@ function AgentCard({
           {agent.x402_supported && (
             <span className="micro rounded-full border hairline border-highlighter-green/40 px-2 py-1 text-highlighter-green">
               x402
+            </span>
+          )}
+          {agent.pcs && (
+            <span
+              title="PancakeSwap-native agent"
+              className="micro rounded-full border hairline border-slate-verdant/25 px-2 py-1 text-newsprint-gray"
+            >
+              PCS
             </span>
           )}
           {agent.verification && (

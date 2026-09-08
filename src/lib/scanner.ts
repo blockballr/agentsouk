@@ -7,6 +7,7 @@ import {
   CategoryKey,
 } from "./types";
 import { classifyAgent, relevanceScore } from "./categories";
+import { isPancakeSwapAgent } from "./pancakeswap";
 
 const BASE = "https://8004scan.io/api/v1/public";
 
@@ -265,6 +266,7 @@ export interface QueryOptions {
   limit?: number;
   ensureWarm?: boolean;
   maxWarmPages?: number;
+  pcs?: boolean;
 }
 
 export interface QueryResult {
@@ -304,6 +306,13 @@ export async function queryAgents(
         a.name.toLowerCase().includes(needle) ||
         (a.description ?? "").toLowerCase().includes(needle) ||
         a.owner_address.toLowerCase().includes(needle),
+    );
+  }
+  if (opts.pcs) {
+    // pancake swap surfacing: detector on registration text only, applied
+    // after the other filters so it composes with category/search
+    items = items.filter((a) =>
+      isPancakeSwapAgent(a.name, a.description ?? ""),
     );
   }
 

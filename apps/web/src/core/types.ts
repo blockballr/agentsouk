@@ -98,6 +98,7 @@ export interface AgentSummary {
   category?: CategoryKey | "general";
   categoryScores?: Partial<Record<CategoryKey, number>>;
   verification?: Verification;
+  pcs?: boolean;
 }
 
 export interface AgentDetail {
@@ -145,4 +146,5 @@ export interface AgentDetail {
   created_at: string;
   updated_at: string;
   verification?: Verification;
+  pcs?: boolean;
 }

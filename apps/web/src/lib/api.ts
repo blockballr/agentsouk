@@ -9,6 +9,7 @@ export interface AgentsQuery {
   sort?: 'score' | 'newest' | 'feedback' | 'health'
   page?: number
   limit?: number
+  pcs?: boolean
 }
 
 export interface AgentsResult {
@@ -25,6 +26,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   if (query.sort) sp.set('sort', query.sort)
   if (query.page && query.page > 1) sp.set('page', String(query.page))
   if (query.limit) sp.set('limit', String(query.limit))
+  if (query.pcs) sp.set('pcs', '1')
   const res = await fetch(`${BASE}/agents?${sp}`)
   if (!res.ok) throw new Error(`agents ${res.status}`)
   const body = await res.json()

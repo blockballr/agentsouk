@@ -173,6 +173,13 @@ export function AgentDetailPage() {
                 </span>
                 <span>Updated {timeAgo(detail.updated_at)}</span>
               </div>
+              {detail.pcs && (
+                <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
+                  <span className="text-press-black">PancakeSwap-native:</span>{' '}
+                  this agent&apos;s own registration describes PancakeSwap V3
+                  liquidity work.
+                </p>
+              )}
             </div>
           </div>
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAgentByToken } from "@/lib/scanner";
 import { loadVerifications } from "@/lib/verifications";
+import { isPancakeSwapAgent } from "@/lib/pancakeswap";
 
 export const dynamic = "force-dynamic";
 
@@ -19,5 +20,8 @@ export async function GET(
   const verifications = await loadVerifications();
   const verification = verifications.get(agent.token_id);
   const data = verification ? { ...agent, verification } : agent;
-  return NextResponse.json({ data });
+  const withPcs = isPancakeSwapAgent(agent.name, agent.description ?? "");
+  return NextResponse.json({
+    data: withPcs ? { ...data, pcs: true } : data,
+  });
 }
