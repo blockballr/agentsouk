@@ -68,3 +68,4 @@ next-env.d.ts
 /.superpowers/
 
 .vercel
+/apps/web/public/agent-souk-og.png
