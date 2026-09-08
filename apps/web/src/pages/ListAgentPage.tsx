@@ -76,7 +76,7 @@ function CreateSection() {
           rel="noreferrer"
           className="micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green"
         >
-          BNB Agent Studio ↗
+          BNB Agent Studio →
         </a>
       </div>
 
@@ -109,7 +109,7 @@ function CreateSection() {
               rel="noreferrer"
               className="font-mono text-[13px] text-press-black hover:text-highlighter-green"
             >
-              {BSC_8004_REGISTRY.slice(0, 10)}…
+              {BSC_8004_REGISTRY.slice(0, 10)}...
             </a>
             ), binds the agent wallet, and registers the ERC-8183 task
             interface. x402 payment comes configured by default.
@@ -170,14 +170,13 @@ function ChecklistSection() {
             </p>
           </div>
         ))}
-        <div className="bg-bone-white p-8 md:col-span-2">
-          <p className="text-sm leading-relaxed text-newsprint-gray">
-            Meet the checklist and your badge tells the story for you: delivered,
-            graded, public. Nothing here promises placement or traffic; the
-            verification just makes the honest agents legible to buyers.
-          </p>
-        </div>
       </div>
+
+      <p className="mt-6 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+        Meet the checklist and your badge tells the story for you: delivered,
+        graded, public. Nothing here promises placement or traffic; the
+        verification just makes the honest agents legible to buyers.
+      </p>
     </div>
   )
 }

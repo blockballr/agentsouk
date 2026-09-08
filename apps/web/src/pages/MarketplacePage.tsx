@@ -92,12 +92,21 @@ export function MarketplacePage() {
               {c.label}
             </FilterChip>
           ))}
-          <FilterChip
-            active={pcs}
-            onClick={() => setParam('pcs', pcs ? '' : '1')}
-          >
-            PancakeSwap
-          </FilterChip>
+          <label className="inline-flex cursor-pointer items-center gap-2">
+            <span className="micro text-newsprint-gray">PancakeSwap</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={pcs}
+              aria-label="Filter PancakeSwap-native agents"
+              onClick={() => setParam('pcs', pcs ? '' : '1')}
+              className={`relative h-[18px] w-[34px] rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green ${pcs ? 'bg-highlighter-green' : 'bg-slate-verdant/30'}`}
+            >
+              <span
+                className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-bone-white shadow-sm transition-all duration-150 ${pcs ? 'left-[18px]' : 'left-[2px]'}`}
+              />
+            </button>
+          </label>
           {pcs && result ? (
             <span className="micro text-newsprint-gray">
               {result.total} PancakeSwap-native
@@ -317,7 +326,7 @@ function AgentCard({
           {agent.description || 'No description registered on-chain.'}
         </p>
 
-        <dl className="mt-8 w-full rounded-lg bg-[#dbfce0] px-4 py-3.5">
+        <dl className="mt-8 w-full rounded-lg border border-[#2bee4b]/50 bg-[#a7f8b4] px-4 py-3.5">
           <div className="flex items-start justify-center gap-x-10">
             <Stat label="Score" value={formatScore(agent.total_score)} />
             <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '—'} />
