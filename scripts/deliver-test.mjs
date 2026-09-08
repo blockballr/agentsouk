@@ -4,6 +4,7 @@
 // Usage (server must be running on :3000):
 //   node scripts/deliver-test.mjs
 // writes data/delivery-matrix.json; many dead/gated entries are expected data
+// unprobed candidates are written as status "skipped" and never counted dead
 import { privateKeyToAccount } from "viem/accounts";
 import { getAddress } from "viem";
 import { randomBytes } from "node:crypto";
@@ -12,9 +13,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 const BASE = "http://localhost:3000";
 const CHAIN_ID = 56;
 const AMOUNT_USD = 2;
-const BUDGET_MS = 20 * 60 * 1000;
-const PER_CATEGORY = 6;
-const GENERAL = 4;
+const BUDGET_MS = 35 * 60 * 1000;
+const PER_CATEGORY = 14;
+const GENERAL = 8;
 const CATEGORIES = ["rebalancing", "grid-trading", "yield", "health-factor"];
 
 const wallet = privateKeyToAccount(
@@ -252,7 +253,7 @@ async function classify(cand) {
     if (!pick) {
       return {
         status: "delivers",
-        detail: "capabilities probe ok; every tool requires arguments so no zero-arg call was made",
+        detail: "delivers on capabilities probe alone; every tool requires arguments so no zero-arg call was made",
         tools: names,
       };
     }
@@ -262,7 +263,7 @@ async function classify(cand) {
       if (GATED_RE.test(err)) return { status: "gated", detail: err, tools: names };
       return {
         status: "delivers",
-        detail: `capabilities ok (tools: ${names.join(", ")}); tools/call of ${pick.name} failed: ${err}`,
+        detail: `delivers on capabilities probe (tools: ${names.join(", ")}); tools/call of ${pick.name} failed: ${err}`,
         tools: names,
       };
     }
@@ -270,7 +271,7 @@ async function classify(cand) {
     if (!cd?.ok) {
       return {
         status: "delivers",
-        detail: `capabilities ok (tools: ${names.join(", ")}); tools/call not ok: ${JSON.stringify(call.body).slice(0, 200)}`,
+        detail: `delivers on capabilities probe (tools: ${names.join(", ")}); tools/call of ${pick.name} not ok: ${JSON.stringify(call.body).slice(0, 200)}`,
         tools: names,
       };
     }
@@ -311,8 +312,8 @@ async function main() {
         name: cand.name,
         category: cand.category,
         protocol: cand.protocol,
-        status: "dead",
-        detail: "skipped: 20 minute wall clock budget exhausted before probe",
+        status: "skipped",
+        detail: "skipped: 35 minute wall clock budget exhausted before probe",
       });
       continue;
     }
@@ -344,7 +345,11 @@ async function main() {
   }
 
   const tally = { delivers: 0, gated: 0, dead: 0 };
-  for (const m of matrix) tally[m.status] += 1;
+  let skipped = 0;
+  for (const m of matrix) {
+    if (m.status === "skipped") skipped += 1;
+    else tally[m.status] += 1;
+  }
 
   const out = {
     capturedAt: new Date().toISOString(),
@@ -364,7 +369,7 @@ async function main() {
       console.log(`  ${r.status.padEnd(8)} ${r.name} (${r.tokenId}) [${r.protocol}] ${r.detail.slice(0, 100)}`);
     }
   }
-  console.log(`\ntally: delivers=${tally.delivers} gated=${tally.gated} dead=${tally.dead}`);
+  console.log(`\ntally: delivers=${tally.delivers} gated=${tally.gated} dead=${tally.dead} skipped=${skipped} (skipped excluded from tally)`);
   console.log(`wrote data/delivery-matrix.json with ${matrix.length} candidates`);
 }
 
