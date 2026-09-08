@@ -4,6 +4,7 @@ import type { AgentDetail, AgentSummary } from '@agora/core'
 import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
 import { getAgentDetail, getAgents } from '../lib/api'
 import { bestByCategory } from '../lib/compare'
+import { CompareBar } from '../components/CompareBar'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
 export function ComparePage() {
@@ -23,6 +24,17 @@ export function ComparePage() {
     const nextSp = new URLSearchParams()
     if (next.length > 0) nextSp.set('ids', next.join(','))
     setSp(nextSp, { replace: true })
+  }
+
+  function clearSelection() {
+    persistShortlist([])
+    setSp(new URLSearchParams(), { replace: true })
+  }
+
+  // same floating bar as the marketplace; here the action anchors the table
+  // instead of navigating
+  function scrollToTable() {
+    document.getElementById('compare-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const [agents, setAgents] = useState<AgentDetail[]>([])
@@ -68,8 +80,11 @@ export function ComparePage() {
         <Picker />
       ) : (
         <>
-          <CompareTable agents={agents} loading={loading} error={error} onClear={() => setSp(new URLSearchParams(), { replace: true })} />
+          <CompareTable agents={agents} loading={loading} error={error} onClear={clearSelection} />
           <ShortlistSearch selected={urlIds} onToggle={toggleId} />
+          {urlIds.length >= 2 && (
+            <CompareBar count={urlIds.length} onClear={clearSelection} onCompare={scrollToTable} />
+          )}
         </>
       )}
     </section>
@@ -257,7 +272,7 @@ function CompareTable({
   )
 
   return (
-    <div className="mt-12">
+    <div id="compare-table" className="mt-12 scroll-mt-8">
       <div className="mb-8 flex items-center justify-between">
         <p className="micro text-newsprint-gray">
           {agents.length} of {agents.length} loaded
