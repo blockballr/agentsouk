@@ -103,7 +103,7 @@ export function MarketplacePage() {
               className={`relative h-[18px] w-[34px] rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green ${pcs ? 'bg-highlighter-green' : 'bg-slate-verdant/30'}`}
             >
               <span
-                className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-bone-white shadow-sm transition-all duration-150 ${pcs ? 'left-[18px]' : 'left-[2px]'}`}
+                className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-switch-knob shadow-sm transition-all duration-150 ${pcs ? 'left-[18px]' : 'left-[2px]'}`}
               />
             </button>
           </label>

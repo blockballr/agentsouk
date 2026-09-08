@@ -10,6 +10,7 @@
   --color-highlighter-green: #2bee4b;
   --color-shadow-moss: #93b799;
   --color-echo-green: #c4e4c9;
+  --color-switch-knob: #fafffa;
 
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -27,10 +28,11 @@
     --color-press-black: #f2f6f1;
     --color-typesetter-ink: #f2f6f1;
     --color-newsprint-gray: #9aa79d;
-    --color-slate-verdant: #2a322c;
+    --color-slate-verdant: #45524a;
     --color-echo-green: #1d2a20;
     --color-muted-sage: #8f9c92;
     --color-shadow-moss: #3f5c46;
+    --color-switch-knob: #f2f6f1;
   }
 }
 
@@ -39,10 +41,11 @@
   --color-press-black: #f2f6f1;
   --color-typesetter-ink: #f2f6f1;
   --color-newsprint-gray: #9aa79d;
-  --color-slate-verdant: #2a322c;
+  --color-slate-verdant: #45524a;
   --color-echo-green: #1d2a20;
   --color-muted-sage: #8f9c92;
   --color-shadow-moss: #3f5c46;
+  --color-switch-knob: #f2f6f1;
 }
 
 :root[data-theme="light"] {
