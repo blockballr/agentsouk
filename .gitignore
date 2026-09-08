@@ -69,3 +69,4 @@ next-env.d.ts
 
 .vercel
 /apps/web/public/agent-souk-og.png
+/MILESTONE.md
