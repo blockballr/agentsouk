@@ -3,7 +3,13 @@ import "server-only";
 import {
   verifyTypedData,
   getAddress,
+  createPublicClient,
+  createWalletClient,
+  http,
+  encodeFunctionData,
 } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { bsc } from "viem/chains";
 import {
   EIP3009_TYPES,
   Eip3009Message,
@@ -51,32 +57,30 @@ export interface SettleContext {
   agent: { chainId: number; tokenId: string; name: string; symbol: string };
 }
 
-// sandbox settlement: verify the EIP-3009 signature with viem, check the terms
-// match the listing, then record a receipt
-// in production this is replaced by the Binance x402 verify + settle calls in
-// the settle route
-export async function settleSandbox(
+// shared verification for sandbox and prod settlement: validate the payload
+// shape, the signed terms, and the EIP-3009 signature itself before anything
+// is recorded or broadcast
+async function settleSandboxChecks(
   req: SettleRequest,
-  ctx: SettleContext,
-): Promise<SettleResult> {
+): Promise<{ ok: true; auth: PaymentPayload["payload"]["authorization"] } | { ok: false; error: string }> {
   const pr: PaymentRequirements = req.paymentRequirements;
   const payload: PaymentPayload = req.paymentPayload;
 
   if (!payload || payload.x402Version !== 2) {
-    return fail("Unsupported x402 version");
+    return { ok: false, error: "Unsupported x402 version" };
   }
   const auth = payload.payload?.authorization;
-  if (!auth?.signature) return fail("Missing signature");
+  if (!auth?.signature) return { ok: false, error: "Missing signature" };
 
   if (payload.accepted.amount !== pr.amount || payload.accepted.payTo !== pr.payTo) {
-    return fail("Signed terms do not match payment requirements");
+    return { ok: false, error: "Signed terms do not match payment requirements" };
   }
 
   const domain = eip3009Domain(pr);
   const message = buildMessage(pr, auth);
 
-  if (isExpired(message.validBefore)) return fail("Authorization expired");
-  if (message.value <= 0n) return fail("Non-positive value");
+  if (isExpired(message.validBefore)) return { ok: false, error: "Authorization expired" };
+  if (message.value <= 0n) return { ok: false, error: "Non-positive value" };
 
   const ok = await verifyTypedData({
     address: message.from,
@@ -87,7 +91,23 @@ export async function settleSandbox(
     signature: auth.signature as `0x${string}`,
   }).catch(() => false);
 
-  if (!ok) return fail("Signature verification failed");
+  if (!ok) return { ok: false, error: "Signature verification failed" };
+  return { ok: true, auth };
+}
+
+// sandbox settlement: verify the EIP-3009 signature with viem, check the terms
+// match the listing, then record a receipt
+// in production this is replaced by the Binance x402 verify + settle calls in
+// the settle route
+export async function settleSandbox(
+  req: SettleRequest,
+  ctx: SettleContext,
+): Promise<SettleResult> {
+  const checks = await settleSandboxChecks(req);
+  if (!checks.ok) return fail(checks.error);
+
+  const pr: PaymentRequirements = req.paymentRequirements;
+  const auth = checks.auth;
 
   const paymentId = req.paymentId ?? crypto.randomUUID();
   const now = new Date();
@@ -112,7 +132,7 @@ export async function settleSandbox(
     },
   };
 
-  recordPayment({ ...receipt, paymentPayload: payload });
+  recordPayment({ ...receipt, paymentPayload: req.paymentPayload });
 
   return {
     success: true,
@@ -133,6 +153,136 @@ export async function settleSandbox(
 
 export function getSandboxReceipt(paymentId: string): Receipt | undefined {
   return getPayment(paymentId);
+}
+
+// prod settlement: relay the buyer's EIP-3009 authorization on BNB Chain
+// mainnet. the relay wallet pays gas; the buyer signs only, and no buyer key
+// is ever held. the 5 USDC cap is enforced before any broadcast.
+const PROD_CAP_RAW = 5n * 10n ** 18n; // 5 USDC, 18 decimals
+const USDC_BSC = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
+const BSC_RPC = "https://bsc-dataseed.binance.org";
+
+// split a 65-byte ECDSA signature into r, s and a normalized v (27/28)
+function splitSig(sig: `0x${string}`) {
+  const s = sig.slice(2);
+  const r = `0x${s.slice(0, 64)}` as `0x${string}`;
+  const vs = `0x${s.slice(64, 128)}` as `0x${string}`;
+  let vNum = parseInt(s.slice(128, 130), 16);
+  if (vNum < 27) vNum += 27;
+  return { r, vs, vNum };
+}
+
+export async function settleProd(
+  req: SettleRequest,
+  ctx: SettleContext,
+): Promise<SettleResult> {
+  const key = process.env.RELAY_PRIVATE_KEY;
+  if (!key) return fail("prod mode requires RELAY_PRIVATE_KEY");
+
+  const pr: PaymentRequirements = req.paymentRequirements;
+
+  // run the same verification as sandbox before spending anything
+  const checks = await settleSandboxChecks(req);
+  if (!checks.ok) return fail(checks.error);
+  const auth = checks.auth;
+
+  if (BigInt(pr.amount) > PROD_CAP_RAW) {
+    return fail("Amount exceeds the 5 USDC prod cap");
+  }
+
+  const relay = privateKeyToAccount(key as `0x${string}`);
+  const publicClient = createPublicClient({ chain: bsc, transport: http(BSC_RPC) });
+  const walletClient = createWalletClient({
+    account: relay,
+    chain: bsc,
+    transport: http(BSC_RPC),
+  });
+
+  const { r, vs, vNum } = splitSig(auth.signature as `0x${string}`);
+  const data = encodeFunctionData({
+    abi: [
+      {
+        name: "transferWithAuthorization",
+        type: "function",
+        stateMutability: "nonpayable",
+        inputs: [
+          { name: "from", type: "address" },
+          { name: "to", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "validAfter", type: "uint256" },
+          { name: "validBefore", type: "uint256" },
+          { name: "nonce", type: "bytes32" },
+          { name: "v", type: "uint8" },
+          { name: "r", type: "bytes32" },
+          { name: "s", type: "bytes32" },
+        ],
+        outputs: [],
+      },
+    ],
+    args: [
+      getAddress(auth.from),
+      getAddress(auth.to),
+      BigInt(auth.value),
+      BigInt(auth.validAfter),
+      BigInt(auth.validBefore),
+      auth.nonce as `0x${string}`,
+      vNum,
+      r,
+      vs,
+    ],
+  });
+
+  try {
+    const hash = await walletClient.sendTransaction({
+      to: USDC_BSC as `0x${string}`,
+      data,
+    });
+    const onchain = await publicClient.waitForTransactionReceipt({ hash });
+    if (onchain.status !== "success") return fail(`Relay tx reverted: ${hash}`);
+
+    const paymentId = req.paymentId ?? crypto.randomUUID();
+    const now = new Date();
+    const receipt: Receipt = {
+      paymentId,
+      createdAt: now.toISOString(),
+      txHash: hash,
+      mode: "prod",
+      agent: {
+        chainId: ctx.agent.chainId,
+        tokenId: ctx.agent.tokenId,
+        name: ctx.agent.name,
+      },
+      client: auth.from,
+      payTo: pr.payTo,
+      amount: pr.amount,
+      symbol: ctx.agent.symbol,
+      activated: true,
+      session: {
+        spendCapUsd: 5,
+        expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      },
+    };
+    recordPayment({ ...receipt, paymentPayload: req.paymentPayload });
+
+    return {
+      success: true,
+      paymentId,
+      txHash: hash,
+      details: {
+        agentId: ctx.agent.tokenId,
+        agentName: ctx.agent.name,
+        client: auth.from,
+        payTo: pr.payTo,
+        amount: pr.amount,
+        symbol: ctx.agent.symbol,
+        verified: true,
+        mode: "prod",
+        txLink: `https://bscscan.com/tx/${hash}`,
+      },
+    };
+  } catch (e) {
+    return fail((e as Error).message);
+  }
 }
 
 function fail(error: string): SettleResult {

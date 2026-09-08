@@ -88,7 +88,8 @@ export interface SettleResult {
     amount: string;
     symbol: string;
     verified: boolean;
-    mode: "sandbox" | "b402";
+    mode: "sandbox" | "prod" | "b402";
+    txLink?: string;
   };
 }
 
@@ -96,7 +97,7 @@ export interface Receipt {
   paymentId: string;
   createdAt: string;
   txHash: string;
-  mode: "sandbox" | "b402";
+  mode: "sandbox" | "prod" | "b402";
   agent: { chainId: number; tokenId: string; name: string };
   client: string;
   payTo: string;

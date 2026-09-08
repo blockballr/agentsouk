@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { settleSandbox } from "@/lib/facilitator";
+import { settleSandbox, settleProd } from "@/lib/facilitator";
 import { SettleRequest } from "@/lib/x402";
 
 export const dynamic = "force-dynamic";
 
+// FACILITATOR_MODE=prod relays the buyer's EIP-3009 authorization on-chain
+// from a relay wallet and requires RELAY_PRIVATE_KEY (capped at 5 USDC)
 // FACILITATOR_MODE=b402 routes through the live Binance x402 API and requires
 // B402_CLIENT_ID + B402_ACCESS_TOKEN
 // sandbox mode verifies the EIP-3009 signature and records a local receipt, so
@@ -30,6 +32,18 @@ export async function POST(req: NextRequest) {
   };
 
   const mode = process.env.FACILITATOR_MODE ?? "sandbox";
+
+  if (mode === "prod") {
+    const result = await settleProd(body, {
+      agent: {
+        chainId: agent.chainId,
+        tokenId: agent.tokenId,
+        name: agent.name,
+        symbol: agent.symbol ?? "USDC",
+      },
+    });
+    return NextResponse.json(result, { status: result.success ? 200 : 402 });
+  }
 
   if (mode === "b402") {
     const result = await settleB402(body, agent);
