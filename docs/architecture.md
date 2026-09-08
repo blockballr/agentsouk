@@ -197,8 +197,8 @@ least 1 for that category, relabeled accordingly.
 
 The result is written as version 2 of the snapshot: a timestamp, the fetch
 source counts, the per-category counts, and the selected agents. The shipped
-snapshot holds 107 real BSC agents: 35 rebalancing, 40 yield, 9 health-factor,
-3 grid-trading, 20 general.
+snapshot holds 168 real BSC agents: 47 rebalancing, 44 yield, 34 health-factor,
+13 grid-trading, 30 general.
 
 ### Classification and Ranking
 
