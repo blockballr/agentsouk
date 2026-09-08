@@ -213,8 +213,8 @@ function BadgeCell({
   return (
     <span
       title={title}
-      className={`micro flex h-[26px] min-w-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-full border hairline px-2 ${
-        tone ?? 'border-slate-verdant/15 text-transparent'
+      className={`micro flex h-[26px] min-w-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-full px-2 ${
+        tone !== undefined ? `border hairline ${tone}` : ''
       }`}
     >
       {children}
