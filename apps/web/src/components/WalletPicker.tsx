@@ -22,7 +22,7 @@ function WalletPicker({
       onClick={() => onPick(null)}
     >
       <div
-        className="w-full max-w-sm rounded-[4px] border hairline border-slate-verdant/30 bg-bone-white p-5 shadow-xl"
+        className="w-full max-w-sm rounded-[4px] border hairline border-slate-verdant/50 bg-bone-white p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="micro text-newsprint-gray">Choose a wallet</p>
@@ -32,7 +32,7 @@ function WalletPicker({
               key={o.rdns}
               type="button"
               onClick={() => onPick(o)}
-              className="flex w-full items-center gap-3 rounded-[4px] border hairline border-slate-verdant/30 px-4 py-3 text-left transition hover:border-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              className="flex w-full items-center gap-3 rounded-[4px] border hairline border-slate-verdant/50 px-4 py-3 text-left transition hover:border-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
             >
               {o.icon ? (
                 <img src={o.icon} alt="" className="h-7 w-7 rounded-[4px]" />
@@ -48,7 +48,7 @@ function WalletPicker({
         <button
           type="button"
           onClick={() => onPick(null)}
-          className="micro mt-4 w-full rounded-[4px] border hairline border-slate-verdant/30 px-4 py-3 text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className="micro mt-4 w-full rounded-[4px] border hairline border-slate-verdant/50 px-4 py-3 text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
         >
           Cancel
         </button>

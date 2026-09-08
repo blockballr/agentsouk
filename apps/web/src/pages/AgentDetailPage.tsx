@@ -20,8 +20,8 @@ import {
 const verificationTone: Record<string, string> = {
   delivered: 'border-highlighter-green/50 text-highlighter-green',
   gated: 'border-slate-verdant/40 text-slate-verdant',
-  dead: 'border-slate-verdant/25 text-newsprint-gray',
-  unreachable: 'border-slate-verdant/25 text-newsprint-gray',
+  dead: 'border-slate-verdant/45 text-newsprint-gray',
+  unreachable: 'border-slate-verdant/45 text-newsprint-gray',
 }
 
 function verificationLabel(status: string): string {
@@ -106,7 +106,7 @@ export function AgentDetailPage() {
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_340px]">
         <div>
-          <div className="flex flex-col gap-6 rounded-[14px] border hairline border-slate-verdant/20 p-8 sm:flex-row sm:items-start">
+          <div className="flex flex-col gap-6 rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:flex-row sm:items-start">
             <img
               src={detail.image_url ?? '/inserts/arc.svg'}
               alt={detail.name}
@@ -175,7 +175,7 @@ export function AgentDetailPage() {
           </div>
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
-            <div className="rounded-[14px] border hairline border-slate-verdant/20 p-8">
+            <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
               <h2 className="micro text-newsprint-gray">Reputation</h2>
               <div className="mt-6 grid grid-cols-3 gap-6">
                 <BigMetric label="Total score" value={formatScore(detail.total_score)} accent />
@@ -194,7 +194,7 @@ export function AgentDetailPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-[14px] border hairline border-slate-verdant/20 p-8">
+              <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
                 <h2 className="micro text-newsprint-gray">Health &amp; activity</h2>
                 <div className="mt-6 grid grid-cols-2 gap-6">
                   <BigMetric label="Health score" value={detail.health_score !== null ? formatScore(detail.health_score) : '—'} />
@@ -202,7 +202,7 @@ export function AgentDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[14px] border hairline border-slate-verdant/20 p-8">
+              <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
                 <h2 className="micro text-newsprint-gray">Endpoints</h2>
                 <div className="mt-6 space-y-3">
                   <Endpoint label="A2A" value={detail.a2a_endpoint} />
@@ -215,11 +215,11 @@ export function AgentDetailPage() {
           </div>
 
           {onchain.length > 0 && (
-            <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/20 p-8">
+            <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
               <h2 className="micro text-newsprint-gray">On-chain metadata</h2>
               <dl className="mt-6 grid grid-cols-1 bg-bone-white pl-px pt-px sm:grid-cols-2">
                 {onchain.map((m) => (
-                  <div key={m.key} className="-ml-px -mt-px border hairline border-slate-verdant/20 bg-bone-white p-4">
+                  <div key={m.key} className="-ml-px -mt-px border hairline border-slate-verdant/40 bg-bone-white p-4">
                     <dt className="micro text-newsprint-gray">{m.key}</dt>
                     <dd className="mt-2 break-words font-mono text-xs leading-relaxed text-press-black">
                       {typeof m.value === 'string' ? m.value : JSON.stringify(m.value)}
@@ -231,7 +231,7 @@ export function AgentDetailPage() {
           )}
         </div>
 
-        <aside className="h-fit rounded-[14px] border hairline border-slate-verdant/20 p-8 lg:sticky lg:top-8">
+        <aside className="h-fit rounded-[14px] border hairline border-slate-verdant/40 p-8 lg:sticky lg:top-8">
           <h2 className="micro text-newsprint-gray">Hire this agent</h2>
           <div className="mt-6 space-y-4 text-[11px] uppercase tracking-[0.01em] text-newsprint-gray">
             <div className="flex justify-between">
@@ -343,7 +343,7 @@ function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: strin
       )}
 
       {(step === 'preview' || step === 'signing' || step === 'settling') && option && preview && (
-        <div className="rounded-[10px] border hairline border-slate-verdant/20 p-4">
+        <div className="rounded-[10px] border hairline border-slate-verdant/40 p-4">
           <div className="space-y-2 text-xs">
             <Row label="Price" value={`$${option.amountUsd} ${option.tokenSymbol}`} mono />
             <Row label="To" value={shortAddress(option.payTo)} mono />
@@ -361,7 +361,7 @@ function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: strin
               <button
                 type="button"
                 onClick={reset}
-                className="micro w-full rounded-[5px] border hairline border-slate-verdant/30 px-4 py-3 text-newsprint-gray transition hover:text-press-black"
+                className="micro w-full rounded-[5px] border hairline border-slate-verdant/50 px-4 py-3 text-newsprint-gray transition hover:text-press-black"
               >
                 Cancel
               </button>
@@ -430,7 +430,7 @@ function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: strin
           <button
             type="button"
             onClick={reset}
-            className="micro mt-4 w-full rounded-[5px] border hairline border-slate-verdant/30 px-4 py-3 text-newsprint-gray transition hover:text-press-black"
+            className="micro mt-4 w-full rounded-[5px] border hairline border-slate-verdant/50 px-4 py-3 text-newsprint-gray transition hover:text-press-black"
           >
             Done
           </button>
@@ -508,7 +508,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
   const selected = tools.find((t) => t.name === tool)
 
   return (
-    <div className="mt-4 rounded-[10px] border hairline border-slate-verdant/20 p-4">
+    <div className="mt-4 rounded-[10px] border hairline border-slate-verdant/40 p-4">
       <p className="micro text-newsprint-gray">Run a task</p>
 
       {phase === 'idle' && (
@@ -538,7 +538,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
                   const t = tools.find((x) => x.name === e.target.value)
                   if (t) setArgsText(skeletonArgs(t.schema))
                 }}
-                className="w-full rounded-[5px] border hairline border-slate-verdant/30 bg-bone-white px-3 py-2 font-mono text-[11px] text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-[11px] text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               >
                 {tools.map((t) => (
                   <option key={t.name} value={t.name}>
@@ -555,7 +555,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
                 rows={5}
                 spellCheck={false}
                 aria-label="Tool arguments as JSON"
-                className="w-full rounded-[5px] border hairline border-slate-verdant/30 bg-bone-white px-3 py-2 font-mono text-[11px] leading-relaxed text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-[11px] leading-relaxed text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               />
               <button
                 type="button"
@@ -574,7 +574,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
                 rows={3}
                 placeholder="Describe the task for this agent…"
                 aria-label="Task description"
-                className="w-full rounded-[5px] border hairline border-slate-verdant/30 bg-bone-white px-3 py-2 text-xs leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-xs leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               />
               <button
                 type="button"
@@ -601,7 +601,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
       )}
 
       {output && (
-        <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-[8px] border hairline border-slate-verdant/20 bg-bone-white p-3 font-mono text-[11px] leading-relaxed text-press-black">
+        <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-[8px] border hairline border-slate-verdant/40 bg-bone-white p-3 font-mono text-[11px] leading-relaxed text-press-black">
           {output}
         </pre>
       )}
