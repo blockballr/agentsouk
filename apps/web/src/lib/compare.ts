@@ -1,5 +1,5 @@
 import type { AgentDetail } from '@agora/core'
-import { classifyAgent } from '@agora/core'
+import { CATEGORIES, CATEGORY_KEYS, classifyAgent } from '@agora/core'
 
 // best-in-category selection for the compare table
 // rank: on-chain total_score, then total_feedbacks, then verification
@@ -22,6 +22,37 @@ const GRADE_RANK: Record<string, number> = {
 
 export function categoryOf(agent: AgentDetail): string {
   return classifyAgent(`${agent.name} ${agent.description ?? ''}`).category
+}
+
+export interface CategoryGroup {
+  category: string
+  label: string
+  agents: AgentDetail[]
+}
+
+// compared agents grouped by category, in the site's fixed category order
+// (the four headline categories, then general); agents keep list order
+// within a group
+export function categoryGroups(agents: AgentDetail[]): CategoryGroup[] {
+  const byKey = new Map<string, AgentDetail[]>()
+  for (const a of agents) {
+    const key = categoryOf(a)
+    const list = byKey.get(key)
+    if (list) list.push(a)
+    else byKey.set(key, [a])
+  }
+  return [...CATEGORY_KEYS, 'general']
+    .filter((key) => byKey.has(key))
+    .map((key) => ({
+      category: key,
+      label: categoryLabel(key),
+      agents: byKey.get(key) as AgentDetail[],
+    }))
+}
+
+function categoryLabel(key: string): string {
+  const def = CATEGORIES.find((c) => c.key === key)
+  return def ? def.label : 'General'
 }
 
 // winner agent_id per category, or null when a category has fewer than two

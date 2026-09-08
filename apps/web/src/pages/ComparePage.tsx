@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import type { AgentDetail, AgentSummary } from '@agora/core'
 import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
 import { getAgentDetail, getAgents } from '../lib/api'
-import { bestByCategory } from '../lib/compare'
+import { bestByCategory, categoryGroups } from '../lib/compare'
 import { CompareBar } from '../components/CompareBar'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
@@ -242,10 +242,18 @@ function CompareTable({
   error: boolean
   onClear: () => void
 }) {
-  const winnerIds = useMemo(() => {
-    const byCategory = bestByCategory(agents)
-    return new Set(Object.values(byCategory).filter((id): id is string => id !== null))
-  }, [agents])
+  const winnerByCategory = useMemo(() => bestByCategory(agents), [agents])
+  const winnerIds = useMemo(
+    () => new Set(Object.values(winnerByCategory).filter((id): id is string => id !== null)),
+    [winnerByCategory],
+  )
+  const groups = useMemo(() => categoryGroups(agents), [agents])
+  const ordered = useMemo(() => groups.flatMap((g) => g.agents), [groups])
+  // left-edge separators so each category band's columns read as one section
+  const groupStartIds = useMemo(
+    () => new Set(groups.slice(1).map((g) => g.agents[0]?.agent_id).filter((id): id is string => id !== undefined)),
+    [groups],
+  )
 
   const rows = useMemo(
     () => [
@@ -305,15 +313,36 @@ function CompareTable({
           <table className="w-full border-collapse text-left">
             <thead>
               <tr>
+                <th className="border-b hairline border-slate-verdant/20" scope="col" aria-label="Metric" />
+                {groups.map((g) => {
+                  const winnerId = winnerByCategory[g.category] ?? null
+                  const winner = winnerId ? agents.find((a) => a.agent_id === winnerId) : null
+                  return (
+                    <th
+                      key={g.category}
+                      colSpan={g.agents.length}
+                      className={`micro border-b hairline border-slate-verdant/20 px-4 py-3 text-newsprint-gray ${
+                        winner ? 'bg-highlighter-green/15 text-highlighter-green' : ''
+                      }`}
+                      scope="colgroup"
+                    >
+                      {g.label}
+                      {winner && <span className="ml-3 font-normal normal-case">best: {winner.name}</span>}
+                    </th>
+                  )
+                })}
+              </tr>
+              <tr>
                 <th className="micro border-b hairline border-slate-verdant/20 p-4 text-newsprint-gray" scope="col">
                   Metric
                 </th>
-                {agents.map((a) => {
+                {ordered.map((a) => {
                   const winner = winnerIds.has(a.agent_id)
+                  const separator = groupStartIds.has(a.agent_id) ? 'border-l border-l-slate-verdant/20' : ''
                   return (
                     <th
                       key={a.agent_id}
-                      className={`border-b hairline border-slate-verdant/20 p-4 font-serif text-lg font-medium ${
+                      className={`border-b hairline border-slate-verdant/20 p-4 font-serif text-lg font-medium ${separator} ${
                         winner ? 'bg-highlighter-green/15' : ''
                       }`}
                       scope="col"
@@ -337,12 +366,12 @@ function CompareTable({
                   <th scope="row" className="micro border-b hairline border-slate-verdant/20 p-4 text-newsprint-gray">
                     {row.label}
                   </th>
-                  {agents.map((a) => (
+                  {ordered.map((a) => (
                     <td
                       key={a.agent_id}
                       className={`border-b hairline border-slate-verdant/20 p-4 text-sm text-press-black ${
-                        winnerIds.has(a.agent_id) ? 'bg-highlighter-green/15' : ''
-                      }`}
+                        groupStartIds.has(a.agent_id) ? 'border-l border-l-slate-verdant/20' : ''
+                      } ${winnerIds.has(a.agent_id) ? 'bg-highlighter-green/15' : ''}`}
                     >
                       {row.render(a)}
                     </td>
