@@ -299,7 +299,11 @@ function AgentCard({
             {agent.category === 'general' ? 'General' : (agent.category ?? '')}
           </span>
           {agent.x402_supported && (
-            <span className="micro rounded-full border hairline border-highlighter-green/40 px-2 py-1 text-highlighter-green">
+            <span className="micro inline-flex items-center gap-2 rounded-full border hairline border-highlighter-green/40 px-2 py-1 text-highlighter-green">
+              <span className="relative flex h-2 w-2">
+                <span className="motion-safe:absolute motion-safe:inline-flex motion-safe:h-full motion-safe:w-full motion-safe:animate-ping motion-safe:rounded-full motion-safe:bg-highlighter-green opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-highlighter-green" />
+              </span>
               x402
             </span>
           )}
