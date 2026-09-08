@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const LLM_API_KEY = process.env.LLM_EVAL_API_KEY ?? "";
 const PRIMARY_MODEL = process.env.LLM_EVAL_MODEL ?? "gemini-2.5-flash";
 const FALLBACK_MODEL = process.env.LLM_EVAL_FALLBACK_MODEL ?? "gemini-2.0-flash";
+// last resort: the free tier only allows 20 requests PER DAY per model, so
+// when both configured models have burned their daily allowance, this lite
+// sibling still has its own untouched bucket
+const LAST_RESORT_MODEL = "gemini-3.5-flash-lite";
 const BASE_URL =
   process.env.LLM_EVAL_BASE_URL ??
   "https://generativelanguage.googleapis.com/v1beta/openai";
@@ -112,9 +117,11 @@ async function llmChat(model: string, userContent: string): Promise<string> {
       ],
     }),
     signal: AbortSignal.timeout(30000),
+  }).catch((e) => {
+    throw new Error(`llm fetch failed: ${e?.message ?? e}`);
   });
   const rawText = await res.text();
-  if (!res.ok) throw new Error(`llm http ${res.status}`);
+  if (!res.ok) throw new Error(`llm http ${res.status}: ${rawText.slice(0, 200)}`);
   let body: unknown;
   try {
     body = JSON.parse(rawText);
@@ -126,11 +133,33 @@ async function llmChat(model: string, userContent: string): Promise<string> {
   if (typeof content !== "string") throw new Error("llm no message content");
   const fenced = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   const parsed: unknown = JSON.parse(fenced);
-  const commentary = (parsed as { commentary?: unknown })?.commentary;
+  const obj = parsed as { commentary?: unknown; analysis?: unknown };
+  // the lite model answers with "analysis"; accept both keys
+  const commentary = typeof obj.commentary === "string" ? obj.commentary : obj.analysis;
   if (typeof commentary !== "string" || !commentary.trim()) {
     throw new Error("llm unparseable commentary");
   }
   return commentary.trim().slice(0, 1200);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// model chain: configured primary, configured fallback, then the lite model
+// whose separate daily bucket usually still has room. no waits: the free
+// tier quota that actually binds is per-day, and waiting never frees it
+async function generateCommentary(userContent: string): Promise<{ commentary: string; model: string }> {
+  let lastError: unknown;
+  for (const model of [PRIMARY_MODEL, FALLBACK_MODEL, LAST_RESORT_MODEL]) {
+    try {
+      const commentary = await llmChat(model, userContent);
+      return { commentary, model };
+    } catch (e) {
+      lastError = e;
+      console.error(`[compare/commentary] ${model}: ${e instanceof Error ? e.message.slice(0, 200) : e}`);
+      await sleep(1500);
+    }
+  }
+  throw lastError;
 }
 
 export async function POST(request: Request) {
@@ -155,14 +184,9 @@ export async function POST(request: Request) {
   });
 
   try {
-    const commentary = await llmChat(PRIMARY_MODEL, userContent);
-    return NextResponse.json({ success: true, commentary, model: PRIMARY_MODEL });
+    const { commentary, model } = await generateCommentary(userContent);
+    return NextResponse.json({ success: true, commentary, model });
   } catch {
-    try {
-      const commentary = await llmChat(FALLBACK_MODEL, userContent);
-      return NextResponse.json({ success: true, commentary, model: FALLBACK_MODEL });
-    } catch {
-      return NextResponse.json({ success: false }, { status: 200 });
-    }
+    return NextResponse.json({ success: false }, { status: 200 });
   }
 }
