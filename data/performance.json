@@ -1,0 +1,103 @@
+{
+  "scannedAt": "2026-09-08T21:24:24.611Z",
+  "scanned": 168,
+  "agents": [],
+  "probeResults": [
+    {
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "265375",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "45650",
+      "status": "no-matching-tool",
+      "detail": "tools: getSupportedChains, getDexInfo, collectFees, createPool, createPosition, decreaseLiquidity, getAllPositionsIds, getLpPosition, increaseLiquidity, createSingleSidePosition, estimateAmountsForPositionCreation, estimateRangesAndAmountsForUsdPositionCreation, estimateRangesForSellingUsdSingleSide, estimateRangesForBuyingUsdSingleSide, estimateAmountsForIncreasePosition, getCurrentPoolPrice, getPredefinedPriceRanges"
+    },
+    {
+      "tokenId": "293902",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "269223",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "340502",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "304493",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "340456",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "338253",
+      "status": "no-matching-tool",
+      "detail": "tools: list_vaults, vault_overview"
+    },
+    {
+      "tokenId": "302257",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "45381",
+      "status": "no-matching-tool",
+      "detail": "tools: borrow, supply, withdraw, repay, repayWithATokens, liquidationCall, setEModeCategory, setUsageAsCollateral, swapBorrowRateMode, getReserveAssociatedTokens, getReserveHumanized, getUserReservesHumanized, getReservesList, getUserWalletBalancesForLendingPool, batchBalanceOf, errorCodeToText, getUserActiveLoans, getUserBorrowingPower, getMaximumBorrowsAmount, getUserCollateral, getUserHealthIndicators, getAaveV3SupportedChains"
+    },
+    {
+      "tokenId": "269228",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "340458",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "266933",
+      "status": "probed",
+      "tool": "get_performance",
+      "rawOutput": "{\n  \"account\": \"0xa09991fc5D8637bb4245737C3ebF26E24D653962\",\n  \"status\": \"active\",\n  \"health_factor\": 999.0,\n  \"risk\": \"SAFE\",\n  \"protections_attempted\": 0,\n  \"protections_succeeded\": 0,\n  \"protections_failed\": 0,\n  \"total_gas_spent_usd\": 0.0,\n  \"realised_loss_24h_usd\": 0.0,\n  \"last_protection\": null,\n  \"last_monitor\": \"2026-09-08T21:24:26.980507+00:00\",\n  \"last_error\": null,\n  \"explanation\": null\n}",
+      "calls": [
+        {
+          "tool": "get_performance",
+          "rawOutput": "{\n  \"account\": \"0xa09991fc5D8637bb4245737C3ebF26E24D653962\",\n  \"status\": \"active\",\n  \"health_factor\": 999.0,\n  \"risk\": \"SAFE\",\n  \"protections_attempted\": 0,\n  \"protections_succeeded\": 0,\n  \"protections_failed\": 0,\n  \"total_gas_spent_usd\": 0.0,\n  \"realised_loss_24h_usd\": 0.0,\n  \"last_protection\": null,\n  \"last_monitor\": \"2026-09-08T21:24:26.980507+00:00\",\n  \"last_error\": null,\n  \"explanation\": null\n}"
+        }
+      ]
+    },
+    {
+      "tokenId": "45422",
+      "status": "no-matching-tool",
+      "detail": "tools: getVaultsWithTokens, getVaultsWithProtocols, getVaultsWithChains, getVaultWithIds, getVaultWithNamesOrSymbols, getPortfolio, deposit, withdraw, getCLMPoolsWithChains, getCLMPoolsWithTokens, getCLMPoolsWithProtocols, getCLMPoolWithIds, getCLMPoolWithNamesOrSymbols, depositCLM, previewDepositCLM, stakeCLM, withdrawCLM, claimCLMRewards, getDescriptionBeefy"
+    },
+    {
+      "tokenId": "269233",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "302258",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    },
+    {
+      "tokenId": "340527",
+      "status": "no-mcp",
+      "detail": "protocol a2a; not probed per brief"
+    }
+  ]
+}
