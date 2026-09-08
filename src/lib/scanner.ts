@@ -371,12 +371,14 @@ function sortAgents(
     case "score":
     default:
       if (category && category !== "all") {
-        // within a category, fit first: a precise match beats an older generic
-        // agent that merely earned reputation, and score still breaks ties
+        // the UI sorts by the same total_score the card displays, so it must
+        // lead; relevance only breaks ties so a precise match still beats a
+        // generic agent with an identical score
         copy.sort(
           (a, b) =>
-            relevanceScore(b, category) - relevanceScore(a, category) ||
-            b.total_score - a.total_score,
+            b.total_score - a.total_score ||
+            b.total_feedbacks - a.total_feedbacks ||
+            relevanceScore(b, category) - relevanceScore(a, category),
         );
       } else {
         copy.sort(
