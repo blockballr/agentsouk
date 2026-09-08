@@ -317,10 +317,12 @@ function AgentCard({
           {agent.description || 'No description registered on-chain.'}
         </p>
 
-        <dl className="mx-auto mt-8 flex w-fit items-baseline justify-center gap-x-8 border-t hairline border-slate-verdant/15 pt-5">
-          <Stat label="Score" value={formatScore(agent.total_score)} />
-          <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '—'} />
-          <Stat label="Hires" value={formatNumber(agent.total_feedbacks)} />
+        <dl className="mt-8 w-full rounded-lg bg-[#dbfce0] px-4 py-3.5">
+          <div className="flex items-start justify-center gap-x-10">
+            <Stat label="Score" value={formatScore(agent.total_score)} />
+            <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '—'} />
+            <Stat label="Hires" value={formatNumber(agent.total_feedbacks)} />
+          </div>
         </dl>
 
         <div className="mt-5 grid grid-cols-2 gap-2">
@@ -390,9 +392,9 @@ function AgentCard({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline gap-1.5">
+    <div className="flex flex-col items-center text-center">
       <dt className="micro text-newsprint-gray">{label}</dt>
-      <dd className="text-sm font-medium tabular-nums text-press-black">
+      <dd className="mt-0.5 text-sm font-medium tabular-nums text-press-black">
         {value}
       </dd>
     </div>
