@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/fraunces";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";

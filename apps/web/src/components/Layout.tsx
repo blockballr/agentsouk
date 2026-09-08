@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { Nav } from './Nav'
 import { Footer } from './Footer'
-import { GreenBand } from './GreenBand'
 
 export function Layout() {
   return (
@@ -11,7 +10,6 @@ export function Layout() {
         <Outlet />
       </main>
       <Footer />
-      <GreenBand />
     </div>
   )
 }
