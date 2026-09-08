@@ -124,7 +124,7 @@ export function MarketplacePage() {
               aria-checked={pcs}
               aria-label="Filter PancakeSwap-native agents"
               onClick={() => setParam('pcs', pcs ? '' : '1')}
-              className={`relative h-[18px] w-[34px] rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green ${pcs ? 'bg-highlighter-green' : 'bg-slate-verdant/30'}`}
+              className={`relative h-[18px] w-[34px] rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green ${pcs ? 'bg-highlighter-green' : 'bg-slate-verdant/50'}`}
             >
               <span
                 className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-switch-knob shadow-sm transition-all duration-150 ${pcs ? 'left-[18px]' : 'left-[2px]'}`}
@@ -213,8 +213,8 @@ function labelFor(key: string): string {
 const verificationTone: Record<string, string> = {
   delivered: 'border-highlighter-green/40 text-highlighter-green',
   gated: 'border-slate-verdant/40 text-slate-verdant',
-  dead: 'border-slate-verdant/25 text-newsprint-gray',
-  unreachable: 'border-slate-verdant/25 text-newsprint-gray',
+  dead: 'border-slate-verdant/45 text-newsprint-gray',
+  unreachable: 'border-slate-verdant/45 text-newsprint-gray',
 }
 
 function verificationLabel(status: string): string {
@@ -331,7 +331,7 @@ function AgentCard({
   const img = agent.image_url ?? '/inserts/arc.svg'
   const key = `${agent.chain_id}/${agent.token_id}`
   return (
-    <div className="relative -ml-px -mt-px border hairline border-slate-verdant/20 bg-bone-white">
+    <div className="relative -ml-px -mt-px border hairline border-slate-verdant/40 bg-bone-white">
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         className="group flex h-full flex-col p-6 transition-colors duration-150 hover:bg-echo-green/40 focus-visible:outline-2 focus-visible:outline-press-black"
@@ -393,7 +393,7 @@ function AgentCard({
           )}
           {agent.pcs ? (
             <BadgeCell
-              tone="border-slate-verdant/25 text-newsprint-gray"
+              tone="border-slate-verdant/45 text-newsprint-gray"
               title="PancakeSwap-native agent"
             >
               PCS
@@ -418,7 +418,7 @@ function AgentCard({
         className={`absolute right-[38px] top-3 z-10 flex h-[18px] w-[18px] items-center justify-center rounded-full border hairline transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-highlighter-green ${
           inCart
             ? 'border-highlighter-green bg-highlighter-green text-typesetter-ink'
-            : 'border-slate-verdant/30 bg-bone-white/90 text-newsprint-gray hover:border-highlighter-green'
+            : 'border-slate-verdant/50 bg-bone-white/90 text-newsprint-gray hover:border-highlighter-green'
         }`}
       >
         <svg width="10" height="9" viewBox="0 0 16 14" fill="none" aria-hidden="true">
@@ -436,7 +436,7 @@ function AgentCard({
         className={`absolute right-3 top-3 z-10 flex h-[18px] w-[18px] cursor-pointer items-center justify-center rounded-full border hairline transition-colors duration-150 focus-within:outline-2 focus-within:outline-highlighter-green ${
           checked
             ? 'border-highlighter-green bg-highlighter-green'
-            : 'border-slate-verdant/30 bg-bone-white/90 hover:border-highlighter-green'
+            : 'border-slate-verdant/50 bg-bone-white/90 hover:border-highlighter-green'
         }`}
       >
         <input
@@ -489,7 +489,7 @@ function GridSkeleton() {
       {Array.from({ length: 12 }, (_, i) => (
         <div
           key={i}
-          className="-ml-px -mt-px animate-pulse border hairline border-slate-verdant/20 bg-bone-white p-6"
+          className="-ml-px -mt-px animate-pulse border hairline border-slate-verdant/40 bg-bone-white p-6"
         >
           <div className="flex items-center justify-between gap-3 pr-7">
             <div className="flex items-center gap-4">
@@ -514,7 +514,7 @@ function GridSkeleton() {
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="border hairline border-slate-verdant/20 px-10 py-20 text-center">
+    <div className="border hairline border-slate-verdant/40 px-10 py-20 text-center">
       <p className="font-serif text-[28px] font-medium">Could not reach the market.</p>
       <p className="mt-3 text-sm text-newsprint-gray">
         The catalogue service did not respond. It should be back shortly.
@@ -532,7 +532,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
-    <div className="border hairline border-slate-verdant/20 px-10 py-20 text-center">
+    <div className="border hairline border-slate-verdant/40 px-10 py-20 text-center">
       <p className="font-serif text-[28px] font-medium">Nothing matches.</p>
       <p className="mt-3 text-sm text-newsprint-gray">
         No agent fits that filter. Clear it to see the full catalogue.

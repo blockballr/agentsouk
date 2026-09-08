@@ -68,7 +68,7 @@ export function AdvantagePage() {
       </h1>
 
       {error ? (
-        <p className="mt-12 border hairline border-slate-verdant/20 px-10 py-16 text-center text-sm text-newsprint-gray">
+        <p className="mt-12 border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
           No advantage report captured yet.
         </p>
       ) : loading ? (
@@ -78,7 +78,7 @@ export function AdvantagePage() {
           ))}
         </div>
       ) : report === null || report.tasks.length === 0 ? (
-        <p className="mt-12 border hairline border-slate-verdant/20 px-10 py-16 text-center text-sm text-newsprint-gray">
+        <p className="mt-12 border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
           No advantage report captured yet.
         </p>
       ) : (
@@ -91,7 +91,7 @@ export function AdvantagePage() {
 function Report({ report }: { report: AdvantageReport }) {
   return (
     <div className="mt-12">
-      <div className="border hairline border-slate-verdant/20 p-8">
+      <div className="border hairline border-slate-verdant/40 p-8">
         <p className="micro text-newsprint-gray">Methodology</p>
         <p className="mt-3 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
           {report.methodology}
@@ -118,7 +118,7 @@ function Report({ report }: { report: AdvantageReport }) {
 
 function VerdictCard({ task }: { task: AdvantageTask }) {
   return (
-    <div className="flex flex-col gap-4 rounded-[14px] border hairline border-slate-verdant/20 p-8">
+    <div className="flex flex-col gap-4 rounded-[14px] border hairline border-slate-verdant/40 p-8">
       <p className="micro text-newsprint-gray">{task.category}</p>
       <p className="font-serif text-2xl font-medium">{task.verdict.winner}</p>
       <dl className="mt-auto space-y-2 text-sm text-newsprint-gray">
@@ -145,7 +145,7 @@ function VerdictCard({ task }: { task: AdvantageTask }) {
 
 function TaskDetail({ task }: { task: AdvantageTask }) {
   return (
-    <article className="rounded-[14px] border hairline border-slate-verdant/20 p-8">
+    <article className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="micro text-newsprint-gray">{task.category}</span>
         <SettleBadge settleMode={task.agent.settleMode} txHash={task.agent.txHash} />
@@ -164,7 +164,7 @@ function TaskDetail({ task }: { task: AdvantageTask }) {
         Agent {task.agentSeconds}s vs manual {task.manualSeconds}s
       </p>
 
-      <details className="mt-6 rounded-[10px] border hairline border-slate-verdant/20 p-4">
+      <details className="mt-6 rounded-[10px] border hairline border-slate-verdant/40 p-4">
         <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
           Agent output
         </summary>
@@ -172,7 +172,7 @@ function TaskDetail({ task }: { task: AdvantageTask }) {
           {task.agentOutput}
         </pre>
       </details>
-      <details className="mt-4 rounded-[10px] border hairline border-slate-verdant/20 p-4">
+      <details className="mt-4 rounded-[10px] border hairline border-slate-verdant/40 p-4">
         <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
           Manual output
         </summary>
@@ -181,7 +181,7 @@ function TaskDetail({ task }: { task: AdvantageTask }) {
         </pre>
       </details>
 
-      <p className="mt-6 border-t hairline border-slate-verdant/20 pt-4 text-sm text-newsprint-gray">
+      <p className="mt-6 border-t hairline border-slate-verdant/40 pt-4 text-sm text-newsprint-gray">
         <span className="micro mr-3 text-press-black">Verdict</span>
         {task.verdict.notes}
       </p>

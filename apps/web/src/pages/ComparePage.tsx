@@ -197,14 +197,14 @@ function Picker() {
           ))}
         </div>
       ) : (
-        <ul className="mt-8 border hairline border-slate-verdant/20">
+        <ul className="mt-8 border hairline border-slate-verdant/40">
           {options.map((a) => {
             const key = keyFor(a)
             const checked = selected.includes(key)
             return (
               <li key={key}>
                 <label
-                  className={`flex cursor-pointer items-center gap-6 border-b hairline border-slate-verdant/20 px-6 py-5 transition last:border-b-0 ${
+                  className={`flex cursor-pointer items-center gap-6 border-b hairline border-slate-verdant/40 px-6 py-5 transition last:border-b-0 ${
                     checked ? 'bg-echo-green/40' : 'hover:bg-echo-green/20'
                   }`}
                 >
@@ -313,7 +313,7 @@ function CompareTable({
       </div>
 
       {error ? (
-        <p className="border hairline border-slate-verdant/20 px-10 py-16 text-center text-sm text-newsprint-gray">
+        <p className="border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
           Could not load the selected agents. Go back and pick again.
         </p>
       ) : loading ? (
@@ -323,7 +323,7 @@ function CompareTable({
           ))}
         </div>
       ) : agents.length === 0 ? (
-        <p className="border hairline border-slate-verdant/20 px-10 py-16 text-center text-sm text-newsprint-gray">
+        <p className="border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
           None of those agents could be loaded. They may have left the registry.
         </p>
       ) : (
@@ -331,7 +331,7 @@ function CompareTable({
           <table className="w-full border-collapse text-left">
             <thead>
               <tr>
-                <th className="border-b hairline border-slate-verdant/20" scope="col" aria-label="Metric" />
+                <th className="border-b hairline border-slate-verdant/40" scope="col" aria-label="Metric" />
                 {groups.map((g) => {
                   const winnerId = winnerByCategory[g.category] ?? null
                   const winner = winnerId ? agents.find((a) => a.agent_id === winnerId) : null
@@ -339,7 +339,7 @@ function CompareTable({
                     <th
                       key={g.category}
                       colSpan={g.agents.length}
-                      className={`micro border-b hairline border-slate-verdant/20 px-4 py-3 text-newsprint-gray ${
+                      className={`micro border-b hairline border-slate-verdant/40 px-4 py-3 text-newsprint-gray ${
                         winner ? 'bg-highlighter-green/15 text-highlighter-green' : ''
                       }`}
                       scope="colgroup"
@@ -357,16 +357,16 @@ function CompareTable({
                 })}
               </tr>
               <tr>
-                <th className="micro border-b hairline border-slate-verdant/20 p-4 text-newsprint-gray" scope="col">
+                <th className="micro border-b hairline border-slate-verdant/40 p-4 text-newsprint-gray" scope="col">
                   Metric
                 </th>
                 {ordered.map((a) => {
                   const winner = winnerIds.has(a.agent_id)
-                  const separator = groupStartIds.has(a.agent_id) ? 'border-l border-l-slate-verdant/20' : ''
+                  const separator = groupStartIds.has(a.agent_id) ? 'border-l border-l-slate-verdant/40' : ''
                   return (
                     <th
                       key={a.agent_id}
-                      className={`border-b hairline border-slate-verdant/20 p-4 font-serif text-lg font-medium ${separator} ${
+                      className={`border-b hairline border-slate-verdant/40 p-4 font-serif text-lg font-medium ${separator} ${
                         winner ? 'bg-highlighter-green/15' : ''
                       }`}
                       scope="col"
@@ -390,14 +390,14 @@ function CompareTable({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.label}>
-                  <th scope="row" className="micro border-b hairline border-slate-verdant/20 p-4 text-newsprint-gray">
+                  <th scope="row" className="micro border-b hairline border-slate-verdant/40 p-4 text-newsprint-gray">
                     {row.label}
                   </th>
                   {ordered.map((a) => (
                     <td
                       key={a.agent_id}
-                      className={`border-b hairline border-slate-verdant/20 p-4 text-sm text-press-black ${
-                        groupStartIds.has(a.agent_id) ? 'border-l border-l-slate-verdant/20' : ''
+                      className={`border-b hairline border-slate-verdant/40 p-4 text-sm text-press-black ${
+                        groupStartIds.has(a.agent_id) ? 'border-l border-l-slate-verdant/40' : ''
                       } ${winnerIds.has(a.agent_id) ? 'bg-highlighter-green/15' : ''}`}
                     >
                       {row.render(a)}
@@ -512,18 +512,18 @@ function ShortlistSearch({
             ))}
           </div>
         ) : results.length === 0 ? (
-          <p className="mt-4 border hairline border-slate-verdant/20 px-6 py-6 text-sm text-newsprint-gray">
+          <p className="mt-4 border hairline border-slate-verdant/40 px-6 py-6 text-sm text-newsprint-gray">
             Nothing matches that search.
           </p>
         ) : (
-          <ul className="mt-4 border hairline border-slate-verdant/20">
+          <ul className="mt-4 border hairline border-slate-verdant/40">
             {results.map((a) => {
               const key = `${a.chain_id}/${a.token_id}`
               const checked = selected.includes(key)
               return (
                 <li key={key}>
                   <label
-                    className={`flex cursor-pointer items-center gap-4 border-b hairline border-slate-verdant/20 px-4 py-2.5 transition last:border-b-0 ${
+                    className={`flex cursor-pointer items-center gap-4 border-b hairline border-slate-verdant/40 px-4 py-2.5 transition last:border-b-0 ${
                       checked ? 'bg-echo-green/40' : 'hover:bg-echo-green/20'
                     }`}
                   >

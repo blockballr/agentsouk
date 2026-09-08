@@ -158,7 +158,7 @@ export function HomePage() {
           <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
             Four kinds of work, all on the ledger.
           </h2>
-          <div className="mt-16 grid gap-px border hairline border-slate-verdant/20 bg-slate-verdant/20 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-16 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-4">
             {CATEGORIES.map((c, i) => (
               <motion.div
                 key={c.key}
@@ -240,7 +240,7 @@ export function HomePage() {
       <Reveal>
         <section className="mx-auto max-w-[1400px] px-6 py-20">
           <p className="micro text-newsprint-gray">How a hire runs</p>
-          <div className="mt-12 grid gap-px border hairline border-slate-verdant/20 bg-slate-verdant/20 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((s, i) => (
               <motion.div
                 key={s.title}
