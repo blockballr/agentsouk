@@ -1,8 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import type { AgentDetail } from '@agora/core'
-import { formatDate, formatNumber, formatScore, shortAddress, timeAgo } from '@agora/core'
-import { getAgentDetail } from '../lib/api'
+import type { AgentDetail, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
+import {
+  X402_VERSION,
+  formatDate,
+  formatNumber,
+  formatScore,
+  randomNonce,
+  shortAddress,
+  timeAgo,
+  x402Domain,
+} from '@agora/core'
+import {
+  deliverTask,
+  getAgentDetail,
+  getHireRequirements,
+  getReceipt,
+  settleHire,
+  type DeliverData,
+  type DeliverTool,
+  type X402Requirements,
+} from '../lib/api'
+import {
+  WalletUnavailableError,
+  connectWallet,
+  ensureBscChain,
+  signTransferAuthorization,
+} from '../lib/wallet'
+
+type HireRequirements = X402Requirements['data']
 
 const scoreBars: { label: string; key: keyof AgentDetail }[] = [
   { label: 'Quality', key: 'quality_score' },
@@ -204,7 +230,7 @@ export function AgentDetailPage() {
               <span className="text-press-black">BNB</span>
             </div>
           </div>
-          <HireButton name={detail.name} />
+          <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} />
           <p className="mt-4 text-xs leading-relaxed text-newsprint-gray">
             You sign a gasless transfer authorization; a facilitator verifies and
             settles it on-chain. Funds go straight to the agent&apos;s wallet.
@@ -215,24 +241,379 @@ export function AgentDetailPage() {
   )
 }
 
-function HireButton({ name }: { name: string }) {
-  const [open, setOpen] = useState(false)
+type HireStep = 'idle' | 'connecting' | 'preview' | 'signing' | 'settling' | 'hired'
+
+function hireErrorText(e: unknown): string {
+  if (e instanceof WalletUnavailableError) return e.message
+  const code = (e as { code?: number }).code
+  if (code === 4001) return 'Request cancelled in the wallet.'
+  const msg = (e as Error)?.message ?? 'Something went wrong.'
+  if (msg.includes('user rejected') || msg.includes('User denied')) {
+    return 'Request cancelled in the wallet.'
+  }
+  return msg
+}
+
+function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: string; name: string }) {
+  const [step, setStep] = useState<HireStep>('idle')
+  const [error, setError] = useState<string | null>(null)
+  const [account, setAccount] = useState<string | null>(null)
+  const [requirements, setRequirements] = useState<PaymentRequirements | null>(null)
+  const [preview, setPreview] = useState<PreviewResult | null>(null)
+  const [agent, setAgent] = useState<HireRequirements['agent'] | null>(null)
+  const [result, setResult] = useState<SettleResult | null>(null)
+  const [receipt, setReceipt] = useState<Receipt | null>(null)
+
+  async function startHire() {
+    setError(null)
+    setStep('connecting')
+    try {
+      const addr = await connectWallet()
+      await ensureBscChain()
+      setAccount(addr)
+      const data = await getHireRequirements(chainId, tokenId, addr)
+      setRequirements(data.paymentRequirements)
+      setPreview(data.preview)
+      setAgent(data.agent)
+      setStep('preview')
+    } catch (e) {
+      setError(hireErrorText(e))
+      setStep('idle')
+    }
+  }
+
+  async function signAndSettle() {
+    if (!requirements || !preview || !agent || !account) return
+    const pr = requirements
+    setError(null)
+    setStep('signing')
+    try {
+      const now = Math.floor(Date.now() / 1000)
+      const message = {
+        from: account,
+        to: pr.payTo,
+        value: pr.amount,
+        validAfter: String(now - 60),
+        validBefore: String(now + pr.maxTimeoutSeconds),
+        nonce: randomNonce(),
+      }
+      const signature = await signTransferAuthorization(account, x402Domain(pr), message)
+      setStep('settling')
+      const resource = preview.resource
+      const settle = await settleHire({
+        paymentId: preview.paymentId,
+        paymentRequirements: pr,
+        paymentPayload: {
+          x402Version: X402_VERSION,
+          payload: { authorization: { ...message, signature }, resource },
+          resource,
+          accepted: pr,
+        },
+        agent: { ...agent },
+      })
+      if (!settle.success) throw new Error(settle.error ?? 'Settlement failed.')
+      setResult(settle)
+      setStep('hired')
+      const stored = await getReceipt(settle.paymentId)
+      if (stored) setReceipt(stored)
+    } catch (e) {
+      setError(hireErrorText(e))
+      setStep('preview')
+    }
+  }
+
+  function reset() {
+    setStep('idle')
+    setError(null)
+    setRequirements(null)
+    setPreview(null)
+    setAgent(null)
+    setResult(null)
+    setReceipt(null)
+  }
+
+  const option = preview?.options[0]
+
   return (
     <div className="mt-6">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-5 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
-      >
-        Hire {name}
-      </button>
-      {open && (
-        <p className="mt-4 rounded-[10px] border hairline border-slate-verdant/20 p-4 text-xs leading-relaxed text-newsprint-gray">
-          Settlement is landing with the API build. Until then you can compare
-          agents and shortlist them from the market.
+      {step === 'idle' && (
+        <button
+          type="button"
+          onClick={startHire}
+          className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-5 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        >
+          Hire {name}
+        </button>
+      )}
+
+      {step === 'connecting' && (
+        <button
+          type="button"
+          disabled
+          className="micro w-full rounded-[5px] bg-highlighter-green/60 px-6 py-5 text-typesetter-ink"
+        >
+          Connecting wallet…
+        </button>
+      )}
+
+      {(step === 'preview' || step === 'signing' || step === 'settling') && option && preview && (
+        <div className="rounded-[10px] border hairline border-slate-verdant/20 p-4">
+          <div className="space-y-2 text-xs">
+            <Row label="Price" value={`$${option.amountUsd} ${option.tokenSymbol}`} mono />
+            <Row label="To" value={shortAddress(option.payTo)} mono />
+            <Row label="For" value={preview.resource.description} />
+          </div>
+          {step === 'preview' ? (
+            <div className="mt-4 space-y-2">
+              <button
+                type="button"
+                onClick={signAndSettle}
+                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              >
+                Sign &amp; activate
+              </button>
+              <button
+                type="button"
+                onClick={reset}
+                className="micro w-full rounded-[5px] border hairline border-slate-verdant/30 px-4 py-3 text-newsprint-gray transition hover:text-press-black"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <p className="micro mt-4 text-center text-newsprint-gray">
+              {step === 'signing' ? 'Waiting for signature…' : 'Settling…'}
+            </p>
+          )}
+        </div>
+      )}
+
+      {step === 'hired' && result && (
+        <div className="rounded-[10px] border hairline border-highlighter-green/50 p-4">
+          <p className="micro text-highlighter-green">Agent activated</p>
+          <div className="mt-3 space-y-2 text-xs">
+            <Row label="Payment" value={result.paymentId} mono />
+            {receipt && (
+              <>
+                <Row label="Session cap" value={`$${receipt.session.spendCapUsd} · until ${formatDate(receipt.session.expiresAt)}`} />
+                <Row
+                  label="Settlement"
+                  value={receipt.mode === 'b402' ? 'BNB Chain (x402)' : 'Sandbox facilitator'}
+                />
+              </>
+            )}
+          </div>
+          {result.txHash && (
+            <p className="mt-3 break-all font-mono text-[10px] text-newsprint-gray">
+              {receipt?.mode === 'b402' ? (
+                <a
+                  href={`https://bscscan.com/tx/${result.txHash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-press-black hover:text-highlighter-green"
+                >
+                  {result.txHash}
+                </a>
+              ) : (
+                result.txHash
+              )}
+            </p>
+          )}
+          {(!receipt || receipt.mode === 'sandbox') && (
+            <p className="mt-3 text-[11px] leading-relaxed text-newsprint-gray">
+              Sandbox settlement: the signature was verified and the session is
+              recorded by the facilitator; no on-chain transfer occurred. Live
+              BNB settlement uses the same flow with the B402 facilitator.
+            </p>
+          )}
+          <DeliveryPanel paymentId={result.paymentId} />
+          <button
+            type="button"
+            onClick={reset}
+            className="micro mt-4 w-full rounded-[5px] border hairline border-slate-verdant/30 px-4 py-3 text-newsprint-gray transition hover:text-press-black"
+          >
+            Done
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-4 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-xs leading-relaxed text-press-black">
+          {error}
         </p>
       )}
+    </div>
+  )
+}
+
+function skeletonArgs(schema: Record<string, unknown>): string {
+  const props = (schema.properties ?? {}) as Record<string, { type?: string }>
+  const required = (schema.required ?? []) as string[]
+  const skeleton: Record<string, unknown> = {}
+  for (const key of required) {
+    const t = props[key]?.type
+    skeleton[key] = t === 'number' ? 0 : t === 'boolean' ? false : t === 'array' ? [] : ''
+  }
+  return JSON.stringify(skeleton, null, 2)
+}
+
+function DeliveryPanel({ paymentId }: { paymentId: string }) {
+  const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'blocked'>('idle')
+  const [data, setData] = useState<DeliverData | null>(null)
+  const [blocked, setBlocked] = useState<string | null>(null)
+  const [tool, setTool] = useState('')
+  const [argsText, setArgsText] = useState('{}')
+  const [taskText, setTaskText] = useState('')
+  const [output, setOutput] = useState<string | null>(null)
+  const [runError, setRunError] = useState<string | null>(null)
+  const [running, setRunning] = useState(false)
+
+  async function loadCapabilities() {
+    setPhase('loading')
+    setBlocked(null)
+    try {
+      const d = await deliverTask({ paymentId })
+      setData(d)
+      const first = d.tools?.[0]
+      if (first) {
+        setTool(first.name)
+        setArgsText(skeletonArgs(first.schema))
+      }
+      setPhase('ready')
+    } catch (e) {
+      setBlocked(hireErrorText(e))
+      setPhase('blocked')
+    }
+  }
+
+  async function run() {
+    setRunning(true)
+    setRunError(null)
+    setOutput(null)
+    try {
+      const body = tool
+        ? { paymentId, tool, args: JSON.parse(argsText || '{}') as Record<string, unknown> }
+        : { paymentId, task: taskText }
+      const d = await deliverTask(body)
+      setOutput(d.text || '(the agent returned no text)')
+      if (d.error) setRunError(d.error)
+    } catch (e) {
+      setRunError(hireErrorText(e))
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  const tools: DeliverTool[] = data?.tools ?? []
+  const selected = tools.find((t) => t.name === tool)
+
+  return (
+    <div className="mt-4 rounded-[10px] border hairline border-slate-verdant/20 p-4">
+      <p className="micro text-newsprint-gray">Run a task</p>
+
+      {phase === 'idle' && (
+        <button
+          type="button"
+          onClick={loadCapabilities}
+          className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        >
+          Load capabilities
+        </button>
+      )}
+
+      {phase === 'loading' && <p className="micro mt-3 text-newsprint-gray">Loading capabilities…</p>}
+
+      {blocked && (
+        <p className="mt-3 text-[11px] leading-relaxed text-newsprint-gray">{blocked}</p>
+      )}
+
+      {phase === 'ready' && data && (
+        <>
+          {tools.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              <select
+                value={tool}
+                onChange={(e) => {
+                  setTool(e.target.value)
+                  const t = tools.find((x) => x.name === e.target.value)
+                  if (t) setArgsText(skeletonArgs(t.schema))
+                }}
+                className="w-full rounded-[5px] border hairline border-slate-verdant/30 bg-bone-white px-3 py-2 font-mono text-[11px] text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              >
+                {tools.map((t) => (
+                  <option key={t.name} value={t.name}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+              {selected?.description && (
+                <p className="text-[11px] leading-relaxed text-newsprint-gray">{selected.description}</p>
+              )}
+              <textarea
+                value={argsText}
+                onChange={(e) => setArgsText(e.target.value)}
+                rows={5}
+                spellCheck={false}
+                aria-label="Tool arguments as JSON"
+                className="w-full rounded-[5px] border hairline border-slate-verdant/30 bg-bone-white px-3 py-2 font-mono text-[11px] leading-relaxed text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              />
+              <button
+                type="button"
+                onClick={run}
+                disabled={running}
+                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              >
+                {running ? 'Running…' : `Run ${tool}`}
+              </button>
+            </div>
+          ) : data.protocol === 'a2a' ? (
+            <div className="mt-3 space-y-2">
+              <textarea
+                value={taskText}
+                onChange={(e) => setTaskText(e.target.value)}
+                rows={3}
+                placeholder="Describe the task for this agent…"
+                aria-label="Task description"
+                className="w-full rounded-[5px] border hairline border-slate-verdant/30 bg-bone-white px-3 py-2 text-xs leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              />
+              <button
+                type="button"
+                onClick={run}
+                disabled={running || !taskText.trim()}
+                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              >
+                {running ? 'Running…' : 'Run task'}
+              </button>
+            </div>
+          ) : null}
+
+          <p className="mt-3 text-[10px] leading-relaxed text-newsprint-gray/70">
+            Delivery is gated on your settled session; the marketplace relays the
+            call to the agent&apos;s own endpoint.
+          </p>
+        </>
+      )}
+
+      {runError && (
+        <p className="mt-3 rounded-[8px] border hairline border-press-black/20 bg-bone-white p-3 text-[11px] leading-relaxed text-press-black">
+          {runError}
+        </p>
+      )}
+
+      {output && (
+        <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-[8px] border hairline border-slate-verdant/20 bg-bone-white p-3 font-mono text-[11px] leading-relaxed text-press-black">
+          {output}
+        </pre>
+      )}
+    </div>
+  )
+}
+
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <span className="micro shrink-0 text-newsprint-gray">{label}</span>
+      <span className={`text-right text-press-black ${mono ? 'font-mono text-[11px]' : ''}`}>{value}</span>
     </div>
   )
 }
