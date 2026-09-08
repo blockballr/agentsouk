@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import type { AgentDetail, AgentSummary } from '@agora/core'
 import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
 import { getAgentDetail, getAgents } from '../lib/api'
+import { bestByCategory } from '../lib/compare'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
 export function ComparePage() {
@@ -226,6 +227,11 @@ function CompareTable({
   error: boolean
   onClear: () => void
 }) {
+  const winnerIds = useMemo(() => {
+    const byCategory = bestByCategory(agents)
+    return new Set(Object.values(byCategory).filter((id): id is string => id !== null))
+  }, [agents])
+
   const rows = useMemo(
     () => [
       { label: 'Owner', render: (a: AgentDetail) => shortAddress(a.owner_address) },
@@ -287,17 +293,27 @@ function CompareTable({
                 <th className="micro border-b hairline border-slate-verdant/20 p-4 text-newsprint-gray" scope="col">
                   Metric
                 </th>
-                {agents.map((a) => (
-                  <th
-                    key={a.agent_id}
-                    className="border-b hairline border-slate-verdant/20 p-4 font-serif text-lg font-medium"
-                    scope="col"
-                  >
-                    <Link to={`/agents/${a.chain_id}/${a.token_id}`} className="hover:text-highlighter-green focus-visible:outline-2 focus-visible:outline-highlighter-green">
-                      {a.name}
-                    </Link>
-                  </th>
-                ))}
+                {agents.map((a) => {
+                  const winner = winnerIds.has(a.agent_id)
+                  return (
+                    <th
+                      key={a.agent_id}
+                      className={`border-b hairline border-slate-verdant/20 p-4 font-serif text-lg font-medium ${
+                        winner ? 'bg-highlighter-green/15' : ''
+                      }`}
+                      scope="col"
+                    >
+                      <Link to={`/agents/${a.chain_id}/${a.token_id}`} className="hover:text-highlighter-green focus-visible:outline-2 focus-visible:outline-highlighter-green">
+                        {a.name}
+                      </Link>
+                      {winner && (
+                        <span className="micro mt-2 block rounded-full border hairline border-highlighter-green/50 px-2.5 py-1 text-highlighter-green">
+                          best in category
+                        </span>
+                      )}
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
@@ -307,7 +323,12 @@ function CompareTable({
                     {row.label}
                   </th>
                   {agents.map((a) => (
-                    <td key={a.agent_id} className="border-b hairline border-slate-verdant/20 p-4 text-sm text-press-black">
+                    <td
+                      key={a.agent_id}
+                      className={`border-b hairline border-slate-verdant/20 p-4 text-sm text-press-black ${
+                        winnerIds.has(a.agent_id) ? 'bg-highlighter-green/15' : ''
+                      }`}
+                    >
                       {row.render(a)}
                     </td>
                   ))}
@@ -315,6 +336,10 @@ function CompareTable({
               ))}
             </tbody>
           </table>
+          <p className="mt-4 text-xs text-newsprint-gray">
+            Best in category is highlighted, ranked by on-chain score, then
+            feedback, then delivery.
+          </p>
         </div>
       )}
     </div>
