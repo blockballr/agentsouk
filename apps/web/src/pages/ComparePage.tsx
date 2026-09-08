@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { AgentDetail, AgentSummary } from '@agora/core'
 import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
-import { getAgentDetail, getAgents } from '../lib/api'
-import { bestByCategory, categoryGroups } from '../lib/compare'
+import { getAgentDetail, getAgents, getCompareCommentary } from '../lib/api'
+import { bestByCategory, categoryGroups, categoryOf } from '../lib/compare'
 import { CompareBar } from '../components/CompareBar'
 import type { HireAgentRef } from '../lib/hire'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
@@ -94,6 +94,7 @@ export function ComparePage() {
       ) : (
         <>
           <CompareTable agents={agents} loading={loading} error={error} onClear={clearSelection} />
+          {!loading && !error && agents.length >= 2 && <CompareCommentary agents={agents} />}
           <ShortlistSearch selected={urlIds} onToggle={toggleId} />
           {urlIds.length >= 2 && (
             <CompareBar
@@ -413,6 +414,73 @@ function CompareTable({
           </p>
         </div>
       )}
+    </div>
+  )
+}
+
+// one fetch per shortlist, cached by sorted agent ids so re-renders and
+// back-navigation never re-call the model; null results are cached too so a
+// failed commentary stays hidden instead of retrying on every keystroke
+const commentaryCache = new Map<string, { commentary: string; model: string } | null>()
+
+function CompareCommentary({ agents }: { agents: AgentDetail[] }) {
+  const [result, setResult] = useState<{ commentary: string; model: string } | null | undefined>(
+    undefined,
+  )
+  const key = useMemo(() => [...agents].map((a) => a.agent_id).sort().join(','), [agents])
+
+  useEffect(() => {
+    const cached = commentaryCache.get(key)
+    if (cached !== undefined) {
+      setResult(cached)
+      return
+    }
+    let cancelled = false
+    setResult(undefined)
+    // only the numbers the table shows, nothing else leaves the page
+    const payload = {
+      agents: agents.map((a) => ({
+        name: a.name,
+        category: categoryOf(a),
+        score: a.total_score,
+        feedbacks: a.total_feedbacks,
+        verified: a.is_verified,
+        verification: a.verification
+          ? {
+              status: a.verification.status,
+              quality: a.verification.quality
+                ? {
+                    grade: a.verification.quality.grade,
+                    reason: a.verification.quality.reason,
+                  }
+                : undefined,
+            }
+          : undefined,
+        pcs: a.pcs,
+      })),
+      winners: Object.entries(bestByCategory(agents))
+        .filter((entry): entry is [string, string] => entry[1] !== null)
+        .map(([category, id]) => ({
+          category,
+          name: agents.find((a) => a.agent_id === id)?.name ?? '',
+        }))
+        .filter((w) => w.name !== ''),
+      language: 'en',
+    }
+    getCompareCommentary(payload).then((r) => {
+      commentaryCache.set(key, r)
+      if (!cancelled) setResult(r)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [agents, key])
+
+  if (!result) return null
+  return (
+    <div className="mt-6 border hairline border-slate-verdant/40 bg-echo-green/20 px-6 py-5">
+      <p className="micro text-newsprint-gray">AI commentary · {result.model}</p>
+      <p className="mt-3 font-serif text-lg leading-snug text-press-black">{result.commentary}</p>
     </div>
   )
 }

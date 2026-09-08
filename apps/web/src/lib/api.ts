@@ -136,6 +136,50 @@ export interface DeliverBody {
   task?: string
 }
 
+export interface CompareCommentaryAgent {
+  name: string
+  category: string
+  score: number
+  feedbacks: number
+  verified: boolean
+  verification?: {
+    status?: string
+    quality?: { grade?: string; reason?: string }
+  }
+  pcs?: boolean
+  fee?: string | number
+}
+
+export interface CompareCommentaryBody {
+  agents: CompareCommentaryAgent[]
+  winners: { category: string; name: string }[]
+  language?: string
+}
+
+// grounded commentary: returns null on any failure so the caller hides the block
+export async function getCompareCommentary(
+  body: CompareCommentaryBody,
+): Promise<{ commentary: string; model: string } | null> {
+  try {
+    const res = await fetch(`${BASE}/compare/commentary`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) return null
+    const data: { success?: boolean; commentary?: unknown; model?: unknown } = await res.json()
+    if (!data.success || typeof data.commentary !== 'string' || !data.commentary.trim()) {
+      return null
+    }
+    return {
+      commentary: data.commentary,
+      model: typeof data.model === 'string' ? data.model : 'ai',
+    }
+  } catch {
+    return null
+  }
+}
+
 export async function deliverTask(body: DeliverBody): Promise<DeliverData> {
   const res = await fetch(`${BASE}/x402/deliver`, {
     method: 'POST',
