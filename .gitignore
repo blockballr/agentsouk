@@ -55,4 +55,13 @@ next-env.d.ts
 /apps/web/public/agora-og.png
 /submission
 
+# local working rules and session artifacts, never tracked, never on github
+/AGENTS.md
+/CLAUDE.md
+/brand/
+/brand.md
+/positioning.md
+/validation-report.html
+/docs/superpowers/
+
 .vercel
