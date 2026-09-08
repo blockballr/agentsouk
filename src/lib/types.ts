@@ -67,6 +67,14 @@ export const CATEGORIES: CategoryDef[] = [
 
 export const CATEGORY_KEYS: CategoryKey[] = CATEGORIES.map((c) => c.key);
 
+export type VerificationStatus = "delivered" | "gated" | "dead" | "unreachable";
+
+export interface Verification {
+  status: VerificationStatus;
+  responseMs: number;
+  checkedAt: string;
+}
+
 export interface AgentSummary {
   agent_id: string;
   token_id: string;
@@ -89,6 +97,7 @@ export interface AgentSummary {
   // enriched client-side
   category?: CategoryKey | "general";
   categoryScores?: Partial<Record<CategoryKey, number>>;
+  verification?: Verification;
 }
 
 export interface AgentDetail {
@@ -135,4 +144,5 @@ export interface AgentDetail {
   } | null;
   created_at: string;
   updated_at: string;
+  verification?: Verification;
 }

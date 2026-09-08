@@ -30,6 +30,17 @@ import {
 
 type HireRequirements = X402Requirements['data']
 
+const verificationTone: Record<string, string> = {
+  delivered: 'border-highlighter-green/50 text-highlighter-green',
+  gated: 'border-slate-verdant/40 text-slate-verdant',
+  dead: 'border-slate-verdant/25 text-newsprint-gray',
+  unreachable: 'border-slate-verdant/25 text-newsprint-gray',
+}
+
+function verificationLabel(status: string): string {
+  return status === 'delivered' ? 'verified delivered' : status
+}
+
 const scoreBars: { label: string; key: keyof AgentDetail }[] = [
   { label: 'Quality', key: 'quality_score' },
   { label: 'Popularity', key: 'popularity_score' },
@@ -132,6 +143,14 @@ export function AgentDetailPage() {
                 {detail.x402_supported && (
                   <span className="micro rounded-full bg-highlighter-green px-2.5 py-1 text-typesetter-ink">
                     Accepts x402
+                  </span>
+                )}
+                {detail.verification && (
+                  <span
+                    title={`Shopper checked ${detail.verification.checkedAt}`}
+                    className={`micro rounded-full border hairline px-2.5 py-1 ${verificationTone[detail.verification.status] ?? verificationTone.dead}`}
+                  >
+                    {verificationLabel(detail.verification.status)}
                   </span>
                 )}
               </div>

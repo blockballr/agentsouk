@@ -158,6 +158,7 @@ function TaskDetail({ task }: { task: AdvantageTask }) {
           {task.agent.name}
         </Link>
       </p>
+      <p className="micro mt-1 text-newsprint-gray">{task.agent.category}</p>
       <p className="mt-4 max-w-3xl text-sm leading-snug text-press-black">{task.prompt}</p>
       <p className="mt-4 text-sm text-newsprint-gray">
         Agent {task.agentSeconds}s vs manual {task.manualSeconds}s

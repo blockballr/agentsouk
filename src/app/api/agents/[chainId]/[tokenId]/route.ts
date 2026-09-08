@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAgentByToken } from "@/lib/scanner";
+import { loadVerifications } from "@/lib/verifications";
 
 export const dynamic = "force-dynamic";
 
@@ -15,5 +16,8 @@ export async function GET(
   if (!agent) {
     return NextResponse.json({ error: "agent not found" }, { status: 404 });
   }
-  return NextResponse.json({ data: agent });
+  const verifications = await loadVerifications();
+  const verification = verifications.get(agent.token_id);
+  const data = verification ? { ...agent, verification } : agent;
+  return NextResponse.json({ data });
 }

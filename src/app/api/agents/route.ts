@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryAgents } from "@/lib/scanner";
+import { loadVerifications } from "@/lib/verifications";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +24,15 @@ export async function GET(req: NextRequest) {
     maxWarmPages,
   });
 
+  const verifications = await loadVerifications();
+  const items = result.items.map((a) => {
+    const verification = verifications.get(a.token_id);
+    return verification ? { ...a, verification } : a;
+  });
+
   return NextResponse.json({
     success: true,
     ...result,
+    items,
   });
 }

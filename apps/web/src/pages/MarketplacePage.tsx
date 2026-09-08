@@ -158,6 +158,36 @@ function labelFor(key: string): string {
   return CATEGORIES.find((c) => c.key === key)?.label ?? 'All agents'
 }
 
+const verificationTone: Record<string, string> = {
+  delivered: 'border-highlighter-green/40 text-highlighter-green',
+  gated: 'border-slate-verdant/40 text-slate-verdant',
+  dead: 'border-slate-verdant/25 text-newsprint-gray',
+  unreachable: 'border-slate-verdant/25 text-newsprint-gray',
+}
+
+function verificationLabel(status: string): string {
+  return status === 'delivered' ? 'verified delivered' : status
+}
+
+function VerificationBadge({
+  status,
+  checkedAt,
+  padded,
+}: {
+  status: string
+  checkedAt: string
+  padded?: boolean
+}) {
+  return (
+    <span
+      title={`Shopper checked ${checkedAt}`}
+      className={`micro rounded-full border hairline ${padded ? 'px-2.5' : 'px-2'} py-1 ${verificationTone[status] ?? verificationTone.dead}`}
+    >
+      {verificationLabel(status)}
+    </span>
+  )
+}
+
 function FilterChip({
   active,
   onClick,
@@ -222,7 +252,7 @@ function AgentCard({
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         className="group flex h-full flex-col p-6 transition-colors duration-150 hover:bg-echo-green/40 focus-visible:outline-2 focus-visible:outline-press-black"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="micro text-muted-sage">
             {agent.category === 'general' ? 'General' : (agent.category ?? '')}
           </span>
@@ -230,6 +260,12 @@ function AgentCard({
             <span className="micro rounded-full border hairline border-highlighter-green/40 px-2 py-1 text-highlighter-green">
               x402
             </span>
+          )}
+          {agent.verification && (
+            <VerificationBadge
+              status={agent.verification.status}
+              checkedAt={agent.verification.checkedAt}
+            />
           )}
         </div>
 
