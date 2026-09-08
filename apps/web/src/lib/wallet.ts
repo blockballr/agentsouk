@@ -1,6 +1,7 @@
-// minimal EIP-1193 client: connect, ensure BNB chain, sign EIP-3009 typed data
-// deliberately dependency-free; MetaMask, Binance Wallet and Rabby all expose
-// window.ethereum
+// EIP-1193 client with EIP-6963 multi-wallet discovery and WalletConnect.
+// connectWallet() resolves the provider via the picker when several wallets
+// announce themselves; a single detected wallet connects directly. All
+// sign/chain calls operate on the chosen provider for the session.
 
 import { TRANSFER_TYPES } from '@agora/core'
 
@@ -9,6 +10,18 @@ interface Eip1193Provider {
   on?(event: string, handler: (...args: unknown[]) => void): void;
   removeListener?(event: string, handler: (...args: unknown[]) => void): void;
   isMetaMask?: boolean;
+}
+
+interface Eip6963ProviderInfo {
+  uuid: string;
+  name: string;
+  icon: string;
+  rdns: string;
+}
+
+interface Eip6963ProviderDetail {
+  info: Eip6963ProviderInfo;
+  provider: Eip1193Provider;
 }
 
 declare global {
@@ -34,17 +47,255 @@ export class WalletUnavailableError extends Error {
   }
 }
 
-export function getProvider(): Eip1193Provider {
-  const provider = typeof window !== "undefined" ? window.ethereum ?? window.BinanceChain : undefined;
-  if (!provider) throw new WalletUnavailableError();
-  return provider;
+// a wallet the picker can offer; rdns is the announced rdns, 'legacy' for an
+// older injected wallet that does not announce, or 'walletconnect'
+export interface WalletOption {
+  kind: "injected" | "walletconnect";
+  rdns: string;
+  name: string;
+  icon?: string;
 }
 
-export async function connectWallet(): Promise<string> {
-  const provider = getProvider();
+const LEGACY_RDNS = "legacy";
+const WALLETCONNECT_RDNS = "walletconnect";
+const STORAGE_KEY = "agora.wallet.rdns";
+
+const announced = new Map<string, Eip6963ProviderDetail>();
+
+function legacyProvider(): Eip1193Provider | undefined {
+  return typeof window !== "undefined" ? window.ethereum ?? window.BinanceChain : undefined;
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("eip6963:announceProvider", (e) => {
+    const detail = (e as CustomEvent<Eip6963ProviderDetail>).detail;
+    if (detail?.info?.rdns && detail.provider) {
+      announced.set(detail.info.rdns, detail);
+    }
+  });
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+}
+
+function readStoredRdns(): string | null {
+  try {
+    return sessionStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeRdns(rdns: string | null): void {
+  try {
+    if (rdns) sessionStorage.setItem(STORAGE_KEY, rdns);
+    else sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // private mode: choice just does not survive refresh
+  }
+}
+
+export function hasChosenWallet(): boolean {
+  return readStoredRdns() !== null;
+}
+
+// wait once for late announcers before trusting the legacy fallback
+let discoveryWait: Promise<void> | null = null;
+function waitForDiscovery(): Promise<void> {
+  if (!discoveryWait) {
+    discoveryWait = new Promise<void>((resolve) => setTimeout(resolve, 250)).then(() => {
+      if (announced.size === 0 && typeof window !== "undefined") {
+        window.dispatchEvent(new Event("eip6963:requestProvider"));
+      }
+    });
+  }
+  return discoveryWait;
+}
+
+// injected wallets only (legacy fallback included); WalletConnect is added
+// separately so the "exactly one wallet connects directly" rule only counts
+// real extensions
+export async function listInjectedWallets(): Promise<WalletOption[]> {
+  await waitForDiscovery();
+  const options: WalletOption[] = [...announced.values()].map((d) => ({
+    kind: "injected",
+    rdns: d.info.rdns,
+    name: d.info.name,
+    icon: d.info.icon,
+  }));
+  if (options.length === 0) {
+    const legacy = legacyProvider();
+    if (legacy) {
+      options.push({
+        kind: "injected",
+        rdns: LEGACY_RDNS,
+        name: legacy.isMetaMask ? "Detected wallet (MetaMask)" : "Detected wallet",
+      });
+    }
+  }
+  return options;
+}
+
+function pickerOptions(injected: WalletOption[]): WalletOption[] {
+  return [
+    ...injected,
+    { kind: "walletconnect", rdns: WALLETCONNECT_RDNS, name: "WalletConnect" },
+  ];
+}
+
+// --- WalletConnect (dynamic import keeps it out of the main bundle) ---
+
+let wcProvider: Eip1193Provider | null = null;
+let wcInit: Promise<Eip1193Provider> | null = null;
+
+function wcProjectId(): string | undefined {
+  return (import.meta.env.VITE_WC_PROJECT_ID as string | undefined) || undefined;
+}
+
+function initWalletConnect(): Promise<Eip1193Provider> {
+  if (wcProvider) return Promise.resolve(wcProvider);
+  if (!wcInit) {
+    const projectId = wcProjectId();
+    if (!projectId) {
+      return Promise.reject(new Error("WalletConnect is not configured (missing project id)."));
+    }
+    wcInit = import("@walletconnect/ethereum-provider")
+      .then(async ({ EthereumProvider }) => {
+        const provider = await EthereumProvider.init({
+          projectId,
+          chains: [56],
+          showQrModal: true,
+          metadata: {
+            name: "Agent Souk",
+            description: "Hire AI agents on BNB Chain",
+            url: typeof window !== "undefined" ? window.location.origin : "https://agentsouk",
+            icons: [],
+          },
+        });
+        wcProvider = provider;
+        return provider;
+      })
+      .catch((e) => {
+        wcInit = null;
+        throw e;
+      });
+  }
+  return wcInit;
+}
+
+// --- provider resolution ---
+
+function resolveInjected(option: WalletOption): Eip1193Provider {
+  if (option.rdns === LEGACY_RDNS) {
+    const provider = legacyProvider();
+    if (!provider) throw new WalletUnavailableError();
+    return provider;
+  }
+  const detail = announced.get(option.rdns);
+  if (!detail) throw new WalletUnavailableError();
+  return detail.provider;
+}
+
+async function resolveProvider(option: WalletOption): Promise<Eip1193Provider> {
+  if (option.kind === "walletconnect") return initWalletConnect();
+  return resolveInjected(option);
+}
+
+// sync access for sign/chain calls, which always run after connectWallet()
+export function getProvider(): Eip1193Provider {
+  const rdns = readStoredRdns();
+  if (rdns === WALLETCONNECT_RDNS && wcProvider) return wcProvider;
+  if (rdns === LEGACY_RDNS) {
+    const legacy = legacyProvider();
+    if (legacy) return legacy;
+  }
+  if (rdns) {
+    const detail = announced.get(rdns);
+    if (detail) return detail.provider;
+  }
+  const legacy = legacyProvider();
+  if (legacy) return legacy;
+  throw new WalletUnavailableError();
+}
+
+// open the picker UI (no-op fallback: legacy window provider); resolves null
+// when the user dismisses it
+let pickerSession: Promise<WalletOption | null> | null = null;
+export async function openWalletPicker(): Promise<WalletOption | null> {
+  const injected = await listInjectedWallets();
+  const options = pickerOptions(injected);
+  if (!pickerSession) {
+    pickerSession = import("../components/WalletPicker")
+      .then(({ showWalletPicker }) => showWalletPicker(options))
+      .finally(() => {
+        pickerSession = null;
+      });
+  }
+  return pickerSession;
+}
+
+export function clearWalletChoice(): void {
+  storeRdns(null);
+  const wc = wcProvider;
+  wcProvider = null;
+  wcInit = null;
+  try {
+    (wc as { disconnect?(): void })?.disconnect?.();
+  } catch {
+    // already disconnected
+  }
+}
+
+async function requestAccounts(provider: Eip1193Provider): Promise<string> {
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   if (!accounts?.length) throw new Error("No account authorized.");
   return accounts[0];
+}
+
+export async function connectWallet(): Promise<string> {
+  // 1. a choice made earlier this session (or WC restoring its pairing)
+  const rdns = readStoredRdns();
+  if (rdns) {
+    if (rdns === WALLETCONNECT_RDNS) {
+      try {
+        return await requestAccounts(await initWalletConnect());
+      } catch {
+        // stale pairing or missing project id: fall through to discovery
+        storeRdns(null);
+      }
+    } else if (rdns === LEGACY_RDNS) {
+      const legacy = legacyProvider();
+      if (legacy) return requestAccounts(legacy);
+      storeRdns(null);
+    } else {
+      const detail = announced.get(rdns);
+      if (detail) return requestAccounts(detail.provider);
+      storeRdns(null);
+    }
+  }
+  // 2. discovery: one wallet connects directly, several open the picker
+  const injected = await listInjectedWallets();
+  if (injected.length === 0) throw new WalletUnavailableError();
+  let option: WalletOption;
+  if (injected.length === 1) {
+    option = injected[0];
+  } else {
+    const picked = await openWalletPicker();
+    if (!picked) throw new WalletUnavailableError();
+    option = picked;
+  }
+  const provider = await resolveProvider(option);
+  storeRdns(option.rdns);
+  return requestAccounts(provider);
+}
+
+// change-wallet affordance: drop the current choice, reopen the picker, and
+// connect to whatever the user picks; resolves null when dismissed
+export async function changeWallet(): Promise<string | null> {
+  clearWalletChoice();
+  const picked = await openWalletPicker();
+  if (!picked) return null;
+  const provider = await resolveProvider(picked);
+  storeRdns(picked.rdns);
+  return requestAccounts(provider);
 }
 
 // returns the active chain id after switching if needed
@@ -90,6 +341,7 @@ export async function signTransferAuthorization(
     method: "eth_signTypedData_v4",
     params: [
       address,
+      // string form: required by WalletConnect, accepted by MetaMask/Rabby
       JSON.stringify({
         domain,
         primaryType: "TransferWithAuthorization",

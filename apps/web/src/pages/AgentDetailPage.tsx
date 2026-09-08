@@ -9,7 +9,7 @@ import {
   timeAgo,
 } from '@agora/core'
 import { deliverTask, getAgentDetail, type DeliverData, type DeliverTool } from '../lib/api'
-import { connectWallet, ensureBscChain } from '../lib/wallet'
+import { changeWallet, connectWallet, ensureBscChain } from '../lib/wallet'
 import {
   fetchHireRequirements,
   hireErrorText,
@@ -364,6 +364,20 @@ function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: strin
                 className="micro w-full rounded-[5px] border hairline border-slate-verdant/30 px-4 py-3 text-newsprint-gray transition hover:text-press-black"
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const addr = await changeWallet()
+                    if (addr) setAccount(addr)
+                  } catch (e) {
+                    setError(hireErrorText(e))
+                  }
+                }}
+                className="micro w-full px-4 py-1 text-center text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              >
+                Change wallet
               </button>
             </div>
           ) : (
