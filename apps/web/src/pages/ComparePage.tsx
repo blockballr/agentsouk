@@ -3,8 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import type { AgentDetail, AgentSummary } from '@agora/core'
 import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
 import { getAgentDetail, getAgents } from '../lib/api'
-
-const IDS_KEY = 'agent-souk.compare.ids'
+import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
 export function ComparePage() {
   const [sp, setSp] = useSearchParams()
@@ -16,6 +15,14 @@ export function ComparePage() {
         .filter(Boolean),
     [sp],
   )
+
+  function toggleId(id: string) {
+    const next = urlIds.includes(id) ? urlIds.filter((x) => x !== id) : [...urlIds, id]
+    persistShortlist(next)
+    const nextSp = new URLSearchParams()
+    if (next.length > 0) nextSp.set('ids', next.join(','))
+    setSp(nextSp, { replace: true })
+  }
 
   const [agents, setAgents] = useState<AgentDetail[]>([])
   const [loading, setLoading] = useState(true)
@@ -59,7 +66,10 @@ export function ComparePage() {
       {urlIds.length === 0 ? (
         <Picker />
       ) : (
-        <CompareTable agents={agents} loading={loading} error={error} onClear={() => setSp(new URLSearchParams(), { replace: true })} />
+        <>
+          <CompareTable agents={agents} loading={loading} error={error} onClear={() => setSp(new URLSearchParams(), { replace: true })} />
+          <ShortlistSearch selected={urlIds} onToggle={toggleId} />
+        </>
       )}
     </section>
   )
@@ -68,20 +78,15 @@ export function ComparePage() {
 function Picker() {
   const [, setSp] = useSearchParams()
   const [category, setCategory] = useState<string>('all')
+  const [q, setQ] = useState('')
   const [options, setOptions] = useState<AgentSummary[]>([])
-  const [selected, setSelected] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(IDS_KEY) ?? '[]')
-    } catch {
-      return []
-    }
-  })
+  const [selected, setSelected] = useState<string[]>(() => getShortlist())
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    getAgents({ category, limit: 12 })
+    getAgents({ category, q, limit: 12 })
       .then((r) => {
         if (!cancelled) setOptions(r.items)
       })
@@ -91,19 +96,15 @@ function Picker() {
     return () => {
       cancelled = true
     }
-  }, [category])
+  }, [category, q])
 
   function toggle(id: string) {
-    setSelected((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-      localStorage.setItem(IDS_KEY, JSON.stringify(next))
-      return next
-    })
+    setSelected(toggleShortlist(id))
   }
 
   function clearSelection() {
     setSelected([])
-    localStorage.setItem(IDS_KEY, '[]')
+    persistShortlist([])
   }
 
   const keyFor = (a: AgentSummary) => `${a.chain_id}/${a.token_id}`
@@ -114,7 +115,7 @@ function Picker() {
         Shortlist agents. Selections carry across filters, so you can match any
         mix of categories.
       </p>
-      <div className="mt-6 flex flex-wrap gap-6">
+      <div className="mt-6 flex flex-wrap items-center gap-6">
         <FilterChip active={category === 'all'} onClick={() => setCategory('all')}>
           All
         </FilterChip>
@@ -127,6 +128,17 @@ function Picker() {
             {c.label}
           </FilterChip>
         ))}
+        <label className="micro text-newsprint-gray" htmlFor="compare-search">
+          Search
+        </label>
+        <input
+          id="compare-search"
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Name, endpoint, tag"
+          className="hairline w-56 border-slate-verdant/25 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+        />
       </div>
 
       <div className="mt-6 flex items-center gap-6 text-xs text-newsprint-gray">
@@ -330,5 +342,103 @@ function FilterChip({
     >
       {children}
     </button>
+  )
+}
+
+function ShortlistSearch({
+  selected,
+  onToggle,
+}: {
+  selected: string[]
+  onToggle: (id: string) => void
+}) {
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState<AgentSummary[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!q.trim()) {
+      setResults([])
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    getAgents({ q, limit: 6 })
+      .then((r) => {
+        if (!cancelled) setResults(r.items)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [q])
+
+  return (
+    <div className="mt-12">
+      <div className="flex flex-wrap items-center gap-6">
+        <p className="micro text-newsprint-gray">Add more agents</p>
+        <label className="micro text-newsprint-gray" htmlFor="compare-add-search">
+          Search
+        </label>
+        <input
+          id="compare-add-search"
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Name, endpoint, tag"
+          className="hairline w-56 border-slate-verdant/25 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+        />
+      </div>
+
+      {q.trim() ? (
+        loading ? (
+          <div className="mt-4 animate-pulse space-y-2" role="status" aria-label="Loading search results">
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={i} className="h-10 bg-slate-verdant/10" />
+            ))}
+          </div>
+        ) : results.length === 0 ? (
+          <p className="mt-4 border hairline border-slate-verdant/20 px-6 py-6 text-sm text-newsprint-gray">
+            Nothing matches that search.
+          </p>
+        ) : (
+          <ul className="mt-4 border hairline border-slate-verdant/20">
+            {results.map((a) => {
+              const key = `${a.chain_id}/${a.token_id}`
+              const checked = selected.includes(key)
+              return (
+                <li key={key}>
+                  <label
+                    className={`flex cursor-pointer items-center gap-4 border-b hairline border-slate-verdant/20 px-4 py-2.5 transition last:border-b-0 ${
+                      checked ? 'bg-echo-green/40' : 'hover:bg-echo-green/20'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => onToggle(key)}
+                      aria-label={`Compare ${a.name}`}
+                      className="h-3.5 w-3.5 accent-highlighter-green"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {a.name}
+                    </span>
+                    <span className="micro text-newsprint-gray">
+                      {a.category}
+                    </span>
+                    <span className="text-sm tabular-nums text-newsprint-gray">
+                      {formatScore(a.total_score)}
+                    </span>
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+        )
+      ) : null}
+    </div>
   )
 }
