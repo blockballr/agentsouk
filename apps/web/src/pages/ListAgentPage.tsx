@@ -237,7 +237,7 @@ function LookupSection() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="45381, 56:45381, or https://8004scan.io/..."
-          className="hairline w-full max-w-md border-slate-verdant/25 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          className="hairline input-hairline w-full max-w-md bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
         />
         <button
           type="submit"

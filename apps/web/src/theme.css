@@ -93,6 +93,9 @@
     border-width: 1px;
     border-style: solid;
   }
+  .input-hairline {
+    border-color: color-mix(in oklab, var(--color-slate-verdant) 25%, transparent);
+  }
   .score-strip {
     background: #a7f8b4;
     border: 1px solid rgb(43 234 75 / 0.5);
@@ -104,9 +107,16 @@
   border-color: rgb(43 234 75 / 0.4);
 }
 
+:root[data-theme="dark"] .input-hairline {
+  border-color: rgb(69 82 74 / 0.6);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .score-strip {
     background: #12341c;
     border-color: rgb(43 234 75 / 0.4);
+  }
+  :root:not([data-theme="light"]) .input-hairline {
+    border-color: rgb(69 82 74 / 0.6);
   }
 }
