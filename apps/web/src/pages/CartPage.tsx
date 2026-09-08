@@ -119,18 +119,18 @@ export function CartPage() {
       </h1>
 
       {notice ? (
-        <p className="mt-8 border hairline border-slate-verdant/20 px-6 py-4 text-sm text-newsprint-gray">
+        <p className="mt-8 border hairline border-slate-verdant/40 px-6 py-4 text-sm text-newsprint-gray">
           {notice}
         </p>
       ) : null}
 
       {summary.length > 0 ? (
-        <div className="mt-10 border hairline border-slate-verdant/20 p-8">
+        <div className="mt-10 border hairline border-slate-verdant/40 p-8">
           <h2 className="font-serif text-[28px] font-medium">Order summary</h2>
           <p className="micro mt-2 text-newsprint-gray">
             {summary.length} hire{summary.length === 1 ? '' : 's'} settled. Receipts recorded on the backend, one signature each.
           </p>
-          <ul className="mt-6 divide-y divide-slate-verdant/20">
+          <ul className="mt-6 divide-y divide-slate-verdant/40">
             {summary.map(([key, r]) => (
               <li key={key} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div className="flex items-center gap-3">
@@ -159,7 +159,7 @@ export function CartPage() {
       ) : null}
 
       {items.length === 0 ? (
-        <div className="mt-10 border hairline border-slate-verdant/20 px-10 py-20 text-center">
+        <div className="mt-10 border hairline border-slate-verdant/40 px-10 py-20 text-center">
           <p className="font-serif text-[28px] font-medium">Your cart is empty.</p>
           <p className="mt-3 text-sm text-newsprint-gray">
             Queue a few agents on the market, then run one checkout.
@@ -172,8 +172,8 @@ export function CartPage() {
           </Link>
         </div>
       ) : (
-        <div className="mt-10 border hairline border-slate-verdant/20">
-          <ul className="divide-y divide-slate-verdant/20">
+        <div className="mt-10 border hairline border-slate-verdant/40">
+          <ul className="divide-y divide-slate-verdant/40">
             {items.map((item) => {
               const key = `${item.chainId}/${item.tokenId}`
               const step = steps[key]?.status ?? 'queued'
@@ -214,7 +214,7 @@ export function CartPage() {
               )
             })}
           </ul>
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t hairline border-slate-verdant/20 px-6 py-5">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t hairline border-slate-verdant/40 px-6 py-5">
             <p className="text-sm text-press-black">
               Total{' '}
               <span className="font-medium tabular-nums">
@@ -234,7 +234,7 @@ export function CartPage() {
             </button>
           </div>
           {failedKeys.length > 0 && !running ? (
-            <div className="border-t hairline border-slate-verdant/20 px-6 py-5">
+            <div className="border-t hairline border-slate-verdant/40 px-6 py-5">
               <button
                 type="button"
                 onClick={() =>
@@ -285,7 +285,7 @@ function StatusMark({ status }: { status: StepStatus }) {
     <span
       className={`h-7 w-7 shrink-0 rounded-full border hairline ${
         status === 'queued'
-          ? 'border-slate-verdant/25'
+          ? 'border-slate-verdant/45'
           : 'border-highlighter-green/60 motion-safe:animate-pulse'
       }`}
       aria-hidden="true"
