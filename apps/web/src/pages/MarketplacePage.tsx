@@ -184,15 +184,21 @@ function verificationLabel(status: string): string {
 function VerificationBadge({
   status,
   checkedAt,
+  quality,
   padded,
 }: {
   status: string
   checkedAt: string
+  quality?: { grade: 'good' | 'partial' | 'poor'; reason: string; model: string }
   padded?: boolean
 }) {
+  const title =
+    quality
+      ? `AI review: ${quality.grade} - ${quality.reason} (checked ${checkedAt.slice(0, 10)})`
+      : `Shopper checked ${checkedAt}`
   return (
     <span
-      title={`Shopper checked ${checkedAt}`}
+      title={title}
       className={`micro rounded-full border hairline ${padded ? 'px-2.5' : 'px-2'} py-1 ${verificationTone[status] ?? verificationTone.dead}`}
     >
       {verificationLabel(status)}
@@ -285,6 +291,7 @@ function AgentCard({
             <VerificationBadge
               status={agent.verification.status}
               checkedAt={agent.verification.checkedAt}
+              quality={agent.verification.quality}
             />
           )}
         </div>

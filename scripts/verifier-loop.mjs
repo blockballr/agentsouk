@@ -18,6 +18,21 @@ const VERIFY_LIMIT = Math.max(1, Math.min(200, Number(process.env.VERIFY_LIMIT ?
 const A2A_TASK = "report your status in one sentence";
 const GATED_RE = /gates direct calls behind its own x402/i;
 
+// the ai layer: review what the agent actually delivered
+// the hire rail above stays deterministic; the model only judges quality
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  // no env file: quality reviews are skipped, deterministic verdicts stand
+}
+const LLM_EVAL_API_KEY = process.env.LLM_EVAL_API_KEY ?? "";
+const PRIMARY_MODEL = process.env.LLM_EVAL_MODEL ?? "gemini-2.5-flash";
+const FALLBACK_MODEL = process.env.LLM_EVAL_FALLBACK_MODEL ?? "gemini-2.0-flash";
+const BASE_URL = process.env.LLM_EVAL_BASE_URL ?? "https://generativelanguage.googleapis.com/v1beta/openai";
+const LLM_DELAY_MS = 5000;
+const GRADES = new Set(["good", "partial", "poor"]);
+let lastLlmCallAt = 0;
+
 const wallet = privateKeyToAccount(
   "0x0000000000000000000000000000000000000000000000000000000000000001",
 );
@@ -193,6 +208,67 @@ async function deliverJson(paymentId, extra = {}) {
   );
 }
 
+async function llmChat(model, task, deliverableText) {
+  const res = await fetch(`${BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${LLM_EVAL_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            'You grade the deliverable an AI agent produced for a task. Reply with JSON only: {"grade":"good"|"partial"|"poor", "reason":"one sentence"}. good = the deliverable answers the task usefully and concretely. partial = partly useful or vague. poor = does not answer the task.',
+        },
+        { role: "user", content: `Task: ${task}\n\nDeliverable:\n${deliverableText.slice(0, 4000)}` },
+      ],
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+  const raw = await res.text();
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  let body;
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    throw new Error("non-json response");
+  }
+  const content = body?.choices?.[0]?.message?.content;
+  if (typeof content !== "string") throw new Error("no message content");
+  const fenced = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const parsed = JSON.parse(fenced);
+  if (!GRADES.has(parsed?.grade) || typeof parsed?.reason !== "string") {
+    throw new Error("unparseable grade");
+  }
+  return { grade: parsed.grade, reason: parsed.reason.slice(0, 300), model };
+}
+
+// primary model first; on any failure (network, 429, 5xx, unparseable json)
+// retry ONCE with the fallback; if both fail return null -> no quality field
+async function reviewQuality(task, deliverableText) {
+  if (!LLM_EVAL_API_KEY) return null;
+  const pace = async () => {
+    const wait = lastLlmCallAt + LLM_DELAY_MS - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastLlmCallAt = Date.now();
+  };
+  try {
+    await pace();
+    return await llmChat(PRIMARY_MODEL, task, deliverableText);
+  } catch {
+    try {
+      await pace();
+      return await llmChat(FALLBACK_MODEL, task, deliverableText);
+    } catch {
+      return null;
+    }
+  }
+}
+
 async function classify(cand) {
   // unreachable: the registry shows no callable endpoint, or the detail
   // lookup itself failed; nothing to hire
@@ -227,7 +303,12 @@ async function classify(cand) {
     if (!tools.length) {
       return { status: "dead", detail: "capabilities ok but tools/list returned no tools" };
     }
-    return { status: "delivered", detail: `capabilities ok (${tools.length} tools)` };
+    return {
+      status: "delivered",
+      detail: `capabilities ok (${tools.length} tools)`,
+      task: "describe the tools you serve",
+      deliverable: JSON.stringify(tools, null, 1),
+    };
   }
 
   // a2a: the capabilities probe is an empty handshake; send the short task
@@ -239,7 +320,7 @@ async function classify(cand) {
   }
   const sd = send.body?.data;
   if (sd?.ok && sd.text) {
-    return { status: "delivered", detail: sd.text.slice(0, 300) };
+    return { status: "delivered", detail: sd.text.slice(0, 300), task: A2A_TASK, deliverable: sd.text };
   }
   return {
     status: "dead",
@@ -255,6 +336,7 @@ async function main() {
 
   const results = [];
   let skipped = 0;
+  const llmStats = { primary: 0, fallback: 0, failed: 0 };
 
   for (const cand of candidates) {
     if (outOfTime()) {
@@ -265,16 +347,28 @@ async function main() {
     const t0 = Date.now();
     try {
       const verdict = await classify(cand);
-      results.push({
+      const result = {
         tokenId: cand.tokenId,
         name: cand.name,
         category: cand.category,
         status: verdict.status,
         responseMs: Date.now() - t0,
         checkedAt: new Date().toISOString(),
-      });
+      };
+      if (verdict.status === "delivered" && !outOfTime()) {
+        const quality = await reviewQuality(verdict.task, verdict.deliverable ?? verdict.detail);
+        if (quality) {
+          result.quality = quality;
+          llmStats[quality.model === PRIMARY_MODEL ? "primary" : "fallback"] += 1;
+        } else {
+          llmStats.failed += 1;
+        }
+      }
+      results.push(result);
       console.log(
-        `${line} -> ${verdict.status} (${Date.now() - t0}ms): ${verdict.detail.slice(0, 120)}`,
+        `${line} -> ${verdict.status}` +
+          (result.quality ? ` [ai:${result.quality.grade} via ${result.quality.model}]` : "") +
+          ` (${Date.now() - t0}ms): ${verdict.detail.slice(0, 120)}`,
       );
     } catch (e) {
       results.push({
@@ -308,6 +402,9 @@ async function main() {
   console.log(
     `\ntally: delivered=${tally.delivered} gated=${tally.gated} dead=${tally.dead} unreachable=${tally.unreachable}` +
       (skipped ? ` skipped=${skipped} (25 minute budget exhausted)` : ""),
+  );
+  console.log(
+    `quality reviews: primary=${llmStats.primary} fallback=${llmStats.fallback} failed=${llmStats.failed}`,
   );
   console.log(`wrote data/verifications.json with ${results.length} results`);
 }

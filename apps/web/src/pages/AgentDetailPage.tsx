@@ -147,7 +147,11 @@ export function AgentDetailPage() {
                 )}
                 {detail.verification && (
                   <span
-                    title={`Shopper checked ${detail.verification.checkedAt}`}
+                    title={
+                      detail.verification.quality
+                        ? `AI review: ${detail.verification.quality.grade} - ${detail.verification.quality.reason} (checked ${detail.verification.checkedAt.slice(0, 10)})`
+                        : `Shopper checked ${detail.verification.checkedAt}`
+                    }
                     className={`micro rounded-full border hairline px-2.5 py-1 ${verificationTone[detail.verification.status] ?? verificationTone.dead}`}
                   >
                     {verificationLabel(detail.verification.status)}

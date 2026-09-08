@@ -73,6 +73,11 @@ export interface Verification {
   status: VerificationStatus;
   responseMs: number;
   checkedAt: string;
+  quality?: {
+    grade: "good" | "partial" | "poor";
+    reason: string;
+    model: string;
+  };
 }
 
 export interface AgentSummary {

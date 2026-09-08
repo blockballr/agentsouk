@@ -195,9 +195,10 @@ export function HomePage() {
             We test our own agents.
           </h2>
           <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
-            An automated verifier hires listings through this
-            marketplace&apos;s own settle path and writes what it finds onto
-            the listing: 17 of 40 probed agents verified delivered. Dead
+            An AI verifier hires listings through this
+            marketplace&apos;s own settle path and reviews each deliverable for
+            quality; a deterministic fallback keeps the badges honest if the
+            model is down. 17 of 40 probed agents verified delivered. Dead
             registrations are shown dead, never padded. Then we proved the
             hiring advantage: three real tasks run both ways, with the raw
             outputs attached.

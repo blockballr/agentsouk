@@ -9,6 +9,7 @@ interface VerificationsFile {
     status: Verification["status"];
     responseMs: number;
     checkedAt: string;
+    quality?: Verification["quality"];
   }[];
 }
 
@@ -26,11 +27,24 @@ export async function loadVerifications(): Promise<Map<string, Verification>> {
         typeof r.responseMs === "number" &&
         typeof r.checkedAt === "string"
       ) {
-        byToken.set(String(r.tokenId), {
+        const verification: Verification = {
           status: r.status,
           responseMs: r.responseMs,
           checkedAt: r.checkedAt,
-        });
+        };
+        if (
+          r.quality &&
+          (r.quality.grade === "good" || r.quality.grade === "partial" || r.quality.grade === "poor") &&
+          typeof r.quality.reason === "string" &&
+          typeof r.quality.model === "string"
+        ) {
+          verification.quality = {
+            grade: r.quality.grade,
+            reason: r.quality.reason,
+            model: r.quality.model,
+          };
+        }
+        byToken.set(String(r.tokenId), verification);
       }
     }
   } catch {

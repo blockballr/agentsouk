@@ -69,10 +69,17 @@ export const CATEGORY_KEYS: CategoryKey[] = CATEGORIES.map((c) => c.key);
 
 export type VerificationStatus = "delivered" | "gated" | "dead" | "unreachable";
 
+export interface VerificationQuality {
+  grade: "good" | "partial" | "poor";
+  reason: string;
+  model: string;
+}
+
 export interface Verification {
   status: VerificationStatus;
   responseMs: number;
   checkedAt: string;
+  quality?: VerificationQuality;
 }
 
 export interface AgentSummary {

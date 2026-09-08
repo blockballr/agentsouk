@@ -1,325 +1,325 @@
 {
-  "updatedAt": "2026-09-08T04:45:06.503Z",
+  "updatedAt": "2026-09-08T11:40:30.400Z",
   "results": [
     {
       "tokenId": "265375",
       "name": "BNB LP Range Rebalancer",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 3177,
-      "checkedAt": "2026-09-08T04:43:50.676Z"
+      "responseMs": 8711,
+      "checkedAt": "2026-09-08T11:36:53.893Z"
     },
     {
       "tokenId": "325413",
       "name": "Sentinels LP Rebalancer",
       "category": "rebalancing",
       "status": "dead",
-      "responseMs": 2366,
-      "checkedAt": "2026-09-08T04:43:53.043Z"
+      "responseMs": 3487,
+      "checkedAt": "2026-09-08T11:37:03.217Z"
     },
     {
       "tokenId": "331750",
       "name": "Assay Range",
       "category": "rebalancing",
       "status": "dead",
-      "responseMs": 1506,
-      "checkedAt": "2026-09-08T04:43:54.549Z"
+      "responseMs": 1898,
+      "checkedAt": "2026-09-08T11:37:05.115Z"
     },
     {
       "tokenId": "2893",
       "name": "Piefi",
       "category": "rebalancing",
       "status": "unreachable",
-      "responseMs": 30,
-      "checkedAt": "2026-09-08T04:43:54.579Z"
+      "responseMs": 207,
+      "checkedAt": "2026-09-08T11:37:05.322Z"
     },
     {
       "tokenId": "45650",
       "name": "V3 Pools powered by HeyAnon",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 1463,
-      "checkedAt": "2026-09-08T04:43:56.042Z"
+      "responseMs": 2248,
+      "checkedAt": "2026-09-08T11:37:07.571Z"
     },
     {
       "tokenId": "293902",
       "name": "mandaterebalance-agent",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 2151,
-      "checkedAt": "2026-09-08T04:43:58.193Z"
+      "responseMs": 2731,
+      "checkedAt": "2026-09-08T11:37:16.101Z"
     },
     {
       "tokenId": "269223",
       "name": "Portfolio Rebalancer",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 2669,
-      "checkedAt": "2026-09-08T04:44:00.863Z"
+      "responseMs": 2057,
+      "checkedAt": "2026-09-08T11:37:25.460Z"
     },
     {
       "tokenId": "340502",
       "name": "Hevo Rebalance",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 1697,
-      "checkedAt": "2026-09-08T04:44:02.560Z"
+      "responseMs": 1620,
+      "checkedAt": "2026-09-08T11:37:35.068Z"
     },
     {
       "tokenId": "50036",
       "name": "Yield-Farmer - Goo",
       "category": "yield",
       "status": "unreachable",
-      "responseMs": 91,
-      "checkedAt": "2026-09-08T04:44:02.651Z"
+      "responseMs": 134,
+      "checkedAt": "2026-09-08T11:37:43.817Z"
     },
     {
       "tokenId": "45705",
       "name": "Yield-Farmer-X",
       "category": "yield",
       "status": "unreachable",
-      "responseMs": 55,
-      "checkedAt": "2026-09-08T04:44:02.706Z"
+      "responseMs": 61,
+      "checkedAt": "2026-09-08T11:37:43.879Z"
     },
     {
       "tokenId": "45245",
       "name": "Yield-GOO",
       "category": "yield",
       "status": "unreachable",
-      "responseMs": 49,
-      "checkedAt": "2026-09-08T04:44:02.755Z"
+      "responseMs": 60,
+      "checkedAt": "2026-09-08T11:37:43.940Z"
     },
     {
       "tokenId": "304493",
       "name": "Brain on BNB — Venus Yield Ranking",
       "category": "yield",
       "status": "delivered",
-      "responseMs": 1192,
-      "checkedAt": "2026-09-08T04:44:03.948Z"
+      "responseMs": 1649,
+      "checkedAt": "2026-09-08T11:37:45.589Z"
     },
     {
       "tokenId": "340456",
       "name": "LingoAI Yield Optimiser",
       "category": "yield",
       "status": "delivered",
-      "responseMs": 2596,
-      "checkedAt": "2026-09-08T04:44:06.544Z"
+      "responseMs": 2918,
+      "checkedAt": "2026-09-08T11:37:56.635Z"
     },
     {
       "tokenId": "326106",
       "name": "Sentinels Yield Router",
       "category": "yield",
       "status": "unreachable",
-      "responseMs": 10396,
-      "checkedAt": "2026-09-08T04:44:16.940Z"
+      "responseMs": 10858,
+      "checkedAt": "2026-09-08T11:38:14.610Z"
     },
     {
       "tokenId": "322046",
       "name": "Venus Yield Lens",
       "category": "yield",
       "status": "unreachable",
-      "responseMs": 39,
-      "checkedAt": "2026-09-08T04:44:16.979Z"
+      "responseMs": 87,
+      "checkedAt": "2026-09-08T11:38:14.697Z"
     },
     {
       "tokenId": "338253",
       "name": "HyperliquidVault",
       "category": "yield",
       "status": "delivered",
-      "responseMs": 3443,
-      "checkedAt": "2026-09-08T04:44:20.422Z"
+      "responseMs": 3898,
+      "checkedAt": "2026-09-08T11:38:18.595Z"
     },
     {
       "tokenId": "302257",
       "name": "Brain on BNB — Venus Health Factor Monitor",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 898,
-      "checkedAt": "2026-09-08T04:44:21.320Z"
+      "responseMs": 1453,
+      "checkedAt": "2026-09-08T11:38:25.606Z"
     },
     {
       "tokenId": "322885",
       "name": "Venus Health Factor Monitor",
       "category": "health-factor",
       "status": "unreachable",
-      "responseMs": 30,
-      "checkedAt": "2026-09-08T04:44:21.350Z"
+      "responseMs": 136,
+      "checkedAt": "2026-09-08T11:38:34.550Z"
     },
     {
       "tokenId": "292058",
       "name": "bnb-lending-guardian.agent",
       "category": "health-factor",
       "status": "dead",
-      "responseMs": 2856,
-      "checkedAt": "2026-09-08T04:44:24.206Z"
+      "responseMs": 3004,
+      "checkedAt": "2026-09-08T11:38:37.555Z"
     },
     {
       "tokenId": "315943",
       "name": "AiKi Venus Health Factor Guardian",
       "category": "health-factor",
       "status": "unreachable",
-      "responseMs": 35,
-      "checkedAt": "2026-09-08T04:44:24.241Z"
+      "responseMs": 172,
+      "checkedAt": "2026-09-08T11:38:37.728Z"
     },
     {
       "tokenId": "45381",
       "name": "Aave powered by HeyAnon",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 1797,
-      "checkedAt": "2026-09-08T04:44:26.038Z"
+      "responseMs": 1715,
+      "checkedAt": "2026-09-08T11:38:39.443Z"
     },
     {
       "tokenId": "269228",
       "name": "Health Factor Monitor",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 2064,
-      "checkedAt": "2026-09-08T04:44:28.102Z"
+      "responseMs": 1935,
+      "checkedAt": "2026-09-08T11:38:47.350Z"
     },
     {
       "tokenId": "340458",
       "name": "LingoAI Health Factor Sentinel",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 2593,
-      "checkedAt": "2026-09-08T04:44:30.695Z"
+      "responseMs": 2706,
+      "checkedAt": "2026-09-08T11:38:57.964Z"
     },
     {
       "tokenId": "266933",
       "name": "BNB Lending Guardian",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 2897,
-      "checkedAt": "2026-09-08T04:44:33.592Z"
+      "responseMs": 3149,
+      "checkedAt": "2026-09-08T11:39:08.239Z"
     },
     {
       "tokenId": "45422",
       "name": "Beefy powered by HeyAnon",
       "category": "general",
       "status": "delivered",
-      "responseMs": 1558,
-      "checkedAt": "2026-09-08T04:44:35.150Z"
+      "responseMs": 1743,
+      "checkedAt": "2026-09-08T11:39:17.028Z"
     },
     {
       "tokenId": "46193",
       "name": "Solana Agent",
       "category": "general",
       "status": "gated",
-      "responseMs": 1636,
-      "checkedAt": "2026-09-08T04:44:36.786Z"
+      "responseMs": 2025,
+      "checkedAt": "2026-09-08T11:39:27.203Z"
     },
     {
       "tokenId": "269233",
       "name": "BNB Grid Trader (test)",
       "category": "general",
       "status": "delivered",
-      "responseMs": 2253,
-      "checkedAt": "2026-09-08T04:44:39.040Z"
+      "responseMs": 2987,
+      "checkedAt": "2026-09-08T11:39:30.190Z"
     },
     {
       "tokenId": "302258",
       "name": "Brain on BNB — BSC Grid Planner",
       "category": "general",
       "status": "delivered",
-      "responseMs": 1196,
-      "checkedAt": "2026-09-08T04:44:40.237Z"
+      "responseMs": 1509,
+      "checkedAt": "2026-09-08T11:39:37.592Z"
     },
     {
       "tokenId": "236013",
       "name": "AlphaHunter",
       "category": "general",
       "status": "dead",
-      "responseMs": 1985,
-      "checkedAt": "2026-09-08T04:44:42.222Z"
+      "responseMs": 2375,
+      "checkedAt": "2026-09-08T11:39:48.318Z"
     },
     {
       "tokenId": "259574",
       "name": "RangeKeeper",
       "category": "general",
       "status": "dead",
-      "responseMs": 1439,
-      "checkedAt": "2026-09-08T04:44:43.661Z"
+      "responseMs": 1733,
+      "checkedAt": "2026-09-08T11:39:50.051Z"
     },
     {
       "tokenId": "294066",
       "name": "Void Weaver",
       "category": "general",
       "status": "dead",
-      "responseMs": 994,
-      "checkedAt": "2026-09-08T04:44:44.655Z"
+      "responseMs": 1641,
+      "checkedAt": "2026-09-08T11:39:51.693Z"
     },
     {
       "tokenId": "133229",
       "name": "sober.me",
       "category": "general",
       "status": "dead",
-      "responseMs": 1319,
-      "checkedAt": "2026-09-08T04:44:45.974Z"
+      "responseMs": 1726,
+      "checkedAt": "2026-09-08T11:39:53.419Z"
     },
     {
       "tokenId": "340455",
       "name": "LingoAI Grid Trading Agent",
       "category": "grid-trading",
       "status": "unreachable",
-      "responseMs": 10386,
-      "checkedAt": "2026-09-08T04:44:56.360Z"
+      "responseMs": 18732,
+      "checkedAt": "2026-09-08T11:40:12.151Z"
     },
     {
       "tokenId": "172801",
       "name": "DeFiBot.agent",
       "category": "grid-trading",
       "status": "dead",
-      "responseMs": 2703,
-      "checkedAt": "2026-09-08T04:44:59.063Z"
+      "responseMs": 3298,
+      "checkedAt": "2026-09-08T11:40:15.449Z"
     },
     {
       "tokenId": "330536",
       "name": "Sentinels Grid Trader",
       "category": "grid-trading",
       "status": "dead",
-      "responseMs": 2206,
-      "checkedAt": "2026-09-08T04:45:01.269Z"
+      "responseMs": 2678,
+      "checkedAt": "2026-09-08T11:40:18.128Z"
     },
     {
       "tokenId": "337826",
       "name": "MANDATE House Keeper A",
       "category": "grid-trading",
       "status": "unreachable",
-      "responseMs": 30,
-      "checkedAt": "2026-09-08T04:45:01.299Z"
+      "responseMs": 87,
+      "checkedAt": "2026-09-08T11:40:18.216Z"
     },
     {
       "tokenId": "340527",
       "name": "Hevo Grid",
       "category": "grid-trading",
       "status": "delivered",
-      "responseMs": 1188,
-      "checkedAt": "2026-09-08T04:45:02.488Z"
+      "responseMs": 1630,
+      "checkedAt": "2026-09-08T11:40:19.846Z"
     },
     {
       "tokenId": "337831",
       "name": "MANDATE House Keeper B",
       "category": "grid-trading",
       "status": "unreachable",
-      "responseMs": 47,
-      "checkedAt": "2026-09-08T04:45:02.535Z"
+      "responseMs": 198,
+      "checkedAt": "2026-09-08T11:40:25.787Z"
     },
     {
       "tokenId": "336623",
       "name": "Gridwright",
       "category": "grid-trading",
       "status": "dead",
-      "responseMs": 1232,
-      "checkedAt": "2026-09-08T04:45:03.767Z"
+      "responseMs": 1794,
+      "checkedAt": "2026-09-08T11:40:27.581Z"
     },
     {
       "tokenId": "302610",
       "name": "test.agent",
       "category": "grid-trading",
       "status": "dead",
-      "responseMs": 2735,
-      "checkedAt": "2026-09-08T04:45:06.503Z"
+      "responseMs": 2817,
+      "checkedAt": "2026-09-08T11:40:30.399Z"
     }
   ]
 }
