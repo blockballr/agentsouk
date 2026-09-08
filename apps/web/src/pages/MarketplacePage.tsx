@@ -286,7 +286,7 @@ function AgentCard({
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         className="group flex h-full flex-col p-6 transition-colors duration-150 hover:bg-echo-green/40 focus-visible:outline-2 focus-visible:outline-press-black"
       >
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 pr-7">
           <span className="micro text-muted-sage">
             {agent.category === 'general' ? 'General' : (agent.category ?? '')}
           </span>
@@ -318,7 +318,7 @@ function AgentCard({
           {agent.description || 'No description registered on-chain.'}
         </p>
 
-        <dl className="mt-8 grid grid-cols-3 gap-2 border-t hairline border-slate-verdant/15 pt-5">
+        <dl className="mx-auto mt-8 flex w-fit items-baseline justify-center gap-x-8 border-t hairline border-slate-verdant/15 pt-5">
           <Stat label="Score" value={formatScore(agent.total_score)} />
           <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '—'} />
           <Stat label="Hires" value={formatNumber(agent.total_feedbacks)} />
@@ -354,7 +354,7 @@ function AgentCard({
       </Link>
 
       <label
-        className={`absolute right-5 top-5 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border hairline transition-colors duration-150 focus-within:outline-2 focus-within:outline-highlighter-green ${
+        className={`absolute right-3 top-3 z-10 flex h-[18px] w-[18px] cursor-pointer items-center justify-center rounded-full border hairline transition-colors duration-150 focus-within:outline-2 focus-within:outline-highlighter-green ${
           checked
             ? 'border-highlighter-green bg-highlighter-green'
             : 'border-slate-verdant/30 bg-bone-white/90 hover:border-highlighter-green'
@@ -366,12 +366,12 @@ function AgentCard({
           onChange={() => onToggle(key)}
           aria-label={`Compare ${agent.name}`}
           title="Shortlist for comparison"
-          className="h-4 w-4 accent-highlighter-green opacity-0"
+          className="h-3 w-3 accent-highlighter-green opacity-0"
         />
         {checked && (
           <svg
-            width="14"
-            height="10"
+            width="10"
+            height="8"
             viewBox="0 0 14 10"
             fill="none"
             aria-hidden="true"
@@ -380,7 +380,7 @@ function AgentCard({
             <path
               d="M1 5l4 4 8-8"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.5"
             />
           </svg>
         )}
@@ -438,9 +438,9 @@ function CompareBar({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="flex items-baseline gap-1.5">
       <dt className="micro text-newsprint-gray">{label}</dt>
-      <dd className="mt-1 text-sm font-medium tabular-nums text-press-black">
+      <dd className="text-sm font-medium tabular-nums text-press-black">
         {value}
       </dd>
     </div>
