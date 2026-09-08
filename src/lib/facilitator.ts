@@ -62,7 +62,11 @@ export interface SettleContext {
 // is recorded or broadcast
 async function settleSandboxChecks(
   req: SettleRequest,
-): Promise<{ ok: true; auth: PaymentPayload["payload"]["authorization"] } | { ok: false; error: string }> {
+): Promise<{
+  ok: true;
+  auth: PaymentPayload["payload"]["authorization"];
+  message: Eip3009Message;
+} | { ok: false; error: string }> {
   const pr: PaymentRequirements = req.paymentRequirements;
   const payload: PaymentPayload = req.paymentPayload;
 
@@ -76,12 +80,29 @@ async function settleSandboxChecks(
     return { ok: false, error: "Signed terms do not match payment requirements" };
   }
 
-  const domain = eip3009Domain(pr);
-  const message = buildMessage(pr, auth);
+  // bind what was actually signed to the payment requirements: the accepted
+  // block alone is client-controlled framing, so the signed value and
+  // recipient must equal the requirements before anything is recorded or spent
+  let message: Eip3009Message;
+  try {
+    if (BigInt(auth.value) !== BigInt(pr.amount)) {
+      return { ok: false, error: "Signed value does not match payment requirements" };
+    }
+    if (normalizeAddress(auth.to) !== normalizeAddress(pr.payTo)) {
+      return { ok: false, error: "Signed recipient does not match payment requirements" };
+    }
+    message = buildMessage(pr, auth);
+  } catch {
+    return { ok: false, error: "Malformed authorization payload" };
+  }
 
   if (isExpired(message.validBefore)) return { ok: false, error: "Authorization expired" };
+  if (message.validAfter > BigInt(Math.floor(Date.now() / 1000))) {
+    return { ok: false, error: "Authorization not yet valid" };
+  }
   if (message.value <= 0n) return { ok: false, error: "Non-positive value" };
 
+  const domain = eip3009Domain(pr);
   const ok = await verifyTypedData({
     address: message.from,
     domain,
@@ -92,7 +113,7 @@ async function settleSandboxChecks(
   }).catch(() => false);
 
   if (!ok) return { ok: false, error: "Signature verification failed" };
-  return { ok: true, auth };
+  return { ok: true, auth, message };
 }
 
 // sandbox settlement: verify the EIP-3009 signature with viem, check the terms
@@ -162,6 +183,10 @@ const PROD_CAP_RAW = 5n * 10n ** 18n; // 5 USDC, 18 decimals
 const USDC_BSC = "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d";
 const BSC_RPC = "https://bsc-dataseed.binance.org";
 
+// per-process, bounded in-memory replay guard: a restart clears it and other
+// replicas do not share it — griefing mitigation only, not consensus
+const seenProdNonces = new Set<string>();
+
 // split a 65-byte ECDSA signature into r, s and a normalized v (27/28)
 function splitSig(sig: `0x${string}`) {
   const s = sig.slice(2);
@@ -181,13 +206,25 @@ export async function settleProd(
 
   const pr: PaymentRequirements = req.paymentRequirements;
 
-  // run the same verification as sandbox before spending anything
+  // run the same verification as sandbox before spending anything; the helper
+  // also binds the signed value/recipient to the payment requirements
   const checks = await settleSandboxChecks(req);
   if (!checks.ok) return fail(checks.error);
   const auth = checks.auth;
 
-  if (BigInt(pr.amount) > PROD_CAP_RAW) {
+  if (checks.message.value > PROD_CAP_RAW) {
     return fail("Amount exceeds the 5 USDC prod cap");
+  }
+
+  // only broadcast USDC on BSC: the EIP-3009 domain is verified against the
+  // client-supplied pr.asset, and a mismatched contract would revert on-chain
+  // and burn relay gas
+  if (normalizeAddress(pr.asset) !== normalizeAddress(USDC_BSC)) {
+    return fail("Unsupported settlement asset");
+  }
+
+  if (seenProdNonces.has(auth.nonce)) {
+    return fail("Authorization already submitted");
   }
 
   const relay = privateKeyToAccount(key as `0x${string}`);
@@ -198,8 +235,10 @@ export async function settleProd(
     transport: http(BSC_RPC),
   });
 
-  const { r, vs, vNum } = splitSig(auth.signature as `0x${string}`);
-  const data = encodeFunctionData({
+  try {
+    seenProdNonces.add(auth.nonce);
+    const { r, vs, vNum } = splitSig(auth.signature as `0x${string}`);
+    const data = encodeFunctionData({
     abi: [
       {
         name: "transferWithAuthorization",
@@ -230,13 +269,14 @@ export async function settleProd(
       r,
       vs,
     ],
-  });
+    });
 
-  try {
     const hash = await walletClient.sendTransaction({
       to: USDC_BSC as `0x${string}`,
       data,
     });
+    // race: if this wait times out but the tx still lands on-chain, funds
+    // moved with no receipt recorded
     const onchain = await publicClient.waitForTransactionReceipt({ hash });
     if (onchain.status !== "success") return fail(`Relay tx reverted: ${hash}`);
 
