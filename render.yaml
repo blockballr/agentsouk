@@ -1,0 +1,57 @@
+# Render blueprint for Agent Souk (replaces the removed fly/docker scaffolding)
+# Deploy: install the Render CLI or connect the repo in the dashboard and
+# Render reads this file. Nothing here runs until you create the services.
+# The live submission stays on Vercel through Sep 23; this is the
+# post-submission home with a scheduled verifier pass.
+
+services:
+  # backend: the Next.js app in the repo root, no docker needed
+  - type: web
+    name: agent-souk-api
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/stats
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: FACILITATOR_MODE
+        value: sandbox
+      - key: EIGHT004_API_KEY
+        sync: false
+      - key: INDEX_SECRET
+        sync: false
+      - key: WEB_ORIGIN
+        value: https://agent-souk-web.onrender.com
+
+  # frontend: the vite app as a static site
+  - type: web
+    name: agent-souk-web
+    runtime: static
+    rootDir: apps/web
+    buildCommand: cd ../.. && npm ci && npm run build --workspace @agora/web
+    staticPublishPath: ../../apps/web/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://agent-souk-api.onrender.com/api
+    routes:
+      # the spa uses client routing; everything unknown falls back to index
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # nightly verifier pass: the marketplace tests its own agents and refreshes
+  # the delivery badges. requires the loop script to read BASE_URL from env
+  # (small follow-up change; it currently defaults to localhost:3000)
+  - type: cron
+    name: agent-souk-verifier
+    runtime: node
+    schedule: "0 6 * * *"
+    buildCommand: npm ci
+    command: node scripts/verifier-loop.mjs
+    envVars:
+      - key: BASE_URL
+        value: https://agent-souk-api.onrender.com
+      - key: VERIFY_LIMIT
+        value: "40"
