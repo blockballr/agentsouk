@@ -108,10 +108,10 @@ async function main() {
 
   if (settleRes.ok && settleBody.success) {
     // 4. Confirm the receipt is retrievable.
-    const rec = await fetch(`${BASE}/api/x402/receipt/${settleBody.paymentId}`);
+    const rec = await fetch(`${BASE}/api/receipts/${settleBody.paymentId}`);
     console.log("receipt lookup status:", rec.status);
     const recBody = await rec.json();
-    console.log("receipt:", JSON.stringify(recBody.data, null, 2));
+    console.log("receipt:", JSON.stringify(recBody, null, 2));
     console.log("PASS");
   } else {
     console.log("FAIL");
