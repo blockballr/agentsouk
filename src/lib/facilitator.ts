@@ -3,6 +3,7 @@ import "server-only";
 import {
   verifyTypedData,
   getAddress,
+  hashTypedData,
   createPublicClient,
   createWalletClient,
   http,
@@ -10,6 +11,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { bsc } from "viem/chains";
+import { verifySmartWalletSignature } from "./erc1271";
 import {
   EIP3009_TYPES,
   Eip3009Message,
@@ -57,6 +59,12 @@ export interface SettleContext {
   agent: { chainId: number; tokenId: string; name: string; symbol: string };
 }
 
+// opt-in smart wallet (ERC-1271) verification; default off so the mainnet
+// behavior is unchanged until the token layer supports settlement
+function isSmartWalletVerifyEnabled(): boolean {
+  return process.env.SMART_WALLET_VERIFY === "on";
+}
+
 // shared verification for sandbox and prod settlement: validate the payload
 // shape, the signed terms, and the EIP-3009 signature itself before anything
 // is recorded or broadcast
@@ -66,6 +74,7 @@ async function settleSandboxChecks(
   ok: true;
   auth: PaymentPayload["payload"]["authorization"];
   message: Eip3009Message;
+  erc1271: boolean;
 } | { ok: false; error: string }> {
   const pr: PaymentRequirements = req.paymentRequirements;
   const payload: PaymentPayload = req.paymentPayload;
@@ -112,8 +121,29 @@ async function settleSandboxChecks(
     signature: auth.signature as `0x${string}`,
   }).catch(() => false);
 
-  if (!ok) return { ok: false, error: "Signature verification failed" };
-  return { ok: true, auth, message };
+  if (!ok) {
+    if (!isSmartWalletVerifyEnabled()) {
+      return { ok: false, error: "Signature verification failed" };
+    }
+    // opt-in path: ecrecover failed and the signer may be a smart account, so
+    // validate on-chain via ERC-1271 against our own typed-data hash. Fail
+    // closed: only a truthful 0x1626ba7e from a deployed contract passes.
+    const verdict = await verifySmartWalletSignature({
+      from: message.from,
+      signature: auth.signature,
+      hash: hashTypedData({
+        domain,
+        types: EIP3009_TYPES,
+        primaryType: "TransferWithAuthorization",
+        message,
+      }),
+      rpcUrl: BSC_RPC,
+    });
+    if (!verdict.isContract) return { ok: false, error: "Signature verification failed" };
+    if (!verdict.valid) return { ok: false, error: "Smart wallet signature verification failed" };
+    return { ok: true, auth, message, erc1271: true };
+  }
+  return { ok: true, auth, message, erc1271: false };
 }
 
 // sandbox settlement: verify the EIP-3009 signature with viem, check the terms
@@ -211,6 +241,16 @@ export async function settleProd(
   const checks = await settleSandboxChecks(req);
   if (!checks.ok) return fail(checks.error);
   const auth = checks.auth;
+
+  // fail closed before spending relay gas: an ERC-1271 signature is not a
+  // recoverable ECDSA sig, so splitSig would produce garbage v/r/s and the
+  // on-chain transferWithAuthorization would revert (verified token-level:
+  // see .superpowers/smart-wallet-audit.md)
+  if (checks.erc1271) {
+    return fail(
+      "Smart wallet settlement is not supported for this asset: the token's transferWithAuthorization cannot consume ERC-1271 signatures",
+    );
+  }
 
   if (checks.message.value > PROD_CAP_RAW) {
     return fail("Amount exceeds the 5 USDC prod cap");
