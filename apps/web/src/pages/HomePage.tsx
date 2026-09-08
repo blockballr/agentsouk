@@ -72,7 +72,7 @@ export function HomePage() {
     const base = import.meta.env.VITE_API_URL ?? '/api'
     fetch(`${base}/stats`)
       .then((r) => r.json())
-      .then((d) => setRegisteredAgents(d?.data?.platform?.bsc?.totalAgents ?? null))
+      .then((d) => setRegisteredAgents(d?.platform?.bsc?.totalAgents ?? null))
       .catch(() => setRegisteredAgents(null))
   }, [])
 
