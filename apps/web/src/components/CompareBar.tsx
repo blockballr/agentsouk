@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { SPRING_STIFF } from '../lib/motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { connectWallet, ensureBscChain } from '../lib/wallet'
 import { hireErrorText, runHire, type HireAgentRef } from '../lib/hire'
 
@@ -15,6 +14,11 @@ interface HireItemState {
 }
 
 const hireKey = (a: HireAgentRef) => `${a.chainId}/${a.tokenId}`
+
+// mount: a single tight spring that lands with a subtle overshoot; exit:
+// a short tween. under prefers-reduced-motion everything is opacity-only
+const SPRING_POP = { type: 'spring', stiffness: 420, damping: 26, mass: 0.9 } as const
+const EXIT_TWEEN = { type: 'tween', duration: 0.18, ease: 'easeOut' } as const
 
 // floating compare shortlist bar, shared by the marketplace and the compare
 // page; pages decide when to mount it, what the Compare action does, and
@@ -34,6 +38,7 @@ export function CompareBar({
   const [items, setItems] = useState<HireItemState[]>([])
   const [batchError, setBatchError] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
+  const reducedMotion = useReducedMotion()
 
   const allSettled = items.length > 0 && items.every((i) => i.phase === 'settled')
 
@@ -105,11 +110,18 @@ export function CompareBar({
     <AnimatePresence>
       {count > 0 && (
         <motion.div
-          className="fixed inset-x-0 bottom-6 z-40 px-4"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 24 }}
-          transition={SPRING_STIFF}
+          className="fixed inset-x-0 bottom-6 z-40 origin-bottom px-4"
+          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 40, scale: 0.94 }}
+          animate={
+            reducedMotion
+              ? { opacity: 1, transition: { duration: 0.2 } }
+              : { opacity: 1, y: 0, scale: 1, transition: SPRING_POP }
+          }
+          exit={
+            reducedMotion
+              ? { opacity: 0, transition: { duration: 0.15 } }
+              : { opacity: 0, y: 32, scale: 0.96, transition: EXIT_TWEEN }
+          }
         >
           <div className="mx-auto max-w-2xl rounded-[14px] bg-press-black px-6 py-4 text-bone-white shadow-lg">
             <div className="flex items-center justify-between gap-6">
