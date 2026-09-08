@@ -4,7 +4,7 @@ import type { AgentDetail, AgentSummary } from '@agora/core'
 import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
 import { getAgentDetail, getAgents } from '../lib/api'
 
-const IDS_KEY = 'agora.compare.ids'
+const IDS_KEY = 'agent-souk.compare.ids'
 
 export function ComparePage() {
   const [sp, setSp] = useSearchParams()

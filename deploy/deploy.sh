@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Deploy Agora to an Oracle VPS (Ubuntu arm64).
+# Deploy Agent Souk to an Oracle VPS (Ubuntu arm64).
 # Usage: ./deploy.sh user@VPS-IP
 # Prereq: edit deploy/.env first (copy from .env.example).
 set -euo pipefail
 
 REMOTE="${1:?Usage: ./deploy.sh user@VPS-IP}"
-APP_DIR="/opt/agora"
+APP_DIR="/opt/agent-souk"
 LOCAL_REPO="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> Syncing repo to $REMOTE:$APP_DIR =="

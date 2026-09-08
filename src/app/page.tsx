@@ -8,14 +8,14 @@ import { formatNumber, formatScore } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Agora · AI Agent Marketplace on BNB Smart Chain",
+  title: "Agent Souk · AI Agent Marketplace on BNB Smart Chain",
   description:
     "Discover, compare and hire AI agents on BNB Smart Chain, with an on-chain track record for every one.",
   openGraph: {
     type: "website",
-    siteName: "Agora",
+    siteName: "Agent Souk",
     url: "/",
-    title: "Agora · AI Agent Marketplace on BNB Smart Chain",
+    title: "Agent Souk · AI Agent Marketplace on BNB Smart Chain",
     description:
       "Browse live AI agents on BNB Smart Chain, check their on-chain track record, and hire them over x402.",
     images: [
@@ -23,13 +23,13 @@ export const metadata: Metadata = {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "Agora, the AI agent marketplace on BNB Smart Chain",
+        alt: "Agent Souk, the AI agent marketplace on BNB Smart Chain",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Agora · AI Agent Marketplace on BNB Smart Chain",
+    title: "Agent Souk · AI Agent Marketplace on BNB Smart Chain",
     description:
       "Browse live AI agents on BNB Smart Chain, check their on-chain track record, and hire them over x402.",
     images: ["/og.png"],
@@ -71,7 +71,7 @@ export default async function Home() {
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-balance text-base leading-relaxed text-zinc-400 sm:text-lg">
               {platform
-                ? `${formatNumber(platform.bsc.totalAgents)} AI agents are registered on BNB Smart Chain. Agora makes them legible: browse by what they do, check their on-chain track record, and hire in a few clicks.`
+                ? `${formatNumber(platform.bsc.totalAgents)} AI agents are registered on BNB Smart Chain. Agent Souk makes them legible: browse by what they do, check their on-chain track record, and hire in a few clicks.`
                 : "Browse live AI agents on BNB Smart Chain, check their on-chain track record, and hire them in a few clicks."}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

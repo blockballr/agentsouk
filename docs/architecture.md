@@ -1,6 +1,6 @@
-## Agora Architecture Documentation
+## Agent Souk Architecture Documentation
 
-This document covers how Agora, the ERC-8004 agent marketplace on BNB Smart
+This document covers how Agent Souk, the ERC-8004 agent marketplace on BNB Smart
 Chain, works. It explains the server-only registry boundary, the
 grounded-in-data classification model, the snapshot build pipeline, the
 marketplace-as-merchant money path over Binance x402, and the sandbox versus
@@ -9,7 +9,7 @@ the live Next.js product and the Vite frontend rebuild that is replacing its
 pages, and the shared core package that will become the single source for
 both.
 
-Agora's design choices -- separating the registry client from the client
+Agent Souk's design choices -- separating the registry client from the client
 bundle, classifying agents from their own registration text rather than from
 manual curation, serving a committed snapshot with live fallback, routing
 payment to the agent's own receiving wallet with no custody, and keeping the
@@ -147,7 +147,7 @@ and dots that travel their shapes. Every animation degrades under
 
 The compare shortlist is a local concern. Agents are checked in the
 marketplace, the selection is persisted to `localStorage` under
-`agora.compare.ids`, and a sticky bar navigates to `/compare?ids=...`. The
+`agent-souk.compare.ids`, and a sticky bar navigates to `/compare?ids=...`. The
 compare page loads each agent's detail and renders a metric table.
 
 The shared package `packages/core` exports the registry types, the classifier,

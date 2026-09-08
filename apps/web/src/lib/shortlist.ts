@@ -1,5 +1,5 @@
 // compare shortlist persisted locally, keyed as chainId/tokenId
-const KEY = 'agora.compare.ids'
+const KEY = 'agent-souk.compare.ids'
 
 export function getShortlist(): string[] {
   try {

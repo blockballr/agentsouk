@@ -13,7 +13,7 @@ export function Footer() {
               </svg>
             </span>
             <span className="text-sm font-semibold text-zinc-100">
-              Agora
+              Agent Souk
             </span>
           </div>
           <p className="mt-3 text-[13px] leading-relaxed text-zinc-500">

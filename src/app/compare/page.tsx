@@ -9,9 +9,9 @@ export const metadata: Metadata = {
     "Compare AI agents on BNB Smart Chain side by side: reputation, health, feedback and trust models before you hire.",
   openGraph: {
     type: "website",
-    siteName: "Agora",
+    siteName: "Agent Souk",
     url: "/compare",
-    title: "Compare agents · Agora",
+    title: "Compare agents · Agent Souk",
     description:
       "Compare AI agents on BNB Smart Chain side by side before you hire.",
     images: [
@@ -19,13 +19,13 @@ export const metadata: Metadata = {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "Agora, the AI agent marketplace on BNB Smart Chain",
+        alt: "Agent Souk, the AI agent marketplace on BNB Smart Chain",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Compare agents · Agora",
+    title: "Compare agents · Agent Souk",
     description:
       "Compare AI agents on BNB Smart Chain side by side before you hire.",
     images: ["/og.png"],

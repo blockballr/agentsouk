@@ -12,7 +12,7 @@ export interface CompareAgent {
   category?: string;
 }
 
-const KEY = "agora.compare.v1";
+const KEY = "agent-souk.compare.v1";
 
 export function readCompare(): CompareAgent[] {
   if (typeof window === "undefined") return [];

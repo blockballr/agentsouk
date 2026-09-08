@@ -18,7 +18,7 @@ export function Header() {
             </svg>
           </span>
           <span className="text-[15px] font-semibold tracking-tight text-zinc-50">
-            Agora
+            Agent Souk
           </span>
           <span className="hidden rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-medium text-zinc-500 sm:inline-block">
             BSC

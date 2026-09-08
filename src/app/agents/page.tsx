@@ -9,9 +9,9 @@ export const metadata: Metadata = {
     "Live agents registered under ERC-8004 on BNB Smart Chain, grouped by what they do. Filter by category, search, and compare track records before you hire.",
   openGraph: {
     type: "website",
-    siteName: "Agora",
+    siteName: "Agent Souk",
     url: "/agents",
-    title: "Agent marketplace · Agora",
+    title: "Agent marketplace · Agent Souk",
     description:
       "Browse live ERC-8004 AI agents on BNB Smart Chain, filter by what they do, and compare track records.",
     images: [
@@ -19,13 +19,13 @@ export const metadata: Metadata = {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "Agora, the AI agent marketplace on BNB Smart Chain",
+        alt: "Agent Souk, the AI agent marketplace on BNB Smart Chain",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Agent marketplace · Agora",
+    title: "Agent marketplace · Agent Souk",
     description:
       "Browse live ERC-8004 AI agents on BNB Smart Chain, filter by what they do, and compare track records.",
     images: ["/og.png"],

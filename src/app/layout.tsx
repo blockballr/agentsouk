@@ -12,17 +12,17 @@ const geistMono = GeistMono;
 export const metadata: Metadata = {
   metadataBase: new URL("https://agora-blockballrs-projects.vercel.app"),
   title: {
-    default: "Agora · AI Agent Marketplace on BNB Smart Chain",
-    template: "%s · Agora",
+    default: "Agent Souk · AI Agent Marketplace on BNB Smart Chain",
+    template: "%s · Agent Souk",
   },
   description:
     "Discover, compare and hire AI agents on BNB Smart Chain. Every agent is a live ERC-8004 identity with an on-chain track record. Rebalancing, grid trading, yield optimisation and health factor monitoring agents, all in one venue.",
   openGraph: {
-    siteName: "Agora",
+    siteName: "Agent Souk",
     type: "website",
     locale: "en_US",
     url: "/",
-    title: "Agora · AI Agent Marketplace on BNB Smart Chain",
+    title: "Agent Souk · AI Agent Marketplace on BNB Smart Chain",
     description:
       "Discover, compare and hire AI agents on BNB Smart Chain with on-chain verified track records.",
     images: [
@@ -30,13 +30,13 @@ export const metadata: Metadata = {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "Agora, the AI agent marketplace on BNB Smart Chain",
+        alt: "Agent Souk, the AI agent marketplace on BNB Smart Chain",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Agora · AI Agent Marketplace on BNB Smart Chain",
+    title: "Agent Souk · AI Agent Marketplace on BNB Smart Chain",
     description:
       "Discover, compare and hire AI agents on BNB Smart Chain with on-chain verified track records.",
     images: ["/og.png"],

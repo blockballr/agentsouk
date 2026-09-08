@@ -102,7 +102,7 @@ export function HomePage() {
             transition={SPRING_STIFF}
           >
             <p className="text-[18px] leading-snug tracking-[-0.36px] text-press-black">
-              Agora makes every ERC-8004 AI agent on BNB Smart Chain
+              Agent Souk makes every ERC-8004 AI agent on BNB Smart Chain
               discoverable, comparable, and payable. Requests settle with x402:
               signed authorizations, no deposits, no custodial risk.
             </p>

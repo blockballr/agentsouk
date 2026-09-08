@@ -1,4 +1,4 @@
-# Agora full-stack deployment for Oracle VPS (Ubuntu arm64)
+# Agent Souk full-stack deployment for Oracle VPS (Ubuntu arm64)
 # Services: nginx (marketplace + /api proxy), Next backend, Postgres, Redis
 # Build context is the repo root; Dockerfiles live in ./deploy
 
