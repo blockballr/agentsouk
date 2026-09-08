@@ -294,35 +294,36 @@ function AgentCard({
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         className="group flex h-full flex-col p-6 transition-colors duration-150 hover:bg-echo-green/40 focus-visible:outline-2 focus-visible:outline-press-black"
       >
-        <div className="flex flex-wrap items-center gap-3 pr-7">
-          <span className="micro text-muted-sage">
-            {agent.category === 'general' ? 'General' : (agent.category ?? '')}
-          </span>
-          {agent.x402_supported && (
-            <span className="micro inline-flex items-center gap-2 rounded-full border hairline border-highlighter-green/40 px-2 py-1 text-highlighter-green">
-              <span className="relative flex h-2 w-2">
-                <span className="motion-safe:absolute motion-safe:inline-flex motion-safe:h-full motion-safe:w-full motion-safe:animate-ping motion-safe:rounded-full motion-safe:bg-highlighter-green opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-highlighter-green" />
+        <div className="flex items-center justify-between gap-3 pr-7">
+          <div className="flex min-w-0 items-center gap-4">
+            <img
+              src={img}
+              alt={agent.name}
+              loading="lazy"
+              className="duotone h-16 w-16 shrink-0 rounded-[14px] object-cover"
+            />
+            <div className="min-w-0">
+              <span className="micro text-muted-sage">
+                {agent.category === 'general' ? 'General' : (agent.category ?? '')}
               </span>
-              x402
-            </span>
-          )}
-        </div>
-
-        <div className="mt-8 flex items-center gap-4">
-          <img
-            src={img}
-            alt={agent.name}
-            loading="lazy"
-            className="duotone h-16 w-16 shrink-0 rounded-[14px] object-cover"
-          />
-          <div className="min-w-0">
-            <h2 className="truncate font-serif text-[22px] font-medium leading-tight tracking-[-0.02em]">
-              {agent.name}
-            </h2>
-            <p className="mt-1 font-mono text-[11px] text-newsprint-gray">
-              {shortAddress(agent.owner_address)}
-            </p>
+              <h2 className="mt-1 truncate font-serif text-[22px] font-medium leading-tight tracking-[-0.02em]">
+                {agent.name}
+              </h2>
+              <p className="mt-1 font-mono text-[11px] text-newsprint-gray">
+                {shortAddress(agent.owner_address)}
+              </p>
+            </div>
+          </div>
+          <div className="flex h-[26px] shrink-0 items-center">
+            {agent.x402_supported && (
+              <span className="micro inline-flex items-center gap-2 rounded-full border hairline border-highlighter-green/40 px-2 py-1 text-highlighter-green">
+                <span className="relative flex h-2 w-2">
+                  <span className="motion-safe:absolute motion-safe:inline-flex motion-safe:h-full motion-safe:w-full motion-safe:animate-ping motion-safe:rounded-full motion-safe:bg-highlighter-green opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-highlighter-green" />
+                </span>
+                x402
+              </span>
+            )}
           </div>
         </div>
 
@@ -426,13 +427,16 @@ function GridSkeleton() {
           key={i}
           className="-ml-px -mt-px animate-pulse border hairline border-slate-verdant/20 bg-bone-white p-6"
         >
-          <div className="h-3 w-20 bg-slate-verdant/10" />
-          <div className="mt-8 flex items-center gap-4">
-            <div className="h-16 w-16 rounded-[14px] bg-slate-verdant/10" />
-            <div className="space-y-2">
-              <div className="h-4 w-28 bg-slate-verdant/10" />
-              <div className="h-3 w-20 bg-slate-verdant/10" />
+          <div className="flex items-center justify-between gap-3 pr-7">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-[14px] bg-slate-verdant/10" />
+              <div className="space-y-2">
+                <div className="h-3 w-20 bg-slate-verdant/10" />
+                <div className="h-4 w-28 bg-slate-verdant/10" />
+                <div className="h-3 w-20 bg-slate-verdant/10" />
+              </div>
             </div>
+            <div className="h-[26px]" />
           </div>
           <div className="mt-6 space-y-2">
             <div className="h-3 w-full bg-slate-verdant/10" />
