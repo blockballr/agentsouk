@@ -21,6 +21,41 @@
   --shadow-lg-2: rgba(18, 146, 39, 0.25) 1px 8px 20px 0px;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bone-white: #0e1311;
+    --color-press-black: #f2f6f1;
+    --color-typesetter-ink: #f2f6f1;
+    --color-newsprint-gray: #9aa79d;
+    --color-slate-verdant: #2a322c;
+    --color-echo-green: #1d2a20;
+    --color-muted-sage: #8f9c92;
+    --color-shadow-moss: #3f5c46;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bone-white: #0e1311;
+  --color-press-black: #f2f6f1;
+  --color-typesetter-ink: #f2f6f1;
+  --color-newsprint-gray: #9aa79d;
+  --color-slate-verdant: #2a322c;
+  --color-echo-green: #1d2a20;
+  --color-muted-sage: #8f9c92;
+  --color-shadow-moss: #3f5c46;
+}
+
+:root[data-theme="light"] {
+  --color-bone-white: #fafffa;
+  --color-press-black: #121613;
+  --color-typesetter-ink: #000000;
+  --color-newsprint-gray: #516254;
+  --color-slate-verdant: #232924;
+  --color-echo-green: #c4e4c9;
+  --color-muted-sage: #c8d2c8;
+  --color-shadow-moss: #93b799;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -54,5 +89,21 @@
   .hairline {
     border-width: 1px;
     border-style: solid;
+  }
+  .score-strip {
+    background: #a7f8b4;
+    border: 1px solid rgb(43 234 75 / 0.5);
+  }
+}
+
+:root[data-theme="dark"] .score-strip {
+  background: #12341c;
+  border-color: rgb(43 234 75 / 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .score-strip {
+    background: #12341c;
+    border-color: rgb(43 234 75 / 0.4);
   }
 }

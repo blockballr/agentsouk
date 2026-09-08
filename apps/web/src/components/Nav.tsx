@@ -1,5 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { Wordmark } from './Wordmark'
+import { ThemeToggle } from './ThemeToggle'
 
 const links = [
   { to: '/agents', label: 'Marketplace' },
@@ -30,6 +31,7 @@ export function Nav() {
               </li>
             ))}
           </ul>
+          <ThemeToggle />
           <Link
             to="/agents"
             aria-label="Open the market"

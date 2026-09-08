@@ -331,7 +331,7 @@ function AgentCard({
           {agent.description || 'No description registered on-chain.'}
         </p>
 
-        <dl className="mt-8 w-full rounded-lg border border-[#2bee4b]/50 bg-[#a7f8b4] px-4 py-3.5">
+        <dl className="score-strip mt-8 w-full rounded-lg px-4 py-3.5">
           <div className="flex items-start justify-center gap-x-10">
             <Stat label="Score" value={formatScore(agent.total_score)} />
             <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '—'} />
