@@ -64,4 +64,7 @@ next-env.d.ts
 /validation-report.html
 /docs/superpowers/
 
+# sdd scratch
+/.superpowers/
+
 .vercel
