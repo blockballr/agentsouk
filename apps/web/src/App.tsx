@@ -6,6 +6,7 @@ import { MarketplacePage } from './pages/MarketplacePage'
 import { AgentDetailPage } from './pages/AgentDetailPage'
 import { ComparePage } from './pages/ComparePage'
 import { AdvantagePage } from './pages/AdvantagePage'
+import { ListAgentPage } from './pages/ListAgentPage'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/advantage" element={<AdvantagePage />} />
+          <Route path="/list" element={<ListAgentPage />} />
           <Route path="*" element={<HomePage />} />
         </Route>
       </Routes>

@@ -5,6 +5,7 @@ const links = [
   { to: '/agents', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
   { to: '/advantage', label: 'Advantage' },
+  { to: '/list', label: 'List your agent' },
 ]
 
 export function Nav() {
