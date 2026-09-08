@@ -5,6 +5,7 @@ import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core
 import { getAgentDetail, getAgents } from '../lib/api'
 import { bestByCategory, categoryGroups } from '../lib/compare'
 import { CompareBar } from '../components/CompareBar'
+import type { HireAgentRef } from '../lib/hire'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
 export function ComparePage() {
@@ -40,6 +41,18 @@ export function ComparePage() {
   const [agents, setAgents] = useState<AgentDetail[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+
+  // one best-in-category winner per category, straight from the same ranker
+  // that highlights the table; these are the agents the bar's hire action runs
+  const hireWinners = useMemo(() => {
+    const winners: HireAgentRef[] = []
+    for (const id of Object.values(bestByCategory(agents))) {
+      if (!id) continue
+      const a = agents.find((x) => x.agent_id === id)
+      if (a) winners.push({ chainId: a.chain_id, tokenId: Number(a.token_id), name: a.name })
+    }
+    return winners
+  }, [agents])
 
   useEffect(() => {
     let cancelled = false
@@ -83,7 +96,12 @@ export function ComparePage() {
           <CompareTable agents={agents} loading={loading} error={error} onClear={clearSelection} />
           <ShortlistSearch selected={urlIds} onToggle={toggleId} />
           {urlIds.length >= 2 && (
-            <CompareBar count={urlIds.length} onClear={clearSelection} onCompare={scrollToTable} />
+            <CompareBar
+              count={urlIds.length}
+              onClear={clearSelection}
+              onCompare={scrollToTable}
+              hire={hireWinners.length > 0 ? { winners: hireWinners } : undefined}
+            />
           )}
         </>
       )}
