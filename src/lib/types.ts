@@ -9,12 +9,12 @@ export const BSC_REGISTRY_ADDRESS =
 export const BSC_TOKENS = {
   USDC: {
     symbol: "USDC",
-    address: "0x8AC76a51cc950d9822d68b83fe1ad97b32cd580d",
+    address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
     decimals: 18,
   },
   USDT: {
     symbol: "USDT",
-    address: "0x55d398326f99059ff775485246999027b3197955",
+    address: "0x55d398326f99059fF775485246999027B3197955",
     decimals: 18,
   },
 } as const;

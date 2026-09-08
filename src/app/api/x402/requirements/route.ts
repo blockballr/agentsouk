@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAddress } from "viem";
 import { fetchAgentDetail } from "@/lib/scanner";
 import { BSC_CHAIN_ID, BSC_TOKENS } from "@/lib/types";
 import {
@@ -37,7 +38,17 @@ export async function POST(req: NextRequest) {
   const priceUsd = body.amountUsd ?? DEFAULT_HIRE_PRICE_USD;
   const token = BSC_TOKENS.USDC;
   const amountRaw = parseUnits(String(priceUsd), token.decimals).toString();
-  const payTo = detail.agent_wallet ?? detail.owner_address;
+  // wallets reject non-checksummed addresses in typed data, and the registry
+  // stores them lowercase
+  const rawPayTo = detail.agent_wallet ?? detail.owner_address;
+  let payTo = rawPayTo;
+  let asset: string = token.address;
+  try {
+    payTo = getAddress(rawPayTo);
+    asset = getAddress(token.address);
+  } catch {
+    // keep the raw values; the settle step will reject them if truly invalid
+  }
 
   const resource: ResourceInfo = {
     url: `/agents/${chainId}/${detail.token_id}`,
@@ -49,7 +60,7 @@ export async function POST(req: NextRequest) {
     scheme: "exact",
     network: `eip155:${chainId}`,
     amount: amountRaw,
-    asset: token.address,
+    asset,
     payTo,
     maxTimeoutSeconds: 300,
     extra: {
