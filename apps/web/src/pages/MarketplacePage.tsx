@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { AgentSummary } from '@agora/core'
@@ -185,23 +185,39 @@ function VerificationBadge({
   status,
   checkedAt,
   quality,
-  padded,
 }: {
   status: string
   checkedAt: string
   quality?: { grade: 'good' | 'partial' | 'poor'; reason: string; model: string }
-  padded?: boolean
 }) {
   const title =
     quality
       ? `AI review: ${quality.grade} - ${quality.reason} (checked ${checkedAt.slice(0, 10)})`
       : `Shopper checked ${checkedAt}`
   return (
+    <BadgeCell tone={verificationTone[status] ?? verificationTone.dead} title={title}>
+      {verificationLabel(status)}
+    </BadgeCell>
+  )
+}
+
+function BadgeCell({
+  tone,
+  title,
+  children,
+}: {
+  tone?: string
+  title?: string
+  children?: ReactNode
+}) {
+  return (
     <span
       title={title}
-      className={`micro rounded-full border hairline ${padded ? 'px-2.5' : 'px-2'} py-1 ${verificationTone[status] ?? verificationTone.dead}`}
+      className={`micro flex h-[26px] min-w-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-full border hairline px-2 ${
+        tone ?? 'border-slate-verdant/15 text-transparent'
+      }`}
     >
-      {verificationLabel(status)}
+      {children}
     </span>
   )
 }
@@ -279,21 +295,6 @@ function AgentCard({
               x402
             </span>
           )}
-          {agent.pcs && (
-            <span
-              title="PancakeSwap-native agent"
-              className="micro rounded-full border hairline border-slate-verdant/25 px-2 py-1 text-newsprint-gray"
-            >
-              PCS
-            </span>
-          )}
-          {agent.verification && (
-            <VerificationBadge
-              status={agent.verification.status}
-              checkedAt={agent.verification.checkedAt}
-              quality={agent.verification.quality}
-            />
-          )}
         </div>
 
         <div className="mt-8 flex items-center gap-4">
@@ -322,6 +323,30 @@ function AgentCard({
           <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '—'} />
           <Stat label="Hires" value={formatNumber(agent.total_feedbacks)} />
         </dl>
+
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          {agent.verification ? (
+            <VerificationBadge
+              status={agent.verification.status}
+              checkedAt={agent.verification.checkedAt}
+              quality={agent.verification.quality}
+            />
+          ) : (
+            <BadgeCell />
+          )}
+          {agent.pcs ? (
+            <BadgeCell
+              tone="border-slate-verdant/25 text-newsprint-gray"
+              title="PancakeSwap-native agent"
+            >
+              PCS
+            </BadgeCell>
+          ) : (
+            <BadgeCell />
+          )}
+          <BadgeCell />
+          <BadgeCell />
+        </div>
 
         <span className="micro mt-auto pt-6 text-newsprint-gray transition group-hover:text-press-black">
           View agent →
