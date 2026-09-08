@@ -327,7 +327,13 @@ function CompareTable({
                       scope="colgroup"
                     >
                       {g.label}
-                      {winner && <span className="ml-3 font-normal normal-case">best: {winner.name}</span>}
+                      {winner && (
+                        <span className="micro ml-3 inline-flex items-center gap-1.5 rounded-full border hairline border-highlighter-green/50 bg-highlighter-green/10 px-2.5 py-1 font-normal normal-case text-highlighter-green">
+                          <TrophyIcon className="h-3 w-3" />
+                          {winner.name}
+                          <span className="sr-only">best in category</span>
+                        </span>
+                      )}
                     </th>
                   )
                 })}
@@ -351,8 +357,11 @@ function CompareTable({
                         {a.name}
                       </Link>
                       {winner && (
-                        <span className="micro mt-2 block rounded-full border hairline border-highlighter-green/50 px-2.5 py-1 text-highlighter-green">
-                          best in category
+                        <span
+                          aria-label="best in category"
+                          className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border hairline border-highlighter-green/50 bg-highlighter-green/10 text-highlighter-green"
+                        >
+                          <TrophyIcon />
                         </span>
                       )}
                     </th>
@@ -387,6 +396,21 @@ function CompareTable({
         </div>
       )}
     </div>
+  )
+}
+
+function TrophyIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      width="14"
+      height="14"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="M6 3h12v2h3v3a5 5 0 0 1-4.58 4.98A6.01 6.01 0 0 1 13 16.92V19h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.08a6.01 6.01 0 0 1-3.42-3.94A5 5 0 0 1 3 8V5h3V3Zm0 4H5v1a3 3 0 0 0 1 2.24V7Zm12 0v3.24A3 3 0 0 0 19 8V7h-1Z" />
+    </svg>
   )
 }
 
