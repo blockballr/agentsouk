@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPayment } from "@/lib/x402";
+import { getPaymentDurable } from "@/lib/receipts-store";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ paymentId: string }> },
 ) {
   const { paymentId } = await params;
-  const payment = getPayment(paymentId);
+  const payment = await getPaymentDurable(paymentId);
   if (!payment) {
     return NextResponse.json({ error: "receipt not found" }, { status: 404 });
   }

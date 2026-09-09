@@ -174,9 +174,9 @@ export interface StoredPayment extends Receipt {
   paymentPayload?: PaymentPayload;
 }
 
-// minimal in-memory ledger, reset on restart
-// this is fine for the demo, and the docs state the receipt is not an on-chain
-// transaction
+// minimal in-memory ledger used as a write-through cache in front of the
+// durable receipts store (postgres when RECEIPTS_STORE=postgres + DATABASE_URL,
+// otherwise memory-only); server-only callers go through receipts-store.ts
 const ledger = new Map<string, StoredPayment>();
 
 export function recordPayment(p: StoredPayment): void {

@@ -20,10 +20,9 @@ import {
   Receipt,
   SettleRequest,
   SettleResult,
-  getPayment,
-  recordPayment,
   eip3009Domain,
 } from "./x402";
+import { recordPaymentDurable, getPaymentDurable } from "./receipts-store";
 
 const SANDBOX_TX_PREFIX = "0x53a66f60094f8e2b6f97a4c7b81b4d9e77f82c9d3e6b4a1d";
 
@@ -183,7 +182,7 @@ export async function settleSandbox(
     },
   };
 
-  recordPayment({ ...receipt, paymentPayload: req.paymentPayload });
+  await recordPaymentDurable({ ...receipt, paymentPayload: req.paymentPayload });
 
   return {
     success: true,
@@ -202,8 +201,10 @@ export async function settleSandbox(
   };
 }
 
-export function getSandboxReceipt(paymentId: string): Receipt | undefined {
-  return getPayment(paymentId);
+export async function getSandboxReceipt(
+  paymentId: string,
+): Promise<Receipt | undefined> {
+  return getPaymentDurable(paymentId);
 }
 
 // prod settlement: relay the buyer's EIP-3009 authorization on BNB Chain
@@ -346,7 +347,7 @@ export async function settleProd(
         expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
       },
     };
-    recordPayment({ ...receipt, paymentPayload: req.paymentPayload });
+    await recordPaymentDurable({ ...receipt, paymentPayload: req.paymentPayload });
 
     return {
       success: true,

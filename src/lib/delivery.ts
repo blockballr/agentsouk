@@ -1,7 +1,7 @@
 import "server-only";
 
 import { fetchAgentDetail } from "@/lib/scanner";
-import { getPayment } from "@/lib/x402";
+import { getPaymentDurable } from "./receipts-store";
 
 // the delivery half of hire: a settled receipt unlocks invoking the agent's
 // own endpoint. two protocols exist in the wild today, both JSON-RPC over HTTP:
@@ -230,7 +230,7 @@ export async function deliver(input: DeliverInput): Promise<
   | (DeliverOutcome & { agent: { chainId: number; tokenId: string; name: string }; paymentId: string })
   | { ok: false; error: string }
 > {
-  const receipt = getPayment(input.paymentId);
+  const receipt = await getPaymentDurable(input.paymentId);
   if (!receipt || !receipt.activated) {
     return { ok: false, error: "No settled session for this payment id. Hire the agent first." };
   }
