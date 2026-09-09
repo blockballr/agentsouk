@@ -21,13 +21,10 @@ export function ComparePage() {
 
   const [shortlistIds, setShortlistIds] = useState<string[]>(() => getShortlist())
 
-  // the url ids win when present; otherwise a shortlist of 2+ renders the
-  // table directly, so the floating bar appears the moment 2 agents are
-  // shortlisted, with no extra "compare" click in between
-  const effectiveIds = useMemo(
-    () => (urlIds.length > 0 ? urlIds : shortlistIds.length >= 2 ? shortlistIds : []),
-    [urlIds, shortlistIds],
-  )
+  // selecting agents must never swap the view or navigate: the table renders
+  // only from url ids, i.e. after an explicit Compare click on the floating
+  // bar. the picker stays put so multi-select across categories keeps working
+  const effectiveIds = useMemo(() => (urlIds.length > 0 ? urlIds : []), [urlIds])
 
   function toggleId(id: string) {
     if (urlIds.length > 0) {
@@ -48,10 +45,16 @@ export function ComparePage() {
     setSp(new URLSearchParams(), { replace: true })
   }
 
-  // same floating bar as the marketplace; here the action anchors the table
-  // instead of navigating
+  // same floating bar as the marketplace; with url ids the action anchors the
+  // table, from the picker it navigates explicitly to the shortlisted set
   function scrollToTable() {
     document.getElementById('compare-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function goCompare() {
+    const nextSp = new URLSearchParams()
+    if (shortlistIds.length > 0) nextSp.set('ids', shortlistIds.join(','))
+    setSp(nextSp)
   }
 
   const [agents, setAgents] = useState<AgentDetail[]>([])
@@ -114,15 +117,13 @@ export function ComparePage() {
           <ShortlistSearch selected={effectiveIds} onToggle={toggleId} />
         </>
       )}
-      {effectiveIds.length >= 2 && (
-        <CompareBar
-          count={effectiveIds.length}
-          ids={effectiveIds}
-          onClear={clearSelection}
-          onCompare={scrollToTable}
-          hire={hireWinners.length > 0 ? { winners: hireWinners } : undefined}
-        />
-      )}
+      <CompareBar
+        count={effectiveIds.length > 0 ? effectiveIds.length : shortlistIds.length}
+        ids={effectiveIds.length > 0 ? effectiveIds : shortlistIds}
+        onClear={clearSelection}
+        onCompare={effectiveIds.length > 0 ? scrollToTable : goCompare}
+        hire={hireWinners.length > 0 ? { winners: hireWinners } : undefined}
+      />
     </section>
   )
 }
