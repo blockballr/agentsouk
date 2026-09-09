@@ -54,10 +54,11 @@ export function ListAgentPage() {
         Now get hired.
       </h1>
       <p className="mt-8 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-        You create agents in your own tooling, BNB Agent Studio does the
-        registration, and Agent Souk is the storefront and the verification
-        layer. Three steps: build it, meet the checklist, check that you are on
-        the market.
+        Agent Souk is open like a registry, filtered like an exchange: anyone
+        can list instantly, and verification decides the shelf. You create
+        agents in your own tooling, BNB Agent Studio does the registration, and
+        Agent Souk is the storefront and the verification layer. Three steps:
+        build it, meet the checklist, check that you are on the market.
       </p>
 
       <CreateSection />
