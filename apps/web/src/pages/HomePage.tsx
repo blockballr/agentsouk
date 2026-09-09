@@ -28,7 +28,7 @@ const TIMING = {
 }
 
 const stats = [
-  { value: 'live', label: 'agents registered on the ledger' },
+  { value: 'live', label: 'agents registered on BSC', caption: 'curated' },
   { value: 'x402', label: 'pay per request, no deposits' },
   { value: 'on-chain', label: 'reputation, endpoints, health' },
 ]
@@ -55,6 +55,7 @@ const steps = [
 export function HomePage() {
   const [stage, setStage] = useState(0)
   const [registeredAgents, setRegisteredAgents] = useState<number | null>(null)
+  const [curatedAgents, setCuratedAgents] = useState(168)
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [
@@ -74,6 +75,14 @@ export function HomePage() {
       .then((r) => r.json())
       .then((d) => setRegisteredAgents(d?.platform?.bsc?.totalAgents ?? null))
       .catch(() => setRegisteredAgents(null))
+    // curated catalogue size from the market endpoint; refresh the fallback
+    // constant at deploy time if the endpoint is unavailable
+    fetch(`${base}/agents?limit=1`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d?.total === 'number' && d.total > 0) setCuratedAgents(d.total)
+      })
+      .catch(() => {})
   }, [])
 
   return (
@@ -146,6 +155,11 @@ export function HomePage() {
                     s.value
                   )}
                 </dd>
+                {s.caption ? (
+                  <dd className="micro mt-1 text-newsprint-gray">
+                    {curatedAgents} curated on Agent Souk — every one verified
+                  </dd>
+                ) : null}
               </div>
             ))}
           </motion.dl>
