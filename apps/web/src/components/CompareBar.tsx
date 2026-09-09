@@ -26,11 +26,15 @@ const EXIT_TWEEN = { type: 'tween', duration: 0.18, ease: 'easeOut' } as const
 // from the best-in-category ranker; the marketplace passes nothing)
 export function CompareBar({
   count,
+  ids,
   onClear,
   onCompare,
   hire,
 }: {
   count: number
+  // shortlist ids backing the bar; pages that hold them in state pass them
+  // in, otherwise the bar reads the persisted shortlist itself
+  ids?: string[]
   onClear: () => void
   onCompare: () => void
   hire?: { winners: HireAgentRef[] }

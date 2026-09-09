@@ -19,15 +19,31 @@ export function ComparePage() {
     [sp],
   )
 
+  const [shortlistIds, setShortlistIds] = useState<string[]>(() => getShortlist())
+
+  // the url ids win when present; otherwise a shortlist of 2+ renders the
+  // table directly, so the floating bar appears the moment 2 agents are
+  // shortlisted, with no extra "compare" click in between
+  const effectiveIds = useMemo(
+    () => (urlIds.length > 0 ? urlIds : shortlistIds.length >= 2 ? shortlistIds : []),
+    [urlIds, shortlistIds],
+  )
+
   function toggleId(id: string) {
-    const next = urlIds.includes(id) ? urlIds.filter((x) => x !== id) : [...urlIds, id]
-    persistShortlist(next)
-    const nextSp = new URLSearchParams()
-    if (next.length > 0) nextSp.set('ids', next.join(','))
-    setSp(nextSp, { replace: true })
+    if (urlIds.length > 0) {
+      const next = urlIds.includes(id) ? urlIds.filter((x) => x !== id) : [...urlIds, id]
+      persistShortlist(next)
+      const nextSp = new URLSearchParams()
+      if (next.length > 0) nextSp.set('ids', next.join(','))
+      setSp(nextSp, { replace: true })
+      return
+    }
+    // shortlist-driven mode: toggle storage and let effectiveIds follow
+    setShortlistIds(toggleShortlist(id))
   }
 
   function clearSelection() {
+    setShortlistIds([])
     persistShortlist([])
     setSp(new URLSearchParams(), { replace: true })
   }
@@ -58,12 +74,12 @@ export function ComparePage() {
     let cancelled = false
     setLoading(true)
     setError(false)
-    if (urlIds.length > 0) {
+    if (effectiveIds.length > 0) {
       const fetchKey = (id: string) => {
         const [chainId = '56', tokenId = id] = id.split('/')
         return getAgentDetail(chainId, tokenId)
       }
-      Promise.all(urlIds.map(fetchKey))
+      Promise.all(effectiveIds.map(fetchKey))
         .then((ds) => {
           if (!cancelled) setAgents(ds.filter((d): d is AgentDetail => d !== null))
         })
@@ -80,7 +96,7 @@ export function ComparePage() {
     return () => {
       cancelled = true
     }
-  }, [urlIds.join(',')])
+  }, [effectiveIds.join(',')])
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
@@ -89,33 +105,40 @@ export function ComparePage() {
         Side by side.
       </h1>
 
-      {urlIds.length === 0 ? (
-        <Picker />
+      {effectiveIds.length === 0 ? (
+        <Picker selected={shortlistIds} onToggle={toggleId} onClear={clearSelection} />
       ) : (
         <>
           <CompareTable agents={agents} loading={loading} error={error} onClear={clearSelection} />
           {!loading && !error && agents.length >= 2 && <CompareCommentary agents={agents} />}
-          <ShortlistSearch selected={urlIds} onToggle={toggleId} />
-          {urlIds.length >= 2 && (
-            <CompareBar
-              count={urlIds.length}
-              onClear={clearSelection}
-              onCompare={scrollToTable}
-              hire={hireWinners.length > 0 ? { winners: hireWinners } : undefined}
-            />
-          )}
+          <ShortlistSearch selected={effectiveIds} onToggle={toggleId} />
         </>
+      )}
+      {effectiveIds.length >= 2 && (
+        <CompareBar
+          count={effectiveIds.length}
+          ids={effectiveIds}
+          onClear={clearSelection}
+          onCompare={scrollToTable}
+          hire={hireWinners.length > 0 ? { winners: hireWinners } : undefined}
+        />
       )}
     </section>
   )
 }
 
-function Picker() {
-  const [, setSp] = useSearchParams()
+function Picker({
+  selected,
+  onToggle,
+  onClear,
+}: {
+  selected: string[]
+  onToggle: (id: string) => void
+  onClear: () => void
+}) {
   const [category, setCategory] = useState<string>('all')
   const [q, setQ] = useState('')
   const [options, setOptions] = useState<AgentSummary[]>([])
-  const [selected, setSelected] = useState<string[]>(() => getShortlist())
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -134,12 +157,7 @@ function Picker() {
   }, [category, q])
 
   function toggle(id: string) {
-    setSelected(toggleShortlist(id))
-  }
-
-  function clearSelection() {
-    setSelected([])
-    persistShortlist([])
+    onToggle(id)
   }
 
   const keyFor = (a: AgentSummary) => `${a.chain_id}/${a.token_id}`
@@ -183,7 +201,7 @@ function Picker() {
         {selected.length > 0 && (
           <button
             type="button"
-            onClick={clearSelection}
+            onClick={onClear}
             className="micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green"
           >
             Clear
@@ -231,21 +249,10 @@ function Picker() {
         </ul>
       )}
 
-      <div className="mt-10 flex items-center gap-6">
-        <button
-          type="button"
-          disabled={selected.length < 2}
-          onClick={() => {
-            setSp({ ids: selected.join(',') }, { replace: true })
-          }}
-          className="micro rounded-[5px] bg-highlighter-green px-6 py-5 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Compare {selected.length > 0 ? selected.length : ''} agents
-        </button>
-        <p className="text-xs text-newsprint-gray">
-          Pick at least two to build the table.
-        </p>
-      </div>
+      <p className="mt-10 text-xs text-newsprint-gray">
+        Pick at least two to build the table — the floating bar takes over
+        from there.
+      </p>
     </div>
   )
 }
