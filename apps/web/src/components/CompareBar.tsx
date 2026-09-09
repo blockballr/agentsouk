@@ -2,6 +2,12 @@ import { useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { connectWallet, ensureBscChain } from '../lib/wallet'
 import { hireErrorText, runHire, type HireAgentRef } from '../lib/hire'
+import { getAgentDetail } from '../lib/api'
+import { addToCart } from '../lib/cart'
+import { categoryOf } from '../lib/compare'
+import { getShortlist } from '../lib/shortlist'
+
+type CartPhase = 'idle' | 'adding' | 'added' | 'full' | 'error'
 
 type HireItemPhase = 'pending' | 'requirements' | 'signing' | 'settling' | 'settled' | 'failed'
 
@@ -42,9 +48,45 @@ export function CompareBar({
   const [items, setItems] = useState<HireItemState[]>([])
   const [batchError, setBatchError] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
+  const [cartPhase, setCartPhase] = useState<CartPhase>('idle')
+  const [cartBusy, setCartBusy] = useState(false)
   const reducedMotion = useReducedMotion()
 
   const allSettled = items.length > 0 && items.every((i) => i.phase === 'settled')
+
+  // one detail fetch per shortlisted agent, then straight into the existing
+  // cart api; a full cart or a failed fetch surfaces briefly on the button
+  async function startAddToCart() {
+    if (cartBusy) return
+    const batch = ids ?? getShortlist()
+    if (batch.length === 0) return
+    setCartBusy(true)
+    setCartPhase('adding')
+    let full = false
+    let failed = false
+    for (const id of batch) {
+      const [chainId = '56', tokenId = id] = id.split('/')
+      try {
+        const d = await getAgentDetail(chainId, tokenId)
+        if (!d) {
+          failed = true
+          continue
+        }
+        const res = addToCart({
+          chainId: d.chain_id,
+          tokenId: Number(d.token_id),
+          name: d.name,
+          category: categoryOf(d),
+        })
+        if (res === 'full') full = true
+      } catch {
+        failed = true
+      }
+    }
+    setCartBusy(false)
+    setCartPhase(failed ? 'error' : full ? 'full' : 'added')
+    window.setTimeout(() => setCartPhase('idle'), 1800)
+  }
 
   function setPhase(key: string, phase: HireItemPhase, error?: string) {
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, phase, error } : i)))
@@ -94,7 +136,30 @@ export function CompareBar({
     setRunning(false)
   }
 
-  function hireLine(i: HireItemState): { text: string; tone: string } {
+  function CartIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      width="16"
+      height="16"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        d="M3 4h2l2.4 11.2a1.6 1.6 0 0 0 1.57 1.3h7.9a1.6 1.6 0 0 0 1.56-1.22L20.5 8H6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="10" cy="20" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="16.5" cy="20" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+function hireLine(i: HireItemState): { text: string; tone: string } {
     switch (i.phase) {
       case 'settled':
         return { text: `✓ ${i.name} settled`, tone: 'text-highlighter-green' }
@@ -154,6 +219,21 @@ export function CompareBar({
                         : hire.winners.length === 1
                           ? 'Hire best'
                           : `Hire ${hire.winners.length} best`}
+                  </button>
+                )}
+                {(ids ?? getShortlist()).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={startAddToCart}
+                    disabled={cartBusy}
+                    aria-label={`Add all ${count} shortlisted agents to cart`}
+                    className="micro inline-flex items-center gap-2 rounded-[5px] border hairline border-bone-white/30 px-3.5 py-3 text-muted-sage transition hover:border-bone-white/60 hover:text-bone-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {cartPhase === 'idle' && <CartIcon className="h-4 w-4" />}
+                    {cartPhase === 'adding' && 'Adding…'}
+                    {cartPhase === 'added' && '✓ Added'}
+                    {cartPhase === 'full' && 'Cart full'}
+                    {cartPhase === 'error' && 'Failed, try again'}
                   </button>
                 )}
                 <button
