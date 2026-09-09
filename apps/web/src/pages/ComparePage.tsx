@@ -96,7 +96,7 @@ export function ComparePage() {
     return () => {
       cancelled = true
     }
-  }, [effectiveIds.join(',')])
+  }, [effectiveIds])
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
