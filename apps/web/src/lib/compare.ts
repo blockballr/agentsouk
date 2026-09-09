@@ -55,8 +55,10 @@ function categoryLabel(key: string): string {
   return def ? def.label : 'General'
 }
 
-// winner agent_id per category, or null when a category has fewer than two
-// compared agents (nothing to compare, no highlight)
+// winner agent_id per category. with two or more agents shortlisted, every
+// represented category has a winner — including categories with a single
+// agent (2 agents in 2 categories each win theirs). categories only go
+// winnerless when fewer than two agents are compared in total
 export function bestByCategory(agents: AgentDetail[]): Record<string, string | null> {
   const groups = new Map<string, number[]>()
   agents.forEach((a, i) => {
@@ -68,7 +70,7 @@ export function bestByCategory(agents: AgentDetail[]): Record<string, string | n
 
   const winners: Record<string, string | null> = {}
   for (const [category, indexes] of groups) {
-    if (indexes.length < 2) {
+    if (agents.length < 2 || indexes.length < 1) {
       winners[category] = null
       continue
     }
