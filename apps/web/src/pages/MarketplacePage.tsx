@@ -21,6 +21,8 @@ export function MarketplacePage() {
   const q = sp.get('q') ?? ''
   const sort = (sp.get('sort') ?? 'score') as (typeof sorts)[number]['key']
   const pcs = sp.get('pcs') === '1'
+  const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
+  const PAGE_SIZE = 48
 
   const [result, setResult] = useState<{ items: AgentSummary[]; snapshotTotal: number | null; total: number } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -63,7 +65,7 @@ export function MarketplacePage() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getAgents({ category, q, sort, limit: 48, pcs })
+    getAgents({ category, q, sort, page, limit: PAGE_SIZE, pcs })
       .then((r) => {
         if (!cancelled) setResult({ items: r.items, snapshotTotal: r.snapshotTotal, total: r.total })
       })
@@ -76,14 +78,17 @@ export function MarketplacePage() {
     return () => {
       cancelled = true
     }
-  }, [category, q, sort, pcs])
+  }, [category, q, sort, pcs, page])
 
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(sp)
+    if (key !== 'page') next.delete('page')
     if (!value || value === 'all') next.delete(key)
     else next.set(key, value)
     setSp(next, { replace: true })
   }
+
+  const totalPages = result ? Math.max(1, Math.ceil(result.total / PAGE_SIZE)) : 1
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
@@ -196,6 +201,33 @@ export function MarketplacePage() {
           />
         )}
       </div>
+
+      {result && totalPages > 1 ? (
+        <nav
+          aria-label="Pagination"
+          className="mt-10 flex items-center justify-center gap-6"
+        >
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setParam('page', String(page - 1))}
+            className="micro rounded-[5px] border hairline border-slate-verdant/40 px-4 py-2 text-press-black transition enabled:hover:border-highlighter-green disabled:opacity-40"
+          >
+            ← Prev
+          </button>
+          <span className="micro text-newsprint-gray">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => setParam('page', String(page + 1))}
+            className="micro rounded-[5px] border hairline border-slate-verdant/40 px-4 py-2 text-press-black transition enabled:hover:border-highlighter-green disabled:opacity-40"
+          >
+            Next →
+          </button>
+        </nav>
+      ) : null}
 
       <CompareBar
         count={shortlist.length}
