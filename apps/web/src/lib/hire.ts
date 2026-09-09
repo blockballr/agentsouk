@@ -6,7 +6,7 @@
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
 import { getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
-import { activeAccountMatches, SmartWalletUnsupportedError, WalletUnavailableError, WrongSignerError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
+import { activeAccountMatches, getActiveAccount, SmartWalletUnsupportedError, WalletUnavailableError, WrongSignerError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
 
 export type HireRequirementsData = X402Requirements['data']
 
@@ -66,7 +66,6 @@ export async function fetchHireRequirements(
 // soon as settlement succeeds, before the (non-fatal) receipt fetch
 export async function signAndSettleHire(
   data: { paymentRequirements: PaymentRequirements; preview: PreviewResult; agent: HireRequirementsData['agent'] },
-  address: string,
   onPhase: (phase: 'signing' | 'settling' | 'hired') => void,
 ): Promise<HireOutcome> {
   const pr = data.paymentRequirements
@@ -75,10 +74,21 @@ export async function signAndSettleHire(
     // via ERC-1271, which our facilitator cannot verify — fail early with a
     // clear message instead of an opaque signature-verification error
     if (await isSmartWalletConnected()) throw new SmartWalletUnsupportedError()
-    // sign-time guard: the user may have switched the active account after
-    // the requirements fetch; signing a stale `from` only fails verification
-    // later, so abort here with a clear message
-    if (!(await activeAccountMatches(address))) {
+    // sign with the wallet's OWN active account, re-read at sign time: the
+    // caller's address may be stale after an account switch, and the wallet
+    // UI always signs with its currently active account — so the `from` must
+    // come from the wallet itself. account switching self-corrects here
+    const signer = await getActiveAccount()
+    if (!signer) {
+      return {
+        success: false,
+        error: 'No wallet account active — reconnect.',
+        cancelled: true,
+      }
+    }
+    // stability backstop: the active account must read the same on a second
+    // look right before the signature request
+    if (!(await activeAccountMatches(signer))) {
       return {
         success: false,
         error: 'Wallet account changed — reconnect and try again.',
@@ -88,14 +98,14 @@ export async function signAndSettleHire(
     onPhase('signing')
     const now = Math.floor(Date.now() / 1000)
     const message = {
-      from: address,
+      from: signer,
       to: pr.payTo,
       value: pr.amount,
       validAfter: String(now - 60),
       validBefore: String(now + pr.maxTimeoutSeconds),
       nonce: randomNonce(),
     }
-    const signature = await signTransferAuthorization(address, x402Domain(pr), message)
+    const signature = await signTransferAuthorization(signer, x402Domain(pr), message)
     onPhase('settling')
     const resource = data.preview.resource
     const settle = await settleHire({
@@ -138,7 +148,7 @@ export async function runHire(
   try {
     onStep({ phase: 'requirements' })
     const data = await fetchHireRequirements(agent, wallet)
-    const outcome = await signAndSettleHire(data, wallet.address, (phase) => {
+    const outcome = await signAndSettleHire(data, (phase) => {
       if (phase !== 'hired') onStep({ phase })
     })
     if (outcome.success) {

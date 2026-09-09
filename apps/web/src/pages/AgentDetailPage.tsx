@@ -406,7 +406,6 @@ function HirePanel({
     setError(null)
     const outcome = await signAndSettleHire(
       { paymentRequirements: requirements, preview, agent },
-      account,
       (phase) => setStep(phase),
     )
     if (outcome.success && outcome.settle) {

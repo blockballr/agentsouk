@@ -296,7 +296,6 @@ export async function openWalletPicker(): Promise<WalletOption | null> {
 
 export function clearWalletChoice(): void {
   storeRdns(null);
-  connectedAddress = null;
   const wc = wcProvider;
   wcProvider = null;
   wcInit = null;
@@ -308,17 +307,17 @@ export function clearWalletChoice(): void {
 }
 
 // --- EIP-1193 account/chain change handling ---
-// switching the active account (or leaving BSC) invalidates the stored
-// connection: drop it so the next hire click re-runs the connect flow with
-// the now-active account instead of signing a stale `from`
+// an empty accountsChanged array (or leaving BSC) invalidates the stored
+// connection; a different permitted account becoming active is handled at
+// sign time by re-reading the active account (self-correcting), so only the
+// empty case disconnects here
 
 let activeProvider: Eip1193Provider | null = null;
-let connectedAddress: string | null = null;
 
 function handleAccountsChanged(accounts: unknown): void {
   const list = Array.isArray(accounts) ? (accounts as string[]) : [];
-  const active = list[0]?.toLowerCase();
-  if (list.length === 0 || (connectedAddress !== null && active !== connectedAddress.toLowerCase())) {
+  if (list.length === 0) {
+    // disconnected in the wallet: drop the connection entirely
     clearWalletChoice();
   }
 }
@@ -358,11 +357,23 @@ export async function activeAccountMatches(address: string): Promise<boolean> {
   }
 }
 
+// the wallet's OWN active account at call time: eth_accounts returns all
+// permitted accounts, and the FIRST entry is the currently active one in
+// MetaMask/Rabby practice — signing uses this, so account switches
+// self-correct instead of producing a stale `from`
+export async function getActiveAccount(): Promise<string | null> {
+  try {
+    const accounts = (await (await getProvider()).request({ method: "eth_accounts" })) as string[];
+    return Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : null;
+  } catch {
+    return null;
+  }
+}
+
 async function requestAccounts(provider: Eip1193Provider): Promise<string> {
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   if (!accounts?.length) throw new Error("No account authorized.");
   attachProviderListeners(provider);
-  connectedAddress = accounts[0];
   return accounts[0];
 }
 
