@@ -50,6 +50,34 @@ interface ActiveSession {
   createdAt: string
 }
 
+export interface PerformanceProbe {
+  tokenId: string
+  status: string
+  tool?: string
+  rawOutput?: string
+}
+
+// self-reported performance comes from the committed scan output, served by the
+// API as-is; a failed fetch just hides the section
+async function fetchPerformanceProbe(
+  tokenId: string,
+): Promise<PerformanceProbe | null> {
+  try {
+    const base = import.meta.env.VITE_API_URL ?? '/api'
+    const res = await fetch(`${base}/performance`)
+    if (!res.ok) return null
+    const body: { success?: boolean; data?: { probeResults?: PerformanceProbe[] } } =
+      await res.json()
+    if (!body.success || !body.data?.probeResults) return null
+    const probe = body.data.probeResults.find(
+      (p) => p.tokenId === tokenId && p.status === 'probed' && p.rawOutput,
+    )
+    return probe ?? null
+  } catch {
+    return null
+  }
+}
+
 type DetailWithSession = AgentDetail & { activeSession?: ActiveSession }
 
 function formatExpiry(iso: string): string {
@@ -71,6 +99,18 @@ export function AgentDetailPage() {
   const [detail, setDetail] = useState<AgentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [perfProbe, setPerfProbe] = useState<PerformanceProbe | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setPerfProbe(null)
+    fetchPerformanceProbe(tokenId).then((p) => {
+      if (!cancelled && p) setPerfProbe(p)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tokenId])
 
   useEffect(() => {
     let cancelled = false
@@ -259,6 +299,8 @@ export function AgentDetailPage() {
               </div>
             </div>
           </div>
+
+          {perfProbe && <PerformanceSection probe={perfProbe} />}
 
           {onchain.length > 0 && (
             <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
@@ -683,6 +725,36 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
     <div className="flex items-start justify-between gap-4">
       <span className="micro shrink-0 text-newsprint-gray">{label}</span>
       <span className={`text-right text-press-black ${mono ? 'font-mono text-[11px]' : ''}`}>{value}</span>
+    </div>
+  )
+}
+
+// the scan records what the agent's own get_performance endpoint returned; we
+// publish it verbatim and label it clearly, no math on the claims
+function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
+  const raw = probe.rawOutput ?? ''
+  const truncated = raw.length > 400 ? `${raw.slice(0, 400)}…` : raw
+
+  return (
+    <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
+      <h2 className="micro text-newsprint-gray">Self-reported performance</h2>
+      <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
+        Self-reported by the agent&apos;s own endpoint. Not verified by Agent
+        Souk.
+      </p>
+      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-[11px] leading-relaxed text-press-black">
+        {truncated}
+      </pre>
+      {raw.length > 400 && (
+        <details className="mt-3">
+          <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
+            Full response from {probe.tool ?? 'the agent'}
+          </summary>
+          <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-[11px] leading-relaxed text-press-black">
+            {raw}
+          </pre>
+        </details>
+      )}
     </div>
   )
 }
