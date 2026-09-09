@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { queryAgents } from "@/lib/scanner";
 import { loadVerifications } from "@/lib/verifications";
 import { isPancakeSwapAgent } from "@/lib/pancakeswap";
+import { findActiveSession } from "@/lib/x402";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,9 @@ export async function GET(req: NextRequest) {
     const withPcs = isPancakeSwapAgent(a.name, a.description ?? "")
       ? { ...a, pcs: true }
       : a;
-    return verification ? { ...withPcs, verification } : withPcs;
+    const withVerification = verification ? { ...withPcs, verification } : withPcs;
+    const activeSession = findActiveSession(a.chain_id, a.token_id);
+    return activeSession ? { ...withVerification, activeSession } : withVerification;
   });
 
   return NextResponse.json({

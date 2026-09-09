@@ -186,3 +186,37 @@ export function recordPayment(p: StoredPayment): void {
 export function getPayment(paymentId: string): StoredPayment | undefined {
   return ledger.get(paymentId);
 }
+
+// the agent's most recent activated, non-expired session, or nothing.
+// NOTE: the ledger is in-memory per server instance (fine for the demo; the
+// docs state the receipt is not an on-chain transaction), so this reflects
+// only sessions settled on the same instance.
+export interface ActiveSession {
+  spendCapUsd: number;
+  expiresAt: string;
+  mode: Receipt["mode"];
+  createdAt: string;
+}
+
+export function findActiveSession(
+  chainId: number,
+  tokenId: string,
+): ActiveSession | undefined {
+  let best: StoredPayment | undefined;
+  const now = Date.now();
+  for (const p of ledger.values()) {
+    if (!p.activated) continue;
+    if (p.agent.chainId !== chainId || p.agent.tokenId !== tokenId) continue;
+    if (new Date(p.session.expiresAt).getTime() <= now) continue;
+    if (!best || new Date(p.createdAt).getTime() > new Date(best.createdAt).getTime()) {
+      best = p;
+    }
+  }
+  if (!best) return undefined;
+  return {
+    spendCapUsd: best.session.spendCapUsd,
+    expiresAt: best.session.expiresAt,
+    mode: best.mode,
+    createdAt: best.createdAt,
+  };
+}
