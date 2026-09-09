@@ -36,6 +36,7 @@ export function CompareBar({
   onClear,
   onCompare,
   hire,
+  cartNoun = 'agents',
 }: {
   count: number
   // shortlist ids backing the bar; pages that hold them in state pass them
@@ -43,7 +44,12 @@ export function CompareBar({
   ids?: string[]
   onClear: () => void
   onCompare: () => void
+  // the agents the buttons act on: checked selection on the compare table,
+  // bests-of-shortlist on the marketplace; drives both the primary add-to-cart
+  // and the secondary direct hire
   hire?: { winners: HireAgentRef[] }
+  // noun for the primary button: "Add N agents to cart" vs "Add N best to cart"
+  cartNoun?: 'agents' | 'best'
 }) {
   const [items, setItems] = useState<HireItemState[]>([])
   const [batchError, setBatchError] = useState<string | null>(null)
@@ -54,8 +60,38 @@ export function CompareBar({
 
   const allSettled = items.length > 0 && items.every((i) => i.phase === 'settled')
 
-  // one detail fetch per shortlisted agent, then straight into the existing
-  // cart api; a full cart or a failed fetch surfaces briefly on the button
+  // one detail fetch per agent (the cart needs the category), then into the
+  // existing cart api; full/failed surfaces briefly on the button
+  async function startAddToCartRefs(refs: HireAgentRef[]) {
+    if (cartBusy || refs.length === 0) return
+    setCartBusy(true)
+    setCartPhase('adding')
+    let full = false
+    let failed = false
+    for (const r of refs) {
+      try {
+        const d = await getAgentDetail(String(r.chainId), String(r.tokenId))
+        if (!d) {
+          failed = true
+          continue
+        }
+        const res = addToCart({
+          chainId: d.chain_id,
+          tokenId: Number(d.token_id),
+          name: d.name,
+          category: categoryOf(d),
+        })
+        if (res === 'full') full = true
+      } catch {
+        failed = true
+      }
+    }
+    setCartBusy(false)
+    setCartPhase(failed ? 'error' : full ? 'full' : 'added')
+    window.setTimeout(() => setCartPhase('idle'), 1800)
+  }
+
+  // legacy whole-shortlist add (cart icon / no target set)
   async function startAddToCart() {
     if (cartBusy) return
     const batch = ids ?? getShortlist()
@@ -236,27 +272,48 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                   Clear
                 </button>
                 {hire && (
-                  <button
-                    type="button"
-                    onClick={startHire}
-                    disabled={running || allSettled || hire.winners.length === 0}
-                    title={
-                      hire.winners.length === 0
-                        ? 'Select agents with the checkboxes in the compare table'
-                        : undefined
-                    }
-                    className="micro rounded-[5px] border hairline border-highlighter-green/60 px-5 py-3 text-highlighter-green transition hover:bg-highlighter-green/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {running
-                      ? 'Hiring…'
-                      : allSettled
-                        ? 'Hired'
-                        : hire.winners.length === 0
-                          ? 'Select agents to hire'
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => startAddToCartRefs(hire.winners)}
+                      disabled={cartBusy || hire.winners.length === 0}
+                      title={
+                        hire.winners.length === 0
+                          ? 'Select agents with the checkboxes in the compare table'
+                          : undefined
+                      }
+                      className="micro rounded-[5px] bg-highlighter-green px-5 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {cartPhase === 'adding'
+                        ? 'Adding…'
+                        : cartPhase === 'added'
+                          ? '✓ Added'
+                          : cartPhase === 'full'
+                            ? 'Cart full'
+                            : cartPhase === 'error'
+                              ? 'Failed, retry'
+                              : `Add ${hire.winners.length} ${cartNoun} to cart`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={startHire}
+                      disabled={running || allSettled || hire.winners.length === 0}
+                      title={
+                        hire.winners.length === 0
+                          ? 'Select agents with the checkboxes in the compare table'
+                          : undefined
+                      }
+                      className="micro rounded-[5px] border hairline border-highlighter-green/60 px-5 py-3 text-highlighter-green transition hover:bg-highlighter-green/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {running
+                        ? 'Hiring…'
+                        : allSettled
+                          ? 'Hired'
                           : hire.winners.length === 1
                             ? 'Hire 1 selected'
                             : `Hire ${hire.winners.length} selected`}
-                  </button>
+                    </button>
+                  </>
                 )}
                 {(ids ?? getShortlist()).length > 0 && (
                   <button

@@ -86,18 +86,6 @@ export function ComparePage() {
     [agents, selectedIds],
   )
 
-  // the loaded agents must BE the current shortlist before the bar may quote
-  // a hire count; during a refetch (or with leftover agents from an earlier
-  // compare) the selection is stale, so the bar shows no hire button instead
-  // of an incoherent one
-  const agentsMatchShortlist = useMemo(
-    () =>
-      agents.length > 0 &&
-      agents.length === effectiveIds.length &&
-      agents.every((a) => effectiveIds.includes(a.agent_id)),
-    [agents, effectiveIds],
-  )
-
   useEffect(() => {
     let cancelled = false
     setLoading(true)
@@ -154,12 +142,11 @@ export function ComparePage() {
         ids={effectiveIds.length > 0 ? effectiveIds : shortlistIds}
         onClear={clearSelection}
         onCompare={effectiveIds.length > 0 ? scrollToTable : goCompare}
-        // hire only in table mode: the selection counts current table agents,
-        // so a stale set from a previous comparison can never leak into the
-        // button (picker mode shows no hire button, matching the marketplace)
-        hire={
-          effectiveIds.length > 0 && agentsMatchShortlist ? { winners: selectedAgents } : undefined
-        }
+        // derive the actions from the RENDERED table agents: the selection is
+        // re-synced to the loaded set on every load, so the button counts are
+        // always what the actions would act on — never a cross-id format
+        // comparison that can silently never pass
+        hire={effectiveIds.length > 0 && !loading && !error && agents.length > 0 ? { winners: selectedAgents } : undefined}
       />
     </section>
   )

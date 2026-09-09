@@ -20,7 +20,19 @@ const GRADE_RANK: Record<string, number> = {
   poor: 1,
 }
 
-export function categoryOf(agent: AgentDetail): string {
+// structural subset the ranker needs; AgentDetail and AgentSummary both
+// satisfy it, so bests can be derived from summaries (marketplace bar) as
+// well as from full details (compare table)
+export interface RankableAgent {
+  agent_id: string;
+  name: string;
+  description?: string | null;
+  total_score: number;
+  total_feedbacks: number;
+  verification?: { status?: string; quality?: { grade?: string } | null } | null;
+}
+
+export function categoryOf(agent: { name: string; description?: string | null }): string {
   return classifyAgent(`${agent.name} ${agent.description ?? ''}`).category
 }
 
@@ -59,7 +71,7 @@ function categoryLabel(key: string): string {
 // represented category has a winner — including categories with a single
 // agent (2 agents in 2 categories each win theirs). categories only go
 // winnerless when fewer than two agents are compared in total
-export function bestByCategory(agents: AgentDetail[]): Record<string, string | null> {
+export function bestByCategory<T extends RankableAgent>(agents: T[]): Record<string, string | null> {
   const groups = new Map<string, number[]>()
   agents.forEach((a, i) => {
     const key = categoryOf(a)
@@ -81,7 +93,7 @@ export function bestByCategory(agents: AgentDetail[]): Record<string, string | n
 }
 
 // does agents[a] outrank agents[b] under the brief's exact tiebreak chain
-function ranksBetter(agents: AgentDetail[], a: number, b: number): boolean {
+function ranksBetter<T extends RankableAgent>(agents: T[], a: number, b: number): boolean {
   const x = agents[a]
   const y = agents[b]
   if (x.total_score !== y.total_score) return x.total_score > y.total_score

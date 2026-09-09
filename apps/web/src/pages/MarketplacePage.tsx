@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { AgentSummary } from '@agora/core'
 import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
 import { getAgents } from '../lib/api'
+import { bestByCategory } from '../lib/compare'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
 
@@ -60,6 +61,34 @@ export function MarketplacePage() {
     setShortlist([])
     persistShortlist([])
   }
+
+  // bests of the shortlist, derived from the summaries currently loaded; the
+  // bar's primary "Add N best to cart" and secondary "Hire N selected" act on
+  // these. when some shortlisted agents are not on the page (or bests cannot
+  // be derived), fall back to the whole shortlist as the target set
+  const shortlistTargets = useMemo(() => {
+    const fallback = shortlist.map((id) => {
+      const [chainId = '56', tokenId = ''] = id.split('/')
+      return { chainId: Number(chainId), tokenId: Number(tokenId), name: `Agent #${tokenId}` }
+    })
+    if (!result || shortlist.length === 0) return { targets: fallback, bestsKnown: false }
+    const onPage = result.items.filter((a) => shortlist.includes(`${a.chain_id}/${a.token_id}`))
+    if (onPage.length === shortlist.length && onPage.length >= 2) {
+      const winnerIds = Object.values(bestByCategory(onPage)).filter(
+        (id): id is string => id !== null,
+      )
+      if (winnerIds.length > 0) {
+        return {
+          targets: winnerIds.map((id) => {
+            const a = onPage.find((x) => x.agent_id === id)!
+            return { chainId: a.chain_id, tokenId: Number(a.token_id), name: a.name }
+          }),
+          bestsKnown: true,
+        }
+      }
+    }
+    return { targets: fallback, bestsKnown: false }
+  }, [result, shortlist])
 
   useEffect(() => {
     let cancelled = false
@@ -233,6 +262,8 @@ export function MarketplacePage() {
         count={shortlist.length}
         onClear={clearShortlist}
         onCompare={() => navigate(`/compare?ids=${shortlist.join(',')}`)}
+        hire={shortlistTargets.targets.length > 0 ? { winners: shortlistTargets.targets } : undefined}
+        cartNoun={shortlistTargets.bestsKnown ? 'best' : 'agents'}
       />
     </section>
   )
