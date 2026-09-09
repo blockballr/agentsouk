@@ -269,6 +269,7 @@ export async function openWalletPicker(): Promise<WalletOption | null> {
 
 export function clearWalletChoice(): void {
   storeRdns(null);
+  connectedAddress = null;
   const wc = wcProvider;
   wcProvider = null;
   wcInit = null;
@@ -279,9 +280,62 @@ export function clearWalletChoice(): void {
   }
 }
 
+// --- EIP-1193 account/chain change handling ---
+// switching the active account (or leaving BSC) invalidates the stored
+// connection: drop it so the next hire click re-runs the connect flow with
+// the now-active account instead of signing a stale `from`
+
+let activeProvider: Eip1193Provider | null = null;
+let connectedAddress: string | null = null;
+
+function handleAccountsChanged(accounts: unknown): void {
+  const list = Array.isArray(accounts) ? (accounts as string[]) : [];
+  const active = list[0]?.toLowerCase();
+  if (list.length === 0 || (connectedAddress !== null && active !== connectedAddress.toLowerCase())) {
+    clearWalletChoice();
+  }
+}
+
+function handleChainChanged(chainId: unknown): void {
+  // anything that is not BSC is treated as disconnected for hire purposes;
+  // a stale wrong-chain connection must never reach the settle path
+  if (typeof chainId === "string" && chainId.toLowerCase() !== BSC_CHAIN_ID_HEX) {
+    clearWalletChoice();
+  }
+}
+
+function detachProviderListeners(): void {
+  if (activeProvider?.removeListener) {
+    activeProvider.removeListener("accountsChanged", handleAccountsChanged);
+    activeProvider.removeListener("chainChanged", handleChainChanged);
+  }
+  activeProvider = null;
+}
+
+function attachProviderListeners(provider: Eip1193Provider): void {
+  if (!provider.on || !provider.removeListener) return;
+  detachProviderListeners();
+  activeProvider = provider;
+  provider.on("accountsChanged", handleAccountsChanged);
+  provider.on("chainChanged", handleChainChanged);
+}
+
+// belt-and-braces sign-time check: re-read the provider's active account and
+// only proceed when it is still the address the hire is signing from
+export async function activeAccountMatches(address: string): Promise<boolean> {
+  try {
+    const accounts = (await getProvider().request({ method: "eth_accounts" })) as string[];
+    return Array.isArray(accounts) && accounts[0]?.toLowerCase() === address.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
 async function requestAccounts(provider: Eip1193Provider): Promise<string> {
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   if (!accounts?.length) throw new Error("No account authorized.");
+  attachProviderListeners(provider);
+  connectedAddress = accounts[0];
   return accounts[0];
 }
 

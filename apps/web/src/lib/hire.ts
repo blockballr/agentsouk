@@ -6,7 +6,7 @@
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
 import { getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
-import { SmartWalletUnsupportedError, WalletUnavailableError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
+import { activeAccountMatches, SmartWalletUnsupportedError, WalletUnavailableError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
 
 export type HireRequirementsData = X402Requirements['data']
 
@@ -74,6 +74,16 @@ export async function signAndSettleHire(
     // via ERC-1271, which our facilitator cannot verify — fail early with a
     // clear message instead of an opaque signature-verification error
     if (await isSmartWalletConnected()) throw new SmartWalletUnsupportedError()
+    // sign-time guard: the user may have switched the active account after
+    // the requirements fetch; signing a stale `from` only fails verification
+    // later, so abort here with a clear message
+    if (!(await activeAccountMatches(address))) {
+      return {
+        success: false,
+        error: 'Wallet account changed — reconnect and try again.',
+        cancelled: true,
+      }
+    }
     onPhase('signing')
     const now = Math.floor(Date.now() / 1000)
     const message = {
