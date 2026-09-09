@@ -82,6 +82,7 @@ export interface Verification {
   responseMs: number;
   checkedAt: string;
   quality?: VerificationQuality;
+  concurrency?: "parallel-ok" | "single-ok" | "untested";
 }
 
 export interface AgentSummary {

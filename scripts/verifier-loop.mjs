@@ -208,6 +208,24 @@ async function deliverJson(paymentId, extra = {}) {
   );
 }
 
+// concurrency probe: two deliver calls on the same settled paymentId fired
+// simultaneously; both ok means the agent handles parallel requests
+// (MCP: two tools/list rounds; A2A: two real message/send tasks)
+async function probeConcurrency(paymentId, protocol) {
+  const extra = protocol === "a2a" ? { task: A2A_TASK } : {};
+  try {
+    const [a, b] = await Promise.all([
+      deliverJson(paymentId, extra),
+      deliverJson(paymentId, extra),
+    ]);
+    const okA = a.status !== 402 && a.body?.success !== false && a.body?.data?.ok;
+    const okB = b.status !== 402 && b.body?.success !== false && b.body?.data?.ok;
+    return okA && okB ? "parallel-ok" : "single-ok";
+  } catch {
+    return "untested";
+  }
+}
+
 async function llmChat(model, task, deliverableText) {
   const res = await fetch(`${BASE_URL}/chat/completions`, {
     method: "POST",
@@ -308,6 +326,7 @@ async function classify(cand) {
       detail: `capabilities ok (${tools.length} tools)`,
       task: "describe the tools you serve",
       deliverable: JSON.stringify(tools, null, 1),
+      concurrency: outOfTime() ? "untested" : await probeConcurrency(hire.paymentId, "mcp"),
     };
   }
 
@@ -320,7 +339,13 @@ async function classify(cand) {
   }
   const sd = send.body?.data;
   if (sd?.ok && sd.text) {
-    return { status: "delivered", detail: sd.text.slice(0, 300), task: A2A_TASK, deliverable: sd.text };
+    return {
+      status: "delivered",
+      detail: sd.text.slice(0, 300),
+      task: A2A_TASK,
+      deliverable: sd.text,
+      concurrency: outOfTime() ? "untested" : await probeConcurrency(hire.paymentId, "a2a"),
+    };
   }
   return {
     status: "dead",
@@ -355,6 +380,7 @@ async function main() {
         responseMs: Date.now() - t0,
         checkedAt: new Date().toISOString(),
       };
+      if (verdict.concurrency) result.concurrency = verdict.concurrency;
       if (verdict.status === "delivered" && !outOfTime()) {
         const quality = await reviewQuality(verdict.task, verdict.deliverable ?? verdict.detail);
         if (quality) {
@@ -385,6 +411,8 @@ async function main() {
 
   const tally = { delivered: 0, gated: 0, dead: 0, unreachable: 0 };
   for (const r of results) tally[r.status] += 1;
+  const conc = { "parallel-ok": 0, "single-ok": 0, untested: 0 };
+  for (const r of results) if (r.concurrency) conc[r.concurrency] += 1;
 
   writeFileSync(
     new URL("../data/verifications.json", import.meta.url),
@@ -400,8 +428,11 @@ async function main() {
     }
   }
   console.log(
-    `\ntally: delivered=${tally.delivered} gated=${tally.gated} dead=${tally.dead} unreachable=${tally.unreachable}` +
+    `tally: delivered=${tally.delivered} gated=${tally.gated} dead=${tally.dead} unreachable=${tally.unreachable}` +
       (skipped ? ` skipped=${skipped} (25 minute budget exhausted)` : ""),
+  );
+  console.log(
+    `concurrency: parallel-ok=${conc["parallel-ok"]} single-ok=${conc["single-ok"]} untested=${conc.untested}`,
   );
   console.log(
     `quality reviews: primary=${llmStats.primary} fallback=${llmStats.fallback} failed=${llmStats.failed}`,

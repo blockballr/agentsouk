@@ -1,17 +1,18 @@
 {
-  "updatedAt": "2026-09-08T12:01:24.946Z",
+  "updatedAt": "2026-09-09T06:34:30.003Z",
   "results": [
     {
       "tokenId": "265375",
       "name": "BNB LP Range Rebalancer",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 6991,
-      "checkedAt": "2026-09-08T11:57:54.537Z",
+      "responseMs": 6460,
+      "checkedAt": "2026-09-09T06:26:58.320Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is a system error payload rather than a one-sentence status report.",
-        "model": "gemini-3.6-flash"
+        "reason": "The deliverable contains a technical error message instead of a status report in one sentence.",
+        "model": "gemini-3.5-flash"
       }
     },
     {
@@ -19,35 +20,36 @@
       "name": "Sentinels LP Rebalancer",
       "category": "rebalancing",
       "status": "dead",
-      "responseMs": 2449,
-      "checkedAt": "2026-09-08T11:57:59.177Z"
+      "responseMs": 2484,
+      "checkedAt": "2026-09-09T06:27:38.398Z"
     },
     {
       "tokenId": "331750",
       "name": "Assay Range",
       "category": "rebalancing",
       "status": "dead",
-      "responseMs": 1486,
-      "checkedAt": "2026-09-08T11:58:00.663Z"
+      "responseMs": 1772,
+      "checkedAt": "2026-09-09T06:27:40.171Z"
     },
     {
       "tokenId": "2893",
       "name": "Piefi",
       "category": "rebalancing",
       "status": "unreachable",
-      "responseMs": 98,
-      "checkedAt": "2026-09-08T11:58:00.761Z"
+      "responseMs": 637,
+      "checkedAt": "2026-09-09T06:27:40.808Z"
     },
     {
       "tokenId": "45650",
       "name": "V3 Pools powered by HeyAnon",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 1776,
-      "checkedAt": "2026-09-08T11:58:02.537Z",
+      "responseMs": 2296,
+      "checkedAt": "2026-09-09T06:27:43.104Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "partial",
-        "reason": "The response accurately details several tools with concrete schemas, but the output is truncated and ends with invalid JSON.",
+        "reason": "The deliverable provides concrete JSON schemas describing several tools, but the response is cut off and truncated at the end.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -56,12 +58,13 @@
       "name": "mandaterebalance-agent",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 2687,
-      "checkedAt": "2026-09-08T11:58:10.794Z",
+      "responseMs": 3435,
+      "checkedAt": "2026-09-09T06:27:53.205Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is an empty JSON object and does not provide a status report.",
-        "model": "gemini-3.6-flash"
+        "reason": "The deliverable is an empty JSON object instead of a sentence reporting status.",
+        "model": "gemini-3.5-flash"
       }
     },
     {
@@ -69,11 +72,12 @@
       "name": "Portfolio Rebalancer",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 1940,
-      "checkedAt": "2026-09-08T11:58:14.286Z",
+      "responseMs": 3036,
+      "checkedAt": "2026-09-09T06:28:33.087Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is an error message payload rather than a one-sentence status report.",
+        "reason": "The deliverable contains a raw JSON error message instead of reporting the agent's status in a sentence.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -82,11 +86,12 @@
       "name": "Hevo Rebalance",
       "category": "rebalancing",
       "status": "delivered",
-      "responseMs": 2203,
-      "checkedAt": "2026-09-08T11:58:44.371Z",
+      "responseMs": 2602,
+      "checkedAt": "2026-09-09T06:28:45.642Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is a raw JSON error payload rather than a one-sentence status report.",
+        "reason": "The deliverable returned an error message instead of reporting its status in one sentence.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -95,35 +100,36 @@
       "name": "Yield-Farmer - Goo",
       "category": "yield",
       "status": "unreachable",
-      "responseMs": 181,
-      "checkedAt": "2026-09-08T11:58:46.516Z"
+      "responseMs": 765,
+      "checkedAt": "2026-09-09T06:28:50.610Z"
     },
     {
       "tokenId": "45705",
       "name": "Yield-Farmer-X",
       "category": "yield",
       "status": "unreachable",
-      "responseMs": 103,
-      "checkedAt": "2026-09-08T11:58:46.619Z"
+      "responseMs": 583,
+      "checkedAt": "2026-09-09T06:28:51.193Z"
     },
     {
       "tokenId": "45245",
       "name": "Yield-GOO",
       "category": "yield",
       "status": "unreachable",
-      "responseMs": 143,
-      "checkedAt": "2026-09-08T11:58:46.762Z"
+      "responseMs": 566,
+      "checkedAt": "2026-09-09T06:28:51.759Z"
     },
     {
       "tokenId": "304493",
       "name": "Brain on BNB — Venus Yield Ranking",
       "category": "yield",
       "status": "delivered",
-      "responseMs": 1360,
-      "checkedAt": "2026-09-08T11:58:48.122Z",
+      "responseMs": 2163,
+      "checkedAt": "2026-09-09T06:28:53.922Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is an incomplete JSON snippet detailing agent services rather than a one-sentence status report.",
+        "reason": "The deliverable is a truncated, malformed JSON snippet instead of a one-sentence status report.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -132,12 +138,13 @@
       "name": "LingoAI Yield Optimiser",
       "category": "yield",
       "status": "delivered",
-      "responseMs": 2758,
-      "checkedAt": "2026-09-08T11:58:53.847Z",
+      "responseMs": 5041,
+      "checkedAt": "2026-09-09T06:29:02.049Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable provides truncated JSON data rather than a status report in one sentence.",
-        "model": "gemini-3.6-flash"
+        "reason": "The deliverable is an incomplete, truncated JSON object that fails to report the status in one sentence as requested.",
+        "model": "gemini-3.5-flash"
       }
     },
     {
@@ -145,27 +152,28 @@
       "name": "Sentinels Yield Router",
       "category": "yield",
       "status": "dead",
-      "responseMs": 4352,
-      "checkedAt": "2026-09-08T11:59:01.069Z"
+      "responseMs": 2458,
+      "checkedAt": "2026-09-09T06:29:42.865Z"
     },
     {
       "tokenId": "322046",
       "name": "Venus Yield Lens",
       "category": "yield",
       "status": "unreachable",
-      "responseMs": 176,
-      "checkedAt": "2026-09-08T11:59:01.249Z"
+      "responseMs": 562,
+      "checkedAt": "2026-09-09T06:29:43.427Z"
     },
     {
       "tokenId": "338253",
       "name": "HyperliquidVault",
       "category": "yield",
       "status": "delivered",
-      "responseMs": 4410,
-      "checkedAt": "2026-09-08T11:59:05.659Z",
+      "responseMs": 6331,
+      "checkedAt": "2026-09-09T06:29:49.758Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "good",
-        "reason": "The deliverable provides a detailed and well-structured JSON specification of the available tools, including descriptions and parameter schemas.",
+        "reason": "The deliverable clearly and accurately describes the tools served using detailed structured JSON format.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -174,11 +182,12 @@
       "name": "Brain on BNB — Venus Health Factor Monitor",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 1270,
-      "checkedAt": "2026-09-08T11:59:10.049Z",
+      "responseMs": 2446,
+      "checkedAt": "2026-09-09T06:30:18.814Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is an incomplete, truncated JSON snippet describing services rather than a one-sentence status report.",
+        "reason": "The deliverable is an incomplete, syntax-broken JSON snippet that fails to provide a one-sentence status report.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -187,49 +196,46 @@
       "name": "Venus Health Factor Monitor",
       "category": "health-factor",
       "status": "unreachable",
-      "responseMs": 62,
-      "checkedAt": "2026-09-08T11:59:12.540Z"
+      "responseMs": 721,
+      "checkedAt": "2026-09-09T06:30:26.650Z"
     },
     {
       "tokenId": "292058",
       "name": "bnb-lending-guardian.agent",
       "category": "health-factor",
       "status": "dead",
-      "responseMs": 2927,
-      "checkedAt": "2026-09-08T11:59:15.468Z"
+      "responseMs": 2651,
+      "checkedAt": "2026-09-09T06:30:29.301Z"
     },
     {
       "tokenId": "315943",
       "name": "AiKi Venus Health Factor Guardian",
       "category": "health-factor",
       "status": "unreachable",
-      "responseMs": 59,
-      "checkedAt": "2026-09-08T11:59:15.527Z"
+      "responseMs": 647,
+      "checkedAt": "2026-09-09T06:30:29.949Z"
     },
     {
       "tokenId": "45381",
       "name": "Aave powered by HeyAnon",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 1546,
-      "checkedAt": "2026-09-08T11:59:17.073Z",
-      "quality": {
-        "grade": "partial",
-        "reason": "The deliverable provides detailed schemas for several Aave V3 tools, but the response cuts off prematurely at the end.",
-        "model": "gemini-3.6-flash"
-      }
+      "responseMs": 1749,
+      "checkedAt": "2026-09-09T06:30:31.698Z",
+      "concurrency": "parallel-ok"
     },
     {
       "tokenId": "269228",
       "name": "Health Factor Monitor",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 4249,
-      "checkedAt": "2026-09-08T11:59:38.536Z",
+      "responseMs": 4315,
+      "checkedAt": "2026-09-09T06:30:55.977Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The agent returned a system error message instead of reporting its status in one sentence.",
-        "model": "gemini-3.6-flash"
+        "reason": "The deliverable is an error message payload rather than a one-sentence status report.",
+        "model": "gemini-3.5-flash"
       }
     },
     {
@@ -237,11 +243,12 @@
       "name": "LingoAI Health Factor Sentinel",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 3513,
-      "checkedAt": "2026-09-08T11:59:44.686Z",
+      "responseMs": 5016,
+      "checkedAt": "2026-09-09T06:31:38.475Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is a raw JSON quote object rather than a status report in one sentence as requested.",
+        "reason": "The deliverable is a raw JSON quote object rather than a one-sentence status report.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -250,12 +257,13 @@
       "name": "BNB Lending Guardian",
       "category": "health-factor",
       "status": "delivered",
-      "responseMs": 3332,
-      "checkedAt": "2026-09-08T11:59:50.217Z",
+      "responseMs": 4118,
+      "checkedAt": "2026-09-09T06:31:45.627Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "partial",
-        "reason": "The deliverable successfully details the tools with their names, descriptions, and schemas, but the JSON output is truncated and incomplete at the end.",
-        "model": "gemini-3.5-flash"
+        "reason": "The deliverable provides detailed tool descriptions and schemas, but the output is truncated and ends abruptly with invalid JSON.",
+        "model": "gemini-3.6-flash"
       }
     },
     {
@@ -263,11 +271,12 @@
       "name": "Beefy powered by HeyAnon",
       "category": "general",
       "status": "delivered",
-      "responseMs": 2895,
-      "checkedAt": "2026-09-08T12:00:06.125Z",
+      "responseMs": 2200,
+      "checkedAt": "2026-09-09T06:31:53.215Z",
+      "concurrency": "parallel-ok",
       "quality": {
-        "grade": "partial",
-        "reason": "The response provides a detailed tool schema specification, but the JSON is truncated at the end.",
+        "grade": "good",
+        "reason": "The deliverable provides detailed, concrete descriptions and schemas for the tools served by the agent.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -276,20 +285,21 @@
       "name": "Solana Agent",
       "category": "general",
       "status": "gated",
-      "responseMs": 3062,
-      "checkedAt": "2026-09-08T12:00:17.003Z"
+      "responseMs": 2473,
+      "checkedAt": "2026-09-09T06:32:00.654Z"
     },
     {
       "tokenId": "269233",
       "name": "BNB Grid Trader (test)",
       "category": "general",
       "status": "delivered",
-      "responseMs": 3080,
-      "checkedAt": "2026-09-08T12:00:20.083Z",
+      "responseMs": 3667,
+      "checkedAt": "2026-09-09T06:32:04.322Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is an unformatted system error message rather than a status report in one sentence.",
-        "model": "gemini-3.6-flash"
+        "reason": "The deliverable is a system error payload instead of a one-sentence status report.",
+        "model": "gemini-3.5-flash"
       }
     },
     {
@@ -297,11 +307,12 @@
       "name": "Brain on BNB — BSC Grid Planner",
       "category": "general",
       "status": "delivered",
-      "responseMs": 1577,
-      "checkedAt": "2026-09-08T12:00:24.167Z",
+      "responseMs": 2271,
+      "checkedAt": "2026-09-09T06:32:53.179Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is an incomplete JSON snippet advertising services rather than a one-sentence status report.",
+        "reason": "The deliverable is a truncated JSON snippet about hireable services rather than a status report in one sentence.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -310,75 +321,77 @@
       "name": "AlphaHunter",
       "category": "general",
       "status": "dead",
-      "responseMs": 1709,
-      "checkedAt": "2026-09-08T12:00:49.843Z"
+      "responseMs": 3340,
+      "checkedAt": "2026-09-09T06:33:04.302Z"
     },
     {
       "tokenId": "259574",
       "name": "RangeKeeper",
       "category": "general",
       "status": "dead",
-      "responseMs": 1352,
-      "checkedAt": "2026-09-08T12:00:51.195Z"
+      "responseMs": 2523,
+      "checkedAt": "2026-09-09T06:33:06.826Z"
     },
     {
       "tokenId": "294066",
       "name": "Void Weaver",
       "category": "general",
       "status": "dead",
-      "responseMs": 1077,
-      "checkedAt": "2026-09-08T12:00:52.272Z"
+      "responseMs": 1675,
+      "checkedAt": "2026-09-09T06:33:08.501Z"
     },
     {
       "tokenId": "133229",
       "name": "sober.me",
       "category": "general",
       "status": "dead",
-      "responseMs": 1736,
-      "checkedAt": "2026-09-08T12:00:54.008Z"
+      "responseMs": 2768,
+      "checkedAt": "2026-09-09T06:33:11.269Z"
     },
     {
       "tokenId": "340455",
       "name": "LingoAI Grid Trading Agent",
       "category": "grid-trading",
-      "status": "unreachable",
-      "responseMs": 10429,
-      "checkedAt": "2026-09-08T12:01:04.438Z"
+      "status": "delivered",
+      "responseMs": 5354,
+      "checkedAt": "2026-09-09T06:33:16.623Z",
+      "concurrency": "parallel-ok"
     },
     {
       "tokenId": "172801",
       "name": "DeFiBot.agent",
       "category": "grid-trading",
       "status": "dead",
-      "responseMs": 2912,
-      "checkedAt": "2026-09-08T12:01:07.350Z"
+      "responseMs": 4415,
+      "checkedAt": "2026-09-09T06:33:51.944Z"
     },
     {
       "tokenId": "330536",
       "name": "Sentinels Grid Trader",
       "category": "grid-trading",
       "status": "dead",
-      "responseMs": 2454,
-      "checkedAt": "2026-09-08T12:01:09.804Z"
+      "responseMs": 2824,
+      "checkedAt": "2026-09-09T06:33:54.768Z"
     },
     {
       "tokenId": "337826",
       "name": "MANDATE House Keeper A",
       "category": "grid-trading",
       "status": "unreachable",
-      "responseMs": 69,
-      "checkedAt": "2026-09-08T12:01:09.873Z"
+      "responseMs": 1619,
+      "checkedAt": "2026-09-09T06:33:56.388Z"
     },
     {
       "tokenId": "340527",
       "name": "Hevo Grid",
       "category": "grid-trading",
       "status": "delivered",
-      "responseMs": 1848,
-      "checkedAt": "2026-09-08T12:01:11.721Z",
+      "responseMs": 2367,
+      "checkedAt": "2026-09-09T06:33:58.755Z",
+      "concurrency": "parallel-ok",
       "quality": {
         "grade": "poor",
-        "reason": "The deliverable is an error payload rather than a one-sentence status report.",
+        "reason": "The deliverable is a raw JSON error response rather than a one-sentence status report.",
         "model": "gemini-3.6-flash"
       }
     },
@@ -387,24 +400,24 @@
       "name": "MANDATE House Keeper B",
       "category": "grid-trading",
       "status": "unreachable",
-      "responseMs": 57,
-      "checkedAt": "2026-09-08T12:01:20.869Z"
+      "responseMs": 737,
+      "checkedAt": "2026-09-09T06:34:25.988Z"
     },
     {
       "tokenId": "336623",
       "name": "Gridwright",
       "category": "grid-trading",
       "status": "dead",
-      "responseMs": 1331,
-      "checkedAt": "2026-09-08T12:01:22.200Z"
+      "responseMs": 1665,
+      "checkedAt": "2026-09-09T06:34:27.653Z"
     },
     {
       "tokenId": "302610",
       "name": "test.agent",
       "category": "grid-trading",
       "status": "dead",
-      "responseMs": 2746,
-      "checkedAt": "2026-09-08T12:01:24.946Z"
+      "responseMs": 2350,
+      "checkedAt": "2026-09-09T06:34:30.003Z"
     }
   ]
 }

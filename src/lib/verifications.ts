@@ -10,6 +10,7 @@ interface VerificationsFile {
     responseMs: number;
     checkedAt: string;
     quality?: Verification["quality"];
+    concurrency?: Verification["concurrency"];
   }[];
 }
 
@@ -43,6 +44,13 @@ export async function loadVerifications(): Promise<Map<string, Verification>> {
             reason: r.quality.reason,
             model: r.quality.model,
           };
+        }
+        if (
+          r.concurrency === "parallel-ok" ||
+          r.concurrency === "single-ok" ||
+          r.concurrency === "untested"
+        ) {
+          verification.concurrency = r.concurrency;
         }
         byToken.set(String(r.tokenId), verification);
       }
