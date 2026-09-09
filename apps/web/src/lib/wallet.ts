@@ -61,8 +61,9 @@ export class SmartWalletUnsupportedError extends Error {
 // opaque facilitator "signature verification failed"
 export class WrongSignerError extends Error {
   constructor(recovered: string, expected: string) {
+    const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
     super(
-      `Signature came from ${recovered}, expected ${expected} — reconnect your wallet and retry.`,
+      `Signed by ${short(recovered)}, not ${short(expected)} — reconnect your wallet and retry.`,
     );
   }
 }
@@ -479,16 +480,30 @@ export async function signTransferAuthorization(
   })) as string;
   // client-side verification over exactly the typed data sent: a signature
   // that recovers to a different account (wrong injected wallet, stale
-  // connection) is rejected here, before it can waste a settle attempt
+  // connection) is rejected here, before it can waste a settle attempt.
+  // uint256 fields MUST be BigInts: viem encodes a decimal string differently
+  // than the wallet's own ABI encoding, which would recover a garbage address
+  // from a perfectly valid signature
   const recovered = await recoverAddress({
     hash: hashTypedData({
-      domain: { ...domain, verifyingContract: domain.verifyingContract as `0x${string}` },
+      domain: {
+        ...domain,
+        chainId: BigInt(domain.chainId),
+        verifyingContract: domain.verifyingContract as `0x${string}`,
+      },
       primaryType: "TransferWithAuthorization",
       types: TRANSFER_TYPES as unknown as Record<
         string,
         readonly { name: string; type: string }[]
       >,
-      message: message as unknown as Record<string, unknown>,
+      message: {
+        from: message.from as `0x${string}`,
+        to: message.to as `0x${string}`,
+        value: BigInt(message.value),
+        validAfter: BigInt(message.validAfter),
+        validBefore: BigInt(message.validBefore),
+        nonce: message.nonce as `0x${string}`,
+      },
     }),
     signature: signature as `0x${string}`,
   });
