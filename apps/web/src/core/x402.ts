@@ -96,9 +96,18 @@ export interface Receipt {
   session: { spendCapUsd: number; expiresAt: string };
 }
 
-// wallet-facing typed data: EIP712Domain is deliberately omitted, wallets
-// derive it from the domain object
+// wallet-facing typed data: EIP712Domain is included EXPLICITLY because
+// wallets (MetaMask/Rabby) derive an EMPTY domain type when it is omitted,
+// which diverges from what viem/ethers auto-insert on verification — the
+// resulting digest differs and the recovered signer never matches. Declaring
+// it makes every implementation (wallet + viem + ethers) hash identically.
 export const TRANSFER_TYPES = {
+  EIP712Domain: [
+    { name: "name", type: "string" },
+    { name: "version", type: "string" },
+    { name: "chainId", type: "uint256" },
+    { name: "verifyingContract", type: "address" },
+  ],
   TransferWithAuthorization: [
     { name: "from", type: "address" },
     { name: "to", type: "address" },

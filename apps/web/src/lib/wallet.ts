@@ -508,29 +508,6 @@ export async function signTransferAuthorization(
     signature: signature as `0x${string}`,
   });
   if (recovered.toLowerCase() !== address.toLowerCase()) {
-    // TEMP DEBUG: ship the failed signature to the backend for dissection
-    try {
-      void fetch("/api/x402/debug-sig", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          signature,
-          message: {
-            from: message.from,
-            to: message.to,
-            value: message.value,
-            validAfter: message.validAfter,
-            validBefore: message.validBefore,
-            nonce: message.nonce,
-          },
-          domain,
-          recovered,
-          expected: address,
-        }),
-      });
-    } catch {
-      // best-effort diagnostics only
-    }
     throw new WrongSignerError(recovered, address);
   }
   return signature;
