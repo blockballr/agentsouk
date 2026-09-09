@@ -114,6 +114,14 @@ export function CompareBar({
     return () => window.clearTimeout(t)
   }, [items, batchError, running])
 
+  // the strip (and any settled/queued lines) belong to the hire attempt for a
+  // given shortlist; a changed shortlist drops them even without Clear
+  const shortlistKey = (ids ?? []).join(',')
+  useEffect(() => {
+    setItems([])
+    setBatchError(null)
+  }, [shortlistKey])
+
   async function startHire() {
     if (!hire || hire.winners.length === 0 || running || allSettled) return
     setRunning(true)

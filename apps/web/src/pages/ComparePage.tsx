@@ -65,11 +65,13 @@ export function ComparePage() {
   // equals this selection, so it can never go stale
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
+  // re-sync on every (re)load of the compared set: selection becomes the
+  // bests of the freshly loaded agents, or the whole set when no bests are
+  // derivable (single agent); stale selections from an earlier compare die here
   useEffect(() => {
     if (agents.length === 0) return
-    setSelectedIds(
-      Object.values(bestByCategory(agents)).filter((id): id is string => id !== null),
-    )
+    const winners = Object.values(bestByCategory(agents)).filter((id): id is string => id !== null)
+    setSelectedIds(winners.length > 0 ? winners : agents.map((a) => a.agent_id))
   }, [agents])
 
   function toggleSelected(id: string) {
@@ -82,6 +84,18 @@ export function ComparePage() {
         .filter((a) => selectedIds.includes(a.agent_id))
         .map((a) => ({ chainId: a.chain_id, tokenId: Number(a.token_id), name: a.name })),
     [agents, selectedIds],
+  )
+
+  // the loaded agents must BE the current shortlist before the bar may quote
+  // a hire count; during a refetch (or with leftover agents from an earlier
+  // compare) the selection is stale, so the bar shows no hire button instead
+  // of an incoherent one
+  const agentsMatchShortlist = useMemo(
+    () =>
+      agents.length > 0 &&
+      agents.length === effectiveIds.length &&
+      agents.every((a) => effectiveIds.includes(a.agent_id)),
+    [agents, effectiveIds],
   )
 
   useEffect(() => {
@@ -143,7 +157,9 @@ export function ComparePage() {
         // hire only in table mode: the selection counts current table agents,
         // so a stale set from a previous comparison can never leak into the
         // button (picker mode shows no hire button, matching the marketplace)
-        hire={effectiveIds.length > 0 ? { winners: selectedAgents } : undefined}
+        hire={
+          effectiveIds.length > 0 && agentsMatchShortlist ? { winners: selectedAgents } : undefined
+        }
       />
     </section>
   )
