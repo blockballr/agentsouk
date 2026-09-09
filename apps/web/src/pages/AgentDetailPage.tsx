@@ -43,6 +43,29 @@ const scoreBars: { label: string; key: keyof AgentDetail }[] = [
   { label: 'Metadata', key: 'metadata_completeness_score' },
 ]
 
+interface ActiveSession {
+  spendCapUsd: number
+  expiresAt: string
+  mode: 'sandbox' | 'prod' | 'b402'
+  createdAt: string
+}
+
+type DetailWithSession = AgentDetail & { activeSession?: ActiveSession }
+
+function formatExpiry(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const date = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  return `${date}, ${time}`
+}
+
+function sessionModeLabel(mode: ActiveSession['mode']): string {
+  if (mode === 'b402') return 'BNB Chain (x402)'
+  if (mode === 'sandbox') return 'Sandbox facilitator'
+  return 'Production'
+}
+
 export function AgentDetailPage() {
   const { chainId = '56', tokenId = '' } = useParams()
   const [detail, setDetail] = useState<AgentDetail | null>(null)
@@ -100,6 +123,15 @@ export function AgentDetailPage() {
   const onchain = detail.raw_metadata?.onchain ?? []
   const bscScan = `https://bscscan.com/token/${detail.contract_address}?a=${detail.token_id}`
   const ownerScan = `https://bscscan.com/address/${detail.owner_address}`
+  const activeSession = (detail as DetailWithSession).activeSession
+
+  function refreshDetail() {
+    getAgentDetail(chainId, tokenId)
+      .then((d) => {
+        if (d) setDetail(d)
+      })
+      .catch(() => {})
+  }
 
   return (
     <div className="mx-auto max-w-[1400px] px-6 py-10">
@@ -238,6 +270,16 @@ export function AgentDetailPage() {
         </div>
 
         <aside className="h-fit rounded-[14px] border hairline border-slate-verdant/40 p-8 lg:sticky lg:top-8">
+          {activeSession && (
+            <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
+              <p className="micro text-press-black">Session active</p>
+              <div className="mt-3 space-y-2 text-xs">
+                <Row label="Spend cap" value={`$${activeSession.spendCapUsd}`} />
+                <Row label="Expires" value={formatExpiry(activeSession.expiresAt)} />
+                <Row label="Mode" value={sessionModeLabel(activeSession.mode)} />
+              </div>
+            </div>
+          )}
           <h2 className="micro text-newsprint-gray">Hire this agent</h2>
           <div className="mt-6 space-y-4 text-[11px] uppercase tracking-[0.01em] text-newsprint-gray">
             <div className="flex justify-between">
@@ -253,7 +295,7 @@ export function AgentDetailPage() {
               <span className="text-press-black">BNB</span>
             </div>
           </div>
-          <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} />
+          <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
           <p className="mt-4 text-xs leading-relaxed text-newsprint-gray">
             You sign a gasless transfer authorization; a facilitator verifies and
             settles it on-chain. Funds go straight to the agent&apos;s wallet.
@@ -266,7 +308,17 @@ export function AgentDetailPage() {
 
 type HireStep = 'idle' | 'connecting' | 'preview' | 'signing' | 'settling' | 'hired'
 
-function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: string; name: string }) {
+function HirePanel({
+  chainId,
+  tokenId,
+  name,
+  onHired,
+}: {
+  chainId: string
+  tokenId: string
+  name: string
+  onHired: () => void
+}) {
   const [step, setStep] = useState<HireStep>('idle')
   const [error, setError] = useState<string | null>(null)
   const [account, setAccount] = useState<string | null>(null)
@@ -310,6 +362,7 @@ function HirePanel({ chainId, tokenId, name }: { chainId: string; tokenId: strin
     if (outcome.success && outcome.settle) {
       setResult(outcome.settle)
       if (outcome.receipt) setReceipt(outcome.receipt)
+      onHired()
     } else {
       setError(outcome.error ?? 'Something went wrong.')
       setStep('preview')
