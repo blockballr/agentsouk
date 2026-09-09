@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { connectWallet, ensureBscChain } from '../lib/wallet'
 import { hireErrorText, runHire, type HireAgentRef } from '../lib/hire'
 import { getAgentDetail } from '../lib/api'
-import { addToCart } from '../lib/cart'
+import { addToCart, clearCart } from '../lib/cart'
 import { categoryOf } from '../lib/compare'
 import { getShortlist } from '../lib/shortlist'
 
@@ -92,8 +92,30 @@ export function CompareBar({
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, phase, error } : i)))
   }
 
+  // clear wipes everything hire-related: shortlist (page callback), cart, and
+  // the failure strip; no stale "failed ..." lines after clear + reselect
+  function handleClear() {
+    setItems([])
+    setBatchError(null)
+    clearCart()
+    onClear()
+  }
+
+  // failed lines auto-dismiss ~10s after the batch stops; a new attempt
+  // re-batches them immediately, so the strip never lingers
+  useEffect(() => {
+    if (running) return
+    const hasFailure = batchError !== null || items.some((i) => i.phase === 'failed')
+    if (!hasFailure) return
+    const t = window.setTimeout(() => {
+      setItems((prev) => prev.filter((i) => i.phase !== 'failed'))
+      setBatchError(null)
+    }, 10000)
+    return () => window.clearTimeout(t)
+  }, [items, batchError, running])
+
   async function startHire() {
-    if (!hire || running || allSettled) return
+    if (!hire || hire.winners.length === 0 || running || allSettled) return
     setRunning(true)
     setBatchError(null)
     // first run: one entry per winner; retry: only entries not settled yet,
@@ -200,25 +222,32 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
               <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={onClear}
+                  onClick={handleClear}
                   className="micro text-muted-sage transition hover:text-bone-white focus-visible:outline-2 focus-visible:outline-bone-white"
                 >
                   Clear
                 </button>
-                {hire && hire.winners.length > 0 && (
+                {hire && (
                   <button
                     type="button"
                     onClick={startHire}
-                    disabled={running || allSettled}
+                    disabled={running || allSettled || hire.winners.length === 0}
+                    title={
+                      hire.winners.length === 0
+                        ? 'Select agents with the checkboxes in the compare table'
+                        : undefined
+                    }
                     className="micro rounded-[5px] border hairline border-highlighter-green/60 px-5 py-3 text-highlighter-green transition hover:bg-highlighter-green/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {running
                       ? 'Hiring…'
                       : allSettled
                         ? 'Hired'
-                        : hire.winners.length === 1
-                          ? 'Hire best'
-                          : `Hire ${hire.winners.length} best`}
+                        : hire.winners.length === 0
+                          ? 'Select agents to hire'
+                          : hire.winners.length === 1
+                            ? 'Hire 1 selected'
+                            : `Hire ${hire.winners.length} selected`}
                   </button>
                 )}
                 {(ids ?? getShortlist()).length > 0 && (
