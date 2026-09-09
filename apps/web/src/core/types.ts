@@ -78,6 +78,7 @@ export interface Verification {
     reason: string;
     model: string;
   };
+  concurrency?: "parallel-ok" | "single-ok" | "untested";
 }
 
 export interface AgentSummary {

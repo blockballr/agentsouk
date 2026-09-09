@@ -182,6 +182,14 @@ export function AgentDetailPage() {
                     {verificationLabel(detail.verification.status)}
                   </span>
                 )}
+                {detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok' && (
+                  <span
+                    title="verified: two simultaneous calls both delivered"
+                    className="micro rounded-full border hairline border-highlighter-green/50 px-2.5 py-1 text-highlighter-green"
+                  >
+                    handles concurrent requests
+                  </span>
+                )}
               </div>
               <p className="mt-4 text-[18px] leading-snug text-newsprint-gray">
                 {detail.description || 'No description registered on-chain.'}
