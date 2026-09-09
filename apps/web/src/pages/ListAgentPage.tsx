@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { AgentDetail } from '@agora/core'
-import { BSC_CHAIN_ID, classifyAgent, categoryDef } from '@agora/core'
+import type { AgentDetail, CategoryDef, CategoryKey } from '@agora/core'
+import { BSC_CHAIN_ID, CATEGORIES, categoryDef, classifyAgent } from '@agora/core'
 import { getAgentDetail } from '../lib/api'
 
 const BSC_8004_REGISTRY = '0x8004a169fb4a3325136eb29fa0ceb6d2e539a432'
@@ -26,6 +26,10 @@ const checklist = [
   {
     title: 'One agent, one registration',
     why: 'Mass numbered duplicates and airdrop-farmer patterns are filtered from the catalog. One registration per agent keeps the shelf honest.',
+  },
+  {
+    title: 'A performance endpoint',
+    why: 'Expose a performance endpoint. A tool like get_performance that returns your live numbers (PnL, fees, hit rate) lets buyers see your record - agents that report get surfaced on their listing.',
   },
 ]
 
@@ -163,7 +167,7 @@ function ChecklistSection() {
       <div className="mt-8 grid gap-px bg-slate-verdant/40 md:grid-cols-2">
         {checklist.map((item, i) => (
           <div key={item.title} className="bg-bone-white p-8">
-            <p className="micro text-newsprint-gray">Check {i + 1} of 5</p>
+            <p className="micro text-newsprint-gray">Check {i + 1} of 6</p>
             <p className="mt-4 font-serif text-xl font-medium">{item.title}</p>
             <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
               {item.why}
@@ -177,6 +181,8 @@ function ChecklistSection() {
         graded, public. Nothing here promises placement or traffic; the
         verification just makes the honest agents legible to buyers.
       </p>
+
+      <PromptGenerator />
     </div>
   )
 }
@@ -188,6 +194,156 @@ type LookupState =
   | { phase: 'missing' }
   | { phase: 'invalid' }
   | { phase: 'error' }
+
+// pure client-side string building from the seller's inputs; no backend, no AI
+function buildDescription(
+  def: CategoryDef,
+  name: string,
+  goal: string,
+): string {
+  const clean = goal.trim().replace(/\s+/g, ' ')
+  const named = name.trim() ? `${name.trim()} is` : 'This agent is'
+  let text = `${named} a ${def.label.toLowerCase()} agent for BNB Chain. ${def.blurb}`
+  if (clean) text += ` What it should achieve: ${clean}.`
+  return text
+}
+
+function buildPrompt(category: CategoryKey, name: string, goal: string): string {
+  const def = categoryDef(category)
+  const description = buildDescription(def, name, goal)
+  const label = name.trim() || `a ${def.label.toLowerCase()} agent`
+  return [
+    'Install the bnb CLI, describe this agent to Studio, and ship it end to end. Studio scaffolds the agent, deploys it, and registers the ERC-8004 identity on BSC. The agent to build is:',
+    '',
+    `${label} (${def.label}).`,
+    '',
+    'Registration description to use, so buyers and the classifier read an honest summary:',
+    description,
+    '',
+    'Acceptance criteria. The work is done only when all of these hold:',
+    '1. The agent exposes a reachable MCP or A2A endpoint over HTTPS.',
+    '2. x402Support is set in the registration.',
+    `3. The registration description names the category honestly: ${def.label.toLowerCase()}, in its own words.`,
+    '4. A performance or reporting tool is exposed, for example get_performance, that returns live numbers.',
+    '5. Exactly one registration is made, not a numbered series of duplicates.',
+    '',
+    'When done, the agent must be registered on BSC ERC-8004 (registry 0x8004a169fb4a3325136eb29fa0ceb6d2e539a432) and appear when searched on agentsouk.pages.dev.',
+  ].join('\n')
+}
+
+function PromptGenerator() {
+  const [category, setCategory] = useState<CategoryKey>('rebalancing')
+  const [name, setName] = useState('')
+  const [goal, setGoal] = useState('')
+  const [prompt, setPrompt] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  function generate() {
+    setPrompt(buildPrompt(category, name, goal))
+    setCopied(false)
+  }
+
+  async function copy() {
+    if (!prompt) return
+    try {
+      await navigator.clipboard.writeText(prompt)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  const inputClass =
+    'hairline input-hairline w-full bg-bone-white px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
+
+  return (
+    <div className="mt-12 rounded-[14px] border hairline border-slate-verdant/40 p-8">
+      <h3 className="font-serif text-2xl font-medium tracking-[-0.02em]">
+        Generate your Agent Studio prompt
+      </h3>
+      <p className="mt-3 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+        Answer three questions and we build the prompt for your coding agent.
+        It embeds the checklist above as acceptance criteria, so what ships is
+        the agent the verifier can actually grade.
+      </p>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="micro text-newsprint-gray" htmlFor="wizard-category">
+            Category
+          </label>
+          <select
+            id="wizard-category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value as CategoryKey)}
+            className={`${inputClass} mt-2`}
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c.key} value={c.key}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="micro text-newsprint-gray" htmlFor="wizard-name">
+            Agent name (one line)
+          </label>
+          <input
+            id="wizard-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="BNB Lending Guardian"
+            className={`${inputClass} mt-2`}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <label className="micro text-newsprint-gray" htmlFor="wizard-goal">
+          What the agent should achieve
+        </label>
+        <textarea
+          id="wizard-goal"
+          value={goal}
+          onChange={(e) => setGoal(e.target.value)}
+          rows={3}
+          placeholder="Watch borrowing positions on Venus and protect them before liquidation hits."
+          className={`${inputClass} mt-2`}
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={generate}
+        className="micro mt-6 rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+      >
+        Generate prompt
+      </button>
+
+      {prompt && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between gap-4">
+            <p className="micro text-newsprint-gray">Your prompt</p>
+            <button
+              type="button"
+              onClick={copy}
+              className="micro rounded-[5px] border hairline border-slate-verdant/50 px-4 py-2 text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-[11px] leading-relaxed text-press-black">
+            {prompt}
+          </pre>
+        </div>
+      )}
+    </div>
+  )
+}
+
 
 function LookupSection() {
   const [input, setInput] = useState('')
