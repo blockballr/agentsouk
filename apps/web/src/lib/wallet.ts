@@ -3,6 +3,7 @@
 // announce themselves; a single detected wallet connects directly. All
 // sign/chain calls operate on the chosen provider for the session.
 
+import { hashTypedData, recoverAddress } from "viem";
 import { TRANSFER_TYPES } from '@agora/core'
 
 interface Eip1193Provider {
@@ -55,6 +56,17 @@ export class SmartWalletUnsupportedError extends Error {
   }
 }
 
+// the wallet signed with a different account than the one connected: the
+// recovered address proves it, so fail with both addresses instead of an
+// opaque facilitator "signature verification failed"
+export class WrongSignerError extends Error {
+  constructor(recovered: string, expected: string) {
+    super(
+      `Signature came from ${recovered}, expected ${expected} — reconnect your wallet and retry.`,
+    );
+  }
+}
+
 // rdns values that always route through a smart account (ERC-4337): their
 // typed-data signatures validate on-chain via ERC-1271 and our facilitator
 // can only verify plain EOA ECDSA signatures today
@@ -69,7 +81,7 @@ export async function isSmartWalletConnected(): Promise<boolean> {
     return true;
   }
   try {
-    const provider = getProvider();
+    const provider = await getProvider();
     const accounts = (await provider.request({ method: "eth_accounts" })) as string[];
     if (!accounts?.length) return false;
     const code = (await provider.request({
@@ -234,17 +246,32 @@ async function resolveProvider(option: WalletOption): Promise<Eip1193Provider> {
   return resolveInjected(option);
 }
 
-// sync access for sign/chain calls, which always run after connectWallet()
-export function getProvider(): Eip1193Provider {
+// resolve the chosen provider for sign/chain calls. NO silent cross-wallet
+// fallback: a stored rdns whose announced provider is missing must never
+// route the signature to a different extension
+export async function getProvider(): Promise<Eip1193Provider> {
   const rdns = readStoredRdns();
-  if (rdns === WALLETCONNECT_RDNS && wcProvider) return wcProvider;
+  if (rdns === WALLETCONNECT_RDNS) {
+    if (wcProvider) return wcProvider;
+    return initWalletConnect();
+  }
   if (rdns === LEGACY_RDNS) {
     const legacy = legacyProvider();
-    if (legacy) return legacy;
+    if (!legacy) throw new WalletUnavailableError();
+    return legacy;
   }
   if (rdns) {
     const detail = announced.get(rdns);
     if (detail) return detail.provider;
+    // extension not announced yet (reload?): re-request and wait briefly,
+    // then fail instead of falling through to a different wallet
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("eip6963:requestProvider"));
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 400));
+    const retry = announced.get(rdns);
+    if (retry) return retry.provider;
+    throw new WalletUnavailableError();
   }
   const legacy = legacyProvider();
   if (legacy) return legacy;
@@ -324,7 +351,7 @@ function attachProviderListeners(provider: Eip1193Provider): void {
 // only proceed when it is still the address the hire is signing from
 export async function activeAccountMatches(address: string): Promise<boolean> {
   try {
-    const accounts = (await getProvider().request({ method: "eth_accounts" })) as string[];
+    const accounts = (await (await getProvider()).request({ method: "eth_accounts" })) as string[];
     return Array.isArray(accounts) && accounts[0]?.toLowerCase() === address.toLowerCase();
   } catch {
     return false;
@@ -389,7 +416,7 @@ export async function changeWallet(): Promise<string | null> {
 
 // returns the active chain id after switching if needed
 export async function ensureBscChain(): Promise<string> {
-  const provider = getProvider();
+  const provider = await getProvider();
   const current = (await provider.request({ method: "eth_chainId" })) as string;
   if (current?.toLowerCase() === BSC_CHAIN_ID_HEX) return current;
   try {
@@ -425,7 +452,7 @@ export async function signTransferAuthorization(
     nonce: string;
   },
 ): Promise<string> {
-  const provider = getProvider();
+  const provider = await getProvider();
   const signature = (await provider.request({
     method: "eth_signTypedData_v4",
     params: [
@@ -439,5 +466,23 @@ export async function signTransferAuthorization(
       }),
     ],
   })) as string;
+  // client-side verification over exactly the typed data sent: a signature
+  // that recovers to a different account (wrong injected wallet, stale
+  // connection) is rejected here, before it can waste a settle attempt
+  const recovered = await recoverAddress({
+    hash: hashTypedData({
+      domain: { ...domain, verifyingContract: domain.verifyingContract as `0x${string}` },
+      primaryType: "TransferWithAuthorization",
+      types: TRANSFER_TYPES as unknown as Record<
+        string,
+        readonly { name: string; type: string }[]
+      >,
+      message: message as unknown as Record<string, unknown>,
+    }),
+    signature: signature as `0x${string}`,
+  });
+  if (recovered.toLowerCase() !== address.toLowerCase()) {
+    throw new WrongSignerError(recovered, address);
+  }
   return signature;
 }

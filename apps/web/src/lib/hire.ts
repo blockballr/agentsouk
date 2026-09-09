@@ -6,7 +6,7 @@
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
 import { getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
-import { activeAccountMatches, SmartWalletUnsupportedError, WalletUnavailableError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
+import { activeAccountMatches, SmartWalletUnsupportedError, WalletUnavailableError, WrongSignerError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
 
 export type HireRequirementsData = X402Requirements['data']
 
@@ -37,6 +37,7 @@ export interface HireOutcome {
 
 export function hireErrorText(e: unknown): string {
   if (e instanceof WalletUnavailableError) return e.message
+  if (e instanceof WrongSignerError) return e.message
   const code = (e as { code?: number }).code
   if (code === 4001) return 'Request cancelled in the wallet.'
   const msg = (e as Error)?.message ?? 'Something went wrong.'
