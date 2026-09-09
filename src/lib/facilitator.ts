@@ -2,6 +2,8 @@ import "server-only";
 
 import {
   verifyTypedData,
+  verifyMessage,
+  recoverAddress,
   getAddress,
   hashTypedData,
   createPublicClient,
@@ -121,6 +123,19 @@ async function settleSandboxChecks(
   }).catch(() => false);
 
   if (!ok) {
+    // TEMP DEBUG (remove after rehearsal): who actually signed?
+    const recovered = await recoverAddress({
+      hash: hashTypedData({
+        domain,
+        types: EIP3009_TYPES,
+        primaryType: "TransferWithAuthorization",
+        message,
+      }),
+      signature: auth.signature as `0x${string}`,
+    }).catch((e) => `recover-error: ${String(e).slice(0, 120)}`);
+    console.error(
+      `[settle-debug] from=${message.from} recovered=${recovered}`,
+    );
     if (!isSmartWalletVerifyEnabled()) {
       return { ok: false, error: "Signature verification failed" };
     }
