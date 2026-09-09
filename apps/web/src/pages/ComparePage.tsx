@@ -5,7 +5,6 @@ import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core
 import { getAgentDetail, getAgents, getCompareCommentary } from '../lib/api'
 import { bestByCategory, categoryGroups, categoryOf } from '../lib/compare'
 import { CompareBar } from '../components/CompareBar'
-import type { HireAgentRef } from '../lib/hire'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
 export function ComparePage() {
@@ -61,17 +60,29 @@ export function ComparePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
-  // one best-in-category winner per category, straight from the same ranker
-  // that highlights the table; these are the agents the bar's hire action runs
-  const hireWinners = useMemo(() => {
-    const winners: HireAgentRef[] = []
-    for (const id of Object.values(bestByCategory(agents))) {
-      if (!id) continue
-      const a = agents.find((x) => x.agent_id === id)
-      if (a) winners.push({ chainId: a.chain_id, tokenId: Number(a.token_id), name: a.name })
-    }
-    return winners
+  // per-agent hire selection over the current table agents; the best of each
+  // category starts checked, any row can be toggled. the bar's count always
+  // equals this selection, so it can never go stale
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+
+  useEffect(() => {
+    if (agents.length === 0) return
+    setSelectedIds(
+      Object.values(bestByCategory(agents)).filter((id): id is string => id !== null),
+    )
   }, [agents])
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
+
+  const selectedAgents = useMemo(
+    () =>
+      agents
+        .filter((a) => selectedIds.includes(a.agent_id))
+        .map((a) => ({ chainId: a.chain_id, tokenId: Number(a.token_id), name: a.name })),
+    [agents, selectedIds],
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -112,7 +123,14 @@ export function ComparePage() {
         <Picker selected={shortlistIds} onToggle={toggleId} onClear={clearSelection} />
       ) : (
         <>
-          <CompareTable agents={agents} loading={loading} error={error} onClear={clearSelection} />
+          <CompareTable
+            agents={agents}
+            loading={loading}
+            error={error}
+            onClear={clearSelection}
+            checkedIds={selectedIds}
+            onToggleChecked={toggleSelected}
+          />
           {!loading && !error && agents.length >= 2 && <CompareCommentary agents={agents} />}
           <ShortlistSearch selected={effectiveIds} onToggle={toggleId} />
         </>
@@ -122,7 +140,10 @@ export function ComparePage() {
         ids={effectiveIds.length > 0 ? effectiveIds : shortlistIds}
         onClear={clearSelection}
         onCompare={effectiveIds.length > 0 ? scrollToTable : goCompare}
-        hire={hireWinners.length > 0 ? { winners: hireWinners } : undefined}
+        // hire only in table mode: the selection counts current table agents,
+        // so a stale set from a previous comparison can never leak into the
+        // button (picker mode shows no hire button, matching the marketplace)
+        hire={effectiveIds.length > 0 ? { winners: selectedAgents } : undefined}
       />
     </section>
   )
@@ -263,11 +284,15 @@ function CompareTable({
   loading,
   error,
   onClear,
+  checkedIds,
+  onToggleChecked,
 }: {
   agents: AgentDetail[]
   loading: boolean
   error: boolean
   onClear: () => void
+  checkedIds: string[]
+  onToggleChecked: (id: string) => void
 }) {
   const winnerByCategory = useMemo(() => bestByCategory(agents), [agents])
   const winnerIds = useMemo(
@@ -380,6 +405,15 @@ function CompareTable({
                       }`}
                       scope="col"
                     >
+                      {/* per-agent hire selection; the winner is pre-checked */}
+                      <input
+                        type="checkbox"
+                        checked={checkedIds.includes(a.agent_id)}
+                        onChange={() => onToggleChecked(a.agent_id)}
+                        aria-label={`Hire ${a.name}`}
+                        title="Hire this agent"
+                        className="mr-2 h-3.5 w-3.5 shrink-0 translate-y-[-1px] accent-highlighter-green"
+                      />
                       <Link to={`/agents/${a.chain_id}/${a.token_id}`} className="hover:text-highlighter-green focus-visible:outline-2 focus-visible:outline-highlighter-green">
                         {a.name}
                       </Link>
