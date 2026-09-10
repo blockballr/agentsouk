@@ -12,12 +12,13 @@ const links = [
 ]
 
 export function Nav() {
+  const [menuOpen, setMenuOpen] = useState(false)
   return (
     <header className="relative z-10">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-8">
         <Wordmark />
         <nav aria-label="Primary" className="flex items-center gap-8">
-          <ul className="flex items-center gap-8">
+          <ul className="hidden items-center gap-8 lg:flex">
             {links.map((l) => (
               <li key={l.to}>
                 <NavLink
@@ -33,17 +34,47 @@ export function Nav() {
               </li>
             ))}
           </ul>
-          <ThemeToggle />
-          <CartLink />
-          <Link
-            to="/agents"
-            aria-label="Open the market"
-            className="flex h-10 w-10 items-center justify-center text-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black"
+          <div className="hidden lg:flex lg:items-center lg:gap-8">
+            <ThemeToggle />
+            <CartLink />
+          </div>
+          <button
+            type="button"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex h-10 w-10 items-center justify-center text-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black lg:hidden"
           >
             <MenuIcon />
-          </Link>
+          </button>
         </nav>
       </div>
+
+      {menuOpen && (
+        <div className="border-b hairline border-slate-verdant/40 bg-background lg:hidden">
+          <nav aria-label="Mobile" className="mx-auto flex max-w-[1400px] flex-col gap-1 px-6 py-4">
+            {links.map((l) => (
+              <NavLink
+                key={l.to}
+                to={l.to}
+                end={l.to === '/agents'}
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) =>
+                  `py-3 text-lg font-serif ${
+                    isActive ? 'text-press-black' : 'text-newsprint-gray'
+                  } focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black`
+                }
+              >
+                {l.label}
+              </NavLink>
+            ))}
+            <div className="mt-2 flex items-center gap-6 py-3">
+              <CartLink />
+              <ThemeToggle />
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
   )
 }

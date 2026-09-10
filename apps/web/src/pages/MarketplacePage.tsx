@@ -182,7 +182,7 @@ export function MarketplacePage() {
             value={q}
             onChange={(e) => setParam('q', e.target.value)}
             placeholder="Name, endpoint, tag"
-            className="hairline input-hairline w-56 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+            className="border hairline input-hairline w-56 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
           />
           <div className="flex gap-1">
             {sorts.map((s) => (

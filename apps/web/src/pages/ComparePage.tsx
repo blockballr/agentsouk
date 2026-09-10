@@ -215,7 +215,7 @@ function Picker({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Name, endpoint, tag"
-          className="hairline input-hairline w-56 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          className="border hairline input-hairline w-56 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
         />
       </div>
 
@@ -298,41 +298,7 @@ function CompareTable({
   onToggleChecked: (id: string) => void
 }) {
   const winnerByCategory = useMemo(() => bestByCategory(agents), [agents])
-  const winnerIds = useMemo(
-    () => new Set(Object.values(winnerByCategory).filter((id): id is string => id !== null)),
-    [winnerByCategory],
-  )
   const groups = useMemo(() => categoryGroups(agents), [agents])
-  const ordered = useMemo(() => groups.flatMap((g) => g.agents), [groups])
-  // left-edge separators so each category band's columns read as one section
-  const groupStartIds = useMemo(
-    () => new Set(groups.slice(1).map((g) => g.agents[0]?.agent_id).filter((id): id is string => id !== undefined)),
-    [groups],
-  )
-
-  const rows = useMemo(
-    () => [
-      { label: 'Owner', render: (a: AgentDetail) => shortAddress(a.owner_address) },
-      { label: 'Score', render: (a: AgentDetail) => formatScore(a.total_score) },
-      { label: 'Avg feedback', render: (a: AgentDetail) => formatScore(a.average_score) },
-      { label: 'Hires', render: (a: AgentDetail) => formatNumber(a.total_feedbacks) },
-      { label: 'Health', render: (a: AgentDetail) => (a.health_score !== null ? formatScore(a.health_score) : '—') },
-      { label: 'Verified', render: (a: AgentDetail) => (a.is_verified ? 'yes' : 'no') },
-      { label: 'x402', render: (a: AgentDetail) => (a.x402_supported ? 'yes' : 'no') },
-      {
-        label: 'A2A endpoint',
-        render: (a: AgentDetail) =>
-          a.a2a_endpoint ? (
-            <a href={a.a2a_endpoint} target="_blank" rel="noreferrer" className="font-mono text-[11px] text-press-black hover:text-highlighter-green">
-              {a.a2a_endpoint}
-            </a>
-          ) : (
-            '—'
-          ),
-      },
-    ],
-    [],
-  )
 
   return (
     <div id="compare-table" className="mt-12 scroll-mt-8">
@@ -364,102 +330,177 @@ function CompareTable({
           None of those agents could be loaded. They may have left the registry.
         </p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr>
-                <th className="border-b hairline border-slate-verdant/40" scope="col" aria-label="Metric" />
-                {groups.map((g) => {
-                  const winnerId = winnerByCategory[g.category] ?? null
-                  const winner = winnerId ? agents.find((a) => a.agent_id === winnerId) : null
-                  return (
-                    <th
-                      key={g.category}
-                      colSpan={g.agents.length}
-                      className={`micro border-b hairline border-slate-verdant/40 px-4 py-3 text-newsprint-gray ${
-                        winner ? 'bg-highlighter-green/15 text-highlighter-green' : ''
-                      }`}
-                      scope="colgroup"
-                    >
-                      {g.label}
-                      {winner && (
-                        <span className="micro ml-3 inline-flex items-center gap-1.5 rounded-full border hairline border-highlighter-green/50 bg-highlighter-green/10 px-2.5 py-1 font-normal normal-case text-highlighter-green">
-                          <TrophyIcon className="h-3 w-3" />
-                          {winner.name}
-                          <span className="sr-only">best in category</span>
-                        </span>
-                      )}
-                    </th>
-                  )
-                })}
-              </tr>
-              <tr>
-                <th className="micro border-b hairline border-slate-verdant/40 p-4 text-newsprint-gray" scope="col">
-                  Metric
-                </th>
-                {ordered.map((a) => {
-                  const winner = winnerIds.has(a.agent_id)
-                  const separator = groupStartIds.has(a.agent_id) ? 'border-l border-l-slate-verdant/40' : ''
-                  return (
-                    <th
-                      key={a.agent_id}
-                      className={`border-b hairline border-slate-verdant/40 p-4 font-serif text-lg font-medium ${separator} ${
-                        winner ? 'bg-highlighter-green/15' : ''
-                      }`}
-                      scope="col"
-                    >
-                      {/* per-agent hire selection; the winner is pre-checked */}
-                      <input
-                        type="checkbox"
-                        checked={checkedIds.includes(a.agent_id)}
-                        onChange={() => onToggleChecked(a.agent_id)}
-                        aria-label={`Hire ${a.name}`}
-                        title="Hire this agent"
-                        className="mr-2 h-3.5 w-3.5 shrink-0 translate-y-[-1px] accent-highlighter-green"
-                      />
-                      <Link to={`/agents/${a.chain_id}/${a.token_id}`} className="hover:text-highlighter-green focus-visible:outline-2 focus-visible:outline-highlighter-green">
-                        {a.name}
-                      </Link>
-                      {winner && (
-                        <span
-                          aria-label="best in category"
-                          className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border hairline border-highlighter-green/50 bg-highlighter-green/10 text-highlighter-green"
-                        >
-                          <TrophyIcon />
-                        </span>
-                      )}
-                    </th>
-                  )
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.label}>
-                  <th scope="row" className="micro border-b hairline border-slate-verdant/40 p-4 text-newsprint-gray">
-                    {row.label}
-                  </th>
-                  {ordered.map((a) => (
-                    <td
-                      key={a.agent_id}
-                      className={`border-b hairline border-slate-verdant/40 p-4 text-sm text-press-black ${
-                        groupStartIds.has(a.agent_id) ? 'border-l border-l-slate-verdant/40' : ''
-                      } ${winnerIds.has(a.agent_id) ? 'bg-highlighter-green/15' : ''}`}
-                    >
-                      {row.render(a)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-12">
+          <CompareWinners agents={agents} winners={winnerByCategory} checkedIds={checkedIds} onToggleChecked={onToggleChecked} />
+          {groups.map((g) => (
+            <CompareGroup
+              key={g.category}
+              label={g.label}
+              agents={g.agents}
+              winnerId={winnerByCategory[g.category] ?? null}
+              checkedIds={checkedIds}
+              onToggleChecked={onToggleChecked}
+            />
+          ))}
           <p className="mt-4 text-xs text-newsprint-gray">
             Best in category is highlighted, ranked by on-chain score, then
-            feedback, then delivery.
+            feedback, then delivery. Switch an agent on to include it in your
+            hire; the winners are pre-selected.
           </p>
         </div>
       )}
     </div>
+  )
+}
+
+// the best agent of each represented category, one card per category, never a
+// wide table. each card is deliberately the same shape so metrics can be read
+// across categories without a horizontal scroll.
+function CompareWinners({
+  agents,
+  winners,
+  checkedIds,
+  onToggleChecked,
+}: {
+  agents: AgentDetail[]
+  winners: Record<string, string | null>
+  checkedIds: string[]
+  onToggleChecked: (id: string) => void
+}) {
+  const entries = Object.entries(winners)
+    .filter((entry): entry is [string, string] => entry[1] !== null)
+    .map(([category, id]) => ({ category, agent: agents.find((a) => a.agent_id === id) }))
+    .filter((e): e is { category: string; agent: AgentDetail } => e.agent !== undefined)
+
+  if (entries.length === 0) return null
+
+  const label = (key: string) => {
+    const def = CATEGORIES.find((c) => c.key === key)
+    return def ? def.label : 'General'
+  }
+
+  return (
+    <section aria-label="Best in each category">
+      <p className="micro text-newsprint-gray">Best in each category</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {entries.map(({ category, agent }) => (
+          <CompareCard key={category} agent={agent} winner checked={checkedIds.includes(agent.agent_id)} onToggle={onToggleChecked} categoryLabel={label(category)} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// every other compared agent, grouped by category, as the same card shape so
+// nothing about the comparison demands a table
+function CompareGroup({
+  label,
+  agents,
+  winnerId,
+  checkedIds,
+  onToggleChecked,
+}: {
+  label: string
+  agents: AgentDetail[]
+  winnerId: string | null
+  checkedIds: string[]
+  onToggleChecked: (id: string) => void
+}) {
+  return (
+    <section aria-label={label}>
+      <p className="micro text-newsprint-gray">
+        {label}
+        {winnerId ? ' — best highlighted' : ''}
+      </p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {agents.map((a) => (
+          <CompareCard key={a.agent_id} agent={a} winner={a.agent_id === winnerId} checked={checkedIds.includes(a.agent_id)} onToggle={onToggleChecked} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function CompareCard({
+  agent,
+  winner,
+  checked,
+  onToggle,
+  categoryLabel,
+}: {
+  agent: AgentDetail
+  winner: boolean
+  checked: boolean
+  onToggle: (id: string) => void
+  categoryLabel?: string
+}) {
+  const metrics: { label: string; value: string }[] = [
+    { label: 'Score', value: formatScore(agent.total_score) },
+    { label: 'Avg feedback', value: formatScore(agent.average_score) },
+    { label: 'Hires', value: formatNumber(agent.total_feedbacks) },
+    { label: 'Health', value: agent.health_score !== null ? formatScore(agent.health_score) : '—' },
+    { label: 'Verified', value: agent.is_verified ? 'yes' : 'no' },
+    { label: 'x402', value: agent.x402_supported ? 'yes' : 'no' },
+  ]
+
+  return (
+    <article
+      className={`flex flex-col rounded-[14px] border hairline p-6 transition ${
+        winner ? 'border-highlighter-green/60 bg-highlighter-green/10' : 'border-slate-verdant/40'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          {categoryLabel && <p className="micro text-newsprint-gray">{categoryLabel}</p>}
+          <Link
+            to={`/agents/${agent.chain_id}/${agent.token_id}`}
+            className="mt-1 block font-serif text-lg font-medium leading-tight hover:text-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green"
+          >
+            {agent.name}
+          </Link>
+        </div>
+        {winner && (
+          <span className="flex shrink-0 items-center gap-1 rounded-full border hairline border-highlighter-green/50 bg-highlighter-green/10 px-2 py-1 text-highlighter-green">
+            <TrophyIcon className="h-3 w-3" />
+            <span className="micro normal-case">Best</span>
+          </span>
+        )}
+      </div>
+
+      <p className="micro mt-3 text-newsprint-gray">Owner {shortAddress(agent.owner_address)}</p>
+
+      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
+        {metrics.map((m) => (
+          <div key={m.label} className="min-w-0">
+            <dt className="micro text-newsprint-gray">{m.label}</dt>
+            <dd className="mt-0.5 text-sm tabular-nums text-press-black">{m.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {agent.a2a_endpoint && (
+        <a
+          href={agent.a2a_endpoint}
+          target="_blank"
+          rel="noreferrer"
+          className="micro mt-4 truncate text-press-black hover:text-highlighter-green focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          title={agent.a2a_endpoint}
+        >
+          {agent.a2a_endpoint}
+        </a>
+      )}
+
+      <label className="mt-5 flex cursor-pointer items-center gap-2 border-t hairline border-slate-verdant/40 pt-4 text-sm">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={() => onToggle(agent.agent_id)}
+          aria-label={`Hire ${agent.name}`}
+          className="h-4 w-4 accent-highlighter-green"
+        />
+        Hire for a paid session
+      </label>
+    </article>
   )
 }
 
@@ -613,7 +654,7 @@ function ShortlistSearch({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Name, endpoint, tag"
-          className="hairline input-hairline w-56 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          className="border hairline input-hairline w-56 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
         />
       </div>
 
