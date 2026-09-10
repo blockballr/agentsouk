@@ -371,6 +371,24 @@ export async function getActiveAccount(): Promise<string | null> {
   }
 }
 
+// current time from the chain, not the host clock: EIP-3009 authorizations
+// carry validAfter/validBefore checked against block.timestamp on-chain, so a
+// local clock that drifts behind the chain produces an authorization that is
+// already expired when the relay broadcasts it. Falls back to the local clock
+// only if the provider cannot return a block.
+export async function getChainTimestamp(): Promise<number | null> {
+  try {
+    const block = (await (await getProvider()).request({
+      method: "eth_getBlockByNumber",
+      params: ["latest", false],
+    })) as { timestamp?: string } | null;
+    if (block?.timestamp) return Number.parseInt(block.timestamp, 16);
+  } catch {
+    // provider refused or no block: caller falls back to the local clock
+  }
+  return null;
+}
+
 async function requestAccounts(provider: Eip1193Provider): Promise<string> {
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   if (!accounts?.length) throw new Error("No account authorized.");

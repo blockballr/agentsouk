@@ -40,7 +40,17 @@ async function main() {
   const payTo = getAddress(pr.payTo);
 
   // 2. Build the EIP-3009 transfer authorization and sign it.
-  const now = Math.floor(Date.now() / 1000);
+  // anchor the validity window to chain time: the token checks validAfter and
+  // validBefore against block.timestamp, so a host clock behind the chain
+  // would sign an authorization that is already expired on-chain
+  const block = await fetch("https://bsc-dataseed.binance.org", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBlockByNumber", params: ["latest", false] }),
+  }).then((r) => r.json()).catch(() => null);
+  const now = block?.result?.timestamp
+    ? Number.parseInt(block.result.timestamp, 16)
+    : Math.floor(Date.now() / 1000);
   const nonce = `0x${"42".repeat(32)}`;
   const message = {
     from: wallet.address,

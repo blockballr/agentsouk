@@ -6,7 +6,7 @@
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
 import { getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
-import { activeAccountMatches, BSC_CHAIN_ID_HEX, ensureBscChain, getActiveAccount, SmartWalletUnsupportedError, WalletUnavailableError, WrongSignerError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
+import { activeAccountMatches, BSC_CHAIN_ID_HEX, ensureBscChain, getActiveAccount, getChainTimestamp, SmartWalletUnsupportedError, WalletUnavailableError, WrongSignerError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
 
 export type HireRequirementsData = X402Requirements['data']
 
@@ -109,7 +109,10 @@ export async function signAndSettleHire(
       }
     }
     onPhase('signing')
-    const now = Math.floor(Date.now() / 1000)
+    // validity is checked on-chain against block.timestamp, so anchor the
+    // window to chain time; a host clock behind the chain would otherwise
+    // sign an authorization that is already expired when the relay sends it
+    const now = (await getChainTimestamp()) ?? Math.floor(Date.now() / 1000)
     const message = {
       from: signer,
       to: pr.payTo,
