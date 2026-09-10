@@ -45,6 +45,7 @@ function parseTokenId(raw: string): string | null {
 }
 
 export function ListAgentPage() {
+  const [foundTokenId, setFoundTokenId] = useState<string | null>(null)
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
       <p className="micro text-newsprint-gray">List your agent</p>
@@ -63,7 +64,8 @@ export function ListAgentPage() {
 
       <CreateSection />
       <ChecklistSection />
-      <LookupSection />
+      <LookupSection onFound={setFoundTokenId} />
+      <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
     </section>
   )
 }
@@ -256,7 +258,7 @@ function PromptGenerator() {
   }
 
   const inputClass =
-    'hairline input-hairline w-full bg-bone-white px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
+    'border hairline input-hairline w-full bg-bone-white px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
 
   return (
     <div className="mt-12 rounded-[14px] border hairline border-slate-verdant/40 p-8">
@@ -346,7 +348,7 @@ function PromptGenerator() {
 }
 
 
-function LookupSection() {
+function LookupSection({ onFound }: { onFound: (tokenId: string) => void }) {
   const [input, setInput] = useState('')
   const [state, setState] = useState<LookupState>({ phase: 'idle' })
 
@@ -359,7 +361,12 @@ function LookupSection() {
     setState({ phase: 'loading' })
     try {
       const agent = await getAgentDetail(String(BSC_CHAIN_ID), tokenId)
-      setState(agent ? { phase: 'found', agent } : { phase: 'missing' })
+      if (agent) {
+        onFound(tokenId)
+        setState({ phase: 'found', agent })
+      } else {
+        setState({ phase: 'missing' })
+      }
     } catch {
       setState({ phase: 'error' })
     }
@@ -394,7 +401,7 @@ function LookupSection() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="45381, 56:45381, or https://8004scan.io/..."
-          className="hairline input-hairline w-full max-w-md bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          className="border hairline input-hairline w-full max-w-md bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
         />
         <button
           type="submit"
@@ -433,6 +440,118 @@ function LookupSection() {
         )}
         {state.phase === 'found' && <FoundAgent agent={state.agent} />}
       </div>
+    </div>
+  )
+}
+
+function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
+  const [tokenId, setTokenId] = useState(defaultTokenId)
+  const [contact, setContact] = useState('')
+  const [note, setNote] = useState('')
+  const [phase, setPhase] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [error, setError] = useState<string | null>(null)
+
+  const inputClass =
+    'border hairline input-hairline w-full bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setPhase('sending')
+    try {
+      const res = await fetch('/api/listings/request', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tokenId, contact, note }),
+      })
+      const body = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null
+      if (!res.ok || !body?.success) {
+        setError(body?.error ?? 'The request failed. Try again in a moment.')
+        setPhase('error')
+        return
+      }
+      setPhase('sent')
+    } catch {
+      setError('The request failed. Try again in a moment.')
+      setPhase('error')
+    }
+  }
+
+  return (
+    <div className="mt-16">
+      <div className="border-t hairline border-slate-verdant/40 pt-8">
+        <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
+          4. Request a listing review
+        </h2>
+        <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
+          Worked through the checklist and still not on the shelf? Send the
+          token id and a way to reach you. A human reads every request; nothing
+          here notifies automatically.
+        </p>
+      </div>
+
+      {phase === 'sent' ? (
+        <p className="mt-8 border hairline border-highlighter-green/50 px-8 py-6 text-sm text-press-black">
+          Request received. We read every one and reply to the contact you left.
+        </p>
+      ) : (
+        <form onSubmit={(e) => void submit(e)} className="mt-8 max-w-xl space-y-4">
+          <div>
+            <label className="micro text-newsprint-gray" htmlFor="review-token-id">
+              BSC token id
+            </label>
+            <input
+              id="review-token-id"
+              type="text"
+              inputMode="numeric"
+              value={tokenId}
+              onChange={(e) => setTokenId(e.target.value)}
+              placeholder="45381"
+              className={`${inputClass} mt-2`}
+            />
+          </div>
+          <div>
+            <label className="micro text-newsprint-gray" htmlFor="review-contact">
+              Contact (email or handle)
+            </label>
+            <input
+              id="review-contact"
+              type="text"
+              value={contact}
+              onChange={(e) => setContact(e.target.value)}
+              placeholder="you@example.com or @handle"
+              autoComplete="email"
+              className={`${inputClass} mt-2`}
+            />
+          </div>
+          <div>
+            <label className="micro text-newsprint-gray" htmlFor="review-note">
+              Note <span className="normal-case">(optional)</span>
+            </label>
+            <textarea
+              id="review-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              maxLength={500}
+              placeholder="What you fixed since the last check."
+              className={`${inputClass} mt-2`}
+            />
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-newsprint-gray">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={phase === 'sending'}
+            className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {phase === 'sending' ? 'Sending…' : 'Request review'}
+          </button>
+        </form>
+      )}
     </div>
   )
 }

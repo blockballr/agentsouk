@@ -2,8 +2,6 @@ import "server-only";
 
 import {
   verifyTypedData,
-  verifyMessage,
-  recoverAddress,
   getAddress,
   hashTypedData,
   createPublicClient,
@@ -33,8 +31,19 @@ function pseudoTx(paymentId: string): string {
   return `${SANDBOX_TX_PREFIX}${hex.slice(0, 24)}`.toLowerCase();
 }
 
-function isExpired(validBefore: bigint): boolean {
-  return BigInt(Math.floor(Date.now() / 1000)) > validBefore;
+// EIP-3009 validAfter/validBefore are checked on-chain against
+// block.timestamp, so the facilitator must judge them against chain time, not
+// the host clock: a host clock that drifts behind the chain would otherwise
+// reject an authorization the chain would accept (or the reverse)
+async function chainNow(): Promise<bigint> {
+  try {
+    const client = createPublicClient({ chain: bsc, transport: http(BSC_RPC) });
+    const block = await client.getBlock({ blockTag: "latest" });
+    if (block?.timestamp) return block.timestamp;
+  } catch {
+    // RPC unavailable: fall back to the host clock
+  }
+  return BigInt(Math.floor(Date.now() / 1000));
 }
 
 function buildMessage(req: PaymentRequirements, auth: PaymentPayload["payload"]["authorization"]): Eip3009Message {
@@ -106,8 +115,9 @@ async function settleSandboxChecks(
     return { ok: false, error: "Malformed authorization payload" };
   }
 
-  if (isExpired(message.validBefore)) return { ok: false, error: "Authorization expired" };
-  if (message.validAfter > BigInt(Math.floor(Date.now() / 1000))) {
+  const nowChain = await chainNow();
+  if (nowChain > message.validBefore) return { ok: false, error: "Authorization expired" };
+  if (message.validAfter > nowChain) {
     return { ok: false, error: "Authorization not yet valid" };
   }
   if (message.value <= 0n) return { ok: false, error: "Non-positive value" };
@@ -123,19 +133,6 @@ async function settleSandboxChecks(
   }).catch(() => false);
 
   if (!ok) {
-    // TEMP DEBUG (remove after rehearsal): who actually signed?
-    const recovered = await recoverAddress({
-      hash: hashTypedData({
-        domain,
-        types: EIP3009_TYPES,
-        primaryType: "TransferWithAuthorization",
-        message,
-      }),
-      signature: auth.signature as `0x${string}`,
-    }).catch((e) => `recover-error: ${String(e).slice(0, 120)}`);
-    console.error(
-      `[settle-debug] from=${message.from} recovered=${recovered}`,
-    );
     if (!isSmartWalletVerifyEnabled()) {
       return { ok: false, error: "Signature verification failed" };
     }

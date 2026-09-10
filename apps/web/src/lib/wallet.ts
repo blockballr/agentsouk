@@ -371,6 +371,24 @@ export async function getActiveAccount(): Promise<string | null> {
   }
 }
 
+// current time from the chain, not the host clock: EIP-3009 authorizations
+// carry validAfter/validBefore checked against block.timestamp on-chain, so a
+// local clock that drifts behind the chain produces an authorization that is
+// already expired when the relay broadcasts it. Falls back to the local clock
+// only if the provider cannot return a block.
+export async function getChainTimestamp(): Promise<number | null> {
+  try {
+    const block = (await (await getProvider()).request({
+      method: "eth_getBlockByNumber",
+      params: ["latest", false],
+    })) as { timestamp?: string } | null;
+    if (block?.timestamp) return Number.parseInt(block.timestamp, 16);
+  } catch {
+    // provider refused or no block: caller falls back to the local clock
+  }
+  return null;
+}
+
 async function requestAccounts(provider: Eip1193Provider): Promise<string> {
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   if (!accounts?.length) throw new Error("No account authorized.");
@@ -508,29 +526,6 @@ export async function signTransferAuthorization(
     signature: signature as `0x${string}`,
   });
   if (recovered.toLowerCase() !== address.toLowerCase()) {
-    // TEMP DEBUG: ship the failed signature to the backend for dissection
-    try {
-      void fetch("/api/x402/debug-sig", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          signature,
-          message: {
-            from: message.from,
-            to: message.to,
-            value: message.value,
-            validAfter: message.validAfter,
-            validBefore: message.validBefore,
-            nonce: message.nonce,
-          },
-          domain,
-          recovered,
-          expected: address,
-        }),
-      });
-    } catch {
-      // best-effort diagnostics only
-    }
     throw new WrongSignerError(recovered, address);
   }
   return signature;

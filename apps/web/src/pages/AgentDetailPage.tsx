@@ -533,7 +533,8 @@ function HirePanel({
             <p className="mt-3 text-[11px] leading-relaxed text-newsprint-gray">
               Sandbox settlement: the signature was verified and the session is
               recorded by the facilitator; no on-chain transfer occurred. Live
-              BNB settlement uses the same flow with the B402 facilitator.
+              BNB settlement uses the same flow, with the relay broadcasting the
+              authorization to the agent's own wallet.
             </p>
           )}
           <DeliveryPanel paymentId={result.paymentId} />

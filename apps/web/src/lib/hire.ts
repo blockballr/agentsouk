@@ -6,7 +6,7 @@
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
 import { getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
-import { activeAccountMatches, getActiveAccount, SmartWalletUnsupportedError, WalletUnavailableError, WrongSignerError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
+import { activeAccountMatches, BSC_CHAIN_ID_HEX, ensureBscChain, getActiveAccount, getChainTimestamp, SmartWalletUnsupportedError, WalletUnavailableError, WrongSignerError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
 
 export type HireRequirementsData = X402Requirements['data']
 
@@ -74,6 +74,19 @@ export async function signAndSettleHire(
     // via ERC-1271, which our facilitator cannot verify — fail early with a
     // clear message instead of an opaque signature-verification error
     if (await isSmartWalletConnected()) throw new SmartWalletUnsupportedError()
+    // the signer's chain must be BSC at sign time, not just at hire start:
+    // the wallet may have switched networks between connect and settle, and
+    // signing chain-56 typed data on another chain produces a signature that
+    // either errors (MetaMask) or silently recovers to the wrong address
+    // (Rabby), both indistinguishable from a wrong-wallet failure to the user
+    const chain = await ensureBscChain()
+    if (chain?.toLowerCase() !== BSC_CHAIN_ID_HEX) {
+      return {
+        success: false,
+        error: 'Wallet is not on BNB Smart Chain — switch to BSC and retry.',
+        cancelled: true,
+      }
+    }
     // sign with the wallet's OWN active account, re-read at sign time: the
     // caller's address may be stale after an account switch, and the wallet
     // UI always signs with its currently active account — so the `from` must
@@ -96,7 +109,10 @@ export async function signAndSettleHire(
       }
     }
     onPhase('signing')
-    const now = Math.floor(Date.now() / 1000)
+    // validity is checked on-chain against block.timestamp, so anchor the
+    // window to chain time; a host clock behind the chain would otherwise
+    // sign an authorization that is already expired when the relay sends it
+    const now = (await getChainTimestamp()) ?? Math.floor(Date.now() / 1000)
     const message = {
       from: signer,
       to: pr.payTo,

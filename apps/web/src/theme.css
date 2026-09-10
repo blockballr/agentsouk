@@ -90,7 +90,6 @@
       hue-rotate(80deg) brightness(1.02) contrast(0.83);
   }
   .hairline {
-    border-width: 1px;
     border-style: solid;
   }
   .input-hairline {
