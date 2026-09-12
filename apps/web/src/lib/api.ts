@@ -180,13 +180,202 @@ export async function getCompareCommentary(
   }
 }
 
-export async function deliverTask(body: DeliverBody): Promise<DeliverData> {
+export async function deliverTask(body: DeliverBody): Promise<DeliverData & { taskId?: string }> {
   const res = await fetch(`${BASE}/x402/deliver`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const payload: { success: boolean; data?: DeliverData; error?: string } = await res.json()
+  const payload: { success: boolean; data?: DeliverData & { taskId?: string }; error?: string } = await res.json()
   if (!payload.success) throw new Error(payload.error ?? `deliver ${res.status}`)
-  return payload.data as DeliverData
+  return payload.data as DeliverData & { taskId?: string }
+}
+
+export type HireTaskStatus = 'ready' | 'running' | 'delivered' | 'failed' | 'gated'
+
+export interface HireTask {
+  id: string
+  paymentId: string
+  chainId: number
+  tokenId: string
+  agentName: string
+  status: HireTaskStatus
+  tool?: string
+  args?: Record<string, unknown>
+  taskText?: string
+  result?: string
+  error?: string
+  protocol?: 'mcp' | 'a2a'
+  quality?: { score: number; grade: 'good' | 'partial' | 'poor'; reason: string }
+  attempts: number
+  maxAttempts: number
+  createdAt: string
+  updatedAt: string
+  history: { at: string; status: string; note?: string }[]
+}
+
+export async function getTask(taskId: string): Promise<{
+  task: HireTask
+  retry: { allowed: boolean; delayMs?: number }
+  metrics: { tokenId: string; delivered: number; failed: number; gated: number; total: number; successRate: number; avgQuality: number }
+} | null> {
+  const res = await fetch(`${BASE}/tasks/${taskId}`)
+  if (!res.ok) return null
+  return res.json()
+}
+
+export async function getTasksByPayment(paymentId: string): Promise<HireTask[]> {
+  const res = await fetch(`${BASE}/tasks?paymentId=${encodeURIComponent(paymentId)}`)
+  if (!res.ok) return []
+  const body = await res.json()
+  return body.tasks ?? []
+}
+
+export async function retryTask(taskId: string): Promise<HireTask | null> {
+  const res = await fetch(`${BASE}/tasks/${taskId}/retry`, { method: 'POST' })
+  const body = await res.json().catch(() => null)
+  if (!res.ok || !body?.task) throw new Error(body?.error ?? `retry ${res.status}`)
+  return body.task as HireTask
+}
+
+export interface ActiveHireSession {
+  paymentId: string
+  chainId: number
+  tokenId: string
+  agentName: string
+  client: string
+  spendCapUsd: number
+  expiresAt: string
+  mode: 'sandbox' | 'prod' | 'b402'
+  createdAt: string
+}
+
+export type JobStatus = 'Open' | 'Funded' | 'Submitted' | 'Completed' | 'Rejected' | 'Expired'
+
+export interface Erc8183Job {
+  id: string
+  client: string
+  provider: string
+  evaluator: string
+  description: string
+  chainId: number
+  tokenId: string
+  agentName: string
+  paymentId?: string
+  budgetUsd: number
+  expiredAt: string
+  status: JobStatus
+  deliverable?: string
+  attestation?: string
+  taskId?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OngoingBundle {
+  sessions: {
+    session: ActiveHireSession
+    task: HireTask | null
+    job: Erc8183Job | null
+  }[]
+  recentTasks: {
+    task: HireTask
+    session: ActiveHireSession | null
+    job: Erc8183Job | null
+  }[]
+  counts: {
+    activeHires: number
+    running: number
+    ready: number
+    delivered: number
+    failed: number
+    jobsFunded?: number
+    jobsSubmitted?: number
+    jobsCompleted?: number
+  }
+}
+
+export async function getOngoing(client?: string | null): Promise<OngoingBundle> {
+  const qs = client ? `?client=${encodeURIComponent(client)}` : ''
+  const res = await fetch(`${BASE}/sessions${qs}`)
+  if (!res.ok) throw new Error(`sessions ${res.status}`)
+  const body = await res.json()
+  return {
+    sessions: body.sessions ?? [],
+    recentTasks: body.recentTasks ?? [],
+    counts: body.counts ?? {
+      activeHires: 0,
+      running: 0,
+      ready: 0,
+      delivered: 0,
+      failed: 0,
+    },
+  }
+}
+
+export async function actOnJob(
+  jobId: string,
+  action: 'complete' | 'reject' | 'claimRefund' | 'submit',
+  body: { by?: string; reason?: string; deliverable?: string } = {},
+): Promise<Erc8183Job> {
+  const res = await fetch(`${BASE}/jobs/${jobId}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action, ...body }),
+  })
+  const payload = await res.json().catch(() => null)
+  if (!res.ok || !payload?.job) throw new Error(payload?.error ?? `job ${res.status}`)
+  return payload.job as Erc8183Job
+}
+
+export async function getBoostStatus(chainId: number, tokenId: string): Promise<{
+  eligible: boolean
+  checks: { key: string; label: string; ok: boolean; detail?: string }[]
+  missing: string[]
+  owners: string[]
+  boost: { expiresAt: string; days: number } | null
+}> {
+  const res = await fetch(
+    `${BASE}/boosts?chainId=${chainId}&tokenId=${encodeURIComponent(tokenId)}`,
+  )
+  const payload = await res.json().catch(() => null)
+  if (!res.ok || !payload?.success) {
+    throw new Error(payload?.error ?? `boost status ${res.status}`)
+  }
+  return {
+    eligible: Boolean(payload.eligible),
+    checks: payload.checks ?? [],
+    missing: payload.missing ?? [],
+    owners: payload.owners ?? [],
+    boost: payload.boost ?? null,
+  }
+}
+
+export async function activateBoost(body: {
+  chainId: number
+  tokenId: string
+  days?: number
+  paymentId?: string
+  contact?: string
+  owner?: string
+  signature?: string
+  nonce?: string
+}): Promise<{ expiresAt: string; days: number }> {
+  const res = await fetch(`${BASE}/boosts`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const payload = await res.json().catch(() => null)
+  if (!res.ok || !payload?.success) {
+    const extra =
+      Array.isArray(payload?.missing) && payload.missing.length
+        ? ` Missing: ${payload.missing.join(', ')}.`
+        : ''
+    throw new Error((payload?.error ?? `boost ${res.status}`) + extra)
+  }
+  return {
+    expiresAt: payload.boost.expiresAt as string,
+    days: payload.boost.days as number,
+  }
 }

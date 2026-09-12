@@ -3,9 +3,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { connectWallet, ensureBscChain } from '../lib/wallet'
 import { hireErrorText, runHire, type HireAgentRef } from '../lib/hire'
 import { getAgentDetail } from '../lib/api'
-import { addToCart, clearCart } from '../lib/cart'
+import { addToCart, clearCart, removeFromCart } from '../lib/cart'
 import { categoryOf } from '../lib/compare'
-import { getShortlist } from '../lib/shortlist'
+import { getShortlist, removeFromShortlist } from '../lib/shortlist'
 
 type CartPhase = 'idle' | 'adding' | 'added' | 'full' | 'error'
 
@@ -35,6 +35,7 @@ export function CompareBar({
   ids,
   onClear,
   onCompare,
+  onHired,
   hire,
   cartNoun = 'agents',
 }: {
@@ -44,6 +45,9 @@ export function CompareBar({
   ids?: string[]
   onClear: () => void
   onCompare: () => void
+  // settle success: drop hired agents from the page shortlist so the bar count
+  // tracks what is left, not what was hired
+  onHired?: (keys: string[]) => void
   // the agents the buttons act on: checked selection on the compare table,
   // bests-of-shortlist on the marketplace; drives both the primary add-to-cart
   // and the secondary direct hire
@@ -198,6 +202,13 @@ export function CompareBar({
       })
       // a rejected signature means the user said stop; settled items stay
       if (outcome.cancelled) break
+      if (outcome.success) {
+        // direct hire is a completed checkout: drop the agent from cart and
+        // shortlist so the bar does not keep a hired count around
+        removeFromCart(item.agent.chainId, item.agent.tokenId)
+        removeFromShortlist([item.key])
+        onHired?.([item.key])
+      }
     }
     setRunning(false)
   }

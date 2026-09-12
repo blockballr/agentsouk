@@ -44,6 +44,25 @@ export function ComparePage() {
     setSp(new URLSearchParams(), { replace: true })
   }
 
+  // settled hires leave the table selection, shortlist, and url ids so the
+  // floating bar count is what is left to hire, not what was already paid
+  function handleHired(keys: string[]) {
+    const hired = new Set(keys)
+    const hiredTokenIds = new Set(keys.map((k) => k.split('/')[1]))
+    setSelectedIds((prev) =>
+      prev.filter((id) => !hiredTokenIds.has(id.split(':').pop() ?? '')),
+    )
+    const source = effectiveIds.length > 0 ? effectiveIds : shortlistIds
+    const next = source.filter((id) => !hired.has(id))
+    setShortlistIds(next)
+    persistShortlist(next)
+    if (effectiveIds.length > 0) {
+      const nextSp = new URLSearchParams()
+      if (next.length > 0) nextSp.set('ids', next.join(','))
+      setSp(nextSp, { replace: true })
+    }
+  }
+
   // same floating bar as the marketplace; with url ids the action anchors the
   // table, from the picker it navigates explicitly to the shortlisted set
   function scrollToTable() {
@@ -142,9 +161,10 @@ export function ComparePage() {
         ids={effectiveIds.length > 0 ? effectiveIds : shortlistIds}
         onClear={clearSelection}
         onCompare={effectiveIds.length > 0 ? scrollToTable : goCompare}
+        onHired={handleHired}
         // derive the actions from the RENDERED table agents: the selection is
         // re-synced to the loaded set on every load, so the button counts are
-        // always what the actions would act on — never a cross-id format
+        // always what the actions would act on - never a cross-id format
         // comparison that can silently never pass
         hire={effectiveIds.length > 0 && !loading && !error && agents.length > 0 ? { winners: selectedAgents } : undefined}
       />
@@ -275,7 +295,7 @@ function Picker({
       )}
 
       <p className="mt-10 text-xs text-newsprint-gray">
-        Pick at least two to build the table — the floating bar takes over
+        Pick at least two to build the table, the floating bar takes over
         from there.
       </p>
     </div>
@@ -410,7 +430,7 @@ function CompareGroup({
     <section aria-label={label}>
       <p className="micro text-newsprint-gray">
         {label}
-        {winnerId ? ' — best highlighted' : ''}
+        {winnerId ? ' · best highlighted' : ''}
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {agents.map((a) => (
@@ -438,7 +458,7 @@ function CompareCard({
     { label: 'Score', value: formatScore(agent.total_score) },
     { label: 'Avg feedback', value: formatScore(agent.average_score) },
     { label: 'Hires', value: formatNumber(agent.total_feedbacks) },
-    { label: 'Health', value: agent.health_score !== null ? formatScore(agent.health_score) : '—' },
+    { label: 'Health', value: agent.health_score !== null ? formatScore(agent.health_score) : 'n/a' },
     { label: 'Verified', value: agent.is_verified ? 'yes' : 'no' },
     { label: 'x402', value: agent.x402_supported ? 'yes' : 'no' },
   ]

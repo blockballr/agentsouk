@@ -71,7 +71,7 @@ export async function signAndSettleHire(
   const pr = data.paymentRequirements
   try {
     // honest limitation: smart-account (ERC-4337) signatures validate on-chain
-    // via ERC-1271, which our facilitator cannot verify — fail early with a
+    // via ERC-1271, which our facilitator cannot verify - fail early with a
     // clear message instead of an opaque signature-verification error
     if (await isSmartWalletConnected()) throw new SmartWalletUnsupportedError()
     // the signer's chain must be BSC at sign time, not just at hire start:
@@ -83,19 +83,19 @@ export async function signAndSettleHire(
     if (chain?.toLowerCase() !== BSC_CHAIN_ID_HEX) {
       return {
         success: false,
-        error: 'Wallet is not on BNB Smart Chain — switch to BSC and retry.',
+        error: 'Wallet is not on BNB Smart Chain, switch to BSC and retry.',
         cancelled: true,
       }
     }
     // sign with the wallet's OWN active account, re-read at sign time: the
     // caller's address may be stale after an account switch, and the wallet
-    // UI always signs with its currently active account — so the `from` must
+    // UI always signs with its currently active account - so the `from` must
     // come from the wallet itself. account switching self-corrects here
     const signer = await getActiveAccount()
     if (!signer) {
       return {
         success: false,
-        error: 'No wallet account active — reconnect.',
+        error: 'No wallet account active, reconnect.',
         cancelled: true,
       }
     }
@@ -104,7 +104,7 @@ export async function signAndSettleHire(
     if (!(await activeAccountMatches(signer))) {
       return {
         success: false,
-        error: 'Wallet account changed — reconnect and try again.',
+        error: 'Wallet account changed, reconnect and try again.',
         cancelled: true,
       }
     }
