@@ -2,12 +2,17 @@ import "server-only";
 
 import { fetchAgentDetail } from "@/lib/scanner";
 import { getPaymentDurable } from "./receipts-store";
+import {
+  ensureTaskForPayment,
+  getTaskByPayment,
+  markTaskDelivered,
+  markTaskFailed,
+  markTaskRunning,
+} from "./tasks";
+import { getJobByPayment, submitJob } from "./jobs";
 
-// the delivery half of hire: a settled receipt unlocks invoking the agent's
-// own endpoint. two protocols exist in the wild today, both JSON-RPC over HTTP:
-// MCP (initialize, tools/list, tools/call) and A2A (agent card, message/send)
-// agents that gate direct calls behind their own x402 payment get surfaced as
-// gated rather than faked
+// the delivery half of hire: a settled receipt unlocks invoking the agent's own endpoint.
+// Two JSON-RPC protocols exist: MCP (initialize, tools/list, tools/call) and A2A (agent card, message/send); agents that gate direct calls behind their own x402 payment are surfaced as gated, not faked.
 
 const HTTP_TIMEOUT_MS = 20000;
 
@@ -224,11 +229,16 @@ export interface DeliverInput {
   tool?: string;
   args?: Record<string, unknown>;
   task?: string;
+  taskId?: string;
 }
 
 export async function deliver(input: DeliverInput): Promise<
-  | (DeliverOutcome & { agent: { chainId: number; tokenId: string; name: string }; paymentId: string })
-  | { ok: false; error: string }
+  | (DeliverOutcome & {
+      agent: { chainId: number; tokenId: string; name: string };
+      paymentId: string;
+      taskId?: string;
+    })
+  | { ok: false; error: string; taskId?: string }
 > {
   const receipt = await getPaymentDurable(input.paymentId);
   if (!receipt || !receipt.activated) {
@@ -238,6 +248,33 @@ export async function deliver(input: DeliverInput): Promise<
   const detail = await fetchAgentDetail(receipt.agent.chainId, receipt.agent.tokenId);
   if (!detail) {
     return { ok: false, error: "Agent left the registry since the hire." };
+  }
+
+  // decide the real execution path first: MCP is preferred when registered
+  let willRun = false;
+  if (detail.mcp_server) {
+    willRun = Boolean(input.tool);
+  } else if (detail.a2a_endpoint) {
+    willRun = Boolean(input.task);
+  }
+
+  let trackedId = input.taskId;
+  if (!trackedId && willRun) {
+    trackedId =
+      getTaskByPayment(input.paymentId)?.id ??
+      ensureTaskForPayment({
+        paymentId: input.paymentId,
+        chainId: receipt.agent.chainId,
+        tokenId: receipt.agent.tokenId,
+        agentName: receipt.agent.name,
+      }).id;
+  }
+  if (willRun && trackedId) {
+    markTaskRunning(trackedId, {
+      tool: input.tool,
+      args: input.args,
+      taskText: input.task,
+    });
   }
 
   let outcome: DeliverOutcome;
@@ -251,16 +288,56 @@ export async function deliver(input: DeliverInput): Promise<
       outcome = await deliverA2a(detail.a2a_endpoint, input.task);
     }
   } else {
-    return {
-      ok: false,
-      error:
-        "This agent has no callable endpoint registered (no MCP server, no A2A endpoint), so settlement can be recorded but nothing can be delivered.",
-    };
+    const error =
+      "This agent has no callable endpoint registered (no MCP server, no A2A endpoint), so settlement can be recorded but nothing can be delivered.";
+    const triedRun = Boolean(input.tool || input.task);
+    if (triedRun) {
+      trackedId =
+        trackedId ??
+        getTaskByPayment(input.paymentId)?.id ??
+        ensureTaskForPayment({
+          paymentId: input.paymentId,
+          chainId: receipt.agent.chainId,
+          tokenId: receipt.agent.tokenId,
+          agentName: receipt.agent.name,
+        }).id;
+      markTaskRunning(trackedId, { tool: input.tool, args: input.args, taskText: input.task });
+      markTaskFailed(trackedId, error);
+    }
+    return { ok: false, error, taskId: trackedId };
+  }
+
+  if (willRun && trackedId) {
+    if (outcome.ok && outcome.kind === "deliverable" && outcome.text && !outcome.isError) {
+      markTaskDelivered(trackedId, {
+        result: outcome.text,
+        protocol: outcome.protocol,
+        tool: input.tool,
+        args: input.args,
+        taskText: input.task,
+      });
+      // ERC-8183 Submitted: provider work is ready for evaluator attestation
+      const job = getJobByPayment(input.paymentId);
+      if (job) {
+        submitJob({
+          jobId: job.id,
+          provider: "marketplace",
+          deliverable: outcome.text.slice(0, 500),
+          taskId: trackedId,
+        });
+      }
+    } else if (!outcome.ok || outcome.gated || outcome.isError) {
+      markTaskFailed(trackedId, outcome.error ?? outcome.text ?? "delivery failed", {
+        protocol: outcome.protocol,
+        gated: outcome.gated,
+      });
+    }
   }
 
   return {
     ...outcome,
     agent: { chainId: receipt.agent.chainId, tokenId: receipt.agent.tokenId, name: receipt.agent.name },
     paymentId: input.paymentId,
+    taskId: trackedId,
   };
 }

@@ -198,6 +198,11 @@ interface SnapshotFile {
 let snapshotLoaded = false;
 let snapshotTime: string | null = null;
 
+// force the next query to re-read data/agents.json (used after scout curation)
+export function invalidateSnapshot(): void {
+  snapshotLoaded = false;
+}
+
 // the snapshot is the primary catalogue, and live warming only fills in when it
 // is absent
 async function loadSnapshot(): Promise<boolean> {

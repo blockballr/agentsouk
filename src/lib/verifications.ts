@@ -14,7 +14,63 @@ interface VerificationsFile {
   }[];
 }
 
-export async function loadVerifications(): Promise<Map<string, Verification>> {
+const CACHE_MS = 30_000;
+let cache: { at: number; map: Map<string, Verification> } | null = null;
+let inflight: Promise<Map<string, Verification>> | null = null;
+
+interface VerificationRow {
+  tokenId: string;
+  status: Verification["status"];
+  responseMs: number;
+  checkedAt?: string;
+  quality?: Verification["quality"];
+  concurrency?: Verification["concurrency"];
+}
+
+function asVerification(row: VerificationRow, checkedAt: string | null): Verification | null {
+  if (
+    row?.tokenId == null ||
+    (row.status !== "delivered" && row.status !== "gated" && row.status !== "dead" && row.status !== "unreachable") ||
+    typeof row.responseMs !== "number" ||
+    typeof checkedAt !== "string"
+  ) {
+    return null;
+  }
+  const verification: Verification = {
+    status: row.status,
+    responseMs: row.responseMs,
+    checkedAt,
+  };
+  if (
+    row.quality &&
+    (row.quality.grade === "good" || row.quality.grade === "partial" || row.quality.grade === "poor") &&
+    typeof row.quality.reason === "string" &&
+    typeof row.quality.model === "string"
+  ) {
+    verification.quality = {
+      grade: row.quality.grade,
+      reason: row.quality.reason,
+      model: row.quality.model,
+    };
+  }
+  if (
+    row.concurrency === "parallel-ok" ||
+    row.concurrency === "single-ok" ||
+    row.concurrency === "untested"
+  ) {
+    verification.concurrency = row.concurrency;
+  }
+  return verification;
+}
+
+async function loadOnce(): Promise<Map<string, Verification>> {
+  try {
+    const { loadVerificationsFromDb } = await import("./verifications-store");
+    const db = await loadVerificationsFromDb();
+    if (db.size > 0) return db;
+  } catch {
+  }
+
   const byToken = new Map<string, Verification>();
   try {
     const fs = await import("node:fs/promises");
@@ -22,41 +78,24 @@ export async function loadVerifications(): Promise<Map<string, Verification>> {
     const file = path.join(process.cwd(), "data", "verifications.json");
     const parsed = JSON.parse(await fs.readFile(file, "utf8")) as VerificationsFile;
     for (const r of parsed.results ?? []) {
-      if (
-        r?.tokenId != null &&
-        (r.status === "delivered" || r.status === "gated" || r.status === "dead" || r.status === "unreachable") &&
-        typeof r.responseMs === "number" &&
-        typeof r.checkedAt === "string"
-      ) {
-        const verification: Verification = {
-          status: r.status,
-          responseMs: r.responseMs,
-          checkedAt: r.checkedAt,
-        };
-        if (
-          r.quality &&
-          (r.quality.grade === "good" || r.quality.grade === "partial" || r.quality.grade === "poor") &&
-          typeof r.quality.reason === "string" &&
-          typeof r.quality.model === "string"
-        ) {
-          verification.quality = {
-            grade: r.quality.grade,
-            reason: r.quality.reason,
-            model: r.quality.model,
-          };
-        }
-        if (
-          r.concurrency === "parallel-ok" ||
-          r.concurrency === "single-ok" ||
-          r.concurrency === "untested"
-        ) {
-          verification.concurrency = r.concurrency;
-        }
-        byToken.set(String(r.tokenId), verification);
-      }
+      const verification = asVerification(r, r.checkedAt);
+      if (verification) byToken.set(String(r.tokenId), verification);
     }
   } catch {
-    // missing or unreadable file means no badge anywhere, which is honest
   }
   return byToken;
+}
+
+export async function loadVerifications(): Promise<Map<string, Verification>> {
+  if (cache && Date.now() - cache.at < CACHE_MS) return cache.map;
+  if (inflight) return inflight;
+  inflight = loadOnce()
+    .then((map) => {
+      cache = { at: Date.now(), map };
+      return map;
+    })
+    .finally(() => {
+      inflight = null;
+    });
+  return inflight;
 }

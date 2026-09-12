@@ -198,6 +198,36 @@ export interface ActiveSession {
   createdAt: string;
 }
 
+export interface ActiveHireSession extends ActiveSession {
+  paymentId: string;
+  chainId: number;
+  tokenId: string;
+  agentName: string;
+  client: string;
+}
+
+export function listActiveSessions(): ActiveHireSession[] {
+  const now = Date.now();
+  const out: ActiveHireSession[] = [];
+  for (const p of ledger.values()) {
+    if (!p.activated) continue;
+    if (new Date(p.session.expiresAt).getTime() <= now) continue;
+    out.push({
+      paymentId: p.paymentId,
+      chainId: p.agent.chainId,
+      tokenId: p.agent.tokenId,
+      agentName: p.agent.name,
+      client: p.client,
+      spendCapUsd: p.session.spendCapUsd,
+      expiresAt: p.session.expiresAt,
+      mode: p.mode,
+      createdAt: p.createdAt,
+    });
+  }
+  out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return out;
+}
+
 export function findActiveSession(
   chainId: number,
   tokenId: string,
