@@ -1,8 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { settleSandbox, settleProd } from "@/lib/facilitator";
 import { SettleRequest } from "@/lib/x402";
+import { createHireTask } from "@/lib/tasks";
+import { fundJob } from "@/lib/jobs";
 
 export const dynamic = "force-dynamic";
+
+const DEFAULT_BUDGET_USD = 2;
+
+function afterSettlement(
+  result: {
+    success: boolean;
+    paymentId?: string;
+    error?: string;
+    details?: { client?: string; payTo?: string };
+  },
+  agent: { chainId: number; tokenId: string; name: string },
+  body: SettleRequest,
+  budgetUsd: number,
+) {
+  if (!result.success || !result.paymentId) return result;
+  const client = result.details?.client ?? body.paymentPayload?.payload?.authorization?.from ?? "";
+  const provider = result.details?.payTo ?? body.paymentRequirements?.payTo ?? "";
+  const task = createHireTask({
+    paymentId: result.paymentId,
+    chainId: agent.chainId,
+    tokenId: agent.tokenId,
+    agentName: agent.name,
+  });
+  const job = fundJob({
+    paymentId: result.paymentId,
+    client,
+    provider,
+    description: `Hire ${agent.name}`,
+    chainId: agent.chainId,
+    tokenId: agent.tokenId,
+    agentName: agent.name,
+    budgetUsd,
+  });
+  return { ...result, taskId: task.id, jobId: job.id, jobStatus: job.status };
+}
 
 // FACILITATOR_MODE=prod relays the buyer's EIP-3009 authorization on-chain
 // from a relay wallet and requires RELAY_PRIVATE_KEY (capped at 5 USDC)
@@ -14,6 +51,7 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as
     | (SettleRequest & {
         agent?: { chainId: number; tokenId: string; name: string; symbol: string };
+        amountUsd?: number;
       })
     | null;
 
@@ -31,6 +69,10 @@ export async function POST(req: NextRequest) {
     symbol: "USDC",
   };
 
+  const budgetUsd = typeof body.amountUsd === "number" && body.amountUsd > 0
+    ? body.amountUsd
+    : DEFAULT_BUDGET_USD;
+
   const mode = process.env.FACILITATOR_MODE ?? "sandbox";
 
   if (mode === "prod") {
@@ -42,12 +84,14 @@ export async function POST(req: NextRequest) {
         symbol: agent.symbol ?? "USDC",
       },
     });
-    return NextResponse.json(result, { status: result.success ? 200 : 402 });
+    const wrapped = afterSettlement(result, agent, body, budgetUsd);
+    return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
   }
 
   if (mode === "b402") {
     const result = await settleB402(body, agent);
-    return NextResponse.json(result, { status: result.success ? 200 : 402 });
+    const wrapped = afterSettlement(result, agent, body, budgetUsd);
+    return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
   }
 
   const result = await settleSandbox(body, {
@@ -59,10 +103,8 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json(
-    result.success ? result : { ...result },
-    { status: result.success ? 200 : 402 },
-  );
+  const wrapped = afterSettlement(result, agent, body, budgetUsd);
+  return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
 }
 
 async function settleB402(

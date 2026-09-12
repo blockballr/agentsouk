@@ -3,6 +3,7 @@ import { queryAgents } from "@/lib/scanner";
 import { loadVerifications } from "@/lib/verifications";
 import { isPancakeSwapAgent } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
+import { hydrateBoostsFromDb, isBoosted } from "@/lib/boosts";
 
 export const dynamic = "force-dynamic";
 
@@ -28,15 +29,27 @@ export async function GET(req: NextRequest) {
     pcs,
   });
 
+  await hydrateBoostsFromDb();
   const verifications = await loadVerifications();
-  const items = result.items.map((a) => {
+
+  // paid boosts sort first within the page the query already selected
+  const ranked = [...result.items].sort((a, b) => {
+    const ab = isBoosted(a.chain_id, a.token_id) ? 1 : 0;
+    const bb = isBoosted(b.chain_id, b.token_id) ? 1 : 0;
+    return bb - ab;
+  });
+
+  const items = ranked.map((a) => {
     const verification = verifications.get(a.token_id);
     const withPcs = isPancakeSwapAgent(a.name, a.description ?? "")
       ? { ...a, pcs: true }
       : a;
     const withVerification = verification ? { ...withPcs, verification } : withPcs;
     const activeSession = findActiveSession(a.chain_id, a.token_id);
-    return activeSession ? { ...withVerification, activeSession } : withVerification;
+    const withSession = activeSession
+      ? { ...withVerification, activeSession }
+      : withVerification;
+    return isBoosted(a.chain_id, a.token_id) ? { ...withSession, boosted: true } : withSession;
   });
 
   return NextResponse.json({
