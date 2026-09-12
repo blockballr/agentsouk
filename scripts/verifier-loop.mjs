@@ -1,16 +1,11 @@
-// Autonomous shopper verification loop: the marketplace hires its own listed
-// agents in sandbox mode and records what actually happened.
-//
-// Usage (server must be running on :3000):
-//   node scripts/verifier-loop.mjs
-// writes data/verifications.json; agents whose verdicts were not reached
-// before the wall clock budget are simply left out (absence is honest)
+// Autonomous shopper verification loop: the marketplace hires its own listed agents in sandbox mode and records what actually happened.
+// Usage: BASE_URL=... node scripts/verifier-loop.mjs. Writes data/verifications.json; agents not reached before the budget are left out.
 import { privateKeyToAccount } from "viem/accounts";
 import { getAddress } from "viem";
 import { randomBytes } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const BASE = "http://localhost:3000";
+const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const CHAIN_ID = 56;
 const AMOUNT_USD = 2;
 const BUDGET_MS = 25 * 60 * 1000;
@@ -208,9 +203,8 @@ async function deliverJson(paymentId, extra = {}) {
   );
 }
 
-// concurrency probe: two deliver calls on the same settled paymentId fired
-// simultaneously; both ok means the agent handles parallel requests
-// (MCP: two tools/list rounds; A2A: two real message/send tasks)
+// concurrency probe: two deliver calls on the same settled paymentId fired simultaneously;
+// both ok means the agent handles parallel requests
 async function probeConcurrency(paymentId, protocol) {
   const extra = protocol === "a2a" ? { task: A2A_TASK } : {};
   try {
