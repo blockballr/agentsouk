@@ -20,9 +20,8 @@ export function ComparePage() {
 
   const [shortlistIds, setShortlistIds] = useState<string[]>(() => getShortlist())
 
-  // selecting agents must never swap the view or navigate: the table renders
-  // only from url ids, i.e. after an explicit Compare click on the floating
-  // bar. the picker stays put so multi-select across categories keeps working
+  // selecting agents must never swap the view or navigate; the table renders only from url
+  // ids after an explicit Compare click, so the picker stays put for multi-select
   const effectiveIds = useMemo(() => (urlIds.length > 0 ? urlIds : []), [urlIds])
 
   function toggleId(id: string) {
@@ -44,6 +43,25 @@ export function ComparePage() {
     setSp(new URLSearchParams(), { replace: true })
   }
 
+  // settled hires leave the table selection, shortlist, and url ids so the
+  // floating bar count is what is left to hire, not what was already paid
+  function handleHired(keys: string[]) {
+    const hired = new Set(keys)
+    const hiredTokenIds = new Set(keys.map((k) => k.split('/')[1]))
+    setSelectedIds((prev) =>
+      prev.filter((id) => !hiredTokenIds.has(id.split(':').pop() ?? '')),
+    )
+    const source = effectiveIds.length > 0 ? effectiveIds : shortlistIds
+    const next = source.filter((id) => !hired.has(id))
+    setShortlistIds(next)
+    persistShortlist(next)
+    if (effectiveIds.length > 0) {
+      const nextSp = new URLSearchParams()
+      if (next.length > 0) nextSp.set('ids', next.join(','))
+      setSp(nextSp, { replace: true })
+    }
+  }
+
   // same floating bar as the marketplace; with url ids the action anchors the
   // table, from the picker it navigates explicitly to the shortlisted set
   function scrollToTable() {
@@ -60,14 +78,12 @@ export function ComparePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
-  // per-agent hire selection over the current table agents; the best of each
-  // category starts checked, any row can be toggled. the bar's count always
-  // equals this selection, so it can never go stale
+  // per-agent hire selection over the current table agents; the best of each category
+  // starts checked and the bar's count always equals this selection
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
-  // re-sync on every (re)load of the compared set: selection becomes the
-  // bests of the freshly loaded agents, or the whole set when no bests are
-  // derivable (single agent); stale selections from an earlier compare die here
+  // re-sync selection to the bests of every freshly loaded set (or the whole set when no
+  // bests exist), so stale selections from an earlier compare die here
   useEffect(() => {
     if (agents.length === 0) return
     const winners = Object.values(bestByCategory(agents)).filter((id): id is string => id !== null)
@@ -142,10 +158,9 @@ export function ComparePage() {
         ids={effectiveIds.length > 0 ? effectiveIds : shortlistIds}
         onClear={clearSelection}
         onCompare={effectiveIds.length > 0 ? scrollToTable : goCompare}
-        // derive the actions from the RENDERED table agents: the selection is
-        // re-synced to the loaded set on every load, so the button counts are
-        // always what the actions would act on — never a cross-id format
-        // comparison that can silently never pass
+        onHired={handleHired}
+        // derive the actions from the RENDERED table agents: selection is re-synced on every load,
+        // so the counts always equal what the actions act on
         hire={effectiveIds.length > 0 && !loading && !error && agents.length > 0 ? { winners: selectedAgents } : undefined}
       />
     </section>
@@ -275,7 +290,7 @@ function Picker({
       )}
 
       <p className="mt-10 text-xs text-newsprint-gray">
-        Pick at least two to build the table — the floating bar takes over
+        Pick at least two to build the table, the floating bar takes over
         from there.
       </p>
     </div>
@@ -353,9 +368,8 @@ function CompareTable({
   )
 }
 
-// the best agent of each represented category, one card per category, never a
-// wide table. each card is deliberately the same shape so metrics can be read
-// across categories without a horizontal scroll.
+// the best agent of each represented category, one same-shaped card per category so
+// metrics read across categories without a horizontal scroll
 function CompareWinners({
   agents,
   winners,
@@ -410,7 +424,7 @@ function CompareGroup({
     <section aria-label={label}>
       <p className="micro text-newsprint-gray">
         {label}
-        {winnerId ? ' — best highlighted' : ''}
+        {winnerId ? ' · best highlighted' : ''}
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {agents.map((a) => (
@@ -438,7 +452,7 @@ function CompareCard({
     { label: 'Score', value: formatScore(agent.total_score) },
     { label: 'Avg feedback', value: formatScore(agent.average_score) },
     { label: 'Hires', value: formatNumber(agent.total_feedbacks) },
-    { label: 'Health', value: agent.health_score !== null ? formatScore(agent.health_score) : '—' },
+    { label: 'Health', value: agent.health_score !== null ? formatScore(agent.health_score) : 'n/a' },
     { label: 'Verified', value: agent.is_verified ? 'yes' : 'no' },
     { label: 'x402', value: agent.x402_supported ? 'yes' : 'no' },
   ]
@@ -504,9 +518,8 @@ function CompareCard({
   )
 }
 
-// one fetch per shortlist, cached by sorted agent ids so re-renders and
-// back-navigation never re-call the model; null results are cached too so a
-// failed commentary stays hidden instead of retrying on every keystroke
+// one fetch per shortlist, cached by sorted agent ids so re-renders and back-navigation
+// never re-call the model; null results are cached too
 const commentaryCache = new Map<string, { commentary: string; model: string } | null>()
 
 function CompareCommentary({ agents }: { agents: AgentDetail[] }) {

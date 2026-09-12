@@ -62,6 +62,13 @@ export function MarketplacePage() {
     persistShortlist([])
   }
 
+  function handleHired(keys: string[]) {
+    const drop = new Set(keys)
+    const next = shortlist.filter((id) => !drop.has(id))
+    setShortlist(next)
+    persistShortlist(next)
+  }
+
   // bests of the shortlist, derived from the summaries currently loaded; the
   // bar's primary "Add N best to cart" and secondary "Hire N selected" act on
   // these. when some shortlisted agents are not on the page (or bests cannot
@@ -118,6 +125,7 @@ export function MarketplacePage() {
   }
 
   const totalPages = result ? Math.max(1, Math.ceil(result.total / PAGE_SIZE)) : 1
+  const visibleItems = result ? result.items : []
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
@@ -214,9 +222,9 @@ export function MarketplacePage() {
           <ErrorState onRetry={() => setSp(new URLSearchParams(sp))} />
         ) : loading ? (
           <GridSkeleton />
-        ) : result && result.items.length > 0 ? (
+        ) : result && visibleItems.length > 0 ? (
           <AgentGrid
-            items={result.items}
+            items={visibleItems}
             shortlist={shortlist}
             onToggle={handleToggle}
             cartKeys={cartKeys}
@@ -262,6 +270,7 @@ export function MarketplacePage() {
         count={shortlist.length}
         onClear={clearShortlist}
         onCompare={() => navigate(`/compare?ids=${shortlist.join(',')}`)}
+        onHired={handleHired}
         hire={shortlistTargets.targets.length > 0 ? { winners: shortlistTargets.targets } : undefined}
         cartNoun={shortlistTargets.bestsKnown ? 'best' : 'agents'}
       />
@@ -439,7 +448,7 @@ function AgentCard({
         <dl className="score-strip mt-8 w-full rounded-lg px-4 py-3.5">
           <div className="flex items-start justify-center gap-x-10">
             <Stat label="Score" value={formatScore(agent.total_score)} />
-            <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '—'} />
+            <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '·'} />
             <Stat label="Hires" value={formatNumber(agent.total_feedbacks)} />
           </div>
         </dl>
@@ -454,6 +463,11 @@ function AgentCard({
           ) : (
             <BadgeCell />
           )}
+          {(agent as { boosted?: boolean }).boosted ? (
+            <BadgeCell tone="border-highlighter-green/50 text-highlighter-green" title="Paid boost">
+              Boosted
+            </BadgeCell>
+          ) : null}
           {agent.pcs ? (
             <BadgeCell
               tone="border-slate-verdant/45 text-newsprint-gray"

@@ -8,12 +8,14 @@ import {
   shortAddress,
   timeAgo,
 } from '@agora/core'
-import { deliverTask, getAgentDetail, type DeliverData, type DeliverTool } from '../lib/api'
+import { activateBoost, deliverTask, getAgentDetail, getBoostStatus, getTask, retryTask, type DeliverData, type DeliverTool, type HireTask } from '../lib/api'
 import {
   SmartWalletUnsupportedError,
   changeWallet,
   connectWallet,
   ensureBscChain,
+  getActiveAccount,
+  getProvider,
   isSmartWalletConnected,
 } from '../lib/wallet'
 import {
@@ -210,6 +212,14 @@ export function AgentDetailPage() {
                     Accepts x402
                   </span>
                 )}
+                {(detail as { boosted?: boolean }).boosted && (
+                  <span
+                    title="Paid boost: sorted higher on the marketplace"
+                    className="micro rounded-full border hairline border-highlighter-green/60 bg-highlighter-green/10 px-2.5 py-1 text-highlighter-green"
+                  >
+                    Boosted
+                  </span>
+                )}
                 {detail.verification && (
                   <span
                     title={
@@ -219,7 +229,7 @@ export function AgentDetailPage() {
                     }
                     className={`micro rounded-full border hairline px-2.5 py-1 ${verificationTone[detail.verification.status] ?? verificationTone.dead}`}
                   >
-                    {verificationLabel(detail.verification.status)}
+                    {verificationLabel(detail.verification.status)} · {detail.verification.checkedAt.slice(0, 10)}
                   </span>
                 )}
                 {detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok' && (
@@ -283,7 +293,7 @@ export function AgentDetailPage() {
               <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
                 <h2 className="micro text-newsprint-gray">Health &amp; activity</h2>
                 <div className="mt-6 grid grid-cols-2 gap-6">
-                  <BigMetric label="Health score" value={detail.health_score !== null ? formatScore(detail.health_score) : '—'} />
+                  <BigMetric label="Health score" value={detail.health_score !== null ? formatScore(detail.health_score) : 'n/a'} />
                   <BigMetric label="Status" value={detail.health_status ?? (detail.is_active ? 'active' : 'inactive')} />
                 </div>
               </div>
@@ -301,6 +311,8 @@ export function AgentDetailPage() {
           </div>
 
           {perfProbe && <PerformanceSection probe={perfProbe} />}
+
+          <PnlComingSoon name={detail.name} />
 
           {onchain.length > 0 && (
             <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
@@ -350,6 +362,15 @@ export function AgentDetailPage() {
             You sign a gasless transfer authorization; a facilitator verifies and
             settles it on-chain. Funds go straight to the agent&apos;s wallet.
           </p>
+          <BoostPanel
+            chainId={chainId}
+            tokenId={detail.token_id}
+            name={detail.name}
+            ownerAddress={detail.owner_address}
+            agentWallet={detail.agent_wallet}
+            alreadyBoosted={Boolean((detail as { boosted?: boolean }).boosted)}
+            onBoosted={refreshDetail}
+          />
         </aside>
       </div>
     </div>
@@ -357,6 +378,161 @@ export function AgentDetailPage() {
 }
 
 type HireStep = 'idle' | 'connecting' | 'preview' | 'signing' | 'settling' | 'hired'
+
+function BoostPanel({
+  chainId,
+  tokenId,
+  name,
+  ownerAddress,
+  agentWallet,
+  alreadyBoosted,
+  onBoosted,
+}: {
+  chainId: string
+  tokenId: string
+  name: string
+  ownerAddress: string
+  agentWallet?: string | null
+  alreadyBoosted: boolean
+  onBoosted: () => void
+}) {
+  const [phase, setPhase] = useState<'idle' | 'busy' | 'done' | 'error'>('idle')
+  const [message, setMessage] = useState<string | null>(null)
+  const [account, setAccount] = useState<string | null>(null)
+  const [status, setStatus] = useState<{
+    eligible: boolean
+    checks: { key: string; label: string; ok: boolean; detail?: string }[]
+    missing: string[]
+  } | null>(null)
+
+  useEffect(() => {
+    void getActiveAccount().then(setAccount)
+    void getBoostStatus(Number(chainId), tokenId)
+      .then((s) => setStatus({ eligible: s.eligible, checks: s.checks, missing: s.missing }))
+      .catch(() => setStatus(null))
+  }, [chainId, tokenId])
+
+  const ownerSet = [ownerAddress, agentWallet]
+    .filter((x): x is string => Boolean(x))
+    .map((x) => x.toLowerCase())
+  const isOwner = Boolean(account && ownerSet.includes(account.toLowerCase()))
+
+  async function boost() {
+    setPhase('busy')
+    setMessage(null)
+    try {
+      const addr = account ?? (await connectWallet())
+      setAccount(addr)
+      if (!ownerSet.includes(addr.toLowerCase())) {
+        setPhase('error')
+        setMessage('Connect the wallet that owns this agent (registry owner or agent wallet).')
+        return
+      }
+      if (!status?.eligible) {
+        setPhase('error')
+        setMessage(
+          status?.missing?.length
+            ? `Boost locked until the verifier checklist passes: ${status.missing.join(', ')}.`
+            : 'Boost locked until the verifier checklist passes.',
+        )
+        return
+      }
+
+      const days = 7
+      const nonce = `0x${Date.now().toString(16)}`
+      const ownerForSig = (ownerAddress || addr).toLowerCase()
+      const messageToSign = [
+        'Agent Souk boost',
+        `chainId: ${Number(chainId)}`,
+        `tokenId: ${tokenId}`,
+        `owner: ${ownerForSig}`,
+        `days: ${days}`,
+        `nonce: ${nonce}`,
+      ].join('\n')
+      const signature = (await (await getProvider()).request({
+        method: 'personal_sign',
+        params: [messageToSign, addr],
+      })) as string
+
+      const paymentId = window.prompt(
+        'Paste a settled x402 paymentId from YOUR owner wallet (hire once as owner, then paste that payment id). 7 days.',
+      )
+      if (!paymentId?.trim()) {
+        setPhase('idle')
+        return
+      }
+
+      const result = await activateBoost({
+        chainId: Number(chainId),
+        tokenId,
+        days,
+        paymentId: paymentId.trim(),
+        owner: addr,
+        signature,
+        nonce,
+      })
+      setPhase('done')
+      setMessage(`Boosted until ${new Date(result.expiresAt).toLocaleString()}`)
+      onBoosted()
+    } catch (e) {
+      setPhase('error')
+      setMessage(hireErrorText(e))
+    }
+  }
+
+  if (alreadyBoosted) {
+    return (
+      <div className="mt-6 rounded-[10px] border hairline border-highlighter-green/40 p-4">
+        <p className="micro text-highlighter-green">Boosted listing</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+          This agent sorts higher on the marketplace while the boost is active.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-6 rounded-[10px] border hairline border-slate-verdant/40 p-4">
+      <p className="micro text-newsprint-gray">Boost this listing</p>
+      <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+        Owner-only. You must meet the verifier checklist, sign as the registered
+        owner, and pay with your own settled x402 receipt.
+      </p>
+      {status && !status.eligible && (
+        <ul className="mt-3 space-y-1 text-[11px] text-newsprint-gray">
+          {status.checks.map((c) => (
+            <li key={c.key} className={c.ok ? 'text-highlighter-green' : 'text-press-black'}>
+              {c.ok ? '✓' : '·'} {c.label}
+              {!c.ok && c.detail ? ` · ${c.detail}` : ''}
+            </li>
+          ))}
+        </ul>
+      )}
+      {account && !isOwner && (
+        <p className="mt-3 text-[11px] text-press-black">
+          Connected wallet is not the owner of this agent.
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={() => void boost()}
+        disabled={phase === 'busy' || (status !== null && !status.eligible)}
+        className="micro mt-3 w-full rounded-[5px] border hairline border-highlighter-green/50 px-3 py-2 text-highlighter-green transition hover:bg-highlighter-green/10 disabled:opacity-50"
+      >
+        {phase === 'busy'
+          ? 'Activating…'
+          : status && !status.eligible
+            ? 'Boost locked'
+            : `Boost ${name}`}
+      </button>
+      {message && (
+        <p className={`mt-2 text-[11px] ${phase === 'error' ? 'text-press-black' : 'text-newsprint-gray'}`}>
+          {message}
+        </p>
+      )}
+    </div>
+  )
+}
 
 function HirePanel({
   chainId,
@@ -538,13 +714,6 @@ function HirePanel({
             </p>
           )}
           <DeliveryPanel paymentId={result.paymentId} />
-          <button
-            type="button"
-            onClick={reset}
-            className="micro mt-4 w-full rounded-[5px] border hairline border-slate-verdant/50 px-4 py-3 text-newsprint-gray transition hover:text-press-black"
-          >
-            Done
-          </button>
         </div>
       )}
 
@@ -578,6 +747,8 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
   const [output, setOutput] = useState<string | null>(null)
   const [runError, setRunError] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
+  const [hireTask, setHireTask] = useState<HireTask | null>(null)
+  const [retrying, setRetrying] = useState(false)
 
   async function loadCapabilities() {
     setPhase('loading')
@@ -597,6 +768,11 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
     }
   }
 
+  async function refreshTask(taskId: string) {
+    const payload = await getTask(taskId)
+    if (payload?.task) setHireTask(payload.task)
+  }
+
   async function run() {
     setRunning(true)
     setRunError(null)
@@ -608,10 +784,29 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
       const d = await deliverTask(body)
       setOutput(d.text || '(the agent returned no text)')
       if (d.error) setRunError(d.error)
+      if (d.taskId) await refreshTask(d.taskId)
     } catch (e) {
       setRunError(hireErrorText(e))
     } finally {
       setRunning(false)
+    }
+  }
+
+  async function retry() {
+    if (!hireTask) return
+    setRetrying(true)
+    setRunError(null)
+    try {
+      const t = await retryTask(hireTask.id)
+      if (t) {
+        setHireTask(t)
+        setOutput(t.result ?? output)
+        if (t.error) setRunError(t.error)
+      }
+    } catch (e) {
+      setRunError(hireErrorText(e))
+    } finally {
+      setRetrying(false)
     }
   }
 
@@ -621,6 +816,33 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
   return (
     <div className="mt-4 rounded-[10px] border hairline border-slate-verdant/40 p-4">
       <p className="micro text-newsprint-gray">Run a task</p>
+
+      {hireTask && (
+        <div className="mt-3 rounded-[8px] border hairline border-slate-verdant/30 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="micro text-newsprint-gray">Task {hireTask.status}</span>
+            <span className="micro text-newsprint-gray">
+              attempt {hireTask.attempts}/{hireTask.maxAttempts}
+            </span>
+          </div>
+          {hireTask.quality && (
+            <p className="mt-2 text-[11px] text-newsprint-gray">
+              quality {hireTask.quality.grade} ({hireTask.quality.score})
+              {hireTask.quality.reason ? ` · ${hireTask.quality.reason}` : ''}
+            </p>
+          )}
+          {hireTask.status === 'failed' && hireTask.attempts < hireTask.maxAttempts && (
+            <button
+              type="button"
+              onClick={retry}
+              disabled={retrying}
+              className="micro mt-3 w-full rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+            >
+              {retrying ? 'Retrying…' : 'Retry delivery'}
+            </button>
+          )}
+        </div>
+      )}
 
       {phase === 'idle' && (
         <button
@@ -731,6 +953,62 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
 
 // the scan records what the agent's own get_performance endpoint returned; we
 // publish it verbatim and label it clearly, no math on the claims
+// placeholder PnL shell: layout ships now, live numbers land with verified
+// report endpoints and our own Studio agents
+function PnlComingSoon({ name }: { name: string }) {
+  return (
+    <div className="relative mt-6 overflow-hidden rounded-[14px] border hairline border-slate-verdant/40 p-8">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="micro text-newsprint-gray">Performance / PnL</h2>
+        <span className="micro rounded-full border hairline border-highlighter-green/50 bg-highlighter-green/10 px-2.5 py-1 text-highlighter-green">
+          Coming soon
+        </span>
+      </div>
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-newsprint-gray">
+        Verified PnL for {name} will appear here once the agent reports through a
+        performance endpoint and marketplace probes confirm the numbers. Sample
+        layout only, not live data.
+      </p>
+      <div className="pointer-events-none mt-6 select-none blur-[6px]" aria-hidden="true">
+        <div className="grid gap-4 sm:grid-cols-4">
+          {[
+            { label: '30d PnL', value: '+12.4%' },
+            { label: 'Win rate', value: '68%' },
+            { label: 'Max drawdown', value: '-4.1%' },
+            { label: 'Sharpe', value: '1.82' },
+          ].map((m) => (
+            <div key={m.label} className="rounded-[10px] border hairline border-slate-verdant/30 p-4">
+              <div className="micro text-newsprint-gray">{m.label}</div>
+              <div className="mt-2 font-serif text-[28px] leading-none text-press-black">{m.value}</div>
+            </div>
+          ))}
+        </div>
+        <svg viewBox="0 0 640 160" className="mt-6 h-36 w-full" role="presentation">
+          <polyline
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="text-highlighter-green"
+            points="0,120 40,110 80,125 120,90 160,100 200,70 240,85 280,55 320,65 360,40 400,50 440,35 480,45 520,28 560,38 600,22 640,30"
+          />
+          <polyline
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="text-slate-verdant"
+            strokeDasharray="4 4"
+            points="0,130 640,100"
+          />
+        </svg>
+      </div>
+      <p className="mt-6 text-[11px] leading-relaxed text-newsprint-gray/80">
+        Sample figures are illustrative and blurred on purpose. Do not treat them
+        as this agent&apos;s record.
+      </p>
+    </div>
+  )
+}
+
 function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
   const raw = probe.rawOutput ?? ''
   const truncated = raw.length > 400 ? `${raw.slice(0, 400)}…` : raw
@@ -802,7 +1080,7 @@ function Endpoint({ label, value }: { label: string; value: string | null }) {
           {value}
         </a>
       ) : (
-        <span className="text-xs text-newsprint-gray/60">—</span>
+        <span className="text-xs text-newsprint-gray/60">n/a</span>
       )}
     </div>
   )

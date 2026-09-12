@@ -485,8 +485,9 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
         </h2>
         <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
           Worked through the checklist and still not on the shelf? Send the
-          token id and a way to reach you. A human reads every request; nothing
-          here notifies automatically.
+          token id and a way to reach you. A human reads every request. When
+          email is configured we notify the team immediately, and reply to you
+          if you left an address.
         </p>
       </div>
 

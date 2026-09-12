@@ -51,7 +51,7 @@ export class WalletUnavailableError extends Error {
 export class SmartWalletUnsupportedError extends Error {
   constructor() {
     super(
-      "Smart wallet detected. Hiring currently supports standard (EOA) wallets only — please connect with MetaMask or another standard wallet. Smart wallet support is coming soon.",
+      "Smart wallet detected. Hiring currently supports standard (EOA) wallets only, please connect with MetaMask or another standard wallet. Smart wallet support is coming soon.",
     );
   }
 }
@@ -63,7 +63,7 @@ export class WrongSignerError extends Error {
   constructor(recovered: string, expected: string) {
     const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
     super(
-      `Signed by ${short(recovered)}, not ${short(expected)} — reconnect your wallet and retry.`,
+      `Signed by ${short(recovered)}, not ${short(expected)}, reconnect your wallet and retry.`,
     );
   }
 }
@@ -75,7 +75,7 @@ const KNOWN_SMART_WALLET_RDNS = new Set(["com.coinbase.wallet"]);
 
 // best-effort smart-account detection: known rdns, else a contract-code probe
 // on the connected address (misses counterfactual accounts that are not yet
-// deployed on the current chain — the known-rdns list covers those)
+// deployed on the current chain - the known-rdns list covers those)
 export async function isSmartWalletConnected(): Promise<boolean> {
   const rdns = readStoredRdns();
   if (rdns && rdns !== LEGACY_RDNS && rdns !== WALLETCONNECT_RDNS && KNOWN_SMART_WALLET_RDNS.has(rdns)) {
@@ -360,7 +360,7 @@ export async function activeAccountMatches(address: string): Promise<boolean> {
 
 // the wallet's OWN active account at call time: eth_accounts returns all
 // permitted accounts, and the FIRST entry is the currently active one in
-// MetaMask/Rabby practice — signing uses this, so account switches
+// MetaMask/Rabby practice - signing uses this, so account switches
 // self-correct instead of producing a stale `from`
 export async function getActiveAccount(): Promise<string | null> {
   try {

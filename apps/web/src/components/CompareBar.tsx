@@ -3,9 +3,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { connectWallet, ensureBscChain } from '../lib/wallet'
 import { hireErrorText, runHire, type HireAgentRef } from '../lib/hire'
 import { getAgentDetail } from '../lib/api'
-import { addToCart, clearCart } from '../lib/cart'
+import { addToCart, clearCart, removeFromCart } from '../lib/cart'
 import { categoryOf } from '../lib/compare'
-import { getShortlist } from '../lib/shortlist'
+import { getShortlist, removeFromShortlist } from '../lib/shortlist'
 
 type CartPhase = 'idle' | 'adding' | 'added' | 'full' | 'error'
 
@@ -26,15 +26,14 @@ const hireKey = (a: HireAgentRef) => `${a.chainId}/${a.tokenId}`
 const SPRING_POP = { type: 'spring', stiffness: 420, damping: 26, mass: 0.9 } as const
 const EXIT_TWEEN = { type: 'tween', duration: 0.18, ease: 'easeOut' } as const
 
-// floating compare shortlist bar, shared by the marketplace and the compare
-// page; pages decide when to mount it, what the Compare action does, and
-// whether the "Hire best" action is available (compare page passes winners
-// from the best-in-category ranker; the marketplace passes nothing)
+// floating compare shortlist bar, shared by the marketplace and the compare page;
+// pages decide when to mount it, what the actions do, and whether Hire best is available
 export function CompareBar({
   count,
   ids,
   onClear,
   onCompare,
+  onHired,
   hire,
   cartNoun = 'agents',
 }: {
@@ -44,9 +43,11 @@ export function CompareBar({
   ids?: string[]
   onClear: () => void
   onCompare: () => void
-  // the agents the buttons act on: checked selection on the compare table,
-  // bests-of-shortlist on the marketplace; drives both the primary add-to-cart
-  // and the secondary direct hire
+  // settle success: drop hired agents from the page shortlist so the bar count
+  // tracks what is left, not what was hired
+  onHired?: (keys: string[]) => void
+  // the agents the buttons act on: checked selection on the compare table, bests-of-shortlist
+  // on the marketplace; drives the primary add-to-cart and the secondary direct hire
   hire?: { winners: HireAgentRef[] }
   // noun for the primary button: "Add N agents to cart" vs "Add N best to cart"
   cartNoun?: 'agents' | 'best'
@@ -198,6 +199,13 @@ export function CompareBar({
       })
       // a rejected signature means the user said stop; settled items stay
       if (outcome.cancelled) break
+      if (outcome.success) {
+        // direct hire is a completed checkout: drop the agent from cart and
+        // shortlist so the bar does not keep a hired count around
+        removeFromCart(item.agent.chainId, item.agent.tokenId)
+        removeFromShortlist([item.key])
+        onHired?.([item.key])
+      }
     }
     setRunning(false)
   }

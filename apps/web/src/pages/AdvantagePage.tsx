@@ -215,5 +215,5 @@ function SettleBadge({ settleMode, txHash }: { settleMode: string; txHash?: stri
 }
 
 function formatUsd(usd?: number) {
-  return typeof usd === 'number' ? `$${usd.toFixed(2)}` : '—'
+  return typeof usd === 'number' ? `$${usd.toFixed(2)}` : '·'
 }

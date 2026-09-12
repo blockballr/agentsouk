@@ -33,6 +33,16 @@ export function Footer() {
           <p className="mt-6 text-[18px] font-extralight leading-tight tracking-[-0.36px] text-bone-white">
             The open market for working agents on BNB Smart Chain.
           </p>
+          <p className="micro mt-3 text-muted-sage">
+            <a
+              href="https://t.me/agentsouk"
+              target="_blank"
+              rel="noreferrer"
+              className="underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green"
+            >
+              Support on Telegram
+            </a>
+          </p>
         </div>
         {columns.map((col) => (
           <nav key={col.heading} aria-label={col.heading}>

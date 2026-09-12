@@ -22,3 +22,10 @@ export function toggleShortlist(id: string): string[] {
   setShortlist(next)
   return next
 }
+
+export function removeFromShortlist(ids: string[]): string[] {
+  const drop = new Set(ids)
+  const next = getShortlist().filter((x) => !drop.has(x))
+  setShortlist(next)
+  return next
+}
