@@ -1,0 +1,129 @@
+{
+  "updatedAt": "2026-09-17T20:42:51.930Z",
+  "probed": 15,
+  "delivered": 9,
+  "dead": 1,
+  "unreachable": 5,
+  "results": [
+    {
+      "tokenId": "346444",
+      "name": "Bench Reference Rebalancer (operated by Bench)",
+      "category": "rebalancing",
+      "status": "delivered",
+      "responseMs": 921,
+      "detail": "a2a card ok"
+    },
+    {
+      "tokenId": "344865",
+      "name": "yield-router.agent",
+      "category": "rebalancing",
+      "status": "dead",
+      "responseMs": 1453,
+      "detail": "a2a 404"
+    },
+    {
+      "tokenId": "342421",
+      "name": "Winnow Ranger",
+      "category": "rebalancing",
+      "status": "unreachable",
+      "responseMs": 2,
+      "detail": "no callable endpoint"
+    },
+    {
+      "tokenId": "341628",
+      "name": "IVL Rebalancer",
+      "category": "rebalancing",
+      "status": "delivered",
+      "responseMs": 1269,
+      "detail": "a2a card ok"
+    },
+    {
+      "tokenId": "341563",
+      "name": "marketplace-operated-rebalance-planner",
+      "category": "rebalancing",
+      "status": "delivered",
+      "responseMs": 1261,
+      "detail": "a2a card ok"
+    },
+    {
+      "tokenId": "340502",
+      "name": "Hevo Rebalance",
+      "category": "rebalancing",
+      "status": "delivered",
+      "responseMs": 993,
+      "detail": "a2a card ok"
+    },
+    {
+      "tokenId": "340471",
+      "name": "Hevo Rebalance",
+      "category": "rebalancing",
+      "status": "delivered",
+      "responseMs": 1003,
+      "detail": "a2a card ok"
+    },
+    {
+      "tokenId": "340460",
+      "name": "LingoAI Portfolio Rebalancer",
+      "category": "rebalancing",
+      "status": "delivered",
+      "responseMs": 1971,
+      "detail": "a2a card ok"
+    },
+    {
+      "tokenId": "340032",
+      "name": "LP Agent 1 by 4LPHA",
+      "category": "rebalancing",
+      "status": "delivered",
+      "responseMs": 1957,
+      "detail": "mcp initialize ok"
+    },
+    {
+      "tokenId": "338550",
+      "name": "LP Agent 2 by 4LPHA",
+      "category": "rebalancing",
+      "status": "delivered",
+      "responseMs": 1037,
+      "detail": "mcp initialize ok"
+    },
+    {
+      "tokenId": "337849",
+      "name": "LP Agent 1 by 4LPHA",
+      "category": "rebalancing",
+      "status": "delivered",
+      "responseMs": 1060,
+      "detail": "mcp initialize ok"
+    },
+    {
+      "tokenId": "337826",
+      "name": "MANDATE House Keeper A",
+      "category": "grid-trading",
+      "status": "unreachable",
+      "responseMs": 8,
+      "detail": "no callable endpoint"
+    },
+    {
+      "tokenId": "337272",
+      "name": "LP Agent 1 by 4LPHA",
+      "category": "rebalancing",
+      "status": "unreachable",
+      "responseMs": 790,
+      "detail": "no callable endpoint"
+    },
+    {
+      "tokenId": "336749",
+      "name": "LP Agent 1 by 4LPHA",
+      "category": "rebalancing",
+      "status": "unreachable",
+      "responseMs": 631,
+      "detail": "no callable endpoint"
+    },
+    {
+      "tokenId": "336599",
+      "name": "MANDATE House Keeper A",
+      "category": "grid-trading",
+      "status": "unreachable",
+      "responseMs": 680,
+      "detail": "no callable endpoint"
+    }
+  ]
+}

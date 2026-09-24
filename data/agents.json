@@ -1,13 +1,15 @@
 {
   "version": 2,
-  "snapshotTime": "2026-09-08T04:34:01.042Z",
+  "snapshotTime": "2026-09-17T20:42:53.426Z",
   "source": {
-    "fetched": 1905,
+    "fetched": 172,
     "upstreamTotal": 309203,
-    "deduped": 1609
+    "deduped": 172,
+    "scoutAdded": 4
   },
   "counts": {
-    "rebalancing": 47,
+    "all": 172,
+    "rebalancing": 51,
     "grid-trading": 13,
     "yield": 44,
     "health-factor": 34,
@@ -6295,6 +6297,936 @@
       "categoryScores": {
         "grid-trading": 1
       }
+    },
+    {
+      "id": "37ae24a0-3ce8-4f8b-81c1-a2f2454fdbf2",
+      "owner_id": "c3afb96e-5e1c-4a2c-bb6a-5fd6b9085b18",
+      "owner_address": "0x164fb22b34bb187e739627efac0c70a3fdd8b942",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x164fb22b34bb187e739627efac0c70a3fdd8b942",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:346444",
+      "token_id": "346444",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "is_testnet": false,
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "name": "Bench Reference Rebalancer (operated by Bench)",
+      "description": "Reference agent operated by Bench itself, published so the audition harness has a worked example end to end. Rebalances a spot BNB/stablecoin position toward 50/50 on PancakeSwap V2. Scored on exactly the same terms as every other agent in the catalog.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x164fb22b34bb187e739627efac0c70a3fdd8b942",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://bench-bnb.vercel.app/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 2.53,
+        "freshness": 90.92,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 83,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 1,
+                  "has_description": true
+                },
+                "a2a_quality": 83,
+                "final_score": 83,
+                "mcp_quality": null,
+                "health_status": "healthy",
+                "integrity_tier": "healthy",
+                "aggregation_method": "max",
+                "discoverability_tier": "ready"
+              }
+            },
+            "momentum": {
+              "score": 45.46,
+              "weight": 0.1,
+              "details": {
+                "final_score": 45.45782214383565,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 90.9156442876713,
+                "days_since_creation": 2
+              }
+            },
+            "publisher": {
+              "score": 2.53,
+              "weight": 0.2,
+              "details": {
+                "cert_bonus": 0,
+                "final_score": 2.5269196445529705,
+                "is_certified": false,
+                "wallet_score": 2.5269196445529705,
+                "wallet_source": "agent_wallet",
+                "wallet_address": "0x164fb22b34bb187e739627efac0c70a3fdd8b942",
+                "validation_bonus": 0,
+                "validation_score": 0,
+                "certification_tier": null,
+                "owner_certified_name": null,
+                "owner_publisher_tier": null,
+                "has_chain_wallet_data": true,
+                "has_address_wallet_data": true
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            }
+          },
+          "final_score": 12.073942650289705,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.5687896176131161,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 27.57767842972684,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 6.819,
+              "trust_score": 4.864642148634212,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.791930784087441,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-17T11:35:01.414449+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 121689283,
+      "created_tx_hash": "0x29f476460d878f54c5cdc6c02b0bf97c7da51fb76a225db114e5780f160e8080",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-17T15:20:13.746334Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "healthy",
+      "health_score": 100,
+      "health_checked_at": "2026-09-17T15:20:13.746396Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-09-13T17:54:58.883060+00:00",
+        "llm_attempted_at": "2026-09-13T18:45:04.107320+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x164fb22b34bb187e739627efac0c70a3fdd8b942",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IlJlZmVyZW5jZSBhZ2VudCBvcGVyYXRlZCBieSBCZW5jaCBpdHNlbGYsIHB1Ymxpc2hlZCBzbyB0aGUgYXVkaXRpb24gaGFybmVzcyBoYXMgYSB3b3JrZWQgZXhhbXBsZSBlbmQgdG8gZW5kLiBSZWJhbGFuY2VzIGEgc3BvdCBCTkIvc3RhYmxlY29pbiBwb3NpdGlvbiB0b3dhcmQgNTAvNTAgb24gUGFuY2FrZVN3YXAgVjIuIFNjb3JlZCBvbiBleGFjdGx5IHRoZSBzYW1lIHRlcm1zIGFzIGV2ZXJ5IG90aGVyIGFnZW50IGluIHRoZSBjYXRhbG9nLiIsImltYWdlIjoiIiwibmFtZSI6IkJlbmNoIFJlZmVyZW5jZSBSZWJhbGFuY2VyIChvcGVyYXRlZCBieSBCZW5jaCkiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjozNDY0NDQsImFnZW50UmVnaXN0cnkiOiJlaXAxNTU6NTY6MHg4MDA0YTE2OWZiNGEzMzI1MTM2ZWIyOWZhMGNlYjZkMmU1MzlhNDMyIn1dLCJzZXJ2aWNlcyI6W3siZW5kcG9pbnQiOiJodHRwczovL2JlbmNoLWJuYi52ZXJjZWwuYXBwLy53ZWxsLWtub3duL2FnZW50LWNhcmQuanNvbiIsIm5hbWUiOiJBMkEiLCJ2ZXJzaW9uIjoiMC4zLjAifV0sInR5cGUiOiJodHRwczovL2VpcHMuZXRoZXJldW0ub3JnL0VJUFMvZWlwLTgwMDQjcmVnaXN0cmF0aW9uLXYxIn0=",
+        "offchain_content": {
+          "name": "Bench Reference Rebalancer (operated by Bench)",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://bench-bnb.vercel.app/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Reference agent operated by Bench itself, published so the audition harness has a worked example end to end. Rebalances a spot BNB/stablecoin position toward 50/50 on PancakeSwap V2. Scored on exactly the same terms as every other agent in the catalog.",
+          "registrations": [
+            {
+              "agentId": 346444,
+              "agentRegistry": "eip155:56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://bench-bnb.vercel.app/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 2.53,
+      "freshness_score": 90.92,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-09-13T17:54:36Z",
+      "updated_at": "2026-09-17T11:35:00.193894Z",
+      "category": "rebalancing",
+      "categoryScores": {}
+    },
+    {
+      "id": "259057cb-42a4-47fd-9d4e-ea33be4a2c84",
+      "owner_id": "abcad093-efc6-4d31-a60c-93781ee32ceb",
+      "owner_address": "0x6d19d43fc2cd226b135ed5f9f82b366ac864b703",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x6d19d43fc2cd226b135ed5f9f82b366ac864b703",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:341628",
+      "token_id": "341628",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "is_testnet": false,
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "name": "IVL Rebalancer",
+      "description": "Non-custodial rebalancing advisor for PancakeSwap v3 concentrated liquidity on BNB Chain. Give it your wallet and pair: it reads your live v3 position, scores your range against the IVL (Internal Variance of Lateralization) optimum — ATR-based width and breakout risk — and returns a rebalance-or-hold call with the target tick range. Read-only, it never touches your funds. Free preview; paid delivery over ERC-8183.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x6d19d43fc2cd226b135ed5f9f82b366ac864b703",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://ivl-mainnet.onrender.com/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 5.83,
+        "activity": 0,
+        "wallet": 7.17,
+        "freshness": 100,
+        "metadata_completeness": 53,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 84,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 3,
+                  "has_description": true
+                },
+                "a2a_quality": 84,
+                "final_score": 84,
+                "mcp_quality": null,
+                "health_status": "healthy",
+                "integrity_tier": "healthy",
+                "aggregation_method": "max",
+                "discoverability_tier": "ready"
+              }
+            },
+            "momentum": {
+              "score": 50,
+              "weight": 0.1,
+              "details": {
+                "final_score": 50,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 100,
+                "days_since_creation": 0
+              }
+            },
+            "publisher": {
+              "score": 7.17,
+              "weight": 0.2,
+              "details": {
+                "cert_bonus": 0,
+                "final_score": 7.171448991510205,
+                "is_certified": false,
+                "wallet_score": 7.171448991510205,
+                "wallet_source": "agent_wallet",
+                "wallet_address": "0x6d19d43fc2cd226b135ed5f9f82b366ac864b703",
+                "validation_bonus": 0,
+                "validation_score": 0,
+                "certification_tier": null,
+                "owner_certified_name": null,
+                "owner_publisher_tier": null,
+                "has_chain_wallet_data": true,
+                "has_address_wallet_data": true
+              }
+            },
+            "compliance": {
+              "score": 53,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 53,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 53
+              }
+            },
+            "engagement": {
+              "score": 2.91,
+              "weight": 0.3,
+              "details": {
+                "chat_count": 0,
+                "global_max": {
+                  "max_chats": 0,
+                  "max_stars": 4013,
+                  "max_views": 10108,
+                  "total_agents": 887256,
+                  "calculated_at": "2026-09-09T01:00:57.221461+00:00",
+                  "max_feedbacks": 304451,
+                  "mainnet_agents": 562828,
+                  "testnet_agents": 324428,
+                  "agents_with_feedbacks": 155640
+                },
+                "star_count": 0,
+                "view_count": 5,
+                "final_score": 2.9146365185425136,
+                "average_score": 0,
+                "feedback_count": 0,
+                "feedback_score": 0,
+                "feedback_weight": 0,
+                "popularity_score": 5.829273037085027,
+                "recent_chat_count": 0,
+                "recent_feedback_count": 0,
+                "satisfaction_component": 0
+              }
+            }
+          },
+          "final_score": 12.100830731985395,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.7756210152722648,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 37.60586740714011,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 9.9735,
+              "trust_score": 12.631211567226192,
+              "feedback_volume_proxy": 29.545000374779473
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 5.170806768481765,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-17T15:36:31.162976+00:00"
+      },
+      "total_score": 44.1,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 120774287,
+      "created_tx_hash": "0x514090638ba8a825308c2728c95126707b8f55001bb9cb60b5c9f79278ff6a56",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-17T15:35:16.320006Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "healthy",
+      "health_score": 100,
+      "health_checked_at": "2026-09-17T15:35:16.320076Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-08T23:48:20.006666+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x6d19d43fc2cd226b135ed5f9f82b366ac864b703",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6Ik5vbi1jdXN0b2RpYWwgcmViYWxhbmNpbmcgYWR2aXNvciBmb3IgUGFuY2FrZVN3YXAgdjMgY29uY2VudHJhdGVkIGxpcXVpZGl0eSBvbiBCTkIgQ2hhaW4uIEdpdmUgaXQgeW91ciB3YWxsZXQgYW5kIHBhaXI6IGl0IHJlYWRzIHlvdXIgbGl2ZSB2MyBwb3NpdGlvbiwgc2NvcmVzIHlvdXIgcmFuZ2UgYWdhaW5zdCB0aGUgSVZMIChJbnRlcm5hbCBWYXJpYW5jZSBvZiBMYXRlcmFsaXphdGlvbikgb3B0aW11bSBcdTIwMTQgQVRSLWJhc2VkIHdpZHRoIGFuZCBicmVha291dCByaXNrIFx1MjAxNCBhbmQgcmV0dXJucyBhIHJlYmFsYW5jZS1vci1ob2xkIGNhbGwgd2l0aCB0aGUgdGFyZ2V0IHRpY2sgcmFuZ2UuIFJlYWQtb25seSwgaXQgbmV2ZXIgdG91Y2hlcyB5b3VyIGZ1bmRzLiBGcmVlIHByZXZpZXc7IHBhaWQgZGVsaXZlcnkgb3ZlciBFUkMtODE4My4iLCJpbWFnZSI6IiIsIm5hbWUiOiJJVkwgUmViYWxhbmNlciIsInJlZ2lzdHJhdGlvbnMiOltdLCJzZXJ2aWNlcyI6W3siZW5kcG9pbnQiOiJodHRwczovL2l2bC1tYWlubmV0Lm9ucmVuZGVyLmNvbS8ud2VsbC1rbm93bi9hZ2VudC1jYXJkLmpzb24iLCJuYW1lIjoiQTJBIiwidmVyc2lvbiI6IjAuMy4wIn1dLCJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSJ9",
+        "offchain_content": {
+          "name": "IVL Rebalancer",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://ivl-mainnet.onrender.com/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Non-custodial rebalancing advisor for PancakeSwap v3 concentrated liquidity on BNB Chain. Give it your wallet and pair: it reads your live v3 position, scores your range against the IVL (Internal Variance of Lateralization) optimum — ATR-based width and breakout risk — and returns a rebalance-or-hold call with the target tick range. Read-only, it never touches your funds. Free preview; paid delivery over ERC-8183.",
+          "registrations": []
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://ivl-mainnet.onrender.com/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 5.83,
+      "activity_score": 0,
+      "wallet_score": 7.17,
+      "freshness_score": 100,
+      "metadata_completeness_score": 53,
+      "created_at": "2026-09-08T23:28:27Z",
+      "updated_at": "2026-09-17T15:36:30.158592Z",
+      "category": "rebalancing",
+      "categoryScores": {}
+    },
+    {
+      "id": "32bc601a-99bf-4d02-84c0-a6d690e11bb3",
+      "owner_id": "2b458ee1-084c-4e9d-a03b-131664632e6d",
+      "owner_address": "0x96a91427bf3dc47b2bbae4bb3fd86f34e1b06bff",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x96a91427bf3dc47b2bbae4bb3fd86f34e1b06bff",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:341563",
+      "token_id": "341563",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "is_testnet": false,
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "name": "marketplace-operated-rebalance-planner",
+      "description": "Marketplace-operated rebalancing planner. Give it your positions with prices and your target weights; it returns the exact sells and buys that bring the portfolio back to target. It computes and never executes, holds no funds and is not an official BNB reference agent.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x96a91427bf3dc47b2bbae4bb3fd86f34e1b06bff",
+      "x402_supported": true,
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/341563/image",
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://bnb-agent-marketplace-ruby.vercel.app/rebalance/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 6.12,
+        "freshness": 0,
+        "metadata_completeness": 73,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 89,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 3,
+                  "has_description": true
+                },
+                "a2a_quality": 89,
+                "final_score": 89,
+                "mcp_quality": null,
+                "health_status": "healthy",
+                "integrity_tier": "healthy",
+                "aggregation_method": "max",
+                "discoverability_tier": "ready"
+              }
+            },
+            "publisher": {
+              "score": 6.12,
+              "weight": 0.2,
+              "details": {
+                "cert_bonus": 0,
+                "final_score": 6.1166517324036125,
+                "is_certified": false,
+                "wallet_score": 6.1166517324036125,
+                "wallet_source": "agent_wallet",
+                "wallet_address": "0x96a91427bf3dc47b2bbae4bb3fd86f34e1b06bff",
+                "validation_bonus": 0,
+                "validation_score": 0,
+                "certification_tier": null,
+                "owner_certified_name": null,
+                "owner_publisher_tier": null,
+                "has_chain_wallet_data": true,
+                "has_address_wallet_data": true
+              }
+            },
+            "compliance": {
+              "score": 73,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 73,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 73
+              }
+            }
+          },
+          "final_score": 12.077645367163802,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.5972720551061679,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 28.95864509605662,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 0,
+              "trust_score": 11.293225480283114,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.981813700707786,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-17T13:47:37.226582+00:00"
+      },
+      "total_score": 44.08,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 120750780,
+      "created_tx_hash": "0xc5ac78d84c44e6313b575816760a0da5a77d46c5ca17d3c648851e51f469e321",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-17T13:47:08.539303Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "healthy",
+      "health_score": 100,
+      "health_checked_at": "2026-09-17T13:47:08.539378Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-09-08T20:34:42.928645+00:00",
+        "llm_attempted_at": "2026-09-08T20:45:03.035192+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x96a91427bf3dc47b2bbae4bb3fd86f34e1b06bff",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e30",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6Ik1hcmtldHBsYWNlLW9wZXJhdGVkIHJlYmFsYW5jaW5nIHBsYW5uZXIuIEdpdmUgaXQgeW91ciBwb3NpdGlvbnMgd2l0aCBwcmljZXMgYW5kIHlvdXIgdGFyZ2V0IHdlaWdodHM7IGl0IHJldHVybnMgdGhlIGV4YWN0IHNlbGxzIGFuZCBidXlzIHRoYXQgYnJpbmcgdGhlIHBvcnRmb2xpbyBiYWNrIHRvIHRhcmdldC4gSXQgY29tcHV0ZXMgYW5kIG5ldmVyIGV4ZWN1dGVzLCBob2xkcyBubyBmdW5kcyBhbmQgaXMgbm90IGFuIG9mZmljaWFsIEJOQiByZWZlcmVuY2UgYWdlbnQuIiwiaW1hZ2UiOiJodHRwczovL2JuYi1hZ2VudC1tYXJrZXRwbGFjZS1ydWJ5LnZlcmNlbC5hcHAvYWdlbnRzL3JlYmFsYW5jZS5zdmciLCJuYW1lIjoibWFya2V0cGxhY2Utb3BlcmF0ZWQtcmViYWxhbmNlLXBsYW5uZXIiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjozNDE1NjMsImFnZW50UmVnaXN0cnkiOiJlaXAxNTU6NTY6MHg4MDA0QTE2OUZCNGEzMzI1MTM2RUIyOWZBMGNlQjZEMmU1MzlhNDMyIn1dLCJzZXJ2aWNlcyI6W3siZW5kcG9pbnQiOiJodHRwczovL2JuYi1hZ2VudC1tYXJrZXRwbGFjZS1ydWJ5LnZlcmNlbC5hcHAvcmViYWxhbmNlLy53ZWxsLWtub3duL2FnZW50LWNhcmQuanNvbiIsIm5hbWUiOiJBMkEiLCJ2ZXJzaW9uIjoiMC4zLjAifV0sInR5cGUiOiJodHRwczovL2VpcHMuZXRoZXJldW0ub3JnL0VJUFMvZWlwLTgwMDQjcmVnaXN0cmF0aW9uLXYxIn0=",
+        "offchain_content": {
+          "name": "marketplace-operated-rebalance-planner",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "https://bnb-agent-marketplace-ruby.vercel.app/agents/rebalance.svg",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://bnb-agent-marketplace-ruby.vercel.app/rebalance/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Marketplace-operated rebalancing planner. Give it your positions with prices and your target weights; it returns the exact sells and buys that bring the portfolio back to target. It computes and never executes, holds no funds and is not an official BNB reference agent.",
+          "registrations": [
+            {
+              "agentId": 341563,
+              "agentRegistry": "eip155:56:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://bnb-agent-marketplace-ruby.vercel.app/rebalance/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 6.12,
+      "freshness_score": 0,
+      "metadata_completeness_score": 73,
+      "created_at": "2026-09-08T20:31:58Z",
+      "updated_at": "2026-09-17T13:47:36.080108Z",
+      "category": "rebalancing",
+      "categoryScores": {}
+    },
+    {
+      "id": "b5e32e4e-4b47-4656-9894-dca288105b46",
+      "owner_id": "ffc52bd4-c701-4663-a6fd-9736a8c0a5a7",
+      "owner_address": "0x75a0c2d1df51c07982de3ff031e5232518676b19",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x75a0c2d1df51c07982de3ff031e5232518676b19",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:340471",
+      "token_id": "340471",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "is_testnet": false,
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "name": "Hevo Rebalance",
+      "description": "Portfolio rebalancing analysis agent on BNB Smart Chain",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x75a0c2d1df51c07982de3ff031e5232518676b19",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://hevo-rebalance.fly.dev/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 44.17,
+        "freshness": 0,
+        "metadata_completeness": 53,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "healthy",
+                "integrity_tier": "healthy",
+                "aggregation_method": "max",
+                "discoverability_tier": "ready"
+              }
+            },
+            "publisher": {
+              "score": 44.17,
+              "weight": 0.2,
+              "details": {
+                "cert_bonus": 0,
+                "final_score": 44.16936936936937,
+                "is_certified": false,
+                "wallet_score": 44.16936936936937,
+                "wallet_source": "agent_wallet",
+                "wallet_address": "0x75a0c2d1df51c07982de3ff031e5232518676b19",
+                "validation_bonus": 0,
+                "validation_score": 0,
+                "certification_tier": null,
+                "owner_certified_name": null,
+                "owner_publisher_tier": null,
+                "has_chain_wallet_data": true,
+                "has_address_wallet_data": true
+              }
+            },
+            "compliance": {
+              "score": 53,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 53,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 53
+              }
+            }
+          },
+          "final_score": 12.095014813599876,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.7308831815375118,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 35.436760316970265,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 0,
+              "trust_score": 48.183801584851295,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 4.872554543583412,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-17T13:50:42.290701+00:00"
+      },
+      "total_score": 44.1,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 120621342,
+      "created_tx_hash": "0x6ebda7623276ffc24bdb2ba9d7feff4b0b3a3d546be21148b2083924ca038549",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-17T13:50:12.570009Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "healthy",
+      "health_score": 100,
+      "health_checked_at": "2026-09-17T13:50:12.570062Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-08T04:21:26.988041+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x75a0c2d1df51c07982de3ff031e5232518676b19",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSIsIm5hbWUiOiJIZXZvIFJlYmFsYW5jZSIsImRlc2NyaXB0aW9uIjoiUG9ydGZvbGlvIHJlYmFsYW5jaW5nIGFuYWx5c2lzIGFnZW50IG9uIEJOQiBTbWFydCBDaGFpbiIsInNlcnZpY2VzIjpbeyJuYW1lIjoiQTJBIiwiZW5kcG9pbnQiOiJodHRwczovL2hldm8tcmViYWxhbmNlLmZseS5kZXYvLndlbGwta25vd24vYWdlbnQtY2FyZC5qc29uIiwidmVyc2lvbiI6IjAuMy4wIn1dLCJyZWdpc3RyYXRpb25zIjpbXX0=",
+        "offchain_content": {
+          "name": "Hevo Rebalance",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://hevo-rebalance.fly.dev/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Portfolio rebalancing analysis agent on BNB Smart Chain",
+          "registrations": []
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://hevo-rebalance.fly.dev/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 44.17,
+      "freshness_score": 0,
+      "metadata_completeness_score": 53,
+      "created_at": "2026-09-08T04:20:56Z",
+      "updated_at": "2026-09-17T13:50:41.651268Z",
+      "category": "rebalancing",
+      "categoryScores": {}
     }
   ]
 }
