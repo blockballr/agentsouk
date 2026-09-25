@@ -4,6 +4,7 @@ import {
   actOnJob,
   getOngoing,
   retryTask,
+  revokeSession,
   type ActiveHireSession,
   type Erc8183Job,
   type HireTask,
@@ -57,6 +58,7 @@ export function OngoingPage() {
   const [error, setError] = useState<string | null>(null)
   const [retryingId, setRetryingId] = useState<string | null>(null)
   const [jobBusy, setJobBusy] = useState<string | null>(null)
+  const [revokingId, setRevokingId] = useState<string | null>(null)
 
   useEffect(() => {
     void getActiveAccount().then((a) => setAccount(a))
@@ -119,6 +121,19 @@ export function OngoingPage() {
       setError(hireErrorText(e))
     } finally {
       setJobBusy(null)
+    }
+  }
+
+  async function onRevoke(paymentId: string) {
+    if (!account) return
+    setRevokingId(paymentId)
+    try {
+      await revokeSession(paymentId, account)
+      await load()
+    } catch (e) {
+      setError(hireErrorText(e))
+    } finally {
+      setRevokingId(null)
     }
   }
 
@@ -247,6 +262,14 @@ export function OngoingPage() {
                   <div className="mt-1 font-mono text-[11px]">
                     {session.paymentId.slice(0, 18)}…
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => onRevoke(session.paymentId)}
+                    disabled={revokingId === session.paymentId}
+                    className="micro mt-3 rounded-[5px] border hairline border-press-black/30 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+                  >
+                    {revokingId === session.paymentId ? 'Revoking…' : 'Revoke session'}
+                  </button>
                 </div>
               </div>
 

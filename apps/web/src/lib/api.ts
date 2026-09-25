@@ -313,6 +313,13 @@ export async function getOngoing(client?: string | null): Promise<OngoingBundle>
   }
 }
 
+export async function revokeSession(paymentId: string, client?: string | null): Promise<void> {
+  const qs = `?paymentId=${encodeURIComponent(paymentId)}${client ? `&client=${encodeURIComponent(client)}` : ''}`
+  const res = await fetch(`${BASE}/sessions${qs}`, { method: 'DELETE' })
+  const body = await res.json().catch(() => null)
+  if (!res.ok || !body?.success) throw new Error(body?.error ?? `revoke ${res.status}`)
+}
+
 export async function actOnJob(
   jobId: string,
   action: 'complete' | 'reject' | 'claimRefund' | 'submit',
