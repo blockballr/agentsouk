@@ -7,6 +7,7 @@ import {
   scoutRateGapMs,
 } from "@/lib/scout-pipeline";
 import type { ScoutCandidate } from "@/lib/scout";
+import { targetChainId } from "@/lib/types";
 import { upsertVerification } from "@/lib/verifications-store";
 import { scoreDelivery } from "@/lib/quality";
 
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest) {
   }
 
   const limit = Math.max(1, Math.min(50, Number(req.nextUrl.searchParams.get("limit") ?? 15) || 15));
-  const store = await loadScoutJson<{ candidates?: ScoutCandidate[] }>("candidates.json");
+  const chain = Number(req.nextUrl.searchParams.get("chain") ?? targetChainId()) || targetChainId();
+  const store = await loadScoutJson<{ candidates?: ScoutCandidate[] }>("candidates.json", chain);
   const candidates = (store?.candidates ?? []).slice(0, limit);
   if (candidates.length === 0) {
     return NextResponse.json(
@@ -84,18 +86,19 @@ export async function POST(req: NextRequest) {
     unreachable: results.filter((r) => r.status === "unreachable").length,
     results,
   };
-  await saveScoutJson("verifications.json", summary);
+  await saveScoutJson("verifications.json", summary, chain);
 
   return NextResponse.json({ success: true, ...summary });
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const chain = Number(req.nextUrl.searchParams.get("chain") ?? targetChainId()) || targetChainId();
   const data = await loadScoutJson<{
     updatedAt: string;
     probed: number;
     delivered: number;
     dead: number;
     unreachable: number;
-  }>("verifications.json");
+  }>("verifications.json", chain);
   return NextResponse.json({ success: true, ...(data ?? { probed: 0 }) });
 }

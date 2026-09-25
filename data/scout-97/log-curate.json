@@ -1,0 +1,30 @@
+{
+  "at": "2026-09-25T16:49:57.864Z",
+  "added": 21,
+  "skipped": 153,
+  "already": 0,
+  "total": 21,
+  "names": [
+    "rangekeeper-agent",
+    "Bench Reference Rebalancer (operated by Bench)",
+    "RangeKeeper",
+    "LingoAI Portfolio Rebalancer (demo)",
+    "Hevo Yield",
+    "Hevo Rebalance",
+    "Grid Runner",
+    "Hevo Grid",
+    "LingoAI Grid Trading Agent (demo)",
+    "yieldrouter-agent",
+    "Sluicegate",
+    "Yield Router",
+    "Sluicegate",
+    "YieldRoute Provider",
+    "YieldRoute Provider",
+    "Fee Yield Scout",
+    "YieldPilot",
+    "LingoAI Yield Optimiser (demo)",
+    "VenusGuard",
+    "Hevo Sentinel",
+    "Keel"
+  ]
+}
