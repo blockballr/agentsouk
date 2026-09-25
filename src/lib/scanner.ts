@@ -5,6 +5,8 @@ import {
   AgentSummary,
   BSC_CHAIN_ID,
   CategoryKey,
+  snapshotFileFor,
+  targetChainId,
 } from "./types";
 import { classifyAgent, relevanceScore } from "./categories";
 import { isPancakeSwapAgent } from "./pancakeswap";
@@ -60,9 +62,10 @@ const PAGE_LIMIT = 100;
 export async function fetchAgentsPage(
   page: number,
   signal?: AbortSignal,
+  chainId: number = BSC_CHAIN_ID,
 ): Promise<ListResponse> {
   const params = new URLSearchParams({
-    chainId: String(BSC_CHAIN_ID),
+    chainId: String(chainId),
     page: String(page),
     limit: String(PAGE_LIMIT),
     sort: "created_desc",
@@ -82,9 +85,10 @@ export async function fetchAgentsPage(
 export async function searchAgents(
   q: string,
   limit = 100,
+  chainId: number = BSC_CHAIN_ID,
 ): Promise<{ data: unknown[]; total: number | null }> {
   const params = new URLSearchParams({
-    chainId: String(BSC_CHAIN_ID),
+    chainId: String(chainId),
     search: q,
     limit: String(limit),
   });
@@ -198,7 +202,7 @@ interface SnapshotFile {
 let snapshotLoaded = false;
 let snapshotTime: string | null = null;
 
-// force the next query to re-read data/agents.json (used after scout curation)
+// force the next query to re-read the snapshot file (used after scout curation)
 export function invalidateSnapshot(): void {
   snapshotLoaded = false;
 }
@@ -210,7 +214,7 @@ async function loadSnapshot(): Promise<boolean> {
   try {
     const fs = await import("node:fs/promises");
     const path = await import("node:path");
-    const file = path.join(process.cwd(), "data", "agents.json");
+    const file = path.join(process.cwd(), "data", snapshotFileFor(targetChainId()));
     const raw = await fs.readFile(file, "utf8");
     const snap = JSON.parse(raw) as SnapshotFile;
     index.agents.clear();
@@ -244,7 +248,7 @@ export async function warmIndex(opts: WarmOptions = {}): Promise<void> {
       if (index.warmedPages.has(page)) continue;
       let body: ListResponse;
       try {
-        body = await fetchAgentsPage(page);
+        body = await fetchAgentsPage(page, undefined, targetChainId());
       } catch (e) {
         index.error = (e as Error).message;
         break;

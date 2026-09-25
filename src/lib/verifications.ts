@@ -1,4 +1,5 @@
 import type { Verification } from "@/lib/types";
+import { BSC_CHAIN_ID, scoutDirFor, targetChainId } from "@/lib/types";
 
 interface VerificationsFile {
   updatedAt: string;
@@ -15,7 +16,7 @@ interface VerificationsFile {
 }
 
 const CACHE_MS = 30_000;
-let cache: { at: number; map: Map<string, Verification> } | null = null;
+let cache: { at: number; chain: number; map: Map<string, Verification> } | null = null;
 let inflight: Promise<Map<string, Verification>> | null = null;
 
 interface VerificationRow {
@@ -64,6 +65,10 @@ function asVerification(row: VerificationRow, checkedAt: string | null): Verific
 }
 
 async function loadOnce(): Promise<Map<string, Verification>> {
+  const chainId = targetChainId();
+  if (chainId !== BSC_CHAIN_ID) {
+    return loadScoutFile(chainId);
+  }
   try {
     const { loadVerificationsFromDb } = await import("./verifications-store");
     const db = await loadVerificationsFromDb();
@@ -86,12 +91,34 @@ async function loadOnce(): Promise<Map<string, Verification>> {
   return byToken;
 }
 
+async function loadScoutFile(chainId: number): Promise<Map<string, Verification>> {
+  const byToken = new Map<string, Verification>();
+  try {
+    const fs = await import("node:fs/promises");
+    const path = await import("node:path");
+    const file = path.join(process.cwd(), "data", scoutDirFor(chainId), "verifications.json");
+    const parsed = JSON.parse(await fs.readFile(file, "utf8")) as {
+      updatedAt?: string;
+      results?: VerificationRow[];
+    };
+    const fallbackCheckedAt = typeof parsed.updatedAt === "string" ? parsed.updatedAt : null;
+    for (const r of parsed.results ?? []) {
+      const checkedAt = typeof r.checkedAt === "string" ? r.checkedAt : fallbackCheckedAt;
+      const verification = asVerification(r, checkedAt);
+      if (verification) byToken.set(String(r.tokenId), verification);
+    }
+  } catch {
+  }
+  return byToken;
+}
+
 export async function loadVerifications(): Promise<Map<string, Verification>> {
-  if (cache && Date.now() - cache.at < CACHE_MS) return cache.map;
+  const chain = targetChainId();
+  if (cache && cache.chain === chain && Date.now() - cache.at < CACHE_MS) return cache.map;
   if (inflight) return inflight;
   inflight = loadOnce()
     .then((map) => {
-      cache = { at: Date.now(), map };
+      cache = { at: Date.now(), chain, map };
       return map;
     })
     .finally(() => {

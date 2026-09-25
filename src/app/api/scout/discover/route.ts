@@ -5,6 +5,7 @@ import {
   saveScoutJson,
 } from "@/lib/scout-pipeline";
 import type { ScoutCandidate, ScoutLog } from "@/lib/scout";
+import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -21,11 +22,13 @@ export async function POST(req: NextRequest) {
   const terms = Number(req.nextUrl.searchParams.get("terms") ?? 2);
   const pages = Number(req.nextUrl.searchParams.get("pages") ?? 1);
   const limit = Number(req.nextUrl.searchParams.get("limit") ?? 200);
+  const chain = Number(req.nextUrl.searchParams.get("chain") ?? targetChainId()) || targetChainId();
 
   const result = await discoverCandidates({
     maxTermsPerCategory: terms,
     recentPages: pages,
     limit,
+    chainId: chain,
   });
 
   await saveScoutJson("candidates.json", {
@@ -33,8 +36,8 @@ export async function POST(req: NextRequest) {
     fetched: result.fetched,
     counts: result.byCategory,
     candidates: result.candidates,
-  });
-  await saveScoutJson("log-discover.json", result.log);
+  }, chain);
+  await saveScoutJson("log-discover.json", result.log, chain);
 
   return NextResponse.json({
     success: true,
@@ -47,14 +50,15 @@ export async function POST(req: NextRequest) {
   });
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const chain = Number(req.nextUrl.searchParams.get("chain") ?? targetChainId()) || targetChainId();
   const data = await loadScoutJson<{
     updatedAt: string;
     fetched: number;
     counts: Record<string, number>;
     candidates: ScoutCandidate[];
-  }>("candidates.json");
-  const log = await loadScoutJson<ScoutLog>("log-discover.json");
+  }>("candidates.json", chain);
+  const log = await loadScoutJson<ScoutLog>("log-discover.json", chain);
   return NextResponse.json({
     success: true,
     updatedAt: data?.updatedAt ?? null,

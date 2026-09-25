@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { autoCurateScout } from "@/lib/scout-curate";
 import { saveScoutJson } from "@/lib/scout-pipeline";
+import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -14,7 +15,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const result = await autoCurateScout();
+  const chain = Number(req.nextUrl.searchParams.get("chain") ?? targetChainId()) || targetChainId();
+
+  const result = await autoCurateScout(chain);
   await saveScoutJson("log-curate.json", {
     at: new Date().toISOString(),
     added: result.added,
@@ -22,7 +25,7 @@ export async function POST(req: NextRequest) {
     already: result.already,
     total: result.total,
     names: result.addedAgents.map((a) => a.name),
-  });
+  }, chain);
 
   return NextResponse.json({
     success: true,

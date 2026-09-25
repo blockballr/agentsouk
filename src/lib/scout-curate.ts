@@ -6,6 +6,7 @@ import path from "node:path";
 import { classifyAgent } from "./categories";
 import { fetchAgentDetail } from "./scanner";
 import { invalidateSnapshot } from "./scanner";
+import { scoutDirFor, snapshotFileFor, targetChainId } from "./types";
 import type { ScoutCandidate } from "./scout";
 import type { AgentSummary, CategoryKey } from "./types";
 
@@ -30,24 +31,26 @@ export interface CurationResult {
   counts: Record<string, number>;
 }
 
-function agentsPath(): string {
-  return path.join(process.cwd(), "data", "agents.json");
+function agentsPath(chainId: number = targetChainId()): string {
+  return path.join(process.cwd(), "data", snapshotFileFor(chainId));
 }
 
-function scoutPath(): string {
-  return path.join(process.cwd(), "data", "scout", "candidates.json");
+function scoutPath(chainId: number = targetChainId()): string {
+  return path.join(process.cwd(), "data", scoutDirFor(chainId), "candidates.json");
 }
 
-function verifyPath(): string {
-  return path.join(process.cwd(), "data", "scout", "verifications.json");
+function verifyPath(chainId: number = targetChainId()): string {
+  return path.join(process.cwd(), "data", scoutDirFor(chainId), "verifications.json");
 }
 
-export async function loadMarketplaceSnapshot(): Promise<{
+export async function loadMarketplaceSnapshot(
+  chainId: number = targetChainId(),
+): Promise<{
   agents: AgentSummary[];
   raw: Record<string, unknown>;
 } | null> {
   try {
-    const raw = JSON.parse(await readFile(agentsPath(), "utf8")) as {
+    const raw = JSON.parse(await readFile(agentsPath(chainId), "utf8")) as {
       agents: AgentSummary[];
       counts?: Record<string, number>;
       source?: Record<string, unknown>;
@@ -58,9 +61,11 @@ export async function loadMarketplaceSnapshot(): Promise<{
   }
 }
 
-export async function loadScoutCandidates(): Promise<ScoutCandidate[]> {
+export async function loadScoutCandidates(
+  chainId: number = targetChainId(),
+): Promise<ScoutCandidate[]> {
   try {
-    const raw = JSON.parse(await readFile(scoutPath(), "utf8")) as {
+    const raw = JSON.parse(await readFile(scoutPath(chainId), "utf8")) as {
       candidates?: ScoutCandidate[];
     };
     return raw.candidates ?? [];
@@ -69,10 +74,12 @@ export async function loadScoutCandidates(): Promise<ScoutCandidate[]> {
   }
 }
 
-export async function loadScoutVerifications(): Promise<Map<string, ScoutVerifyRow>> {
+export async function loadScoutVerifications(
+  chainId: number = targetChainId(),
+): Promise<Map<string, ScoutVerifyRow>> {
   const map = new Map<string, ScoutVerifyRow>();
   try {
-    const raw = JSON.parse(await readFile(verifyPath(), "utf8")) as {
+    const raw = JSON.parse(await readFile(verifyPath(chainId), "utf8")) as {
       results?: ScoutVerifyRow[];
     };
     for (const r of raw.results ?? []) {
@@ -155,10 +162,10 @@ export function buildAgentSummaryFromDetail(
   } as AgentSummary;
 }
 
-export async function autoCurateScout(): Promise<CurationResult> {
-  const snapshot = await loadMarketplaceSnapshot();
-  const candidates = await loadScoutCandidates();
-  const verifications = await loadScoutVerifications();
+export async function autoCurateScout(chainId: number = targetChainId()): Promise<CurationResult> {
+  const snapshot = await loadMarketplaceSnapshot(chainId);
+  const candidates = await loadScoutCandidates(chainId);
+  const verifications = await loadScoutVerifications(chainId);
   const existing = new Set((snapshot?.agents ?? []).map((a) => String(a.token_id)));
   const categoryCounts: Record<string, number> = {};
   for (const a of snapshot?.agents ?? []) {
@@ -173,6 +180,10 @@ export async function autoCurateScout(): Promise<CurationResult> {
 
   for (const cand of candidates) {
     if (added >= ADD_PER_RUN) break;
+    if (Number(cand.chain_id) !== chainId) {
+      skipped += 1;
+      continue;
+    }
     if (existing.has(String(cand.token_id))) {
       already += 1;
       continue;
@@ -217,8 +228,8 @@ export async function autoCurateScout(): Promise<CurationResult> {
     agents,
   };
 
-  await mkdir(path.dirname(agentsPath()), { recursive: true });
-  await writeFile(agentsPath(), JSON.stringify(outFile, null, 2), "utf8");
+  await mkdir(path.dirname(agentsPath(chainId)), { recursive: true });
+  await writeFile(agentsPath(chainId), JSON.stringify(outFile, null, 2), "utf8");
   invalidateSnapshot();
 
   return {

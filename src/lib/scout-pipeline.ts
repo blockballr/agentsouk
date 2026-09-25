@@ -3,6 +3,7 @@
 
 import { classifyAgent } from "./categories";
 import { fetchAgentsPage, fetchAgentDetail, searchAgents } from "./scanner";
+import { scoutDirFor, targetChainId } from "./types";
 import type { CategoryKey } from "./types";
 import type { ScoutCandidate, ScoutLog } from "./scout";
 import {
@@ -74,21 +75,28 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function scoutDir(): string {
-  return path.join(process.cwd(), "data", "scout");
+function scoutDir(chainId: number = targetChainId()): string {
+  return path.join(process.cwd(), "data", scoutDirFor(chainId));
 }
 
-export async function saveScoutJson(name: string, value: unknown): Promise<string> {
-  const dir = scoutDir();
+export async function saveScoutJson(
+  name: string,
+  value: unknown,
+  chainId: number = targetChainId(),
+): Promise<string> {
+  const dir = scoutDir(chainId);
   await mkdir(dir, { recursive: true });
   const file = path.join(dir, name);
   await writeFile(file, JSON.stringify(value, null, 2), "utf8");
   return file;
 }
 
-export async function loadScoutJson<T>(name: string): Promise<T | null> {
+export async function loadScoutJson<T>(
+  name: string,
+  chainId: number = targetChainId(),
+): Promise<T | null> {
   try {
-    const raw = await readFile(path.join(scoutDir(), name), "utf8");
+    const raw = await readFile(path.join(scoutDir(chainId), name), "utf8");
     return JSON.parse(raw) as T;
   } catch {
     return null;
@@ -100,6 +108,7 @@ export interface DiscoverOptions {
   recentPages?: number;
   gapMs?: number;
   limit?: number;
+  chainId?: number;
 }
 
 export interface DiscoverResult {
@@ -111,6 +120,7 @@ export interface DiscoverResult {
 }
 
 export async function discoverCandidates(opts: DiscoverOptions = {}): Promise<DiscoverResult> {
+  const chain = opts.chainId ?? targetChainId();
   const gapMs = opts.gapMs ?? scoutRateGapMs();
   const termsPerCat = Math.max(1, opts.maxTermsPerCategory ?? 2);
   const recentPages = Math.max(0, opts.recentPages ?? 1);
@@ -142,7 +152,7 @@ export async function discoverCandidates(opts: DiscoverOptions = {}): Promise<Di
   for (const terms of Object.values(SCOUT_KEYWORDS)) {
     for (const term of terms.slice(0, termsPerCat)) {
       try {
-        const res = await searchAgents(term, 100);
+        const res = await searchAgents(term, 100, chain);
         for (const raw of (res.data ?? []) as RawHit[]) {
           consider(raw, "keyword");
         }
@@ -155,7 +165,7 @@ export async function discoverCandidates(opts: DiscoverOptions = {}): Promise<Di
 
   for (let page = 1; page <= recentPages; page++) {
     try {
-      const body = await fetchAgentsPage(page);
+      const body = await fetchAgentsPage(page, undefined, chain);
       for (const raw of (body.data ?? []) as RawHit[]) {
         consider(raw, "recent");
       }

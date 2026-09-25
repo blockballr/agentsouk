@@ -1,4 +1,18 @@
 export const BSC_CHAIN_ID = 56;
+export const BSC_TESTNET_CHAIN_ID = 97;
+
+export function targetChainId(): number {
+  const raw = Number.parseInt(process.env.TARGET_CHAIN ?? "", 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : BSC_CHAIN_ID;
+}
+
+export function snapshotFileFor(chainId: number): string {
+  return chainId === BSC_CHAIN_ID ? "agents.json" : `agents-${chainId}.json`;
+}
+
+export function scoutDirFor(chainId: number): string {
+  return chainId === BSC_CHAIN_ID ? "scout" : `scout-${chainId}`;
+}
 
 export const BSC_REGISTRY_ADDRESS =
   "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432";

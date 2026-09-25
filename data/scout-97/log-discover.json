@@ -1,0 +1,12 @@
+{
+  "runId": "scout-1790353393178",
+  "startedAt": "2026-09-25T16:22:53.779Z",
+  "completedAt": "2026-09-25T16:23:13.178Z",
+  "phase": "discover",
+  "discovered": 174,
+  "verified": 0,
+  "tracked": 0,
+  "added": 0,
+  "pruned": 0,
+  "errors": []
+}

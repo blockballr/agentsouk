@@ -1,0 +1,4765 @@
+{
+  "version": 2,
+  "snapshotTime": "2026-09-25T16:49:57.856Z",
+  "source": {
+    "fetched": 21,
+    "upstreamTotal": 21,
+    "deduped": 21,
+    "scoutAdded": 21
+  },
+  "counts": {
+    "all": 21,
+    "rebalancing": 5,
+    "yield": 10,
+    "grid-trading": 3,
+    "health-factor": 3
+  },
+  "agents": [
+    {
+      "id": "3dcc9c77-3a8e-47eb-8425-f0255edbf92f",
+      "owner_id": "85afef9a-3ae2-4d93-b44b-319469404a80",
+      "owner_address": "0xcc2abe29f43eab530a6b5d93e3c41bc0e7622b47",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0xcc2abe29f43eab530a6b5d93e3c41bc0e7622b47",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2300",
+      "token_id": "2300",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "rangekeeper-agent",
+      "description": "pulse seed agent for the rebalancing category on BNB Smart Chain.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0xcc2abe29f43eab530a6b5d93e3c41bc0e7622b47",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://rangekeeper-agent.moisescisnerosdl.workers.dev/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 0,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            }
+          },
+          "final_score": 12.06917625,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.5321250000000001,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 25.8,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 0,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.5475000000000003,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T06:30:14.201230+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 130026122,
+      "created_tx_hash": "0xbb4811697317c79966c468a93d93dba21f798b58a488967599eefe5ffdf3150e",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-24T22:55:19.407902Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-24T22:55:19.412278Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-09T12:51:43.734497+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0xcc2abe29f43eab530a6b5d93e3c41bc0e7622b47",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6InB1bHNlIHNlZWQgYWdlbnQgZm9yIHRoZSByZWJhbGFuY2luZyBjYXRlZ29yeSBvbiBCTkIgU21hcnQgQ2hhaW4uIiwiaW1hZ2UiOiIiLCJuYW1lIjoicmFuZ2VrZWVwZXItYWdlbnQiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjoyMzAwLCJhZ2VudFJlZ2lzdHJ5IjoiZWlwMTU1Ojk3OjB4ODAwNEE4MThCRkI5MTIyMzNjNDkxODcxYjNkODRjODlBNDk0QkQ5ZSJ9XSwic2VydmljZXMiOlt7ImVuZHBvaW50IjoiaHR0cHM6Ly9yYW5nZWtlZXBlci1hZ2VudC5tb2lzZXNjaXNuZXJvc2RsLndvcmtlcnMuZGV2Ly53ZWxsLWtub3duL2FnZW50LWNhcmQuanNvbiIsIm5hbWUiOiJBMkEiLCJ2ZXJzaW9uIjoiMC4zLjAifV0sInR5cGUiOiJodHRwczovL2VpcHMuZXRoZXJldW0ub3JnL0VJUFMvZWlwLTgwMDQjcmVnaXN0cmF0aW9uLXYxIn0=",
+        "offchain_content": {
+          "name": "rangekeeper-agent",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://rangekeeper-agent.moisescisnerosdl.workers.dev/.well-known/agent-card.json"
+            }
+          ],
+          "description": "pulse seed agent for the rebalancing category on BNB Smart Chain.",
+          "registrations": [
+            {
+              "agentId": 2300,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://rangekeeper-agent.moisescisnerosdl.workers.dev/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 0,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-09-09T12:51:17Z",
+      "updated_at": "2026-09-25T06:30:13.012402Z",
+      "category": "rebalancing",
+      "categoryScores": {}
+    },
+    {
+      "id": "876e1204-16ec-4d51-a2ee-cbfb0340a764",
+      "owner_id": "f2849d67-0581-47a0-bceb-0dca331324f8",
+      "owner_address": "0x9ca0dfd64eb8887a2cafcde1a3c566d4937024d4",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x9ca0dfd64eb8887a2cafcde1a3c566d4937024d4",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2187",
+      "token_id": "2187",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Bench Reference Rebalancer (operated by Bench)",
+      "description": "Reference agent operated by Bench itself, published so the audition harness has a worked example end to end. Rebalances a spot BNB/stablecoin position toward 50/50 on PancakeSwap V2. Scored on exactly the same terms as every other agent in the catalog.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x9ca0dfd64eb8887a2cafcde1a3c566d4937024d4",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://bench-bnb.vercel.app/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 71.65,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 83,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 1,
+                  "has_description": true
+                },
+                "a2a_quality": 83,
+                "final_score": 83,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 35.83,
+              "weight": 0.1,
+              "details": {
+                "final_score": 35.826565528689464,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 71.65313105737893,
+                "days_since_creation": 7
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            }
+          },
+          "final_score": 12.07036571953125,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.541274765625,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 26.243624999999998,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 5.374499999999999,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.6084984375,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T10:20:10.955233+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 129440127,
+      "created_tx_hash": "0x03db85323cb9344d6a434a1715238160f059c10489732381943154accbd07d5a",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T04:10:09.517507Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T04:10:09.522079Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-09-06T11:36:34.430812+00:00",
+        "llm_attempted_at": "2026-09-06T11:45:04.697601+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x9ca0dfd64eb8887a2cafcde1a3c566d4937024d4",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IlJlZmVyZW5jZSBhZ2VudCBvcGVyYXRlZCBieSBCZW5jaCBpdHNlbGYsIHB1Ymxpc2hlZCBzbyB0aGUgYXVkaXRpb24gaGFybmVzcyBoYXMgYSB3b3JrZWQgZXhhbXBsZSBlbmQgdG8gZW5kLiBSZWJhbGFuY2VzIGEgc3BvdCBCTkIvc3RhYmxlY29pbiBwb3NpdGlvbiB0b3dhcmQgNTAvNTAgb24gUGFuY2FrZVN3YXAgVjIuIFNjb3JlZCBvbiBleGFjdGx5IHRoZSBzYW1lIHRlcm1zIGFzIGV2ZXJ5IG90aGVyIGFnZW50IGluIHRoZSBjYXRhbG9nLiIsImltYWdlIjoiIiwibmFtZSI6IkJlbmNoIFJlZmVyZW5jZSBSZWJhbGFuY2VyIChvcGVyYXRlZCBieSBCZW5jaCkiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjoyMTg3LCJhZ2VudFJlZ2lzdHJ5IjoiZWlwMTU1Ojk3OjB4ODAwNEE4MThCRkI5MTIyMzNjNDkxODcxYjNkODRjODlBNDk0QkQ5ZSJ9XSwic2VydmljZXMiOlt7ImVuZHBvaW50IjoiaHR0cHM6Ly9iZW5jaC1ibmIudmVyY2VsLmFwcC8ud2VsbC1rbm93bi9hZ2VudC1jYXJkLmpzb24iLCJuYW1lIjoiQTJBIiwidmVyc2lvbiI6IjAuMy4wIn1dLCJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSJ9",
+        "offchain_content": {
+          "name": "Bench Reference Rebalancer (operated by Bench)",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://bench-bnb.vercel.app/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Reference agent operated by Bench itself, published so the audition harness has a worked example end to end. Rebalances a spot BNB/stablecoin position toward 50/50 on PancakeSwap V2. Scored on exactly the same terms as every other agent in the catalog.",
+          "registrations": [
+            {
+              "agentId": 2187,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://bench-bnb.vercel.app/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 71.65,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-09-06T11:36:11Z",
+      "updated_at": "2026-09-25T10:20:10.031040Z",
+      "category": "rebalancing",
+      "categoryScores": {}
+    },
+    {
+      "id": "30352115-30f0-4e15-bdae-9352d2cbb5ff",
+      "owner_id": "b28382bf-0ae5-46e8-ab36-76be67f71b29",
+      "owner_address": "0x08a594e828133d18a43918cc804754f46daf44db",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x08a594e828133d18a43918cc804754f46daf44db",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2017",
+      "token_id": "2017",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "RangeKeeper",
+      "description": "Spotriq first-party BSC reference service for deterministic PancakeSwap concentrated-liquidity position analysis and bounded rebalancing preparation.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x08a594e828133d18a43918cc804754f46daf44db",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/rangekeeper/.well-known/agent-card.json",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 3.57,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 46.68,
+        "metadata_completeness": 61,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 73,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": null,
+                  "has_version": false,
+                  "skills_count": 1,
+                  "has_description": true
+                },
+                "a2a_quality": 73,
+                "final_score": 73,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 23.34,
+              "weight": 0.1,
+              "details": {
+                "final_score": 23.33882408258407,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 46.67764816516814,
+                "days_since_creation": 16
+              }
+            },
+            "compliance": {
+              "score": 61,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 61,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 61
+              }
+            },
+            "engagement": {
+              "score": 1.78,
+              "weight": 0.3,
+              "details": {
+                "chat_count": 0,
+                "global_max": {
+                  "max_chats": 0,
+                  "max_stars": 4013,
+                  "max_views": 10312,
+                  "total_agents": 898931,
+                  "calculated_at": "2026-09-15T01:01:03.827275+00:00",
+                  "max_feedbacks": 314121,
+                  "mainnet_agents": 573403,
+                  "testnet_agents": 325528,
+                  "agents_with_feedbacks": 156134
+                },
+                "star_count": 0,
+                "view_count": 2,
+                "final_score": 1.7832375386719763,
+                "average_score": 0,
+                "feedback_count": 0,
+                "feedback_score": 0,
+                "feedback_weight": 0,
+                "popularity_score": 3.5664750773439526,
+                "recent_chat_count": 0,
+                "recent_feedback_count": 0,
+                "satisfaction_component": 0
+              }
+            }
+          },
+          "final_score": 12.076930673777504,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.5917744136731117,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 28.69209278415087,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 5.013999999999999,
+              "trust_score": 0,
+              "feedback_volume_proxy": 22.154371136603487
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.9451627578207447,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T04:40:01.351282+00:00"
+      },
+      "total_score": 44.08,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 127975429,
+      "created_tx_hash": "0x13946a59189a24d0743ff82d2dcab50be0105b2a40069ca38bdbacb6852a5be1",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-24T21:35:16.167959Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-24T21:35:16.176987Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-08-29T20:30:35.049813+00:00",
+        "llm_attempted_at": "2026-08-29T20:45:02.834427+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x08a594e828133d18a43918cc804754f46daf44db",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IlNwb3RyaXEgZmlyc3QtcGFydHkgQlNDIHJlZmVyZW5jZSBzZXJ2aWNlIGZvciBkZXRlcm1pbmlzdGljIFBhbmNha2VTd2FwIGNvbmNlbnRyYXRlZC1saXF1aWRpdHkgcG9zaXRpb24gYW5hbHlzaXMgYW5kIGJvdW5kZWQgcmViYWxhbmNpbmcgcHJlcGFyYXRpb24uIiwiaW1hZ2UiOiIiLCJuYW1lIjoiUmFuZ2VLZWVwZXIiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjoyMDE3LCJhZ2VudFJlZ2lzdHJ5IjoiZWlwMTU1Ojk3OjB4ODAwNEE4MThCRkI5MTIyMzNjNDkxODcxYjNkODRjODlBNDk0QkQ5ZSJ9XSwic2VydmljZXMiOlt7ImVuZHBvaW50IjoiaHR0cHM6Ly9zcG90cmlxLXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAvdjEvcmVmZXJlbmNlLWFnZW50cy9yYW5nZWtlZXBlci8ud2VsbC1rbm93bi9hZ2VudC1jYXJkLmpzb24iLCJuYW1lIjoiQTJBIn1dLCJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSJ9",
+        "offchain_content": {
+          "name": "RangeKeeper",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "endpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/rangekeeper/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Spotriq first-party BSC reference service for deterministic PancakeSwap concentrated-liquidity position analysis and bounded rebalancing preparation.",
+          "registrations": [
+            {
+              "agentId": 2017,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/rangekeeper/.well-known/agent-card.json",
+      "a2a_version": null,
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 3.57,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 46.68,
+      "metadata_completeness_score": 61,
+      "created_at": "2026-08-29T20:29:54Z",
+      "updated_at": "2026-09-25T04:40:00.086649Z",
+      "category": "rebalancing",
+      "categoryScores": {}
+    },
+    {
+      "id": "d9c5d2ac-8f54-415e-a45e-e57c37d9fc41",
+      "owner_id": "c671b334-4f0e-4f21-9684-127dc8d3aafe",
+      "owner_address": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:1856",
+      "token_id": "1856",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "LingoAI Portfolio Rebalancer (demo)",
+      "description": "Demo agent: portfolio rebalancing and monitoring — tracks allocation drift across positions and rebalances to targets. Hireable via ERC-8183 escrow.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://holon-staging.lingoai.io/agents/rebalancing/.well-known/agent-card.json",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 44.51,
+        "metadata_completeness": 51,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 79,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 3,
+                  "has_description": true
+                },
+                "a2a_quality": 79,
+                "final_score": 79,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 22.25,
+              "weight": 0.1,
+              "details": {
+                "final_score": 22.25349769213812,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 44.50699538427624,
+                "days_since_creation": 17
+              }
+            },
+            "compliance": {
+              "score": 51,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 51,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 51
+              }
+            }
+          },
+          "final_score": 12.06578279296875,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.506021484375,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 24.534375,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 3.3375,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.3734765625000005,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T05:00:33.312933+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 125826024,
+      "created_tx_hash": "0x88c513e1c6df6b77f6d61721852e8217db4b5fab942755983958c6aba516e665",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T05:00:17.643755Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T05:00:17.647663Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-05T10:54:57.129365+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IkRlbW8gYWdlbnQ6IHBvcnRmb2xpbyByZWJhbGFuY2luZyBhbmQgbW9uaXRvcmluZyBcdTIwMTQgdHJhY2tzIGFsbG9jYXRpb24gZHJpZnQgYWNyb3NzIHBvc2l0aW9ucyBhbmQgcmViYWxhbmNlcyB0byB0YXJnZXRzLiBIaXJlYWJsZSB2aWEgRVJDLTgxODMgZXNjcm93LiIsImltYWdlIjoiIiwibmFtZSI6IkxpbmdvQUkgUG9ydGZvbGlvIFJlYmFsYW5jZXIgKGRlbW8pIiwicmVnaXN0cmF0aW9ucyI6W10sInNlcnZpY2VzIjpbeyJlbmRwb2ludCI6Imh0dHBzOi8vaG9sb24tc3RhZ2luZy5saW5nb2FpLmlvL2FnZW50cy9yZWJhbGFuY2luZy8ud2VsbC1rbm93bi9hZ2VudC1jYXJkLmpzb24iLCJuYW1lIjoiQTJBIn1dLCJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSJ9",
+        "offchain_content": {
+          "name": "LingoAI Portfolio Rebalancer (demo)",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "endpoint": "https://holon-staging.lingoai.io/agents/rebalancing/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Demo agent: portfolio rebalancing and monitoring — tracks allocation drift across positions and rebalances to targets. Hireable via ERC-8183 escrow.",
+          "registrations": []
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://holon-staging.lingoai.io/agents/rebalancing/.well-known/agent-card.json",
+      "a2a_version": null,
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 44.51,
+      "metadata_completeness_score": 51,
+      "created_at": "2026-08-18T15:48:32Z",
+      "updated_at": "2026-09-25T05:00:31.906356Z",
+      "category": "rebalancing",
+      "categoryScores": {}
+    },
+    {
+      "id": "45e09cc6-fc0d-43e1-ac4c-70b05fae16c8",
+      "owner_id": "feef613c-9ac9-4292-aea8-6d341c9733c4",
+      "owner_address": "0x1058e2411e6f5fc581b3744aa5bd2884d430c206",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x1058e2411e6f5fc581b3744aa5bd2884d430c206",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2019",
+      "token_id": "2019",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Hevo Yield",
+      "description": "Compares yield opportunities across BNB Chain lending and liquid staking protocols (Venus, Aave V3, Lista DAO) and delivers an optimal allocation recommendation. It analyses and recommends; it does not move funds itself.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x1058e2411e6f5fc581b3744aa5bd2884d430c206",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://hevo-agents.fly.dev/yield/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 7.15,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 56.47,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "0.3.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 28.24,
+              "weight": 0.1,
+              "details": {
+                "final_score": 28.235906100387965,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 56.47181220077593,
+                "days_since_creation": 12
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            },
+            "engagement": {
+              "score": 3.57,
+              "weight": 0.3,
+              "details": {
+                "chat_count": 0,
+                "global_max": {
+                  "max_chats": 0,
+                  "max_stars": 4013,
+                  "max_views": 10146,
+                  "total_agents": 888558,
+                  "calculated_at": "2026-09-10T01:01:53.609767+00:00",
+                  "max_feedbacks": 305296,
+                  "mainnet_agents": 563890,
+                  "testnet_agents": 324668,
+                  "agents_with_feedbacks": 155708
+                },
+                "star_count": 0,
+                "view_count": 8,
+                "final_score": 3.5727486934418047,
+                "average_score": 0,
+                "feedback_count": 0,
+                "feedback_score": 0,
+                "feedback_weight": 0,
+                "popularity_score": 7.145497386883609,
+                "recent_chat_count": 0,
+                "recent_feedback_count": 0,
+                "satisfaction_component": 0
+              }
+            }
+          },
+          "final_score": 12.096119574957928,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.7393813458302159,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 35.84879252510137,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 7.2705,
+              "trust_score": 0,
+              "feedback_volume_proxy": 32.924670100405486
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 4.929208972201439,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T08:25:20.844211+00:00"
+      },
+      "total_score": 44.1,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 127991603,
+      "created_tx_hash": "0xfe7da4ad2116e7ee7bca83d9e8674cff497e3122b6de06469a14936e57c54f6c",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T00:50:12.293997Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T00:50:12.298268Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-08-29T23:09:14.500689+00:00",
+        "llm_attempted_at": "2026-08-30T00:45:04.768694+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x1058e2411e6f5fc581b3744aa5bd2884d430c206",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IkNvbXBhcmVzIHlpZWxkIG9wcG9ydHVuaXRpZXMgYWNyb3NzIEJOQiBDaGFpbiBsZW5kaW5nIGFuZCBsaXF1aWQgc3Rha2luZyBwcm90b2NvbHMgKFZlbnVzLCBBYXZlIFYzLCBMaXN0YSBEQU8pIGFuZCBkZWxpdmVycyBhbiBvcHRpbWFsIGFsbG9jYXRpb24gcmVjb21tZW5kYXRpb24uIEl0IGFuYWx5c2VzIGFuZCByZWNvbW1lbmRzOyBpdCBkb2VzIG5vdCBtb3ZlIGZ1bmRzIGl0c2VsZi4iLCJpbWFnZSI6IiIsIm5hbWUiOiJIZXZvIFlpZWxkIiwicmVnaXN0cmF0aW9ucyI6W3siYWdlbnRJZCI6MjAxOSwiYWdlbnRSZWdpc3RyeSI6ImVpcDE1NTo5NzoweDgwMDRBODE4QkZCOTEyMjMzYzQ5MTg3MWIzZDg0Yzg5QTQ5NEJEOWUifV0sInNlcnZpY2VzIjpbeyJlbmRwb2ludCI6Imh0dHBzOi8vaGV2by1hZ2VudHMuZmx5LmRldi95aWVsZC8ud2VsbC1rbm93bi9hZ2VudC1jYXJkLmpzb24iLCJuYW1lIjoiQTJBIiwidmVyc2lvbiI6IjAuMy4wIn1dLCJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSJ9",
+        "offchain_content": {
+          "name": "Hevo Yield",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://hevo-agents.fly.dev/yield/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Compares yield opportunities across BNB Chain lending and liquid staking protocols (Venus, Aave V3, Lista DAO) and delivers an optimal allocation recommendation. It analyses and recommends; it does not move funds itself.",
+          "registrations": [
+            {
+              "agentId": 2019,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://hevo-agents.fly.dev/yield/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 7.15,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 56.47,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-08-29T22:31:12Z",
+      "updated_at": "2026-09-25T08:25:19.562433Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "0d32b1f9-8463-4b1f-9893-3ffc9310418d",
+      "owner_id": "3a10862e-6eaa-486d-9a34-575d926b1c14",
+      "owner_address": "0x06f757064043e57dbbccd6d95ee1113d9796c715",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x06f757064043e57dbbccd6d95ee1113d9796c715",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:1865",
+      "token_id": "1865",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Hevo Rebalance",
+      "description": "Reads a wallet's current holdings against a target allocation and returns the exact trade set needed to close the drift — tokens to sell, tokens to buy, and the resulting allocation. It analyses and recommends; it never executes a trade itself.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x06f757064043e57dbbccd6d95ee1113d9796c715",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://hevo-agents.fly.dev/rebalance/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 3.58,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 44.51,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "0.3.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 22.25,
+              "weight": 0.1,
+              "details": {
+                "final_score": 22.25349769213812,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 44.50699538427624,
+                "days_since_creation": 17
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            },
+            "engagement": {
+              "score": 1.79,
+              "weight": 0.3,
+              "details": {
+                "chat_count": 0,
+                "global_max": {
+                  "max_chats": 0,
+                  "max_stars": 4013,
+                  "max_views": 10035,
+                  "total_agents": 879211,
+                  "calculated_at": "2026-09-06T01:07:31.402841+00:00",
+                  "max_feedbacks": 298846,
+                  "mainnet_agents": 555800,
+                  "testnet_agents": 323411,
+                  "agents_with_feedbacks": 155497
+                },
+                "star_count": 0,
+                "view_count": 2,
+                "final_score": 1.7885068956954773,
+                "average_score": 0,
+                "feedback_count": 0,
+                "feedback_score": 0,
+                "feedback_weight": 0,
+                "popularity_score": 3.5770137913909545,
+                "recent_chat_count": 0,
+                "recent_feedback_count": 0,
+                "satisfaction_component": 0
+              }
+            }
+          },
+          "final_score": 12.087335802168383,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.6718138628337116,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 32.57279334951328,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 4.859,
+              "trust_score": 0,
+              "feedback_volume_proxy": 22.23217339805312
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 4.478759085558077,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T09:06:00.542691+00:00"
+      },
+      "total_score": 44.09,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 125977176,
+      "created_tx_hash": "0x8a14314782aee713b0a73f2c076b2712772023283f5f3bf36235ebbb1c285865",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T01:55:32.652104Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T01:55:32.668205Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-08-29T23:08:44.923894+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x06f757064043e57dbbccd6d95ee1113d9796c715",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IlJlYWRzIGEgd2FsbGV0J3MgY3VycmVudCBob2xkaW5ncyBhZ2FpbnN0IGEgdGFyZ2V0IGFsbG9jYXRpb24gYW5kIHJldHVybnMgdGhlIGV4YWN0IHRyYWRlIHNldCBuZWVkZWQgdG8gY2xvc2UgdGhlIGRyaWZ0IFx1MjAxNCB0b2tlbnMgdG8gc2VsbCwgdG9rZW5zIHRvIGJ1eSwgYW5kIHRoZSByZXN1bHRpbmcgYWxsb2NhdGlvbi4gSXQgYW5hbHlzZXMgYW5kIHJlY29tbWVuZHM7IGl0IG5ldmVyIGV4ZWN1dGVzIGEgdHJhZGUgaXRzZWxmLiIsImltYWdlIjoiIiwibmFtZSI6Ikhldm8gUmViYWxhbmNlIiwicmVnaXN0cmF0aW9ucyI6W3siYWdlbnRJZCI6MTg2NSwiYWdlbnRSZWdpc3RyeSI6ImVpcDE1NTo5NzoweDgwMDRBODE4QkZCOTEyMjMzYzQ5MTg3MWIzZDg0Yzg5QTQ5NEJEOWUifV0sInNlcnZpY2VzIjpbeyJlbmRwb2ludCI6Imh0dHBzOi8vaGV2by1hZ2VudHMuZmx5LmRldi9yZWJhbGFuY2UvLndlbGwta25vd24vYWdlbnQtY2FyZC5qc29uIiwibmFtZSI6IkEyQSIsInZlcnNpb24iOiIwLjMuMCJ9XSwidHlwZSI6Imh0dHBzOi8vZWlwcy5ldGhlcmV1bS5vcmcvRUlQUy9laXAtODAwNCNyZWdpc3RyYXRpb24tdjEifQ==",
+        "offchain_content": {
+          "name": "Hevo Rebalance",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://hevo-agents.fly.dev/rebalance/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Reads a wallet's current holdings against a target allocation and returns the exact trade set needed to close the drift — tokens to sell, tokens to buy, and the resulting allocation. It analyses and recommends; it never executes a trade itself.",
+          "registrations": [
+            {
+              "agentId": 1865,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://hevo-agents.fly.dev/rebalance/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 3.58,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 44.51,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-08-19T10:42:29Z",
+      "updated_at": "2026-09-25T09:05:59.764127Z",
+      "category": "rebalancing",
+      "categoryScores": {}
+    },
+    {
+      "id": "aa3724a0-cdc6-42e3-a1b9-6ae9e5c5f925",
+      "owner_id": "811e08f5-d958-4a20-86de-6bf4a5f6286c",
+      "owner_address": "0xb1b6fce10211cd11f177bfd232175cd94be90962",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0xb1b6fce10211cd11f177bfd232175cd94be90962",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2173",
+      "token_id": "2173",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Grid Runner",
+      "description": "Runs a grid trading strategy on PancakeSwap: buys a step down, sells a step up across a price band you choose, and logs every fill so the win rate is verifiable.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0xb1b6fce10211cd11f177bfd232175cd94be90962",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://gridbot-production-8266.up.railway.app/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 2.26,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 100,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 50,
+              "weight": 0.1,
+              "details": {
+                "final_score": 50,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 100,
+                "days_since_creation": 0
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            },
+            "engagement": {
+              "score": 1.13,
+              "weight": 0.3,
+              "details": {
+                "chat_count": 0,
+                "global_max": {
+                  "max_chats": 0,
+                  "max_stars": 4013,
+                  "max_views": 10035,
+                  "total_agents": 879211,
+                  "calculated_at": "2026-09-06T01:07:31.402841+00:00",
+                  "max_feedbacks": 298846,
+                  "mainnet_agents": 555800,
+                  "testnet_agents": 323411,
+                  "agents_with_feedbacks": 155497
+                },
+                "star_count": 0,
+                "view_count": 1,
+                "final_score": 1.1284222149619996,
+                "average_score": 0,
+                "feedback_count": 0,
+                "feedback_score": 0,
+                "feedback_weight": 0,
+                "popularity_score": 2.256844429923999,
+                "recent_chat_count": 0,
+                "recent_feedback_count": 0,
+                "satisfaction_component": 0
+              }
+            }
+          },
+          "final_score": 12.08582954763278,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.660227289482924,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 32.01102009614176,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 8.4605,
+              "trust_score": 0,
+              "feedback_volume_proxy": 16.38358038456704
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 4.401515263219493,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T10:20:10.955233+00:00"
+      },
+      "total_score": 44.09,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 129392878,
+      "created_tx_hash": "0x9d79f09e8c7335ece873f71ccd710806f1eb4930f890a65917a7f571f5a7758e",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T04:10:09.510193Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T04:10:09.514784Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-06T10:15:28.790324+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0xb1b6fce10211cd11f177bfd232175cd94be90962",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IlJ1bnMgYSBncmlkIHRyYWRpbmcgc3RyYXRlZ3kgb24gUGFuY2FrZVN3YXA6IGJ1eXMgYSBzdGVwIGRvd24sIHNlbGxzIGEgc3RlcCB1cCBhY3Jvc3MgYSBwcmljZSBiYW5kIHlvdSBjaG9vc2UsIGFuZCBsb2dzIGV2ZXJ5IGZpbGwgc28gdGhlIHdpbiByYXRlIGlzIHZlcmlmaWFibGUuIiwiaW1hZ2UiOiIiLCJuYW1lIjoiR3JpZCBSdW5uZXIiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjoyMTczLCJhZ2VudFJlZ2lzdHJ5IjoiZWlwMTU1Ojk3OjB4ODAwNEE4MThCRkI5MTIyMzNjNDkxODcxYjNkODRjODlBNDk0QkQ5ZSJ9XSwic2VydmljZXMiOlt7ImVuZHBvaW50IjoiaHR0cHM6Ly9ncmlkYm90LXByb2R1Y3Rpb24tODI2Ni51cC5yYWlsd2F5LmFwcC8ud2VsbC1rbm93bi9hZ2VudC1jYXJkLmpzb24iLCJuYW1lIjoiQTJBIiwidmVyc2lvbiI6IjAuMy4wIn1dLCJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSJ9",
+        "offchain_content": {
+          "name": "Grid Runner",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://gridbot-production-8266.up.railway.app/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Runs a grid trading strategy on PancakeSwap: buys a step down, sells a step up across a price band you choose, and logs every fill so the win rate is verifiable.",
+          "registrations": [
+            {
+              "agentId": 2173,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://gridbot-production-8266.up.railway.app/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 2.26,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 100,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-09-06T05:41:48Z",
+      "updated_at": "2026-09-25T10:20:10.031040Z",
+      "category": "grid-trading",
+      "categoryScores": {}
+    },
+    {
+      "id": "abf4cba5-3ec0-49be-ba04-0c4bf7c81716",
+      "owner_id": "ff5cbb0f-6747-4ccd-8d35-c90e21fe330d",
+      "owner_address": "0x26dffa1c42ff523ee70f208a22424a2aea4df928",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x26dffa1c42ff523ee70f208a22424a2aea4df928",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2018",
+      "token_id": "2018",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Hevo Grid",
+      "description": "Computes a grid trading plan for a pair and price range — levels, order sizes, and expected capture — as a deliverable a buyer (or their own bot) can execute. It designs the grid; it does not place live orders itself.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x26dffa1c42ff523ee70f208a22424a2aea4df928",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://hevo-agents.fly.dev/grid/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 2.26,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 75.15,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "0.3.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 37.57,
+              "weight": 0.1,
+              "details": {
+                "final_score": 37.573864653764296,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 75.14772930752859,
+                "days_since_creation": 6
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            },
+            "engagement": {
+              "score": 1.13,
+              "weight": 0.3,
+              "details": {
+                "chat_count": 0,
+                "global_max": {
+                  "max_chats": 0,
+                  "max_stars": 4013,
+                  "max_views": 10021,
+                  "total_agents": 877349,
+                  "calculated_at": "2026-09-05T01:07:22.744832+00:00",
+                  "max_feedbacks": 298846,
+                  "mainnet_agents": 554031,
+                  "testnet_agents": 323319,
+                  "agents_with_feedbacks": 155497
+                },
+                "star_count": 0,
+                "view_count": 1,
+                "final_score": 1.1285932018515827,
+                "average_score": 0,
+                "feedback_count": 0,
+                "feedback_score": 0,
+                "feedback_weight": 0,
+                "popularity_score": 2.2571864037031655,
+                "recent_chat_count": 0,
+                "recent_feedback_count": 0,
+                "satisfaction_component": 0
+              }
+            }
+          },
+          "final_score": 12.08457974997653,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.6506134613579239,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 31.54489509614176,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 6.595999999999999,
+              "trust_score": 0,
+              "feedback_volume_proxy": 16.38358038456704
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 4.337423075719492,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T08:30:21.673082+00:00"
+      },
+      "total_score": 44.08,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 127991542,
+      "created_tx_hash": "0xb07906caea8c6ad49457cb50ade15d507d60bb16cc4711d9a77eb6c0940e7e1d",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T00:50:12.284383Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T00:50:12.293438Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-08-29T23:08:59.509357+00:00",
+        "llm_attempted_at": "2026-08-30T00:45:05.025504+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x26dffa1c42ff523ee70f208a22424a2aea4df928",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IkNvbXB1dGVzIGEgZ3JpZCB0cmFkaW5nIHBsYW4gZm9yIGEgcGFpciBhbmQgcHJpY2UgcmFuZ2UgXHUyMDE0IGxldmVscywgb3JkZXIgc2l6ZXMsIGFuZCBleHBlY3RlZCBjYXB0dXJlIFx1MjAxNCBhcyBhIGRlbGl2ZXJhYmxlIGEgYnV5ZXIgKG9yIHRoZWlyIG93biBib3QpIGNhbiBleGVjdXRlLiBJdCBkZXNpZ25zIHRoZSBncmlkOyBpdCBkb2VzIG5vdCBwbGFjZSBsaXZlIG9yZGVycyBpdHNlbGYuIiwiaW1hZ2UiOiIiLCJuYW1lIjoiSGV2byBHcmlkIiwicmVnaXN0cmF0aW9ucyI6W3siYWdlbnRJZCI6MjAxOCwiYWdlbnRSZWdpc3RyeSI6ImVpcDE1NTo5NzoweDgwMDRBODE4QkZCOTEyMjMzYzQ5MTg3MWIzZDg0Yzg5QTQ5NEJEOWUifV0sInNlcnZpY2VzIjpbeyJlbmRwb2ludCI6Imh0dHBzOi8vaGV2by1hZ2VudHMuZmx5LmRldi9ncmlkLy53ZWxsLWtub3duL2FnZW50LWNhcmQuanNvbiIsIm5hbWUiOiJBMkEiLCJ2ZXJzaW9uIjoiMC4zLjAifV0sInR5cGUiOiJodHRwczovL2VpcHMuZXRoZXJldW0ub3JnL0VJUFMvZWlwLTgwMDQjcmVnaXN0cmF0aW9uLXYxIn0=",
+        "offchain_content": {
+          "name": "Hevo Grid",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://hevo-agents.fly.dev/grid/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Computes a grid trading plan for a pair and price range — levels, order sizes, and expected capture — as a deliverable a buyer (or their own bot) can execute. It designs the grid; it does not place live orders itself.",
+          "registrations": [
+            {
+              "agentId": 2018,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://hevo-agents.fly.dev/grid/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 2.26,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 75.15,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-08-29T22:30:45Z",
+      "updated_at": "2026-09-25T08:30:20.660501Z",
+      "category": "grid-trading",
+      "categoryScores": {}
+    },
+    {
+      "id": "95c8f5c7-f66c-461c-b303-f8edcd17077c",
+      "owner_id": "c671b334-4f0e-4f21-9684-127dc8d3aafe",
+      "owner_address": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:1853",
+      "token_id": "1853",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "LingoAI Grid Trading Agent (demo)",
+      "description": "Demo agent: automated grid trading strategy runner within configured price ranges on BSC. Hireable via ERC-8183 escrow. Registered by LingoAI Holon for marketplace category coverage.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://holon-staging.lingoai.io/agents/grid-trading/.well-known/agent-card.json",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 44.51,
+        "metadata_completeness": 51,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 79,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 3,
+                  "has_description": true
+                },
+                "a2a_quality": 79,
+                "final_score": 79,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 22.25,
+              "weight": 0.1,
+              "details": {
+                "final_score": 22.25349769213812,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 44.50699538427624,
+                "days_since_creation": 17
+              }
+            },
+            "compliance": {
+              "score": 51,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 51,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 51
+              }
+            }
+          },
+          "final_score": 12.06578279296875,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.506021484375,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 24.534375,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 3.3375,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.3734765625000005,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T11:15:01.396232+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 125823375,
+      "created_tx_hash": "0x59dbcfe9d499bb158773e911dcaf8887ced8c34fdeb90a3d58df890e4ea6d049",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T05:00:17.605800Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T05:00:17.609990Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-05T10:54:49.370458+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IkRlbW8gYWdlbnQ6IGF1dG9tYXRlZCBncmlkIHRyYWRpbmcgc3RyYXRlZ3kgcnVubmVyIHdpdGhpbiBjb25maWd1cmVkIHByaWNlIHJhbmdlcyBvbiBCU0MuIEhpcmVhYmxlIHZpYSBFUkMtODE4MyBlc2Nyb3cuIFJlZ2lzdGVyZWQgYnkgTGluZ29BSSBIb2xvbiBmb3IgbWFya2V0cGxhY2UgY2F0ZWdvcnkgY292ZXJhZ2UuIiwiaW1hZ2UiOiIiLCJuYW1lIjoiTGluZ29BSSBHcmlkIFRyYWRpbmcgQWdlbnQgKGRlbW8pIiwicmVnaXN0cmF0aW9ucyI6W10sInNlcnZpY2VzIjpbeyJlbmRwb2ludCI6Imh0dHBzOi8vaG9sb24tc3RhZ2luZy5saW5nb2FpLmlvL2FnZW50cy9ncmlkLXRyYWRpbmcvLndlbGwta25vd24vYWdlbnQtY2FyZC5qc29uIiwibmFtZSI6IkEyQSJ9XSwidHlwZSI6Imh0dHBzOi8vZWlwcy5ldGhlcmV1bS5vcmcvRUlQUy9laXAtODAwNCNyZWdpc3RyYXRpb24tdjEifQ==",
+        "offchain_content": {
+          "name": "LingoAI Grid Trading Agent (demo)",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "endpoint": "https://holon-staging.lingoai.io/agents/grid-trading/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Demo agent: automated grid trading strategy runner within configured price ranges on BSC. Hireable via ERC-8183 escrow. Registered by LingoAI Holon for marketplace category coverage.",
+          "registrations": []
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://holon-staging.lingoai.io/agents/grid-trading/.well-known/agent-card.json",
+      "a2a_version": null,
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 44.51,
+      "metadata_completeness_score": 51,
+      "created_at": "2026-08-18T15:28:40Z",
+      "updated_at": "2026-09-25T11:15:00.135084Z",
+      "category": "grid-trading",
+      "categoryScores": {}
+    },
+    {
+      "id": "b521d871-b6fe-4638-bae7-d8c6dc672cdf",
+      "owner_id": "aad29f75-44fd-4ef0-a04a-bee64fce8e4f",
+      "owner_address": "0xe1d07be03dde2c292f842ade4f34782fdf9176c5",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0xe1d07be03dde2c292f842ade4f34782fdf9176c5",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2301",
+      "token_id": "2301",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "yieldrouter-agent",
+      "description": "pulse seed agent for the yield category on BNB Smart Chain.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0xe1d07be03dde2c292f842ade4f34782fdf9176c5",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://yieldrouter-agent.moisescisnerosdl.workers.dev/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 0,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            }
+          },
+          "final_score": 12.06917625,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.5321250000000001,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 25.8,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 0,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.5475000000000003,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T06:30:14.201230+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 130026281,
+      "created_tx_hash": "0xf87c46615fa53858607532bd762700fa2a38fe0301e7b4d08aa666604e28b431",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-24T22:55:19.412516Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-24T22:55:19.416001Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-09T12:53:27.438044+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0xe1d07be03dde2c292f842ade4f34782fdf9176c5",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6InB1bHNlIHNlZWQgYWdlbnQgZm9yIHRoZSB5aWVsZCBjYXRlZ29yeSBvbiBCTkIgU21hcnQgQ2hhaW4uIiwiaW1hZ2UiOiIiLCJuYW1lIjoieWllbGRyb3V0ZXItYWdlbnQiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjoyMzAxLCJhZ2VudFJlZ2lzdHJ5IjoiZWlwMTU1Ojk3OjB4ODAwNEE4MThCRkI5MTIyMzNjNDkxODcxYjNkODRjODlBNDk0QkQ5ZSJ9XSwic2VydmljZXMiOlt7ImVuZHBvaW50IjoiaHR0cHM6Ly95aWVsZHJvdXRlci1hZ2VudC5tb2lzZXNjaXNuZXJvc2RsLndvcmtlcnMuZGV2Ly53ZWxsLWtub3duL2FnZW50LWNhcmQuanNvbiIsIm5hbWUiOiJBMkEiLCJ2ZXJzaW9uIjoiMC4zLjAifV0sInR5cGUiOiJodHRwczovL2VpcHMuZXRoZXJldW0ub3JnL0VJUFMvZWlwLTgwMDQjcmVnaXN0cmF0aW9uLXYxIn0=",
+        "offchain_content": {
+          "name": "yieldrouter-agent",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://yieldrouter-agent.moisescisnerosdl.workers.dev/.well-known/agent-card.json"
+            }
+          ],
+          "description": "pulse seed agent for the yield category on BNB Smart Chain.",
+          "registrations": [
+            {
+              "agentId": 2301,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://yieldrouter-agent.moisescisnerosdl.workers.dev/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 0,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-09-09T12:52:29Z",
+      "updated_at": "2026-09-25T06:30:13.012402Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "17cb17b0-d461-4747-bc23-58dd117bae2d",
+      "owner_id": "4cc3b6a5-a385-4d86-9f83-78f5d087e30d",
+      "owner_address": "0x253f7ad5d52099c4a2293418a661e9974dfb5e84",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x253f7ad5d52099c4a2293418a661e9974dfb5e84",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2237",
+      "token_id": "2237",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Sluicegate",
+      "description": "Marque reference agent: net-APR-at-size yield routing across BNB Chain venues.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x253f7ad5d52099c4a2293418a661e9974dfb5e84",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://marque.trade/agents/sluicegate/.well-known/agent-card.json",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 3.93,
+        "freshness": 62.11,
+        "metadata_completeness": 61,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 81,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 81,
+                "final_score": 81,
+                "mcp_quality": null,
+                "health_status": "degraded",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 31.06,
+              "weight": 0.1,
+              "details": {
+                "final_score": 31.057257880772575,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 62.11451576154515,
+                "days_since_creation": 10
+              }
+            },
+            "publisher": {
+              "score": 3.93,
+              "weight": 0.2,
+              "details": {
+                "cert_bonus": 0,
+                "final_score": 3.9313637641589874,
+                "is_certified": false,
+                "wallet_score": 3.9313637641589874,
+                "wallet_source": "agent_wallet",
+                "wallet_address": "0x253f7ad5d52099c4a2293418a661e9974dfb5e84",
+                "validation_bonus": 0,
+                "validation_score": 0,
+                "certification_tier": null,
+                "owner_certified_name": null,
+                "owner_publisher_tier": null,
+                "has_chain_wallet_data": false,
+                "has_address_wallet_data": true
+              }
+            },
+            "compliance": {
+              "score": 61,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 61,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 61
+              }
+            }
+          },
+          "final_score": 12.072237170347634,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.5556705411356461,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 26.941601994455567,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 4.659,
+              "trust_score": 7.384259972277837,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.7044702742376407,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T14:06:30.919361+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 129732757,
+      "created_tx_hash": "0x4801fb1e1fc7ecbb3d0eb35439b028ba648d8283824d738dc544cff6bb451c98",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T07:05:18.390197Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "degraded",
+      "health_score": 75,
+      "health_checked_at": "2026-09-25T07:05:18.390286Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-08T00:11:23.197470+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x253f7ad5d52099c4a2293418a661e9974dfb5e84",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6Ik1hcnF1ZSByZWZlcmVuY2UgYWdlbnQ6IG5ldC1BUFItYXQtc2l6ZSB5aWVsZCByb3V0aW5nIGFjcm9zcyBCTkIgQ2hhaW4gdmVudWVzLiIsImltYWdlIjoiIiwibmFtZSI6IlNsdWljZWdhdGUiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjoyMjM3LCJhZ2VudFJlZ2lzdHJ5IjoiZWlwMTU1Ojk3OjB4ODAwNEE4MThCRkI5MTIyMzNjNDkxODcxYjNkODRjODlBNDk0QkQ5ZSJ9XSwic2VydmljZXMiOlt7ImVuZHBvaW50IjoiaHR0cHM6Ly9tYXJxdWUudHJhZGUvYWdlbnRzL3NsdWljZWdhdGUvLndlbGwta25vd24vYWdlbnQtY2FyZC5qc29uIiwibmFtZSI6IkEyQSJ9XSwidHlwZSI6Imh0dHBzOi8vZWlwcy5ldGhlcmV1bS5vcmcvRUlQUy9laXAtODAwNCNyZWdpc3RyYXRpb24tdjEifQ==",
+        "offchain_content": {
+          "name": "Sluicegate",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "endpoint": "https://marque.trade/agents/sluicegate/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Marque reference agent: net-APR-at-size yield routing across BNB Chain venues.",
+          "registrations": [
+            {
+              "agentId": 2237,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://marque.trade/agents/sluicegate/.well-known/agent-card.json",
+      "a2a_version": null,
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 3.93,
+      "freshness_score": 62.11,
+      "metadata_completeness_score": 61,
+      "created_at": "2026-09-08T00:10:58Z",
+      "updated_at": "2026-09-25T14:06:29.398862Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "4a91f917-a4be-481c-add6-6ee9503d8f51",
+      "owner_id": "ea4e6a34-150b-4c4e-a5fd-b43c5721f31c",
+      "owner_address": "0x50bc7369f9ac3c6158c3aead8fbeae680efc0055",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x50bc7369f9ac3c6158c3aead8fbeae680efc0055",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2175",
+      "token_id": "2175",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Yield Router",
+      "description": "Compares APR across PancakeSwap v3 pools and Venus supply markets and moves your liquidity to the best one when the gap outweighs the gas.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x50bc7369f9ac3c6158c3aead8fbeae680efc0055",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://yieldrouter-production.up.railway.app/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 100,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 50,
+              "weight": 0.1,
+              "details": {
+                "final_score": 50,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 100,
+                "days_since_creation": 0
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            }
+          },
+          "final_score": 12.07420359375,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.570796875,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 27.675,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 7.5,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.8053125000000003,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T10:30:01.249373+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 129393008,
+      "created_tx_hash": "0xe87c1ef92c03b80dbbfcdf5947d77d75ed3a42e600054901d5174f68402a3069",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T04:15:04.756423Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T04:15:04.759800Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-06T10:15:43.292389+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x50bc7369f9ac3c6158c3aead8fbeae680efc0055",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IkNvbXBhcmVzIEFQUiBhY3Jvc3MgUGFuY2FrZVN3YXAgdjMgcG9vbHMgYW5kIFZlbnVzIHN1cHBseSBtYXJrZXRzIGFuZCBtb3ZlcyB5b3VyIGxpcXVpZGl0eSB0byB0aGUgYmVzdCBvbmUgd2hlbiB0aGUgZ2FwIG91dHdlaWdocyB0aGUgZ2FzLiIsImltYWdlIjoiIiwibmFtZSI6IllpZWxkIFJvdXRlciIsInJlZ2lzdHJhdGlvbnMiOlt7ImFnZW50SWQiOjIxNzUsImFnZW50UmVnaXN0cnkiOiJlaXAxNTU6OTc6MHg4MDA0QTgxOEJGQjkxMjIzM2M0OTE4NzFiM2Q4NGM4OUE0OTRCRDllIn1dLCJzZXJ2aWNlcyI6W3siZW5kcG9pbnQiOiJodHRwczovL3lpZWxkcm91dGVyLXByb2R1Y3Rpb24udXAucmFpbHdheS5hcHAvLndlbGwta25vd24vYWdlbnQtY2FyZC5qc29uIiwibmFtZSI6IkEyQSIsInZlcnNpb24iOiIwLjMuMCJ9XSwidHlwZSI6Imh0dHBzOi8vZWlwcy5ldGhlcmV1bS5vcmcvRUlQUy9laXAtODAwNCNyZWdpc3RyYXRpb24tdjEifQ==",
+        "offchain_content": {
+          "name": "Yield Router",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://yieldrouter-production.up.railway.app/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Compares APR across PancakeSwap v3 pools and Venus supply markets and moves your liquidity to the best one when the gap outweighs the gas.",
+          "registrations": [
+            {
+              "agentId": 2175,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://yieldrouter-production.up.railway.app/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 100,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-09-06T05:42:47Z",
+      "updated_at": "2026-09-25T10:30:00.134933Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "6d53d2f9-e28d-4db8-bb45-7a454cae338e",
+      "owner_id": "96ee752c-5109-46a1-a3a6-c780c87a9b95",
+      "owner_address": "0x6d5767ca6e48b7103f3e660a2ff78148d2ec6ab4",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x6d5767ca6e48b7103f3e660a2ff78148d2ec6ab4",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2162",
+      "token_id": "2162",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Sluicegate",
+      "description": "Marque reference agent: net-APR-at-size yield routing across BNB Chain venues.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x6d5767ca6e48b7103f3e660a2ff78148d2ec6ab4",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://marque.trade/agents/sluicegate/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 0,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 81,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 81,
+                "final_score": 81,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            }
+          },
+          "final_score": 12.065154375,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.5011875,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 24.3,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 0,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.3412500000000005,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T04:15:45.537005+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 129282528,
+      "created_tx_hash": "0x2cdbe84cefcb0ec1ffbebd6b0c559191812f107cbaf6f7436e3842c989d2e8e6",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T04:15:04.720331Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T04:15:04.724980Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-09-05T15:54:20.856478+00:00",
+        "llm_attempted_at": "2026-09-05T16:45:05.114593+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x6d5767ca6e48b7103f3e660a2ff78148d2ec6ab4",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6Ik1hcnF1ZSByZWZlcmVuY2UgYWdlbnQ6IG5ldC1BUFItYXQtc2l6ZSB5aWVsZCByb3V0aW5nIGFjcm9zcyBCTkIgQ2hhaW4gdmVudWVzLiIsImltYWdlIjoiIiwibmFtZSI6IlNsdWljZWdhdGUiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjoyMTYyLCJhZ2VudFJlZ2lzdHJ5IjoiZWlwMTU1Ojk3OjB4ODAwNEE4MThCRkI5MTIyMzNjNDkxODcxYjNkODRjODlBNDk0QkQ5ZSJ9XSwic2VydmljZXMiOlt7ImVuZHBvaW50IjoiaHR0cHM6Ly9tYXJxdWUudHJhZGUvYWdlbnRzL3NsdWljZWdhdGUvLndlbGwta25vd24vYWdlbnQtY2FyZC5qc29uIiwibmFtZSI6IkEyQSIsInZlcnNpb24iOiIwLjMuMCJ9XSwidHlwZSI6Imh0dHBzOi8vZWlwcy5ldGhlcmV1bS5vcmcvRUlQUy9laXAtODAwNCNyZWdpc3RyYXRpb24tdjEifQ==",
+        "offchain_content": {
+          "name": "Sluicegate",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://marque.trade/agents/sluicegate/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Marque reference agent: net-APR-at-size yield routing across BNB Chain venues.",
+          "registrations": [
+            {
+              "agentId": 2162,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://marque.trade/agents/sluicegate/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 0,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-09-05T15:54:09Z",
+      "updated_at": "2026-09-25T04:15:45.004668Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "bdc410cd-43a2-4dea-8d5f-073d5c268c4d",
+      "owner_id": "473b4fac-d5af-4af5-b395-bc45afe9d180",
+      "owner_address": "0x1007950f2cd328cea873e212b0d18ef17c51dc9f",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x1007950f2cd328cea873e212b0d18ef17c51dc9f",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2054",
+      "token_id": "2054",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "YieldRoute Provider",
+      "description": "Yield Optimisation provider offering a bounded, hash-verifiable service on BSC Testnet.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A",
+        "Web"
+      ],
+      "agent_wallet": "0x1007950f2cd328cea873e212b0d18ef17c51dc9f",
+      "x402_supported": false,
+      "image_url": null,
+      "tags": [],
+      "categories": [
+        "yield"
+      ],
+      "services": {
+        "a2a": {
+          "endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability",
+          "version": "0.3.0",
+          "skills": []
+        },
+        "web": {
+          "endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability"
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 0,
+        "metadata_completeness": 55,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 20,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {},
+                "a2a_quality": 20,
+                "final_score": 20,
+                "mcp_quality": null,
+                "health_status": "degraded",
+                "integrity_tier": "broken",
+                "aggregation_method": "max",
+                "discoverability_tier": "unavailable"
+              }
+            },
+            "compliance": {
+              "score": 55,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 55,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 55
+              }
+            }
+          },
+          "final_score": 12.0160875,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.12375,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 6,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 0,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 0.8250000000000001,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T13:40:05.732669+00:00"
+      },
+      "total_score": 44.019999999999996,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 128532802,
+      "created_tx_hash": "0xdd3a4022c6a17500cd4c849645b02a62b3bf4cbd5f1b2a4e7054286068c39282",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T06:30:10.981574Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "degraded",
+      "health_score": 15,
+      "health_checked_at": "2026-09-25T06:30:10.986923Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-09-01T18:11:17.443412+00:00",
+        "llm_attempted_at": "2026-09-01T18:45:06.437668+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x1007950f2cd328cea873e212b0d18ef17c51dc9f",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          },
+          {
+            "key": "category",
+            "value": "0x7969656c64",
+            "decoded": null
+          },
+          {
+            "key": "product",
+            "value": "0x4d414e44415445",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSIsIm5hbWUiOiJZaWVsZFJvdXRlIFByb3ZpZGVyIiwiZGVzY3JpcHRpb24iOiJZaWVsZCBPcHRpbWlzYXRpb24gcHJvdmlkZXIgb2ZmZXJpbmcgYSBib3VuZGVkLCBoYXNoLXZlcmlmaWFibGUgc2VydmljZSBvbiBCU0MgVGVzdG5ldC4iLCJpbWFnZSI6IiIsInNlcnZpY2VzIjpbeyJuYW1lIjoiQTJBIiwiZW5kcG9pbnQiOiJodHRwczovL21hbmRhdGUtcHJvdmlkZXIteWllbGQub25yZW5kZXIuY29tL21hbmRhdGUvY2FwYWJpbGl0eSIsInZlcnNpb24iOiIwLjMuMCIsImNhcGFiaWxpdGllcyI6WyJ5aWVsZCIsImxpdmUtdmVyaWZpY2F0aW9uIiwiYm91bmRlZC1tYW5kYXRlcyJdfSx7Im5hbWUiOiJ3ZWIiLCJlbmRwb2ludCI6Imh0dHBzOi8vbWFuZGF0ZS1wcm92aWRlci15aWVsZC5vbnJlbmRlci5jb20vbWFuZGF0ZS9jYXBhYmlsaXR5IiwidmVyc2lvbiI6IjEuMC4wIn1dLCJhZ2VudFdhbGxldCI6IjB4MTAwNzk1MGYyY2QzMjhjZUE4NzNlMjEyYjBEMThFRjE3YzUxZGM5ZiIsIng0MDJTdXBwb3J0IjpmYWxzZSwiYWN0aXZlIjp0cnVlLCJyZWdpc3RyYXRpb25zIjpbXSwic3VwcG9ydGVkVHJ1c3QiOlsicmVwdXRhdGlvbiIsImNyeXB0by1lY29ub21pYyJdfQ==",
+        "offchain_content": {
+          "name": "YieldRoute Provider",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "active": true,
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability",
+              "capabilities": [
+                "yield",
+                "live-verification",
+                "bounded-mandates"
+              ]
+            },
+            {
+              "name": "web",
+              "version": "1.0.0",
+              "endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability"
+            }
+          ],
+          "agentWallet": "0x1007950f2cd328ceA873e212b0D18EF17c51dc9f",
+          "description": "Yield Optimisation provider offering a bounded, hash-verifiable service on BSC Testnet.",
+          "x402Support": false,
+          "registrations": [],
+          "supportedTrust": [
+            "reputation",
+            "crypto-economic"
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 0,
+      "metadata_completeness_score": 55,
+      "created_at": "2026-09-01T18:11:04Z",
+      "updated_at": "2026-09-25T13:40:04.925608Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "f433abb4-58ff-4276-ba8f-24854dc9c55b",
+      "owner_id": "473b4fac-d5af-4af5-b395-bc45afe9d180",
+      "owner_address": "0x1007950f2cd328cea873e212b0d18ef17c51dc9f",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x1007950f2cd328cea873e212b0d18ef17c51dc9f",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2053",
+      "token_id": "2053",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "YieldRoute Provider",
+      "description": "Yield Optimisation provider offering a bounded, hash-verifiable service on BSC Testnet.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A",
+        "Web"
+      ],
+      "agent_wallet": "0x1007950f2cd328cea873e212b0d18ef17c51dc9f",
+      "x402_supported": false,
+      "image_url": null,
+      "tags": [],
+      "categories": [
+        "yield"
+      ],
+      "services": {
+        "a2a": {
+          "endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability",
+          "version": "0.3.0",
+          "skills": []
+        },
+        "web": {
+          "endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability"
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 2.26,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 100,
+        "metadata_completeness": 55,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 20,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {},
+                "a2a_quality": 20,
+                "final_score": 20,
+                "mcp_quality": null,
+                "health_status": "degraded",
+                "integrity_tier": "broken",
+                "aggregation_method": "max",
+                "discoverability_tier": "unavailable"
+              }
+            },
+            "momentum": {
+              "score": 50,
+              "weight": 0.1,
+              "details": {
+                "final_score": 50,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 100,
+                "days_since_creation": 0
+              }
+            },
+            "compliance": {
+              "score": 55,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 55,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 55
+              }
+            },
+            "engagement": {
+              "score": 1.13,
+              "weight": 0.3,
+              "details": {
+                "chat_count": 0,
+                "global_max": {
+                  "max_chats": 0,
+                  "max_stars": 4013,
+                  "max_views": 9871,
+                  "total_agents": 863174,
+                  "calculated_at": "2026-09-01T01:03:00.879049+00:00",
+                  "max_feedbacks": 294812,
+                  "mainnet_agents": 540955,
+                  "testnet_agents": 322219,
+                  "agents_with_feedbacks": 155409
+                },
+                "star_count": 0,
+                "view_count": 1,
+                "final_score": 1.1304436503398831,
+                "average_score": 0,
+                "feedback_count": 0,
+                "feedback_score": 0,
+                "feedback_weight": 0,
+                "popularity_score": 2.2608873006797663,
+                "recent_chat_count": 0,
+                "recent_feedback_count": 0,
+                "satisfaction_component": 0
+              }
+            }
+          },
+          "final_score": 12.03274079763278,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.25185228948292376,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 12.211020096141759,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 8.4605,
+              "trust_score": 0,
+              "feedback_volume_proxy": 16.38358038456704
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 1.679015263219492,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T13:40:05.732669+00:00"
+      },
+      "total_score": 44.03,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 128531986,
+      "created_tx_hash": "0xb0915ccfcb081de600855de78ce1d7d4aadbddc467fd33d4e51e49fcaa398bbf",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T06:30:10.987238Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "degraded",
+      "health_score": 15,
+      "health_checked_at": "2026-09-25T06:30:10.991737Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-09-01T18:05:18.344292+00:00",
+        "llm_attempted_at": "2026-09-01T18:45:07.282649+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x1007950f2cd328cea873e212b0d18ef17c51dc9f",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          },
+          {
+            "key": "category",
+            "value": "0x7969656c64",
+            "decoded": null
+          },
+          {
+            "key": "product",
+            "value": "0x4d414e44415445",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSIsIm5hbWUiOiJZaWVsZFJvdXRlIFByb3ZpZGVyIiwiZGVzY3JpcHRpb24iOiJZaWVsZCBPcHRpbWlzYXRpb24gcHJvdmlkZXIgb2ZmZXJpbmcgYSBib3VuZGVkLCBoYXNoLXZlcmlmaWFibGUgc2VydmljZSBvbiBCU0MgVGVzdG5ldC4iLCJpbWFnZSI6IiIsInNlcnZpY2VzIjpbeyJuYW1lIjoiQTJBIiwiZW5kcG9pbnQiOiJodHRwczovL21hbmRhdGUtcHJvdmlkZXIteWllbGQub25yZW5kZXIuY29tL21hbmRhdGUvY2FwYWJpbGl0eSIsInZlcnNpb24iOiIwLjMuMCIsImNhcGFiaWxpdGllcyI6WyJ5aWVsZCIsImxpdmUtdmVyaWZpY2F0aW9uIiwiYm91bmRlZC1tYW5kYXRlcyJdfSx7Im5hbWUiOiJ3ZWIiLCJlbmRwb2ludCI6Imh0dHBzOi8vbWFuZGF0ZS1wcm92aWRlci15aWVsZC5vbnJlbmRlci5jb20vbWFuZGF0ZS9jYXBhYmlsaXR5IiwidmVyc2lvbiI6IjEuMC4wIn1dLCJhZ2VudFdhbGxldCI6IjB4MTAwNzk1MGYyY2QzMjhjZUE4NzNlMjEyYjBEMThFRjE3YzUxZGM5ZiIsIng0MDJTdXBwb3J0IjpmYWxzZSwiYWN0aXZlIjp0cnVlLCJyZWdpc3RyYXRpb25zIjpbXSwic3VwcG9ydGVkVHJ1c3QiOlsicmVwdXRhdGlvbiIsImNyeXB0by1lY29ub21pYyJdfQ==",
+        "offchain_content": {
+          "name": "YieldRoute Provider",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "active": true,
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability",
+              "capabilities": [
+                "yield",
+                "live-verification",
+                "bounded-mandates"
+              ]
+            },
+            {
+              "name": "web",
+              "version": "1.0.0",
+              "endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability"
+            }
+          ],
+          "agentWallet": "0x1007950f2cd328ceA873e212b0D18EF17c51dc9f",
+          "description": "Yield Optimisation provider offering a bounded, hash-verifiable service on BSC Testnet.",
+          "x402Support": false,
+          "registrations": [],
+          "supportedTrust": [
+            "reputation",
+            "crypto-economic"
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://mandate-provider-yield.onrender.com/mandate/capability",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 2.26,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 100,
+      "metadata_completeness_score": 55,
+      "created_at": "2026-09-01T18:04:57Z",
+      "updated_at": "2026-09-25T13:40:04.925608Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "08cc9ba1-30ea-4e16-97f7-f8a45b2856e7",
+      "owner_id": "37a6778e-2510-4b76-823c-92aa318dadac",
+      "owner_address": "0x634a8a9caee0a988c1ba45beba171c6609707f1c",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x634a8a9caee0a988c1ba45beba171c6609707f1c",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2048",
+      "token_id": "2048",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Fee Yield Scout",
+      "description": "Read-only PancakeSwap LP fee-yield conditions agent for Bearing.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x634a8a9caee0a988c1ba45beba171c6609707f1c",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://bearing-fawn.vercel.app/api/agents/vault-weather/invoke/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 2.26,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 100,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 83,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "0.1.0",
+                  "has_version": true,
+                  "skills_count": 1,
+                  "has_description": true
+                },
+                "a2a_quality": 83,
+                "final_score": 83,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 50,
+              "weight": 0.1,
+              "details": {
+                "final_score": 50,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 100,
+                "days_since_creation": 0
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            },
+            "engagement": {
+              "score": 1.13,
+              "weight": 0.3,
+              "details": {
+                "chat_count": 0,
+                "global_max": {
+                  "max_chats": 0,
+                  "max_stars": 4013,
+                  "max_views": 9807,
+                  "total_agents": 852407,
+                  "calculated_at": "2026-08-31T01:06:00.806681+00:00",
+                  "max_feedbacks": 293941,
+                  "mainnet_agents": 530340,
+                  "testnet_agents": 322070,
+                  "agents_with_feedbacks": 155284
+                },
+                "star_count": 0,
+                "view_count": 1,
+                "final_score": 1.1312436222709208,
+                "average_score": 0,
+                "feedback_count": 0,
+                "feedback_score": 0,
+                "feedback_weight": 0,
+                "popularity_score": 2.2624872445418416,
+                "recent_chat_count": 0,
+                "recent_feedback_count": 0,
+                "satisfaction_component": 0
+              }
+            }
+          },
+          "final_score": 12.08341642263278,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.6416647894829238,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 31.111020096141758,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 8.4605,
+              "trust_score": 0,
+              "feedback_volume_proxy": 16.38358038456704
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 4.277765263219492,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T03:25:01.612786+00:00"
+      },
+      "total_score": 44.08,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 128324678,
+      "created_tx_hash": "0xac85146163561cdc157933a1159572e2c4d2192891e29a6d253972669712c524",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-24T21:05:24.924857Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-24T21:05:24.936886Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-08-31T16:10:25.973573+00:00",
+        "llm_attempted_at": "2026-08-31T16:45:05.480302+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x634a8a9caee0a988c1ba45beba171c6609707f1c",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IlJlYWQtb25seSBQYW5jYWtlU3dhcCBMUCBmZWUteWllbGQgY29uZGl0aW9ucyBhZ2VudCBmb3IgQmVhcmluZy4iLCJpbWFnZSI6IiIsIm5hbWUiOiJGZWUgWWllbGQgU2NvdXQiLCJyZWdpc3RyYXRpb25zIjpbeyJhZ2VudElkIjoyMDQ4LCJhZ2VudFJlZ2lzdHJ5IjoiZWlwMTU1Ojk3OjB4ODAwNEE4MThCRkI5MTIyMzNjNDkxODcxYjNkODRjODlBNDk0QkQ5ZSJ9XSwic2VydmljZXMiOlt7ImVuZHBvaW50IjoiaHR0cHM6Ly9iZWFyaW5nLWZhd24udmVyY2VsLmFwcC9hcGkvYWdlbnRzL3ZhdWx0LXdlYXRoZXIvaW52b2tlLy53ZWxsLWtub3duL2FnZW50LWNhcmQuanNvbiIsIm5hbWUiOiJBMkEiLCJ2ZXJzaW9uIjoiMC4zLjAifV0sInR5cGUiOiJodHRwczovL2VpcHMuZXRoZXJldW0ub3JnL0VJUFMvZWlwLTgwMDQjcmVnaXN0cmF0aW9uLXYxIn0=",
+        "offchain_content": {
+          "name": "Fee Yield Scout",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://bearing-fawn.vercel.app/api/agents/vault-weather/invoke/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Read-only PancakeSwap LP fee-yield conditions agent for Bearing.",
+          "registrations": [
+            {
+              "agentId": 2048,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://bearing-fawn.vercel.app/api/agents/vault-weather/invoke/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 2.26,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 100,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-08-31T16:10:06Z",
+      "updated_at": "2026-09-25T03:25:00.096920Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "f3d905e5-4c4f-4376-8b02-58091b685243",
+      "owner_id": "b28382bf-0ae5-46e8-ab36-76be67f71b29",
+      "owner_address": "0x08a594e828133d18a43918cc804754f46daf44db",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x08a594e828133d18a43918cc804754f46daf44db",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2044",
+      "token_id": "2044",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "YieldPilot",
+      "description": "First-party Spotriq reference service for deterministic BSC yield opportunity analysis using supported protocol data, without fabricating realised yield or autonomous wallet authority.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x08a594e828133d18a43918cc804754f46daf44db",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/yieldpilot/.well-known/agent-card.json",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 0,
+        "metadata_completeness": 61,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 73,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": null,
+                  "has_version": false,
+                  "skills_count": 1,
+                  "has_description": true
+                },
+                "a2a_quality": 73,
+                "final_score": 73,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "compliance": {
+              "score": 61,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 61,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 61
+              }
+            }
+          },
+          "final_score": 12.058719375,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.45168749999999996,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 21.9,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 0,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.01125,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T07:00:23.949842+00:00"
+      },
+      "total_score": 44.06,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 128277626,
+      "created_tx_hash": "0x363a975492928d338e564d0507561b2c2af508809d3b6b091a6707bba5ef4f7d",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-24T23:15:11.365814Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-24T23:15:11.369971Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-08-31T10:17:39.013635+00:00",
+        "llm_attempted_at": "2026-08-31T10:45:04.817280+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x08a594e828133d18a43918cc804754f46daf44db",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IkZpcnN0LXBhcnR5IFNwb3RyaXEgcmVmZXJlbmNlIHNlcnZpY2UgZm9yIGRldGVybWluaXN0aWMgQlNDIHlpZWxkIG9wcG9ydHVuaXR5IGFuYWx5c2lzIHVzaW5nIHN1cHBvcnRlZCBwcm90b2NvbCBkYXRhLCB3aXRob3V0IGZhYnJpY2F0aW5nIHJlYWxpc2VkIHlpZWxkIG9yIGF1dG9ub21vdXMgd2FsbGV0IGF1dGhvcml0eS4iLCJpbWFnZSI6IiIsIm5hbWUiOiJZaWVsZFBpbG90IiwicmVnaXN0cmF0aW9ucyI6W3siYWdlbnRJZCI6MjA0NCwiYWdlbnRSZWdpc3RyeSI6ImVpcDE1NTo5NzoweDgwMDRBODE4QkZCOTEyMjMzYzQ5MTg3MWIzZDg0Yzg5QTQ5NEJEOWUifV0sInNlcnZpY2VzIjpbeyJlbmRwb2ludCI6Imh0dHBzOi8vc3BvdHJpcS1wcm9kdWN0aW9uLnVwLnJhaWx3YXkuYXBwL3YxL3JlZmVyZW5jZS1hZ2VudHMveWllbGRwaWxvdC8ud2VsbC1rbm93bi9hZ2VudC1jYXJkLmpzb24iLCJuYW1lIjoiQTJBIn1dLCJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSJ9",
+        "offchain_content": {
+          "name": "YieldPilot",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "endpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/yieldpilot/.well-known/agent-card.json"
+            }
+          ],
+          "description": "First-party Spotriq reference service for deterministic BSC yield opportunity analysis using supported protocol data, without fabricating realised yield or autonomous wallet authority.",
+          "registrations": [
+            {
+              "agentId": 2044,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/yieldpilot/.well-known/agent-card.json",
+      "a2a_version": null,
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 0,
+      "metadata_completeness_score": 61,
+      "created_at": "2026-08-31T10:17:13Z",
+      "updated_at": "2026-09-25T07:00:22.558128Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "511de5d0-b386-440c-bde8-b5df8a2f7700",
+      "owner_id": "c671b334-4f0e-4f21-9684-127dc8d3aafe",
+      "owner_address": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:1854",
+      "token_id": "1854",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "LingoAI Yield Optimiser (demo)",
+      "description": "Demo agent: yield optimisation — monitors APY across vaults and staking pools, reallocates capital toward the highest-earning opportunities. Hireable via ERC-8183 escrow.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://holon-staging.lingoai.io/agents/yield/.well-known/agent-card.json",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 44.51,
+        "metadata_completeness": 51,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 79,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 3,
+                  "has_description": true
+                },
+                "a2a_quality": 79,
+                "final_score": 79,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 22.25,
+              "weight": 0.1,
+              "details": {
+                "final_score": 22.25349769213812,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 44.50699538427624,
+                "days_since_creation": 17
+              }
+            },
+            "compliance": {
+              "score": 51,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 51,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 51
+              }
+            }
+          },
+          "final_score": 12.06578279296875,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.506021484375,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 24.534375,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 3.3375,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.3734765625000005,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T05:00:33.312933+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 125824927,
+      "created_tx_hash": "0x3a34007e13cd05b58d4e47c32dd54f3670bf986786217c2a0d14c692449dea24",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T05:00:17.627414Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T05:00:17.633514Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-05T10:54:49.851575+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0xfc32b10396b6fe6033d8e69861fe81b99fe291bd",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IkRlbW8gYWdlbnQ6IHlpZWxkIG9wdGltaXNhdGlvbiBcdTIwMTQgbW9uaXRvcnMgQVBZIGFjcm9zcyB2YXVsdHMgYW5kIHN0YWtpbmcgcG9vbHMsIHJlYWxsb2NhdGVzIGNhcGl0YWwgdG93YXJkIHRoZSBoaWdoZXN0LWVhcm5pbmcgb3Bwb3J0dW5pdGllcy4gSGlyZWFibGUgdmlhIEVSQy04MTgzIGVzY3Jvdy4iLCJpbWFnZSI6IiIsIm5hbWUiOiJMaW5nb0FJIFlpZWxkIE9wdGltaXNlciAoZGVtbykiLCJyZWdpc3RyYXRpb25zIjpbXSwic2VydmljZXMiOlt7ImVuZHBvaW50IjoiaHR0cHM6Ly9ob2xvbi1zdGFnaW5nLmxpbmdvYWkuaW8vYWdlbnRzL3lpZWxkLy53ZWxsLWtub3duL2FnZW50LWNhcmQuanNvbiIsIm5hbWUiOiJBMkEifV0sInR5cGUiOiJodHRwczovL2VpcHMuZXRoZXJldW0ub3JnL0VJUFMvZWlwLTgwMDQjcmVnaXN0cmF0aW9uLXYxIn0=",
+        "offchain_content": {
+          "name": "LingoAI Yield Optimiser (demo)",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "endpoint": "https://holon-staging.lingoai.io/agents/yield/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Demo agent: yield optimisation — monitors APY across vaults and staking pools, reallocates capital toward the highest-earning opportunities. Hireable via ERC-8183 escrow.",
+          "registrations": []
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://holon-staging.lingoai.io/agents/yield/.well-known/agent-card.json",
+      "a2a_version": null,
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 44.51,
+      "metadata_completeness_score": 51,
+      "created_at": "2026-08-18T15:40:19Z",
+      "updated_at": "2026-09-25T05:00:31.906356Z",
+      "category": "yield",
+      "categoryScores": {}
+    },
+    {
+      "id": "abcf4dbe-676d-4175-a99b-b144fde71d7c",
+      "owner_id": "b28382bf-0ae5-46e8-ab36-76be67f71b29",
+      "owner_address": "0x08a594e828133d18a43918cc804754f46daf44db",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x08a594e828133d18a43918cc804754f46daf44db",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2046",
+      "token_id": "2046",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "VenusGuard",
+      "description": "First-party Spotriq reference service for deterministic Venus lending health and liquidation-risk monitoring on BSC, without fabricating financial outcomes or granting autonomous wallet authority.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x08a594e828133d18a43918cc804754f46daf44db",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/venusguard/.well-known/agent-card.json",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 0,
+        "metadata_completeness": 61,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 73,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": null,
+                  "has_version": false,
+                  "skills_count": 1,
+                  "has_description": true
+                },
+                "a2a_quality": 73,
+                "final_score": 73,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "compliance": {
+              "score": 61,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 61,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 61
+              }
+            }
+          },
+          "final_score": 12.058719375,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.45168749999999996,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 21.9,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 0,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.01125,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T06:55:00.822826+00:00"
+      },
+      "total_score": 44.06,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 128278133,
+      "created_tx_hash": "0x8c78c6a509ee194752da91f003ea0b63c31a466b7ad6f1e89134e35552e8f9f4",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-24T23:15:11.360035Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-24T23:15:11.365530Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-08-31T10:21:21.062046+00:00",
+        "llm_attempted_at": "2026-08-31T10:45:03.020041+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x08a594e828133d18a43918cc804754f46daf44db",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IkZpcnN0LXBhcnR5IFNwb3RyaXEgcmVmZXJlbmNlIHNlcnZpY2UgZm9yIGRldGVybWluaXN0aWMgVmVudXMgbGVuZGluZyBoZWFsdGggYW5kIGxpcXVpZGF0aW9uLXJpc2sgbW9uaXRvcmluZyBvbiBCU0MsIHdpdGhvdXQgZmFicmljYXRpbmcgZmluYW5jaWFsIG91dGNvbWVzIG9yIGdyYW50aW5nIGF1dG9ub21vdXMgd2FsbGV0IGF1dGhvcml0eS4iLCJpbWFnZSI6IiIsIm5hbWUiOiJWZW51c0d1YXJkIiwicmVnaXN0cmF0aW9ucyI6W3siYWdlbnRJZCI6MjA0NiwiYWdlbnRSZWdpc3RyeSI6ImVpcDE1NTo5NzoweDgwMDRBODE4QkZCOTEyMjMzYzQ5MTg3MWIzZDg0Yzg5QTQ5NEJEOWUifV0sInNlcnZpY2VzIjpbeyJlbmRwb2ludCI6Imh0dHBzOi8vc3BvdHJpcS1wcm9kdWN0aW9uLnVwLnJhaWx3YXkuYXBwL3YxL3JlZmVyZW5jZS1hZ2VudHMvdmVudXNndWFyZC8ud2VsbC1rbm93bi9hZ2VudC1jYXJkLmpzb24iLCJuYW1lIjoiQTJBIn1dLCJ0eXBlIjoiaHR0cHM6Ly9laXBzLmV0aGVyZXVtLm9yZy9FSVBTL2VpcC04MDA0I3JlZ2lzdHJhdGlvbi12MSJ9",
+        "offchain_content": {
+          "name": "VenusGuard",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "endpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/venusguard/.well-known/agent-card.json"
+            }
+          ],
+          "description": "First-party Spotriq reference service for deterministic Venus lending health and liquidation-risk monitoring on BSC, without fabricating financial outcomes or granting autonomous wallet authority.",
+          "registrations": [
+            {
+              "agentId": 2046,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/venusguard/.well-known/agent-card.json",
+      "a2a_version": null,
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 0,
+      "metadata_completeness_score": 61,
+      "created_at": "2026-08-31T10:21:01Z",
+      "updated_at": "2026-09-25T06:55:00.072071Z",
+      "category": "health-factor",
+      "categoryScores": {}
+    },
+    {
+      "id": "f0fad53b-d951-48dd-9781-9fea93b08381",
+      "owner_id": "46f76dbe-4df5-4317-8adf-7a51735e595f",
+      "owner_address": "0x9f23164d9da521ee06bc49f5945870ce52deedcd",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0x9f23164d9da521ee06bc49f5945870ce52deedcd",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2020",
+      "token_id": "2020",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Hevo Sentinel",
+      "description": "Checks lending positions against safety thresholds on Venus and Aave V3, alerting on liquidation risks and computing precise collateral/debt remedies to restore safe buffers. It monitors and alerts; it does not execute top-ups directly.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0x9f23164d9da521ee06bc49f5945870ce52deedcd",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://hevo-agents.fly.dev/sentinel/.well-known/agent-card.json",
+          "version": "0.3.0",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 0,
+        "freshness": 100,
+        "metadata_completeness": 63,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "0.3.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "unknown",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 50,
+              "weight": 0.1,
+              "details": {
+                "final_score": 50,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 100,
+                "days_since_creation": 0
+              }
+            },
+            "compliance": {
+              "score": 63,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 63,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 63
+              }
+            }
+          },
+          "final_score": 12.07420359375,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.570796875,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 27.675,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 7.5,
+              "trust_score": 0,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.8053125000000003,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-25T00:50:31.198701+00:00"
+      },
+      "total_score": 44.07,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 127991664,
+      "created_tx_hash": "0x43769b66e4a289a7386f5ec8b8e585c51ea04f10fc676a0987dd027b65e54394",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T00:50:12.298542Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "unknown",
+      "health_score": 65,
+      "health_checked_at": "2026-09-25T00:50:12.302361Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "llm_errors": [
+          {
+            "type": "llm_no_response",
+            "message": "LLM returned empty response"
+          }
+        ],
+        "llm_attempted": true,
+        "last_parsed_at": "2026-08-29T23:09:14.715383+00:00",
+        "llm_attempted_at": "2026-08-30T00:45:04.514867+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0x9f23164d9da521ee06bc49f5945870ce52deedcd",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e342e32",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6IkNoZWNrcyBsZW5kaW5nIHBvc2l0aW9ucyBhZ2FpbnN0IHNhZmV0eSB0aHJlc2hvbGRzIG9uIFZlbnVzIGFuZCBBYXZlIFYzLCBhbGVydGluZyBvbiBsaXF1aWRhdGlvbiByaXNrcyBhbmQgY29tcHV0aW5nIHByZWNpc2UgY29sbGF0ZXJhbC9kZWJ0IHJlbWVkaWVzIHRvIHJlc3RvcmUgc2FmZSBidWZmZXJzLiBJdCBtb25pdG9ycyBhbmQgYWxlcnRzOyBpdCBkb2VzIG5vdCBleGVjdXRlIHRvcC11cHMgZGlyZWN0bHkuIiwiaW1hZ2UiOiIiLCJuYW1lIjoiSGV2byBTZW50aW5lbCIsInJlZ2lzdHJhdGlvbnMiOlt7ImFnZW50SWQiOjIwMjAsImFnZW50UmVnaXN0cnkiOiJlaXAxNTU6OTc6MHg4MDA0QTgxOEJGQjkxMjIzM2M0OTE4NzFiM2Q4NGM4OUE0OTRCRDllIn1dLCJzZXJ2aWNlcyI6W3siZW5kcG9pbnQiOiJodHRwczovL2hldm8tYWdlbnRzLmZseS5kZXYvc2VudGluZWwvLndlbGwta25vd24vYWdlbnQtY2FyZC5qc29uIiwibmFtZSI6IkEyQSIsInZlcnNpb24iOiIwLjMuMCJ9XSwidHlwZSI6Imh0dHBzOi8vZWlwcy5ldGhlcmV1bS5vcmcvRUlQUy9laXAtODAwNCNyZWdpc3RyYXRpb24tdjEifQ==",
+        "offchain_content": {
+          "name": "Hevo Sentinel",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "version": "0.3.0",
+              "endpoint": "https://hevo-agents.fly.dev/sentinel/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Checks lending positions against safety thresholds on Venus and Aave V3, alerting on liquidation risks and computing precise collateral/debt remedies to restore safe buffers. It monitors and alerts; it does not execute top-ups directly.",
+          "registrations": [
+            {
+              "agentId": 2020,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://hevo-agents.fly.dev/sentinel/.well-known/agent-card.json",
+      "a2a_version": "0.3.0",
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 0,
+      "freshness_score": 100,
+      "metadata_completeness_score": 63,
+      "created_at": "2026-08-29T22:31:40Z",
+      "updated_at": "2026-09-25T00:50:30.225305Z",
+      "category": "health-factor",
+      "categoryScores": {}
+    },
+    {
+      "id": "6eac0898-ae8d-4a7f-b843-ad15719d25d2",
+      "owner_id": "bf43d647-6c1c-48f4-8b26-efb7132b0d94",
+      "owner_address": "0xdf1074a272c53a1a10b96fa0201eb58bbbaafe00",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "creator_address": "0xdf1074a272c53a1a10b96fa0201eb58bbbaafe00",
+      "agent_id": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2238",
+      "token_id": "2238",
+      "chain_id": 97,
+      "chain_type": "evm",
+      "is_testnet": true,
+      "contract_address": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+      "name": "Keel",
+      "description": "Marque reference agent: Venus health factor, liquidation price and exact restore amount.",
+      "agent_type": null,
+      "is_verified": false,
+      "star_count": 0,
+      "watch_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "agent_wallet": "0xdf1074a272c53a1a10b96fa0201eb58bbbaafe00",
+      "x402_supported": true,
+      "image_url": null,
+      "tags": [],
+      "categories": [],
+      "services": {
+        "a2a": {
+          "endpoint": "https://marque.trade/agents/keel/.well-known/agent-card.json",
+          "skills": []
+        }
+      },
+      "scores": {
+        "quality": 0,
+        "popularity": 0,
+        "activity": 0,
+        "wallet": 3.6,
+        "freshness": 90.92,
+        "metadata_completeness": 61,
+        "health_score": null,
+        "breakdown": {
+          "version": "5.2",
+          "algorithm": "v5_leaderboard_policy",
+          "dimensions": {
+            "service": {
+              "score": 86,
+              "weight": 0.25,
+              "details": {
+                "has_a2a": true,
+                "has_mcp": false,
+                "a2a_stats": {
+                  "version": "1.0.0",
+                  "has_version": true,
+                  "skills_count": 2,
+                  "has_description": true
+                },
+                "a2a_quality": 86,
+                "final_score": 86,
+                "mcp_quality": null,
+                "health_status": "degraded",
+                "integrity_tier": "degraded",
+                "aggregation_method": "max",
+                "discoverability_tier": "degraded"
+              }
+            },
+            "momentum": {
+              "score": 45.46,
+              "weight": 0.1,
+              "details": {
+                "final_score": 45.45782214383565,
+                "activity_score": 0,
+                "activity_source": "legacy_scores",
+                "freshness_score": 90.9156442876713,
+                "days_since_creation": 2
+              }
+            },
+            "publisher": {
+              "score": 3.6,
+              "weight": 0.2,
+              "details": {
+                "cert_bonus": 0,
+                "final_score": 3.5980304308256543,
+                "is_certified": false,
+                "wallet_score": 3.5980304308256543,
+                "wallet_source": "agent_wallet",
+                "wallet_address": "0xdf1074a272c53a1a10b96fa0201eb58bbbaafe00",
+                "validation_bonus": 0,
+                "validation_score": 0,
+                "certification_tier": null,
+                "owner_certified_name": null,
+                "owner_publisher_tier": null,
+                "has_chain_wallet_data": false,
+                "has_address_wallet_data": true
+              }
+            },
+            "compliance": {
+              "score": 61,
+              "weight": 0.15,
+              "details": {
+                "error_count": 0,
+                "final_score": 61,
+                "parse_status": "success",
+                "parse_penalty": 1,
+                "warning_count": 0,
+                "verification_bonus": 0,
+                "is_endpoint_verified": false,
+                "metadata_completeness_score": 61
+              }
+            }
+          },
+          "final_score": 12.077392946850813,
+          "leaderboard_policy": {
+            "notes": [
+              "no core A2A/MCP health data"
+            ],
+            "version": "5.2",
+            "weights": {
+              "proof": 0.85,
+              "support": 0.15
+            },
+            "algorithm": "v5_leaderboard_policy",
+            "score_band": {
+              "floor": 12,
+              "ceiling": 25
+            },
+            "merit_score": 0.595330360390867,
+            "proof_score": 0,
+            "evidence_tier": "early",
+            "support_score": 28.864502321981426,
+            "feedback_count": 0,
+            "integrity_tier": "no-core-service",
+            "support_details": {
+              "reach_score": 6.819,
+              "trust_score": 6.798761609907121,
+              "feedback_volume_proxy": 0
+            },
+            "base_evidence_rank": 0,
+            "discoverability_tier": "metadata-only",
+            "feedback_signal_score": 0,
+            "discoverability_factor": 0.55,
+            "weighted_support_score": 3.9688690692724466,
+            "effective_evidence_rank": 0
+          }
+        },
+        "last_scored_at": "2026-09-24T07:46:49.348636+00:00"
+      },
+      "total_score": 44.08,
+      "cross_chain_links": [],
+      "cross_chain_versions": null,
+      "created_block_number": 129732771,
+      "created_tx_hash": "0x3fa52b98933368ff19ae01a82aa56c2815938d8658b0933bc2f81bed0117d79b",
+      "is_endpoint_verified": false,
+      "endpoint_verified_at": null,
+      "endpoint_verified_domain": null,
+      "endpoint_verification_error": null,
+      "endpoint_last_checked_at": "2026-09-25T07:05:18.391113Z",
+      "is_active": true,
+      "supported_trust_models": [],
+      "health_status": "degraded",
+      "health_score": 75,
+      "health_checked_at": "2026-09-25T07:05:18.391206Z",
+      "total_feedbacks": 0,
+      "total_validations": 0,
+      "successful_validations": 0,
+      "average_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "parse_status": {
+        "info": [],
+        "errors": [],
+        "status": "success",
+        "warnings": [],
+        "last_parsed_at": "2026-09-08T00:11:23.307036+00:00"
+      },
+      "raw_metadata": {
+        "onchain": [
+          {
+            "key": "agentWallet",
+            "value": "0xdf1074a272c53a1a10b96fa0201eb58bbbaafe00",
+            "decoded": null
+          },
+          {
+            "key": "built_with",
+            "value": "0x68747470733a2f2f6769746875622e636f6d2f626e622d636861696e2f626e626167656e742d73646b2376302e352e35",
+            "decoded": null
+          }
+        ],
+        "offchain_uri": "data:application/json;base64,eyJkZXNjcmlwdGlvbiI6Ik1hcnF1ZSByZWZlcmVuY2UgYWdlbnQ6IFZlbnVzIGhlYWx0aCBmYWN0b3IsIGxpcXVpZGF0aW9uIHByaWNlIGFuZCBleGFjdCByZXN0b3JlIGFtb3VudC4iLCJpbWFnZSI6IiIsIm5hbWUiOiJLZWVsIiwicmVnaXN0cmF0aW9ucyI6W3siYWdlbnRJZCI6MjIzOCwiYWdlbnRSZWdpc3RyeSI6ImVpcDE1NTo5NzoweDgwMDRBODE4QkZCOTEyMjMzYzQ5MTg3MWIzZDg0Yzg5QTQ5NEJEOWUifV0sInNlcnZpY2VzIjpbeyJlbmRwb2ludCI6Imh0dHBzOi8vbWFycXVlLnRyYWRlL2FnZW50cy9rZWVsLy53ZWxsLWtub3duL2FnZW50LWNhcmQuanNvbiIsIm5hbWUiOiJBMkEifV0sInR5cGUiOiJodHRwczovL2VpcHMuZXRoZXJldW0ub3JnL0VJUFMvZWlwLTgwMDQjcmVnaXN0cmF0aW9uLXYxIn0=",
+        "offchain_content": {
+          "name": "Keel",
+          "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+          "image": "",
+          "services": [
+            {
+              "name": "A2A",
+              "endpoint": "https://marque.trade/agents/keel/.well-known/agent-card.json"
+            }
+          ],
+          "description": "Marque reference agent: Venus health factor, liquidation price and exact restore amount.",
+          "registrations": [
+            {
+              "agentId": 2238,
+              "agentRegistry": "eip155:97:0x8004A818BFB912233c491871b3d84c89A494BD9e"
+            }
+          ]
+        }
+      },
+      "field_sources": null,
+      "ens": null,
+      "did": null,
+      "mcp_server": null,
+      "mcp_version": null,
+      "a2a_endpoint": "https://marque.trade/agents/keel/.well-known/agent-card.json",
+      "a2a_version": null,
+      "agent_url": null,
+      "quality_score": 0,
+      "popularity_score": 0,
+      "activity_score": 0,
+      "wallet_score": 3.6,
+      "freshness_score": 90.92,
+      "metadata_completeness_score": 61,
+      "created_at": "2026-09-08T00:11:05Z",
+      "updated_at": "2026-09-24T07:46:48.107923Z",
+      "category": "health-factor",
+      "categoryScores": {}
+    }
+  ]
+}
