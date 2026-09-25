@@ -94,3 +94,13 @@ export async function getPaymentDurable(
   if (stored) recordPayment(stored);
   return stored;
 }
+
+export async function revokeSessionDurable(paymentId: string): Promise<boolean> {
+  const cached = getPayment(paymentId);
+  const stored = cached ?? (await loadReceipt(paymentId));
+  if (!stored) return false;
+  const next = { ...stored, activated: false };
+  recordPayment(next);
+  await saveReceipt(next);
+  return true;
+}

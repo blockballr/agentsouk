@@ -187,6 +187,14 @@ export function getPayment(paymentId: string): StoredPayment | undefined {
   return ledger.get(paymentId);
 }
 
+export function revokeSession(paymentId: string): boolean {
+  const p = ledger.get(paymentId);
+  if (!p) return false;
+  p.activated = false;
+  ledger.set(paymentId, p);
+  return true;
+}
+
 // the agent's most recent activated, non-expired session, or nothing.
 // NOTE: the ledger is in-memory per server instance (fine for the demo; the
 // docs state the receipt is not an on-chain transaction), so this reflects

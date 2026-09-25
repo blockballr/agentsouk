@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { listActiveSessions } from "@/lib/x402";
 import { listTasks } from "@/lib/tasks";
 import { getJobByPayment, listJobs, type Job } from "@/lib/jobs";
+import { getPaymentDurable, revokeSessionDurable } from "@/lib/receipts-store";
 
 export const dynamic = "force-dynamic";
 
@@ -72,4 +73,36 @@ export async function GET(req: NextRequest) {
       jobsCompleted: jobs.filter((j) => j.status === "Completed").length,
     },
   });
+}
+
+export async function DELETE(req: NextRequest) {
+  const paymentId = req.nextUrl.searchParams.get("paymentId")?.trim() ?? "";
+  if (!paymentId) {
+    return NextResponse.json(
+      { success: false, error: "paymentId required" },
+      { status: 400 },
+    );
+  }
+  const stored = await getPaymentDurable(paymentId);
+  if (!stored) {
+    return NextResponse.json(
+      { success: false, error: "unknown paymentId" },
+      { status: 404 },
+    );
+  }
+  const client = req.nextUrl.searchParams.get("client")?.trim() ?? "";
+  if (client && !sameAddr(stored.client, client)) {
+    return NextResponse.json(
+      { success: false, error: "not the session owner" },
+      { status: 403 },
+    );
+  }
+  const revoked = await revokeSessionDurable(paymentId);
+  if (!revoked) {
+    return NextResponse.json(
+      { success: false, error: "unknown paymentId" },
+      { status: 404 },
+    );
+  }
+  return NextResponse.json({ success: true, paymentId });
 }
