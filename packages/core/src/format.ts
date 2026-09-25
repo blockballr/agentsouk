@@ -1,35 +1,35 @@
 export function shortAddress(addr: string | null | undefined, size = 6): string {
-  if (typeof addr !== "string") return "—";
-  if (!addr) return "—";
+  if (typeof addr !== "string") return "-";
+  if (!addr) return "-";
   if (addr.length <= size * 2 + 2) return addr;
   return `${addr.slice(0, size)}…${addr.slice(-size)}`;
 }
 
 export function formatNumber(n: number | null | undefined): string {
-  if (n === null || n === undefined) return "—";
+  if (n === null || n === undefined) return "-";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
   return `${n}`;
 }
 
 export function formatScore(n: number | null | undefined): string {
-  if (n === null || n === undefined) return "—";
+  if (n === null || n === undefined) return "-";
   const num = Number(n);
-  if (!Number.isFinite(num)) return "—";
+  if (!Number.isFinite(num)) return "-";
   return num.toFixed(1);
 }
 
 export function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toISOString().slice(0, 10);
 }
 
 export function timeAgo(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso).getTime();
-  if (Number.isNaN(d)) return "—";
+  if (Number.isNaN(d)) return "-";
   const diff = Date.now() - d;
   const mins = Math.floor(diff / 60000);
   if (mins < 60) return `${mins}m ago`;

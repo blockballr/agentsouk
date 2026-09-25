@@ -68,7 +68,7 @@ function categoryLabel(key: string): string {
 }
 
 // winner agent_id per category. with two or more agents shortlisted, every
-// represented category has a winner — including categories with a single
+// represented category has a winner - including categories with a single
 // agent (2 agents in 2 categories each win theirs). categories only go
 // winnerless when fewer than two agents are compared in total
 export function bestByCategory<T extends RankableAgent>(agents: T[]): Record<string, string | null> {

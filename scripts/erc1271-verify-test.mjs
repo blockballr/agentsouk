@@ -7,7 +7,7 @@
 // What it CANNOT test without a real smart wallet: Coinbase Smart Wallet
 // semantics (WebAuthn wrapper, ("Coinbase Smart Wallet","1") domain),
 // undeployed-account ERC-6492 deployless validation, and end-to-end
-// settlement (the deployed token itself has no ERC-1271-consuming path —
+// settlement (the deployed token itself has no ERC-1271-consuming path -
 // see .superpowers/smart-wallet-audit.md). The facilitator glue
 // (SMART_WALLET_VERIFY gating, settleProd fail-closed gate) imports
 // "server-only" and is covered by review, not by this script.

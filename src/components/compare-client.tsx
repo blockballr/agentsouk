@@ -75,14 +75,14 @@ export function CompareClient({ ids }: { ids: string[] }) {
 
   const rows: { label: string; render: (a: AgentDetail & { category?: string }) => React.ReactNode }[] = [
     { label: "Category", render: (a) => <CategoryBadge category={(a.category ?? "general") as CategoryKey | "general"} /> },
-    { label: "Description", render: (a) => <p className="text-xs leading-relaxed text-zinc-500">{a.description || "—"}</p> },
+    { label: "Description", render: (a) => <p className="text-xs leading-relaxed text-zinc-500">{a.description || "-"}</p> },
     { label: "Verified", render: (a) => (a.is_verified ? <Yes /> : <No />) },
     { label: "Endpoint verified", render: (a) => (a.is_endpoint_verified ? <Yes /> : <No />) },
     { label: "x402 payments", render: (a) => (a.x402_supported ? <Yes /> : <No />) },
     { label: "Total score", render: (a) => <strong className="text-amber-300">{formatScore(a.total_score)}</strong> },
     { label: "Avg feedback", render: (a) => <span className="tabular-nums">{formatScore(a.average_score)}</span> },
     { label: "Hires", render: (a) => <span className="tabular-nums">{formatNumber(a.total_feedbacks)}</span> },
-    { label: "Health score", render: (a) => <span className="tabular-nums">{a.health_score != null ? formatScore(a.health_score) : "—"}</span> },
+    { label: "Health score", render: (a) => <span className="tabular-nums">{a.health_score != null ? formatScore(a.health_score) : "-"}</span> },
     { label: "Quality", render: (a) => <span className="tabular-nums">{formatScore(a.quality_score)}</span> },
     { label: "Popularity", render: (a) => <span className="tabular-nums">{formatScore(a.popularity_score)}</span> },
     { label: "Activity", render: (a) => <span className="tabular-nums">{formatScore(a.activity_score)}</span> },
@@ -158,5 +158,5 @@ function Yes() {
   return <span className="text-emerald-400">✓</span>;
 }
 function No() {
-  return <span className="text-zinc-700">—</span>;
+  return <span className="text-zinc-700">-</span>;
 }

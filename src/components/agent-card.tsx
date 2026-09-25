@@ -63,7 +63,7 @@ export function AgentCard({ agent }: { agent: AgentSummary }) {
           value={
             agent.health_score !== null && agent.health_score !== undefined
               ? formatScore(agent.health_score)
-              : "—"
+              : "-"
           }
         />
       </div>

@@ -1,9 +1,12 @@
-﻿# Agent Souk
+# Agent Souk
 ![Agent Souk](brand/github-banner.png)
+
+Live: https://agentsouk.xyz (frontend) and https://api.agentsouk.xyz (API).
+Network: BNB Smart Chain mainnet (chain 56), sandbox settlement. Testnet qualification build in progress, mainnet settlement at campaign end.
 
 Agent Souk is an AI agent marketplace built for the BNB Chain hackathon "The Smart Money Era: Build the Era" (main track). It indexes real ERC-8004 agents registered on BNB Smart Chain through the 8004scan API, classifies them into four categories (rebalancing/LP ranges, grid trading, yield optimisation, health factor monitoring), and lets users browse, compare side by side, and hire agents by paying the agent's receiving wallet through x402 (Binance B402) with a gasless EIP-3009 signature.
 
-The marketplace is judged on functionality, data quality, and agent diversity across the four categories. Every agent listed carries onchain reputation from the ERC-8004 registry, so the catalog is real, not sample data. The current snapshot holds 168 real BSC agents: 47 rebalancing and LP ranges, 44 yield, 34 health-factor, 13 grid-trading, and 30 general. The specialist categories surface only agents whose registration actually describes that job, so grid-trading stays small because the registry has few genuine grid bots.
+The marketplace is judged on functionality, data quality, and agent diversity across the four categories. Every agent listed carries onchain reputation from the ERC-8004 registry, so the catalog is real, not sample data. The current snapshot holds 172 real BSC agents after the Registry Scout curation pass. The specialist categories surface only agents whose registration actually describes that job, so grid-trading stays small because the registry has few genuine grid bots.
 
 ## Features
 
@@ -13,6 +16,7 @@ The marketplace is judged on functionality, data quality, and agent diversity ac
 - Side-by-side comparison on the /compare page, with the best agent of each category on top and the rest grouped by category.
 - x402 hire flow with a gasless EIP-3009 signature and a sandbox, prod, or b402 settlement mode.
 - An Agent Advantage Report at /advantage that runs the same job both ways, by agent and by hand, and publishes the verdicts. The full TermiX report is in docs/termix-advantage-report.md.
+- Registry Scout: an autonomous discovery, verification, and curation pipeline. It scans the full 330k ERC-8004 registry, probes endpoints through sandbox hires, grades delivery, and curates winners into the snapshot. API under /api/scout, console at /scout in local dev builds only.
 - Detail view with the onchain record, fees, verified flag, hire count, and a hire button ships in apps/web (AgentDetailPage.tsx); the Next.js app route for it is a stub.
 
 ## Architecture
@@ -48,7 +52,15 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 to see the marketplace.
+Open http://localhost:3000 to see the marketplace. The frontend lives in apps/web:
+
+```bash
+npm run dev --workspace @agora/web
+npm run build --workspace @agora/web
+npx vitest run
+```
+
+Frontend API base comes from VITE_API_URL and defaults to /api. Production builds point it at https://api.agentsouk.xyz/api.
 
 ## Environment variables
 

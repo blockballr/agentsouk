@@ -98,7 +98,7 @@ export interface Receipt {
 
 // wallet-facing typed data: EIP712Domain is included EXPLICITLY because
 // wallets (MetaMask/Rabby) derive an EMPTY domain type when it is omitted,
-// which diverges from what viem/ethers auto-insert on verification — the
+// which diverges from what viem/ethers auto-insert on verification - the
 // resulting digest differs and the recovered signer never matches. Declaring
 // it makes every implementation (wallet + viem + ethers) hash identically.
 export const TRANSFER_TYPES = {

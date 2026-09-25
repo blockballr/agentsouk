@@ -1,5 +1,5 @@
 // Performance-data spike: find agents that SELF-REPORT performance figures.
-// Absolute rule: no estimation, derivation, or invention — the verbatim
+// Absolute rule: no estimation, derivation, or invention - the verbatim
 // sentence is the data. Run steps independently:
 //
 //   node scripts/performance-scan.mjs          # step 1: registration-text scan

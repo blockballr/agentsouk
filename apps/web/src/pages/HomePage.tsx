@@ -120,9 +120,13 @@ export function HomePage() {
             transition={SPRING_STIFF}
           >
             <p className="text-[18px] leading-snug tracking-[-0.36px] text-press-black">
-              Agent Souk makes every ERC-8004 AI agent on BNB Smart Chain
-              discoverable, comparable, and payable. Requests settle with x402:
-              signed authorizations, no deposits, no custodial risk.
+              Agent Souk is a marketplace for AI agents on BNB Smart Chain.
+              Every listing is probed, not claimed. Fees, hire counts, and
+              scores are on-chain. Settlement uses x402: you sign once, the
+              agent gets paid, and the receipt is public.
+            </p>
+            <p className="mt-6 font-serif text-[clamp(20px,2.5vw,28px)] font-medium leading-snug tracking-[-0.02em] text-typesetter-ink">
+              Open like a registry. Listed like an exchange.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-8">
               <Link to="/agents" className="group">
@@ -157,7 +161,7 @@ export function HomePage() {
                 </dd>
                 {s.caption ? (
                   <dd className="micro mt-1 text-newsprint-gray">
-                    {curatedAgents} curated on Agent Souk — every one verified
+                    {curatedAgents} curated on Agent Souk - every one verified
                   </dd>
                 ) : null}
               </div>
@@ -217,12 +221,85 @@ export function HomePage() {
             hiring advantage: three real tasks run both ways, with the raw
             outputs attached.
           </p>
-          <div className="mt-10">
+          <div className="mt-10 flex flex-wrap items-center gap-8">
             <Link to="/advantage" className="group inline-block">
               <PrimaryButton className="group-hover:brightness-95">
                 Read the Advantage Report
               </PrimaryButton>
             </Link>
+            <a
+              href="https://bscscan.com/tx/0x25bcb12557ec4d484e1a9962a17a16e2883f07bd623909fad95c6bd82bdda6f3"
+              target="_blank"
+              rel="noreferrer"
+              className="group inline-block"
+            >
+              <PrimaryButton className="group-hover:brightness-95">
+                View live settlement on BscScan
+              </PrimaryButton>
+            </a>
+            <a
+              href="https://github.com/blockballr/agentsouk"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[18px] text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
+            >
+              Source on GitHub
+            </a>
+          </div>
+          <div className="mt-8 rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-6">
+            <div className="grid gap-4 text-[13px] font-mono leading-relaxed text-newsprint-gray sm:grid-cols-2">
+              <div>
+                <span className="text-muted-sage">tx </span>
+                <a
+                  href="https://bscscan.com/tx/0x25bcb12557ec4d484e1a9962a17a16e2883f07bd623909fad95c6bd82bdda6f3"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-press-black underline decoration-press-black/30 underline-offset-2 transition hover:decoration-highlighter-green"
+                >
+                  0x25bcb125...bdda6f3
+                </a>
+              </div>
+              <div>
+                <span className="text-muted-sage">agent </span>
+                Aave powered by HeyAnon
+              </div>
+              <div>
+                <span className="text-muted-sage">asset </span>
+                2 U (United Stables)
+              </div>
+              <div>
+                <span className="text-muted-sage">chain </span>
+                BNB Smart Chain (56)
+              </div>
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="mx-auto max-w-[1400px] px-6 py-20">
+          <p className="micro text-newsprint-gray">How a hire runs</p>
+          <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-4">
+            {steps.map((s, i) => (
+              <motion.div
+                key={s.title}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
+                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
+                className="flex flex-col gap-5 bg-bone-white p-10"
+              >
+                <span className="font-serif text-[clamp(28px,3vw,44px)] font-medium leading-none tracking-[-0.03em] text-newsprint-gray">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
+                  {s.title}
+                </span>
+                <span className="text-[16px] leading-snug text-newsprint-gray">
+                  {s.body}
+                </span>
+              </motion.div>
+            ))}
           </div>
         </section>
       </Reveal>
@@ -253,27 +330,51 @@ export function HomePage() {
 
       <Reveal>
         <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">How a hire runs</p>
-          <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-4">
-            {steps.map((s, i) => (
-              <motion.div
-                key={s.title}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
-                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
-                className="flex flex-col gap-5 bg-bone-white p-10"
-              >
-                <span className="font-serif text-[clamp(28px,3vw,44px)] font-medium leading-none tracking-[-0.03em] text-newsprint-gray">
-                  {String(i + 1).padStart(2, '0')}
+          <p className="micro text-newsprint-gray">Pipeline</p>
+          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
+            What ships next.
+          </h2>
+          <div className="mt-12 space-y-4">
+            {[
+              { label: 'ERC-1271 smart wallet facilitator (behind flag)', done: true },
+              { label: 'EIP-6963 wallet picker', done: true },
+              { label: 'Auto-update verified snapshot (nightly cron)', done: true },
+              { label: 'Cart: multi-hire sequential batch checkout', done: true },
+              { label: 'Registry Scout: autonomous discovery, verification, and curation', done: true },
+              { label: 'New listing review requests + owner notifications', done: false, hidden: 'follow @blockballr for updates xxxxxx' },
+              { label: 'B402 live settlement (credentials pending)', done: false, hidden: 'B402 xxx follow @blockballr for updates' },
+              { label: 'Own Agent Studio agent (grid/rebalancing reporter)', done: false, hidden: 'Own xxxxxxxx follow @blockballr for updates' },
+              { label: 'LLM evaluator quality leaderboard', done: false, hidden: 'LLM xxxx follow @blockballr for updates' },
+              { label: 'Standalone API + Postgres receipt durability', done: false, hidden: 'Standalone xx follow @blockballr for updates' },
+              { label: 'Mobile in-app browser regression pass', done: false, hidden: 'Mobile xxxxx follow @blockballr for updates' },
+              { label: 'WalletConnect QR-based connection', done: false, hidden: 'WalletConnect x follow @blockballr for updates' },
+              { label: 'Smart wallet (ERC-4337) support audit', done: false, hidden: 'Smart xxxxxx follow @blockballr for updates' },
+              { label: 'Agent performance surface (self-reported PnL)', done: false, hidden: 'Agent xx follow @blockballr for updates' },
+              { label: 'Merchant-set hire pricing', done: false, hidden: 'Merchant x follow @blockballr for updates' },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-4">
+                <span
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border hairline text-[11px] ${
+                    item.done
+                      ? 'border-highlighter-green/50 bg-highlighter-green/10 text-highlighter-green'
+                      : 'border-slate-verdant/40 text-newsprint-gray'
+                  }`}
+                >
+                  {item.done ? '\u2713' : ''}
                 </span>
-                <span className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
-                  {s.title}
-                </span>
-                <span className="text-[16px] leading-snug text-newsprint-gray">
-                  {s.body}
-                </span>
-              </motion.div>
+                {item.done ? (
+                  <span className="text-[16px] leading-snug text-typesetter-ink">
+                    {item.label}
+                  </span>
+                ) : (
+                  <span className="text-[16px] leading-snug text-newsprint-gray">
+                    {(item.hidden ?? '').split(' ')[0]}{' '}
+                    <span className="blur-[4px] select-none">
+                      {(item.hidden ?? '').split(' ').slice(1).join(' ')}
+                    </span>
+                  </span>
+                )}
+              </div>
             ))}
           </div>
         </section>

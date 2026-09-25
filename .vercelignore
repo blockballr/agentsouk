@@ -1,0 +1,8 @@
+apps/web/dist
+tests
+docs/superpowers
+.superpowers
+server.*.log
+web-preview.*.log
+tsconfig.tsbuildinfo
+validation-report.html
