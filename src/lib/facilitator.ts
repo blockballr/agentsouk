@@ -231,7 +231,7 @@ const U_BSC = "0xcE24439F2D9C6a2289F741120FE202248B666666";
 const BSC_RPC = "https://bsc-dataseed.binance.org";
 
 // per-process, bounded in-memory replay guard: a restart clears it and other
-// replicas do not share it — griefing mitigation only, not consensus
+// replicas do not share it - griefing mitigation only, not consensus
 const seenProdNonces = new Set<string>();
 
 // split a 65-byte ECDSA signature into r, s and a normalized v (27/28)

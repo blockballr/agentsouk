@@ -1,11 +1,5 @@
-// Performance-data spike: find agents that SELF-REPORT performance figures.
-// Absolute rule: no estimation, derivation, or invention — the verbatim
-// sentence is the data. Run steps independently:
-//
-//   node scripts/performance-scan.mjs          # step 1: registration-text scan
-//   node scripts/performance-scan.mjs --probe  # steps 1+2: also probe delivered agents (needs :3000)
-//
-// writes data/performance.json
+// Performance-data spike: find agents that SELF-REPORT figures. No estimation or invention: the verbatim sentence is the data.
+// Run: node scripts/performance-scan.mjs [--probe]. Writes data/performance.json
 import { privateKeyToAccount } from "viem/accounts";
 import { getAddress } from "viem";
 import { randomBytes } from "node:crypto";

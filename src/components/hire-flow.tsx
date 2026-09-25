@@ -59,7 +59,7 @@ export function HireFlow({
   const amountUsd =
     requirements && requirements.amount
       ? formatUnits(BigInt(requirements.amount), 18)
-      : "—";
+      : "-";
 
   useEffect(() => {
     if (!agent) return;

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://agentsouk.xyz/sitemap.xml

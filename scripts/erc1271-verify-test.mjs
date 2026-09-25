@@ -1,16 +1,5 @@
-// ERC-1271 verify-branch test for src/lib/erc1271.ts against a mocked JSON-RPC
-// endpoint (mocked contract responses, since no real smart wallet is available
-// in this environment). Run: node scripts/erc1271-verify-test.mjs
-//
-// What this CAN test: verdict policy (magic value, wrong value, revert, EOA,
-// RPC failure), ERC-6492 unwrapping, and the exact calldata sent on-chain.
-// What it CANNOT test without a real smart wallet: Coinbase Smart Wallet
-// semantics (WebAuthn wrapper, ("Coinbase Smart Wallet","1") domain),
-// undeployed-account ERC-6492 deployless validation, and end-to-end
-// settlement (the deployed token itself has no ERC-1271-consuming path —
-// see .superpowers/smart-wallet-audit.md). The facilitator glue
-// (SMART_WALLET_VERIFY gating, settleProd fail-closed gate) imports
-// "server-only" and is covered by review, not by this script.
+// ERC-1271 verify-branch test for src/lib/erc1271.ts against a mocked JSON-RPC endpoint; no real smart wallet is available here.
+// Covers verdict policy, ERC-6492 unwrapping and calldata; smart-wallet semantics and end-to-end settlement are out of scope.
 import { createServer } from "node:http";
 import { encodeAbiParameters, hashTypedData, getAddress } from "viem";
 import {

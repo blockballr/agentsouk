@@ -69,7 +69,7 @@ export function unwrapErc6492Signature(signature: `0x${string}`): `0x${string}` 
 
 // Validates an ERC-1271 signature against the smart account at `from` using an
 // eth_call on `rpcUrl`. The account must be deployed (extcodesize > 0):
-// counterfactual accounts that never deployed on this chain fail closed —
+// counterfactual accounts that never deployed on this chain fail closed -
 // deployless ERC-4337-style validation is intentionally out of scope.
 export async function verifySmartWalletSignature(
   args: Erc1271VerifyArgs,

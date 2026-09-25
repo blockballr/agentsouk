@@ -518,7 +518,7 @@ async function main() {
     const manual = await def.manual();
     console.log(`manual side: ${manual.error ? "ERROR" : "ok"} ${fmt(manual.seconds)}s output ${manual.output.length} chars`);
     const verdict = buildVerdict(def, agent, manual);
-    console.log(`verdict: ${verdict.winner} — ${verdict.notes}`);
+    console.log(`verdict: ${verdict.winner} - ${verdict.notes}`);
     tasks.push({
       id: def.id,
       category: def.category,

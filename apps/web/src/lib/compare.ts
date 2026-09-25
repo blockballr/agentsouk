@@ -1,11 +1,8 @@
 import type { AgentDetail } from '@agora/core'
 import { CATEGORIES, CATEGORY_KEYS, classifyAgent } from '@agora/core'
 
-// best-in-category selection for the compare table
-// rank: on-chain total_score, then total_feedbacks, then verification
-// status (delivered > gated > dead/unreachable > absent), then AI quality
-// grade (good > partial > poor), then list order. every step is explainable
-// from the numbers already on the table plus the badge data we surface
+// best-in-category selection: rank by total_score, total_feedbacks, verification status
+// (delivered > gated > dead/unreachable > absent), AI quality grade, then list order
 
 const VERIFICATION_RANK: Record<string, number> = {
   delivered: 3,
@@ -20,9 +17,8 @@ const GRADE_RANK: Record<string, number> = {
   poor: 1,
 }
 
-// structural subset the ranker needs; AgentDetail and AgentSummary both
-// satisfy it, so bests can be derived from summaries (marketplace bar) as
-// well as from full details (compare table)
+// structural subset the ranker needs; both AgentDetail and AgentSummary satisfy it,
+// so bests can be derived from summaries or full details
 export interface RankableAgent {
   agent_id: string;
   name: string;
@@ -42,9 +38,7 @@ export interface CategoryGroup {
   agents: AgentDetail[]
 }
 
-// compared agents grouped by category, in the site's fixed category order
-// (the four headline categories, then general); agents keep list order
-// within a group
+// compared agents grouped by category in the fixed category order, with list order kept within a group
 export function categoryGroups(agents: AgentDetail[]): CategoryGroup[] {
   const byKey = new Map<string, AgentDetail[]>()
   for (const a of agents) {
@@ -67,10 +61,8 @@ function categoryLabel(key: string): string {
   return def ? def.label : 'General'
 }
 
-// winner agent_id per category. with two or more agents shortlisted, every
-// represented category has a winner — including categories with a single
-// agent (2 agents in 2 categories each win theirs). categories only go
-// winnerless when fewer than two agents are compared in total
+// winner agent_id per category; with two or more agents shortlisted every represented
+// category has a winner, including single-agent categories
 export function bestByCategory<T extends RankableAgent>(agents: T[]): Record<string, string | null> {
   const groups = new Map<string, number[]>()
   agents.forEach((a, i) => {

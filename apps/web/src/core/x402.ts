@@ -1,7 +1,5 @@
-// client-side half of the x402 flow, mirroring src/lib/x402.ts on the server:
-// fetch payment requirements, preview, sign an EIP-3009 transfer authorization
-// in the wallet, then hand the payload to the settle endpoint
-// no viem here on purpose; the server checksums addresses and owns verification
+// client-side half of the x402 flow (mirroring src/lib/x402.ts): fetch requirements,
+// preview, sign EIP-3009 in the wallet, settle. No viem: the server owns verification.
 
 export const X402_VERSION = 2;
 
@@ -96,11 +94,8 @@ export interface Receipt {
   session: { spendCapUsd: number; expiresAt: string };
 }
 
-// wallet-facing typed data: EIP712Domain is included EXPLICITLY because
-// wallets (MetaMask/Rabby) derive an EMPTY domain type when it is omitted,
-// which diverges from what viem/ethers auto-insert on verification — the
-// resulting digest differs and the recovered signer never matches. Declaring
-// it makes every implementation (wallet + viem + ethers) hash identically.
+// EIP712Domain is declared EXPLICITLY: wallets (MetaMask/Rabby) derive an empty domain
+// type when it is omitted, so the digest diverges from viem/ethers and the signer never recovers.
 export const TRANSFER_TYPES = {
   EIP712Domain: [
     { name: "name", type: "string" },
