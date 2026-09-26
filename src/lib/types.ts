@@ -14,14 +14,17 @@ export function scoutDirFor(chainId: number): string {
   return chainId === BSC_CHAIN_ID ? "scout" : `scout-${chainId}`;
 }
 
+// Explorer for a chain, so a link we hand out points at the network the
+// transaction is on rather than always at mainnet.
+export function explorerBaseFor(chainId: number): string {
+  return chainId === BSC_TESTNET_CHAIN_ID ? "https://testnet.bscscan.com" : "https://bscscan.com";
+}
+
 export const BSC_REGISTRY_ADDRESS =
   "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432";
 
 // BSC mainnet token contracts
-// $U (United Stables) implements EIP-3009 (transferWithAuthorization), which
-// x402 uses for gasless stablecoin payments. Verified on-chain 2026-09-08:
-// vrs selector 0xe3ee160e present, DOMAIN_SEPARATOR matches
-// ("United Stables", "1", chainId 56), decimals 18
+// $U (United Stables) implements EIP-3009 (transferWithAuthorization) for gasless x402 payments
 export const BSC_TOKENS = {
   U: {
     symbol: "U",
@@ -35,16 +38,8 @@ export const BSC_TOKENS = {
   },
 } as const;
 
-// The asset x402 settles in, per chain. Both implement the nine argument
-// transferWithAuthorization variant the relay broadcasts, selector 0xe3ee160e.
-//
-// chain 56: $U (United Stables), EIP-3009 verified on-chain 2026-09-08, and a
-// real settlement relayed at 0x25bcb125...bbda6f3 on 2026-09-10.
-// chain 97: sUSD, the EIP-3009 test token we deployed for the Set and Earn
-// campaign, because the chain 97 build of $U has that code path disabled and
-// reverts with "EIP7598 is disabled". Verified by a relayed settlement at
-// 0x1214d9a4...c196c9e8, and it publishes eip712Domain() so the signing domain
-// is read off the contract rather than assumed.
+// The asset x402 settles in, per chain; both implement the nine-argument
+// transferWithAuthorization variant, selector 0xe3ee160e. chain 56 settles in $U, chain 97 in sUSD.
 export interface SettlementAsset {
   symbol: string;
   address: `0x${string}`;

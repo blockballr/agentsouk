@@ -14,6 +14,7 @@ import { SESSION_HOURS, SESSION_SPEND_CAP_USD } from "@agora/core";
 import { verifySmartWalletSignature } from "./erc1271";
 import {
   BSC_TESTNET_CHAIN_ID,
+  explorerBaseFor,
   settlementAsset,
   targetChainId,
 } from "./types";
@@ -51,10 +52,8 @@ function pseudoTx(paymentId: string): string {
   return `${SANDBOX_TX_PREFIX}${hex.slice(0, 24)}`.toLowerCase();
 }
 
-// EIP-3009 validAfter/validBefore are checked on-chain against
-// block.timestamp, so the facilitator must judge them against chain time, not
-// the host clock: a host clock that drifts behind the chain would otherwise
-// reject an authorization the chain would accept (or the reverse)
+// EIP-3009 validAfter/validBefore are checked on-chain against block.timestamp, so the
+// facilitator must judge them against chain time, not the host clock
 async function chainNow(): Promise<bigint> {
   try {
     const { chain, transport } = chainConfig(targetChainId());
@@ -96,9 +95,8 @@ function isSmartWalletVerifyEnabled(): boolean {
   return process.env.SMART_WALLET_VERIFY === "on";
 }
 
-// shared verification for sandbox and prod settlement: validate the payload
-// shape, the signed terms, and the EIP-3009 signature itself before anything
-// is recorded or broadcast
+// shared verification for sandbox and prod settlement: validate the payload shape, the
+// signed terms, and the EIP-3009 signature before anything is recorded or broadcast
 async function settleSandboxChecks(
   req: SettleRequest,
 ): Promise<{
@@ -120,9 +118,8 @@ async function settleSandboxChecks(
     return { ok: false, error: "Signed terms do not match payment requirements" };
   }
 
-  // bind what was actually signed to the payment requirements: the accepted
-  // block alone is client-controlled framing, so the signed value and
-  // recipient must equal the requirements before anything is recorded or spent
+  // bind what was actually signed to the payment requirements: the accepted block alone is
+  // client-controlled framing, so the signed value and recipient must equal the requirements
   let message: Eip3009Message;
   try {
     if (BigInt(auth.value) !== BigInt(pr.amount)) {
@@ -157,9 +154,8 @@ async function settleSandboxChecks(
     if (!isSmartWalletVerifyEnabled()) {
       return { ok: false, error: "Signature verification failed" };
     }
-    // opt-in path: ecrecover failed and the signer may be a smart account, so
-    // validate on-chain via ERC-1271 against our own typed-data hash. Fail
-    // closed: only a truthful 0x1626ba7e from a deployed contract passes.
+    // opt-in path: ecrecover failed and the signer may be a smart account, so validate on-chain
+    // via ERC-1271 against our own typed-data hash; fail closed
     const verdict = await verifySmartWalletSignature({
       from: message.from,
       signature: auth.signature,
@@ -178,10 +174,8 @@ async function settleSandboxChecks(
   return { ok: true, auth, message, erc1271: false };
 }
 
-// sandbox settlement: verify the EIP-3009 signature with viem, check the terms
-// match the listing, then record a receipt
-// in production this is replaced by the Binance x402 verify + settle calls in
-// the settle route
+// sandbox settlement: verify the EIP-3009 signature with viem, check the terms match the
+// listing, then record a receipt (in production the Binance x402 verify + settle calls replace this)
 export async function settleSandbox(
   req: SettleRequest,
   ctx: SettleContext,
@@ -240,9 +234,8 @@ export async function getSandboxReceipt(
   return getPaymentDurable(paymentId);
 }
 
-// prod settlement: relay the buyer's EIP-3009 authorization on BNB Chain
-// mainnet. the relay wallet pays gas; the buyer signs only, and no buyer key
-// is ever held. the 5 U cap is enforced before any broadcast.
+// prod settlement: relay the buyer's EIP-3009 authorization on BNB Chain mainnet; the relay
+// pays gas, no buyer key is ever held, and the 5 U cap is enforced before any broadcast
 const PROD_CAP_RAW = 5n * 10n ** 18n; // 5 units, 18 decimals
 
 // per-process, bounded in-memory replay guard: a restart clears it and other
@@ -274,10 +267,8 @@ export async function settleProd(
   if (!checks.ok) return fail(checks.error);
   const auth = checks.auth;
 
-  // fail closed before spending relay gas: an ERC-1271 signature is not a
-  // recoverable ECDSA sig, so splitSig would produce garbage v/r/s and the
-  // on-chain transferWithAuthorization would revert (verified token-level:
-  // see .superpowers/smart-wallet-audit.md)
+  // fail closed before spending relay gas: an ERC-1271 signature is not recoverable ECDSA, so
+  // splitSig would produce garbage v/r/s and the transfer would revert
   if (checks.erc1271) {
     return fail(
       "Smart wallet settlement is not supported for this asset: the token's transferWithAuthorization cannot consume ERC-1271 signatures",
@@ -288,9 +279,8 @@ export async function settleProd(
     return fail("Amount exceeds the 5 U prod cap");
   }
 
-  // the chain the client signed for decides where the relay broadcasts, and it
-  // must be the chain this deployment is configured for: otherwise a payload
-  // signed for testnet could be relayed onto mainnet, or the reverse
+  // the chain the client signed for must be the chain this deployment is configured for,
+  // else a testnet payload could be relayed to mainnet or the reverse
   const signedChainId = chainIdFromNetwork(pr.network);
   if (signedChainId === null) {
     return fail(`Unrecognised payment network ${pr.network}`);
@@ -401,7 +391,8 @@ export async function settleProd(
         symbol: ctx.agent.symbol,
         verified: true,
         mode: "prod",
-        txLink: `https://bscscan.com/tx/${hash}`,
+        // chain-aware explorer, so a chain-97 receipt does not link to mainnet
+        txLink: `${explorerBaseFor(targetChainId())}/tx/${hash}`,
       },
     };
   } catch (e) {
