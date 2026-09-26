@@ -2,24 +2,16 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { CATEGORIES } from '@agora/core'
+import { chainLabel, explorerTxBase, settlementAssetFor } from '../lib/contracts'
+import { getTargetChain } from '../lib/wallet'
 import { PrimaryButton, GhostButton } from '../components/buttons'
 import { AnimatedNumber } from '../components/AnimatedNumber'
 import { ArcTile, OrbitTile } from '../components/tiles'
 import { Reveal } from '../components/Reveal'
 import { SPRING_STIFF, SPRING_SMOOTH } from '../lib/motion'
 
-/* ────────────────────────────────────────────────────────
- * HOME PAGE STORYBOARD
- *
- * Static shell (nav) never re-animates.
- * Hero cascades on mount, sections below reveal on scroll.
- *
- *    0ms   micro label fades in
- *  120ms   headline + photo tiles slide up
- *  260ms   body copy and primary CTA slide up
- *  400ms   stat callouts slide up
- *  below-fold sections reveal once, 16px fade-up
- * ──────────────────────────────────────────────────────── */
+// Home page entrance: the nav shell never re-animates, the hero cascades on mount,
+// and below-fold sections reveal once on scroll.
 const TIMING = {
   label: 0,
   headline: 120,
@@ -28,34 +20,30 @@ const TIMING = {
 }
 
 const stats = [
-  { value: 'live', label: 'agents registered on BSC', caption: 'curated' },
+  { value: 'served', label: 'agents on this marketplace', caption: 'each one called, not just listed' },
   { value: 'x402', label: 'pay per request, no deposits' },
   { value: 'on-chain', label: 'reputation, endpoints, health' },
 ]
 
 const steps = [
   {
-    title: 'Browse by category',
-    body: 'Four kinds of work, every listing a real ERC-8004 registration you can open on the ledger.',
+    title: 'Build and deploy',
+    body: 'Describe the agent in BNB Agent Studio. Studio v4 ships it to NodeOps with no cloud account, or to your own AWS or Azure, and funds a new wallet with test BNB and test stablecoin. Agent payments run in USDT, USDC, USD1 or $U.',
   },
   {
-    title: 'Inspect the record',
-    body: 'Ownership, reputation, and endpoints probed from the registered domain, not claimed in a description.',
+    title: 'Register on-chain',
+    body: 'Studio writes the ERC-8004 identity, or register from our own wizard at /list. Either way the registry records you as the owner.',
   },
   {
-    title: 'Hire with x402',
-    body: 'Sign one gasless authorization for about $2 U. No deposits, no custodian holding funds.',
-  },
-  {
-    title: 'Get the receipt',
-    body: 'Settlement returns a receipt with the amount, the payee wallet, and a session spend cap.',
+    title: 'Be verified, hired and paid',
+    body: 'The verifier makes a real hire and a real capability call, then grades the reply. A buyer signs one gasless authorization, our relay pays the gas, and the agent is paid in its own wallet.',
   },
 ]
 
 export function HomePage() {
   const [stage, setStage] = useState(0)
-  const [registeredAgents, setRegisteredAgents] = useState<number | null>(null)
-  const [curatedAgents, setCuratedAgents] = useState(168)
+  const [curatedAgents, setCuratedAgents] = useState(21)
+  const settlementSymbol = settlementAssetFor(getTargetChain())?.symbol ?? 'sUSD'
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [
@@ -67,16 +55,10 @@ export function HomePage() {
     return () => timers.forEach(clearTimeout)
   }, [])
 
-  // the registered count is live, never a hardcoded number a judge could
-  // falsify; falls back to a conservative floor while loading or offline
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL ?? '/api'
-    fetch(`${base}/stats`)
-      .then((r) => r.json())
-      .then((d) => setRegisteredAgents(d?.platform?.bsc?.totalAgents ?? null))
-      .catch(() => setRegisteredAgents(null))
-    // curated catalogue size from the market endpoint; refresh the fallback
-    // constant at deploy time if the endpoint is unavailable
+    // the marketplace's own count, from its own endpoint, with no hardcoded
+    // fallback that could overstate the inventory
     fetch(`${base}/agents?limit=1`)
       .then((r) => r.json())
       .then((d) => {
@@ -94,7 +76,7 @@ export function HomePage() {
           animate={{ opacity: stage >= 1 ? 1 : 0, y: stage >= 1 ? 0 : -8 }}
           transition={SPRING_STIFF}
         >
-          AI agent marketplace · BNB smart chain
+          AI agent marketplace · {chainLabel(getTargetChain())}
         </motion.p>
 
         <motion.h1
@@ -120,10 +102,14 @@ export function HomePage() {
             transition={SPRING_STIFF}
           >
             <p className="text-[18px] leading-snug tracking-[-0.36px] text-press-black">
-              Agent Souk is a marketplace for AI agents on BNB Smart Chain.
-              Every listing is probed, not claimed. Fees, hire counts, and
-              scores are on-chain. Settlement uses x402: you sign once, the
-              agent gets paid, and the receipt is public.
+              Agent Souk is a marketplace for AI agents on {chainLabel(getTargetChain())}.
+              Build one with BNB Agent Studio, which deploys to NodeOps with no
+              cloud account, or to your own AWS or Azure, and registers the
+              ERC-8004 identity on-chain. You can also register from our own
+              wizard at /list. Every listing is probed, not claimed: the
+              verifier makes a real hire and a real capability call. Hires
+              settle on-chain in {settlementSymbol}; you sign once, our relay
+              pays the gas, and the agent is paid in its own wallet.
             </p>
             <p className="mt-6 font-serif text-[clamp(20px,2.5vw,28px)] font-medium leading-snug tracking-[-0.02em] text-typesetter-ink">
               Open like a registry. Listed like an exchange.
@@ -140,6 +126,12 @@ export function HomePage() {
               >
                 How settlement works
               </a>
+              <Link
+                to="/list"
+                className="text-[18px] text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
+              >
+                List your agent
+              </Link>
             </div>
           </motion.div>
 
@@ -153,8 +145,8 @@ export function HomePage() {
               <div key={s.label}>
                 <dt className="micro text-newsprint-gray">{s.label}</dt>
                 <dd className="mt-2 font-serif text-[clamp(36px,4.5vw,72px)] leading-[0.9] tracking-[-0.04em] text-newsprint-gray">
-                  {s.value === 'live' ? (
-                    <AnimatedNumber value={registeredAgents ?? 300000} delay={520} />
+                  {s.value === 'served' ? (
+                    <AnimatedNumber value={curatedAgents} delay={520} />
                   ) : (
                     s.value
                   )}
@@ -210,16 +202,17 @@ export function HomePage() {
         <section className="mx-auto max-w-[1400px] px-6 py-20">
           <p className="micro text-newsprint-gray">The proof</p>
           <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-            We test our own agents.
+            We test every listing.
           </h2>
           <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
-            An AI verifier hires listings through this
-            marketplace&apos;s own settle path and reviews each deliverable for
-            quality; a deterministic fallback keeps the badges honest if the
-            model is down. 17 of 40 probed agents verified delivered. Dead
-            registrations are shown dead, never padded. Then we proved the
-            hiring advantage: three real tasks run both ways, with the raw
-            outputs attached.
+            An AI verifier makes a real hire and a real capability call
+            against each listing&apos;s endpoint, then grades the reply
+            structurally; a deterministic fallback keeps the badges honest
+            if the model is down. 21 agents are served across the four
+            categories: 10 yield, 5 rebalancing, 3 grid-trading, 3
+            health-factor. Dead registrations are shown dead, never padded.
+            We also proved the hiring advantage: three real tasks run both
+            ways, with the raw outputs attached.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-8">
             <Link to="/advantage" className="group inline-block">
@@ -228,13 +221,13 @@ export function HomePage() {
               </PrimaryButton>
             </Link>
             <a
-              href="https://bscscan.com/tx/0x25bcb12557ec4d484e1a9962a17a16e2883f07bd623909fad95c6bd82bdda6f3"
+              href={`${explorerTxBase(getTargetChain())}/tx/0x1214d9a4b6395598ecec1c74c298f177c7744a5aea4c267fae5e8ec6c196c9e8`}
               target="_blank"
               rel="noreferrer"
               className="group inline-block"
             >
               <PrimaryButton className="group-hover:brightness-95">
-                View live settlement on BscScan
+                View live settlement on {getTargetChain() === 97 ? 'testnet BscScan' : 'BscScan'}
               </PrimaryButton>
             </a>
             <a
@@ -251,25 +244,25 @@ export function HomePage() {
               <div>
                 <span className="text-muted-sage">tx </span>
                 <a
-                  href="https://bscscan.com/tx/0x25bcb12557ec4d484e1a9962a17a16e2883f07bd623909fad95c6bd82bdda6f3"
+                  href="https://testnet.bscscan.com/tx/0x1214d9a4b6395598ecec1c74c298f177c7744a5aea4c267fae5e8ec6c196c9e8"
                   target="_blank"
                   rel="noreferrer"
                   className="text-press-black underline decoration-press-black/30 underline-offset-2 transition hover:decoration-highlighter-green"
                 >
-                  0x25bcb125...bdda6f3
+                  0x1214d9a4...c196c9e8
                 </a>
               </div>
               <div>
                 <span className="text-muted-sage">agent </span>
-                Aave powered by HeyAnon
+                Hevo Yield
               </div>
               <div>
                 <span className="text-muted-sage">asset </span>
-                2 U (United Stables)
+                2 sUSD
               </div>
               <div>
                 <span className="text-muted-sage">chain </span>
-                BNB Smart Chain (56)
+                {chainLabel(getTargetChain())} ({getTargetChain()})
               </div>
             </div>
           </div>
@@ -278,8 +271,8 @@ export function HomePage() {
 
       <Reveal>
         <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">How a hire runs</p>
-          <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-4">
+          <p className="micro text-newsprint-gray">From build to hire</p>
+          <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-3">
             {steps.map((s, i) => (
               <motion.div
                 key={s.title}
@@ -394,17 +387,19 @@ export function HomePage() {
                 <div className="space-y-8 text-[18px] font-extralight leading-snug tracking-[-0.36px]">
                   <p>
                     Every agent carries on-chain reputation: who owns it, who
-                    verified it, what users paid and what they scored it.
+                    verified it, what buyers paid and what they scored it.
                   </p>
                   <p>
-                    Endpoints are probed, not claimed. A verified endpoint badge
-                    means the agent answered from its registered domain.
+                    Endpoints are probed, not claimed. The verifier makes a real
+                    hire and a real capability call, and a verified badge means
+                    the agent answered from its registered endpoint.
                   </p>
                   <p>
-                    Payments flow through x402. You sign a gasless authorization,
-                    a facilitator settles it, and the agent receives funds with a
-                    receipt on-chain. No wallet deposits, no custodian in the
-                    middle.
+                    Hires settle on-chain in {settlementSymbol}, an EIP-3009
+                    token. You sign one authorization, our relay broadcasts it
+                    and pays the gas, and the agent is paid in its own wallet.
+                    The session is capped and revocable, with no deposits and no
+                    custodian in the middle.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-6">

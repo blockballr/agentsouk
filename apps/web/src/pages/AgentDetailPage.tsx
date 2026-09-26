@@ -5,10 +5,14 @@ import {
   formatDate,
   formatNumber,
   formatScore,
+  SESSION_HOURS,
+  SESSION_SPEND_CAP_USD,
   shortAddress,
   timeAgo,
 } from '@agora/core'
 import { activateBoost, deliverTask, getAgentDetail, getBoostStatus, getTask, retryTask, type DeliverData, type DeliverTool, type HireTask } from '../lib/api'
+import { TestTokens } from '../components/TestTokens'
+import { chainLabel } from '../lib/contracts'
 import {
   changeWallet,
   connectWallet,
@@ -37,7 +41,8 @@ function verificationLabel(status: string): string {
 }
 
 function explorerBase(chainId: string): string {
-  return chainId === '97' ? 'https://testnet.bscscan.com' : 'https://bscscan.com'
+  // compared as a number: the route parameter arrives as a string
+  return Number(chainId) === 97 ? 'https://testnet.bscscan.com' : 'https://bscscan.com'
 }
 
 const scoreBars: { label: string; key: keyof AgentDetail }[] = [
@@ -61,10 +66,10 @@ export interface PerformanceProbe {
   status: string
   tool?: string
   rawOutput?: string
+  scannedAt?: string
 }
 
-// self-reported performance comes from the committed scan output, served by the
-// API as-is; a failed fetch just hides the section
+// self-reported performance comes from the committed scan output; a failed fetch hides the section
 async function fetchPerformanceProbe(
   tokenId: string,
 ): Promise<PerformanceProbe | null> {
@@ -72,13 +77,17 @@ async function fetchPerformanceProbe(
     const base = import.meta.env.VITE_API_URL ?? '/api'
     const res = await fetch(`${base}/performance`)
     if (!res.ok) return null
-    const body: { success?: boolean; data?: { probeResults?: PerformanceProbe[] } } =
-      await res.json()
+    const body: {
+      success?: boolean
+      data?: { probeResults?: PerformanceProbe[]; scannedAt?: string }
+    } = await res.json()
     if (!body.success || !body.data?.probeResults) return null
     const probe = body.data.probeResults.find(
       (p) => p.tokenId === tokenId && p.status === 'probed' && p.rawOutput,
     )
-    return probe ?? null
+    if (!probe) return null
+    // carried onto the record so the section can date itself
+    return { ...probe, scannedAt: body.data.scannedAt }
   } catch {
     return null
   }
@@ -100,28 +109,28 @@ function sessionModeLabel(mode: ActiveSession['mode']): string {
   return 'Production'
 }
 
-// The name of the chain this deployment settles on. The panel used to say
-// "BNB" here, which names no chain in particular: on the testnet quest a reader
-// could not tell whether the hire in front of them moved real money or test
-// tokens.
-function chainLabel(chainId: number): string {
-  return chainId === 97 ? 'BSC testnet' : 'BNB Smart Chain'
-}
+// chainLabel lives in lib/contracts so the network is named in one place.
 
-// How the settlement actually happened. This must cover all three modes, because
-// the previous version only tested for b402 and fell through to "Sandbox
-// facilitator" for everything else, so the moment the facilitator was switched to
-// production this panel would have kept telling the reader the hire was sandboxed.
+// covers all three modes, so a production hire is never labelled sandboxed
 function settlementLabel(mode: ActiveSession['mode'] | undefined): string {
   if (mode === 'b402') return 'BNB Chain (x402)'
   if (mode === 'sandbox') return 'Sandbox facilitator, nothing broadcast'
   return 'Production relay, broadcast on chain'
 }
 
-// A hash is only a transaction when something was actually broadcast. Sandbox
-// derives a synthetic string from the payment id, so linking it to an explorer
-// would 404, and printing it unlabelled invites the reader to treat it as a
-// receipt.
+// a hash is only a transaction when something was broadcast; sandbox strings are synthetic
+// a listing belongs to whoever the registry records as owner, or the agent wallet
+function isListingOwner(
+  account: string,
+  detail: { owner_address?: string | null; agent_wallet?: string | null },
+): boolean {
+  const a = account.toLowerCase();
+  return (
+    (!!detail.owner_address && detail.owner_address.toLowerCase() === a) ||
+    (!!detail.agent_wallet && detail.agent_wallet.toLowerCase() === a)
+  );
+}
+
 function isOnchainSettlement(mode: ActiveSession['mode'] | undefined): boolean {
   return mode === 'prod' || mode === 'b402'
 }
@@ -132,6 +141,12 @@ export function AgentDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [perfProbe, setPerfProbe] = useState<PerformanceProbe | null>(null)
+  // the connected viewer, so owner-only affordances can be hidden from everyone else
+  const [viewer, setViewer] = useState<string | null>(null)
+
+  useEffect(() => {
+    void getActiveAccount().then(setViewer)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -331,12 +346,7 @@ export function AgentDetailPage() {
 
               <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
                 <h2 className="micro text-newsprint-gray">Endpoints</h2>
-                <div className="mt-6 space-y-3">
-                  <Endpoint label="A2A" value={detail.a2a_endpoint} />
-                  <Endpoint label="MCP" value={detail.mcp_server} />
-                  <Endpoint label="Agent URL" value={detail.agent_url} />
-                  <Endpoint label="Verified domain" value={detail.endpoint_verified_domain} />
-                </div>
+                <EndpointPanel detail={detail} />
               </div>
             </div>
           </div>
@@ -381,7 +391,12 @@ export function AgentDetailPage() {
             </div>
             <div className="flex justify-between">
               <span>Session</span>
-              <span className="text-press-black">24h · $10 cap</span>
+              {/* reflects what the facilitator actually sets on the session,
+                  rather than a second opinion in the markup: this said $10 while
+                  production issued $5, so a live session contradicted the page */}
+              <span className="text-press-black">
+                {SESSION_HOURS}h · ${SESSION_SPEND_CAP_USD} cap
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Network</span>
@@ -393,15 +408,101 @@ export function AgentDetailPage() {
             You sign a gasless transfer authorization; a facilitator verifies and
             settles it on-chain. Funds go straight to the agent&apos;s wallet.
           </p>
-          <BoostPanel
-            chainId={chainId}
-            tokenId={detail.token_id}
-            name={detail.name}
-            ownerAddress={detail.owner_address}
-            agentWallet={detail.agent_wallet}
-            alreadyBoosted={Boolean((detail as { boosted?: boolean }).boosted)}
-            onBoosted={refreshDetail}
-          />
+          {/* owner-only, so it renders only for an owner */}
+          {viewer && isListingOwner(viewer, detail) && (
+            <BoostPanel
+              chainId={chainId}
+              tokenId={detail.token_id}
+              name={detail.name}
+              ownerAddress={detail.owner_address}
+              agentWallet={detail.agent_wallet}
+              alreadyBoosted={Boolean((detail as { boosted?: boolean }).boosted)}
+              onBoosted={refreshDetail}
+            />
+          )}
+          {/* permissions precede the registry evidence: they are part of the buying decision */}
+          <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
+            <h2 className="micro text-newsprint-gray">What you are authorising</h2>
+            <ul className="mt-4 space-y-3 text-sm leading-relaxed text-newsprint-gray">
+              <li>
+                One EIP-3009 transfer authorization for the hire amount, scoped to this agent&apos;s
+                wallet. Nothing is approved for later, and there is no blanket token approval.
+              </li>
+              <li>
+                A session capped at ${SESSION_SPEND_CAP_USD} and expiring in {SESSION_HOURS} hours.
+                Every later call draws on that cap until you revoke it.
+              </li>
+              <li>
+                {detail.mcp_server
+                  ? 'The agent is invoked over MCP, so it can call the tools it publishes.'
+                  : detail.a2a_endpoint
+                    ? 'The agent is invoked over A2A, so it receives the messages you send it.'
+                    : 'No callable endpoint is published for this agent.'}
+              </li>
+            </ul>
+          </div>
+
+          {/* registry id and creation transaction, so a listing can be checked against the chain */}
+          {(detail.agent_id || detail.created_tx_hash) && (
+            <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
+              <h2 className="micro text-newsprint-gray">Registry record</h2>
+              <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
+                This listing is an ERC-8004 registration. Check it against the registry and the
+                transaction that created it.
+              </p>
+              <dl className="mt-5 space-y-3">
+                {detail.agent_id && (
+                  <div>
+                    <dt className="micro text-newsprint-gray">Registry ID</dt>
+                    <dd className="mt-1 break-all font-mono text-xs text-press-black">
+                      {detail.agent_id}
+                    </dd>
+                  </div>
+                )}
+                {detail.contract_address && (
+                  <div>
+                    <dt className="micro text-newsprint-gray">Registry contract</dt>
+                    <dd className="mt-1 break-all font-mono text-xs">
+                      <a
+                        href={`${explorerBase(chainId)}/address/${detail.contract_address}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-press-black hover:text-highlighter-green"
+                      >
+                        {detail.contract_address}
+                      </a>
+                    </dd>
+                  </div>
+                )}
+                {detail.created_tx_hash && (
+                  <div>
+                    <dt className="micro text-newsprint-gray">Registration transaction</dt>
+                    <dd className="mt-1 break-all font-mono text-xs">
+                      <a
+                        href={`${explorerBase(chainId)}/tx/${detail.created_tx_hash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-press-black hover:text-highlighter-green"
+                      >
+                        {detail.created_tx_hash}
+                      </a>
+                    </dd>
+                  </div>
+                )}
+                <div>
+                  <dt className="micro text-newsprint-gray">Freshness</dt>
+                  <dd className="mt-1 text-xs text-press-black">
+                    Registry record last updated{' '}
+                    {detail.updated_at ? timeAgo(detail.updated_at) : 'unknown'}
+                    {detail.health_checked_at
+                      ? `, endpoint last checked ${timeAgo(detail.health_checked_at)}`
+                      : ''}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          )}
+
         </aside>
       </div>
     </div>
@@ -583,20 +684,20 @@ function HirePanel({
   const [preview, setPreview] = useState<PreviewResult | null>(null)
   const [agent, setAgent] = useState<HireRequirementsData['agent'] | null>(null)
   const [result, setResult] = useState<SettleResult | null>(null)
+  // catch the shortfall before the signature, saving a wasted signature and a reverted tx
+  const [shortForHire, setShortForHire] = useState(false)
+  const [nudge, setNudge] = useState(0)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
 
   async function startHire() {
     setError(null)
     setStep('connecting')
     try {
-      // pin the wallet to this agent's chain before connecting, so connect and
-      // signature both target the chain the requirements will name
+      // pin the wallet to this agent's chain before connecting
       setTargetChain(Number(chainId))
       const addr = await connectWallet()
       await ensureBscChain()
-      // deliberately no smart-account gate at connect time: see the note in
-      // lib/hire.ts. the facilitator is the authority on whether a signature is
-      // recoverable, and the heuristic refusal blocked EOA wallets outright.
+      // no smart-account gate: the facilitator is the authority (see lib/hire.ts)
       setAccount(addr)
       const data = await fetchHireRequirements(
         { chainId: Number(chainId), tokenId: Number(tokenId), name },
@@ -672,12 +773,33 @@ function HirePanel({
           </div>
           {step === 'preview' ? (
             <div className="mt-4 space-y-2">
+              {shortForHire && (
+                <p className="rounded-[10px] border border-highlighter-green/40 bg-highlighter-green/10 p-3 text-xs leading-relaxed text-highlighter-green">
+                  This wallet does not hold enough sUSD for the ${option.amountUsd} hire. Get 10
+                  free below, then sign.
+                </p>
+              )}
               <button
                 type="button"
-                onClick={signAndSettle}
-                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                onClick={() => {
+                  if (shortForHire) {
+                    setNudge((n) => n + 1)
+                    return
+                  }
+                  void signAndSettle()
+                }}
+                className={`micro w-full rounded-[5px] px-4 py-3 text-typesetter-ink shadow transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
+                  shortForHire ? 'bg-highlighter-green/40' : 'bg-highlighter-green hover:brightness-95'
+                }`}
               >
-                Sign &amp; activate
+                {shortForHire ? (
+                  // .micro uppercases, which would render the symbol as SUSD
+                  <>
+                    Get <span className="normal-case">sUSD</span> to activate
+                  </>
+                ) : (
+                  'Sign & activate'
+                )}
               </button>
               <button
                 type="button"
@@ -703,8 +825,7 @@ function HirePanel({
               <button
                 type="button"
                 onClick={() => {
-                  // a wallet that cannot hire must not be a dead end: forget the
-                  // choice and the derived session, then offer connect again
+                  // a wallet that cannot hire must not be a dead end
                   disconnectWallet()
                   setAccount(null)
                   setStep('idle')
@@ -750,8 +871,7 @@ function HirePanel({
                   </a>
                 </>
               ) : (
-                // labelled, because this is derived from the payment id and is
-                // not a transaction. Unlabelled, it reads as a receipt.
+                // labelled: this is derived from the payment id, not a transaction
                 <>synthetic, not a transaction: {result.txHash}</>
               )}
             </p>
@@ -770,9 +890,29 @@ function HirePanel({
       )}
 
       {error && (
-        <p className="mt-4 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-xs leading-relaxed text-press-black">
-          {error}
-        </p>
+        <>
+          <p className="mt-4 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-xs leading-relaxed text-press-black">
+            {error}
+          </p>
+          {/* 0xe450d38c is ERC20InsufficientBalance. A raw viem revert string is
+              not an explanation, so name the cause and point at what fixes it. */}
+          {/e450d38c|InsufficientBalance|insufficient balance/i.test(error) && (
+            <p className="mt-2 rounded-[10px] border border-highlighter-green/40 bg-highlighter-green/10 p-3 text-xs leading-relaxed text-highlighter-green">
+              That failed because this wallet does not hold enough sUSD. Get 10 free below, then
+              try again.
+            </p>
+          )}
+        </>
+      )}
+
+      {/* outside the step blocks on purpose, so it stays available the moment a wallet lacks sUSD */}
+      {step !== 'hired' && (
+        <TestTokens
+          chainId={Number(chainId)}
+          account={account}
+          onShortfall={setShortForHire}
+          nudge={nudge}
+        />
       )}
     </div>
   )
@@ -1003,59 +1143,36 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
   )
 }
 
-// the scan records what the agent's own get_performance endpoint returned; we
-// publish it verbatim and label it clearly, no math on the claims
-// placeholder PnL shell: layout ships now, live numbers land with verified
-// report endpoints and our own Studio agents
+// the scan records what the agent's own endpoint returned; published verbatim, no math
 function PnlComingSoon({ name }: { name: string }) {
+  // deliberately empty: the brief forbids mock data, so the layout waits for real numbers
+  const metrics = ['30d PnL', 'Win rate', 'Max drawdown', 'Sharpe']
   return (
     <div className="relative mt-6 overflow-hidden rounded-[14px] border hairline border-slate-verdant/40 p-8">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="micro text-newsprint-gray">Performance / PnL</h2>
-        <span className="micro rounded-full border hairline border-highlighter-green/50 bg-highlighter-green/10 px-2.5 py-1 text-highlighter-green">
-          Coming soon
+        <span className="micro rounded-full border hairline border-slate-verdant/50 bg-bone-white px-2.5 py-1 text-newsprint-gray">
+          No reports yet
         </span>
       </div>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-newsprint-gray">
-        Verified PnL for {name} will appear here once the agent reports through a
-        performance endpoint and marketplace probes confirm the numbers. Sample
-        layout only, not live data.
+        No verified performance reports have been received for {name}. When the agent reports
+        through a performance endpoint and our probes confirm the numbers, its record appears
+        here. Until then this card stays empty rather than showing figures nobody produced.
       </p>
-      <div className="pointer-events-none mt-6 select-none blur-[6px]" aria-hidden="true">
-        <div className="grid gap-4 sm:grid-cols-4">
-          {[
-            { label: '30d PnL', value: '+12.4%' },
-            { label: 'Win rate', value: '68%' },
-            { label: 'Max drawdown', value: '-4.1%' },
-            { label: 'Sharpe', value: '1.82' },
-          ].map((m) => (
-            <div key={m.label} className="rounded-[10px] border hairline border-slate-verdant/30 p-4">
-              <div className="micro text-newsprint-gray">{m.label}</div>
-              <div className="mt-2 font-serif text-[28px] leading-none text-press-black">{m.value}</div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-4">
+        {metrics.map((label) => (
+          <div key={label} className="rounded-[10px] border hairline border-slate-verdant/30 p-4">
+            <div className="micro text-newsprint-gray">{label}</div>
+            <div className="mt-2 font-serif text-[28px] leading-none text-newsprint-gray/50">
+              -
             </div>
-          ))}
-        </div>
-        <svg viewBox="0 0 640 160" className="mt-6 h-36 w-full" role="presentation">
-          <polyline
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-highlighter-green"
-            points="0,120 40,110 80,125 120,90 160,100 200,70 240,85 280,55 320,65 360,40 400,50 440,35 480,45 520,28 560,38 600,22 640,30"
-          />
-          <polyline
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            className="text-slate-verdant"
-            strokeDasharray="4 4"
-            points="0,130 640,100"
-          />
-        </svg>
+          </div>
+        ))}
       </div>
       <p className="mt-6 text-[11px] leading-relaxed text-newsprint-gray/80">
-        Sample figures are illustrative and blurred on purpose. Do not treat them
-        as this agent&apos;s record.
+        A track record begins when an agent starts reporting, so this fills in over the campaign
+        rather than on the day it is listed.
       </p>
     </div>
   )
@@ -1069,8 +1186,15 @@ function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
     <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
       <h2 className="micro text-newsprint-gray">Self-reported performance</h2>
       <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
-        Self-reported by the agent&apos;s own endpoint. Not verified by Agent
-        Souk.
+        Self-reported by the agent&apos;s own endpoint. Not verified by Agent Souk.
+        {probe.scannedAt ? (
+          <>
+            {' '}
+            Captured {timeAgo(probe.scannedAt)}, when the agent returned this.
+          </>
+        ) : (
+          ' Capture date unknown, so treat it as undated.'
+        )}
       </p>
       <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-[11px] leading-relaxed text-press-black">
         {truncated}
@@ -1118,22 +1242,47 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
   )
 }
 
-function Endpoint({ label, value }: { label: string; value: string | null }) {
+function EndpointPanel({ detail }: { detail: AgentDetail }) {
+  const rows: { label: string; value: string }[] = []
+  if (detail.a2a_endpoint) rows.push({ label: 'A2A', value: detail.a2a_endpoint })
+  if (detail.mcp_server) rows.push({ label: 'MCP', value: detail.mcp_server })
+  if (detail.agent_url) rows.push({ label: 'Agent URL', value: detail.agent_url })
+  if (detail.endpoint_verified_domain) {
+    rows.push({ label: 'Verified domain', value: detail.endpoint_verified_domain })
+  }
+
+  if (rows.length === 0) {
+    return (
+      <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
+        This agent publishes no callable endpoint, so a hire cannot reach it. Treat the listing as
+        reference only.
+      </p>
+    )
+  }
+
+  const only = rows.length === 1
   return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="micro text-newsprint-gray">{label}</span>
-      {value ? (
-        <a
-          href={value.startsWith('http') ? value : undefined}
-          target={value.startsWith('http') ? '_blank' : undefined}
-          rel="noreferrer"
-          className="max-w-[220px] truncate font-mono text-[11px] text-press-black hover:text-highlighter-green"
-        >
-          {value}
-        </a>
-      ) : (
-        <span className="text-xs text-newsprint-gray/60">n/a</span>
-      )}
-    </div>
+    <>
+      <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
+        {only
+          ? 'Invoked over the one protocol this agent publishes.'
+          : `Invoked over ${rows.length} protocols this agent publishes.`}
+      </p>
+      <div className="mt-5 space-y-3">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between gap-4">
+            <span className="micro text-newsprint-gray">{r.label}</span>
+            <a
+              href={r.value.startsWith('http') ? r.value : undefined}
+              target={r.value.startsWith('http') ? '_blank' : undefined}
+              rel="noreferrer"
+              className="max-w-[220px] truncate font-mono text-[11px] text-press-black hover:text-highlighter-green"
+            >
+              {r.value}
+            </a>
+          </div>
+        ))}
+      </div>
+    </>
   )
 }

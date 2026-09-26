@@ -1,7 +1,4 @@
 // shared hire runner: requirements -> wallet sign -> settle -> receipt
-// extracted verbatim from the detail page's hire panel so the compare bar
-// (and the upcoming cart checkout) run the exact same flow: one gasless
-// EIP-3009 signature per hire, settle direct, receipts recorded by the backend
 
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
@@ -29,22 +26,94 @@ export interface HireOutcome {
   txHash?: string
   receipt?: Receipt | null
   error?: string
-  // true when the user rejected the signature in the wallet: the batch caller
-  // should stop instead of continuing to the next hire
+  // true when the user rejected the signature: a batch caller should stop
   cancelled?: boolean
   settle?: SettleResult
 }
 
+// maps our token revert selectors to a sentence; unknown failures get a generic line
+const REVERT_PLAIN_ENGLISH: { test: RegExp; message: string }[] = [
+  {
+    test: /e450d38c|InsufficientBalance|insufficient balance/i,
+    message: 'This wallet does not have enough sUSD to cover the hire.',
+  },
+  {
+    test: /fb8f41b2|InsufficientAllowance/i,
+    message: 'This wallet has not approved enough sUSD for the payment.',
+  },
+  {
+    test: /10761275|EIP3009Expired/i,
+    message: 'That authorisation had already expired, so it could not be used. Start the hire again.',
+  },
+  {
+    test: /c6eeaf81|EIP3009NotYetValid/i,
+    message: 'That authorisation is not valid yet. Wait a moment and start the hire again.',
+  },
+  {
+    test: /9c87612c|EIP3009AlreadyUsed/i,
+    message: 'That payment was already completed, so it cannot be used again.',
+  },
+  {
+    test: /3e3ef59c|EIP3009Unauthorized|EIP712InvalidSignature|f44a5048/i,
+    message: 'The signature did not match the address that signed it. If you switched accounts in your wallet, start again with the account you want to pay from.',
+  },
+  {
+    test: /ec442f05|96c6fd1e|InvalidReceiver|InvalidSender/i,
+    message: 'The payment could not be sent to that address. Check the agent wallet and try again.',
+  },
+  {
+    test: /insufficient funds for gas|exceeds account balance/i,
+    message: 'This wallet does not have enough BNB to pay for the transaction.',
+  },
+  {
+    // not a bare "network": that also matches our own "switch networks" message
+    test: /fetch failed|failed to fetch|ECONNREFUSED|ETIMEDOUT|socket hang up|network request failed|load failed/i,
+    message: 'We could not reach BSC. Check your connection and try again.',
+  },
+  {
+    test: /wrong network|unsupported chain|switch networks/i,
+    message: 'Your wallet is on the wrong network. Switch to BSC and try again.',
+  },
+  {
+    test: /nonce|already been used/i,
+    message: 'That authorisation has already been used. Start the hire again.',
+  },
+]
+
+/** A short, plain-English sentence for a failed hire, with no library internals. */
 export function hireErrorText(e: unknown): string {
   if (e instanceof WalletUnavailableError) return e.message
   if (e instanceof WrongSignerError) return e.message
+
   const code = (e as { code?: number }).code
-  if (code === 4001) return 'Request cancelled in the wallet.'
-  const msg = (e as Error)?.message ?? 'Something went wrong.'
-  if (msg.includes('user rejected') || msg.includes('User denied')) {
-    return 'Request cancelled in the wallet.'
+  if (code === 4001) return 'You cancelled this in your wallet, so nothing was charged.'
+
+  const raw = (e as Error)?.message ?? ''
+  if (!raw) return 'Something went wrong on our side. Please try again.'
+
+  const lower = raw.toLowerCase()
+  if (lower.includes('user rejected') || lower.includes('user denied')) {
+    return 'You cancelled this in your wallet, so nothing was charged.'
   }
-  return msg
+
+  for (const { test, message } of REVERT_PLAIN_ENGLISH) {
+    if (test.test(raw)) return message
+  }
+
+  // a viem error puts the machine-readable detail in `details`, so check that too
+  const details = String((e as { details?: string })?.details ?? '')
+  for (const { test, message } of REVERT_PLAIN_ENGLISH) {
+    if (details && test.test(details)) return message
+  }
+
+  if (/^execution reverted/i.test(lower) || /^viem|@viem|version:/i.test(lower)) {
+    return 'The payment could not be completed. If this keeps happening, mint some sUSD and try again.'
+  }
+
+  // anything left is our own short sentence, so it is safe to show
+  if (raw.length <= 140 && !raw.includes('0x') && !raw.includes('viem')) return raw
+
+  return 'The payment could not be completed. Please try again.'
 }
 
 // a rejected signature means the user said stop (code 4001 / wallet message)
@@ -62,27 +131,14 @@ export async function fetchHireRequirements(
   return getHireRequirements(String(agent.chainId), String(agent.tokenId), wallet.address)
 }
 
-// sign the EIP-3009 authorization and settle it; onPhase('hired') fires as
-// soon as settlement succeeds, before the (non-fatal) receipt fetch
+// sign the EIP-3009 authorization and settle it; onPhase('hired') fires on success
 export async function signAndSettleHire(
   data: { paymentRequirements: PaymentRequirements; preview: PreviewResult; agent: HireRequirementsData['agent'] },
   onPhase: (phase: 'signing' | 'settling' | 'hired') => void,
 ): Promise<HireOutcome> {
   const pr = data.paymentRequirements
   try {
-    // no pre-emptive smart-account gate here. the old check treated any
-    // connected address that returned contract code from eth_getCode as a
-    // smart wallet and refused the hire, which blocked ordinary EOA wallets
-    // including Rabby. it also duplicated a decision the facilitator already
-    // makes authoritatively: it recovers the signature and refuses with a
-    // precise reason when it is not plain ECDSA. warning a genuine smart
-    // account early is a nicety, wrongly refusing a wallet that wants to pay
-    // is not survivable during a campaign.
-    // The wallet must be on the SAME chain the signature is bound to, and that
-    // chain comes from the requirements we are about to sign, not from a
-    // constant. Otherwise the domain says one chain and the wallet sits on
-    // another, and every wallet refuses with "chainId should be same as current
-    // chain" before a signature is ever produced.
+    // chain comes from the requirements, so wallet and signing domain cannot disagree
     const signedChainId = Number(pr.network.split(':')[1])
     if (!Number.isFinite(signedChainId) || signedChainId <= 0) {
       return {
@@ -100,10 +156,7 @@ export async function signAndSettleHire(
         cancelled: true,
       }
     }
-    // sign with the wallet's OWN active account, re-read at sign time: the
-    // caller's address may be stale after an account switch, and the wallet
-    // UI always signs with its currently active account - so the `from` must
-    // come from the wallet itself. account switching self-corrects here
+    // re-read the active account at sign time; the wallet signs with whatever is active
     const signer = await getActiveAccount()
     if (!signer) {
       return {
@@ -112,8 +165,7 @@ export async function signAndSettleHire(
         cancelled: true,
       }
     }
-    // stability backstop: the active account must read the same on a second
-    // look right before the signature request
+    // stability backstop: the account must read the same just before signing
     if (!(await activeAccountMatches(signer))) {
       return {
         success: false,
@@ -122,9 +174,7 @@ export async function signAndSettleHire(
       }
     }
     onPhase('signing')
-    // validity is checked on-chain against block.timestamp, so anchor the
-    // window to chain time; a host clock behind the chain would otherwise
-    // sign an authorization that is already expired when the relay sends it
+    // anchor validity to chain time, so a slow host clock cannot sign an expired authorization
     const now = (await getChainTimestamp()) ?? Math.floor(Date.now() / 1000)
     const message = {
       from: signer,
@@ -167,8 +217,7 @@ export async function signAndSettleHire(
   }
 }
 
-// one full hire for a single agent; wallet must already be connected
-// (connectWallet + ensureBscChain) by the caller
+// one full hire for a single agent; the caller must have connected the wallet
 export async function runHire(
   agent: HireAgentRef,
   wallet: { address: string },

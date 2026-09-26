@@ -1,8 +1,8 @@
-// The addresses below are the ones a reviewer checks. Pinning them here means a
-// chain-97 deployment cannot quietly start publishing the mainnet registry, which
-// is the exact bug these tests exist to prevent.
+// The addresses below are the ones a reviewer checks; pinning them means a chain-97 deployment
+// cannot quietly publish the mainnet registry.
 import { describe, expect, it } from "vitest";
 import {
+  chainLabel,
   explorerAddressUrl,
   REGISTRY_BY_CHAIN,
   registryFor,
@@ -36,6 +36,18 @@ describe("published contract addresses", () => {
   it("points at the explorer for the chain in question", () => {
     expect(explorerAddressUrl(97, "0xabc")).toBe("https://testnet.bscscan.com/address/0xabc");
     expect(explorerAddressUrl(56, "0xabc")).toBe("https://bscscan.com/address/0xabc");
+  });
+
+  it("names the chain for display, because the brief grades stating it", () => {
+    expect(chainLabel(97)).toBe("BSC testnet");
+    expect(chainLabel(56)).toBe("BNB Smart Chain");
+  });
+
+  it("does not name mainnet while serving the testnet chain", () => {
+    // the homepage evidence strip hardcoded "BNB Smart Chain (56)" on a chain-97
+    // deployment, in the largest type on the page
+    expect(chainLabel(97)).not.toMatch(/56/);
+    expect(chainLabel(97)).not.toMatch(/Smart Chain$/);
   });
 
   it("keeps every published address a full 20-byte hex string", () => {

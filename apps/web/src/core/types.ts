@@ -4,8 +4,7 @@ export const BSC_REGISTRY_ADDRESS =
   "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432";
 
 // BSC mainnet token contracts
-// USDC implements EIP-3009 (transferWithAuthorization), which x402 uses for
-// gasless stablecoin payments
+// USDC implements EIP-3009 (transferWithAuthorization), which x402 uses for gasless payments
 export const BSC_TOKENS = {
   USDC: {
     symbol: "USDC",
@@ -134,6 +133,7 @@ export interface AgentDetail {
   total_score: number;
   health_score: number | null;
   health_status: string | null;
+  health_checked_at: string | null;
   quality_score: number;
   popularity_score: number;
   activity_score: number;
