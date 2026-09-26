@@ -32,15 +32,45 @@ declare global {
   }
 }
 
-export const BSC_CHAIN_ID_HEX = "0x38";
+// The chain the wallet must be on. This is deliberately NOT a constant, because
+// the deployment decides it and the two deployments differ: this one settles on
+// BSC testnet. Hardcoding mainnet made the app switch wallets to chain 56 while
+// the requirements advertised eip155:97, and every wallet then refused to sign
+// with "chainId should be same as current chain". The expected chain is set from
+// the same payment requirements the signature is built from, so the wallet chain
+// and the signing domain cannot drift apart.
+let targetChainId = 56;
 
-const BSC_CHAIN_PARAMS = {
-  chainId: BSC_CHAIN_ID_HEX,
-  chainName: "BNB Smart Chain",
-  nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-  rpcUrls: ["https://bsc-dataseed.binance.org"],
-  blockExplorerUrls: ["https://bscscan.com"],
-};
+export function chainIdToHex(chainId: number): string {
+  return `0x${chainId.toString(16)}`;
+}
+
+export function setTargetChain(chainId: number): void {
+  if (Number.isFinite(chainId) && chainId > 0) targetChainId = chainId;
+}
+
+export function getTargetChain(): number {
+  return targetChainId;
+}
+
+function chainParams(chainId: number) {
+  if (chainId === 97) {
+    return {
+      chainId: chainIdToHex(97),
+      chainName: "BNB Smart Chain Testnet",
+      nativeCurrency: { name: "tBNB", symbol: "tBNB", decimals: 18 },
+      rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545"],
+      blockExplorerUrls: ["https://testnet.bscscan.com"],
+    };
+  }
+  return {
+    chainId: chainIdToHex(56),
+    chainName: "BNB Smart Chain",
+    nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+    rpcUrls: ["https://bsc-dataseed.binance.org"],
+    blockExplorerUrls: ["https://bscscan.com"],
+  };
+}
 
 export class WalletUnavailableError extends Error {
   constructor() {
@@ -307,6 +337,15 @@ export function clearWalletChoice(): void {
   }
 }
 
+// Forget the wallet and end the session from our side. This is the most a dapp
+// can honestly do: an injected wallet keeps its own permission grant, so the
+// extension may still list an account for this origin. What we do control is
+// the stored choice and anything derived from it, which is what made a user
+// feel stuck when the wallet they picked could not hire.
+export function disconnectWallet(): void {
+  clearWalletChoice();
+}
+
 // --- EIP-1193 account/chain change handling ---
 // an empty accountsChanged array (or leaving BSC) invalidates the stored
 // connection; a different permitted account becoming active is handled at
@@ -326,7 +365,7 @@ function handleAccountsChanged(accounts: unknown): void {
 function handleChainChanged(chainId: unknown): void {
   // anything that is not BSC is treated as disconnected for hire purposes;
   // a stale wrong-chain connection must never reach the settle path
-  if (typeof chainId === "string" && chainId.toLowerCase() !== BSC_CHAIN_ID_HEX) {
+  if (typeof chainId === "string" && chainId.toLowerCase() !== chainIdToHex(targetChainId)) {
     clearWalletChoice();
   }
 }
@@ -448,18 +487,19 @@ export async function changeWallet(): Promise<string | null> {
 export async function ensureBscChain(): Promise<string> {
   const provider = await getProvider();
   const current = (await provider.request({ method: "eth_chainId" })) as string;
-  if (current?.toLowerCase() === BSC_CHAIN_ID_HEX) return current;
+  const wanted = chainIdToHex(targetChainId);
+  if (current?.toLowerCase() === wanted) return current;
   try {
     await provider.request({
       method: "wallet_switchEthereumChain",
-      params: [{ chainId: BSC_CHAIN_ID_HEX }],
+      params: [{ chainId: wanted }],
     });
   } catch (e) {
     const code = (e as { code?: number }).code;
     if (code !== 4902 && code !== -32603) throw e;
     await provider.request({
       method: "wallet_addEthereumChain",
-      params: [BSC_CHAIN_PARAMS],
+      params: [chainParams(targetChainId)],
     });
   }
   return (await provider.request({ method: "eth_chainId" })) as string;

@@ -6,7 +6,7 @@
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
 import { getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
-import { activeAccountMatches, BSC_CHAIN_ID_HEX, ensureBscChain, getActiveAccount, getChainTimestamp, SmartWalletUnsupportedError, WalletUnavailableError, WrongSignerError, isSmartWalletConnected, signTransferAuthorization } from './wallet'
+import { activeAccountMatches, chainIdToHex, ensureBscChain, getActiveAccount, getChainTimestamp, setTargetChain, WalletUnavailableError, WrongSignerError, signTransferAuthorization } from './wallet'
 
 export type HireRequirementsData = X402Requirements['data']
 
@@ -70,20 +70,33 @@ export async function signAndSettleHire(
 ): Promise<HireOutcome> {
   const pr = data.paymentRequirements
   try {
-    // honest limitation: smart-account (ERC-4337) signatures validate on-chain
-    // via ERC-1271, which our facilitator cannot verify - fail early with a
-    // clear message instead of an opaque signature-verification error
-    if (await isSmartWalletConnected()) throw new SmartWalletUnsupportedError()
-    // the signer's chain must be BSC at sign time, not just at hire start:
-    // the wallet may have switched networks between connect and settle, and
-    // signing chain-56 typed data on another chain produces a signature that
-    // either errors (MetaMask) or silently recovers to the wrong address
-    // (Rabby), both indistinguishable from a wrong-wallet failure to the user
-    const chain = await ensureBscChain()
-    if (chain?.toLowerCase() !== BSC_CHAIN_ID_HEX) {
+    // no pre-emptive smart-account gate here. the old check treated any
+    // connected address that returned contract code from eth_getCode as a
+    // smart wallet and refused the hire, which blocked ordinary EOA wallets
+    // including Rabby. it also duplicated a decision the facilitator already
+    // makes authoritatively: it recovers the signature and refuses with a
+    // precise reason when it is not plain ECDSA. warning a genuine smart
+    // account early is a nicety, wrongly refusing a wallet that wants to pay
+    // is not survivable during a campaign.
+    // The wallet must be on the SAME chain the signature is bound to, and that
+    // chain comes from the requirements we are about to sign, not from a
+    // constant. Otherwise the domain says one chain and the wallet sits on
+    // another, and every wallet refuses with "chainId should be same as current
+    // chain" before a signature is ever produced.
+    const signedChainId = Number(pr.network.split(':')[1])
+    if (!Number.isFinite(signedChainId) || signedChainId <= 0) {
       return {
         success: false,
-        error: 'Wallet is not on BNB Smart Chain, switch to BSC and retry.',
+        error: `Payment requirements carried an unusable network: ${pr.network}.`,
+        cancelled: true,
+      }
+    }
+    setTargetChain(signedChainId)
+    const chain = await ensureBscChain()
+    if (chain?.toLowerCase() !== chainIdToHex(signedChainId)) {
+      return {
+        success: false,
+        error: `Wallet is not on ${signedChainId === 97 ? 'BSC testnet' : 'BSC'}, switch networks and retry.`,
         cancelled: true,
       }
     }

@@ -10,13 +10,13 @@ import {
 } from '@agora/core'
 import { activateBoost, deliverTask, getAgentDetail, getBoostStatus, getTask, retryTask, type DeliverData, type DeliverTool, type HireTask } from '../lib/api'
 import {
-  SmartWalletUnsupportedError,
   changeWallet,
   connectWallet,
+  disconnectWallet,
   ensureBscChain,
   getActiveAccount,
   getProvider,
-  isSmartWalletConnected,
+  setTargetChain,
 } from '../lib/wallet'
 import {
   fetchHireRequirements,
@@ -563,10 +563,14 @@ function HirePanel({
     setError(null)
     setStep('connecting')
     try {
+      // pin the wallet to this agent's chain before connecting, so connect and
+      // signature both target the chain the requirements will name
+      setTargetChain(Number(chainId))
       const addr = await connectWallet()
       await ensureBscChain()
-      // fail at connect time with the honest message instead of after preview
-      if (await isSmartWalletConnected()) throw new SmartWalletUnsupportedError()
+      // deliberately no smart-account gate at connect time: see the note in
+      // lib/hire.ts. the facilitator is the authority on whether a signature is
+      // recoverable, and the heuristic refusal blocked EOA wallets outright.
       setAccount(addr)
       const data = await fetchHireRequirements(
         { chainId: Number(chainId), tokenId: Number(tokenId), name },
@@ -669,6 +673,21 @@ function HirePanel({
                 className="micro w-full px-4 py-1 text-center text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               >
                 Change wallet
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // a wallet that cannot hire must not be a dead end: forget the
+                  // choice and the derived session, then offer connect again
+                  disconnectWallet()
+                  setAccount(null)
+                  setStep('idle')
+                  setRequirements(null)
+                  setError(null)
+                }}
+                className="micro w-full px-4 py-1 text-center text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              >
+                Disconnect
               </button>
             </div>
           ) : (
