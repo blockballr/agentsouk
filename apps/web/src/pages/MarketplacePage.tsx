@@ -22,6 +22,7 @@ export function MarketplacePage() {
   const q = sp.get('q') ?? ''
   const sort = (sp.get('sort') ?? 'score') as (typeof sorts)[number]['key']
   const pcs = sp.get('pcs') === '1'
+  const hide = sp.get('hide') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
   const PAGE_SIZE = 48
 
@@ -69,10 +70,8 @@ export function MarketplacePage() {
     persistShortlist(next)
   }
 
-  // bests of the shortlist, derived from the summaries currently loaded; the
-  // bar's primary "Add N best to cart" and secondary "Hire N selected" act on
-  // these. when some shortlisted agents are not on the page (or bests cannot
-  // be derived), fall back to the whole shortlist as the target set
+  // bests of the shortlist from the summaries currently loaded, driving the bar's add-to-cart
+  // and hire actions; when some agents are off-page, fall back to the whole shortlist
   const shortlistTargets = useMemo(() => {
     const fallback = shortlist.map((id) => {
       const [chainId = '56', tokenId = ''] = id.split('/')
@@ -125,7 +124,13 @@ export function MarketplacePage() {
   }
 
   const totalPages = result ? Math.max(1, Math.ceil(result.total / PAGE_SIZE)) : 1
-  const visibleItems = result ? result.items : []
+  const visibleItems = result
+    ? hide
+      ? result.items.filter(
+          (a) => a.verification?.status !== 'dead' && a.verification?.status !== 'unreachable',
+        )
+      : result.items
+    : []
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
@@ -178,6 +183,21 @@ export function MarketplacePage() {
               {result.total} PancakeSwap-native
             </span>
           ) : null}
+          <label className="inline-flex cursor-pointer items-center gap-2">
+            <span className="micro text-newsprint-gray">Hide unresponsive</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={hide}
+              aria-label="Hide unresponsive agents"
+              onClick={() => setParam('hide', hide ? '' : '1')}
+              className={`relative h-[18px] w-[34px] rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green ${hide ? 'bg-highlighter-green' : 'bg-slate-verdant/50'}`}
+            >
+              <span
+                className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-switch-knob shadow-sm transition-all duration-150 ${hide ? 'left-[18px]' : 'left-[2px]'}`}
+              />
+            </button>
+          </label>
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-6">
@@ -209,6 +229,11 @@ export function MarketplacePage() {
             ))}
           </div>
         </div>
+        {hide && result ? (
+          <span className="micro text-newsprint-gray">
+            {visibleItems.length} shown
+          </span>
+        ) : null}
       </div>
 
       {cartFull ? (
@@ -481,6 +506,11 @@ function AgentCard({
           <BadgeCell />
           <BadgeCell />
         </div>
+        {agent.verification ? (
+          <p className="micro mt-3 text-newsprint-gray">
+            Checked {agent.verification.checkedAt.slice(0, 10)}
+          </p>
+        ) : null}
 
         <span className="micro mt-auto pt-6 text-newsprint-gray transition group-hover:text-press-black">
           View agent →

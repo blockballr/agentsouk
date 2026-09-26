@@ -36,6 +36,10 @@ function verificationLabel(status: string): string {
   return status === 'delivered' ? 'verified delivered' : status
 }
 
+function explorerBase(chainId: string): string {
+  return chainId === '97' ? 'https://testnet.bscscan.com' : 'https://bscscan.com'
+}
+
 const scoreBars: { label: string; key: keyof AgentDetail }[] = [
   { label: 'Quality', key: 'quality_score' },
   { label: 'Popularity', key: 'popularity_score' },
@@ -163,8 +167,9 @@ export function AgentDetailPage() {
   }
 
   const onchain = detail.raw_metadata?.onchain ?? []
-  const bscScan = `https://bscscan.com/token/${detail.contract_address}?a=${detail.token_id}`
-  const ownerScan = `https://bscscan.com/address/${detail.owner_address}`
+  const explorer = explorerBase(chainId)
+  const bscScan = `${explorer}/token/${detail.contract_address}?a=${detail.token_id}`
+  const ownerScan = `${explorer}/address/${detail.owner_address}`
   const activeSession = (detail as DetailWithSession).activeSession
 
   function refreshDetail() {
@@ -693,7 +698,7 @@ function HirePanel({
             <p className="mt-3 break-all font-mono text-[10px] text-newsprint-gray">
               {receipt?.mode === 'b402' ? (
                 <a
-                  href={`https://bscscan.com/tx/${result.txHash}`}
+                  href={`${explorerBase(chainId)}/tx/${result.txHash}`}
                   target="_blank"
                   rel="noreferrer"
                   className="text-press-black hover:text-highlighter-green"
