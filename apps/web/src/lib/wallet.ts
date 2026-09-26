@@ -1,10 +1,8 @@
-// EIP-1193 client with EIP-6963 multi-wallet discovery and WalletConnect.
-// connectWallet() resolves the provider via the picker when several wallets
-// announce themselves; a single detected wallet connects directly. All
-// sign/chain calls operate on the chosen provider for the session.
+// EIP-1193 client with EIP-6963 multi-wallet discovery and WalletConnect; connectWallet
+// resolves via the picker when several wallets announce, a single wallet connects directly
 
 import { hashTypedData, recoverAddress } from "viem";
-import { TRANSFER_TYPES } from '@agora/core'
+import { TRANSFER_TYPES, rpcUrlsFor } from '@agora/core'
 
 interface Eip1193Provider {
   request(args: { method: string; params?: unknown[] | object }): Promise<unknown>;
@@ -32,13 +30,8 @@ declare global {
   }
 }
 
-// The chain the wallet must be on. This is deliberately NOT a constant, because
-// the deployment decides it and the two deployments differ: this one settles on
-// BSC testnet. Hardcoding mainnet made the app switch wallets to chain 56 while
-// the requirements advertised eip155:97, and every wallet then refused to sign
-// with "chainId should be same as current chain". The expected chain is set from
-// the same payment requirements the signature is built from, so the wallet chain
-// and the signing domain cannot drift apart.
+// The chain the wallet must be on is set from the payment requirements the
+// signature is built from, so the wallet chain and signing domain cannot drift.
 let targetChainId = 56;
 
 export function chainIdToHex(chainId: number): string {
@@ -53,13 +46,23 @@ export function getTargetChain(): number {
   return targetChainId;
 }
 
+// The override is a Vite var because the browser cannot read process.env; the list comes
+// from @agora/core, the same one the server falls back through
+function webRpcUrls(chainId: number): string[] {
+  const override =
+    chainId === 97
+      ? import.meta.env.VITE_BSC_TESTNET_RPC_URL
+      : import.meta.env.VITE_BSC_MAINNET_RPC_URL;
+  return rpcUrlsFor(chainId, typeof override === "string" ? override : undefined);
+}
+
 function chainParams(chainId: number) {
   if (chainId === 97) {
     return {
       chainId: chainIdToHex(97),
       chainName: "BNB Smart Chain Testnet",
       nativeCurrency: { name: "tBNB", symbol: "tBNB", decimals: 18 },
-      rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545"],
+      rpcUrls: webRpcUrls(97),
       blockExplorerUrls: ["https://testnet.bscscan.com"],
     };
   }
@@ -67,7 +70,7 @@ function chainParams(chainId: number) {
     chainId: chainIdToHex(56),
     chainName: "BNB Smart Chain",
     nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-    rpcUrls: ["https://bsc-dataseed.binance.org"],
+    rpcUrls: webRpcUrls(56),
     blockExplorerUrls: ["https://bscscan.com"],
   };
 }
@@ -86,9 +89,8 @@ export class SmartWalletUnsupportedError extends Error {
   }
 }
 
-// the wallet signed with a different account than the one connected: the
-// recovered address proves it, so fail with both addresses instead of an
-// opaque facilitator "signature verification failed"
+// wallet signed with a different account than the one connected: fail with both addresses
+// instead of an opaque facilitator "signature verification failed"
 export class WrongSignerError extends Error {
   constructor(recovered: string, expected: string) {
     const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -98,14 +100,12 @@ export class WrongSignerError extends Error {
   }
 }
 
-// rdns values that always route through a smart account (ERC-4337): their
-// typed-data signatures validate on-chain via ERC-1271 and our facilitator
-// can only verify plain EOA ECDSA signatures today
+// rdns values that always route through an ERC-4337 smart account: their typed-data
+// signatures validate via ERC-1271, which the facilitator cannot verify yet
 const KNOWN_SMART_WALLET_RDNS = new Set(["com.coinbase.wallet"]);
 
-// best-effort smart-account detection: known rdns, else a contract-code probe
-// on the connected address (misses counterfactual accounts that are not yet
-// deployed on the current chain - the known-rdns list covers those)
+// best-effort smart-account detection: known rdns, else a contract-code probe on the
+// connected address (counterfactual accounts are covered by the rdns list)
 export async function isSmartWalletConnected(): Promise<boolean> {
   const rdns = readStoredRdns();
   if (rdns && rdns !== LEGACY_RDNS && rdns !== WALLETCONNECT_RDNS && KNOWN_SMART_WALLET_RDNS.has(rdns)) {
@@ -188,9 +188,8 @@ function waitForDiscovery(): Promise<void> {
   return discoveryWait;
 }
 
-// injected wallets only (legacy fallback included); WalletConnect is added
-// separately so the "exactly one wallet connects directly" rule only counts
-// real extensions
+// injected wallets only (legacy fallback included); WalletConnect is added separately so
+// the one-wallet-direct rule counts real extensions
 export async function listInjectedWallets(): Promise<WalletOption[]> {
   await waitForDiscovery();
   const options: WalletOption[] = [...announced.values()].map((d) => ({
@@ -277,9 +276,8 @@ async function resolveProvider(option: WalletOption): Promise<Eip1193Provider> {
   return resolveInjected(option);
 }
 
-// resolve the chosen provider for sign/chain calls. NO silent cross-wallet
-// fallback: a stored rdns whose announced provider is missing must never
-// route the signature to a different extension
+// resolve the chosen provider for sign/chain calls; no silent cross-wallet fallback, so a
+// missing stored rdns never routes the signature to a different extension
 export async function getProvider(): Promise<Eip1193Provider> {
   const rdns = readStoredRdns();
   if (rdns === WALLETCONNECT_RDNS) {
@@ -337,20 +335,14 @@ export function clearWalletChoice(): void {
   }
 }
 
-// Forget the wallet and end the session from our side. This is the most a dapp
-// can honestly do: an injected wallet keeps its own permission grant, so the
-// extension may still list an account for this origin. What we do control is
-// the stored choice and anything derived from it, which is what made a user
-// feel stuck when the wallet they picked could not hire.
+// Forget the wallet and end our side of the session: an injected wallet keeps its own
+// permission grant, so only the stored choice and what derives from it can be cleared.
 export function disconnectWallet(): void {
   clearWalletChoice();
 }
 
 // --- EIP-1193 account/chain change handling ---
-// an empty accountsChanged array (or leaving BSC) invalidates the stored
-// connection; a different permitted account becoming active is handled at
-// sign time by re-reading the active account (self-correcting), so only the
-// empty case disconnects here
+// an empty accountsChanged array (or leaving BSC) invalidates the stored connection
 
 let activeProvider: Eip1193Provider | null = null;
 
@@ -397,10 +389,8 @@ export async function activeAccountMatches(address: string): Promise<boolean> {
   }
 }
 
-// the wallet's OWN active account at call time: eth_accounts returns all
-// permitted accounts, and the FIRST entry is the currently active one in
-// MetaMask/Rabby practice - signing uses this, so account switches
-// self-correct instead of producing a stale `from`
+// the wallet's own active account at call time: eth_accounts returns permitted accounts
+// and the first is the active one, so signing self-corrects on account switch
 export async function getActiveAccount(): Promise<string | null> {
   try {
     const accounts = (await (await getProvider()).request({ method: "eth_accounts" })) as string[];
@@ -410,11 +400,8 @@ export async function getActiveAccount(): Promise<string | null> {
   }
 }
 
-// current time from the chain, not the host clock: EIP-3009 authorizations
-// carry validAfter/validBefore checked against block.timestamp on-chain, so a
-// local clock that drifts behind the chain produces an authorization that is
-// already expired when the relay broadcasts it. Falls back to the local clock
-// only if the provider cannot return a block.
+// current time from the chain, not the host clock: EIP-3009 validAfter/validBefore are
+// checked against block.timestamp, so a host clock behind the chain signs an expired authorization
 export async function getChainTimestamp(): Promise<number | null> {
   try {
     const block = (await (await getProvider()).request({
@@ -536,12 +523,8 @@ export async function signTransferAuthorization(
       }),
     ],
   })) as string;
-  // client-side verification over exactly the typed data sent: a signature
-  // that recovers to a different account (wrong injected wallet, stale
-  // connection) is rejected here, before it can waste a settle attempt.
-  // uint256 fields MUST be BigInts: viem encodes a decimal string differently
-  // than the wallet's own ABI encoding, which would recover a garbage address
-  // from a perfectly valid signature
+  // reject a signature that recovers to a different account before wasting a settle;
+  // uint256 fields MUST be BigInts or viem encodes them differently and recovers garbage
   const recovered = await recoverAddress({
     hash: hashTypedData({
       domain: {

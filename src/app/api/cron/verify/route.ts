@@ -2,20 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { privateKeyToAccount } from "viem/accounts";
 import { getAddress } from "viem";
 import { randomBytes } from "node:crypto";
+import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const CHAIN_ID = 56;
+// The chain this deployment settles on, so the candidate filter below matches this chain's agents.
+const CHAIN_ID = targetChainId();
 const AMOUNT_USD = 2;
 const VERIFY_LIMIT = Math.max(1, Math.min(50, Number(process.env.VERIFY_LIMIT ?? 10) || 10));
 const A2A_TASK = "report your status in one sentence";
 const GATED_RE = /gates direct calls behind its own x402/i;
 const BUDGET_MS = 4 * 60 * 1000;
 
-const wallet = privateKeyToAccount(
-  "0x0000000000000000000000000000000000000000000000000000000000000001",
-);
+// The verifier signs its own EIP-3009 authorizations, so it needs a funded buyer key.
+const ANVIL_TEST_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001";
+const RELAY_KEY = process.env.RELAY_PRIVATE_KEY as `0x${string}` | undefined;
+
+const wallet = privateKeyToAccount(RELAY_KEY ?? ANVIL_TEST_KEY);
 
 function baseUrl(): string {
   return process.env.VERCEL_URL
@@ -198,8 +202,19 @@ async function classify(cand: { chainId: number; tokenId: string; name: string; 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // fails closed: an unset secret must refuse, because this route spends real money on every candidate
+  if (!cronSecret) {
+    return NextResponse.json({ error: "verification is not configured" }, { status: 503 });
+  }
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  // refuse rather than fall back: an unfunded or public test key produces verdicts that only look real
+  if (!RELAY_KEY) {
+    return NextResponse.json(
+      { success: false, error: "verifier requires RELAY_PRIVATE_KEY: it signs the authorization, so the buyer must be funded" },
+      { status: 500 },
+    );
   }
 
   try {

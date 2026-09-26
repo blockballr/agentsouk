@@ -1,17 +1,12 @@
-// ERC-1271 / ERC-6492 smart wallet signature verification for the facilitator.
-// Pure helper (no "server-only"): the facilitator is the trust boundary; this
-// module only performs fail-closed verification and returns a verdict.
-//
-// Policy: every failure path returns valid=false. A verdict is true ONLY when
-// the caller is a contract AND its isValidSignature(hash, sig) staticcall
-// returns the ERC-1271 magic value 0x1626ba7e for OUR typed-data hash.
+// ERC-1271 / ERC-6492 smart wallet signature verification for the facilitator (pure helper, no server-only).
+// Policy: every failure path returns valid=false; a verdict is true only when the caller is a contract whose isValidSignature returns the magic value 0x1626ba7e for our typed-data hash.
 
 import {
   createPublicClient,
   decodeAbiParameters,
   decodeFunctionResult,
   encodeFunctionData,
-  http,
+  type Transport,
 } from "viem";
 
 // ERC-1271 magic value (bytes4 of keccak256("isValidSignature(bytes32,bytes)"))
@@ -38,7 +33,7 @@ export interface Erc1271VerifyArgs {
   from: `0x${string}`;
   signature: string;
   hash: `0x${string}`;
-  rpcUrl: string;
+  transport: Transport;
 }
 
 export interface Erc1271Verdict {
@@ -51,9 +46,8 @@ export function isErc6492Signature(signature: string): boolean {
   return signature.toLowerCase().endsWith(ERC6492_MAGIC_BYTES.slice(2));
 }
 
-// ERC-6492 layout: abi.encode(address contract, bytes initCode, bytes signature)
-// followed by the 32-byte magic. Returns the underlying ERC-1271/ECDSA
-// signature bytes; 0x on any parse inconsistency (fail closed upstream).
+// ERC-6492 layout: abi.encode(address contract, bytes initCode, bytes signature) followed
+// by the 32-byte magic. Returns the signature bytes; 0x on any parse inconsistency.
 export function unwrapErc6492Signature(signature: `0x${string}`): `0x${string}` {
   if (!isErc6492Signature(signature)) return signature;
   try {
@@ -67,10 +61,8 @@ export function unwrapErc6492Signature(signature: `0x${string}`): `0x${string}` 
   }
 }
 
-// Validates an ERC-1271 signature against the smart account at `from` using an
-// eth_call on `rpcUrl`. The account must be deployed (extcodesize > 0):
-// counterfactual accounts that never deployed on this chain fail closed -
-// deployless ERC-4337-style validation is intentionally out of scope.
+// Validates an ERC-1271 signature against the smart account at `from` via an eth_call over
+// the caller's transport. The account must be deployed (extcodesize > 0); counterfactual accounts fail closed by design.
 export async function verifySmartWalletSignature(
   args: Erc1271VerifyArgs,
 ): Promise<Erc1271Verdict> {
@@ -81,7 +73,7 @@ export async function verifySmartWalletSignature(
   });
 
   try {
-    const client = createPublicClient({ transport: http(args.rpcUrl) });
+    const client = createPublicClient({ transport: args.transport });
 
     const code = await client.getCode({ address: args.from });
     if (!code || code === "0x") {
