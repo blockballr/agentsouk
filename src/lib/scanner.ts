@@ -10,8 +10,22 @@ import {
 } from "./types";
 import { classifyAgent, relevanceScore } from "./categories";
 import { isPancakeSwapAgent } from "./pancakeswap";
+import {
+  dueForRefresh,
+  indexKey,
+  shouldCacheShelfAgent,
+  isShelfReady,
+  summaryFromDetail,
+} from "./agent-index";
 
 const BASE = "https://8004scan.io/api/v1/public";
+
+// Give a live detail read this long before serving the snapshot instead of hanging.
+const LIVE_DETAIL_TIMEOUT_MS = 5000;
+const REFRESH_FETCH_TIMEOUT_MS = 6000;
+// At most one live top-up per process per cooldown, so browse traffic cannot hammer the registry.
+const REFRESH_COOLDOWN_MS = 60_000;
+const SHELF_REFRESH_PAGES = 1;
 
 function apiKey(): string | undefined {
   const k = process.env.EIGHT004_API_KEY;
@@ -111,10 +125,12 @@ export async function searchAgents(
 export async function fetchAgentDetail(
   chainId: number,
   tokenId: string,
+  timeoutMs?: number,
 ): Promise<AgentDetail | null> {
   const res = await fetch(`${BASE}/agents/${chainId}/${tokenId}`, {
     headers: authHeaders(),
     next: { revalidate: 60 },
+    ...(timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
   });
   if (!res.ok) return null;
   const body = (await res.json()) as DetailResponse;
@@ -176,6 +192,8 @@ interface IndexState {
   warmedPages: Set<number>;
   totalFetched: number;
   warming: boolean;
+  refreshing: boolean;
+  lastRefreshAt: number | null;
   lastWarmAt: number | null;
   snapshotTotal: number | null;
   error: string | null;
@@ -186,6 +204,8 @@ const index: IndexState = {
   warmedPages: new Set(),
   totalFetched: 0,
   warming: false,
+  refreshing: false,
+  lastRefreshAt: null,
   lastWarmAt: null,
   snapshotTotal: null,
   error: null,
@@ -218,7 +238,7 @@ async function loadSnapshot(): Promise<boolean> {
     const raw = await fs.readFile(file, "utf8");
     const snap = JSON.parse(raw) as SnapshotFile;
     index.agents.clear();
-    for (const a of snap.agents) index.agents.set(a.agent_id, a);
+    for (const a of snap.agents) index.agents.set(indexKey(a.chain_id, a.token_id), a);
     index.snapshotTotal = snap.source.upstreamTotal;
     index.totalFetched = snap.agents.length;
     index.lastWarmAt = Date.now();
@@ -235,9 +255,8 @@ export interface WarmOptions {
   categories?: CategoryKey[];
 }
 
-// Pulls pages of recent BSC agents, classifies them, and stores them. Idempotent
-// per page. Stops when maxPages reached or upstream has no more pages. Designed to
-// be called on first browse and to top up coverage over time.
+// Pulls pages of recent BSC agents, classifies them, and stores them; idempotent per page,
+// stops at maxPages or when upstream has no more pages.
 export async function warmIndex(opts: WarmOptions = {}): Promise<void> {
   if (await loadSnapshot()) return; // curated snapshot already provides coverage
   const maxPages = opts.maxPages ?? 6;
@@ -255,7 +274,7 @@ export async function warmIndex(opts: WarmOptions = {}): Promise<void> {
       }
       index.snapshotTotal = body.meta.pagination.total;
       for (const raw of body.data) {
-        index.agents.set(raw.agent_id, buildSummary(raw));
+        index.agents.set(indexKey(raw.chain_id, raw.token_id), buildSummary(raw));
       }
       index.warmedPages.add(page);
       index.totalFetched += body.data.length;
@@ -265,6 +284,86 @@ export async function warmIndex(opts: WarmOptions = {}): Promise<void> {
   } finally {
     index.warming = false;
   }
+}
+
+export interface RefreshReport {
+  pages: number;
+  fetched: number;
+  added: number;
+  total: number;
+  upstreamTotal: number | null;
+  error: string | null;
+}
+
+// Reads through to 8004scan because the committed snapshot is frozen at deploy
+// time; a failed pull leaves the snapshot untouched rather than emptying the shelf.
+export async function refreshIndexFromLive(
+  maxPages = SHELF_REFRESH_PAGES,
+): Promise<RefreshReport> {
+  if (index.refreshing) {
+    return {
+      pages: 0,
+      fetched: 0,
+      added: 0,
+      total: index.agents.size,
+      upstreamTotal: index.snapshotTotal,
+      error: "refresh already running",
+    };
+  }
+  index.refreshing = true;
+  index.lastRefreshAt = Date.now();
+  const chainId = targetChainId();
+  const pages = Math.max(1, Math.min(10, maxPages));
+  let fetched = 0;
+  let added = 0;
+  let done = 0;
+  let error: string | null = null;
+  try {
+    await loadSnapshot();
+    for (let page = 1; page <= pages; page++) {
+      let body: ListResponse;
+      try {
+        body = await fetchAgentsPage(
+          page,
+          AbortSignal.timeout(REFRESH_FETCH_TIMEOUT_MS),
+          chainId,
+        );
+      } catch (e) {
+        error = (e as Error).message;
+        break;
+      }
+      index.snapshotTotal = body.meta.pagination.total;
+      for (const raw of body.data) {
+        const summary = buildSummary(raw);
+        // Shelve only what the marketplace would stand behind: a new registration appears once it
+        // has a callable endpoint and a category, never unclassified or unverifiable.
+        if (!isShelfReady(summary)) continue;
+        const key = indexKey(summary.chain_id, summary.token_id);
+        if (!index.agents.has(key)) added += 1;
+        index.agents.set(key, summary);
+      }
+      fetched += body.data.length;
+      done = page;
+      if (!body.meta.pagination.hasMore) break;
+    }
+  } finally {
+    index.refreshing = false;
+    index.lastWarmAt = Date.now();
+  }
+  index.error = error;
+  return {
+    pages: done,
+    fetched,
+    added,
+    total: index.agents.size,
+    upstreamTotal: index.snapshotTotal,
+    error,
+  };
+}
+
+async function maybeRefreshShelf(): Promise<void> {
+  if (!dueForRefresh(index.lastRefreshAt, Date.now(), REFRESH_COOLDOWN_MS)) return;
+  await refreshIndexFromLive(SHELF_REFRESH_PAGES);
 }
 
 export interface QueryOptions {
@@ -298,12 +397,18 @@ export async function queryAgents(
   opts: QueryOptions = {},
 ): Promise<QueryResult> {
   const { category, q, sort = "score", page = 1, limit = 24 } = opts;
+  const chainId = targetChainId();
   const hasSnapshot = await loadSnapshot();
   if (opts.ensureWarm && !hasSnapshot) {
     await warmIndex({ maxPages: opts.maxWarmPages ?? 6 });
+  } else if (hasSnapshot) {
+    // The snapshot is frozen at deploy time, so top up the newest page on a cooldown.
+    await maybeRefreshShelf();
   }
 
-  let items = Array.from(index.agents.values());
+  // Only the target chain belongs on this shelf; a live read for another chain cannot leak in.
+  const shelf = Array.from(index.agents.values()).filter((a) => a.chain_id === chainId);
+  let items = shelf;
 
   if (category && category !== "all") {
     items = items.filter((a) => a.category === category);
@@ -326,9 +431,9 @@ export async function queryAgents(
   }
 
   const categoryCounts: Record<string, number> = {
-    all: index.agents.size,
+    all: shelf.length,
   };
-  for (const a of index.agents.values()) {
+  for (const a of shelf) {
     const key = a.category ?? "general";
     categoryCounts[key] = (categoryCounts[key] ?? 0) + 1;
   }
@@ -380,9 +485,7 @@ function sortAgents(
     case "score":
     default:
       if (category && category !== "all") {
-        // the UI sorts by the same total_score the card displays, so it must
-        // lead; relevance only breaks ties so a precise match still beats a
-        // generic agent with an identical score
+        // the UI sorts by the same total_score the card displays, so it must lead; relevance only breaks ties
         copy.sort(
           (a, b) =>
             b.total_score - a.total_score ||
@@ -459,11 +562,25 @@ export async function getAgentByToken(
   chainId: number,
   tokenId: string,
 ): Promise<AgentSummary | AgentDetail | null> {
-  // a fresh fetch keeps the detail page live
-  const detail = await fetchAgentDetail(chainId, tokenId);
-  if (detail) return detail;
-  const cached = Array.from(index.agents.values()).find(
-    (a) => a.token_id === tokenId && a.chain_id === chainId,
-  );
-  return cached ?? null;
+  await loadSnapshot();
+  const cached = index.agents.get(indexKey(chainId, tokenId)) ?? null;
+  // A detail read still goes live and the snapshot is only the fallback, so a hung registry
+  // degrades to the shelf instead of hanging the request.
+  try {
+    const detail = await fetchAgentDetail(chainId, tokenId, LIVE_DETAIL_TIMEOUT_MS);
+    if (detail) {
+      // Served regardless, because the caller asked for this exact agent by id; shelved only if it
+      // qualifies, so a direct read cannot smuggle an unqualified listing into browse.
+      if (shouldCacheShelfAgent(chainId, targetChainId()) && isShelfReady(detail)) {
+        index.agents.set(
+          indexKey(detail.chain_id, detail.token_id),
+          summaryFromDetail(detail),
+        );
+      }
+      return detail;
+    }
+  } catch {
+    // 8004scan unavailable or slow: fall through to the snapshot
+  }
+  return cached;
 }
