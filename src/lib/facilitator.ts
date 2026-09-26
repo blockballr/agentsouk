@@ -6,11 +6,11 @@ import {
   hashTypedData,
   createPublicClient,
   createWalletClient,
-  http,
   encodeFunctionData,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { bsc, bscTestnet } from "viem/chains";
+import { SESSION_HOURS, SESSION_SPEND_CAP_USD } from "@agora/core";
 import { verifySmartWalletSignature } from "./erc1271";
 import {
   BSC_TESTNET_CHAIN_ID,
@@ -28,15 +28,17 @@ import {
   eip3009Domain,
 } from "./x402";
 import { recordPaymentDurable, getPaymentDurable } from "./receipts-store";
+import { rpcTransport } from "./rpc";
 
 const SANDBOX_TX_PREFIX = "0x53a66f60094f8e2b6f97a4c7b81b4d9e77f82c9d3e6b4a1d";
+
+
 
 // chain and RPC per chain id, so nothing in the settlement path is pinned to
 // mainnet: the relay used to broadcast to chain 56 whatever the client signed
 function chainConfig(chainId: number) {
-  return chainId === BSC_TESTNET_CHAIN_ID
-    ? { chain: bscTestnet, rpc: "https://data-seed-prebsc-1-s1.binance.org:8545" }
-    : { chain: bsc, rpc: "https://bsc-dataseed.binance.org" };
+  const chain = chainId === BSC_TESTNET_CHAIN_ID ? bscTestnet : bsc;
+  return { chain, transport: rpcTransport(chainId) };
 }
 
 function chainIdFromNetwork(network: string): number | null {
@@ -55,8 +57,8 @@ function pseudoTx(paymentId: string): string {
 // reject an authorization the chain would accept (or the reverse)
 async function chainNow(): Promise<bigint> {
   try {
-    const { chain, rpc } = chainConfig(targetChainId());
-    const client = createPublicClient({ chain, transport: http(rpc) });
+    const { chain, transport } = chainConfig(targetChainId());
+    const client = createPublicClient({ chain, transport });
     const block = await client.getBlock({ blockTag: "latest" });
     if (block?.timestamp) return block.timestamp;
   } catch {
@@ -167,7 +169,7 @@ async function settleSandboxChecks(
         primaryType: "TransferWithAuthorization",
         message,
       }),
-      rpcUrl: chainConfig(targetChainId()).rpc,
+      transport: chainConfig(targetChainId()).transport,
     });
     if (!verdict.isContract) return { ok: false, error: "Signature verification failed" };
     if (!verdict.valid) return { ok: false, error: "Smart wallet signature verification failed" };
@@ -208,8 +210,8 @@ export async function settleSandbox(
     symbol: ctx.agent.symbol,
     activated: true,
     session: {
-      spendCapUsd: 10,
-      expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      spendCapUsd: SESSION_SPEND_CAP_USD,
+      expiresAt: new Date(now.getTime() + SESSION_HOURS * 60 * 60 * 1000).toISOString(),
     },
   };
 
@@ -298,7 +300,7 @@ export async function settleProd(
       `Authorization is for chain ${signedChainId} but this deployment settles on chain ${targetChainId()}`,
     );
   }
-  const { chain, rpc } = chainConfig(signedChainId);
+  const { chain, transport } = chainConfig(signedChainId);
   const asset = settlementAsset(signedChainId);
 
   if (normalizeAddress(pr.asset) !== normalizeAddress(asset.address)) {
@@ -310,11 +312,11 @@ export async function settleProd(
   }
 
   const relay = privateKeyToAccount(key as `0x${string}`);
-  const publicClient = createPublicClient({ chain, transport: http(rpc) });
+  const publicClient = createPublicClient({ chain, transport });
   const walletClient = createWalletClient({
     account: relay,
     chain,
-    transport: http(rpc),
+    transport,
   });
 
   try {
@@ -380,7 +382,7 @@ export async function settleProd(
       symbol: ctx.agent.symbol,
       activated: true,
       session: {
-        spendCapUsd: 5,
+        spendCapUsd: SESSION_SPEND_CAP_USD,
         expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
       },
     };

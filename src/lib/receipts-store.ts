@@ -1,13 +1,12 @@
-// server-only durable receipts store behind RECEIPTS_STORE=postgres
-// memory stays the fallback whenever the flag or DATABASE_URL is missing
-// this module must only be imported from server code (it pulls in a node
-// driver); it wraps the in-memory ledger in x402.ts as a write-through cache
+// server-only durable receipts store behind RECEIPTS_STORE=postgres; memory stays the fallback without the flag or DATABASE_URL.
+// Only import from server code (it pulls in a node driver); wraps the in-memory ledger in x402.ts as a write-through cache.
 
 import "server-only";
 import postgres from "postgres";
 import {
   recordPayment,
   getPayment,
+  listPayments,
   type StoredPayment,
 } from "./x402";
 
@@ -82,6 +81,33 @@ export async function loadReceipt(
 export async function recordPaymentDurable(p: StoredPayment): Promise<void> {
   recordPayment(p);
   await saveReceipt(p);
+}
+
+// Lists every receipt belonging to a client wallet, newest first, from the durable store:
+// the in-process ledger only knows about payments made by the same instance, so it is empty for most serverless requests.
+export async function listPaymentsByClient(
+  client: string,
+  limit = 200,
+): Promise<StoredPayment[]> {
+  const cached = listPayments().filter(
+    (p) => (p.client ?? "").toLowerCase() === client.toLowerCase(),
+  );
+  if (postgresEnabled() && sql && (await init())) {
+    try {
+      const rows = await sql`
+        select payload from receipts
+        where lower(payload->>'client') = ${client.toLowerCase()}
+        order by created_at desc
+        limit ${limit}
+      `;
+      const stored = rows.map((r) => r.payload as StoredPayment);
+      for (const p of stored) recordPayment(p);
+      return stored;
+    } catch {
+      // fall through to whatever the memory cache holds
+    }
+  }
+  return cached;
 }
 
 // read-through: memory cache first, then postgres (backfilling the cache)

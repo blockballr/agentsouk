@@ -1,9 +1,5 @@
-// shared by client and server, mirroring the x402 v2 flow: a merchant returns
-// 402 with payment requirements, the buyer previews and signs a transfer
-// authorization, and a facilitator verifies then settles
-// on BNB the facilitator is Binance x402 (B402), and this project ships a
-// sandbox facilitator so the journey runs end to end with no credentials
-// swapping in the live B402 API is a single mode change in the settle route
+// shared by client and server, mirroring the x402 v2 flow: a merchant returns 402 with payment
+// requirements, the buyer previews and signs a transfer authorization, a facilitator verifies and settles. On BNB the facilitator is Binance x402 (B402); this project ships a sandbox one.
 
 import { getAddress } from "viem";
 
@@ -145,9 +141,8 @@ export function eip3009Domain(req: PaymentRequirements) {
   };
 }
 
-// the registry stores token addresses lowercased, and viem rejects a
-// non-checksummed address in typed-data encoding, so normalize
-// (identity on the bytes)
+// the registry stores token addresses lowercased and viem rejects a non-checksummed address
+// in typed-data encoding, so normalize
 function safeAddress(addr: string): `0x${string}` {
   try {
     return getAddress(addr);
@@ -174,9 +169,8 @@ export interface StoredPayment extends Receipt {
   paymentPayload?: PaymentPayload;
 }
 
-// minimal in-memory ledger used as a write-through cache in front of the
-// durable receipts store (postgres when RECEIPTS_STORE=postgres + DATABASE_URL,
-// otherwise memory-only); server-only callers go through receipts-store.ts
+// minimal in-memory ledger used as a write-through cache in front of the durable receipts store
+// (postgres when RECEIPTS_STORE=postgres and DATABASE_URL are set); server-only callers go through receipts-store.ts
 const ledger = new Map<string, StoredPayment>();
 
 export function recordPayment(p: StoredPayment): void {
@@ -187,6 +181,14 @@ export function getPayment(paymentId: string): StoredPayment | undefined {
   return ledger.get(paymentId);
 }
 
+// Every recorded payment, newest first: the in-process ledger is only a partial view, kept so
+// the durable store can be backfilled from memory and local runs have something to read.
+export function listPayments(): StoredPayment[] {
+  return [...ledger.values()].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
+}
+
 export function revokeSession(paymentId: string): boolean {
   const p = ledger.get(paymentId);
   if (!p) return false;
@@ -195,10 +197,8 @@ export function revokeSession(paymentId: string): boolean {
   return true;
 }
 
-// the agent's most recent activated, non-expired session, or nothing.
-// NOTE: the ledger is in-memory per server instance (fine for the demo; the
-// docs state the receipt is not an on-chain transaction), so this reflects
-// only sessions settled on the same instance.
+// the agent's most recent activated, non-expired session, or nothing; the ledger is in-memory
+// per instance, so this reflects only sessions settled on the same one
 export interface ActiveSession {
   spendCapUsd: number;
   expiresAt: string;
