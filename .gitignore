@@ -70,6 +70,12 @@ next-env.d.ts
 /apps/web/public/agent-souk-og.png
 /MILESTONE.md
 
+# foundry build output for the testnet settlement token; the source is tracked
+/cache/
+/contracts/out/
+/contracts/lib/
+/broadcast/
+
 # internal working documents and scripts, never published
 /docs/demo-cue-sheet.md
 /docs/voiceover-script.md

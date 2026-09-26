@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { settleSandbox, settleProd } from "@/lib/facilitator";
+import { resolveFacilitatorMode } from "@/lib/facilitator-mode";
 import { SettleRequest } from "@/lib/x402";
 import { createHireTask } from "@/lib/tasks";
 import { fundJob } from "@/lib/jobs";
@@ -73,38 +74,41 @@ export async function POST(req: NextRequest) {
     ? body.amountUsd
     : DEFAULT_BUDGET_USD;
 
-  const mode = process.env.FACILITATOR_MODE ?? "sandbox";
+  const mode = resolveFacilitatorMode(process.env.FACILITATOR_MODE);
 
-  if (mode === "prod") {
-    const result = await settleProd(body, {
-      agent: {
-        chainId: agent.chainId,
-        tokenId: agent.tokenId,
-        name: agent.name,
-        symbol: agent.symbol ?? "USDC",
-      },
-    });
-    const wrapped = afterSettlement(result, agent, body, budgetUsd);
-    return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
+  switch (mode) {
+    case "prod": {
+      const result = await settleProd(body, {
+        agent: {
+          chainId: agent.chainId,
+          tokenId: agent.tokenId,
+          name: agent.name,
+          symbol: agent.symbol ?? "USDC",
+        },
+      });
+      const wrapped = afterSettlement(result, agent, body, budgetUsd);
+      return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
+    }
+
+    case "b402": {
+      const result = await settleB402(body, agent);
+      const wrapped = afterSettlement(result, agent, body, budgetUsd);
+      return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
+    }
+
+    case "sandbox": {
+      const result = await settleSandbox(body, {
+        agent: {
+          chainId: agent.chainId,
+          tokenId: agent.tokenId,
+          name: agent.name,
+          symbol: agent.symbol ?? "USDC",
+        },
+      });
+      const wrapped = afterSettlement(result, agent, body, budgetUsd);
+      return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
+    }
   }
-
-  if (mode === "b402") {
-    const result = await settleB402(body, agent);
-    const wrapped = afterSettlement(result, agent, body, budgetUsd);
-    return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
-  }
-
-  const result = await settleSandbox(body, {
-    agent: {
-      chainId: agent.chainId,
-      tokenId: agent.tokenId,
-      name: agent.name,
-      symbol: agent.symbol ?? "USDC",
-    },
-  });
-
-  const wrapped = afterSettlement(result, agent, body, budgetUsd);
-  return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
 }
 
 async function settleB402(

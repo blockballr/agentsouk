@@ -1,0 +1,14 @@
+[profile.default]
+# keep foundry out of the Next.js app directory: the repo root already has a
+# src/ full of TypeScript that forge must never try to compile
+src = "contracts/src"
+out = "contracts/out"
+test = "contracts/test"
+libs = ["contracts/lib"]
+optimizer = true
+optimizer_runs = 200
+# EIP-3009 carries seven arguments plus locals, which overflows the legacy stack
+# allocator, so build through the IR pipeline
+via_ir = true
+# deterministic bytecode, so the deployed address is reproducible from the source
+bytecode_hash = "none"
