@@ -4,6 +4,7 @@ import type { AgentDetail, CategoryDef, CategoryKey } from '@agora/core'
 import { CATEGORIES, categoryDef, classifyAgent } from '@agora/core'
 import { getTargetChain } from '../lib/wallet'
 import {
+  chainLabel,
   explorerAddressUrl,
   REGISTRY_BY_CHAIN,
   registryFor,
@@ -11,6 +12,7 @@ import {
   settlementAssetFor,
 } from '../lib/contracts'
 import { getAgentDetail } from '../lib/api'
+import { RegisterWizard } from '../components/RegisterWizard'
 
 const checklist = [
   {
@@ -69,6 +71,23 @@ export function ListAgentPage() {
       </p>
 
       <CreateSection />
+      {/* register straight from here, for a participant who would rather not
+          install the CLI. Sits after the Studio path because both are valid and
+          the Studio route is the one the brief describes. */}
+      <div className="mt-16">
+        <div className="border-t hairline border-slate-verdant/40 pt-8">
+          <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
+            2. Or register from here
+          </h2>
+          <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
+            The same registration without the CLI. You send one transaction from your own wallet,
+            and the registry records you as the owner.
+          </p>
+          <div className="mt-8">
+            <RegisterWizard chainId={getTargetChain()} />
+          </div>
+        </div>
+      </div>
       <ChecklistSection />
       <LookupSection onFound={setFoundTokenId} />
       <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
@@ -104,7 +123,9 @@ function CreateSection() {
           <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
             One npm install brings the CLI and the agent runtime down together.
             Then one more command teaches your editor the studio; it
-            auto-detects Cursor and Claude Code.
+            auto-detects Cursor and Claude Code. A new wallet is created and
+            funded with test BNB and test stablecoin automatically, so there is
+            nothing to request separately.
           </p>
           <pre className="mt-4 overflow-x-auto rounded-[10px] border hairline border-slate-verdant/40 p-4 font-mono text-xs text-press-black">
             npm install -g @bnbagent/studio-cli
@@ -131,6 +152,20 @@ function CreateSection() {
             </a>
             ), binds the agent wallet, and registers the ERC-8183 task
             interface. x402 payment comes configured by default.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
+            For deployment, Studio v4 offers{' '}
+            <a
+              href="https://nodeops.network/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-press-black underline decoration-press-black/30 underline-offset-2 hover:text-highlighter-green"
+            >
+              NodeOps
+            </a>{' '}
+            alongside AWS and Azure. NodeOps is the zero-config route: no cloud account, nothing to
+            configure, and the agent runs on a NodeOps hardware provider. Choose AWS or Azure only
+            if you want to bring your own cloud and configure it yourself.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
             Hires on this deployment settle in {settlementAsset.symbol} (EIP-3009,
@@ -239,6 +274,9 @@ function buildPrompt(category: CategoryKey, name: string, goal: string): string 
   const def = categoryDef(category)
   const description = buildDescription(def, name, goal)
   const label = name.trim() || `a ${def.label.toLowerCase()} agent`
+  // derived, not pasted: the registry must be the one this deployment indexes
+  const chain = getTargetChain()
+  const registryAddress = registryFor(chain) ?? REGISTRY_BY_CHAIN[56]
   return [
     'Install the bnb CLI, describe this agent to Studio, and ship it end to end. Studio scaffolds the agent, deploys it, and registers the ERC-8004 identity on BSC. The agent to build is:',
     '',
@@ -254,7 +292,9 @@ function buildPrompt(category: CategoryKey, name: string, goal: string): string 
     '4. A performance or reporting tool is exposed, for example get_performance, that returns live numbers.',
     '5. Exactly one registration is made, not a numbered series of duplicates.',
     '',
-    'When done, the agent must be registered on BSC ERC-8004 (registry 0x8004a169fb4a3325136eb29fa0ceb6d2e539a432) and appear when searched on agentsouk.pages.dev.',
+    // The registry address must be the one this deployment indexes (chain 97), and the origin
+    // the judged domain; a mainnet registry or wrong origin makes listing silently fail.
+    `When done, the agent must be registered on ${chainLabel(getTargetChain())} ERC-8004 (registry ${registryAddress}${getTargetChain() === 97 ? ', chain 97' : ''}) and appear when searched on agentsouk.xyz.`,
   ].join('\n')
 }
 
