@@ -6,3 +6,7 @@ server.*.log
 web-preview.*.log
 tsconfig.tsbuildinfo
 validation-report.html
+# dependencies are installed on Vercel from the lockfile, so shipping a local
+# node_modules only makes the upload enormous. cache is the Foundry build dir.
+node_modules
+cache

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAddress } from "viem";
 import { fetchAgentDetail } from "@/lib/scanner";
-import { BSC_CHAIN_ID, settlementAsset } from "@/lib/types";
+import { settlementAsset, targetChainId } from "@/lib/types";
 import {
   PaymentRequirements,
   PreviewResult,
@@ -14,9 +14,8 @@ export const dynamic = "force-dynamic";
 
 export const DEFAULT_HIRE_PRICE_USD = 2;
 
-// the marketplace acts as the x402 merchant and the agent's receiving wallet is
-// the payTo, which is how BNB Agent Studio routes payments via Binance x402
-// in production this data comes from the agent's own x402 merchant endpoint
+// the marketplace is the x402 merchant and the agent's receiving wallet is the payTo,
+// matching how BNB Agent Studio routes payments; in production this comes from the agent's own merchant endpoint
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as {
     chainId?: number;
@@ -29,16 +28,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "tokenId required" }, { status: 400 });
   }
 
-  const chainId = body.chainId ?? BSC_CHAIN_ID;
+  // default to the configured chain, not mainnet: this deployment declares BSC testnet, and
+  // defaulting to BSC_CHAIN_ID gave a caller that omitted chain a mainnet asset and a different agent's wallet
+  const chainId = body.chainId ?? targetChainId();
   const detail = await fetchAgentDetail(chainId, body.tokenId);
   if (!detail) {
     return NextResponse.json({ success: false, error: "agent not found" }, { status: 404 });
   }
 
   const priceUsd = body.amountUsd ?? DEFAULT_HIRE_PRICE_USD;
-  // the asset is resolved per chain, so chain 97 settles in the sUSD we
-  // deployed and chain 56 in $U, and the advertised EIP-712 domain always
-  // matches what the relay will actually broadcast
+  // the asset is resolved per chain (97 settles in sUSD, 56 in $U), so the advertised
+  // EIP-712 domain always matches what the relay will actually broadcast
   const token = settlementAsset(chainId);
   const amountRaw = parseUnits(String(priceUsd), token.decimals).toString();
   // wallets reject non-checksummed addresses in typed data, and the registry
