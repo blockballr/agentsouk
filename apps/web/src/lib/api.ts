@@ -1,7 +1,7 @@
 import type { AgentDetail, AgentSummary, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 
-// the standalone API, co-hosted behind /api in production
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
+import { setTargetChain } from './wallet'
 
 export interface AgentsQuery {
   category?: string
@@ -30,8 +30,13 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   const res = await fetch(`${BASE}/agents?${sp}`)
   if (!res.ok) throw new Error(`agents ${res.status}`)
   const body = await res.json()
+  const items: AgentSummary[] = body.items ?? []
+  // learn the chain from the catalogue rather than shipping it as a constant, so
+  // a hardcoded chain cannot silently disagree with the deployment
+  const chain = items[0]?.chain_id
+  if (typeof chain === 'number' && chain > 0) setTargetChain(chain)
   return {
-    items: body.items ?? [],
+    items,
     total: body.total ?? 0,
     snapshotTotal: body.snapshotTotal ?? null,
     counts: body.counts ?? {},
@@ -156,7 +161,6 @@ export interface CompareCommentaryBody {
   language?: string
 }
 
-// grounded commentary: returns null on any failure so the caller hides the block
 export async function getCompareCommentary(
   body: CompareCommentaryBody,
 ): Promise<{ commentary: string; model: string } | null> {

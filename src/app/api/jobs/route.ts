@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createJob, getJob, listJobs } from "@/lib/jobs";
+import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     provider: body.provider,
     evaluator: body.evaluator,
     description: body.description ?? `Hire ${body.agentName ?? body.tokenId}`,
-    chainId: Number(body.chainId ?? 56),
+    chainId: Number(body.chainId ?? targetChainId()),
     tokenId: body.tokenId,
     agentName: body.agentName ?? `Agent ${body.tokenId}`,
     budgetUsd: Number(body.budgetUsd ?? 2),

@@ -1,7 +1,5 @@
-// ERC-8183 job records for Agent Souk
-// state machine follows the EIP: Open, Funded, Submitted, Completed, Rejected, Expired
-// fund leg is the x402 settle (sandbox, prod, or b402); evaluator defaults to the client
-// in-memory per process, same durability story as the receipt/task ledgers
+// ERC-8183 job records for Agent Souk: Open, Funded, Submitted, Completed, Rejected, Expired.
+// The fund leg is the x402 settle; evaluator defaults to the client. In-memory per process, like the receipt and task ledgers.
 
 import "server-only";
 import { randomUUID } from "node:crypto";
@@ -12,6 +10,7 @@ import {
   loadJobsByClient,
   saveJob,
 } from "./durable-store";
+import { targetChainId } from "./types";
 
 export type JobStatus =
   | "Open"
@@ -127,12 +126,19 @@ export function getJobByPayment(paymentId: string): Job | undefined {
   return id ? jobs.get(id) : undefined;
 }
 
+// Jobs are scoped to the chain the deployment settles on: the append-only ledger outlives
+// any single deployment, so records written on chain 56 must not be served from a chain-97 site.
+function onTargetChain(job: Job): boolean {
+  return Number(job.chainId) === targetChainId();
+}
+
 export async function listJobs(limit = 50): Promise<Job[]> {
   const fromDb = await loadJobs(limit * 2);
   for (const j of fromDb) {
     if (!jobs.has(j.id)) cache(j);
   }
   return [...jobs.values()]
+    .filter(onTargetChain)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, limit);
 }
@@ -144,6 +150,7 @@ export async function listJobsForClient(client: string, limit = 50): Promise<Job
   }
   return [...jobs.values()]
     .filter((j) => j.client.toLowerCase() === client.toLowerCase())
+    .filter(onTargetChain)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, limit);
 }

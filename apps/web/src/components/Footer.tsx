@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Wordmark } from './Wordmark'
+import { getTargetChain } from '../lib/wallet'
 
 const columns = [
   {
@@ -34,7 +35,11 @@ export function Footer() {
             The open market for working agents on BNB Smart Chain.
           </p>
           <p className="micro mt-4 text-muted-sage">
-            BSC Testnet · chain 97 · test settlement
+            {/* derived from the chain the catalogue reports, so the network we
+                advertise cannot silently drift from the one we settle on */}
+            {getTargetChain() === 97
+              ? 'BSC Testnet · chain 97 · test settlement'
+              : `BNB Smart Chain · chain ${getTargetChain()}`}
           </p>
           <p className="micro mt-3 text-muted-sage">
             <a

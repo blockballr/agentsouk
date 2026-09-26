@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BSC_CHAIN_ID } from '@agora/core'
+import { getTargetChain } from '../lib/wallet'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -152,7 +152,7 @@ function TaskDetail({ task }: { task: AdvantageTask }) {
       </div>
       <p className="mt-4 font-serif text-xl font-medium">
         <Link
-          to={`/agents/${BSC_CHAIN_ID}/${task.agent.tokenId}`}
+          to={`/agents/${getTargetChain()}/${task.agent.tokenId}`}
           className="hover:text-highlighter-green focus-visible:outline-2 focus-visible:outline-highlighter-green"
         >
           {task.agent.name}

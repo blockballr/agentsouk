@@ -1,10 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { AgentDetail, CategoryDef, CategoryKey } from '@agora/core'
-import { BSC_CHAIN_ID, CATEGORIES, categoryDef, classifyAgent } from '@agora/core'
+import { CATEGORIES, categoryDef, classifyAgent } from '@agora/core'
+import { getTargetChain } from '../lib/wallet'
+import {
+  explorerAddressUrl,
+  REGISTRY_BY_CHAIN,
+  registryFor,
+  SETTLEMENT_ASSET_BY_CHAIN,
+  settlementAssetFor,
+} from '../lib/contracts'
 import { getAgentDetail } from '../lib/api'
-
-const BSC_8004_REGISTRY = '0x8004a169fb4a3325136eb29fa0ceb6d2e539a432'
 
 const checklist = [
   {
@@ -71,6 +77,10 @@ export function ListAgentPage() {
 }
 
 function CreateSection() {
+  // the addresses we publish are the ones for the chain this deployment serves
+  const chain = getTargetChain()
+  const registryAddress = registryFor(chain) ?? REGISTRY_BY_CHAIN[56]
+  const settlementAsset = settlementAssetFor(chain) ?? SETTLEMENT_ASSET_BY_CHAIN[56]
   return (
     <div className="mt-16">
       <div className="flex flex-wrap items-baseline justify-between gap-4 border-t hairline border-slate-verdant/40 pt-8">
@@ -109,17 +119,31 @@ function CreateSection() {
           <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
             Describe the agent in Cursor or Claude Code and ask Studio to
             deploy. Studio scaffolds the agent, deploys it, registers the
-            ERC-8004 identity on BSC (registry{' '}
+            ERC-8004 identity on{' '}
+            {getTargetChain() === 97 ? 'BSC testnet' : 'BSC'} (registry{' '}
             <a
-              href={`https://bscscan.com/address/${BSC_8004_REGISTRY}`}
+              href={explorerAddressUrl(getTargetChain(), registryAddress)}
               target="_blank"
               rel="noreferrer"
-              className="font-mono text-[13px] text-press-black hover:text-highlighter-green"
+              className="font-mono text-[13px] break-all text-press-black hover:text-highlighter-green"
             >
-              {BSC_8004_REGISTRY.slice(0, 10)}...
+              {registryAddress}
             </a>
             ), binds the agent wallet, and registers the ERC-8183 task
             interface. x402 payment comes configured by default.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
+            Hires on this deployment settle in {settlementAsset.symbol} (EIP-3009,
+            one signature per hire, relayed){' '}
+            <a
+              href={explorerAddressUrl(getTargetChain(), settlementAsset.address)}
+              target="_blank"
+              rel="noreferrer"
+              className="font-mono text-[13px] break-all text-press-black hover:text-highlighter-green"
+            >
+              {settlementAsset.address}
+            </a>
+            .
           </p>
         </li>
         <li className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
@@ -360,7 +384,9 @@ function LookupSection({ onFound }: { onFound: (tokenId: string) => void }) {
     }
     setState({ phase: 'loading' })
     try {
-      const agent = await getAgentDetail(String(BSC_CHAIN_ID), tokenId)
+      // the chain the site is actually serving, learned from the catalogue, not
+      // a compiled-in 56 that sent every lookup to the wrong network
+      const agent = await getAgentDetail(String(getTargetChain()), tokenId)
       if (agent) {
         onFound(tokenId)
         setState({ phase: 'found', agent })
