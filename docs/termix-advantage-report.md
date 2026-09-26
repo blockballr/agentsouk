@@ -135,8 +135,11 @@ reported rather than padded.
 
 The settlement in these captures ran through the facilitator's sandbox mode,
 which verifies the EIP-3009 signature and records the session but does not move
-funds on chain. The live on-chain path is the same flow with the relay
-broadcasting the buyer's authorization to the agent's own wallet.
+funds on chain. The on-chain path is the same flow with the relay broadcasting
+the buyer's authorization to the agent's own wallet, and it has since been
+exercised for real: seven settlements on chain 97, covering all four categories,
+a non-default amount, and a cancellation, are itemised in the tracking
+submission.
 
 ## Marketplace quality
 

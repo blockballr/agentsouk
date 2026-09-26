@@ -286,12 +286,19 @@ default is `sandbox`, verified by `settleSandbox` in `src/lib/facilitator.ts`:
 3. Expiry and value. `validBefore` must be in the future and `value` positive.
 4. Signature. `verifyTypedData` recomputes the domain hash and message hash and
    checks the signature against `from`.
-5. Receipt. A receipt records the payment id, a deterministic sandbox tx hash,
+5. Receipt. A receipt records the payment id, the settlement transaction hash,
    the agent, the client, the payTo, the amount, and a session with a spend cap
-   of 10 USD expiring in 24 hours.
+   of 10 USD expiring in 24 hours. Receipts are persisted through
+   `src/lib/receipts-store.ts` into postgres when `RECEIPTS_STORE=postgres` and
+   `DATABASE_URL` are set, and fall back to an in-process map otherwise.
 
-The sandbox tx hash is deterministic, not a chain transaction: a fixed prefix
-followed by a hex encoding of the payment id without dashes.
+The transaction hash on a receipt is whatever the active mode produced. In
+`sandbox` nothing is broadcast, so the hash is synthetic: a fixed prefix followed
+by a hex encoding of the payment id, reproducible by anyone and useful for a
+demo, but not evidence of a payment. In `prod` the relay signs and broadcasts the
+authorization itself and the receipt carries the real chain transaction hash.
+The quest runs in `prod`, so the hashes in the tracking submission are chain
+transactions.
 
 In `b402` mode the route calls `papi.binance.com/papi/v2/b402/verify` then
 `/settle` with the `X-B402-CLIENT-ID` and `Authorization: Bearer` headers from
@@ -325,26 +332,36 @@ exercised and rejected.
 
 ### The Next Stage
 
-The migration plan is honest about what is not yet built. The Vite frontend is
-the current frontend target, and it is previewed locally against the Next.js
-backend. The next stage moves the backend out of Next.js into a standalone API
-service that the frontend talks to directly, and it moves the payment ledger
-and the agent index into Postgres so receipts and the catalogue survive
-restarts and scale. The snapshot build becomes a scheduled refresh writing to
-Postgres instead of a one-shot committed file. The hire path in the Vite app
-will sign through a connected wallet, settle through the facilitator, and show
-the receipt on the detail page. None of that stage is built yet.
+The migration plan is honest about what is not yet built. The backend has moved
+out of Next.js into a standalone API service that the Vite frontend talks to
+directly, and the payment ledger and the agent index live in Postgres so
+receipts and the catalogue survive restarts. The frontend is deployed and the
+hire path in it signs through a connected wallet, settles through the
+facilitator, and shows the receipt on the detail page.
+
+What remains is the agent index. It is still a committed snapshot file rather
+than a scheduled refresh, so the catalogue is rebuilt on a deploy rather than
+continuously, and an agent registered after the last build is not listed until
+the next one. The registry is the source of truth and the snapshot is derived
+from it, so nothing is lost, but freshness is bounded by the deploy cadence
+rather than by the chain.
 
 ### The Provable Boundary
 
 What is provable: every listing is a real ERC-8004 registration on BSC,
 readable through 8004scan, so any score, feedback, or hire count on screen is
 checkable on chain, and the snapshot is a reproducible artifact regenerated
-from the same public data. The settlement in sandbox mode is a real EIP-3009
-signature that was cryptographically verified.
+from the same public data. Settlement is a real EIP-3009 signature, and in the
+mode the quest runs in the relay signs and broadcasts it, so a settled hire
+carries a real chain transaction that anyone can check independently on the
+testnet explorer. Seven such settlements are itemised in the tracking
+submission, covering all four agent categories, a non-default amount, and a
+cancellation of an authorization before it was used.
 
-What is not yet provable: the sandbox receipt is held in memory and resets on
-restart, and its tx hash is deterministic, not an on-chain transaction. b402
-mode would produce a real on-chain transaction but has not run. The Vite
-frontend is not yet deployed. These limits are stated in the docs rather than
-hidden, and the demo never claims more than the sandbox proved.
+What is not yet provable: job completion and rating are API records rather than
+on-chain events, so settlement is the only leg that leaves a transaction trail.
+b402 mode is wired and unexercised, because it needs credentials the project does
+not have. The receipt ledger falls back to an in-process map when postgres is not
+configured, so an unconfigured deployment loses receipts on restart. These limits
+are stated in the docs rather than hidden, and the demo never claims more than
+the settlement proved.
