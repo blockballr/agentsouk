@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAddress } from "viem";
 import { fetchAgentDetail } from "@/lib/scanner";
-import { BSC_CHAIN_ID, BSC_TOKENS } from "@/lib/types";
+import { BSC_CHAIN_ID, settlementAsset } from "@/lib/types";
 import {
   PaymentRequirements,
   PreviewResult,
@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
   }
 
   const priceUsd = body.amountUsd ?? DEFAULT_HIRE_PRICE_USD;
-  const token = BSC_TOKENS.U;
+  // the asset is resolved per chain, so chain 97 settles in the sUSD we
+  // deployed and chain 56 in $U, and the advertised EIP-712 domain always
+  // matches what the relay will actually broadcast
+  const token = settlementAsset(chainId);
   const amountRaw = parseUnits(String(priceUsd), token.decimals).toString();
   // wallets reject non-checksummed addresses in typed data, and the registry
   // stores them lowercase
@@ -64,8 +67,8 @@ export async function POST(req: NextRequest) {
     payTo,
     maxTimeoutSeconds: 300,
     extra: {
-      name: "United Stables",
-      version: "1",
+      name: token.eip712Name,
+      version: token.eip712Version,
       assetTransferMethod: "eip3009",
       signerAddress: body.client,
       resourceUrl: resource.url,

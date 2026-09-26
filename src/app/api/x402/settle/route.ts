@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { settleSandbox, settleProd } from "@/lib/facilitator";
+import { resolveFacilitatorMode } from "@/lib/facilitator-mode";
 import { SettleRequest } from "@/lib/x402";
 import { createHireTask } from "@/lib/tasks";
 import { fundJob } from "@/lib/jobs";
@@ -41,12 +42,8 @@ function afterSettlement(
   return { ...result, taskId: task.id, jobId: job.id, jobStatus: job.status };
 }
 
-// FACILITATOR_MODE=prod relays the buyer's EIP-3009 authorization on-chain
-// from a relay wallet and requires RELAY_PRIVATE_KEY (capped at 5 USDC)
-// FACILITATOR_MODE=b402 routes through the live Binance x402 API and requires
-// B402_CLIENT_ID + B402_ACCESS_TOKEN
-// sandbox mode verifies the EIP-3009 signature and records a local receipt, so
-// the journey runs fully with no external credentials
+// FACILITATOR_MODE=prod relays the buyer's EIP-3009 authorization on-chain from a relay
+// wallet (RELAY_PRIVATE_KEY, capped at 5 USDC). b402 routes through the live Binance x402 API (B402_CLIENT_ID + B402_ACCESS_TOKEN); sandbox verifies the signature and records a local receipt.
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as
     | (SettleRequest & {
@@ -73,38 +70,41 @@ export async function POST(req: NextRequest) {
     ? body.amountUsd
     : DEFAULT_BUDGET_USD;
 
-  const mode = process.env.FACILITATOR_MODE ?? "sandbox";
+  const mode = resolveFacilitatorMode(process.env.FACILITATOR_MODE);
 
-  if (mode === "prod") {
-    const result = await settleProd(body, {
-      agent: {
-        chainId: agent.chainId,
-        tokenId: agent.tokenId,
-        name: agent.name,
-        symbol: agent.symbol ?? "USDC",
-      },
-    });
-    const wrapped = afterSettlement(result, agent, body, budgetUsd);
-    return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
+  switch (mode) {
+    case "prod": {
+      const result = await settleProd(body, {
+        agent: {
+          chainId: agent.chainId,
+          tokenId: agent.tokenId,
+          name: agent.name,
+          symbol: agent.symbol ?? "USDC",
+        },
+      });
+      const wrapped = afterSettlement(result, agent, body, budgetUsd);
+      return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
+    }
+
+    case "b402": {
+      const result = await settleB402(body, agent);
+      const wrapped = afterSettlement(result, agent, body, budgetUsd);
+      return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
+    }
+
+    case "sandbox": {
+      const result = await settleSandbox(body, {
+        agent: {
+          chainId: agent.chainId,
+          tokenId: agent.tokenId,
+          name: agent.name,
+          symbol: agent.symbol ?? "USDC",
+        },
+      });
+      const wrapped = afterSettlement(result, agent, body, budgetUsd);
+      return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
+    }
   }
-
-  if (mode === "b402") {
-    const result = await settleB402(body, agent);
-    const wrapped = afterSettlement(result, agent, body, budgetUsd);
-    return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
-  }
-
-  const result = await settleSandbox(body, {
-    agent: {
-      chainId: agent.chainId,
-      tokenId: agent.tokenId,
-      name: agent.name,
-      symbol: agent.symbol ?? "USDC",
-    },
-  });
-
-  const wrapped = afterSettlement(result, agent, body, budgetUsd);
-  return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
 }
 
 async function settleB402(

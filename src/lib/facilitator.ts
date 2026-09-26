@@ -10,8 +10,13 @@ import {
   encodeFunctionData,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { bsc } from "viem/chains";
+import { bsc, bscTestnet } from "viem/chains";
 import { verifySmartWalletSignature } from "./erc1271";
+import {
+  BSC_TESTNET_CHAIN_ID,
+  settlementAsset,
+  targetChainId,
+} from "./types";
 import {
   EIP3009_TYPES,
   Eip3009Message,
@@ -26,6 +31,19 @@ import { recordPaymentDurable, getPaymentDurable } from "./receipts-store";
 
 const SANDBOX_TX_PREFIX = "0x53a66f60094f8e2b6f97a4c7b81b4d9e77f82c9d3e6b4a1d";
 
+// chain and RPC per chain id, so nothing in the settlement path is pinned to
+// mainnet: the relay used to broadcast to chain 56 whatever the client signed
+function chainConfig(chainId: number) {
+  return chainId === BSC_TESTNET_CHAIN_ID
+    ? { chain: bscTestnet, rpc: "https://data-seed-prebsc-1-s1.binance.org:8545" }
+    : { chain: bsc, rpc: "https://bsc-dataseed.binance.org" };
+}
+
+function chainIdFromNetwork(network: string): number | null {
+  const parsed = Number.parseInt(network.split(":")[1] ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function pseudoTx(paymentId: string): string {
   const hex = paymentId.replace(/-/g, "");
   return `${SANDBOX_TX_PREFIX}${hex.slice(0, 24)}`.toLowerCase();
@@ -37,7 +55,8 @@ function pseudoTx(paymentId: string): string {
 // reject an authorization the chain would accept (or the reverse)
 async function chainNow(): Promise<bigint> {
   try {
-    const client = createPublicClient({ chain: bsc, transport: http(BSC_RPC) });
+    const { chain, rpc } = chainConfig(targetChainId());
+    const client = createPublicClient({ chain, transport: http(rpc) });
     const block = await client.getBlock({ blockTag: "latest" });
     if (block?.timestamp) return block.timestamp;
   } catch {
@@ -148,7 +167,7 @@ async function settleSandboxChecks(
         primaryType: "TransferWithAuthorization",
         message,
       }),
-      rpcUrl: BSC_RPC,
+      rpcUrl: chainConfig(targetChainId()).rpc,
     });
     if (!verdict.isContract) return { ok: false, error: "Signature verification failed" };
     if (!verdict.valid) return { ok: false, error: "Smart wallet signature verification failed" };
@@ -222,13 +241,7 @@ export async function getSandboxReceipt(
 // prod settlement: relay the buyer's EIP-3009 authorization on BNB Chain
 // mainnet. the relay wallet pays gas; the buyer signs only, and no buyer key
 // is ever held. the 5 U cap is enforced before any broadcast.
-const PROD_CAP_RAW = 5n * 10n ** 18n; // 5 U, 18 decimals
-// United Stables $U, EIP-3009 verified on-chain 2026-09-08: vrs selector
-// 0xe3ee160e present (the variant settleProd broadcasts), DOMAIN_SEPARATOR
-// present and matching ("United Stables", "1", chainId 56), name() =
-// "United Stables", decimals = 18
-const U_BSC = "0xcE24439F2D9C6a2289F741120FE202248B666666";
-const BSC_RPC = "https://bsc-dataseed.binance.org";
+const PROD_CAP_RAW = 5n * 10n ** 18n; // 5 units, 18 decimals
 
 // per-process, bounded in-memory replay guard: a restart clears it and other
 // replicas do not share it - griefing mitigation only, not consensus
@@ -273,10 +286,22 @@ export async function settleProd(
     return fail("Amount exceeds the 5 U prod cap");
   }
 
-  // only broadcast $U on BSC: the EIP-3009 domain is verified against the
-  // client-supplied pr.asset, and a mismatched contract would revert on-chain
-  // and burn relay gas
-  if (normalizeAddress(pr.asset) !== normalizeAddress(U_BSC)) {
+  // the chain the client signed for decides where the relay broadcasts, and it
+  // must be the chain this deployment is configured for: otherwise a payload
+  // signed for testnet could be relayed onto mainnet, or the reverse
+  const signedChainId = chainIdFromNetwork(pr.network);
+  if (signedChainId === null) {
+    return fail(`Unrecognised payment network ${pr.network}`);
+  }
+  if (signedChainId !== targetChainId()) {
+    return fail(
+      `Authorization is for chain ${signedChainId} but this deployment settles on chain ${targetChainId()}`,
+    );
+  }
+  const { chain, rpc } = chainConfig(signedChainId);
+  const asset = settlementAsset(signedChainId);
+
+  if (normalizeAddress(pr.asset) !== normalizeAddress(asset.address)) {
     return fail("Unsupported settlement asset");
   }
 
@@ -285,11 +310,11 @@ export async function settleProd(
   }
 
   const relay = privateKeyToAccount(key as `0x${string}`);
-  const publicClient = createPublicClient({ chain: bsc, transport: http(BSC_RPC) });
+  const publicClient = createPublicClient({ chain, transport: http(rpc) });
   const walletClient = createWalletClient({
     account: relay,
-    chain: bsc,
-    transport: http(BSC_RPC),
+    chain,
+    transport: http(rpc),
   });
 
   try {
@@ -329,7 +354,7 @@ export async function settleProd(
     });
 
     const hash = await walletClient.sendTransaction({
-      to: U_BSC as `0x${string}`,
+      to: asset.address,
       data,
     });
     // race: if this wait times out but the tx still lands on-chain, funds

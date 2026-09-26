@@ -1,0 +1,94 @@
+{
+  "generatedAt": "2026-09-26T10:18:02.857Z",
+  "token": "0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53",
+  "domain": {
+    "name": "Agent Souk Test USD",
+    "version": "1",
+    "chainId": 97
+  },
+  "results": [
+    {
+      "label": "hire-yield",
+      "category": "yield",
+      "tokenId": "2019",
+      "agentName": "Hevo Yield",
+      "payee": "0x1058E2411e6F5fC581b3744aA5bD2884D430C206",
+      "payer": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+      "amountUsd": "2",
+      "tx": "0xbaaec7294ec276a76311168c71dff30918f99d3fd686d14df329c923fbcb20f4",
+      "status": "success",
+      "gasUsed": 61310,
+      "valueMovedOnChain": true,
+      "mintTx": null,
+      "explorer": "https://testnet.bscscan.com/tx/0xbaaec7294ec276a76311168c71dff30918f99d3fd686d14df329c923fbcb20f4"
+    },
+    {
+      "label": "hire-grid-trading",
+      "category": "grid-trading",
+      "tokenId": "2173",
+      "agentName": "Grid Runner",
+      "payee": "0xB1b6fCe10211Cd11F177BFD232175cd94Be90962",
+      "payer": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+      "amountUsd": "2",
+      "tx": "0xb57dda246f6e8412fd5bfff5c305e94998e3d5e778426fe4b3c376bc9271c195",
+      "status": "success",
+      "gasUsed": 61396,
+      "valueMovedOnChain": true,
+      "mintTx": "0xc2d3a6d7fe3a21d298f1150e2adeab17cd46db7b079b063e3cde20056df975f0",
+      "explorer": "https://testnet.bscscan.com/tx/0xb57dda246f6e8412fd5bfff5c305e94998e3d5e778426fe4b3c376bc9271c195"
+    },
+    {
+      "label": "hire-rebalancing",
+      "category": "rebalancing",
+      "tokenId": "2300",
+      "agentName": "rangekeeper-agent",
+      "payee": "0xCC2abE29F43EAb530a6b5D93E3C41bc0E7622b47",
+      "payer": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+      "amountUsd": "2",
+      "tx": "0xc62f7421a31c09dc0b45643405212ce54e61305c6c3ce4722612ffc8b6b066aa",
+      "status": "success",
+      "gasUsed": 61396,
+      "valueMovedOnChain": true,
+      "mintTx": "0x271e58503ebed4867c07ccedb29b5f92261f365fa52d5c790f78966f91b287ed",
+      "explorer": "https://testnet.bscscan.com/tx/0xc62f7421a31c09dc0b45643405212ce54e61305c6c3ce4722612ffc8b6b066aa"
+    },
+    {
+      "label": "hire-health-factor",
+      "category": "health-factor",
+      "tokenId": "2046",
+      "agentName": "VenusGuard",
+      "payee": "0x08a594e828133D18A43918cc804754f46dAF44dB",
+      "payer": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+      "amountUsd": "2",
+      "tx": "0xf10142bdcf534c69f18c862dd365f21ee025d60e4d1068b15a2df68d3e35d899",
+      "status": "success",
+      "gasUsed": 61396,
+      "valueMovedOnChain": true,
+      "mintTx": "0x2aac4a02db08846c256ec5d808fbfe0d11e76cc4bbcab7a54a7e8d18f935f735",
+      "explorer": "https://testnet.bscscan.com/tx/0xf10142bdcf534c69f18c862dd365f21ee025d60e4d1068b15a2df68d3e35d899"
+    },
+    {
+      "label": "hire-nondefault-amount",
+      "category": "yield",
+      "tokenId": "2019",
+      "agentName": "Hevo Yield",
+      "payee": "0x1058E2411e6F5fC581b3744aA5bD2884D430C206",
+      "payer": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+      "amountUsd": "0.75",
+      "tx": "0x7d144a2cfc6244d5dfe1ae6e46d54803cf0f7ae4d2262c569508162fd1646a82",
+      "status": "success",
+      "gasUsed": 61384,
+      "valueMovedOnChain": true,
+      "mintTx": "0x223b816bfefdd603c4ccca83761e8623ed073107dd95c624b3263fb785c5ba92",
+      "explorer": "https://testnet.bscscan.com/tx/0x7d144a2cfc6244d5dfe1ae6e46d54803cf0f7ae4d2262c569508162fd1646a82"
+    },
+    {
+      "label": "cancel-unused-authorization",
+      "category": "revocation",
+      "tx": "0xa72e7c831b0f171df4b368243d49e245a930dcd3cd1cbb54caf3925720feb0d3",
+      "status": "success",
+      "authorizationState": true,
+      "explorer": "https://testnet.bscscan.com/tx/0xa72e7c831b0f171df4b368243d49e245a930dcd3cd1cbb54caf3925720feb0d3"
+    }
+  ]
+}
