@@ -100,6 +100,32 @@ function sessionModeLabel(mode: ActiveSession['mode']): string {
   return 'Production'
 }
 
+// The name of the chain this deployment settles on. The panel used to say
+// "BNB" here, which names no chain in particular: on the testnet quest a reader
+// could not tell whether the hire in front of them moved real money or test
+// tokens.
+function chainLabel(chainId: number): string {
+  return chainId === 97 ? 'BSC testnet' : 'BNB Smart Chain'
+}
+
+// How the settlement actually happened. This must cover all three modes, because
+// the previous version only tested for b402 and fell through to "Sandbox
+// facilitator" for everything else, so the moment the facilitator was switched to
+// production this panel would have kept telling the reader the hire was sandboxed.
+function settlementLabel(mode: ActiveSession['mode'] | undefined): string {
+  if (mode === 'b402') return 'BNB Chain (x402)'
+  if (mode === 'sandbox') return 'Sandbox facilitator, nothing broadcast'
+  return 'Production relay, broadcast on chain'
+}
+
+// A hash is only a transaction when something was actually broadcast. Sandbox
+// derives a synthetic string from the payment id, so linking it to an explorer
+// would 404, and printing it unlabelled invites the reader to treat it as a
+// receipt.
+function isOnchainSettlement(mode: ActiveSession['mode'] | undefined): boolean {
+  return mode === 'prod' || mode === 'b402'
+}
+
 export function AgentDetailPage() {
   const { chainId = '56', tokenId = '' } = useParams()
   const [detail, setDetail] = useState<AgentDetail | null>(null)
@@ -359,7 +385,7 @@ export function AgentDetailPage() {
             </div>
             <div className="flex justify-between">
               <span>Network</span>
-              <span className="text-press-black">BNB</span>
+              <span className="text-press-black">{chainLabel(Number(chainId))}</span>
             </div>
           </div>
           <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
@@ -706,26 +732,27 @@ function HirePanel({
             {receipt && (
               <>
                 <Row label="Session cap" value={`$${receipt.session.spendCapUsd} · until ${formatDate(receipt.session.expiresAt)}`} />
-                <Row
-                  label="Settlement"
-                  value={receipt.mode === 'b402' ? 'BNB Chain (x402)' : 'Sandbox facilitator'}
-                />
+                <Row label="Settlement" value={settlementLabel(receipt.mode)} />
               </>
             )}
           </div>
           {result.txHash && (
             <p className="mt-3 break-all font-mono text-[10px] text-newsprint-gray">
-              {receipt?.mode === 'b402' ? (
-                <a
-                  href={`${explorerBase(chainId)}/tx/${result.txHash}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-press-black hover:text-highlighter-green"
-                >
-                  {result.txHash}
-                </a>
+              {isOnchainSettlement(receipt?.mode) ? (
+                <>
+                  <a
+                    href={`${explorerBase(chainId)}/tx/${result.txHash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-press-black hover:text-highlighter-green"
+                  >
+                    {result.txHash}
+                  </a>
+                </>
               ) : (
-                result.txHash
+                // labelled, because this is derived from the payment id and is
+                // not a transaction. Unlabelled, it reads as a receipt.
+                <>synthetic, not a transaction: {result.txHash}</>
               )}
             </p>
           )}
@@ -733,8 +760,9 @@ function HirePanel({
             <p className="mt-3 text-[11px] leading-relaxed text-newsprint-gray">
               Sandbox settlement: the signature was verified and the session is
               recorded by the facilitator; no on-chain transfer occurred. Live
-              BNB settlement uses the same flow, with the relay broadcasting the
-              authorization to the agent's own wallet.
+              Live settlement on {chainLabel(Number(chainId))} uses the same flow,
+              with the relay broadcasting the authorization to the agent's own
+              wallet.
             </p>
           )}
           <DeliveryPanel paymentId={result.paymentId} />
