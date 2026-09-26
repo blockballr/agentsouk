@@ -2,7 +2,7 @@
 ![Agent Souk](brand/github-banner.png)
 
 Live: https://agentsouk.xyz (frontend) and https://api.agentsouk.xyz (API).
-Network: BNB Smart Chain mainnet (chain 56), sandbox settlement. Testnet qualification build in progress, mainnet settlement at campaign end.
+Network: BSC Testnet (chain 97), testnet settlement with mock tokens. Mainnet base (chain 56, 172 agents) stays untouched; mainnet settlement at campaign end.
 
 Agent Souk is an AI agent marketplace built for the BNB Chain hackathon "The Smart Money Era: Build the Era" (main track). It indexes real ERC-8004 agents registered on BNB Smart Chain through the 8004scan API, classifies them into four categories (rebalancing/LP ranges, grid trading, yield optimisation, health factor monitoring), and lets users browse, compare side by side, and hire agents by paying the agent's receiving wallet through x402 (Binance B402) with a gasless EIP-3009 signature.
 

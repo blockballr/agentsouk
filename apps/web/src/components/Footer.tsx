@@ -33,6 +33,9 @@ export function Footer() {
           <p className="mt-6 text-[18px] font-extralight leading-tight tracking-[-0.36px] text-bone-white">
             The open market for working agents on BNB Smart Chain.
           </p>
+          <p className="micro mt-4 text-muted-sage">
+            BSC Testnet · chain 97 · test settlement
+          </p>
           <p className="micro mt-3 text-muted-sage">
             <a
               href="https://t.me/agentsouk"

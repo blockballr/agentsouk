@@ -161,7 +161,7 @@ export function HomePage() {
                 </dd>
                 {s.caption ? (
                   <dd className="micro mt-1 text-newsprint-gray">
-                    {curatedAgents} curated on Agent Souk - every one verified
+                    {curatedAgents} curated on Agent Souk, every one verified
                   </dd>
                 ) : null}
               </div>
