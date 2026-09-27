@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { listActiveSessions } from "@/lib/x402";
 import { listTasks } from "@/lib/tasks";
 import { getJobByPayment, listJobs, type Job } from "@/lib/jobs";
-import { getPaymentDurable, revokeSessionDurable } from "@/lib/receipts-store";
+import {
+  cancelAuthorizationDurable,
+  getPaymentDurable,
+  revokeSessionDurable,
+} from "@/lib/receipts-store";
+import { explorerBaseFor } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -103,5 +108,12 @@ export async function DELETE(req: NextRequest) {
       { status: 404 },
     );
   }
-  return NextResponse.json({ success: true, paymentId });
+  // the ledger revoke above is the guarantee; the chain cancel is best-effort and
+  // reported separately so a failure is never dressed up as a cancellation
+  const onchain = await cancelAuthorizationDurable(paymentId);
+  const txLink =
+    onchain.txHash && onchain.chainId
+      ? `${explorerBaseFor(onchain.chainId)}/tx/${onchain.txHash}`
+      : undefined;
+  return NextResponse.json({ success: true, paymentId, onchain: { ...onchain, txLink } });
 }

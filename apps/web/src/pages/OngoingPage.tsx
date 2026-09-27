@@ -4,14 +4,39 @@ import {
   actOnJob,
   getOngoing,
   retryTask,
-  revokeSession,
   type ActiveHireSession,
   type Erc8183Job,
   type HireTask,
   type OngoingBundle,
 } from '../lib/api'
+import { explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
+
+interface RevokeOutcome {
+  attempted: boolean
+  canceled: boolean
+  alreadyRevoked?: boolean
+  txHash?: string
+  chainId?: number
+  txLink?: string
+  error?: string
+}
+
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
+
+// The revoke response carries the on-chain cancellation result, which api.ts's
+// revokeSession discards, so call the endpoint directly to keep the transaction hash.
+async function revokeSessionWithCancel(
+  paymentId: string,
+  client: string,
+): Promise<RevokeOutcome | null> {
+  const qs = `?paymentId=${encodeURIComponent(paymentId)}&client=${encodeURIComponent(client)}`
+  const res = await fetch(`${API_BASE}/sessions${qs}`, { method: 'DELETE' })
+  const body = await res.json().catch(() => null)
+  if (!res.ok || !body?.success) throw new Error(body?.error ?? `revoke ${res.status}`)
+  return (body.onchain as RevokeOutcome | undefined) ?? null
+}
 
 const taskChip: Record<HireTask['status'], string> = {
   ready: 'border-slate-verdant/50 text-newsprint-gray',
@@ -59,6 +84,7 @@ export function OngoingPage() {
   const [retryingId, setRetryingId] = useState<string | null>(null)
   const [jobBusy, setJobBusy] = useState<string | null>(null)
   const [revokingId, setRevokingId] = useState<string | null>(null)
+  const [revokeResults, setRevokeResults] = useState<Record<string, RevokeOutcome>>({})
 
   useEffect(() => {
     void getActiveAccount().then((a) => setAccount(a))
@@ -128,7 +154,8 @@ export function OngoingPage() {
     if (!account) return
     setRevokingId(paymentId)
     try {
-      await revokeSession(paymentId, account)
+      const outcome = await revokeSessionWithCancel(paymentId, account)
+      if (outcome) setRevokeResults((prev) => ({ ...prev, [paymentId]: outcome }))
       await load()
     } catch (e) {
       setError(hireErrorText(e))
@@ -140,6 +167,10 @@ export function OngoingPage() {
   const sessions = data?.sessions ?? []
   const recent = data?.recentTasks ?? []
   const counts = data?.counts
+  const recentPaymentIds = new Set(recent.map(({ task }) => task.paymentId))
+  const standaloneRevocations = Object.entries(revokeResults).filter(
+    ([paymentId]) => !recentPaymentIds.has(paymentId),
+  )
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
@@ -334,13 +365,31 @@ export function OngoingPage() {
         </div>
       )}
 
+      {account && standaloneRevocations.length > 0 && (
+        <div className="mt-10">
+          <p className="micro text-newsprint-gray">Revocations</p>
+          <div className="mt-3 space-y-2">
+            {standaloneRevocations.map(([paymentId, outcome]) => (
+              <div
+                key={paymentId}
+                className="rounded-[10px] border hairline border-slate-verdant/30 p-4"
+              >
+                <p className="micro font-mono text-press-black">{paymentId.slice(0, 18)}…</p>
+                <RevokeNote outcome={outcome} chainId={outcome.chainId ?? 0} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {account && recent.length > 0 && (
         <div className="mt-16">
           <p className="micro text-newsprint-gray">Recent tasks (session ended)</p>
           <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">
             Ended sessions keep their agent, job and deliverable here. Revoke
-            closes the session in the ledger so nothing further is served
-            against it; it does not cancel the authorization on chain.
+            closes the session in the ledger and cancels the buyer&apos;s
+            authorization on the settlement token when the stored payload and
+            relay key allow it; the cancellation transaction is linked below.
           </p>
           <div className="mt-6 space-y-3">
             {recent.map(({ task, job }) => (
@@ -370,6 +419,13 @@ export function OngoingPage() {
                     {revokingId === task.paymentId ? 'Revoking…' : 'Revoke session'}
                   </button>
                 </div>
+
+                {revokeResults[task.paymentId] && (
+                  <RevokeNote
+                    outcome={revokeResults[task.paymentId]}
+                    chainId={task.chainId}
+                  />
+                )}
 
                 <div className="mt-4">
                   <TaskRow task={task} onRetry={onRetry} retrying={retryingId === task.id} />
@@ -456,5 +512,37 @@ function TaskRow({
         </button>
       )}
     </div>
+  )
+}
+
+function RevokeNote({ outcome, chainId }: { outcome: RevokeOutcome; chainId: number }) {
+  if (outcome.txHash) {
+    const href = outcome.txLink ?? `${explorerTxBase(outcome.chainId ?? chainId)}/tx/${outcome.txHash}`
+    return (
+      <p className="micro mt-2 text-newsprint-gray">
+        Authorization cancelled on chain ·{' '}
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="text-press-black underline"
+        >
+          {outcome.txHash.slice(0, 18)}…
+        </a>
+      </p>
+    )
+  }
+  if (outcome.alreadyRevoked) {
+    return (
+      <p className="micro mt-2 text-newsprint-gray">
+        Authorization was already cancelled on chain.
+      </p>
+    )
+  }
+  return (
+    <p className="micro mt-2 text-newsprint-gray">
+      Revoked in the ledger. Authorization not cancelled on chain
+      {outcome.error ? `: ${outcome.error}` : '.'}
+    </p>
   )
 }
