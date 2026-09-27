@@ -4,6 +4,7 @@
 import { hashTypedData, recoverAddress } from "viem";
 import { TRANSFER_TYPES, rpcUrlsFor } from '@agora/core'
 import { explorerTxBase } from './contracts'
+import { reloadOnceForStaleChunk } from './stale-chunk'
 import { setTargetChainState } from './target-chain'
 
 interface Eip1193Provider {
@@ -323,6 +324,12 @@ export async function openWalletPicker(): Promise<WalletOption | null> {
   if (!pickerSession) {
     pickerSession = import("../components/WalletPicker")
       .then(({ showWalletPicker }) => showWalletPicker(options))
+      .catch((error) => {
+        // an older build can ask for a chunk the current deploy has replaced;
+        // reload to pick it up instead of failing the connect flow
+        if (reloadOnceForStaleChunk()) return null;
+        throw error;
+      })
       .finally(() => {
         pickerSession = null;
       });
