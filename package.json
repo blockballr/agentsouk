@@ -11,7 +11,8 @@
     "build": "next build",
     "build:web": "npm run build -w @agora/web",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run"
   },
   "dependencies": {
     "@agora/core": "*",

@@ -17,7 +17,7 @@ The marketplace is judged on functionality, data quality, and agent diversity ac
 - x402 hire flow with a gasless EIP-3009 signature and a sandbox, prod, or b402 settlement mode.
 - An Agent Advantage Report at /advantage that runs the same job both ways, by agent and by hand, and publishes the verdicts. The full TermiX report is in docs/termix-advantage-report.md.
 - Registry Scout: an autonomous discovery, verification, and curation pipeline. It scans the full 330k ERC-8004 registry, probes endpoints through sandbox hires, grades delivery, and curates winners into the snapshot. API under /api/scout, console at /scout in local dev builds only.
-- Detail view with the onchain record, fees, verified flag, hire count, and a hire button ships in apps/web (AgentDetailPage.tsx); the Next.js app route for it is a stub.
+- Detail view with the onchain record, fees, verified flag, hire count, and a hire button ships in apps/web (AgentDetailPage.tsx); the Next.js app does not route it yet.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ Classification happens in src/lib/categories.ts. It is a weighted-term keyword c
 
 The snapshot builder is the API route src/app/api/index/build/route.ts. A POST to /api/index/build?secret=... fetches per-category keyword searches plus the 12 newest pages in parallel batches. Anonymous access runs 8 requests at a time with 6.1 second gaps; with an EIGHT004_API_KEY it runs 24 at a time with 200 millisecond gaps. The builder drops known spam cohorts (Ensoul mock Twitter profiles, dgrid.ai airdrop farmers), dedupes entries (at most 3 per normalized name, trailing digits stripped so numbered batch series count as one), ranks inside each category by relevance (category score times 10, plus 2 when the agent accepts x402, plus a small reputation term), and backfills a thin category only with agents that carry a real signal for it, then writes a category-balanced selection to data/agents.json.
 
-The hire flow is split across src/lib/x402.ts, which holds the shared types, the EIP-3009 typed data, and an in-memory ledger, and src/lib/facilitator.ts, which verifies the EIP-3009 signature with viem and settles it in one of three modes. Addresses are checksum-normalized because the registry stores lowercased token addresses and viem rejects non-checksummed addresses. The API routes are /api/x402/requirements, /api/x402/settle, and /api/x402/receipt/[paymentId]. FACILITATOR_MODE defaults to sandbox, which verifies the signature and records a receipt without moving funds. Set it to prod to relay the buyer's EIP-3009 authorization on BNB Chain mainnet: the relay wallet (RELAY_PRIVATE_KEY) pays gas, the buyer only signs, and the transfer goes to the agent's own receiving wallet under a 5 U cap. Set it to b402 to route through papi.binance.com/papi/v2/b402/verify and /settle using B402_CLIENT_ID and B402_ACCESS_TOKEN. Because EIP-3009 validAfter and validBefore are checked on chain against block.timestamp, both the web app and the facilitator anchor the validity window to the chain's latest block time rather than the host clock, so a drifting host clock cannot sign an authorization that is already expired when the relay broadcasts it.
+The hire flow is split across src/lib/x402.ts, which holds the shared types, the EIP-3009 typed data, and an in-memory ledger, and src/lib/facilitator.ts, which verifies the EIP-3009 signature with viem and settles it in one of three modes. Addresses are checksum-normalized because the registry stores lowercased token addresses and viem rejects non-checksummed addresses. The API routes are /api/x402/requirements, /api/x402/settle, and /api/x402/receipt/[paymentId]. FACILITATOR_MODE defaults to sandbox, which verifies the signature and records a receipt without moving funds. Set it to prod to relay the buyer's EIP-3009 authorization on the configured BNB chain: the relay wallet (RELAY_PRIVATE_KEY) pays gas, the buyer only signs, and the transfer goes to the agent's own receiving wallet under a 5 unit cap. Set it to b402 to route through papi.binance.com/papi/v2/b402/verify and /settle using B402_CLIENT_ID and B402_ACCESS_TOKEN. Because EIP-3009 validAfter and validBefore are checked on chain against block.timestamp, both the web app and the facilitator anchor the validity window to the chain's latest block time rather than the host clock, so a drifting host clock cannot sign an authorization that is already expired when the relay broadcasts it.
 
 The pages are / (landing page with live stats and featured agents per category), /agents (browse, filter, search, and sort, client-rendered through the /api/agents route with a warm param), and /compare (best in each category on top, the rest grouped by category as cards). The agent detail view lives in apps/web/src/pages/AgentDetailPage.tsx and is not yet wired as a route in the Next.js app.
 
@@ -57,14 +57,19 @@ Open http://localhost:3000 to see the marketplace. The frontend lives in apps/we
 ```bash
 npm run dev --workspace @agora/web
 npm run build --workspace @agora/web
-npx vitest run
+```
+
+The Vitest suite in tests/ runs from the repo root:
+
+```bash
+npm test
 ```
 
 Frontend API base comes from VITE_API_URL and defaults to /api. Production builds point it at https://api.agentsouk.xyz/api.
 
 ## Environment variables
 
-Create a .env.local file at the project root. Only EIGHT004_API_KEY changes the core pipeline; the rest configure the hire flow.
+Create a .env.local file at the project root. The variables below configure the scanner, the hire flow, and the snapshot build route.
 
 | Variable | Purpose |
 | --- | --- |
@@ -84,6 +89,7 @@ Create a .env.local file at the project root. Only EIGHT004_API_KEY changes the 
 | npm run build | Build for production. |
 | npm start | Run the production server on port 3000. |
 | npm run lint | Lint the codebase. |
+| npm test | Run the Vitest suite in tests/. |
 
 ## Regenerating the snapshot
 
@@ -106,13 +112,13 @@ A mainnet settlement test runs with node scripts/prod-settle-test.mjs. It requir
 - The 8004scan semantic search endpoint returns 502 errors, so search uses the keyword list parameter instead. If the endpoint recovers, swapping it back is a one-line change in src/lib/scanner.ts.
 - The in-memory index warms from data/agents.json on cold start, so a fresh deployment serves the last snapshot until the build route runs again.
 - Grid trading is intentionally thin (13 agents) because the registry has few genuine grid bots; the builder backfills only with agents whose registration carries a real signal, and the UI reports the count honestly.
-- FACILITATOR_MODE defaults to sandbox settlement, which verifies the signature and records a receipt without moving funds. Set it to prod to settle on BNB Chain mainnet (RELAY_PRIVATE_KEY pays gas), or b402 to route through the Binance production endpoint with B402_CLIENT_ID and B402_ACCESS_TOKEN.
+- FACILITATOR_MODE defaults to sandbox settlement, which verifies the signature and records a receipt without moving funds. Set it to prod to settle on the configured BNB chain (RELAY_PRIVATE_KEY pays gas), or b402 to route through the Binance production endpoint with B402_CLIENT_ID and B402_ACCESS_TOKEN.
 - The x402 ledger is in-memory; receipts survive per process, not across restarts.
 - Hiring supports standard (EOA) wallets only. Smart-account wallets (ERC-4337, e.g. Coinbase Smart Wallet) sign EIP-3009 authorizations whose signatures validate on-chain via ERC-1271, which the facilitator cannot verify with off-chain ecrecover; the web app detects a connected smart account and shows an explicit message instead of a settlement failure. An opt-in on-chain ERC-1271 verifier ships behind `SMART_WALLET_VERIFY=on` (default off), but it cannot unlock settlement today: live probes (3 independent BSC RPCs + implementation bytecode dispatcher scan) show the deployed BSC USDC (0x8AC7…580d) exposes no EIP-3009 `transferWithAuthorization` at all (neither the v/r/s nor the ERC-1271-capable bytes variant), so signature-based settlement reverts at the token regardless of wallet type. Token-level findings and unlock conditions: .superpowers/smart-wallet-audit.md.
 
 ## Standards
 
-- ERC-8004 agent identity, with the BSC registry at 0x8004a169fb4a3325136eb29fa0ceb6d2e539a432.
+- ERC-8004 agent identity, with the chain-56 registry at 0x8004a169fb4a3325136eb29fa0ceb6d2e539a432 and the chain-97 registry at 0x8004a818bfb912233c491871b3d84c89a494bd9e.
 - ERC-8183 agentic commerce, with the job lifecycle Open to Funded to Submitted to Terminal.
 - Binance x402 (B402) payment with gasless EIP-3009 signatures.
 
@@ -131,4 +137,4 @@ The project also aligns with the partner track: Altana sessions (own-wallet paym
 | scripts/settle-test.mjs | End-to-end x402 settlement test against the sandbox facilitator. |
 | scripts/prod-settle-test.mjs | End-to-end x402 settlement test against BNB Chain mainnet (prod mode). |
 | docs/termix-advantage-report.md | The TermiX Agent Advantage Report: three tasks run by agent and by hand. |
-| data/agents.json | Current snapshot of 168 real BSC agents. |
+| data/agents.json | Current snapshot of 172 real BSC agents. |
