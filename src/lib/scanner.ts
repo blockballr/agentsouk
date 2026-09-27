@@ -11,10 +11,15 @@ import {
 import { classifyAgent, relevanceScore } from "./categories";
 import { isPancakeSwapAgent } from "./pancakeswap";
 import {
+  AgentRemovedError,
+  classifyLiveReadFailure,
   dueForRefresh,
   indexKey,
+  shelfActionOnFailure,
+  shouldAdmitSnapshotEntry,
   shouldCacheShelfAgent,
   isShelfReady,
+  snapshotEndpointRegime,
   summaryFromDetail,
 } from "./agent-index";
 
@@ -145,13 +150,21 @@ export async function fetchAgentDetail(
   chainId: number,
   tokenId: string,
   timeoutMs?: number,
+  signalRemoved = false,
 ): Promise<AgentDetail | null> {
   const res = await fetch(`${BASE}/agents/${chainId}/${tokenId}`, {
     headers: authHeaders(),
     next: { revalidate: 60 },
     ...(timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // opt-in only: the by-id reader treats a missing record as a removal, while
+    // the other callers keep reading a missing detail as null
+    if (signalRemoved && (res.status === 404 || res.status === 410)) {
+      throw new AgentRemovedError(res.status);
+    }
+    return null;
+  }
   const body = (await res.json()) as DetailResponse;
   if (!body.success) return null;
   const data = body.data;
@@ -260,7 +273,13 @@ async function loadSnapshot(): Promise<boolean> {
     const raw = await fs.readFile(file, "utf8");
     const snap = JSON.parse(raw) as SnapshotFile;
     index.agents.clear();
-    for (const a of snap.agents) index.agents.set(indexKey(a.chain_id, a.token_id), a);
+    // a snapshot that carries no endpoint data cannot be judged on one, so the
+    // regime decides whether the full gate applies or only the category rule
+    const regime = snapshotEndpointRegime(snap.agents);
+    for (const a of snap.agents) {
+      if (!shouldAdmitSnapshotEntry(a, regime)) continue;
+      index.agents.set(indexKey(a.chain_id, a.token_id), a);
+    }
     index.snapshotTotal = snap.source.upstreamTotal;
     index.totalFetched = snap.agents.length;
     index.lastWarmAt = Date.now();
@@ -589,7 +608,7 @@ export async function getAgentByToken(
   // A detail read still goes live and the snapshot is only the fallback, so a hung registry
   // degrades to the shelf instead of hanging the request.
   try {
-    const detail = await fetchAgentDetail(chainId, tokenId, LIVE_DETAIL_TIMEOUT_MS);
+    const detail = await fetchAgentDetail(chainId, tokenId, LIVE_DETAIL_TIMEOUT_MS, true);
     if (detail) {
       // Served regardless, because the caller asked for this exact agent by id; shelved only if it
       // qualifies, so a direct read cannot smuggle an unqualified listing into browse.
@@ -601,8 +620,14 @@ export async function getAgentByToken(
       }
       return detail;
     }
-  } catch {
-    // 8004scan unavailable or slow: fall through to the snapshot
+  } catch (e) {
+    // A definitive not-found evicts, because the registry said the agent is gone.
+    // A timeout or a registry fault keeps the snapshot, because neither is evidence.
+    const action = shelfActionOnFailure(classifyLiveReadFailure({ error: e }));
+    if (action === "evict") {
+      index.agents.delete(indexKey(chainId, tokenId));
+      return null;
+    }
   }
   return cached;
 }

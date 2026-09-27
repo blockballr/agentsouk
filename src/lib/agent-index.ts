@@ -71,3 +71,144 @@ export function isShelfReady(a: {
   );
   return endpoints.some((u) => privateEndpointReason(u) === null);
 }
+
+// fetchAgentDetail returns null for every non-ok response, which folds a
+// definitive removal into the same value as a registry fault. A caller serving
+// exactly one agent opts into this error so a 404 can evict the snapshot entry
+// instead of serving it forever; a caller that does not opt in keeps seeing null.
+export class AgentRemovedError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`agent is no longer on the registry (${status})`);
+    this.name = "AgentRemovedError";
+    this.status = status;
+  }
+}
+
+// What a live read told us about one cached entry when it did not confirm it.
+export type LiveReadFailure =
+  | { kind: "not_found"; status: number | null }
+  | { kind: "timeout" }
+  | { kind: "error"; message?: string };
+
+// What to do with the cached entry when the live read did not confirm it.
+export type ShelfFailureAction = "evict" | "keep" | "keep_stale";
+
+// A definitive not-found evicts. A timeout keeps the entry and marks it stale,
+// because a slow agent may still be alive. Any other fault keeps the entry as it
+// was, since charging our own outage to the agent would evict healthy listings.
+export function shelfActionOnFailure(failure: LiveReadFailure): ShelfFailureAction {
+  switch (failure.kind) {
+    case "not_found":
+      return "evict";
+    case "timeout":
+      return "keep_stale";
+    case "error":
+      return "keep";
+  }
+}
+
+export interface LiveReadSignals {
+  // HTTP status when the registry answered, null or omitted when it never did.
+  status?: number | null;
+  // The error the read threw, when it threw.
+  error?: unknown;
+}
+
+// Folds the two things a live read leaves behind, a status and a thrown error,
+// into the single failure the shelf decision understands. Anything unrecognised
+// is an error, which never evicts, so a missing signal cannot delist an agent.
+export function classifyLiveReadFailure(signals: LiveReadSignals): LiveReadFailure {
+  if (signals.status === 404 || signals.status === 410) {
+    return { kind: "not_found", status: signals.status };
+  }
+  if (signals.error instanceof AgentRemovedError) {
+    return { kind: "not_found", status: signals.error.status };
+  }
+  const name = signals.error instanceof Error ? signals.error.name : "";
+  if (name === "TimeoutError" || name === "AbortError") {
+    return { kind: "timeout" };
+  }
+  return {
+    kind: "error",
+    ...(signals.error instanceof Error ? { message: signals.error.message } : {}),
+  };
+}
+
+// How far an entry has fallen behind its last confirmation. "stale" keeps the
+// card on the page with a last-checked note; "overdue" says a live re-check is
+// due before the entry is trusted again, so the page can say it is not
+// responding rather than hide it.
+export type ShelfFreshness = "fresh" | "stale" | "overdue" | "unknown";
+
+export interface FreshnessWindow {
+  staleAfterMs: number;
+  overdueAfterMs: number;
+}
+
+// Both bounds are inclusive: the age equal to a threshold takes the later state.
+// A confirmation dated in the future is clock skew, not freshness.
+export function shelfFreshness(
+  lastConfirmedAt: number | null,
+  now: number,
+  window: FreshnessWindow,
+): ShelfFreshness {
+  if (lastConfirmedAt === null) return "unknown";
+  const age = now - lastConfirmedAt;
+  if (age < window.staleAfterMs) return "fresh";
+  if (age < window.overdueAfterMs) return "stale";
+  return "overdue";
+}
+
+// One hour without confirmation shows a last-checked note; a day is overdue for
+// a live re-check. Both sit far above the 60s refresh cooldown, so a healthy
+// process never labels an entry it just topped up.
+export const DEFAULT_FRESHNESS_WINDOW: FreshnessWindow = {
+  staleAfterMs: 60 * 60 * 1000,
+  overdueAfterMs: 24 * 60 * 60 * 1000,
+};
+
+// A committed snapshot either carries endpoint data or predates it. The chain-97
+// snapshot carries endpoints on every entry; the chain-56 snapshot carries them
+// on only a few, so gating that shelf on an endpoint would empty it. The regime
+// is decided once for the whole snapshot, not guessed per entry from a missing
+// field, so a sparse snapshot cannot silently drop its classified agents.
+export type SnapshotEndpointRegime = "endpoints-available" | "no-endpoints";
+
+export interface EndpointBearing {
+  a2a_endpoint?: string | null;
+  mcp_server?: string | null;
+}
+
+function carriesEndpoint(a: EndpointBearing): boolean {
+  return (
+    (typeof a.a2a_endpoint === "string" && a.a2a_endpoint.length > 0) ||
+    (typeof a.mcp_server === "string" && a.mcp_server.length > 0)
+  );
+}
+
+// Endpoints count as available only when a strict majority of entries carry one,
+// so a handful of scout-added rows on an otherwise endpoint-less snapshot cannot
+// flip the shelf into endpoint gating and drop the rest.
+export function snapshotEndpointRegime(
+  agents: readonly EndpointBearing[],
+): SnapshotEndpointRegime {
+  if (agents.length === 0) return "no-endpoints";
+  const withEndpoint = agents.filter(carriesEndpoint).length;
+  return withEndpoint * 2 > agents.length ? "endpoints-available" : "no-endpoints";
+}
+
+// Admits a committed snapshot entry under the same gate as a live one where the
+// snapshot carries endpoints. Where it does not, the endpoint requirement is
+// dropped and a real category is required, so an endpoint-less shelf keeps its
+// classified entries instead of being wiped by a field it never captured.
+export function shouldAdmitSnapshotEntry(
+  entry: EndpointBearing & { category?: string | null },
+  regime: SnapshotEndpointRegime,
+): boolean {
+  if (regime === "no-endpoints") {
+    return Boolean(entry.category) && entry.category !== "general";
+  }
+  return isShelfReady(entry);
+}
