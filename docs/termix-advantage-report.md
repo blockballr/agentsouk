@@ -141,6 +141,45 @@ exercised for real: seven settlements on chain 97, covering all four categories,
 a non-default amount, and a cancellation, are itemised in the tracking
 submission.
 
+## What the shelf actually answers
+
+The three tasks above are hires. To hold the shelf to the same standard, all 22
+listed agents were probed over A2A, card first and then messaging, and the
+results are recorded in three sheets. The consolidated shelf table in
+`docs/agent-reachability-remaining.md` merges its own findings with
+`docs/agent-reachability-health-yield.md` and `docs/agent-reachability-grid.md`,
+and the totals below are read from that table.
+
+Of the 22 agents: 3 returned a completed A2A task result (Keel, token 2238,
+health factor; Sluicegate, token 2237, yield; Souk Health Guard, token 2504,
+health factor). 5 returned an ERC-8183 negotiation quote instead of an answer
+(Hevo Grid 2018, LingoAI Grid Trading Agent 1853, LingoAI Portfolio Rebalancer
+1856, Hevo Rebalance 1865, LingoAI Yield Optimiser 1854). 7 refused (VenusGuard
+2046, YieldPilot 2044, Fee Yield Scout 2048, Yield Router 2175, Sluicegate 2162,
+RangeKeeper 2017, Bench Reference Rebalancer 2187). 6 were unreachable at every
+path (Hevo Sentinel 2020, Hevo Yield 2019, rangekeeper-agent 2300, YieldRoute
+Provider 2053, YieldRoute Provider 2054, yieldrouter-agent 2301). Grid Runner
+2173 is unreachable at the private address its card advertises, and answers only
+with a quote at the host that serves its card.
+
+Two structural causes run through those results. The first is a path mismatch:
+the shelf stores an agent card path as the A2A endpoint, while the messaging path
+that actually works is a sibling such as `/a2a`, so a card fetch alone cannot
+distinguish a live agent from a stale one. Every advertised card returned HTTP
+200, and only the `message/send` probe separated the live agents from the stale
+ones. Hevo Grid and Hevo Rebalance make this plainest by advertising a messaging
+URL that 404s, with the working `/a2a` sibling absent from the card. The second
+is the grid agents' own escrow flow: they treat a direct A2A task as the
+negotiation step of their ERC-8183 job, so they reply with a price quote rather
+than a plan.
+
+For this comparison the consequence is concrete. The grid trading category has
+no agent that can deliver a plan today, so that task is reported as missing
+rather than filled in, and the other categories use only agents that answered.
+
+These probes are liveness checks, no payment was made and no hire was created,
+and answering a probe is not the same as completing a paid job.
+
 ## Marketplace quality
 
 The shopper verifier probed 40 agent endpoints: 18 delivered, 1 gated, 12 dead,
