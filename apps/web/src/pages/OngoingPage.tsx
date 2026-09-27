@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   actOnJob,
+  getHiresByWallet,
   getOngoing,
   retryTask,
   type ActiveHireSession,
@@ -10,6 +11,7 @@ import {
   type OngoingBundle,
 } from '../lib/api'
 import { explorerTxBase } from '../lib/contracts'
+import { mergeSessions } from '../lib/ongoing-merge'
 import { hireErrorText } from '../lib/hire'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
 
@@ -85,6 +87,7 @@ export function OngoingPage() {
   const [jobBusy, setJobBusy] = useState<string | null>(null)
   const [revokingId, setRevokingId] = useState<string | null>(null)
   const [revokeResults, setRevokeResults] = useState<Record<string, RevokeOutcome>>({})
+  const inFlight = useRef(false)
 
   useEffect(() => {
     void getActiveAccount().then((a) => setAccount(a))
@@ -95,12 +98,31 @@ export function OngoingPage() {
       setData(null)
       return
     }
+    if (inFlight.current) return
+    inFlight.current = true
     try {
-      const next = await getOngoing(account)
-      setData(next)
-      setError(null)
-    } catch (e) {
-      setError(hireErrorText(e))
+      // The instance ledger may be cold or belong to another instance, so the
+      // wallet's durable hires are fetched alongside it and merged by payment id.
+      const [bundle, hires] = await Promise.allSettled([
+        getOngoing(account),
+        getHiresByWallet(account),
+      ])
+      const walletHires = hires.status === 'fulfilled' ? hires.value : []
+      if (bundle.status === 'fulfilled') {
+        setData({ ...bundle.value, sessions: mergeSessions(bundle.value.sessions, walletHires) })
+        setError(null)
+        return
+      }
+      if (hires.status === 'fulfilled') {
+        // The ledger is unavailable but the wallet's own hires still stand. Counts
+        // are left absent rather than reported as zero.
+        setData({ sessions: mergeSessions([], walletHires), recentTasks: [] })
+        setError(null)
+        return
+      }
+      setError(hireErrorText(bundle.reason))
+    } finally {
+      inFlight.current = false
     }
   }, [account])
 
@@ -240,7 +262,7 @@ export function OngoingPage() {
           {sessions.length === 0 && !error && (
             <div className="rounded-[14px] border hairline border-slate-verdant/40 p-10 xl:col-span-2">
               <p className="text-[15px] text-newsprint-gray">
-                No active hires for this wallet on this server instance.
+                No hires for this wallet.
               </p>
               <p className="mt-2 text-[13px] text-newsprint-gray/80">
                 Hire from the marketplace with this wallet. Sandbox and live
@@ -315,7 +337,7 @@ export function OngoingPage() {
               <div className="mt-6 border-t hairline border-slate-verdant/30 pt-5">
                 {task ? (
                   <TaskRow task={task} onRetry={onRetry} retrying={retryingId === task.id} />
-                ) : (
+                ) : job ? (
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-[14px] text-newsprint-gray">
                       Job Funded. No delivery yet.
@@ -325,6 +347,19 @@ export function OngoingPage() {
                       className="micro rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black"
                     >
                       Run a task
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="max-w-md text-[14px] text-newsprint-gray">
+                      No recorded run for this hire on this instance. Open the agent
+                      page to see the run panel and start a task.
+                    </p>
+                    <Link
+                      to={`/agents/${session.chainId}/${session.tokenId}`}
+                      className="micro rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black"
+                    >
+                      Open agent and run
                     </Link>
                   </div>
                 )}

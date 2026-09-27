@@ -366,7 +366,9 @@ export interface OngoingBundle {
     session: ActiveHireSession | null
     job: Erc8183Job | null
   }[]
-  counts: {
+  // absent when the instance ledger could not answer and the page is running on
+  // the wallet's durable hires alone
+  counts?: {
     activeHires: number
     running: number
     ready: number
@@ -378,9 +380,25 @@ export interface OngoingBundle {
   }
 }
 
-export async function getOngoing(client?: string | null): Promise<OngoingBundle> {
+// A cold instance can leave the per instance ledger unresponsive for a minute or
+// more. The wallet's durable hires carry the page, so this call is bounded: a slow
+// answer must not hold the live sessions off the screen.
+export async function getOngoing(
+  client?: string | null,
+  timeoutMs = 10000,
+): Promise<OngoingBundle> {
   const qs = client ? `?client=${encodeURIComponent(client)}` : ''
-  const res = await fetch(`${BASE}/sessions${qs}`)
+  const controller = new AbortController()
+  const timer = timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : null
+  let res: Response
+  try {
+    res = await fetch(`${BASE}/sessions${qs}`, { signal: controller.signal })
+  } catch (e) {
+    if (controller.signal.aborted) throw new Error(`sessions timed out after ${timeoutMs}ms`)
+    throw e
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
   if (!res.ok) throw new Error(`sessions ${res.status}`)
   const body = await readJsonBody<{
     sessions?: OngoingBundle['sessions']
