@@ -178,7 +178,39 @@ interface AgentCard {
   supportedInterfaces?: { url: string }[];
 }
 
-async function deliverA2a(endpoint: string, task: string): Promise<DeliverOutcome> {
+export interface A2aMessagePart {
+  kind: "text" | "data";
+  text?: string;
+  data?: { input: Record<string, unknown> };
+}
+
+// Some agents read only the text part; the three chain-97 reference agents read a
+// structured data part and reject JSON placed in text. Sending text always, plus
+// data when the caller supplies input, keeps both audiences working.
+export function buildA2aParts(task: string, input?: Record<string, unknown>): A2aMessagePart[] {
+  const parts: A2aMessagePart[] = [{ kind: "text", text: task }];
+  if (input) parts.push({ kind: "data", data: { input } });
+  return parts;
+}
+
+// A structured input is either absent or a plain JSON object. An array, string,
+// number or null is a caller mistake, refused rather than sent as a data part the
+// agent cannot read.
+export function normalizeDeliverInput(
+  value: unknown,
+): { ok: true; input?: Record<string, unknown> } | { ok: false; error: string } {
+  if (value === undefined) return { ok: true };
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return { ok: false, error: "input must be a JSON object, for example {\"walletAddress\":\"0x...\"}." };
+  }
+  return { ok: true, input: value as Record<string, unknown> };
+}
+
+async function deliverA2a(
+  endpoint: string,
+  task: string,
+  input?: Record<string, unknown>,
+): Promise<DeliverOutcome> {
   // the registry's a2a_endpoint usually points at the agent card; the messaging
   // url lives inside it
   const endpointBlocked = privateEndpointReason(endpoint);
@@ -221,7 +253,7 @@ async function deliverA2a(endpoint: string, task: string): Promise<DeliverOutcom
         role: "user",
         kind: "message",
         messageId: `agora-${Date.now()}`,
-        parts: [{ kind: "text", text: task }],
+        parts: buildA2aParts(task, input),
       },
     },
   });
@@ -264,6 +296,7 @@ export interface DeliverInput {
   tool?: string;
   args?: Record<string, unknown>;
   task?: string;
+  input?: Record<string, unknown>;
   taskId?: string;
 }
 
@@ -320,7 +353,7 @@ export async function deliver(input: DeliverInput): Promise<
       // no task yet: report the protocol so the client can ask for one
       outcome = { protocol: "a2a", ok: true, kind: "capabilities", tools: [] };
     } else {
-      outcome = await deliverA2a(detail.a2a_endpoint, input.task);
+      outcome = await deliverA2a(detail.a2a_endpoint, input.task, input.input);
     }
   } else {
     const error =

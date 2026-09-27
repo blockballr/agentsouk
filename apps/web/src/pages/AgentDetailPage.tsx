@@ -947,6 +947,26 @@ function skeletonArgs(schema: Record<string, unknown>): string {
   return JSON.stringify(skeleton, null, 2)
 }
 
+// an A2A agent may read a structured data part; the buyer pastes one JSON object.
+// Empty is allowed (text-only flow unchanged), anything that is not a plain object
+// is named inline rather than relayed.
+function parseStructuredInput(
+  raw: string,
+): { ok: true; input?: Record<string, unknown> } | { ok: false; error: string } {
+  const trimmed = raw.trim()
+  if (!trimmed) return { ok: true }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(trimmed)
+  } catch {
+    return { ok: false, error: 'This is not valid JSON. Paste an object such as {"walletAddress":"0x..."}.' }
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return { ok: false, error: 'Structured input must be a JSON object such as {"walletAddress":"0x..."}.' }
+  }
+  return { ok: true, input: parsed as Record<string, unknown> }
+}
+
 function DeliveryPanel({ paymentId }: { paymentId: string }) {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'blocked'>('idle')
   const [data, setData] = useState<DeliverData | null>(null)
@@ -954,6 +974,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
   const [tool, setTool] = useState('')
   const [argsText, setArgsText] = useState('{}')
   const [taskText, setTaskText] = useState('')
+  const [inputText, setInputText] = useState('')
   const [output, setOutput] = useState<string | null>(null)
   const [runError, setRunError] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
@@ -988,9 +1009,16 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
     setRunError(null)
     setOutput(null)
     try {
+      // the structured input is optional; when malformed it blocks the run here
+      // rather than reaching the API as a part the agent cannot read
+      const structured = parseStructuredInput(inputText)
+      if (!structured.ok) {
+        setRunError(structured.error)
+        return
+      }
       const body = tool
         ? { paymentId, tool, args: JSON.parse(argsText || '{}') as Record<string, unknown> }
-        : { paymentId, task: taskText }
+        : { paymentId, task: taskText, ...(structured.input ? { input: structured.input } : {}) }
       const d = await deliverTask(body)
       setOutput(d.text || '(the agent returned no text)')
       if (d.error) setRunError(d.error)
@@ -1022,6 +1050,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
 
   const tools: DeliverTool[] = data?.tools ?? []
   const selected = tools.find((t) => t.name === tool)
+  const structured = parseStructuredInput(inputText)
 
   return (
     <div className="mt-4 rounded-[10px] border hairline border-slate-verdant/40 p-4">
@@ -1119,10 +1148,35 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
                 aria-label="Task description"
                 className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-xs leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               />
+              {/* some agents read a structured data part instead of prose; this stays
+                  collapsed and empty by default so the text-only flow is unchanged */}
+              <details className="rounded-[5px] border hairline border-slate-verdant/40 p-3">
+                <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
+                  Add structured input (JSON)
+                </summary>
+                <p className="mt-2 text-[10px] leading-relaxed text-newsprint-gray">
+                  Some agents read structured fields. Paste one JSON object, for example{' '}
+                  {'{"walletAddress":"0x..."}'}, and it is sent alongside your task text.
+                </p>
+                <textarea
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  rows={4}
+                  spellCheck={false}
+                  placeholder={'{"walletAddress":"0x..."}'}
+                  aria-label="Structured input as JSON"
+                  className="mt-2 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-[11px] leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                />
+                {!structured.ok && (
+                  <p className="mt-2 text-[11px] leading-relaxed text-press-black">
+                    {structured.error}
+                  </p>
+                )}
+              </details>
               <button
                 type="button"
                 onClick={run}
-                disabled={running || !taskText.trim()}
+                disabled={running || !taskText.trim() || !structured.ok}
                 className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               >
                 {running ? 'Running…' : 'Run task'}

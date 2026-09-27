@@ -143,6 +143,7 @@ export interface DeliverBody {
   tool?: string
   args?: Record<string, unknown>
   task?: string
+  input?: Record<string, unknown>
 }
 
 export interface CompareCommentaryAgent {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { deliver } from "@/lib/delivery";
+import { deliver, normalizeDeliverInput } from "@/lib/delivery";
 import { enforceRateLimit, type RateLimitVerdict } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -25,11 +25,19 @@ export async function POST(req: NextRequest) {
     tool?: string;
     args?: Record<string, unknown>;
     task?: string;
+    input?: unknown;
   } | null;
 
   const paymentId = typeof body?.paymentId === "string" ? body.paymentId : "";
   if (!paymentId) {
     return NextResponse.json({ success: false, error: "paymentId required" }, { status: 400 });
+  }
+
+  // a structured input drives agents that read a data part; anything that is not
+  // a plain object is refused here rather than relayed as an unreadable part
+  const structured = normalizeDeliverInput(body?.input);
+  if (!structured.ok) {
+    return NextResponse.json({ success: false, error: structured.error }, { status: 400 });
   }
 
   // cap the outbound agent calls before any work starts; an unreachable store is
@@ -58,6 +66,7 @@ export async function POST(req: NextRequest) {
       tool: body?.tool,
       args: body?.args,
       task: body?.task,
+      input: structured.input,
     });
 
     if (!outcome.ok) {
