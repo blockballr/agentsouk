@@ -59,5 +59,11 @@ export async function GET(req: NextRequest) {
     chainId: targetChainId(),
     ...result,
     items,
+    // the browse header reads these; snapshotTotal is the registry total behind the
+    // shelf, and the timestamps are the freshness the server can actually attest
+    snapshotTotal: result.indexStatus.snapshotTotal,
+    counts: result.categoryCounts,
+    snapshotTime: result.indexStatus.snapshotTime,
+    lastTopUpAt: result.indexStatus.lastTopUpAt,
   });
 }

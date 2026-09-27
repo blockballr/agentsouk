@@ -4,7 +4,7 @@ import type { AgentSummary } from '@agora/core'
 import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
 import { getAgents } from '../lib/api'
-import { chainLabel, settlementAssetFor } from '../lib/contracts'
+import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
 import { bestByCategory } from '../lib/compare'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
@@ -27,10 +27,18 @@ export function MarketplacePage() {
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
   const PAGE_SIZE = 48
 
-  const [result, setResult] = useState<{ items: AgentSummary[]; snapshotTotal: number | null; total: number } | null>(null)
+  const [result, setResult] = useState<{
+    items: AgentSummary[]
+    snapshotTotal: number | null
+    snapshotTime: string | null
+    lastTopUpAt: number | null
+    total: number
+  } | null>(null)
   // the network is unknown until the market answers; do not paint the compiled
   // default as if it were the deployment's chain
   const [chainId, setChainId] = useState<number | null>(null)
+  // the registry the shelf is read from, keyed to the chain the API says it serves
+  const registry = chainId !== null ? registryFor(chainId) : null
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [shortlist, setShortlist] = useState<string[]>(() => getShortlist())
@@ -107,7 +115,13 @@ export function MarketplacePage() {
     getAgents({ category, q, sort, page, limit: PAGE_SIZE, pcs })
       .then((r) => {
         if (!cancelled) {
-          setResult({ items: r.items, snapshotTotal: r.snapshotTotal, total: r.total })
+          setResult({
+            items: r.items,
+            snapshotTotal: r.snapshotTotal,
+            snapshotTime: r.snapshotTime,
+            lastTopUpAt: r.lastTopUpAt,
+            total: r.total,
+          })
           setChainId(r.chainId)
         }
       })
@@ -138,6 +152,18 @@ export function MarketplacePage() {
         )
       : result.items
     : []
+
+  // One freshness figure, never a guess: a live top-up is newer than the snapshot.
+  const freshness = useMemo(() => {
+    if (!result) return null
+    if (result.lastTopUpAt) {
+      return `catalogue refreshed ${new Date(result.lastTopUpAt).toISOString().slice(0, 10)}`
+    }
+    if (result.snapshotTime) {
+      return `snapshot taken ${result.snapshotTime.slice(0, 10)}`
+    }
+    return null
+  }, [result])
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
@@ -172,6 +198,27 @@ export function MarketplacePage() {
         >
           Settlement proof →
         </Link>
+        {chainId !== null && registry ? (
+          <p className="micro basis-full text-newsprint-gray">
+            Read from the ERC-8004 registry at{' '}
+            <a
+              href={explorerAddressUrl(chainId, registry)}
+              target="_blank"
+              rel="noreferrer"
+              title={`ERC-8004 identity registry on ${chainLabel(chainId)}`}
+              className="underline decoration-newsprint-gray underline-offset-4 transition hover:decoration-highlighter-green"
+            >
+              {registry}
+            </a>{' '}
+            on {chainLabel(chainId)}
+            {result
+              ? result.snapshotTotal
+                ? ` · ${result.total.toLocaleString('en-US')} shown of ${result.snapshotTotal.toLocaleString('en-US')} registered`
+                : ` · ${result.total.toLocaleString('en-US')} shown`
+              : ''}
+            {freshness ? ` · ${freshness}` : ''}
+          </p>
+        ) : null}
       </section>
 
       <div className="mt-12 flex flex-wrap items-center gap-x-10 gap-y-6">

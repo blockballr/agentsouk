@@ -16,6 +16,10 @@ export interface AgentsResult {
   items: AgentSummary[]
   total: number
   snapshotTotal: number | null
+  // provenance the server can attest: when the snapshot was taken, and when the
+  // process last topped it up from the registry (null until a live refresh lands)
+  snapshotTime: string | null
+  lastTopUpAt: number | null
   counts: Record<string, number>
   chainId: number | null
 }
@@ -34,6 +38,8 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     items?: AgentSummary[]
     total?: number
     snapshotTotal?: number | null
+    snapshotTime?: string | null
+    lastTopUpAt?: number | null
     counts?: Record<string, number>
     chainId?: number
   }>(res, 'agents')
@@ -47,6 +53,11 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     items,
     total: body.total ?? 0,
     snapshotTotal: body.snapshotTotal ?? null,
+    snapshotTime: typeof body.snapshotTime === 'string' ? body.snapshotTime : null,
+    lastTopUpAt:
+      typeof body.lastTopUpAt === 'number' && Number.isFinite(body.lastTopUpAt)
+        ? body.lastTopUpAt
+        : null,
     counts: body.counts ?? {},
     chainId,
   }
