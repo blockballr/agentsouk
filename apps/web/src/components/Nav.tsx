@@ -4,14 +4,11 @@ import { Wordmark } from './Wordmark'
 import { ThemeToggle } from './ThemeToggle'
 import { cartCount, subscribe } from '../lib/cart'
 
-const SOURCE_URL = 'https://github.com/blockballr/agentsouk'
-
 const links = [
   { to: '/', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
   { to: '/ongoing', label: 'Ongoing' },
   { to: '/advantage', label: 'Advantage' },
-  { to: '/about', label: 'Proof and about' },
   { to: '/list', label: 'List your agent' },
 ]
 
@@ -40,14 +37,7 @@ export function Nav() {
             ))}
           </ul>
           <div className="hidden lg:flex lg:items-center lg:gap-8">
-            <a
-              href={SOURCE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black"
-            >
-              Source
-            </a>
+            <AboutLink />
             <ThemeToggle />
             <CartLink />
             <ProfileLink />
@@ -83,17 +73,10 @@ export function Nav() {
               </NavLink>
             ))}
             <div className="mt-2 flex items-center gap-6 py-3">
-              <CartLink />
+              <AboutLink onClick={() => setMenuOpen(false)} />
               <ThemeToggle />
+              <CartLink />
               <ProfileLink onClick={() => setMenuOpen(false)} />
-              <a
-                href={SOURCE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black"
-              >
-                Source
-              </a>
             </div>
           </nav>
         </div>
@@ -114,6 +97,22 @@ function CartLink() {
       <CartGlyph />
       {count > 0 ? <span className="tabular-nums text-press-black">{count}</span> : null}
     </Link>
+  )
+}
+
+function AboutLink({ onClick }: { onClick?: () => void }) {
+  return (
+    <NavLink
+      to="/about"
+      onClick={onClick}
+      className={({ isActive }) =>
+        `micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black ${
+          isActive ? 'border-b border-highlighter-green' : 'border-b border-transparent'
+        }`
+      }
+    >
+      Proof and about
+    </NavLink>
   )
 }
 
