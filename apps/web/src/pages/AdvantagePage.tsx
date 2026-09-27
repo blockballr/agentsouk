@@ -69,6 +69,11 @@ interface AdvantageTask {
   verdict: { winner: 'agent' | 'manual' | 'tie'; notes: string }
 }
 
+// The comparison is served from data/advantage-tasks.json. Rerunning
+// scripts/run-advantage-tasks.mjs overwrites that file with a fresh capture, so
+// refreshing the numbers is a script run rather than a code edit. A chain 97
+// re-capture has to name chain 97 agents: the token ids in the current file
+// (266933, 45422, 117823) are chain 56 mainnet agents this deployment cannot call.
 async function getAdvantageReport(): Promise<AdvantageReport> {
   const res = await fetch(`${BASE}/advantage`)
   if (!res.ok) throw new Error(`advantage ${res.status}`)
@@ -176,7 +181,27 @@ function NetworkPanel({ report }: { report: AdvantageReport }) {
           <p className="mt-3 font-serif text-2xl font-medium">{network.name}</p>
           <p className="mt-1 text-sm text-newsprint-gray">{networkLine(network)}</p>
           {capture ? (
-            <dl className="mt-5 space-y-2 text-sm text-newsprint-gray">
+            <p className="mt-5 max-w-3xl text-sm leading-snug text-press-black">
+              {captureLead(capture.measuredAt ?? report.generatedAt)} This deployment settles real
+              sUSD on BSC testnet chain 97, so for current evidence see the{' '}
+              <Link
+                to="/agents/97/2173"
+                className="underline decoration-highlighter-green decoration-1 underline-offset-2 hover:text-highlighter-green"
+              >
+                settled hire to Grid Runner on chain 97
+              </Link>
+              , or browse the{' '}
+              <Link
+                to="/agents"
+                className="underline decoration-highlighter-green decoration-1 underline-offset-2 hover:text-highlighter-green"
+              >
+                marketplace
+              </Link>
+              .
+            </p>
+          ) : null}
+          {capture ? (
+            <dl className="mt-4 space-y-2 text-sm text-newsprint-gray">
               <div className="flex justify-between gap-4">
                 <dt>Captured</dt>
                 <dd className="tabular-nums text-press-black">
@@ -223,6 +248,43 @@ function networkLine(network: { chainId: number; asset?: AdvantageAsset }) {
 function railLabel(capture: AdvantageCapture) {
   if (capture.settledOnChain) return capture.rail ?? 'on chain'
   return capture.rail === 'sandbox' ? 'sandbox, no funds moved' : (capture.rail ?? 'not settled on chain')
+}
+
+const NUMBER_WORDS = [
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen',
+]
+const TENS_WORDS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+
+function numberWord(n: number): string {
+  if (n < 20) return NUMBER_WORDS[n]
+  if (n < 100) return TENS_WORDS[Math.floor(n / 10)] + (n % 10 ? `-${NUMBER_WORDS[n % 10]}` : '')
+  return String(n)
+}
+
+// A capture timestamp alone lets a stale comparison pass for the current build,
+// so the age is spelled out and grows with the clock instead of being frozen.
+export function captureAgeWords(measuredAt?: string, now: Date = new Date()): string | null {
+  if (!measuredAt) return null
+  const measured = Date.parse(measuredAt)
+  if (Number.isNaN(measured)) return null
+  const days = Math.floor((now.getTime() - measured) / 86_400_000)
+  if (days < 0) return null
+  if (days === 0) return 'less than a day'
+  if (days === 1) return 'one day'
+  if (days < 13) return `${numberWord(days)} days`
+  if (days < 56) return `about ${numberWord(Math.round(days / 7))} weeks`
+  if (days < 361) return `about ${numberWord(Math.round(days / 30.44))} months`
+  const years = Math.round(days / 365.25)
+  return years <= 1 ? 'over a year' : `about ${numberWord(years)} years`
+}
+
+// The lead sentence for the capture block: which rail measured these, and how
+// long ago. Kept as a string so the no-funds claim and the age can be tested.
+export function captureLead(measuredAt?: string, now: Date = new Date()): string {
+  const age = captureAgeWords(measuredAt, now)
+  const when = age ? `, and the capture is ${age} old` : ''
+  return `These captures were measured on the sandbox rail on their own date, so no funds moved in them${when}.`
 }
 
 function VerdictCard({ task }: { task: AdvantageTask }) {
