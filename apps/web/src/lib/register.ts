@@ -77,12 +77,35 @@ export interface ReceiptWaitOptions {
   timeoutMs?: number
   /** Delay between reads. */
   intervalMs?: number
+  /** How long one read may hang before it counts as a miss. */
+  readTimeoutMs?: number
   /** Called after each empty read with the elapsed milliseconds, so the ui can report honestly. */
   onProgress?: (elapsedMs: number) => void
 }
 
 export const RECEIPT_TIMEOUT_MS = 90_000
 export const RECEIPT_POLL_MS = 2_500
+
+// A wallet provider can stop answering without rejecting, for example when its
+// popup closes with the request in flight, so a single read must never be
+// allowed to hang the whole wait past its budget.
+export const POLL_READ_TIMEOUT_MS = 15_000
+
+function withPollTimeout<T>(work: Promise<T>, timeoutMs: number): Promise<T | null> {
+  return new Promise<T | null>((resolve) => {
+    const timer = setTimeout(() => resolve(null), timeoutMs)
+    work.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      () => {
+        clearTimeout(timer)
+        resolve(null)
+      },
+    )
+  })
+}
 
 /**
  * eth_getTransactionReceipt resolves as soon as a transaction is broadcast, so one immediate
@@ -95,9 +118,10 @@ export async function waitForTransactionReceipt(
 ): Promise<TransactionReceipt | null> {
   const timeoutMs = options.timeoutMs ?? RECEIPT_TIMEOUT_MS
   const intervalMs = options.intervalMs ?? RECEIPT_POLL_MS
+  const readTimeoutMs = options.readTimeoutMs ?? POLL_READ_TIMEOUT_MS
   const started = Date.now()
   for (;;) {
-    const receipt = await read().catch(() => null)
+    const receipt = await withPollTimeout(Promise.resolve().then(read), readTimeoutMs)
     if (receipt) return receipt
     const elapsed = Date.now() - started
     if (elapsed >= timeoutMs) return null
