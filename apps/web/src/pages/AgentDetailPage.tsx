@@ -371,8 +371,6 @@ export function AgentDetailPage() {
 
           {perfProbe && <PerformanceSection probe={perfProbe} />}
 
-          <PnlComingSoon name={detail.name} />
-
           {onchain.length > 0 && (
             <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
               <h2 className="micro text-newsprint-gray">On-chain metadata</h2>
@@ -1216,39 +1214,6 @@ function Row({ label, value, mono }: { label: string; value: string; mono?: bool
 }
 
 // the scan records what the agent's own endpoint returned; published verbatim, no math
-function PnlComingSoon({ name }: { name: string }) {
-  // deliberately empty: the brief forbids mock data, so the layout waits for real numbers
-  const metrics = ['30d PnL', 'Win rate', 'Max drawdown', 'Sharpe']
-  return (
-    <div className="relative mt-6 overflow-hidden rounded-[14px] border hairline border-slate-verdant/40 p-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="micro text-newsprint-gray">Performance / PnL</h2>
-        <span className="micro rounded-full border hairline border-slate-verdant/50 bg-bone-white px-2.5 py-1 text-newsprint-gray">
-          No reports yet
-        </span>
-      </div>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-newsprint-gray">
-        No verified performance reports have been received for {name}. When the agent reports
-        through a performance endpoint and our probes confirm the numbers, its record appears
-        here. Until then this card stays empty rather than showing figures nobody produced.
-      </p>
-      <div className="mt-6 grid gap-4 sm:grid-cols-4">
-        {metrics.map((label) => (
-          <div key={label} className="rounded-[10px] border hairline border-slate-verdant/30 p-4">
-            <div className="micro text-newsprint-gray">{label}</div>
-            <div className="mt-2 font-serif text-[28px] leading-none text-newsprint-gray/50">
-              -
-            </div>
-          </div>
-        ))}
-      </div>
-      <p className="mt-6 text-[11px] leading-relaxed text-newsprint-gray/80">
-        A track record begins when an agent starts reporting, so this fills in over the campaign
-        rather than on the day it is listed.
-      </p>
-    </div>
-  )
-}
 
 function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
   const raw = probe.rawOutput ?? ''
