@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { fetchAgentsPage, searchAgents } from "@/lib/scanner";
+import {
+  fetchAgentsPage,
+  resolveIndexBuildTarget,
+  searchAgents,
+} from "@/lib/scanner";
 import { classifyAgent, relevanceScore } from "@/lib/categories";
 import { AgentSummary, CATEGORY_KEYS, CategoryKey } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// POST /api/index/build?per=40&secret=...
-// writes a balanced snapshot of real, live ERC-8004 agents on BSC to
-// data/agents.json
+// POST /api/index/build?per=40&chain=97&secret=...
+// writes a balanced snapshot of real, live ERC-8004 agents to the target
+// chain's snapshot file (data/agents.json on 56, data/agents-97.json on 97)
 // targeted keyword searches stand in for the unreliable semantic backend, and
 // the newest pages add freshness and general diversity
 // requests fan out in parallel batches within the active tier's rate limits
@@ -96,6 +100,11 @@ export async function POST(req: NextRequest) {
   }
 
   const perCategory = Math.min(60, Math.max(5, Number(sp.get("per") ?? 40) || 40));
+  // An explicit chain wins; otherwise the deployment target. The fetch chain and
+  // the output file come from the same value, so a chain-97 run never reads 56
+  // nor writes the mainnet snapshot.
+  const buildTarget = resolveIndexBuildTarget(sp.get("chain"));
+  const chainId = buildTarget.chainId;
 
   const jobs: { label: string; run: () => Promise<{ data: RawLike[]; total?: number | null }> }[] = [];
 
@@ -104,7 +113,7 @@ export async function POST(req: NextRequest) {
       jobs.push({
         label: `search:${key}:${term}`,
         run: async () => {
-          const r = await searchAgents(term, 100);
+          const r = await searchAgents(term, 100, chainId);
           return { data: r.data as RawLike[], total: r.total };
         },
       });
@@ -114,7 +123,7 @@ export async function POST(req: NextRequest) {
     jobs.push({
       label: `pages:${p}`,
       run: async () => {
-        const r = await fetchAgentsPage(p);
+        const r = await fetchAgentsPage(p, undefined, chainId);
         return { data: r.data as RawLike[], total: r.meta.pagination.total };
       },
     });
@@ -207,12 +216,13 @@ export async function POST(req: NextRequest) {
     agents: selected,
   };
 
-  const outPath = path.join(process.cwd(), "data", "agents.json");
+  const outPath = path.join(process.cwd(), "data", buildTarget.snapshotFile);
   await mkdir(path.dirname(outPath), { recursive: true });
   await writeFile(outPath, JSON.stringify(snapshot, null, 2), "utf8");
 
   return NextResponse.json({
     success: true,
+    chainId,
     written: outPath,
     snapshot: {
       snapshotTime: snapshot.snapshotTime,

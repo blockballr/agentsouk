@@ -124,6 +124,23 @@ export async function searchAgents(
   };
 }
 
+export interface IndexBuildTarget {
+  chainId: number;
+  snapshotFile: string;
+}
+
+// The build route must read and write the same chain, or a testnet build
+// regenerates a mainnet snapshot the reader never opens. An explicit chain wins;
+// otherwise the deployment target decides. The fallback is the target chain,
+// never a hardcoded 56.
+export function resolveIndexBuildTarget(
+  requested?: string | number | null,
+): IndexBuildTarget {
+  const parsed = Number(requested);
+  const chainId = Number.isFinite(parsed) && parsed > 0 ? parsed : targetChainId();
+  return { chainId, snapshotFile: snapshotFileFor(chainId) };
+}
+
 export async function fetchAgentDetail(
   chainId: number,
   tokenId: string,
