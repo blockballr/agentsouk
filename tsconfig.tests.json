@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "types": ["vite/client", "node"]
+  },
+  "include": [
+    "next-env.d.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": ["node_modules", "apps", "packages"]
+}
