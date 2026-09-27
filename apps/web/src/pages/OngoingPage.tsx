@@ -337,19 +337,59 @@ export function OngoingPage() {
       {account && recent.length > 0 && (
         <div className="mt-16">
           <p className="micro text-newsprint-gray">Recent tasks (session ended)</p>
+          <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">
+            Ended sessions keep their agent, job and deliverable here. Revoke
+            closes the session in the ledger so nothing further is served
+            against it; it does not cancel the authorization on chain.
+          </p>
           <div className="mt-6 space-y-3">
             {recent.map(({ task, job }) => (
               <article
                 key={task.id}
                 className="rounded-[10px] border hairline border-slate-verdant/30 p-4"
               >
-                <TaskRow task={task} onRetry={onRetry} retrying={retryingId === task.id} compact />
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <Link
+                      to={`/agents/${task.chainId}/${task.tokenId}`}
+                      className="font-serif text-[22px] leading-none text-press-black hover:text-highlighter-green"
+                    >
+                      {task.agentName}
+                    </Link>
+                    <p className="micro mt-2 text-newsprint-gray">
+                      chain {task.chainId} · token {task.tokenId} ·{' '}
+                      <span className="font-mono">{task.paymentId.slice(0, 18)}…</span>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onRevoke(task.paymentId)}
+                    disabled={revokingId === task.paymentId}
+                    className="micro rounded-[5px] border hairline border-press-black/30 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+                  >
+                    {revokingId === task.paymentId ? 'Revoking…' : 'Revoke session'}
+                  </button>
+                </div>
+
+                <div className="mt-4">
+                  <TaskRow task={task} onRetry={onRetry} retrying={retryingId === task.id} />
+                </div>
+
                 {job && (
-                  <p className="micro mt-2 text-newsprint-gray">
-                    job {job.status}
+                  <p className="micro mt-3 text-newsprint-gray">
+                    job <span className="text-press-black">{job.status}</span>
+                    {job.budgetUsd ? ` · budget $${job.budgetUsd}` : ''}
                     {job.deliverable ? ' · deliverable recorded' : ''}
+                    {job.attestation ? ` · ${job.attestation}` : ''}
                   </p>
                 )}
+
+                <Link
+                  to={`/agents/${task.chainId}/${task.tokenId}`}
+                  className="micro mt-3 inline-block rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black"
+                >
+                  Open agent and session
+                </Link>
               </article>
             ))}
           </div>
