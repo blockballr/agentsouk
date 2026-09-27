@@ -1,16 +1,36 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { RegistrationDraft } from '@agora/core'
 import {
+  RECEIPT_POLL_MS,
+  RECEIPT_TIMEOUT_MS,
   confirmRegistration,
   prepareRegistration,
   tokenIdFromReceipt,
+  waitForTransactionReceipt,
   type ConfirmResult,
   type PrepareResult,
+  type TransactionReceipt,
 } from '../lib/register'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
-import { connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
+import {
+  chainIdToHex,
+  connectWallet,
+  ensureBscChain,
+  getActiveAccount,
+  getProvider,
+  setTargetChain,
+} from '../lib/wallet'
 
-type Step = 'form' | 'prepared' | 'signing' | 'confirming' | 'listed' | 'error'
+// pending means the wallet already sent a transaction and we are waiting on its receipt, so the
+// only control from there is a check, never a second send
+type Step =
+  | 'form'
+  | 'prepared'
+  | 'signing'
+  | 'confirming'
+  | 'pending'
+  | 'listed'
+  | 'error'
 
 const CATEGORY_OPTIONS: { value: RegistrationDraft['category']; label: string }[] = [
   { value: 'yield', label: 'Yield' },
@@ -38,6 +58,9 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
   const [result, setResult] = useState<ConfirmResult | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [txHash, setTxHash] = useState<`0x${string}` | null>(null)
+  // latched in the same tick as the send, so a repeat click can never reach eth_sendTransaction twice
+  const sentLatch = useRef(false)
 
   const set = <K extends keyof RegistrationDraft>(key: K, value: RegistrationDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }))
@@ -47,30 +70,45 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     setMessage(null)
     setBusy(true)
     try {
-      // the claim records an owner, so connecting first makes the later check meaningful
-      setTargetChain(chainId)
+      // the claim records an owner, so connect first; the chain to be on comes from the server
+      // response, not the client default, because the calldata is encoded for the server's chain
       const account = (await getActiveAccount()) ?? (await connectWallet())
-      await ensureBscChain()
       const res = await prepareRegistration(draft, account)
+      setTargetChain(res.chainId)
+      let onChain: string
+      try {
+        onChain = await ensureBscChain()
+      } catch {
+        setErrors([`Your wallet could not switch to ${chainLabel(res.chainId)}. Nothing was sent.`])
+        return
+      }
+      if (onChain?.toLowerCase() !== chainIdToHex(res.chainId)) {
+        setErrors([
+          `Your wallet is on chain ${onChain}, not ${chainLabel(res.chainId)}. Nothing was sent.`,
+        ])
+        return
+      }
+      sentLatch.current = false
       setPrepared(res)
       setStep('prepared')
     } catch (e) {
       setErrors([(e as Error).message])
+    } finally {
+      setBusy(false)
     }
-    setBusy(false)
   }
 
-  async function register() {
-    if (!prepared) return
+  async function sign() {
+    if (!prepared || txHash || sentLatch.current) return
     setMessage(null)
     setErrors([])
     setStep('signing')
-    let txHash: `0x${string}`
+    let hash: `0x${string}`
     try {
       const provider = await getProvider()
       const account = (await getActiveAccount()) ?? (await connectWallet())
       // sent from the participant's own wallet, so the registry records them as owner
-      txHash = (await provider.request({
+      hash = (await provider.request({
         method: 'eth_sendTransaction',
         params: [
           {
@@ -91,35 +129,57 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
       return
     }
 
-    setStep('confirming')
-    try {
-      const receipt = (await (await getProvider()).request({
-        method: 'eth_getTransactionReceipt',
-        params: [txHash],
-      })) as { logs?: { address: string; topics: string[]; data: string }[] } | null
+    // keep the hash before anything else can fail: from here the flow only ever checks this send
+    sentLatch.current = true
+    setTxHash(hash)
+    await checkTransaction(hash)
+  }
 
-      // mined but not yet indexed: say so rather than claiming a failure
+  async function checkTransaction(hash: `0x${string}`) {
+    if (!prepared) return
+    setErrors([])
+    setStep('confirming')
+    setMessage('Waiting for the transaction to confirm. This usually takes a few seconds.')
+    try {
+      const provider = await getProvider()
+      const receipt = await waitForTransactionReceipt(
+        () =>
+          provider
+            .request({ method: 'eth_getTransactionReceipt', params: [hash] })
+            .then((r) => r as TransactionReceipt | null),
+        {
+          timeoutMs: RECEIPT_TIMEOUT_MS,
+          intervalMs: RECEIPT_POLL_MS,
+          onProgress: (elapsedMs) =>
+            setMessage(
+              `Waiting for the transaction to confirm (${Math.max(1, Math.round(elapsedMs / 1000))}s so far).`,
+            ),
+        },
+      )
+
+      // no receipt inside the budget means the transaction is still pending on the node, not failed
       if (!receipt) {
         setMessage(
-          'The transaction is still pending. Wait for it to confirm, then use "Check my listing" below.',
+          'Your wallet sent the transaction and it is still waiting to confirm. Check it again below; it will not be sent a second time.',
         )
-        setStep('prepared')
+        setStep('pending')
         return
       }
 
       const agentId = tokenIdFromReceipt(receipt.logs ?? [], prepared.registryAddress)
       if (!agentId) {
         setMessage(
-          'The transaction confirmed but the registry did not report a new agent id. Send us the transaction hash and we will look at it.',
+          'The transaction is on the chain, but the registry did not report a new agent id. Do not send it again. Check the transaction or send us the hash and we will look at it.',
         )
-        setStep('prepared')
+        setStep('error')
         return
       }
 
+      setMessage('The transaction confirmed. Checking the registry against the chain.')
       const confirmed = await confirmRegistration({
         claimId: prepared.claimId,
         agentId,
-        txHash,
+        txHash: hash,
       })
       setResult(confirmed)
       setStep(confirmed.status === 'confirmed' ? 'listed' : 'error')
@@ -127,10 +187,13 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         setMessage(confirmed.verification?.detail ?? 'The chain did not agree with that registration.')
       }
     } catch (e) {
-      setStep('error')
       setMessage((e as Error).message)
+      setStep('error')
     }
   }
+
+  // the server says which chain the calldata is for, so links and labels follow it, not the client default
+  const displayChain = prepared?.chainId ?? chainId
 
   if (step === 'listed' && result) {
     return (
@@ -148,7 +211,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             <dt className="micro text-newsprint-gray">Registration</dt>
             <dd className="mt-1 break-all font-mono text-xs">
               <a
-                href={`${explorerTxBase(chainId)}/tx/${result.txHash}`}
+                href={`${explorerTxBase(displayChain)}/tx/${result.txHash}`}
                 target="_blank"
                 rel="noreferrer"
                 className="text-press-black hover:text-highlighter-green"
@@ -172,7 +235,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
       <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
         Describe the agent, then send the ERC-8004 registration from your own wallet. You pay the
         gas for that one transaction, and nothing is charged by us. Registration is on{' '}
-        {chainLabel(chainId)}.
+        {chainLabel(displayChain)}.
       </p>
 
       <div className="mt-6 space-y-4">
@@ -287,22 +350,38 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           </button>
         )}
 
-        {(step === 'prepared' || step === 'signing' || step === 'confirming') && (
+        {step === 'prepared' && !txHash && (
           <button
             type="button"
-            disabled={step !== 'prepared'}
-            onClick={() => void register()}
+            onClick={() => void sign()}
             className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:opacity-60"
           >
-            {step === 'prepared'
-              ? 'Sign the registration in your wallet'
-              : step === 'signing'
-                ? 'Waiting for your wallet'
-                : 'Checking the registry'}
+            Sign the registration in your wallet
           </button>
         )}
 
-        {step === 'error' && (
+        {(step === 'signing' || step === 'confirming') && (
+          <button
+            type="button"
+            disabled
+            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink opacity-60"
+          >
+            {step === 'signing' ? 'Waiting for your wallet' : 'Waiting for the transaction to confirm'}
+          </button>
+        )}
+
+        {/* once a hash exists the only control is a check of that send, so no click can send it twice */}
+        {txHash && (step === 'pending' || step === 'prepared' || step === 'error') && (
+          <button
+            type="button"
+            onClick={() => void checkTransaction(txHash)}
+            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:opacity-60"
+          >
+            Check the transaction again
+          </button>
+        )}
+
+        {step === 'error' && !txHash && (
           <button
             type="button"
             onClick={() => setStep('prepared')}
