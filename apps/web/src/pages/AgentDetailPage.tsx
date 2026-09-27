@@ -23,6 +23,7 @@ import {
   setTargetChain,
 } from '../lib/wallet'
 import {
+  deliveryErrorText,
   fetchHireRequirements,
   hireErrorText,
   signAndSettleHire,
@@ -955,7 +956,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
       }
       setPhase('ready')
     } catch (e) {
-      setBlocked(hireErrorText(e))
+      setBlocked(deliveryErrorText(e))
       setPhase('blocked')
     }
   }
@@ -978,7 +979,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
       if (d.error) setRunError(d.error)
       if (d.taskId) await refreshTask(d.taskId)
     } catch (e) {
-      setRunError(hireErrorText(e))
+      setRunError(deliveryErrorText(e))
     } finally {
       setRunning(false)
     }
@@ -996,7 +997,7 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
         if (t.error) setRunError(t.error)
       }
     } catch (e) {
-      setRunError(hireErrorText(e))
+      setRunError(deliveryErrorText(e))
     } finally {
       setRetrying(false)
     }

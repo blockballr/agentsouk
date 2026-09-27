@@ -116,6 +116,49 @@ export function hireErrorText(e: unknown): string {
   return 'The payment could not be completed. Please try again.'
 }
 
+// delivery failures are not payment failures: the agent's own endpoint could not be called
+export function deliveryErrorText(e: unknown): string {
+  const raw = (e as Error)?.message ?? ''
+
+  // a private or malformed url is refused before dialling; name it and the fix
+  const badEndpoint = raw.match(
+    /"([^"]+)" is (a private address that the marketplace cannot reach|not a valid url|not an http url)/i,
+  )
+  if (badEndpoint) {
+    const url = badEndpoint[1]
+    const reason = badEndpoint[2].toLowerCase()
+    const detail = reason.includes('private address')
+      ? 'a private address the marketplace cannot call'
+      : reason.includes('valid url')
+        ? 'not a valid url'
+        : 'not a public http address'
+    return `Agent Souk could not reach this agent's endpoint. Its listing points at ${url}, which is ${detail}, so the agent's owner needs to publish a public, reachable endpoint. Nothing is reported as delivered until that is fixed.`
+  }
+
+  if (
+    /timed out reaching the agent|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|request failed|fetch failed|network request failed/i.test(
+      raw,
+    )
+  ) {
+    return "Agent Souk could not reach this agent's endpoint. The agent's owner needs to check that it is online and publicly reachable, then run the task again. Nothing is reported as delivered until it answers."
+  }
+
+  // a raw parse or empty-body error explains nothing
+  if (
+    /unexpected end of json|failed to execute 'json'|is not valid json|json\.parse|syntaxerror|no readable answer/i.test(
+      raw,
+    )
+  ) {
+    return 'The marketplace could not read a result from this agent call, so nothing is reported as delivered. Try again, or ask the agent owner to check the endpoint if it keeps happening.'
+  }
+
+  const text = hireErrorText(e)
+  // hireErrorText's last resort talks about a payment, which is misleading here
+  return /^The payment could not be completed\./.test(text)
+    ? 'The task could not be delivered. The agent returned no usable result, so nothing is reported as delivered. Try again, or ask the agent owner to check the endpoint if it keeps happening.'
+    : text
+}
+
 // a rejected signature means the user said stop (code 4001 / wallet message)
 function isUserRejection(e: unknown): boolean {
   const code = (e as { code?: number }).code
