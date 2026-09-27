@@ -70,6 +70,8 @@ interface ActiveSession {
   expiresAt: string
   mode: 'sandbox' | 'prod' | 'b402'
   createdAt: string
+  paymentId: string
+  client: string
 }
 
 export interface PerformanceProbe {
@@ -227,6 +229,12 @@ export function AgentDetailPage() {
   const bscScan = `${explorer}/token/${detail.contract_address}?a=${detail.token_id}`
   const ownerScan = `${explorer}/address/${detail.owner_address}`
   const activeSession = detail.activeSession
+  // only the wallet that bought the session is offered its run controls; another
+  // viewer keeps the hire panel, because the session is not theirs to spend
+  const mySession =
+    activeSession && viewer && activeSession.client.toLowerCase() === viewer.toLowerCase()
+      ? activeSession
+      : undefined
   const verificationProbe = detail.verification
     ? isProbeCheck(detail.chain_id, detail.verification.quality)
     : false
@@ -403,7 +411,9 @@ export function AgentDetailPage() {
               </div>
             </div>
           )}
-          <h2 className="micro text-newsprint-gray">Hire this agent</h2>
+          <h2 className="micro text-newsprint-gray">
+            {mySession ? 'Run a task in your session' : 'Hire this agent'}
+          </h2>
           <div className="mt-6 space-y-4 text-[11px] uppercase tracking-[0.01em] text-newsprint-gray">
             <div className="flex justify-between">
               <span>Model</span>
@@ -423,7 +433,16 @@ export function AgentDetailPage() {
               <span className="text-press-black">{chainLabel(Number(chainId))}</span>
             </div>
           </div>
-          <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
+          {/* A wallet that already holds a live session should land on the run
+              controls rather than on a second signature: the session is already
+              bought, so offering the hire again invites paying twice for it. */}
+          {mySession ? (
+            <div className="mt-6">
+              <DeliveryPanel paymentId={mySession.paymentId} />
+            </div>
+          ) : (
+            <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
+          )}
           <p className="mt-4 text-xs leading-relaxed text-newsprint-gray">
             You sign a gasless transfer authorization; a facilitator verifies and
             settles it on-chain. Funds go straight to the agent&apos;s wallet.

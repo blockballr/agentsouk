@@ -204,6 +204,10 @@ export interface ActiveSession {
   expiresAt: string;
   mode: Receipt["mode"];
   createdAt: string;
+  // the ledger key, so a page can offer the run controls for a session the
+  // viewer already bought instead of asking them to sign for a second one
+  paymentId: string;
+  client: string;
 }
 
 export interface ActiveHireSession extends ActiveSession {
@@ -256,5 +260,7 @@ export function findActiveSession(
     expiresAt: best.session.expiresAt,
     mode: best.mode,
     createdAt: best.createdAt,
+    paymentId: best.paymentId,
+    client: best.client,
   };
 }

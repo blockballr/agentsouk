@@ -284,6 +284,14 @@ export function OngoingPage() {
                       {job.deliverable ? <span>deliverable on file</span> : null}
                     </p>
                   )}
+                  {/* the way through to the work: every card needs one, because a
+                      session with attempts left is meant to be used, not re-bought */}
+                  <Link
+                    to={`/agents/${session.chainId}/${session.tokenId}`}
+                    className="micro mt-3 inline-block rounded-[5px] bg-highlighter-green px-3 py-2 text-typesetter-ink shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                  >
+                    Open agent and run
+                  </Link>
                 </div>
                 <div className="text-right text-[13px] text-newsprint-gray">
                   <div>
