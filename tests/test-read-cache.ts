@@ -15,7 +15,7 @@ const scanner = vi.hoisted(() => ({ queryAgents: vi.fn() }));
 vi.mock("@/lib/scanner", () => scanner);
 
 const receipts = vi.hoisted(() => ({
-  listPaymentsByClient: vi.fn(),
+  listPaymentsByClient: vi.fn(async () => []),
   getPaymentDurable: vi.fn(),
   receiptsMode: vi.fn(() => "memory"),
   revokeSessionDurable: vi.fn(),

@@ -8,6 +8,7 @@ import {
   listPaymentsByClient,
   revokeSessionDurable,
 } from "@/lib/receipts-store";
+import type { StoredPayment } from "@/lib/x402";
 import { cacheKeys, cached, invalidate, invalidatePrefix } from "@/lib/short-cache";
 import { explorerBaseFor } from "@/lib/types";
 
@@ -25,7 +26,15 @@ function sameAddr(a: string, b: string): boolean {
 // The durable view of one wallet's open sessions, in the shape the page already
 // renders, so an instance that never handled the settlement still lists them.
 async function sessionsFromStore(client: string) {
-  const stored = await listPaymentsByClient(client);
+  // A store fault or an unexpected shape must never crash the page or empty it:
+  // the ledger read above still contributes whatever it holds.
+  let stored: StoredPayment[] = [];
+  try {
+    const rows = await listPaymentsByClient(client);
+    if (Array.isArray(rows)) stored = rows;
+  } catch {
+    return [];
+  }
   const now = Date.now();
   return stored
     .filter((p) => p.activated && new Date(p.session.expiresAt).getTime() > now)
