@@ -97,6 +97,17 @@ describe("summaryFromDetail", () => {
     );
     expect(summary.verification?.status).toBe("delivered");
   });
+
+  it("carries the endpoints the shelf gate inspects", () => {
+    const summary = summaryFromDetail(
+      detail({
+        a2a_endpoint: "https://a.example/.well-known/agent-card.json",
+        mcp_server: "http://localhost:9000/mcp",
+      }),
+    );
+    expect(summary.a2a_endpoint).toBe("https://a.example/.well-known/agent-card.json");
+    expect(summary.mcp_server).toBe("http://localhost:9000/mcp");
+  });
 });
 
 describe("shouldCacheShelfAgent", () => {
@@ -145,5 +156,44 @@ describe("shelf admission", () => {
 
   it("refuses an agent that fails both", () => {
     expect(isShelfReady({})).toBe(false);
+  });
+
+  // The incident: a card declared http://localhost:8080/ as its messaging url, the marketplace
+  // called its own loopback from a serverless function and the hire died on a bare parse error.
+  it("refuses an agent whose only declared endpoint is loopback", () => {
+    expect(isShelfReady({ a2a_endpoint: "http://localhost:8080/", category: "yield" })).toBe(false);
+    expect(isShelfReady({ mcp_server: "http://127.0.0.1:3000/mcp", category: "rebalancing" })).toBe(false);
+    expect(isShelfReady({ a2a_endpoint: "http://[::1]:8080/a2a", category: "yield" })).toBe(false);
+  });
+
+  it("refuses an agent whose only declared endpoint is a private or link-local address", () => {
+    expect(isShelfReady({ mcp_server: "http://10.0.0.5/mcp", category: "yield" })).toBe(false);
+    expect(isShelfReady({ a2a_endpoint: "http://192.168.1.20/a2a", category: "grid-trading" })).toBe(false);
+    expect(isShelfReady({ a2a_endpoint: "http://169.254.169.254/meta", category: "yield" })).toBe(false);
+  });
+
+  it("refuses an agent whose only declared endpoint is malformed or not http", () => {
+    expect(isShelfReady({ a2a_endpoint: "not a url", category: "yield" })).toBe(false);
+    expect(isShelfReady({ mcp_server: "ftp://agent.example/mcp", category: "yield" })).toBe(false);
+  });
+
+  it("still admits an agent with a public endpoint", () => {
+    expect(
+      isShelfReady({
+        a2a_endpoint: "https://agent.example/.well-known/agent-card.json",
+        category: "yield",
+      }),
+    ).toBe(true);
+    expect(isShelfReady({ mcp_server: "https://m.example/mcp", category: "rebalancing" })).toBe(true);
+  });
+
+  it("admits a reachable agent that also declares a private endpoint", () => {
+    expect(
+      isShelfReady({
+        a2a_endpoint: "http://localhost:8080/",
+        mcp_server: "https://m.example/mcp",
+        category: "health-factor",
+      }),
+    ).toBe(true);
   });
 });

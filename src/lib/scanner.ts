@@ -62,6 +62,8 @@ interface RawAgent {
   total_feedbacks: number;
   health_score: number | null;
   supported_trust_models: string[];
+  a2a_endpoint?: string | null;
+  mcp_server?: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -180,6 +182,9 @@ function buildSummary(raw: RawAgent): AgentSummary {
   const { category, scores } = classifyAgent(classificationText);
   return {
     ...raw,
+    // the shelf gate judges reachability from these, so normalize absent to null
+    a2a_endpoint: raw.a2a_endpoint ?? null,
+    mcp_server: raw.mcp_server ?? null,
     category,
     categoryScores: scores,
   };

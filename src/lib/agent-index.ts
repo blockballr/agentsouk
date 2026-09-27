@@ -1,4 +1,5 @@
 import { classifyAgent } from "./categories";
+import { privateEndpointReason } from "./endpoint";
 import type { AgentDetail, AgentSummary } from "./types";
 
 // The index singleton is shared by every chain this process serves, so entries are keyed by chain and token.
@@ -31,6 +32,8 @@ export function summaryFromDetail(detail: AgentDetail): AgentSummary {
     total_feedbacks: detail.total_feedbacks,
     health_score: detail.health_score,
     supported_trust_models: detail.supported_trust_models ?? [],
+    a2a_endpoint: detail.a2a_endpoint,
+    mcp_server: detail.mcp_server,
     is_active: detail.is_active,
     created_at: detail.created_at,
     category,
@@ -55,13 +58,16 @@ export function dueForRefresh(
   return now - lastRefreshAt >= cooldownMs;
 }
 
-/** Whether an agent belongs on the shelf: a callable endpoint and one of the four categories. */
+/** Whether an agent belongs on the shelf: one publicly reachable endpoint and a real category. */
 export function isShelfReady(a: {
   a2a_endpoint?: string | null;
   mcp_server?: string | null;
   category?: string | null;
 }): boolean {
-  const callable = Boolean(a.a2a_endpoint || a.mcp_server);
   const classified = Boolean(a.category) && a.category !== "general";
-  return callable && classified;
+  if (!classified) return false;
+  const endpoints = [a.a2a_endpoint, a.mcp_server].filter(
+    (u): u is string => typeof u === "string" && u.length > 0,
+  );
+  return endpoints.some((u) => privateEndpointReason(u) === null);
 }

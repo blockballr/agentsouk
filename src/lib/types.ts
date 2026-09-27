@@ -156,6 +156,8 @@ export interface AgentSummary {
   total_feedbacks: number;
   health_score: number | null;
   supported_trust_models: string[];
+  a2a_endpoint?: string | null;
+  mcp_server?: string | null;
   is_active: boolean;
   created_at: string;
   // enriched client-side
