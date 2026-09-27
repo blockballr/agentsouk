@@ -10,7 +10,6 @@ const links = [
   { to: '/', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
   { to: '/ongoing', label: 'Ongoing' },
-  { to: '/profile', label: 'Profile' },
   { to: '/advantage', label: 'Advantage' },
   { to: '/about', label: 'Proof and about' },
   { to: '/list', label: 'List your agent' },
@@ -51,6 +50,7 @@ export function Nav() {
             </a>
             <ThemeToggle />
             <CartLink />
+            <ProfileLink />
           </div>
           <button
             type="button"
@@ -85,6 +85,7 @@ export function Nav() {
             <div className="mt-2 flex items-center gap-6 py-3">
               <CartLink />
               <ThemeToggle />
+              <ProfileLink onClick={() => setMenuOpen(false)} />
               <a
                 href={SOURCE_URL}
                 target="_blank"
@@ -113,6 +114,40 @@ function CartLink() {
       <CartGlyph />
       {count > 0 ? <span className="tabular-nums text-press-black">{count}</span> : null}
     </Link>
+  )
+}
+
+function ProfileLink({ onClick }: { onClick?: () => void }) {
+  return (
+    <NavLink
+      to="/profile"
+      onClick={onClick}
+      aria-label="Profile, your listings"
+      className={({ isActive }) =>
+        `micro flex items-center gap-2 rounded-[4px] border hairline px-2.5 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
+          isActive
+            ? 'border-highlighter-green text-press-black'
+            : 'border-slate-verdant/40 text-newsprint-gray hover:text-press-black'
+        }`
+      }
+    >
+      <ProfileGlyph />
+      Profile
+    </NavLink>
+  )
+}
+
+function ProfileGlyph() {
+  return (
+    <svg width="14" height="15" viewBox="0 0 14 15" fill="none" aria-hidden="true">
+      <circle cx="7" cy="4.3" r="3.1" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M1.5 14c0-2.9 2.4-4.7 5.5-4.7s5.5 1.8 5.5 4.7"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 
