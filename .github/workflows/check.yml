@@ -1,0 +1,21 @@
+name: Text hygiene
+
+# Guards the tree against mojibake, which is UTF-8 read as cp1252 and written
+# back. It once grew a tracked file to 8 MB of noise, and the local pre-commit
+# gate only protects commits that go through it, so this runs on every push and
+# pull request to catch anything that skips the gate.
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+
+jobs:
+  text:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check for mojibake in tracked text files
+        run: node scripts/check-text.mjs
