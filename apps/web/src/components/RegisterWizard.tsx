@@ -79,6 +79,33 @@ function nextPaint(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 150))
 }
 
+// A wallet that never answers must not leave the lister watching a spinner. The
+// connection phase is the safe place to give up, because nothing has been sent
+// yet, so a retry cannot become a second transaction.
+const WALLET_TIMEOUT_MS = 25_000
+
+function withWalletTimeout<T>(work: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(
+        new Error(
+          'Your wallet did not answer. Unlock it or open it, then press the button below to try again. Nothing was sent.',
+        ),
+      )
+    }, WALLET_TIMEOUT_MS)
+    work.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
 /** The listing wizard: fill the draft, review the document, register from the owner's wallet, then let the server check the chain. */
 export function RegisterWizard({ chainId }: { chainId: number }) {
   const [step, setStep] = useState<Step>('form')
@@ -220,6 +247,11 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         `The server prepared the document at ${res.agentUri}, for ${chainLabel(res.chainId)} against registry ${res.registryAddress}.`,
       )
       setStep('prepared')
+      // the wallet opens on its own, so the lister is not left wondering whether
+      // anything happened; the button stays as the fallback for a wallet that
+      // refuses an unprompted request
+      await nextPaint()
+      void sign(res)
     } catch (e) {
       const detail = (e as Error).message
       mark('terms', 'failed', detail)
@@ -229,33 +261,37 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     }
   }
 
-  async function sign() {
-    if (!prepared || txHash || sentLatch.current) return
+  async function sign(target: PrepareResult | null | undefined = prepared) {
+    if (!target || txHash || sentLatch.current) return
     setMessage(null)
     setErrors([])
     setStep('signing')
-    mark('transaction', 'checking', 'Waiting for your wallet to sign and send the transaction.')
+    mark('transaction', 'checking', 'Asking your wallet to sign and send the transaction.')
     let hash: `0x${string}`
     try {
-      const provider = await getProvider()
-      const account = (await getActiveAccount()) ?? (await connectWallet())
+      const provider = await withWalletTimeout(getProvider())
+      const account =
+        (await getActiveAccount()) ?? (await withWalletTimeout(connectWallet()))
       // sent from the participant's own wallet, so the registry records them as owner
       hash = (await provider.request({
         method: 'eth_sendTransaction',
         params: [
           {
             from: account,
-            to: prepared.registryAddress,
-            data: prepared.registerCalldata,
+            to: target.registryAddress,
+            data: target.registerCalldata,
           },
         ],
       })) as `0x${string}`
     } catch (e) {
       const err = e as Error & { code?: number }
+      // the timeout's own sentence is the useful one, because it says what to do
       const detail =
         err.code === 4001
           ? 'You cancelled the transaction, so nothing was registered.'
-          : 'The registration could not be sent. Nothing was registered.'
+          : err.message.includes('did not answer')
+            ? err.message
+            : 'The registration could not be sent. Nothing was registered.'
       mark('transaction', 'failed', detail)
       setMessage(detail)
       setStep('prepared')
