@@ -4,7 +4,9 @@ import type { AgentSummary } from '@agora/core'
 import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
 import { getAgents } from '../lib/api'
+import { chainLabel, settlementAssetFor } from '../lib/contracts'
 import { bestByCategory } from '../lib/compare'
+import { getTargetChain } from '../lib/wallet'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
 
@@ -25,6 +27,8 @@ export function MarketplacePage() {
   const hide = sp.get('hide') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
   const PAGE_SIZE = 48
+  const chainId = getTargetChain()
+  const settlementSymbol = settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'
 
   const [result, setResult] = useState<{ items: AgentSummary[]; snapshotTotal: number | null; total: number } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -139,12 +143,31 @@ export function MarketplacePage() {
         <h1 className="font-serif text-[clamp(44px,7vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
           {category === 'all' ? 'All agents' : labelFor(category)}
         </h1>
-        {result?.snapshotTotal ? (
+        {loading && !result ? (
+          <p className="micro text-newsprint-gray">Loading agents</p>
+        ) : result?.snapshotTotal ? (
           <p className="micro text-newsprint-gray">
             {result.snapshotTotal.toLocaleString('en-US')} agents registered
           </p>
         ) : null}
       </div>
+
+      {/* the proof lives on /about, but a reviewer who lands here must still
+          see the chain and asset the market actually settles in */}
+      <section
+        aria-label="Settlement proof"
+        className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-y hairline border-slate-verdant/40 py-3"
+      >
+        <p className="micro text-newsprint-gray">
+          {chainLabel(chainId)} · chain {chainId} · hires settle on-chain in {settlementSymbol}
+        </p>
+        <Link
+          to="/about"
+          className="micro text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
+        >
+          Settlement proof →
+        </Link>
+      </section>
 
       <div className="mt-12 flex flex-wrap items-center gap-x-10 gap-y-6">
         <div className="flex flex-wrap gap-6">

@@ -40,6 +40,19 @@ const steps = [
   },
 ]
 
+// Recorded settlement evidence, one slot per chain. The testnet hire below is
+// the one we observed and can link. The mainnet slot stays pending until the
+// cutover produces a real transaction, never a placeholder hash.
+const settlementEvidence = [
+  { chainId: 56, txHash: null, agent: null, amount: null },
+  {
+    chainId: 97,
+    txHash: '0x1214d9a4b6395598ecec1c74c298f177c7744a5aea4c267fae5e8ec6c196c9e8',
+    agent: 'Hevo Yield',
+    amount: 2,
+  },
+] as const
+
 export function HomePage() {
   const [stage, setStage] = useState(0)
   const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
@@ -242,50 +255,50 @@ export function HomePage() {
               </PrimaryButton>
             </Link>
             <a
-              href={`${explorerTxBase(getTargetChain())}/tx/0x1214d9a4b6395598ecec1c74c298f177c7744a5aea4c267fae5e8ec6c196c9e8`}
-              target="_blank"
-              rel="noreferrer"
-              className="group inline-block"
-            >
-              <PrimaryButton className="group-hover:brightness-95">
-                View live settlement on {getTargetChain() === 97 ? 'testnet BscScan' : 'BscScan'}
-              </PrimaryButton>
-            </a>
-            <a
               href="https://github.com/blockballr/agentsouk"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="text-[18px] text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
             >
               Source on GitHub
             </a>
           </div>
-          <div className="mt-8 rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-6">
-            <div className="grid gap-4 text-[13px] font-mono leading-relaxed text-newsprint-gray sm:grid-cols-2">
-              <div>
-                <span className="text-muted-sage">tx </span>
-                <a
-                  href="https://testnet.bscscan.com/tx/0x1214d9a4b6395598ecec1c74c298f177c7744a5aea4c267fae5e8ec6c196c9e8"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-press-black underline decoration-press-black/30 underline-offset-2 transition hover:decoration-highlighter-green"
-                >
-                  0x1214d9a4...c196c9e8
-                </a>
-              </div>
-              <div>
-                <span className="text-muted-sage">agent </span>
-                Hevo Yield
-              </div>
-              <div>
-                <span className="text-muted-sage">asset </span>
-                2 sUSD
-              </div>
-              <div>
-                <span className="text-muted-sage">chain </span>
-                {chainLabel(getTargetChain())} ({getTargetChain()})
-              </div>
-            </div>
+          <div className="mt-8 grid gap-px overflow-hidden rounded-[10px] border hairline border-slate-verdant/40 bg-slate-verdant/40 sm:grid-cols-2">
+            {settlementEvidence.map((e) => {
+              const asset = settlementAssetFor(e.chainId)
+              return (
+                <div key={e.chainId} className="bg-bone-white p-6">
+                  <p className="micro text-muted-sage">
+                    {chainLabel(e.chainId)} · chain {e.chainId}
+                  </p>
+                  <div className="mt-4 space-y-2 text-[13px] font-mono leading-relaxed text-newsprint-gray">
+                    <div>
+                      <span className="text-muted-sage">tx </span>
+                      {e.txHash ? (
+                        <a
+                          href={`${explorerTxBase(e.chainId)}/tx/${e.txHash}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-press-black underline decoration-press-black/30 underline-offset-2 transition hover:decoration-highlighter-green"
+                        >
+                          {e.txHash.slice(0, 12)}...{e.txHash.slice(-8)}
+                        </a>
+                      ) : (
+                        <span>pending cutover</span>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-muted-sage">agent </span>
+                      {e.agent ?? 'awaiting the first mainnet hire'}
+                    </div>
+                    <div>
+                      <span className="text-muted-sage">asset </span>
+                      {e.amount !== null ? `${e.amount} ${asset?.symbol ?? ''}` : asset?.symbol ?? 'pending'}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </section>
       </Reveal>

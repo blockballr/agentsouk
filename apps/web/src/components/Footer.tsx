@@ -3,7 +3,9 @@ import { Wordmark } from './Wordmark'
 import { chainLabel } from '../lib/contracts'
 import { getTargetChain } from '../lib/wallet'
 
-const columns = [
+type FooterLink = { to: string; label: string; external?: boolean }
+
+const columns: { heading: string; links: FooterLink[] }[] = [
   {
     heading: 'Market',
     links: [
@@ -22,12 +24,20 @@ const columns = [
       { to: '/agents', label: 'BNB Smart Chain' },
     ],
   },
+  {
+    heading: 'Project',
+    links: [
+      { to: '/about', label: 'Proof and about' },
+      { to: '/advantage', label: 'Advantage report' },
+      { to: 'https://github.com/blockballr/agentsouk', label: 'Source on GitHub', external: true },
+    ],
+  },
 ]
 
 export function Footer() {
   return (
     <footer className="bg-press-black text-bone-white">
-      <div className="mx-auto grid max-w-[1400px] gap-16 px-6 py-24 md:grid-cols-[1fr_auto_auto]">
+      <div className="mx-auto grid max-w-[1400px] gap-16 px-6 py-24 md:grid-cols-[1fr_auto_auto_auto]">
         <div className="max-w-xs">
           <div className="[&_.text-typesetter-ink]:text-bone-white">
             <Wordmark />
@@ -59,12 +69,23 @@ export function Footer() {
             <ul className="mt-6 space-y-4">
               {col.links.map((l) => (
                 <li key={l.label}>
-                  <Link
-                    to={l.to}
-                    className="text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
-                  >
-                    {l.label}
-                  </Link>
+                  {l.external ? (
+                    <a
+                      href={l.to}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
+                    >
+                      {l.label}
+                    </a>
+                  ) : (
+                    <Link
+                      to={l.to}
+                      className="text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
+                    >
+                      {l.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

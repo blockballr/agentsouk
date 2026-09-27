@@ -18,7 +18,8 @@ function App() {
     <MotionConfig reducedMotion="user">
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<HomePage />} />
+          <Route index element={<MarketplacePage />} />
+          <Route path="/about" element={<HomePage />} />
           <Route path="/agents" element={<MarketplacePage />} />
           <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
           <Route path="/compare" element={<ComparePage />} />
@@ -36,7 +37,7 @@ function App() {
             />
           )}
           <Route path="/list" element={<ListAgentPage />} />
-          <Route path="*" element={<HomePage />} />
+          <Route path="*" element={<MarketplacePage />} />
         </Route>
       </Routes>
     </MotionConfig>
