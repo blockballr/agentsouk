@@ -25,7 +25,7 @@ import { RegisterWizard } from '../components/RegisterWizard'
 const checklist = [
   {
     title: 'A reachable endpoint',
-    why: 'The verifier makes a real MCP tools/list or A2A message/send call over HTTPS. Unreachable endpoints are badged dead on sight. Of the 40 agents we have shopped, 17 delivered and 11 were dead before the first call came back.',
+    why: 'The verifier makes a real MCP tools/list or A2A message/send call over HTTPS. An agent with no callable endpoint is badged unreachable, and one that fails the call is badged dead. Of the 40 agents recorded in data/verifications.json, 18 delivered and 12 were dead before the first call came back; those counts were checked against the file.',
   },
   {
     title: 'x402 support',
@@ -36,8 +36,8 @@ const checklist = [
     why: 'The classifier reads your registration name and description. Say what the agent does in the category\u2019s own words: rebalancing and LP ranges, grid trading, yield optimisation, health factor monitoring. Padding or keyword stuffing does not survive the classifier.',
   },
   {
-    title: 'A real deliverable',
-    why: 'The verifier sends your agent a task and an AI reviewer grades the response: good, partial, or poor. Agents that answer with substance get delivered badges, and the grade is public on your badge.',
+    title: 'A graded response',
+    why: 'The verifier asks your agent a capability question over its own endpoint, and the reply is graded good, partial or poor, with the grade public on your badge. On chain 97 that grade is scored deterministically from the reply; the paid-hire verifier that grades a delivered task runs on chain 56.',
   },
   {
     title: 'One agent, one registration',
@@ -900,8 +900,18 @@ const verificationTone: Record<string, string> = {
   unreachable: 'border-slate-verdant/45 text-newsprint-gray',
 }
 
-function verificationLabel(status: string): string {
-  return status === 'delivered' ? 'verified delivered' : status
+// chain 97 has no paid-hire verifier: its delivered verdicts come from the scout
+// liveness probe in probeToVerification, so they are reachability rather than delivery
+const BSC_TESTNET_CHAIN_ID = 97
+
+function isProbeCheck(chainId: number, quality?: { model: string }): boolean {
+  if (quality?.model === 'deterministic') return true
+  return chainId === BSC_TESTNET_CHAIN_ID && !quality
+}
+
+function verificationLabel(status: string, probe: boolean): string {
+  if (status !== 'delivered') return status
+  return probe ? 'endpoint reachable' : 'verified delivered'
 }
 
 function FoundAgent({ agent }: { agent: AgentDetail }) {
@@ -912,6 +922,9 @@ function FoundAgent({ agent }: { agent: AgentDetail }) {
     classification.category === 'general'
       ? null
       : categoryDef(classification.category).label
+  const probe = agent.verification
+    ? isProbeCheck(agent.chain_id, agent.verification.quality)
+    : false
 
   return (
     <div className="rounded-[14px] border hairline border-highlighter-green/50 p-8">
@@ -940,9 +953,18 @@ function FoundAgent({ agent }: { agent: AgentDetail }) {
         )}
         {agent.verification && (
           <span
+            title={
+              agent.verification.quality
+                ? probe
+                  ? `Deterministic probe: ${agent.verification.quality.grade} - ${agent.verification.quality.reason} (checked ${agent.verification.checkedAt.slice(0, 10)})`
+                  : `AI review: ${agent.verification.quality.grade} - ${agent.verification.quality.reason} (checked ${agent.verification.checkedAt.slice(0, 10)})`
+                : probe && agent.verification.status === 'delivered'
+                  ? `Endpoint answered a liveness probe (checked ${agent.verification.checkedAt})`
+                  : `Shopper checked ${agent.verification.checkedAt}`
+            }
             className={`micro rounded-full border hairline px-2.5 py-1 ${verificationTone[agent.verification.status] ?? verificationTone.dead}`}
           >
-            {verificationLabel(agent.verification.status)}
+            {verificationLabel(agent.verification.status, probe)}
           </span>
         )}
       </div>

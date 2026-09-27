@@ -359,8 +359,8 @@ function CompareTable({
           ))}
           <p className="mt-4 text-xs text-newsprint-gray">
             Best in category is highlighted, ranked by on-chain score, then
-            feedback, then delivery. Switch an agent on to include it in your
-            hire; the winners are pre-selected.
+            feedback, then verification status. Switch an agent on to include it
+            in your hire; the winners are pre-selected.
           </p>
         </div>
       )}
@@ -451,7 +451,7 @@ function CompareCard({
   const metrics: { label: string; value: string }[] = [
     { label: 'Score', value: formatScore(agent.total_score) },
     { label: 'Avg feedback', value: formatScore(agent.average_score) },
-    { label: 'Hires', value: formatNumber(agent.total_feedbacks) },
+    { label: 'Feedback', value: formatNumber(agent.total_feedbacks) },
     { label: 'Health', value: agent.health_score !== null ? formatScore(agent.health_score) : 'n/a' },
     { label: 'Verified', value: agent.is_verified ? 'yes' : 'no' },
     { label: 'x402', value: agent.x402_supported ? 'yes' : 'no' },

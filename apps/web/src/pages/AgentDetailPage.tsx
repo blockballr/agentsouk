@@ -37,8 +37,18 @@ const verificationTone: Record<string, string> = {
   unreachable: 'border-slate-verdant/45 text-newsprint-gray',
 }
 
-function verificationLabel(status: string): string {
-  return status === 'delivered' ? 'verified delivered' : status
+// chain 97 has no paid-hire verifier: its delivered verdicts come from the scout
+// liveness probe in probeToVerification, so they are reachability rather than delivery
+const BSC_TESTNET_CHAIN_ID = 97
+
+function isProbeCheck(chainId: number, quality?: { model: string }): boolean {
+  if (quality?.model === 'deterministic') return true
+  return chainId === BSC_TESTNET_CHAIN_ID && !quality
+}
+
+function verificationLabel(status: string, probe: boolean): string {
+  if (status !== 'delivered') return status
+  return probe ? 'endpoint reachable' : 'verified delivered'
 }
 
 function explorerBase(chainId: string): string {
@@ -213,6 +223,9 @@ export function AgentDetailPage() {
   const bscScan = `${explorer}/token/${detail.contract_address}?a=${detail.token_id}`
   const ownerScan = `${explorer}/address/${detail.owner_address}`
   const activeSession = (detail as DetailWithSession).activeSession
+  const verificationProbe = detail.verification
+    ? isProbeCheck(detail.chain_id, detail.verification.quality)
+    : false
 
   function refreshDetail() {
     getAgentDetail(chainId, tokenId)
@@ -271,17 +284,21 @@ export function AgentDetailPage() {
                   <span
                     title={
                       detail.verification.quality
-                        ? `AI review: ${detail.verification.quality.grade} - ${detail.verification.quality.reason} (checked ${detail.verification.checkedAt.slice(0, 10)})`
-                        : `Shopper checked ${detail.verification.checkedAt}`
+                        ? verificationProbe
+                          ? `Deterministic probe: ${detail.verification.quality.grade} - ${detail.verification.quality.reason} (checked ${detail.verification.checkedAt.slice(0, 10)})`
+                          : `AI review: ${detail.verification.quality.grade} - ${detail.verification.quality.reason} (checked ${detail.verification.checkedAt.slice(0, 10)})`
+                        : verificationProbe && detail.verification.status === 'delivered'
+                          ? `Endpoint answered a liveness probe (checked ${detail.verification.checkedAt})`
+                          : `Shopper checked ${detail.verification.checkedAt}`
                     }
                     className={`micro rounded-full border hairline px-2.5 py-1 ${verificationTone[detail.verification.status] ?? verificationTone.dead}`}
                   >
-                    {verificationLabel(detail.verification.status)} · {detail.verification.checkedAt.slice(0, 10)}
+                    {verificationLabel(detail.verification.status, verificationProbe)} · {detail.verification.checkedAt.slice(0, 10)}
                   </span>
                 )}
                 {detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok' && (
                   <span
-                    title="verified: two simultaneous calls both delivered"
+                    title="verified: two simultaneous calls both answered"
                     className="micro rounded-full border hairline border-highlighter-green/50 px-2.5 py-1 text-highlighter-green"
                   >
                     handles concurrent requests
@@ -323,7 +340,7 @@ export function AgentDetailPage() {
               <div className="mt-6 grid grid-cols-3 gap-6">
                 <BigMetric label="Total score" value={formatScore(detail.total_score)} accent />
                 <BigMetric label="Avg feedback" value={formatScore(detail.average_score)} />
-                <BigMetric label="Hires" value={formatNumber(detail.total_feedbacks)} />
+                <BigMetric label="Feedback" value={formatNumber(detail.total_feedbacks)} />
               </div>
               <div className="mt-8 space-y-5">
                 {scoreBars.map((b) => (
