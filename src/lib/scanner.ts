@@ -1,5 +1,6 @@
 import "server-only";
 
+import { after } from "next/server";
 import {
   AgentDetail,
   AgentSummary,
@@ -229,6 +230,7 @@ interface IndexState {
   warming: boolean;
   refreshing: boolean;
   lastRefreshAt: number | null;
+  lastTopUpAt: number | null;
   lastWarmAt: number | null;
   snapshotTotal: number | null;
   error: string | null;
@@ -241,6 +243,7 @@ const index: IndexState = {
   warming: false,
   refreshing: false,
   lastRefreshAt: null,
+  lastTopUpAt: null,
   lastWarmAt: null,
   snapshotTotal: null,
   error: null,
@@ -392,6 +395,9 @@ export async function refreshIndexFromLive(
     index.lastWarmAt = Date.now();
   }
   index.error = error;
+  // Only a clean pull counts as a top up; a failed one leaves the clock at the
+  // last time the shelf actually gained live data.
+  if (error === null) index.lastTopUpAt = Date.now();
   return {
     pages: done,
     fetched,
@@ -405,6 +411,21 @@ export async function refreshIndexFromLive(
 async function maybeRefreshShelf(): Promise<void> {
   if (!dueForRefresh(index.lastRefreshAt, Date.now(), REFRESH_COOLDOWN_MS)) return;
   await refreshIndexFromLive(SHELF_REFRESH_PAGES);
+}
+
+// Trigger the shelf top up without making the browse response wait on 8004scan.
+// after() is the sanctioned mechanism and runs the work once the response is
+// sent, with waitUntil keeping the invocation alive on serverless so the refresh
+// is not cut off. Outside a request scope (tests, scripts, or a self-hosted
+// server without waitUntil) after() throws, so fall back to a floating promise,
+// which is best effort and may be cut off when the process ends.
+function scheduleShelfTopUp(): void {
+  const topUp = () => maybeRefreshShelf().catch(() => {});
+  try {
+    after(topUp);
+  } catch {
+    void topUp();
+  }
 }
 
 export interface QueryOptions {
@@ -427,6 +448,9 @@ export interface QueryResult {
     totalFetched: number;
     snapshotTotal: number | null;
     lastWarmAt: number | null;
+    // When the last successful live top up of the frozen snapshot completed, so
+    // the response can report shelf freshness without waiting on the in-flight one.
+    lastTopUpAt: number | null;
     warming: boolean;
     error: string | null;
     snapshotTime: string | null;
@@ -443,8 +467,9 @@ export async function queryAgents(
   if (opts.ensureWarm && !hasSnapshot) {
     await warmIndex({ maxPages: opts.maxWarmPages ?? 6 });
   } else if (hasSnapshot) {
-    // The snapshot is frozen at deploy time, so top up the newest page on a cooldown.
-    await maybeRefreshShelf();
+    // The snapshot is frozen at deploy time, so top up the newest page on a
+    // cooldown without blocking the browse response on the registry.
+    scheduleShelfTopUp();
   }
 
   // Only the target chain belongs on this shelf; a live read for another chain cannot leak in.
@@ -494,6 +519,7 @@ export async function queryAgents(
       totalFetched: index.totalFetched,
       snapshotTotal: index.snapshotTotal,
       lastWarmAt: index.lastWarmAt,
+      lastTopUpAt: index.lastTopUpAt,
       warming: index.warming,
       error: index.error,
       snapshotTime,
