@@ -132,7 +132,7 @@ export function deliveryErrorText(e: unknown): string {
       : reason.includes('valid url')
         ? 'not a valid url'
         : 'not a public http address'
-    return `Agent Souk could not reach this agent's endpoint. Its listing points at ${url}, which is ${detail}, so the agent's owner needs to publish a public, reachable endpoint. Nothing is reported as delivered until that is fixed.`
+    return `Agent Souk could not reach this agent's endpoint. Its own record points at ${url}, which is ${detail}, so the agent's owner needs to publish a public, reachable endpoint. Nothing is reported as delivered until that is fixed.`
   }
 
   if (
