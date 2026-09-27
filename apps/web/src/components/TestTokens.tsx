@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { mintRequestMessage } from '@agora/core'
 import {
   canAffordHire,
-  encodeBalanceOf,
   isTestnet,
   MINT_PER_CLICK,
+  readErc20Balance,
+  readNativeBalance,
   SUSD_ADDRESS,
   watchSusd,
 } from '../lib/mint'
@@ -55,26 +56,14 @@ export function TestTokens({
   // a mint is a broadcast, not a state change, so poll until the balance moves
   const waitForBalance = useCallback(
     async (who: string) => {
-      try {
-        const provider = await getProvider()
-        for (let attempt = 0; attempt < 20; attempt++) {
-          await new Promise((r) => setTimeout(r, 1500))
-          const hex = (await provider.request({
-            method: 'eth_call',
-            params: [
-              { to: SUSD_ADDRESS, data: encodeBalanceOf(who as `0x${string}`) },
-              'latest',
-            ],
-          })) as string
-          const next = BigInt(hex)
-          setBalance(next)
-          if (next > 0n) return
-        }
-      } catch {
-        // leave the balance as it was rather than silently claiming success
+      for (let attempt = 0; attempt < 20; attempt++) {
+        await new Promise((r) => setTimeout(r, 1500))
+        const next = await readErc20Balance(SUSD_ADDRESS, who as `0x${string}`, chainId)
+        if (next !== null) setBalance(next)
+        if (next !== null && next > 0n) return
       }
     },
-    [],
+    [chainId],
   )
 
   const enabled = isTestnet(chainId)
@@ -84,22 +73,17 @@ export function TestTokens({
     setPhase('reading')
     setError(null)
     try {
-      const provider = await getProvider()
-      const to = addr as `0x${string}`
-      const [tokenHex, nativeHex] = await Promise.all([
-        provider.request({
-          method: 'eth_call',
-          params: [{ to: SUSD_ADDRESS, data: encodeBalanceOf(to) }, 'latest'],
-        }) as Promise<string>,
-        provider.request({ method: 'eth_getBalance', params: [to, 'latest'] }) as Promise<string>,
+      const [tokens, nativeHex] = await Promise.all([
+        readErc20Balance(SUSD_ADDRESS, addr as `0x${string}`, chainId),
+        readNativeBalance(addr as `0x${string}`, chainId),
       ])
-      setBalance(BigInt(tokenHex))
-      setNative(BigInt(nativeHex))
+      setBalance(tokens)
+      setNative(nativeHex)
     } catch (e) {
       setError((e as Error).message)
     }
     setPhase('idle')
-  }, [addr])
+  }, [addr, chainId])
 
   useEffect(() => {
     if (open) void read()
@@ -113,21 +97,13 @@ export function TestTokens({
     }
     let cancelled = false
     void (async () => {
-      try {
-        const provider = await getProvider()
-        const hex = (await provider.request({
-          method: 'eth_call',
-          params: [{ to: SUSD_ADDRESS, data: encodeBalanceOf(addr as `0x${string}`) }, 'latest'],
-        })) as string
-        if (!cancelled) setBalance(BigInt(hex))
-      } catch {
-        if (!cancelled) setBalance(null)
-      }
+      const next = await readErc20Balance(SUSD_ADDRESS, addr as `0x${string}`, chainId)
+      if (!cancelled) setBalance(next)
     })()
     return () => {
       cancelled = true
     }
-  }, [addr])
+  }, [addr, chainId])
 
   const shortOnTokens = balance !== null && !canAffordHire(balance, priceWei)
   const shouldOffer = enabled && !!addr && shortOnTokens
