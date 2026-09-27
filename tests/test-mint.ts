@@ -1,7 +1,12 @@
 // The mint path is a transaction users send, so its encoding is pinned rather than trusted to
 // a library call: a wrong selector silently calls a nonexistent function and surfaces as an opaque revert.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { parseUnits } from "viem";
+
+// the mint route reaches server-only stores through its own module graph, and
+// this test only wants the pure drip decision it exports
+vi.mock("server-only", () => ({}));
+
 import {
   canAffordHire,
   encodeBalanceOf,
@@ -11,6 +16,7 @@ import {
   MINT_PER_CLICK,
   SUSD_ADDRESS,
 } from "../apps/web/src/lib/mint";
+import { GAS_FLOOR_WEI, gasDripFor } from "../src/app/api/tokens/mint/route";
 
 const BUYER = "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713" as const;
 
@@ -61,5 +67,38 @@ describe("test token mint", () => {
     const price = parseUnits("2", 18);
     expect(canAffordHire(parseUnits("2", 18), price)).toBe(true);
     expect(canAffordHire(parseUnits("1.99", 18), price)).toBe(false);
+  });
+});
+
+describe("sponsored gas drip", () => {
+  it("tops a wallet holding dust up by the shortfall", () => {
+    // 0.00000000000001 tBNB: the dust an earlier faucet claim can leave behind
+    const dust = 10_000n;
+    const drip = gasDripFor(dust);
+    expect(drip.outcome).toBe("topped_up");
+    expect(drip.amountWei).toBe(GAS_FLOOR_WEI - dust);
+    expect(drip.amountWei).toBeGreaterThan(0n);
+  });
+
+  it("leaves a wallet at or above the floor alone and says it is already funded", () => {
+    for (const balance of [GAS_FLOOR_WEI, GAS_FLOOR_WEI * 3n]) {
+      const drip = gasDripFor(balance);
+      expect(drip.amountWei).toBe(0n);
+      expect(drip.outcome).toBe("already_funded");
+      expect(drip.message).toMatch(/already holds/i);
+    }
+  });
+
+  it("never debits the relay more than the shortfall to the floor", () => {
+    for (const balance of [0n, 1n, GAS_FLOOR_WEI / 2n, GAS_FLOOR_WEI - 1n]) {
+      const drip = gasDripFor(balance);
+      expect(drip.amountWei).toBe(GAS_FLOOR_WEI - balance);
+      expect(drip.amountWei + balance).toBe(GAS_FLOOR_WEI);
+    }
+    expect(gasDripFor(GAS_FLOOR_WEI + 1n).amountWei).toBe(0n);
+  });
+
+  it("names the floor as one registration's gas, not an arbitrary zero", () => {
+    expect(GAS_FLOOR_WEI).toBe(parseUnits("0.001", 18));
   });
 });

@@ -128,6 +128,10 @@ export function ListAgentPage() {
   )
 }
 
+// Matches GAS_FLOOR_WEI in src/app/api/tokens/mint/route.ts: the sponsored mint
+// tops a wallet up to this amount, so one already at or above it needs no drip.
+const GAS_FLOOR_WEI = 10n ** 15n
+
 // Registration is the participant's own transaction, which is how the registry
 // records them as owner. So the wallet, not the marketplace, pays the gas, and a
 // fresh testnet wallet has none. This states the cost and the ways to cover it
@@ -140,9 +144,10 @@ function GasRequirement({ chainId }: { chainId: number }) {
   const [phase, setPhase] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
   const [gasTxHash, setGasTxHash] = useState<string | null>(null)
+  const [gasNote, setGasNote] = useState<string | null>(null)
   const testnet = isTestnet(chainId)
   const symbol = testnet ? 'tBNB' : 'BNB'
-  const holdsGas = balance !== null && balance > 0n
+  const holdsGas = balance !== null && balance >= GAS_FLOOR_WEI
 
   const refresh = useCallback(
     async (who: string | null) => {
@@ -188,10 +193,11 @@ function GasRequirement({ chainId }: { chainId: number }) {
   }
 
   // Signs the same sponsored-mint message the hire flow uses, so the visitor pays
-  // no gas; the server submits it and tops up an exactly empty wallet.
+  // no gas; the server submits it and tops the wallet up to the gas floor.
   async function getGas() {
     setError(null)
     setGasTxHash(null)
+    setGasNote(null)
     setPhase('sending')
     try {
       const who = account ?? (await connectWallet())
@@ -218,6 +224,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
         success?: boolean
         error?: string
         gasTxHash?: string | null
+        gasDrip?: { message?: string } | null
       } | null
       if (!res.ok || !body?.success) {
         setError(body?.error ?? 'The sponsored mint did not answer. Use the official faucet above.')
@@ -225,6 +232,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
         return
       }
       setGasTxHash(body.gasTxHash ?? null)
+      setGasNote(body.gasDrip?.message ?? null)
       setPhase('sent')
       // the top-up is a broadcast, not a state change, so re-read it shortly after
       setTimeout(() => void refresh(who), 5000)
@@ -253,7 +261,9 @@ function GasRequirement({ chainId }: { chainId: number }) {
 
       <dl className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <div className="flex items-center gap-2">
-          <dt className="micro text-newsprint-gray">Your {symbol}</dt>
+          <dt className="micro text-newsprint-gray">
+            Your <span className="normal-case">{symbol}</span>
+          </dt>
           <dd className="font-mono text-press-black">
             {!account
               ? 'no wallet connected'
@@ -306,22 +316,26 @@ function GasRequirement({ chainId }: { chainId: number }) {
                 onClick={() => void getGas()}
                 className="micro rounded-[5px] bg-highlighter-green px-5 py-2.5 text-typesetter-ink shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               >
-                {phase === 'sending'
-                  ? 'Sign the message in your wallet'
-                  : `Get 0.001 ${symbol} free`}
+                {phase === 'sending' ? (
+                  'Sign the message in your wallet'
+                ) : (
+                  <>
+                    Top up <span className="normal-case">{symbol}</span> for gas
+                  </>
+                )}
               </button>
             )}
           </div>
           <p className="mt-3 max-w-3xl text-xs leading-relaxed text-newsprint-gray">
-            The sponsored mint grants 10 test sUSD, and it sends 0.001 {symbol} only
-            when your {symbol} balance is exactly zero. If you already hold any{' '}
-            {symbol}, even a little, it will not top you up, so the faucet above is
-            the way. The mint itself costs you no gas.
+            The sponsored mint grants 10 test sUSD, and it tops your {symbol} up to
+            0.001 {symbol} for gas when you hold less than that. It sends only the
+            shortfall, so a wallet holding dust is still covered. The mint itself
+            costs you no gas.
           </p>
           {holdsGas && balance !== null && (
             <p className="mt-2 max-w-3xl text-xs leading-relaxed text-press-black">
-              This wallet already holds {formatNative(balance)} {symbol}, so the
-              sponsored top-up will not fire here.
+              This wallet already holds {formatNative(balance)} {symbol}, which
+              covers the gas for registration, so no top-up will be sent.
             </p>
           )}
           {phase === 'error' && error && (
@@ -331,9 +345,10 @@ function GasRequirement({ chainId }: { chainId: number }) {
           )}
           {phase === 'sent' && (
             <p className="mt-3 text-sm leading-relaxed text-press-black">
-              {gasTxHash ? (
+              {gasNote ?? 'Minted, but no gas top-up was reported.'}
+              {gasTxHash && (
                 <>
-                  Sent 0.001 {symbol} for gas, plus 10 test sUSD.{' '}
+                  {' '}
                   <a
                     href={`${explorerTxBase(chainId)}/tx/${gasTxHash}`}
                     target="_blank"
@@ -343,12 +358,6 @@ function GasRequirement({ chainId }: { chainId: number }) {
                     View the top-up
                   </a>
                   .
-                </>
-              ) : (
-                <>
-                  Minted, but no gas top-up was sent. That is what happens when the
-                  wallet already held {symbol}, and a failed top-up is not retried;
-                  use the faucet above if you are still short.
                 </>
               )}
             </p>

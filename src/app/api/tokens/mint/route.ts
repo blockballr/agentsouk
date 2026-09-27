@@ -2,7 +2,7 @@
 // The signature must recover to the funded address and a lifetime cap bounds the gas.
 
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, createWalletClient, encodeFunctionData, parseUnits, verifyMessage } from "viem";
+import { createPublicClient, createWalletClient, encodeFunctionData, formatEther, parseUnits, verifyMessage } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { bscTestnet } from "viem/chains";
 import {
@@ -34,8 +34,36 @@ const SUSD_ABI = [
 
 const GRANT = parseUnits("10", 18);
 const MAX_LIFETIME_GRANT = parseUnits("100", 18);
-const GAS_DRIP_WEI = parseUnits("0.001", 18);
+// One registration on BSC testnet costs well under 0.001 tBNB at testnet gas prices.
+export const GAS_FLOOR_WEI = parseUnits("0.001", 18);
 const SIGNATURE_TTL_SECONDS = 15 * 60;
+
+export interface GasDrip {
+  outcome: "topped_up" | "already_funded";
+  amountWei: bigint;
+  balanceWei: bigint;
+  message: string;
+}
+
+// The drip is the shortfall to the floor, never the whole floor, so a repeated
+// click cannot drain the relay or over-fund a wallet that already holds gas.
+export function gasDripFor(balanceWei: bigint): GasDrip {
+  if (balanceWei >= GAS_FLOOR_WEI) {
+    return {
+      outcome: "already_funded",
+      amountWei: 0n,
+      balanceWei,
+      message: `Your wallet already holds ${formatEther(balanceWei)} tBNB, which covers the gas for registration, so no top-up was sent.`,
+    };
+  }
+  const amountWei = GAS_FLOOR_WEI - balanceWei;
+  return {
+    outcome: "topped_up",
+    amountWei,
+    balanceWei,
+    message: `Topped up with ${formatEther(amountWei)} tBNB so the wallet holds ${formatEther(GAS_FLOOR_WEI)} tBNB for gas.`,
+  };
+}
 
 export async function POST(req: NextRequest) {
   if (targetChainId() !== 97) {
@@ -134,6 +162,13 @@ export async function POST(req: NextRequest) {
     // A small tBNB top-up: registration cannot be sponsored, because the registry
     // records the sender as owner, and the official faucet refuses most newcomers.
     let gasTxHash: string | null = null;
+    let gasDrip: {
+      outcome: GasDrip["outcome"];
+      amountWei: string;
+      balanceWei: string;
+      floorWei: string;
+      message: string;
+    } | null = null;
     try {
       const publicClient = createPublicClient({
         chain: bscTestnet,
@@ -142,12 +177,20 @@ export async function POST(req: NextRequest) {
       const balance = await publicClient.getBalance({
         address: fields.address as `0x${string}`,
       });
-      if (balance === 0n) {
+      const drip = gasDripFor(balance);
+      if (drip.amountWei > 0n) {
         gasTxHash = await wallet.sendTransaction({
           to: fields.address as `0x${string}`,
-          value: GAS_DRIP_WEI,
+          value: drip.amountWei,
         });
       }
+      gasDrip = {
+        outcome: drip.outcome,
+        amountWei: drip.amountWei.toString(),
+        balanceWei: drip.balanceWei.toString(),
+        floorWei: GAS_FLOOR_WEI.toString(),
+        message: drip.message,
+      };
     } catch {
       // the participant still has their tokens; the drip is a convenience
     }
@@ -158,6 +201,7 @@ export async function POST(req: NextRequest) {
       txHash: hash,
       explorer: `https://testnet.bscscan.com/tx/${hash}`,
       gasTxHash,
+      gasDrip,
     });
   } catch (e) {
     return NextResponse.json(
