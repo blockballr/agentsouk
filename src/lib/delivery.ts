@@ -1,6 +1,7 @@
 import "server-only";
 
 import { fetchAgentDetail } from "@/lib/scanner";
+import { privateEndpointReason } from "@/lib/endpoint";
 import { getPaymentDurable } from "./receipts-store";
 import {
   ensureTaskForPayment,
@@ -52,6 +53,15 @@ async function postRpc(
     const contentType = res.headers.get("content-type") ?? "";
     const raw = await res.text();
     return { status: res.status, contentType, body: parseRpc(raw, contentType), sessionId: res.headers.get("mcp-session-id") };
+  } catch (e) {
+    // a refused or timed out connection must not throw out of the route: the
+    // caller turns this into an honest failure instead of an empty 500
+    return {
+      status: 0,
+      contentType: "",
+      body: { error: { code: -32000, message: `request failed: ${(e as Error).message}` } },
+      sessionId: null,
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -105,6 +115,14 @@ async function deliverMcp(
   tool?: string,
   args?: Record<string, unknown>,
 ): Promise<DeliverOutcome> {
+  const blocked = privateEndpointReason(endpoint);
+  if (blocked) {
+    return {
+      protocol: "mcp",
+      ok: false,
+      error: `${blocked}. the agent's registry record points there, so the owner needs to publish a public endpoint.`,
+    };
+  }
   const init = await mcpCall(endpoint, "initialize", {
     protocolVersion: "2025-06-18",
     capabilities: {},
@@ -175,6 +193,15 @@ async function deliverA2a(endpoint: string, task: string): Promise<DeliverOutcom
     if (fromCard) messagingUrl = fromCard;
   } catch {
     // not a card; treat the registered endpoint as the messaging url directly
+  }
+
+  const blocked = privateEndpointReason(messagingUrl);
+  if (blocked) {
+    return {
+      protocol: "a2a",
+      ok: false,
+      error: `${blocked}. the agent's card names it as the messaging url, so the owner needs to publish a public one.`,
+    };
   }
 
   const send = await postRpc(messagingUrl, {

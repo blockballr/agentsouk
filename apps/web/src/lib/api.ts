@@ -113,8 +113,7 @@ export async function settleHire(body: SettleBody): Promise<SettleResult> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const result: SettleResult = await res.json()
-  return result
+  return readJsonBody<SettleResult>(res, 'settle')
 }
 
 export interface DeliverTool {
@@ -184,13 +183,34 @@ export async function getCompareCommentary(
   }
 }
 
+// A route that throws answers with an empty body, and res.json() then reports
+// "Unexpected end of JSON input", which tells the reader nothing. Read the
+// body as text first so the status and the real reason survive.
+async function readJsonBody<T>(res: Response, what: string): Promise<T> {
+  const raw = await res.text().catch(() => '')
+  if (raw) {
+    try {
+      return JSON.parse(raw) as T
+    } catch {
+      // fall through to the message below
+    }
+  }
+  if (res.status === 502 || res.status === 504) {
+    throw new Error(`${what}: the marketplace timed out reaching the agent, try again`)
+  }
+  throw new Error(`${what} returned ${res.status} with no readable answer`)
+}
+
 export async function deliverTask(body: DeliverBody): Promise<DeliverData & { taskId?: string }> {
   const res = await fetch(`${BASE}/x402/deliver`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const payload: { success: boolean; data?: DeliverData & { taskId?: string }; error?: string } = await res.json()
+  const payload = await readJsonBody<{ success: boolean; data?: DeliverData & { taskId?: string }; error?: string }>(
+    res,
+    'deliver',
+  )
   if (!payload.success) throw new Error(payload.error ?? `deliver ${res.status}`)
   return payload.data as DeliverData & { taskId?: string }
 }
