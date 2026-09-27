@@ -3,6 +3,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { getAddress } from "viem";
 import { randomBytes } from "node:crypto";
 import { targetChainId } from "@/lib/types";
+import { unreachableEndpointVerdict } from "@/lib/verifications";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -174,6 +175,8 @@ async function classify(cand: { chainId: number; tokenId: string; name: string; 
   const cap = await deliverJson(hire.paymentId);
   if (cap.status === 402 || cap.body?.success === false) {
     const err = cap.body?.error ?? `HTTP ${cap.status}`;
+    const unreachable = unreachableEndpointVerdict(err);
+    if (unreachable) return unreachable;
     if (GATED_RE.test(String(err))) return { status: "gated" as const, detail: String(err) };
     return { status: "dead" as const, detail: `deliver failed: ${err}` };
   }
@@ -189,6 +192,8 @@ async function classify(cand: { chainId: number; tokenId: string; name: string; 
   const send = await deliverJson(hire.paymentId, { task: A2A_TASK });
   if (send.status === 402 || send.body?.success === false) {
     const err = send.body?.error ?? `HTTP ${send.status}`;
+    const unreachable = unreachableEndpointVerdict(err);
+    if (unreachable) return unreachable;
     if (GATED_RE.test(String(err))) return { status: "gated" as const, detail: String(err) };
     return { status: "dead" as const, detail: `message/send failed: ${err}` };
   }
@@ -232,7 +237,7 @@ export async function GET(req: NextRequest) {
       }));
 
     const { upsertVerification } = await import("@/lib/verifications-store");
-    const results: { tokenId: string; name: string; status: string; responseMs: number }[] = [];
+    const results: { tokenId: string; name: string; status: string; responseMs: number; detail?: string }[] = [];
 
     for (const cand of candidates) {
       if (outOfTime()) break;
@@ -240,12 +245,13 @@ export async function GET(req: NextRequest) {
       try {
         const verdict = await classify(cand);
         const ms = Date.now() - t0;
-        await upsertVerification(cand.tokenId, cand.name, cand.category, verdict.status, ms);
-        results.push({ tokenId: cand.tokenId, name: cand.name, status: verdict.status, responseMs: ms });
+        await upsertVerification(cand.tokenId, cand.name, cand.category, verdict.status, ms, undefined, verdict.detail);
+        results.push({ tokenId: cand.tokenId, name: cand.name, status: verdict.status, responseMs: ms, detail: verdict.detail });
       } catch (e) {
         const ms = Date.now() - t0;
-        await upsertVerification(cand.tokenId, cand.name, cand.category, "dead", ms);
-        results.push({ tokenId: cand.tokenId, name: cand.name, status: "dead", responseMs: ms });
+        const detail = `sweep error: ${(e as Error).message}`;
+        await upsertVerification(cand.tokenId, cand.name, cand.category, "dead", ms, undefined, detail);
+        results.push({ tokenId: cand.tokenId, name: cand.name, status: "dead", responseMs: ms, detail });
       }
     }
 

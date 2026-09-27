@@ -1,5 +1,12 @@
-import type { Verification } from "@/lib/types";
-import { BSC_CHAIN_ID, scoutDirFor, targetChainId } from "@/lib/types";
+import type { Verification } from "./types";
+import { BSC_CHAIN_ID, scoutDirFor, targetChainId } from "./types";
+import { privateEndpointReason } from "./endpoint";
+
+// a recorded verification, plus the plain reason behind a refusal so an
+// auditor sees why the endpoint could not be reached
+export interface RecordedVerification extends Verification {
+  detail?: string;
+}
 
 interface VerificationsFile {
   updatedAt: string;
@@ -12,12 +19,39 @@ interface VerificationsFile {
     checkedAt: string;
     quality?: Verification["quality"];
     concurrency?: Verification["concurrency"];
+    detail?: string;
   }[];
 }
 
+// An agent can name a loopback or private address as the url the marketplace
+// should call. A delivery that fails for that reason is the agent's endpoint
+// being unreachable, not the agent being dead, so the sweep records it that way.
+// The reason is embedded verbatim, which keeps a quoted non-url in some other
+// agent error from being mistaken for the endpoint.
+export function endpointFailureReason(error: unknown): string | null {
+  const text =
+    typeof error === "string"
+      ? error
+      : error instanceof Error
+        ? error.message
+        : "";
+  if (!text) return null;
+  const url = text.match(/^"([^"]+)"/)?.[1];
+  if (!url) return null;
+  const reason = privateEndpointReason(url);
+  return reason && text.includes(reason) ? text : null;
+}
+
+export function unreachableEndpointVerdict(
+  error: unknown,
+): { status: "unreachable"; detail: string } | null {
+  const detail = endpointFailureReason(error);
+  return detail ? { status: "unreachable", detail } : null;
+}
+
 const CACHE_MS = 30_000;
-let cache: { at: number; chain: number; map: Map<string, Verification> } | null = null;
-let inflight: Promise<Map<string, Verification>> | null = null;
+let cache: { at: number; chain: number; map: Map<string, RecordedVerification> } | null = null;
+let inflight: Promise<Map<string, RecordedVerification>> | null = null;
 
 interface VerificationRow {
   tokenId: string;
@@ -26,9 +60,10 @@ interface VerificationRow {
   checkedAt?: string;
   quality?: Verification["quality"];
   concurrency?: Verification["concurrency"];
+  detail?: string;
 }
 
-function asVerification(row: VerificationRow, checkedAt: string | null): Verification | null {
+function asVerification(row: VerificationRow, checkedAt: string | null): RecordedVerification | null {
   if (
     row?.tokenId == null ||
     (row.status !== "delivered" && row.status !== "gated" && row.status !== "dead" && row.status !== "unreachable") ||
@@ -37,7 +72,7 @@ function asVerification(row: VerificationRow, checkedAt: string | null): Verific
   ) {
     return null;
   }
-  const verification: Verification = {
+  const verification: RecordedVerification = {
     status: row.status,
     responseMs: row.responseMs,
     checkedAt,
@@ -61,10 +96,13 @@ function asVerification(row: VerificationRow, checkedAt: string | null): Verific
   ) {
     verification.concurrency = row.concurrency;
   }
+  if (typeof row.detail === "string") {
+    verification.detail = row.detail;
+  }
   return verification;
 }
 
-async function loadOnce(): Promise<Map<string, Verification>> {
+async function loadOnce(): Promise<Map<string, RecordedVerification>> {
   const chainId = targetChainId();
   if (chainId !== BSC_CHAIN_ID) {
     return loadScoutFile(chainId);
@@ -76,7 +114,7 @@ async function loadOnce(): Promise<Map<string, Verification>> {
   } catch {
   }
 
-  const byToken = new Map<string, Verification>();
+  const byToken = new Map<string, RecordedVerification>();
   try {
     const fs = await import("node:fs/promises");
     const path = await import("node:path");
@@ -91,8 +129,8 @@ async function loadOnce(): Promise<Map<string, Verification>> {
   return byToken;
 }
 
-async function loadScoutFile(chainId: number): Promise<Map<string, Verification>> {
-  const byToken = new Map<string, Verification>();
+async function loadScoutFile(chainId: number): Promise<Map<string, RecordedVerification>> {
+  const byToken = new Map<string, RecordedVerification>();
   try {
     const fs = await import("node:fs/promises");
     const path = await import("node:path");
@@ -112,7 +150,7 @@ async function loadScoutFile(chainId: number): Promise<Map<string, Verification>
   return byToken;
 }
 
-export async function loadVerifications(): Promise<Map<string, Verification>> {
+export async function loadVerifications(): Promise<Map<string, RecordedVerification>> {
   const chain = targetChainId();
   if (cache && cache.chain === chain && Date.now() - cache.at < CACHE_MS) return cache.map;
   if (inflight) return inflight;
