@@ -134,9 +134,16 @@ export async function POST(req: NextRequest) {
   const byId = new Map<string, AgentSummary>();
   let fetched = 0;
   let upstreamTotal: number | null = null;
+  // Only a plain page read is scoped to the chain, so only its pagination total is
+  // the chain's registry total. A search total counts matches for that term and is
+  // honest for upstreamTotal but can never be recorded as a registry total.
+  let registryTotal: number | null = null;
 
-  for (const { data, total } of results) {
-    if (total) upstreamTotal = total;
+  for (const { label, data, total } of results) {
+    if (total) {
+      upstreamTotal = total;
+      if (label.startsWith("pages:") && total > 0) registryTotal = total;
+    }
     for (const raw of data) {
       fetched++;
       byId.set(raw.agent_id, buildSummary(raw));
@@ -211,7 +218,7 @@ export async function POST(req: NextRequest) {
   const snapshot = {
     version: 2,
     snapshotTime: new Date().toISOString(),
-    source: { fetched, upstreamTotal, deduped: deduped.length },
+    source: { fetched, upstreamTotal, deduped: deduped.length, registryTotal },
     counts,
     agents: selected,
   };
@@ -229,6 +236,7 @@ export async function POST(req: NextRequest) {
       total: selected.length,
       fetched,
       deduped: deduped.length,
+      registryTotal,
       counts,
     },
   });

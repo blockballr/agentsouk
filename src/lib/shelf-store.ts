@@ -68,6 +68,39 @@ function init(): Promise<boolean> {
   return initPromise;
 }
 
+let registryInitPromise: Promise<boolean> | null = null;
+
+// The registry total lives in its own table so it can be written by a live read
+// before any shelf row is, and read without touching the shelf. Same lazy latch
+// and same clean degradation as the shelf table above.
+function initRegistry(): Promise<boolean> {
+  const c = client();
+  if (!c) return Promise.resolve(false);
+  if (!registryInitPromise) {
+    registryInitPromise = (async () => {
+      try {
+        await Promise.race([
+          c`
+            create table if not exists registry_totals (
+              chain_id integer primary key,
+              total integer not null,
+              updated_at timestamptz default now()
+            )
+          `,
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("registry db timeout")), 4000),
+          ),
+        ]);
+        return true;
+      } catch {
+        registryInitPromise = null;
+        return false;
+      }
+    })();
+  }
+  return registryInitPromise;
+}
+
 export interface ShelfAgentRow {
   chain_id: number;
   token_id: string;
@@ -182,5 +215,48 @@ export async function deleteShelfAgent(
       delete from shelf_agents where chain_id = ${chainId} and token_id = ${tokenId}
     `;
   } catch {
+  }
+}
+
+// Persist the registry total a live read observed for a chain, so every instance
+// answers with one denominator instead of the per-process figure that flickered.
+// A non-positive total is not a denominator and is never stored.
+export async function saveRegistryTotal(
+  chainId: number,
+  total: number,
+): Promise<void> {
+  const c = client();
+  if (!Number.isFinite(total) || total <= 0) return;
+  if (!(await initRegistry()) || !c) return;
+  try {
+    await c`
+      insert into registry_totals (chain_id, total, updated_at)
+      values (${chainId}, ${Math.floor(total)}, now())
+      on conflict (chain_id) do update set
+        total = excluded.total,
+        updated_at = now()
+    `;
+  } catch {
+    // the memory value stays whatever this process already had
+  }
+}
+
+// Read the shared registry total for a chain. Nothing when the store is absent,
+// unreachable, or has never observed one, so the caller omits the denominator
+// rather than printing a figure only this process saw.
+export async function loadRegistryTotal(
+  chainId: number,
+): Promise<number | null> {
+  const c = client();
+  if (!(await initRegistry()) || !c) return null;
+  try {
+    const rows = await c`
+      select total from registry_totals where chain_id = ${chainId}
+    `;
+    if (rows.length === 0) return null;
+    const total = Number(rows[0].total);
+    return Number.isFinite(total) && total > 0 ? Math.floor(total) : null;
+  } catch {
+    return null;
   }
 }

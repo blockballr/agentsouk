@@ -24,6 +24,7 @@ interface BrowseResponse {
   indexStatus: {
     totalFetched: number;
     snapshotTotal: number | null;
+    registryTotal: number | null;
     lastWarmAt: number | null;
     warming: boolean;
     error: string | null;
@@ -227,7 +228,9 @@ export function BrowseClient({ initialCategory }: { initialCategory?: string }) 
             <span className={`h-1.5 w-1.5 rounded-full ${indexStatus.warming ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`} />
             {indexStatus.warming
               ? "Indexing live BSC agents…"
-              : `${indexStatus.totalFetched} agents indexed from ${indexStatus.snapshotTotal?.toLocaleString() ?? "…"} registered on BSC`}
+              : indexStatus.registryTotal !== null
+                ? `${indexStatus.totalFetched.toLocaleString()} shown of ${indexStatus.registryTotal.toLocaleString()} registered on BSC`
+                : `${indexStatus.totalFetched.toLocaleString()} agents shown on BSC`}
           </span>
           <span>
             {total.toLocaleString()} matching

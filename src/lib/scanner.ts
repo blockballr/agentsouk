@@ -25,7 +25,9 @@ import {
 } from "./agent-index";
 import {
   deleteShelfAgent,
+  loadRegistryTotal,
   loadShelfAgents,
+  saveRegistryTotal,
   saveShelfAgents,
   shelfStoreMode,
   type ShelfStoreMode,
@@ -243,6 +245,9 @@ interface IndexState {
   // the committed snapshot's own size, and the registry total it recorded, if any
   snapshotTotal: number | null;
   snapshotRegistryTotal: number | null;
+  // the registry total the shared store last reported for this chain; null until
+  // one has been observed anywhere, never a per-process live figure
+  storedRegistryTotal: number | null;
   // the last registry pagination total a live read saw, used only without a snapshot
   liveUpstreamTotal: number | null;
   error: string | null;
@@ -259,6 +264,7 @@ const index: IndexState = {
   lastWarmAt: null,
   snapshotTotal: null,
   snapshotRegistryTotal: null,
+  storedRegistryTotal: null,
   liveUpstreamTotal: null,
   error: null,
 };
@@ -305,24 +311,27 @@ function positiveCount(value: number | null | undefined): number | null {
 }
 
 // A fresh instance reads the committed snapshot while a topped-up instance reads the
-// live registry, so the denominator comes from what both can see: the registry total
-// recorded in the snapshot. A live pagination total is used only when there is no
-// snapshot to disagree with.
+// live registry, so the denominator must be something both can see. The shared stored
+// value wins, then the registry total the snapshot recorded, then unknown. A live
+// pagination total is used only when there is no snapshot to disagree with, so it can
+// never make two instances serving the same snapshot report different denominators.
 export function resolveShelfCounts(input: {
   snapshotAgents: number | null;
   snapshotRegistryTotal: number | null;
+  storedRegistryTotal?: number | null;
   liveUpstreamTotal: number | null;
 }): ShelfCounts {
   const snapshotTotal = nonNegativeCount(input.snapshotAgents);
+  const stored = positiveCount(input.storedRegistryTotal);
   if (snapshotTotal !== null) {
     return {
       snapshotTotal,
-      registryTotal: positiveCount(input.snapshotRegistryTotal),
+      registryTotal: stored ?? positiveCount(input.snapshotRegistryTotal),
     };
   }
   return {
     snapshotTotal: null,
-    registryTotal: positiveCount(input.liveUpstreamTotal),
+    registryTotal: stored ?? positiveCount(input.liveUpstreamTotal),
   };
 }
 
@@ -332,11 +341,13 @@ let snapshotTime: string | null = null;
 // never per request.
 let durableMerged = false;
 let durableReadAt: number | null = null;
+let registryTotalLoaded = false;
 
 // force the next query to re-read the snapshot file (used after scout curation)
 export function invalidateSnapshot(): void {
   snapshotLoaded = false;
   durableMerged = false;
+  registryTotalLoaded = false;
 }
 
 // Merge the fleet's durable shelf over whatever is already in memory. A read
@@ -357,6 +368,29 @@ async function mergeDurableShelf(force = false): Promise<number> {
     merged += 1;
   }
   return merged;
+}
+
+// Read the shared registry total once per process and again on the refresh
+// cadence, never per request. With no store this stays null, so the denominator
+// is omitted rather than guessed from whatever this process happened to see.
+async function mergeRegistryTotal(force = false): Promise<void> {
+  if (registryTotalLoaded && !force) return;
+  registryTotalLoaded = true;
+  index.storedRegistryTotal = await loadRegistryTotal(targetChainId());
+}
+
+// A live read makes the denominator real only by writing it to the shared store
+// and reading it back. A figure kept in this process is what made the old field
+// flicker between instances, so it is never adopted on its own.
+async function observeRegistryTotal(
+  chainId: number,
+  total: number | null,
+): Promise<void> {
+  const observed = positiveCount(total);
+  if (observed === null) return;
+  await saveRegistryTotal(chainId, observed);
+  const durable = await loadRegistryTotal(chainId);
+  if (durable !== null) index.storedRegistryTotal = durable;
 }
 
 // the snapshot is the primary catalogue, and live warming only fills in when it
@@ -406,6 +440,7 @@ export async function warmIndex(opts: WarmOptions = {}): Promise<void> {
   const maxPages = opts.maxPages ?? 6;
   if (index.warming) return;
   index.warming = true;
+  let observedTotal: number | null = null;
   try {
     for (let page = 1; page <= maxPages; page++) {
       if (index.warmedPages.has(page)) continue;
@@ -417,6 +452,7 @@ export async function warmIndex(opts: WarmOptions = {}): Promise<void> {
         break;
       }
       index.liveUpstreamTotal = body.meta.pagination.total;
+      observedTotal = positiveCount(body.meta.pagination.total);
       for (const raw of body.data) {
         index.agents.set(indexKey(raw.chain_id, raw.token_id), buildSummary(raw));
       }
@@ -428,6 +464,7 @@ export async function warmIndex(opts: WarmOptions = {}): Promise<void> {
   } finally {
     index.warming = false;
   }
+  await observeRegistryTotal(targetChainId(), observedTotal);
 }
 
 export interface RefreshReport {
@@ -462,6 +499,7 @@ export async function refreshIndexFromLive(
   let added = 0;
   let done = 0;
   let error: string | null = null;
+  let observedTotal: number | null = null;
   const admitted: AgentSummary[] = [];
   try {
     await loadSnapshot();
@@ -478,6 +516,7 @@ export async function refreshIndexFromLive(
         break;
       }
       index.liveUpstreamTotal = body.meta.pagination.total;
+      observedTotal = positiveCount(body.meta.pagination.total);
       for (const raw of body.data) {
         const summary = buildSummary(raw);
         // Shelve only what the marketplace would stand behind: a new registration appears once it
@@ -495,6 +534,9 @@ export async function refreshIndexFromLive(
     // persist the admitted entries so the whole fleet, and the next process,
     // sees what this pull learned
     await saveShelfAgents(admitted);
+    // the registry total this pull observed is shared too, so the denominator is
+    // the same on an instance that just topped up and one that never did
+    await observeRegistryTotal(chainId, observedTotal);
   } finally {
     index.refreshing = false;
     index.lastWarmAt = Date.now();
@@ -522,6 +564,9 @@ async function maybeRefreshShelf(): Promise<void> {
     mergeDurableShelf(true),
     refreshIndexFromLive(SHELF_REFRESH_PAGES),
   ]);
+  // The top up wrote the total it observed; this re-reads it, and any other
+  // instance's write, on the same cadence as the shelf re-read.
+  await mergeRegistryTotal(true);
 }
 
 // Trigger the shelf top up without making the browse response wait on 8004scan.
@@ -583,6 +628,7 @@ export async function queryAgents(
   // no-op once the process has merged; covers the no-snapshot path too, where
   // loadSnapshot never ran the merge
   await mergeDurableShelf();
+  await mergeRegistryTotal();
   if (opts.ensureWarm && !hasSnapshot) {
     await warmIndex({ maxPages: opts.maxWarmPages ?? 6 });
   } else if (hasSnapshot) {
@@ -631,6 +677,7 @@ export async function queryAgents(
 
   const shelfCounts = resolveShelfCounts({
     snapshotAgents: index.snapshotTotal,
+    storedRegistryTotal: index.storedRegistryTotal,
     snapshotRegistryTotal: index.snapshotRegistryTotal,
     liveUpstreamTotal: index.liveUpstreamTotal,
   });
