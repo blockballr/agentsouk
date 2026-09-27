@@ -1,12 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPaymentDurable, listPaymentsByClient, receiptsMode } from "@/lib/receipts-store";
+import { listPaymentsByClient, receiptsMode } from "@/lib/receipts-store";
 import { queryAgents } from "@/lib/scanner";
+import { cacheKeys, cached } from "@/lib/short-cache";
 import { snapshotFileFor, targetChainId } from "@/lib/types";
 import { CATEGORY_KEYS, type CategoryKey } from "@agora/core";
 
 export const dynamic = "force-dynamic";
 
+// A hire list only changes on settle or revoke; five seconds bounds the lag for
+// the settle path, which runs in another route this read cannot invalidate, and
+// keeps the answer live for a page the buyer opens rather than polls.
+const HIRES_TTL_MS = 5000;
+
+// The catalogue changes on the scanner's own 60s cadence and is shared by every
+// wallet, so map chain:token to category once per window instead of sorting the
+// whole shelf on each wallet read.
+const CATEGORY_TTL_MS = 60_000;
+
 // Hires per wallet, read from the durable receipts store rather than the in-process ledger.
+
+async function categoryMap(): Promise<Map<string, string>> {
+  return cached(
+    cacheKeys.categoryMap(targetChainId()),
+    CATEGORY_TTL_MS,
+    async () => {
+      const catalogue = await queryAgents({ limit: 5000 });
+      const map = new Map<string, string>();
+      for (const a of catalogue.items) {
+        map.set(`${a.chain_id}:${a.token_id}`, a.category ?? "general");
+      }
+      return map;
+    },
+  );
+}
 
 export async function GET(req: NextRequest) {
   const wallet = req.nextUrl.searchParams.get("wallet")?.trim() ?? "";
@@ -23,14 +49,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const stored = await listPaymentsByClient(wallet);
-  const catalogue = await queryAgents({ limit: 5000 });
-  const categoryByToken = new Map(
-    catalogue.items.map((a) => [
-      `${a.chain_id}:${a.token_id}`,
-      a.category ?? "general",
-    ]),
+  const body = await cached(cacheKeys.hires(wallet), HIRES_TTL_MS, () =>
+    hiresForWallet(wallet),
   );
+  return NextResponse.json(body);
+}
+
+async function hiresForWallet(wallet: string) {
+  // The durable read is the batch: every receipt for this wallet arrives in one
+  // query, so the join below never has to reach the store per payment.
+  const stored = await listPaymentsByClient(wallet);
+  const categoryByToken = await categoryMap();
+  const foreignCategories = new Map<string, string>();
 
   // Hires from another chain are durable and real, so read that snapshot rather than report null.
   const missing = new Set(
@@ -51,8 +81,12 @@ export async function GET(req: NextRequest) {
       for (const a of snap.agents ?? []) {
         const key = `${a.chain_id ?? chainId}:${a.token_id}`;
         // only accept the category keys the marketplace actually uses, so a stale value cannot leak
-        if (CATEGORY_KEYS.includes(a.category as CategoryKey) && !categoryByToken.has(key)) {
-          categoryByToken.set(key, a.category as CategoryKey);
+        if (
+          CATEGORY_KEYS.includes(a.category as CategoryKey) &&
+          !categoryByToken.has(key) &&
+          !foreignCategories.has(key)
+        ) {
+          foreignCategories.set(key, a.category as CategoryKey);
         }
       }
     } catch {
@@ -63,26 +97,25 @@ export async function GET(req: NextRequest) {
   // a session counts only once its payment is actually recorded, so an unsettled attempt cannot appear
   const hires = [];
   for (const p of stored) {
-    const payment = (await getPaymentDurable(p.paymentId)) ?? p;
-    if (!payment.activated) continue;
+    if (!p.activated) continue;
+    const categoryKey = `${p.agent.chainId}:${p.agent.tokenId}`;
     hires.push({
-      paymentId: payment.paymentId,
-      receiptId: payment.paymentId,
-      chainId: payment.agent.chainId,
-      tokenId: payment.agent.tokenId,
-      agentName: payment.agent.name,
-      category:
-        categoryByToken.get(`${payment.agent.chainId}:${payment.agent.tokenId}`) ?? null,
-      client: payment.client,
-      txHash: payment.txHash ?? null,
-      mode: payment.mode,
-      spendCapUsd: payment.session.spendCapUsd,
-      createdAt: payment.createdAt,
-      expiresAt: payment.session.expiresAt,
+      paymentId: p.paymentId,
+      receiptId: p.paymentId,
+      chainId: p.agent.chainId,
+      tokenId: p.agent.tokenId,
+      agentName: p.agent.name,
+      category: categoryByToken.get(categoryKey) ?? foreignCategories.get(categoryKey) ?? null,
+      client: p.client,
+      txHash: p.txHash ?? null,
+      mode: p.mode,
+      spendCapUsd: p.session.spendCapUsd,
+      createdAt: p.createdAt,
+      expiresAt: p.session.expiresAt,
     });
   }
 
-  return NextResponse.json({
+  return {
     success: true,
     wallet,
     hires,
@@ -91,5 +124,5 @@ export async function GET(req: NextRequest) {
     },
     // surfaced so a reader can tell a genuinely empty answer from an incomplete one
     source: receiptsMode(),
-  });
+  };
 }

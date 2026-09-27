@@ -7,9 +7,15 @@ import {
   getPaymentDurable,
   revokeSessionDurable,
 } from "@/lib/receipts-store";
+import { cacheKeys, cached, invalidate, invalidatePrefix } from "@/lib/short-cache";
 import { explorerBaseFor } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+// Ongoing polls every 2.5s. A five second window serves at most one durable
+// scan per wallet per window, collapsing a poll burst onto one read, while the
+// view never trails the poll cadence by more than two intervals.
+const SESSIONS_TTL_MS = 5000;
 
 function sameAddr(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
@@ -20,15 +26,18 @@ function sameAddr(a: string, b: string): boolean {
 
 export async function GET(req: NextRequest) {
   const client = req.nextUrl.searchParams.get("client")?.trim() ?? "";
+  const body = await cached(cacheKeys.sessions(client), SESSIONS_TTL_MS, () =>
+    ongoingBundle(client),
+  );
+  return NextResponse.json(body);
+}
+
+async function ongoingBundle(client: string) {
   const sessions = listActiveSessions().filter(
     (s) => !client || sameAddr(s.client, client),
   );
-  const allTasks = await listTasks(200);
-  const tasks = allTasks.filter((t) => {
-    if (!client) return true;
-    return sessions.some((s) => s.paymentId === t.paymentId);
-  });
-  const allJobs = await listJobs(200);
+  // Two independent reads, run together so a cache miss pays one round trip.
+  const [allTasks, allJobs] = await Promise.all([listTasks(200), listJobs(200)]);
   const jobs = allJobs.filter((j) => !client || sameAddr(j.client, client));
   const paymentIds = new Set(sessions.map((s) => s.paymentId));
   const scopedTasks = client
@@ -61,7 +70,7 @@ export async function GET(req: NextRequest) {
       job: jobFor(t.paymentId),
     }));
 
-  return NextResponse.json({
+  return {
     success: true,
     client: client || null,
     sessions: ongoing,
@@ -76,7 +85,7 @@ export async function GET(req: NextRequest) {
       jobsSubmitted: jobs.filter((j) => j.status === "Submitted").length,
       jobsCompleted: jobs.filter((j) => j.status === "Completed").length,
     },
-  });
+  };
 }
 
 export async function DELETE(req: NextRequest) {
@@ -108,6 +117,10 @@ export async function DELETE(req: NextRequest) {
       { status: 404 },
     );
   }
+  // A revoke must be visible on the very next read, so drop the session list
+  // and the wallet's hire list rather than let the cache serve the old view.
+  invalidatePrefix(cacheKeys.sessionsPrefix);
+  invalidate(cacheKeys.hires(client));
   // the ledger revoke above is the guarantee; the chain cancel is best-effort and
   // reported separately so a failure is never dressed up as a cancellation
   const onchain = await cancelAuthorizationDurable(paymentId);
