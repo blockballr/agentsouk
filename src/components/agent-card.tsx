@@ -42,7 +42,7 @@ export function AgentCard({ agent }: { agent: AgentSummary }) {
             </span>
           )}
           <span>
-            {formatNumber(agent.total_feedbacks)} hires
+            {formatNumber(agent.total_feedbacks)} feedback{agent.total_feedbacks === 1 ? '' : 's'}
           </span>
         </div>
         <span className="text-zinc-600">{timeAgo(agent.created_at)}</span>

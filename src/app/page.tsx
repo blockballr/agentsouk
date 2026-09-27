@@ -52,6 +52,10 @@ export default async function Home() {
 
   const platform = stats.status === "fulfilled" && stats.value ? stats.value : null;
   const rows = featured.status === "fulfilled" ? featured.value : null;
+  // scanner folds a missing chain-56 row into all zeros while still returning a block, so a
+  // block that is entirely zero means the upstream stats omitted BSC, not that BSC has no agents
+  const bscStats =
+    platform && Object.values(platform.bsc).some((n) => n > 0) ? platform.bsc : null;
 
   return (
     <div className="bg-zinc-950">
@@ -70,8 +74,8 @@ export default async function Home() {
               and hired.
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-balance text-base leading-relaxed text-zinc-400 sm:text-lg">
-              {platform
-                ? `${formatNumber(platform.bsc.totalAgents)} AI agents are registered on BNB Smart Chain. Agent Souk makes them legible: browse by what they do, check their on-chain track record, and hire in a few clicks.`
+              {bscStats
+                ? `${formatNumber(bscStats.totalAgents)} AI agents are registered on BNB Smart Chain. Agent Souk makes them legible: browse by what they do, check their on-chain track record, and hire in a few clicks.`
                 : "Browse live AI agents on BNB Smart Chain, check their on-chain track record, and hire them in a few clicks."}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -93,12 +97,12 @@ export default async function Home() {
             </div>
           </div>
 
-          {platform && (
+          {bscStats && (
             <div className="mx-auto mt-16 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
-              <Stat value={formatNumber(platform.bsc.totalAgents)} label="Agents registered" />
-              <Stat value={`+${formatNumber(platform.bsc.dailyNewAgents)}/day`} label="New agents" />
-              <Stat value={formatNumber(platform.bsc.totalFeedbacks)} label="On-chain hires" />
-              <Stat value={formatScore(platform.bsc.averageScore)} label="Avg feedback score" />
+              <Stat value={formatNumber(bscStats.totalAgents)} label="Agents registered" />
+              <Stat value={`+${formatNumber(bscStats.dailyNewAgents)}/day`} label="New agents" />
+              <Stat value={formatNumber(bscStats.totalFeedbacks)} label="On-chain feedbacks" />
+              <Stat value={formatScore(bscStats.averageScore)} label="Avg feedback score" />
             </div>
           )}
         </div>
