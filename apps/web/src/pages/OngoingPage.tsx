@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
   actOnJob,
@@ -187,6 +187,10 @@ export function OngoingPage() {
   }
 
   const sessions = data?.sessions ?? []
+  // Completed hires are history, not work in flight: they get their own section
+  // so a finished job is never mistaken for something still needing action.
+  const inflight = sessions.filter(({ job }) => job?.status !== 'Completed')
+  const completed = sessions.filter(({ job }) => job?.status === 'Completed')
   const recent = data?.recentTasks ?? []
   const counts = data?.counts
   const recentPaymentIds = new Set(recent.map(({ task }) => task.paymentId))
@@ -277,11 +281,8 @@ export function OngoingPage() {
             </div>
           )}
 
-          {sessions.map(({ session, task, job }) => (
-            <article
-              key={session.paymentId}
-              className="rounded-[14px] border hairline border-slate-verdant/40 p-6"
-            >
+          {inflight.map(({ session, task, job }) => (
+            <HireCard key={session.paymentId}>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <Link
@@ -403,8 +404,86 @@ export function OngoingPage() {
                   </p>
                 )}
               </div>
-            </article>
+            </HireCard>
           ))}
+        </div>
+      )}
+
+      {account && (
+        <div className="mt-10">
+          <p className="micro text-newsprint-gray">
+            Completed{completed.length > 0 ? ` · ${completed.length}` : ''}
+          </p>
+          {completed.length === 0 ? (
+            <p className="mt-4 text-[13px] text-newsprint-gray">
+              No completed hires for this wallet yet. Attest a submitted job and it lands here,
+              with its deliverable and attestation on file.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-4 xl:grid-cols-2">
+              {completed.map(({ session, task, job }) => (
+                <HireCard key={session.paymentId}>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <Link
+                        to={`/agents/${session.chainId}/${session.tokenId}`}
+                        className="font-serif text-[28px] leading-none text-press-black hover:text-highlighter-green"
+                      >
+                        {session.agentName}
+                      </Link>
+                      <p className="micro mt-2 text-newsprint-gray">
+                        hire session · {formatExpiry(session.expiresAt)} ·{' '}
+                        {sessionModeLabel(session.mode)}
+                      </p>
+                      {job && (
+                        <p className="micro mt-2 flex flex-wrap items-center gap-2 text-newsprint-gray">
+                          <span>ERC-8183</span>
+                          <span
+                            className={`rounded-full border hairline px-2.5 py-1 ${jobChip[job.status]}`}
+                          >
+                            {job.status}
+                          </span>
+                          <span>budget ${job.budgetUsd}</span>
+                          {job.deliverable ? <span>deliverable on file</span> : null}
+                        </p>
+                      )}
+                      <p className="micro mt-3 text-newsprint-gray">
+                        Terminal · Completed
+                        {job?.attestation ? ` · ${job.attestation}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right text-[13px] text-newsprint-gray">
+                      <div>
+                        spend cap{' '}
+                        <span className="text-press-black">${session.spendCapUsd}</span>
+                      </div>
+                      <div className="mt-1 font-mono text-[11px]">
+                        {session.paymentId.slice(0, 18)}…
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onRevoke(session.paymentId)}
+                        disabled={revokingId === session.paymentId}
+                        className="micro mt-3 rounded-[5px] border hairline border-press-black/30 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+                      >
+                        {revokingId === session.paymentId ? 'Revoking…' : 'Revoke session'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 border-t hairline border-slate-verdant/30 pt-5">
+                    {task ? (
+                      <TaskRow task={task} onRetry={onRetry} retrying={retryingId === task.id} />
+                    ) : (
+                      <p className="text-[14px] text-newsprint-gray">
+                        No recorded run for this hire on this instance.
+                      </p>
+                    )}
+                  </div>
+                </HireCard>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -495,6 +574,16 @@ export function OngoingPage() {
         </div>
       )}
     </section>
+  )
+}
+
+// One hire card, shared by the in-flight grid and the completed section, so the
+// two lists cannot drift apart in what they show for the same hire.
+function HireCard({ children }: { children: ReactNode }) {
+  return (
+    <article className="rounded-[14px] border hairline border-slate-verdant/40 p-6">
+      {children}
+    </article>
   )
 }
 
