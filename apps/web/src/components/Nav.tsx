@@ -10,6 +10,7 @@ const links = [
   { to: '/', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
   { to: '/ongoing', label: 'Ongoing' },
+  { to: '/profile', label: 'Profile' },
   { to: '/advantage', label: 'Advantage' },
   { to: '/about', label: 'Proof and about' },
   { to: '/list', label: 'List your agent' },

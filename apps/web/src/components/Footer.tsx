@@ -29,6 +29,7 @@ const columns: { heading: string; links: FooterLink[] }[] = [
     links: [
       { to: '/about', label: 'Proof and about' },
       { to: '/advantage', label: 'Advantage report' },
+      { to: '/profile', label: 'Your listings' },
       { to: 'https://github.com/blockballr/agentsouk', label: 'Source on GitHub', external: true },
     ],
   },

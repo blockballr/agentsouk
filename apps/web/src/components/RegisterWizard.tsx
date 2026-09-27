@@ -252,11 +252,18 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         >
           Open the agent page
         </Link>
+        <Link
+          to="/profile"
+          className="micro mt-6 ml-3 inline-block rounded-[5px] border hairline border-slate-verdant/50 px-5 py-2.5 text-press-black transition hover:bg-bone-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        >
+          Open your listings
+        </Link>
         <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
-          That page reads the agent from the registry, so it is the place to watch
-          as the index catches up. If the agent still has no category or no callable
-          endpoint it will not be shelved; if it does not show there, send us the
-          agent id above.
+          Your profile lists every agent this wallet owns, whether it is live, and
+          who hired it. That page reads the agent from the registry, so it is the
+          place to watch as the index catches up. If the agent still has no
+          category or no callable endpoint it will not be shelved; if it does not
+          show there, send us the agent id above.
         </p>
       </div>
     )

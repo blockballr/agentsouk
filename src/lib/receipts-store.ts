@@ -119,6 +119,34 @@ export async function listPaymentsByClient(
   return cached;
 }
 
+// Lists every receipt paid to a wallet, newest first, from the durable store: the
+// income side of the same rows listPaymentsByClient reads for a payer. The payTo is
+// the agent's receiving wallet, so a lister asking "did anyone hire me" reads here.
+export async function listPaymentsByPayee(
+  payee: string,
+  limit = 200,
+): Promise<StoredPayment[]> {
+  const cached = listPayments().filter(
+    (p) => (p.payTo ?? "").toLowerCase() === payee.toLowerCase(),
+  );
+  if (postgresEnabled() && sql && (await init())) {
+    try {
+      const rows = await sql`
+        select payload from receipts
+        where lower(payload->>'payTo') = ${payee.toLowerCase()}
+        order by created_at desc
+        limit ${limit}
+      `;
+      const stored = rows.map((r) => r.payload as StoredPayment);
+      for (const p of stored) recordPayment(p);
+      return stored;
+    } catch {
+      // fall through to whatever the memory cache holds
+    }
+  }
+  return cached;
+}
+
 // read-through: memory cache first, then postgres (backfilling the cache)
 export async function getPaymentDurable(
   paymentId: string,

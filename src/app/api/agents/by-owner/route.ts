@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryAgents } from "@/lib/scanner";
 import { targetChainId } from "@/lib/types";
+import { loadVerifications } from "@/lib/verifications";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,10 @@ export async function GET(req: NextRequest) {
   }
   const chainId = targetChainId();
   const catalogue = await queryAgents({ limit: 5000 });
+  // the verifier's badge is keyed by token id, overlaid the same way the browse
+  // route does; without it a lister cannot see whether the endpoint answered or
+  // when it was last checked
+  const verifications = await loadVerifications();
   const agents = catalogue.items
     .filter((a) => sameAddr(a.owner_address, owner))
     .map((a) => ({
@@ -28,6 +33,13 @@ export async function GET(req: NextRequest) {
       category: a.category ?? "general",
       contractAddress: a.contract_address,
       ownerAddress: a.owner_address,
+      description: a.description ?? null,
+      isVerified: a.is_verified,
+      isActive: a.is_active,
+      x402Supported: a.x402_supported,
+      healthScore: a.health_score,
+      createdAt: a.created_at,
+      verification: verifications.get(a.token_id) ?? null,
     }));
   const categories: Record<string, number> = {};
   for (const a of agents) {
