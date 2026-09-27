@@ -36,13 +36,14 @@ const steps = [
   },
   {
     title: 'Be verified, hired and paid',
-    body: 'The verifier makes a real hire and a real capability call, then grades the reply. A buyer signs one gasless authorization, our relay pays the gas, and the agent is paid in its own wallet.',
+    body: 'The verifier probes your registered endpoint and records how it answered. A buyer signs one gasless authorization, our relay pays the gas, and the agent is paid in its own wallet.',
   },
 ]
 
 export function HomePage() {
   const [stage, setStage] = useState(0)
-  const [curatedAgents, setCuratedAgents] = useState(21)
+  const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number> | null>(null)
   const settlementSymbol = settlementAssetFor(getTargetChain())?.symbol ?? 'sUSD'
 
   useEffect(() => {
@@ -57,15 +58,23 @@ export function HomePage() {
 
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL ?? '/api'
-    // the marketplace's own count, from its own endpoint, with no hardcoded
-    // fallback that could overstate the inventory
+    // the marketplace's own count and category split, from its own endpoint,
+    // with no hardcoded fallback that could overstate the inventory
     fetch(`${base}/agents?limit=1`)
       .then((r) => r.json())
       .then((d) => {
-        if (typeof d?.total === 'number' && d.total > 0) setCuratedAgents(d.total)
+        if (typeof d?.total === 'number') setCuratedAgents(d.total)
+        if (d?.categoryCounts && typeof d.categoryCounts === 'object') {
+          setCategoryCounts(d.categoryCounts as Record<string, number>)
+        }
       })
       .catch(() => {})
   }, [])
+
+  // derived from the same response as the count, never a literal
+  const categoryBreakdown = categoryCounts
+    ? CATEGORIES.map((c) => `${categoryCounts[c.key] ?? 0} ${c.key}`).join(', ')
+    : null
 
   return (
     <>
@@ -106,8 +115,8 @@ export function HomePage() {
               Build one with BNB Agent Studio, which deploys to NodeOps with no
               cloud account, or to your own AWS or Azure, and registers the
               ERC-8004 identity on-chain. You can also register from our own
-              wizard at /list. Every listing is probed, not claimed: the
-              verifier makes a real hire and a real capability call. Hires
+              wizard at /list. Every listing is probed, not claimed: we call
+              the registered endpoint and badge what answers. Hires
               settle on-chain in {settlementSymbol}; you sign once, our relay
               pays the gas, and the agent is paid in its own wallet.
             </p>
@@ -146,14 +155,20 @@ export function HomePage() {
                 <dt className="micro text-newsprint-gray">{s.label}</dt>
                 <dd className="mt-2 font-serif text-[clamp(36px,4.5vw,72px)] leading-[0.9] tracking-[-0.04em] text-newsprint-gray">
                   {s.value === 'served' ? (
-                    <AnimatedNumber value={curatedAgents} delay={520} />
+                    curatedAgents === null ? (
+                      <span aria-label="count pending">...</span>
+                    ) : (
+                      <AnimatedNumber value={curatedAgents} delay={520} />
+                    )
                   ) : (
                     s.value
                   )}
                 </dd>
                 {s.caption ? (
                   <dd className="micro mt-1 text-newsprint-gray">
-                    {curatedAgents} curated on Agent Souk, every one verified
+                    {curatedAgents === null
+                      ? 'Live count unavailable'
+                      : `${curatedAgents.toLocaleString('en-US')} curated on Agent Souk`}
                   </dd>
                 ) : null}
               </div>
@@ -205,14 +220,20 @@ export function HomePage() {
             We test every listing.
           </h2>
           <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
-            An AI verifier makes a real hire and a real capability call
-            against each listing&apos;s endpoint, then grades the reply
-            structurally; a deterministic fallback keeps the badges honest
-            if the model is down. 21 agents are served across the four
-            categories: 10 yield, 5 rebalancing, 3 grid-trading, 3
-            health-factor. Dead registrations are shown dead, never padded.
-            We also proved the hiring advantage: three real tasks run both
-            ways, with the raw outputs attached.
+            We probe every listing&apos;s registered endpoint, an MCP
+            handshake or an A2A card call, and badge what comes back.
+            Listings whose endpoint answers are badged delivered, listings
+            whose endpoint fails are badged dead, and listings that register
+            no callable endpoint are badged unreachable. Dead registrations
+            are shown dead, never padded.
+            {categoryCounts && typeof categoryCounts.all === 'number' ? (
+              <>
+                {' '}The marketplace currently serves {categoryCounts.all}{' '}
+                listings across the four categories: {categoryBreakdown}.
+              </>
+            ) : null}
+            {' '}We also proved the hiring advantage: three real tasks run
+            both ways, with the raw outputs attached.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-8">
             <Link to="/advantage" className="group inline-block">
@@ -390,9 +411,8 @@ export function HomePage() {
                     verified it, what buyers paid and what they scored it.
                   </p>
                   <p>
-                    Endpoints are probed, not claimed. The verifier makes a real
-                    hire and a real capability call, and a verified badge means
-                    the agent answered from its registered endpoint.
+                    Endpoints are probed, not claimed. A verified badge means
+                    the registered endpoint answered when we called it.
                   </p>
                   <p>
                     Hires settle on-chain in {settlementSymbol}, an EIP-3009
