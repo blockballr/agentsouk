@@ -23,6 +23,14 @@ import {
   snapshotEndpointRegime,
   summaryFromDetail,
 } from "./agent-index";
+import {
+  deleteShelfAgent,
+  loadShelfAgents,
+  saveShelfAgents,
+  shelfStoreMode,
+  type ShelfStoreMode,
+  summaryFromRow,
+} from "./shelf-store";
 
 const BASE = "https://8004scan.io/api/v1/public";
 
@@ -259,10 +267,35 @@ interface SnapshotFile {
 
 let snapshotLoaded = false;
 let snapshotTime: string | null = null;
+// The shared store is read once per process and again on the refresh cadence,
+// never per request.
+let durableMerged = false;
+let durableReadAt: number | null = null;
 
 // force the next query to re-read the snapshot file (used after scout curation)
 export function invalidateSnapshot(): void {
   snapshotLoaded = false;
+  durableMerged = false;
+}
+
+// Merge the fleet's durable shelf over whatever is already in memory. A read
+// runs once per process unless forced, so a browse cannot turn the database into
+// the new bottleneck; a due refresh forces a fresh read.
+async function mergeDurableShelf(force = false): Promise<number> {
+  if (durableMerged && !force) return 0;
+  durableMerged = true;
+  durableReadAt = Date.now();
+  const rows = await loadShelfAgents(targetChainId());
+  let merged = 0;
+  for (const row of rows) {
+    const summary = summaryFromRow(row);
+    // the store can hold several chains; the gate already ran, this keeps the
+    // shelf to the chain this deployment serves
+    if (!summary || summary.chain_id !== targetChainId()) continue;
+    index.agents.set(indexKey(summary.chain_id, summary.token_id), summary);
+    merged += 1;
+  }
+  return merged;
 }
 
 // the snapshot is the primary catalogue, and live warming only fills in when it
@@ -288,6 +321,9 @@ async function loadSnapshot(): Promise<boolean> {
     index.lastWarmAt = Date.now();
     snapshotTime = snap.snapshotTime;
     snapshotLoaded = true;
+    // overlay the shared store so an instance that never pulled still serves what
+    // another instance learned
+    await mergeDurableShelf();
     return true;
   } catch {
     return false;
@@ -362,6 +398,7 @@ export async function refreshIndexFromLive(
   let added = 0;
   let done = 0;
   let error: string | null = null;
+  const admitted: AgentSummary[] = [];
   try {
     await loadSnapshot();
     for (let page = 1; page <= pages; page++) {
@@ -382,6 +419,7 @@ export async function refreshIndexFromLive(
         // Shelve only what the marketplace would stand behind: a new registration appears once it
         // has a callable endpoint and a category, never unclassified or unverifiable.
         if (!isShelfReady(summary)) continue;
+        admitted.push(summary);
         const key = indexKey(summary.chain_id, summary.token_id);
         if (!index.agents.has(key)) added += 1;
         index.agents.set(key, summary);
@@ -390,6 +428,9 @@ export async function refreshIndexFromLive(
       done = page;
       if (!body.meta.pagination.hasMore) break;
     }
+    // persist the admitted entries so the whole fleet, and the next process,
+    // sees what this pull learned
+    await saveShelfAgents(admitted);
   } finally {
     index.refreshing = false;
     index.lastWarmAt = Date.now();
@@ -410,7 +451,13 @@ export async function refreshIndexFromLive(
 
 async function maybeRefreshShelf(): Promise<void> {
   if (!dueForRefresh(index.lastRefreshAt, Date.now(), REFRESH_COOLDOWN_MS)) return;
-  await refreshIndexFromLive(SHELF_REFRESH_PAGES);
+  // A due refresh is also the cadence at which this instance re-reads the fleet's
+  // shared shelf. Both start together so the registry pull is not delayed behind
+  // the database read; they write the same shelf shape, so the last writer wins.
+  await Promise.all([
+    mergeDurableShelf(true),
+    refreshIndexFromLive(SHELF_REFRESH_PAGES),
+  ]);
 }
 
 // Trigger the shelf top up without making the browse response wait on 8004scan.
@@ -454,6 +501,10 @@ export interface QueryResult {
     warming: boolean;
     error: string | null;
     snapshotTime: string | null;
+    // "shared" means the top up is backed by the durable store; "per-process"
+    // means this instance only knows what it learned itself
+    shelfMode: ShelfStoreMode;
+    lastDurableReadAt: number | null;
   };
   categoryCounts: Record<string, number>;
 }
@@ -464,6 +515,9 @@ export async function queryAgents(
   const { category, q, sort = "score", page = 1, limit = 24 } = opts;
   const chainId = targetChainId();
   const hasSnapshot = await loadSnapshot();
+  // no-op once the process has merged; covers the no-snapshot path too, where
+  // loadSnapshot never ran the merge
+  await mergeDurableShelf();
   if (opts.ensureWarm && !hasSnapshot) {
     await warmIndex({ maxPages: opts.maxWarmPages ?? 6 });
   } else if (hasSnapshot) {
@@ -523,6 +577,8 @@ export async function queryAgents(
       warming: index.warming,
       error: index.error,
       snapshotTime,
+      shelfMode: shelfStoreMode(),
+      lastDurableReadAt: durableReadAt,
     },
     categoryCounts,
   };
@@ -652,6 +708,9 @@ export async function getAgentByToken(
     const action = shelfActionOnFailure(classifyLiveReadFailure({ error: e }));
     if (action === "evict") {
       index.agents.delete(indexKey(chainId, tokenId));
+      // remove it from the shared shelf too, or the next process start would
+      // merge the delisted agent back in
+      await deleteShelfAgent(chainId, tokenId);
       return null;
     }
   }
