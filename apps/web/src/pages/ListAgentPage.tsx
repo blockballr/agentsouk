@@ -101,10 +101,10 @@ export function ListAgentPage() {
       <div className="mt-16">
         <div className="border-t hairline border-slate-verdant/40 pt-8">
           <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
-            2. Or register from here
+            Or register from here
           </h2>
           <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-            The same registration without the CLI. You send one transaction from your own wallet,
+            The same registration without Studio&apos;s CLI. You send one transaction from your own wallet,
             and the registry records you as the owner.
           </p>
           {chain === null ? (
