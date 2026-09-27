@@ -16,6 +16,7 @@ import {
   type PrepareResult,
   type TransactionReceipt,
 } from '../lib/register'
+import { VerificationLoop, type CheckLine, type CheckState } from './VerificationLoop'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import {
   chainIdToHex,
@@ -54,6 +55,30 @@ const EMPTY: RegistrationDraft = {
   x402Support: true,
 }
 
+// The checks the marketplace applies, in the order it applies them. The old form checked the
+// endpoint and the category in separate places; this list is the whole judgement in one place.
+type LoopId = 'endpoint' | 'card' | 'classifier' | 'terms' | 'transaction' | 'confirm' | 'sweep'
+
+const SWEEP_DETAIL =
+  'Nothing in this wizard earns the badge. Once the registration is confirmed, the verifier probes the registered endpoint on its next sweep; the badge it awards follows whether that endpoint answers, not anything done here.'
+
+function initialChecks(): CheckLine[] {
+  return [
+    { id: 'endpoint', title: 'Endpoint address rule', state: 'waiting' },
+    { id: 'card', title: 'The agent card answers', state: 'waiting' },
+    { id: 'classifier', title: 'Category the classifier assigns', state: 'waiting' },
+    { id: 'terms', title: 'Registration terms from the server', state: 'waiting' },
+    { id: 'transaction', title: 'Transaction sent and mined', state: 'waiting' },
+    { id: 'confirm', title: 'Registration confirmed on chain', state: 'waiting' },
+    { id: 'sweep', title: 'The verification sweep, after this', state: 'waiting', detail: SWEEP_DETAIL },
+  ]
+}
+
+// A synchronous check needs one painted frame between its checking state and its result.
+function nextPaint(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 150))
+}
+
 /** The listing wizard: fill the draft, review the document, register from the owner's wallet, then let the server check the chain. */
 export function RegisterWizard({ chainId }: { chainId: number }) {
   const [step, setStep] = useState<Step>('form')
@@ -68,9 +93,20 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
   const [probing, setProbing] = useState(false)
   // latched in the same tick as the send, so a repeat click can never reach eth_sendTransaction twice
   const sentLatch = useRef(false)
+  // null until the lister proceeds; each entry updates as its check runs
+  const [checks, setChecks] = useState<CheckLine[] | null>(null)
 
   const set = <K extends keyof RegistrationDraft>(key: K, value: RegistrationDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }))
+
+  const mark = (id: LoopId, state: CheckState, detail?: string) =>
+    setChecks((prev) =>
+      prev
+        ? prev.map((c) =>
+            c.id === id ? { ...c, state, ...(detail !== undefined ? { detail } : {}) } : c,
+          )
+        : prev,
+    )
 
   async function testEndpoint() {
     setProbe(null)
@@ -86,13 +122,78 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
   // never blocks, because a cross-origin block is not proof the endpoint is down
   const endpointFault = endpointRefusal(draft.endpoint ?? '')
 
-  async function prepare() {
+  // The whole judgement the marketplace applies, run in order the moment the lister proceeds, with
+  // each step reporting its own real outcome as it happens rather than all at once at the end.
+  async function runChecks() {
     setErrors([])
     setMessage(null)
     setBusy(true)
+    setChecks(initialChecks())
+
+    // 1. the deterministic address rule, the same rule src/lib/endpoint.ts enforces server-side
+    mark('endpoint', 'checking')
+    await nextPaint()
+    const endpoint = (draft.endpoint ?? '').trim()
+    const endpointReason = endpoint
+      ? endpointRefusal(endpoint)
+      : 'No endpoint yet. The registry requires an https URL a buyer can call, so this would be rejected before it was registered.'
+    if (endpointReason) {
+      mark('endpoint', 'failed', endpointReason)
+      setBusy(false)
+      return
+    }
+    mark(
+      'endpoint',
+      'passed',
+      'An https URL that is not a loopback or private address, so the marketplace can call it.',
+    )
+
+    // 2. the card is probed from the browser; a cross-origin block is unverified, never a failure
+    mark('card', 'checking')
+    const probeResult = await probeEndpoint(endpoint)
+    setProbe(probeResult)
+    if (probeResult.state === 'answered') {
+      mark('card', 'passed', probeResult.detail)
+    } else if (probeResult.state === 'unverified') {
+      mark('card', 'undetermined', probeResult.detail)
+    } else {
+      mark('card', 'failed', probeResult.detail)
+      setBusy(false)
+      return
+    }
+
+    // 3. the classifier, not the dropdown, decides the shelf. A general reading still registers,
+    // so it is reported as a failure to shelve rather than a reason to stop the loop.
+    mark('classifier', 'checking')
+    await nextPaint()
+    const text = `${draft.name} ${draft.description}`.trim()
+    if (!text) {
+      mark(
+        'classifier',
+        'failed',
+        'The name and description are both empty, so the classifier has nothing to place and the shelf has no category to file it under.',
+      )
+    } else {
+      const { category } = classifyAgent(text)
+      if (category === 'general') {
+        mark(
+          'classifier',
+          'failed',
+          'The name and description read as general, not one of the four categories. Registration still succeeds, but the shelf has nothing to file it under, so it will not appear. Say what the agent does in the category words: rebalancing, LP ranges, grid trading, yield or APR, health factor.',
+        )
+      } else {
+        mark(
+          'classifier',
+          'passed',
+          `The classifier reads this as ${categoryDef(category).label}, so that is the shelf it will appear under.`,
+        )
+      }
+    }
+
+    // 4. the server mints the document and returns the terms; the chain to be on comes from its
+    // response, not the client default, because the calldata is encoded for the server's chain
+    mark('terms', 'checking')
     try {
-      // the claim records an owner, so connect first; the chain to be on comes from the server
-      // response, not the client default, because the calldata is encoded for the server's chain
       const account = (await getActiveAccount()) ?? (await connectWallet())
       const res = await prepareRegistration(draft, account)
       setTargetChain(res.chainId)
@@ -100,20 +201,29 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
       try {
         onChain = await ensureBscChain()
       } catch {
-        setErrors([`Your wallet could not switch to ${chainLabel(res.chainId)}. Nothing was sent.`])
+        const detail = `Your wallet could not switch to ${chainLabel(res.chainId)}. Nothing was sent.`
+        mark('terms', 'failed', detail)
+        setErrors([detail])
         return
       }
       if (onChain?.toLowerCase() !== chainIdToHex(res.chainId)) {
-        setErrors([
-          `Your wallet is on chain ${onChain}, not ${chainLabel(res.chainId)}. Nothing was sent.`,
-        ])
+        const detail = `Your wallet is on chain ${onChain}, not ${chainLabel(res.chainId)}. Nothing was sent.`
+        mark('terms', 'failed', detail)
+        setErrors([detail])
         return
       }
       sentLatch.current = false
       setPrepared(res)
+      mark(
+        'terms',
+        'passed',
+        `The server prepared the document at ${res.agentUri}, for ${chainLabel(res.chainId)} against registry ${res.registryAddress}.`,
+      )
       setStep('prepared')
     } catch (e) {
-      setErrors([(e as Error).message])
+      const detail = (e as Error).message
+      mark('terms', 'failed', detail)
+      setErrors([detail])
     } finally {
       setBusy(false)
     }
@@ -124,6 +234,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     setMessage(null)
     setErrors([])
     setStep('signing')
+    mark('transaction', 'checking', 'Waiting for your wallet to sign and send the transaction.')
     let hash: `0x${string}`
     try {
       const provider = await getProvider()
@@ -141,11 +252,12 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
       })) as `0x${string}`
     } catch (e) {
       const err = e as Error & { code?: number }
-      setMessage(
+      const detail =
         err.code === 4001
           ? 'You cancelled the transaction, so nothing was registered.'
-          : 'The registration could not be sent. Nothing was registered.',
-      )
+          : 'The registration could not be sent. Nothing was registered.'
+      mark('transaction', 'failed', detail)
+      setMessage(detail)
       setStep('prepared')
       return
     }
@@ -153,6 +265,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     // keep the hash before anything else can fail: from here the flow only ever checks this send
     sentLatch.current = true
     setTxHash(hash)
+    mark('transaction', 'checking', `Sent ${hash}. Waiting for the transaction to confirm.`)
     await checkTransaction(hash)
   }
 
@@ -161,9 +274,12 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     setErrors([])
     setStep('confirming')
     setMessage('Waiting for the transaction to confirm. This usually takes a few seconds.')
+    mark('transaction', 'checking', 'Waiting for the transaction to confirm (0s so far).')
+
+    let receipt: TransactionReceipt | null
     try {
       const provider = await getProvider()
-      const receipt = await waitForTransactionReceipt(
+      receipt = await waitForTransactionReceipt(
         () =>
           provider
             .request({ method: 'eth_getTransactionReceipt', params: [hash] })
@@ -171,46 +287,78 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         {
           timeoutMs: RECEIPT_TIMEOUT_MS,
           intervalMs: RECEIPT_POLL_MS,
-          onProgress: (elapsedMs) =>
-            setMessage(
-              `Waiting for the transaction to confirm (${Math.max(1, Math.round(elapsedMs / 1000))}s so far).`,
-            ),
+          onProgress: (elapsedMs) => {
+            const detail = `Waiting for the transaction to confirm (${Math.max(1, Math.round(elapsedMs / 1000))}s so far).`
+            setMessage(detail)
+            mark('transaction', 'checking', detail)
+          },
         },
       )
+    } catch (e) {
+      const detail = (e as Error).message
+      mark('transaction', 'failed', detail)
+      setMessage(detail)
+      setStep('error')
+      return
+    }
 
-      // no receipt inside the budget means the transaction is still pending on the node, not failed
-      if (!receipt) {
-        setMessage(
-          'Your wallet sent the transaction and it is still waiting to confirm. Check it again below; it will not be sent a second time.',
-        )
-        setStep('pending')
-        return
-      }
+    // no receipt inside the budget means the transaction is still pending on the node, not failed
+    if (!receipt) {
+      const detail =
+        'Your wallet sent the transaction and it is still waiting to confirm. Check it again below; it will not be sent a second time.'
+      mark('transaction', 'undetermined', detail)
+      setMessage(detail)
+      setStep('pending')
+      return
+    }
 
-      const agentId = tokenIdFromReceipt(receipt.logs ?? [], prepared.registryAddress)
-      if (!agentId) {
-        setMessage(
-          'The transaction is on the chain, but the registry did not report a new agent id. Do not send it again. Check the transaction or send us the hash and we will look at it.',
-        )
-        setStep('error')
-        return
-      }
+    mark(
+      'transaction',
+      'passed',
+      'The transaction mined. Reading the registry receipt for the new agent id.',
+    )
 
-      setMessage('The transaction confirmed. Checking the registry against the chain.')
-      const confirmed = await confirmRegistration({
+    const agentId = tokenIdFromReceipt(receipt.logs ?? [], prepared.registryAddress)
+    if (!agentId) {
+      const detail =
+        'The transaction is on the chain, but the registry did not report a new agent id. Do not send it again. Check the transaction or send us the hash and we will look at it.'
+      mark('confirm', 'failed', detail)
+      setMessage(detail)
+      setStep('error')
+      return
+    }
+
+    setMessage('The transaction confirmed. Checking the registry against the chain.')
+    mark(
+      'confirm',
+      'checking',
+      'The server is reading the registry against the chain to prove ownership and the agent id.',
+    )
+    let confirmed: ConfirmResult
+    try {
+      confirmed = await confirmRegistration({
         claimId: prepared.claimId,
         agentId,
         txHash: hash,
       })
-      setResult(confirmed)
-      setStep(confirmed.status === 'confirmed' ? 'listed' : 'error')
-      if (confirmed.status === 'refuted') {
-        setMessage(confirmed.verification?.detail ?? 'The chain did not agree with that registration.')
-      }
     } catch (e) {
-      setMessage((e as Error).message)
+      const detail = (e as Error).message
+      mark('confirm', 'failed', detail)
+      setMessage(detail)
       setStep('error')
+      return
     }
+
+    setResult(confirmed)
+    if (confirmed.status === 'confirmed') {
+      mark('confirm', 'passed', confirmed.verification?.detail ?? 'The chain agrees with the registration.')
+      setStep('listed')
+      return
+    }
+    const detail = confirmed.verification?.detail ?? 'The chain did not agree with that registration.'
+    mark('confirm', 'failed', detail)
+    setMessage(detail)
+    setStep('error')
   }
 
   // the server says which chain the calldata is for, so links and labels follow it, not the client default
@@ -227,6 +375,11 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           endpoint and a category the classifier assigns. The verifier calls it on
           its next sweep and puts a grade on the badge.
         </p>
+        {checks && (
+          <div className="mt-5">
+            <VerificationLoop checks={checks} />
+          </div>
+        )}
         <dl className="mt-5 space-y-3 text-sm">
           <div>
             <dt className="micro text-newsprint-gray">Agent id</dt>
@@ -355,7 +508,8 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         </label>
       </div>
 
-      {step === 'form' && (
+      {/* the pre-flight card is the idle form; once the loop runs, the stepped panel replaces it */}
+      {step === 'form' && checks === null && (
         <div className="mt-5 rounded-[10px] border hairline border-slate-verdant/40 p-4">
           <p className="micro text-newsprint-gray">Before you spend gas</p>
           <p className="mt-2 text-xs leading-relaxed text-newsprint-gray">
@@ -401,6 +555,12 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         </div>
       )}
 
+      {checks && (
+        <div className="mt-5">
+          <VerificationLoop checks={checks} />
+        </div>
+      )}
+
       {errors.length > 0 && (
         <ul className="mt-4 space-y-1 rounded-[10px] border border-press-black/20 bg-bone-white p-4 text-xs text-press-black">
           {errors.map((e) => (
@@ -435,7 +595,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           <button
             type="button"
             disabled={busy || endpointFault !== null}
-            onClick={() => void prepare()}
+            onClick={() => void runChecks()}
             className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {endpointFault
