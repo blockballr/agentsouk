@@ -11,8 +11,14 @@ import {
   eip3009Domain,
   randomNonce,
 } from "@/lib/x402";
+import { SESSION_HOURS, SESSION_SPEND_CAP_USD } from "@agora/core";
 import { shortAddress, formatUnits } from "@/lib/format";
 import { AgentAvatar } from "./agent-avatar";
+
+// mirrors chainLabel in apps/web/src/lib/contracts.ts so both front ends name the chain the same way
+function chainLabel(chainId: number): string {
+  return chainId === 97 ? "BSC testnet" : "BNB Smart Chain";
+}
 
 export interface HireAgent {
   chainId: number;
@@ -212,10 +218,11 @@ export function HireFlow({
           <>
             <div className="mt-5 space-y-2 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm">
               <Row label="Price" value={`${amountUsd} ${symbol}`} />
-              <Row label="Network" value="BNB Smart Chain" />
+              <Row label="Network" value={chainLabel(agent.chainId)} />
               <Row label="Method" value="x402 · EIP-3009" />
-              <Row label="Settlement" value="Sandbox facilitator" hint="Verify → settle" />
-              <Row label="Session" value="24h · $10 spend cap" />
+              {/* the rail is chosen server-side by FACILITATOR_MODE and only returned on settle, so name it honestly rather than guessing */}
+              <Row label="Settlement" value="Confirmed at settlement" hint="mode in the receipt" />
+              <Row label="Session" value={`${SESSION_HOURS}h · $${SESSION_SPEND_CAP_USD} spend cap`} />
             </div>
             {!isConnected ? (
               <p className="mt-4 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2.5 text-xs text-amber-200">
