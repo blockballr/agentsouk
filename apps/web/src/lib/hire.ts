@@ -4,6 +4,7 @@ import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
 import { getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
 import { activeAccountMatches, chainIdToHex, ensureBscChain, getActiveAccount, getChainTimestamp, setTargetChain, WalletUnavailableError, WrongSignerError, signTransferAuthorization } from './wallet'
+import { setPaymentInFlight } from './stale-chunk'
 
 export type HireRequirementsData = X402Requirements['data']
 
@@ -180,6 +181,9 @@ export async function signAndSettleHire(
   onPhase: (phase: 'signing' | 'settling' | 'hired') => void,
 ): Promise<HireOutcome> {
   const pr = data.paymentRequirements
+  // the signed authorisation exists only in memory until it is broadcast, so a
+  // stale chunk reload must not fire anywhere in this window
+  setPaymentInFlight(true)
   try {
     // chain comes from the requirements, so wallet and signing domain cannot disagree
     const signedChainId = Number(pr.network.split(':')[1])
@@ -257,6 +261,9 @@ export async function signAndSettleHire(
       error: hireErrorText(e),
       cancelled: isUserRejection(e),
     }
+  } finally {
+    // clear on success, refusal and thrown error alike, so the guard re-arms
+    setPaymentInFlight(false)
   }
 }
 
