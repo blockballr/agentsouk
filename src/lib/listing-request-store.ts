@@ -70,3 +70,44 @@ export async function recordListingRequest(req: StoredListingRequest): Promise<b
 export async function listListingRequests(): Promise<StoredListingRequest[]> {
   return [...memory];
 }
+
+// The durable read behind the team's queue. Postgres holds what every instance
+// received, so the queue is complete rather than whatever this instance served;
+// the in-memory list is the fallback when no database is configured.
+export async function readListingRequests(limit = 50): Promise<StoredListingRequest[]> {
+  const capped = Math.min(200, Math.max(1, Math.floor(limit)));
+  if (process.env.DATABASE_URL) {
+    try {
+      const mod = (await import("postgres")) as unknown as {
+        default: (url: string, opts?: object) => unknown;
+      };
+      const sql = mod.default(process.env.DATABASE_URL, { max: 1, idle_timeout: 20 }) as {
+        (t: TemplateStringsArray, ...v: unknown[]): Promise<unknown>;
+      };
+      if (await ensureTable(sql)) {
+        const rows = (await sql`
+          select token_id, contact, note, created_at
+          from listing_requests
+          order by created_at desc, id desc
+          limit ${capped}
+        `) as {
+          token_id: string;
+          contact: string;
+          note: string;
+          created_at: string | Date;
+        }[];
+        return rows.map((r) => ({
+          tokenId: r.token_id,
+          contact: r.contact,
+          note: r.note,
+          createdAt: new Date(r.created_at).toISOString(),
+        }));
+      }
+    } catch {
+      // fall through to the in-memory list rather than failing the read
+    }
+  }
+  return [...memory]
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, capped);
+}
