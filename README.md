@@ -21,15 +21,9 @@ The marketplace is judged on functionality, data quality, and agent diversity ac
 
 ## Architecture
 
-The data pipeline lives in src/lib/scanner.ts, a server-only 8004scan API client. It exposes fetchAgentsPage(p), fetchAgentDetail(chainId, tokenId), fetchFeedbacks, fetchPlatformStats, and searchAgents(q, limit). Search uses the ?search= list parameter, because the semantic /agents/search endpoint returns 502 errors and keyword search is a reliable replacement. The scanner keeps an in-memory index queried through queryAgents({category, q, sort, page, limit}) and warmed by warmIndex, which reads a snapshot from data/agents.json when one is present.
-
-Classification happens in src/lib/categories.ts. It is a weighted-term keyword classifier with a threshold of at least 2, labelling each agent as rebalancing, grid-trading, yield, health-factor, or general, and producing confidence scores per category.
-
-The snapshot builder is the API route src/app/api/index/build/route.ts. A POST to /api/index/build?secret=... fetches per-category keyword searches plus the 12 newest pages in parallel batches. Anonymous access runs 8 requests at a time with 6.1 second gaps; with an EIGHT004_API_KEY it runs 24 at a time with 200 millisecond gaps. The builder drops known spam cohorts (Ensoul mock Twitter profiles, dgrid.ai airdrop farmers), dedupes entries (at most 3 per normalized name, trailing digits stripped so numbered batch series count as one), ranks inside each category by relevance (category score times 10, plus 2 when the agent accepts x402, plus a small reputation term), and backfills a thin category only with agents that carry a real signal for it, then writes a category-balanced selection to data/agents.json.
-
-The hire flow is split across src/lib/x402.ts, which holds the shared types, the EIP-3009 typed data, and an in-memory ledger, and src/lib/facilitator.ts, which verifies the EIP-3009 signature with viem and settles it in one of three modes. Addresses are checksum-normalized because the registry stores lowercased token addresses and viem rejects non-checksummed addresses. The API routes are /api/x402/requirements, /api/x402/settle, and /api/x402/receipt/[paymentId]. FACILITATOR_MODE defaults to sandbox, which verifies the signature and records a receipt without moving funds. Set it to prod to relay the buyer's EIP-3009 authorization on the configured BNB chain: the relay wallet (RELAY_PRIVATE_KEY) pays gas, the buyer only signs, and the transfer goes to the agent's own receiving wallet under a 5 unit cap. Set it to b402 to route through papi.binance.com/papi/v2/b402/verify and /settle using B402_CLIENT_ID and B402_ACCESS_TOKEN. Because EIP-3009 validAfter and validBefore are checked on chain against block.timestamp, both the web app and the facilitator anchor the validity window to the chain's latest block time rather than the host clock, so a drifting host clock cannot sign an authorization that is already expired when the relay broadcasts it.
-
-The pages are / (landing page with live stats and featured agents per category), /agents (browse, filter, search, and sort, client-rendered through the /api/agents route with a warm param), and /compare (best in each category on top, the rest grouped by category as cards). The agent detail view lives in apps/web/src/pages/AgentDetailPage.tsx and is not yet wired as a route in the Next.js app.
+Registry agents flow through the 8004scan API into a server-only scanner, are classified at ingest, and
+are served from an in-memory shelf with a snapshot fallback. Hiring runs through the x402 requirements,
+settle and receipt routes into the facilitator, which settles in sandbox, prod or b402 mode.
 
 ```mermaid
 flowchart LR
@@ -43,7 +37,8 @@ flowchart LR
     X --> F[facilitator: sandbox, prod, or b402 settlement]
 ```
 
-The same facts in prose: registry agents flow through the 8004scan API into the server-only scanner and are classified at ingest, then a build route writes a balanced snapshot that warms the in-memory index serving the pages through the /api/agents route, and hiring runs through the x402 requirements, settle, and receipt routes into the facilitator.
+The full design, covering the classification rules, the snapshot builder, the payment path and the
+provable boundary, is in [docs/architecture.md](docs/architecture.md).
 
 ## Setup
 
@@ -114,7 +109,7 @@ A mainnet settlement test runs with node scripts/prod-settle-test.mjs. It requir
 - Grid trading is intentionally thin (13 agents) because the registry has few genuine grid bots; the builder backfills only with agents whose registration carries a real signal, and the UI reports the count honestly.
 - FACILITATOR_MODE defaults to sandbox settlement, which verifies the signature and records a receipt without moving funds. Set it to prod to settle on the configured BNB chain (RELAY_PRIVATE_KEY pays gas), or b402 to route through the Binance production endpoint with B402_CLIENT_ID and B402_ACCESS_TOKEN.
 - The x402 ledger is in-memory; receipts survive per process, not across restarts.
-- Hiring supports standard (EOA) wallets only. Smart-account wallets (ERC-4337, e.g. Coinbase Smart Wallet) sign EIP-3009 authorizations whose signatures validate on-chain via ERC-1271, which the facilitator cannot verify with off-chain ecrecover; the web app detects a connected smart account and shows an explicit message instead of a settlement failure. An opt-in on-chain ERC-1271 verifier ships behind `SMART_WALLET_VERIFY=on` (default off), but it cannot unlock settlement today: live probes (3 independent BSC RPCs + implementation bytecode dispatcher scan) show the deployed BSC USDC (0x8AC7…580d) exposes no EIP-3009 `transferWithAuthorization` at all (neither the v/r/s nor the ERC-1271-capable bytes variant), so signature-based settlement reverts at the token regardless of wallet type. Token-level findings and unlock conditions: .superpowers/smart-wallet-audit.md.
+- Hiring supports standard (EOA) wallets only. Smart-account wallets (ERC-4337, e.g. Coinbase Smart Wallet) sign EIP-3009 authorizations whose signatures validate on-chain via ERC-1271, which the facilitator cannot verify with off-chain ecrecover; the web app detects a connected smart account and shows an explicit message instead of a settlement failure. An opt-in on-chain ERC-1271 verifier ships behind `SMART_WALLET_VERIFY=on` (default off), but it cannot unlock settlement today: live probes (3 independent BSC RPCs + implementation bytecode dispatcher scan) show the deployed BSC USDC (0x8AC7...580d) exposes no EIP-3009 `transferWithAuthorization` at all (neither the v/r/s nor the ERC-1271-capable bytes variant), so signature-based settlement reverts at the token regardless of wallet type. Token-level findings and unlock conditions: .superpowers/smart-wallet-audit.md.
 
 ## Standards
 
