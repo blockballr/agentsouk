@@ -40,16 +40,21 @@ const steps = [
   },
 ]
 
-// Recorded settlement evidence, one slot per chain. The testnet hire below is
-// the one we observed and can link. The mainnet slot stays pending until the
-// cutover produces a real transaction, never a placeholder hash.
+// Recorded settlement evidence, one slot per chain. The testnet hire below is the
+// strongest one we hold: its authorizer is a buyer wallet that is not one of ours,
+// whereas the team's own proof suite was authorised by our own buyer. The mainnet
+// slot stays pending until the cutover produces a real transaction, never a
+// placeholder hash. When a hire whose work was completed exists, it replaces this
+// one, because a settled hire with a delivered result is stronger still.
 const settlementEvidence = [
-  { chainId: 56, txHash: null, agent: null, amount: null },
+  { chainId: 56, txHash: null, agent: null, amount: null, payer: null, note: null },
   {
     chainId: 97,
-    txHash: '0x1214d9a4b6395598ecec1c74c298f177c7744a5aea4c267fae5e8ec6c196c9e8',
-    agent: 'Hevo Yield',
+    txHash: '0x6d5c3de6016ed3cf4e5671447e7fa82066396d8a22a131890d3d64ea706d59a6',
+    agent: 'Grid Runner',
     amount: 2,
+    payer: '0x84fedaBd1b83443aD86796C15619494878B64180',
+    note: 'authorised by a buyer wallet that is not one of ours',
   },
 ] as const
 
@@ -296,6 +301,15 @@ export function HomePage() {
                       <span className="text-muted-sage">asset </span>
                       {e.amount !== null ? `${e.amount} ${asset?.symbol ?? ''}` : asset?.symbol ?? 'pending'}
                     </div>
+                    <div>
+                      <span className="text-muted-sage">payer </span>
+                      {e.payer ? `${e.payer.slice(0, 10)}...${e.payer.slice(-6)}` : 'not yet'}
+                    </div>
+                    {e.note ? (
+                      <p className="pt-1 font-sans text-[12px] leading-relaxed text-newsprint-gray">
+                        {e.note}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               )
