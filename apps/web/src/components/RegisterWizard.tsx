@@ -1,13 +1,18 @@
 import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { categoryDef, classifyAgent } from '@agora/core'
 import type { RegistrationDraft } from '@agora/core'
 import {
   RECEIPT_POLL_MS,
   RECEIPT_TIMEOUT_MS,
   confirmRegistration,
+  endpointRefusal,
   prepareRegistration,
+  probeEndpoint,
   tokenIdFromReceipt,
   waitForTransactionReceipt,
   type ConfirmResult,
+  type EndpointProbe,
   type PrepareResult,
   type TransactionReceipt,
 } from '../lib/register'
@@ -59,11 +64,27 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null)
+  const [probe, setProbe] = useState<EndpointProbe | null>(null)
+  const [probing, setProbing] = useState(false)
   // latched in the same tick as the send, so a repeat click can never reach eth_sendTransaction twice
   const sentLatch = useRef(false)
 
   const set = <K extends keyof RegistrationDraft>(key: K, value: RegistrationDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }))
+
+  async function testEndpoint() {
+    setProbe(null)
+    setProbing(true)
+    try {
+      setProbe(await probeEndpoint(draft.endpoint ?? ''))
+    } finally {
+      setProbing(false)
+    }
+  }
+
+  // a deterministic address or scheme fault is refused before the transaction; the browser probe
+  // never blocks, because a cross-origin block is not proof the endpoint is down
+  const endpointFault = endpointRefusal(draft.endpoint ?? '')
 
   async function prepare() {
     setErrors([])
@@ -198,9 +219,13 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
   if (step === 'listed' && result) {
     return (
       <div className="rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-8">
-        <h3 className="font-serif text-2xl font-medium">Your agent is listed</h3>
+        <h3 className="font-serif text-2xl font-medium">Your agent is registered</h3>
         <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-          The registry confirms it, so this is real rather than pending.
+          The registry confirms it, so this is real rather than pending. What happens
+          next is not instant: the catalogue reads the chain again and the agent
+          appears on the shelf, usually within a minute, if it has a callable
+          endpoint and a category the classifier assigns. The verifier calls it on
+          its next sweep and puts a grade on the badge.
         </p>
         <dl className="mt-5 space-y-3 text-sm">
           <div>
@@ -221,8 +246,16 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             </dd>
           </div>
         </dl>
-        <p className="mt-5 text-sm leading-relaxed text-newsprint-gray">
-          It will appear in the catalogue on the next index refresh. If it does not, tell us the
+        <Link
+          to={`/agents/${displayChain}/${result.agentId}`}
+          className="micro mt-6 inline-block rounded-[5px] border hairline border-slate-verdant/50 px-5 py-2.5 text-press-black transition hover:bg-bone-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        >
+          Open the agent page
+        </Link>
+        <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
+          That page reads the agent from the registry, so it is the place to watch
+          as the index catches up. If the agent still has no category or no callable
+          endpoint it will not be shelved; if it does not show there, send us the
           agent id above.
         </p>
       </div>
@@ -283,7 +316,10 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             <span className="micro text-newsprint-gray">How it is invoked</span>
             <select
               value={draft.endpointKind}
-              onChange={(e) => set('endpointKind', e.target.value as RegistrationDraft['endpointKind'])}
+              onChange={(e) => {
+                set('endpointKind', e.target.value as RegistrationDraft['endpointKind'])
+                setProbe(null)
+              }}
               disabled={busy || step !== 'form'}
               className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-sm text-press-black disabled:opacity-60"
             >
@@ -298,7 +334,10 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           <span className="micro text-newsprint-gray">Endpoint</span>
           <input
             value={draft.endpoint}
-            onChange={(e) => set('endpoint', e.target.value)}
+            onChange={(e) => {
+              set('endpoint', e.target.value)
+              setProbe(null)
+            }}
             disabled={busy || step !== 'form'}
             className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-xs text-press-black disabled:opacity-60"
             placeholder="https://your-agent.example/.well-known/agent-card.json"
@@ -308,6 +347,52 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           </span>
         </label>
       </div>
+
+      {step === 'form' && (
+        <div className="mt-5 rounded-[10px] border hairline border-slate-verdant/40 p-4">
+          <p className="micro text-newsprint-gray">Before you spend gas</p>
+          <p className="mt-2 text-xs leading-relaxed text-newsprint-gray">
+            A registration can succeed on chain and still be useless on the shelf.
+            Two things decide that: the endpoint has to answer, and the classifier
+            has to place the agent in one of the four categories.
+          </p>
+
+          {endpointFault ? (
+            <EndpointProbeResult probe={{ state: 'refused', detail: endpointFault }} />
+          ) : (
+            <>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  disabled={probing || busy}
+                  onClick={() => void testEndpoint()}
+                  className="micro rounded-[5px] border hairline border-slate-verdant/50 px-4 py-2 text-press-black transition hover:bg-bone-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                >
+                  {probing ? 'Asking the endpoint' : 'Test the endpoint'}
+                </button>
+                <span className="text-xs leading-relaxed text-newsprint-gray">
+                  The request comes from your browser, never from our servers.
+                </span>
+              </div>
+              {probe && <EndpointProbeResult probe={probe} />}
+            </>
+          )}
+
+          {draft.endpointKind === 'web' && (
+            <div className="mt-3 rounded-[8px] border border-press-black/20 bg-bone-white p-3 text-xs leading-relaxed text-press-black">
+              <p className="micro">Web will not appear on the shelf</p>
+              <p className="mt-1">
+                The registration records a web service, but the marketplace only
+                shelves A2A and MCP endpoints. A Web listing would register and then
+                stay invisible. Pick whichever of A2A or MCP the agent actually
+                speaks.
+              </p>
+            </div>
+          )}
+
+          <CategoryCheck draft={draft} />
+        </div>
+      )}
 
       {errors.length > 0 && (
         <ul className="mt-4 space-y-1 rounded-[10px] border border-press-black/20 bg-bone-white p-4 text-xs text-press-black">
@@ -342,11 +427,15 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         {step === 'form' && (
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || endpointFault !== null}
             onClick={() => void prepare()}
-            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:opacity-60"
+            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {busy ? 'Preparing' : 'Continue to registration'}
+            {endpointFault
+              ? 'Fix the endpoint before registering'
+              : busy
+                ? 'Preparing'
+                : 'Continue to registration'}
           </button>
         )}
 
@@ -392,5 +481,64 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         )}
       </div>
     </div>
+  )
+}
+
+function EndpointProbeResult({ probe }: { probe: EndpointProbe }) {
+  const label =
+    probe.state === 'answered'
+      ? 'Endpoint answers'
+      : probe.state === 'refused'
+        ? 'Endpoint refused'
+        : 'Could not verify'
+  const tone =
+    probe.state === 'answered'
+      ? 'border-highlighter-green/50 text-press-black'
+      : probe.state === 'refused'
+        ? 'border-press-black/30 text-press-black'
+        : 'border-slate-verdant/45 text-newsprint-gray'
+  return (
+    <div
+      role="status"
+      className={`mt-3 rounded-[8px] border hairline p-3 text-xs leading-relaxed ${tone}`}
+    >
+      <p className="micro">{label}</p>
+      <p className="mt-1">{probe.detail}</p>
+    </div>
+  )
+}
+
+// The classifier reads the name and description, not the category dropdown, so a
+// listing whose text reads as general is registered but never shelved.
+function CategoryCheck({ draft }: { draft: RegistrationDraft }) {
+  const text = `${draft.name} ${draft.description}`.trim()
+  if (!text) {
+    return (
+      <p className="mt-3 text-xs leading-relaxed text-newsprint-gray">
+        The classifier reads the name and the description. With both still empty it
+        has nothing to place, so this would register as general and stay off the
+        shelf.
+      </p>
+    )
+  }
+  const { category } = classifyAgent(text)
+  if (category === 'general') {
+    return (
+      <div className="mt-3 rounded-[8px] border border-press-black/20 bg-bone-white p-3 text-xs leading-relaxed text-press-black">
+        <p className="micro">The classifier will not place this</p>
+        <p className="mt-1">
+          The name and description read as general, so the shelf has no category to
+          file this under and it would not appear in one of the four. Say what the
+          agent does in the category&apos;s own words, for example rebalancing or LP
+          ranges, grid trading, yield or APR, or health factor and liquidation.
+        </p>
+      </div>
+    )
+  }
+  return (
+    <p className="mt-3 text-xs leading-relaxed text-newsprint-gray">
+      The classifier reads this as {categoryDef(category).label}, so that is the
+      shelf it would appear under.
+    </p>
   )
 }

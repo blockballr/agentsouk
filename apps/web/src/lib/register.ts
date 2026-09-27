@@ -123,3 +123,103 @@ export function tokenIdFromReceipt(logs: ReceiptLog[], registryAddress: string):
   }
   return null
 }
+
+// The marketplace will not call a loopback or private address from its own server, and the shelf
+// will not list one. This mirrors src/lib/endpoint.ts so a lister learns the same rule before the
+// registration transaction rather than after, when the gas is already spent.
+export function privateEndpointReason(url: string): string | null {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return `"${url}" is not a valid url`
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return `"${url}" is not an http url`
+  }
+  // URL.hostname keeps the brackets on an ipv6 literal
+  const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  const loopback =
+    host === 'localhost' ||
+    host === '::1' ||
+    host === '0.0.0.0' ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    /^127\./.test(host)
+  const privateV4 =
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    /^169\.254\./.test(host)
+  if (loopback || privateV4) {
+    return `"${url}" is a private address that the marketplace cannot reach`
+  }
+  return null
+}
+
+export type EndpointProbeState = 'answered' | 'unverified' | 'refused'
+
+export interface EndpointProbe {
+  state: EndpointProbeState
+  detail: string
+}
+
+/**
+ * A deterministic fault the marketplace will not tolerate: an unparseable url, a
+ * non-http scheme, a loopback or private address, or a plain http url the registry
+ * rejects. Returns null for anything that could still be a valid listing.
+ */
+export function endpointRefusal(raw: string): string | null {
+  const url = raw.trim()
+  if (!url) return null
+  const privateReason = privateEndpointReason(url)
+  if (privateReason) {
+    return `${privateReason}. The marketplace will not call it and the shelf will not list it, so a registration here would be dark.`
+  }
+  return new URL(url).protocol === 'https:'
+    ? null
+    : 'The registry only accepts an https endpoint, so an http url is rejected at registration.'
+}
+
+/**
+ * Asks the typed endpoint whether it answers, from the browser, before any gas is
+ * spent. A cross-origin request the browser will not complete is reported as
+ * unverified rather than broken, because a CORS policy is not an outage.
+ */
+export async function probeEndpoint(raw: string): Promise<EndpointProbe> {
+  const url = raw.trim()
+  if (!url) {
+    return { state: 'refused', detail: 'No endpoint to test yet. Paste the address a buyer would call.' }
+  }
+  const refusal = endpointRefusal(url)
+  if (refusal) return { state: 'refused', detail: refusal }
+
+  const signal = AbortSignal.timeout(7000)
+
+  // A readable response is the strongest signal: the endpoint answered and allowed this origin.
+  try {
+    const res = await fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store', signal })
+    return { state: 'answered', detail: `The endpoint answered with HTTP ${res.status}.` }
+  } catch {
+    // CORS, an extension, an offline browser or the timeout all reject here; none of them prove the
+    // endpoint is down, so only a second, opaque attempt can tell a policy block from a network fault.
+  }
+
+  try {
+    // no-cors resolves once a response is received even without CORS headers, so a rejection here
+    // is much more likely to be a network fault than the endpoint's own policy.
+    await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store', signal })
+    return {
+      state: 'answered',
+      detail:
+        'The endpoint answered, but did not let this page read the reply. That is a cross-origin policy, not an outage.',
+    }
+  } catch {
+    return {
+      state: 'unverified',
+      detail:
+        'The browser could not complete a request from this page, which can be a cross-origin block or a network fault. Open the endpoint in a new tab to confirm it answers, then register.',
+    }
+  }
+}
