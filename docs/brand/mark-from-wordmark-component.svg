@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Agent Souk mark">
+  <!-- Reconstructed from the inline svg in apps/web/src/components/Wordmark.tsx.
+       The four rects are copied from the component. The three currentColor fills
+       were resolved to press-black #121613 for standalone use, and the fixed
+       width/height were dropped so the mark scales. -->
+  <rect x="8" y="8" width="22" height="22" rx="4" fill="#121613"/>
+  <rect x="34" y="8" width="22" height="22" rx="4" fill="#121613"/>
+  <rect x="8" y="34" width="22" height="22" rx="4" fill="#121613"/>
+  <rect x="34" y="34" width="22" height="22" rx="4" fill="#2bee4b"/>
+</svg>
