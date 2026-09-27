@@ -128,6 +128,19 @@ function sessionModeLabel(mode: ActiveSession['mode']): string {
 
 // chainLabel lives in lib/contracts so the network is named in one place.
 
+// A listed agent is either answering, not answering, or not yet swept. The upstream
+// index saying nothing is not a status, so it is never rendered as one: our own
+// verifier's reading comes first, then a real index reading, then the sweep state.
+function statusFor(detail: AgentDetail): string {
+  const v = detail.verification
+  if (v?.status) {
+    return v.checkedAt ? `${v.status}, checked ${formatDate(v.checkedAt)}` : v.status
+  }
+  const upstream = (detail.health_status ?? '').trim()
+  if (upstream && upstream.toLowerCase() !== 'unknown') return `${upstream}, from the index`
+  return detail.is_active ? 'not yet swept' : 'inactive'
+}
+
 // covers all three modes, so a production hire is never labelled sandboxed
 function settlementLabel(mode: ActiveSession['mode'] | undefined): string {
   if (mode === 'b402') return 'BNB Chain (x402)'
@@ -402,7 +415,7 @@ export function AgentDetailPage() {
                 <h2 className="micro text-newsprint-gray">Health &amp; activity</h2>
                 <div className="mt-6 grid grid-cols-2 gap-6">
                   <BigMetric label="Health score" value={detail.health_score !== null ? formatScore(detail.health_score) : 'n/a'} />
-                  <BigMetric label="Status" value={detail.health_status ?? (detail.is_active ? 'active' : 'inactive')} />
+                  <BigMetric label="Status" value={statusFor(detail)} />
                 </div>
               </div>
 
