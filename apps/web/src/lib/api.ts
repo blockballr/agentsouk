@@ -17,6 +17,7 @@ export interface AgentsResult {
   total: number
   snapshotTotal: number | null
   counts: Record<string, number>
+  chainId: number | null
 }
 
 export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> {
@@ -34,17 +35,20 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     total?: number
     snapshotTotal?: number | null
     counts?: Record<string, number>
+    chainId?: number
   }>(res, 'agents')
   const items: AgentSummary[] = body.items ?? []
-  // learn the chain from the catalogue rather than shipping it as a constant, so
-  // a hardcoded chain cannot silently disagree with the deployment
-  const chain = items[0]?.chain_id
-  if (typeof chain === 'number' && chain > 0) setTargetChain(chain)
+  // the server states the chain it serves; fall back to the catalogue only when the
+  // field is absent, and never trust a non-positive or non-finite value
+  const chain = body.chainId ?? items[0]?.chain_id
+  const chainId = typeof chain === 'number' && Number.isFinite(chain) && chain > 0 ? chain : null
+  if (chainId !== null) setTargetChain(chainId)
   return {
     items,
     total: body.total ?? 0,
     snapshotTotal: body.snapshotTotal ?? null,
     counts: body.counts ?? {},
+    chainId,
   }
 }
 

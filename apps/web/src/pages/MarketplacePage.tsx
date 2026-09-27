@@ -6,7 +6,6 @@ import { CompareBar } from '../components/CompareBar'
 import { getAgents } from '../lib/api'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
 import { bestByCategory } from '../lib/compare'
-import { getTargetChain } from '../lib/wallet'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
 
@@ -27,10 +26,11 @@ export function MarketplacePage() {
   const hide = sp.get('hide') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
   const PAGE_SIZE = 48
-  const chainId = getTargetChain()
-  const settlementSymbol = settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'
 
   const [result, setResult] = useState<{ items: AgentSummary[]; snapshotTotal: number | null; total: number } | null>(null)
+  // the network is unknown until the market answers; do not paint the compiled
+  // default as if it were the deployment's chain
+  const [chainId, setChainId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [shortlist, setShortlist] = useState<string[]>(() => getShortlist())
@@ -106,7 +106,10 @@ export function MarketplacePage() {
     setError(null)
     getAgents({ category, q, sort, page, limit: PAGE_SIZE, pcs })
       .then((r) => {
-        if (!cancelled) setResult({ items: r.items, snapshotTotal: r.snapshotTotal, total: r.total })
+        if (!cancelled) {
+          setResult({ items: r.items, snapshotTotal: r.snapshotTotal, total: r.total })
+          setChainId(r.chainId)
+        }
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e))
@@ -159,7 +162,9 @@ export function MarketplacePage() {
         className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-y hairline border-slate-verdant/40 py-3"
       >
         <p className="micro text-newsprint-gray">
-          {chainLabel(chainId)} · chain {chainId} · hires settle on-chain in {settlementSymbol}
+          {chainId === null
+            ? 'Checking the network'
+            : `${chainLabel(chainId)} · chain ${chainId} · hires settle on-chain in ${settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}`}
         </p>
         <Link
           to="/about"

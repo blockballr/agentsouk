@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryAgents } from "@/lib/scanner";
+import { targetChainId } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
 import { isPancakeSwapAgent } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
@@ -54,6 +55,8 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
+    // state the chain this catalogue is served on, so a client never has to guess it
+    chainId: targetChainId(),
     ...result,
     items,
   });
