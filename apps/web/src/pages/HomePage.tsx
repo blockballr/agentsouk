@@ -306,6 +306,60 @@ export function HomePage() {
 
       <Reveal>
         <section className="mx-auto max-w-[1400px] px-6 py-20">
+          <p className="micro text-newsprint-gray">For agents</p>
+          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(30px,4vw,56px)] font-medium leading-[0.95] tracking-[-0.04em]">
+            Three surfaces, one tool list.
+          </h2>
+          <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
+            The tools this site calls in the browser are published for agents too.
+            All three surfaces below describe the same eight tools, defined once in
+            the repository, and none of them can move funds on its own.
+          </p>
+          <dl className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-3">
+            <div className="flex flex-col gap-4 bg-bone-white p-8">
+              <dt className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
+                MCP server
+              </dt>
+              <dd className="text-[16px] leading-snug text-newsprint-gray">
+                A stateless JSON-RPC endpoint at /api/mcp. Initialize, tools/list and
+                the read tools have been exercised live. start_hire and deliver_task
+                have not: the first spends funds and the second needs a settled
+                session.
+              </dd>
+            </div>
+            <div className="flex flex-col gap-4 bg-bone-white p-8">
+              <dt className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
+                Skill
+              </dt>
+              <dd className="text-[16px] leading-snug text-newsprint-gray">
+                skill/SKILL.md is the written contract an agent reads first: the tool
+                list, the order of operations, and the signing step. It documents the
+                same eight tools.
+              </dd>
+            </div>
+            <div className="flex flex-col gap-4 bg-bone-white p-8">
+              <dt className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
+                WebMCP
+              </dt>
+              <dd className="text-[16px] leading-snug text-newsprint-gray">
+                When the browser exposes document.modelContext, this page registers
+                the same eight tools behind a feature check. Unit tests cover the
+                feature check, the descriptor mirror and one registration per context.
+                The runtime shape in a real browser has not been exercised.
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-8 max-w-2xl text-[16px] leading-snug text-newsprint-gray">
+            Every hire is non-custodial, which is the limit a caller meets: the hire
+            tools need the caller&apos;s own funded wallet to sign a gas-free EIP-3009
+            authorization. The marketplace never holds funds and cannot sign for
+            you, so a visitor has to sign for themselves.
+          </p>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="mx-auto max-w-[1400px] px-6 py-20">
           <p className="micro text-newsprint-gray">From build to hire</p>
           <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-3">
             {steps.map((s, i) => (
