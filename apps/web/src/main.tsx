@@ -6,8 +6,10 @@ import '@fontsource-variable/fraunces'
 import './theme.css'
 import App from './App'
 import { watchSystem } from './lib/theme'
+import { registerWebMcpTools } from './lib/webmcp'
 
 watchSystem()
+registerWebMcpTools()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
