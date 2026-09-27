@@ -255,9 +255,105 @@ export async function getSandboxReceipt(
 // pays gas, no buyer key is ever held, and the 5 U cap is enforced before any broadcast
 const PROD_CAP_RAW = 5n * 10n ** 18n; // 5 units, 18 decimals
 
-// per-process, bounded in-memory replay guard: a restart clears it and other
-// replicas do not share it - griefing mitigation only, not consensus
+// Prod settlement replay guard. The in-process set only covers one instance, so
+// a restart or a second replica could relay the same signed authorization again;
+// when the durable store is configured the nonce is also claimed in a small
+// table. The on-chain nonce stays authoritative, so an unreachable store falls
+// back to the local set rather than blocking settlement.
 const seenProdNonces = new Set<string>();
+const SEEN_PROD_NONCES_MAX = 10_000;
+
+type NonceSql = {
+  unsafe: (query: string, params?: unknown[]) => Promise<unknown>;
+};
+
+let nonceClient: Promise<NonceSql | null> | null = null;
+let nonceTableReady: Promise<boolean> | null = null;
+
+function nonceStoreConfigured(): boolean {
+  return process.env.RECEIPTS_STORE === "postgres" && !!process.env.DATABASE_URL;
+}
+
+async function nonceDb(): Promise<NonceSql | null> {
+  if (!nonceStoreConfigured()) return null;
+  if (!nonceClient) {
+    nonceClient = (async () => {
+      try {
+        const mod = (await import("postgres")) as unknown as {
+          default: (url: string, opts?: object) => unknown;
+        };
+        return mod.default(process.env.DATABASE_URL as string, {
+          max: 1,
+          idle_timeout: 20,
+          connect_timeout: 5,
+        }) as NonceSql;
+      } catch {
+        return null;
+      }
+    })();
+  }
+  return nonceClient;
+}
+
+async function ensureNonceTable(sql: NonceSql): Promise<boolean> {
+  if (nonceTableReady === null) {
+    nonceTableReady = (async () => {
+      try {
+        await sql.unsafe(`
+          create table if not exists settlement_nonces (
+            nonce text primary key,
+            seen_at timestamptz not null default now()
+          );
+        `);
+        return true;
+      } catch {
+        nonceTableReady = null;
+        return false;
+      }
+    })();
+  }
+  return nonceTableReady;
+}
+
+function rememberProdNonce(nonce: string): void {
+  if (seenProdNonces.size >= SEEN_PROD_NONCES_MAX) seenProdNonces.clear();
+  seenProdNonces.add(nonce);
+}
+
+// Claims the nonce in the durable store when configured and in memory always;
+// returns false on a replay. A configured store that cannot be reached falls
+// back to the local set: the chain rejects a reused nonce anyway, so refusing
+// here would turn a store blip into a settlement outage.
+export async function claimProdNonce(nonce: string): Promise<boolean> {
+  if (seenProdNonces.has(nonce)) return false;
+  const sql = await nonceDb();
+  if (sql) {
+    try {
+      if (await ensureNonceTable(sql)) {
+        const rows = (await sql.unsafe(
+          `insert into settlement_nonces (nonce) values ($1)
+           on conflict (nonce) do nothing
+           returning nonce`,
+          [nonce],
+        )) as unknown[];
+        if (rows.length === 0) {
+          rememberProdNonce(nonce);
+          return false;
+        }
+      }
+    } catch {
+      // store unavailable: the local guard below still applies
+    }
+  }
+  rememberProdNonce(nonce);
+  return true;
+}
+
+export function resetProdNoncesForTests(): void {
+  seenProdNonces.clear();
+  nonceClient = null;
+  nonceTableReady = null;
+}
 
 // split a 65-byte ECDSA signature into r, s and a normalized v (27/28)
 function splitSig(sig: `0x${string}`) {
@@ -314,7 +410,7 @@ export async function settleProd(
     return fail("Unsupported settlement asset");
   }
 
-  if (seenProdNonces.has(auth.nonce)) {
+  if (!(await claimProdNonce(auth.nonce))) {
     return fail("Authorization already submitted");
   }
 
@@ -327,7 +423,6 @@ export async function settleProd(
   });
 
   try {
-    seenProdNonces.add(auth.nonce);
     const { r, vs, vNum } = splitSig(auth.signature as `0x${string}`);
     const data = encodeFunctionData({
     abi: [

@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
+import { clientIpFrom, enforceRateLimit, type RateLimitVerdict } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+// Each request can make up to three model calls and the free tier allows only
+// 20 model requests a day, so a single source is capped well below that; a buyer
+// viewing a comparison asks once, so five an hour does not touch real use.
+const COMMENTARY_RATE = {
+  table: "compare_commentary_rate_limits",
+  limit: 5,
+  windowMs: 60 * 60 * 1000,
+};
 
 const LLM_API_KEY = process.env.LLM_EVAL_API_KEY ?? "";
 const PRIMARY_MODEL = process.env.LLM_EVAL_MODEL ?? "gemini-2.5-flash";
@@ -174,6 +184,29 @@ export async function POST(request: Request) {
   }
   if (!LLM_API_KEY) {
     return NextResponse.json({ success: false }, { status: 200 });
+  }
+
+  // cap the paid calls before any model is reached; an unreachable store is a
+  // refusal, not a fallthrough
+  let rate: RateLimitVerdict;
+  try {
+    rate = await enforceRateLimit(COMMENTARY_RATE, {
+      keys: [`ip:${clientIpFrom(request.headers)}`],
+    });
+  } catch {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Commentary is temporarily unavailable, please try again shortly.",
+      },
+      { status: 503 },
+    );
+  }
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { success: false, error: "Too many commentary requests from this address. Try again later." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } },
+    );
   }
 
   // only the numbers the buyer sees in the table go to the model
