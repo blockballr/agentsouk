@@ -1,17 +1,25 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { AgentDetail, CategoryDef, CategoryKey } from '@agora/core'
-import { CATEGORIES, categoryDef, classifyAgent } from '@agora/core'
-import { getTargetChain } from '../lib/wallet'
+import {
+  CATEGORIES,
+  categoryDef,
+  classifyAgent,
+  mintRequestMessage,
+  shortAddress,
+} from '@agora/core'
+import { connectWallet, getActiveAccount, getProvider, getTargetChain } from '../lib/wallet'
+import { FAUCET_URL, MINT_PER_CLICK, isTestnet, readNativeBalance } from '../lib/mint'
 import {
   chainLabel,
   explorerAddressUrl,
+  explorerTxBase,
   REGISTRY_BY_CHAIN,
   registryFor,
   SETTLEMENT_ASSET_BY_CHAIN,
   settlementAssetFor,
 } from '../lib/contracts'
-import { getAgentDetail } from '../lib/api'
+import { getAgentDetail, getAgents } from '../lib/api'
 import { RegisterWizard } from '../components/RegisterWizard'
 
 const checklist = [
@@ -52,8 +60,33 @@ function parseTokenId(raw: string): string | null {
   return nums[nums.length - 1]
 }
 
+// A gas drip is 0.001 and most wallets hold less than one, so keep up to eight
+// fractional digits rather than rounding a small balance down to zero.
+function formatNative(wei: bigint): string {
+  const whole = wei / 10n ** 18n
+  const frac = (wei % 10n ** 18n).toString().padStart(18, '0').replace(/0+$/, '')
+  if (!frac) return `${whole}`
+  const shown = frac.slice(0, 8).replace(/0+$/, '')
+  return shown ? `${whole}.${shown}` : '<0.00000001'
+}
+
 export function ListAgentPage() {
   const [foundTokenId, setFoundTokenId] = useState<string | null>(null)
+  // The chain is learned from the catalogue the same way the marketplace learns
+  // it, so a direct load cannot keep a compiled-in mainnet default and hand a
+  // testnet participant the wrong gas advice.
+  const [chain, setChain] = useState(getTargetChain())
+  useEffect(() => {
+    let cancelled = false
+    void getAgents({ limit: 1 })
+      .then(() => {
+        if (!cancelled) setChain(getTargetChain())
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
       <p className="micro text-newsprint-gray">List your agent</p>
@@ -83,8 +116,9 @@ export function ListAgentPage() {
             The same registration without the CLI. You send one transaction from your own wallet,
             and the registry records you as the owner.
           </p>
+          <GasRequirement chainId={chain} />
           <div className="mt-8">
-            <RegisterWizard chainId={getTargetChain()} />
+            <RegisterWizard chainId={chain} />
           </div>
         </div>
       </div>
@@ -92,6 +126,242 @@ export function ListAgentPage() {
       <LookupSection onFound={setFoundTokenId} />
       <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
     </section>
+  )
+}
+
+// Registration is the participant's own transaction, which is how the registry
+// records them as owner. So the wallet, not the marketplace, pays the gas, and a
+// fresh testnet wallet has none. This states the cost and the ways to cover it
+// before the register button is reached.
+function GasRequirement({ chainId }: { chainId: number }) {
+  const [account, setAccount] = useState<string | null>(null)
+  const [balance, setBalance] = useState<bigint | null>(null)
+  const [reading, setReading] = useState(false)
+  const [connecting, setConnecting] = useState(false)
+  const [phase, setPhase] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [error, setError] = useState<string | null>(null)
+  const [gasTxHash, setGasTxHash] = useState<string | null>(null)
+  const testnet = isTestnet(chainId)
+  const symbol = testnet ? 'tBNB' : 'BNB'
+  const holdsGas = balance !== null && balance > 0n
+
+  const refresh = useCallback(
+    async (who: string | null) => {
+      if (!who) {
+        setBalance(null)
+        return
+      }
+      setReading(true)
+      try {
+        setBalance(await readNativeBalance(who as `0x${string}`, chainId))
+      } catch {
+        setBalance(null)
+      }
+      setReading(false)
+    },
+    [chainId],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const active = await getActiveAccount()
+      if (cancelled) return
+      setAccount(active)
+      await refresh(active)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [refresh])
+
+  async function connect() {
+    setConnecting(true)
+    setError(null)
+    try {
+      const who = await connectWallet()
+      setAccount(who)
+      await refresh(who)
+    } catch (e) {
+      setError((e as Error).message)
+    }
+    setConnecting(false)
+  }
+
+  // Signs the same sponsored-mint message the hire flow uses, so the visitor pays
+  // no gas; the server submits it and tops up an exactly empty wallet.
+  async function getGas() {
+    setError(null)
+    setGasTxHash(null)
+    setPhase('sending')
+    try {
+      const who = account ?? (await connectWallet())
+      setAccount(who)
+      const expires = Math.floor(Date.now() / 1000) + 15 * 60
+      const nonce = `${expires}-${who.slice(2, 10).toLowerCase()}`
+      const fields = {
+        address: who.toLowerCase(),
+        amount: MINT_PER_CLICK.toString(),
+        nonce,
+        expires,
+      }
+      const provider = await getProvider()
+      const signature = (await provider.request({
+        method: 'personal_sign',
+        params: [mintRequestMessage(fields), who],
+      })) as string
+      const res = await fetch('/api/tokens/mint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...fields, signature }),
+      })
+      const body = (await res.json().catch(() => null)) as {
+        success?: boolean
+        error?: string
+        gasTxHash?: string | null
+      } | null
+      if (!res.ok || !body?.success) {
+        setError(body?.error ?? 'The sponsored mint did not answer. Use the official faucet above.')
+        setPhase('error')
+        return
+      }
+      setGasTxHash(body.gasTxHash ?? null)
+      setPhase('sent')
+      // the top-up is a broadcast, not a state change, so re-read it shortly after
+      setTimeout(() => void refresh(who), 5000)
+    } catch (e) {
+      const err = e as Error & { code?: number }
+      setError(
+        err.code === 4001
+          ? 'You cancelled the signature, so nothing was sent.'
+          : 'The sponsored mint failed. Use the official faucet above.',
+      )
+      setPhase('error')
+    }
+  }
+
+  return (
+    <div className="mt-8 rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h3 className="font-serif text-xl font-medium">Gas to register</h3>
+        <span className="micro text-newsprint-gray">{chainLabel(chainId)}</span>
+      </div>
+      <p className="mt-3 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+        Registration is one transaction sent from your own wallet, which is how the
+        registry records you as the owner. Nobody can send it for you, so your wallet
+        pays a little {symbol} in gas. A fresh testnet wallet starts with none.
+      </p>
+
+      <dl className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+        <div className="flex items-center gap-2">
+          <dt className="micro text-newsprint-gray">Your {symbol}</dt>
+          <dd className="font-mono text-press-black">
+            {!account
+              ? 'no wallet connected'
+              : reading
+                ? 'reading'
+                : balance === null
+                  ? 'unavailable'
+                  : `${formatNative(balance)} ${symbol}`}
+          </dd>
+        </div>
+        {account && (
+          <div className="flex items-center gap-2">
+            <dt className="micro text-newsprint-gray">Wallet</dt>
+            <dd className="font-mono text-[11px] text-newsprint-gray">{shortAddress(account)}</dd>
+          </div>
+        )}
+      </dl>
+
+      {!account && (
+        <button
+          type="button"
+          disabled={connecting}
+          onClick={() => void connect()}
+          className="micro mt-4 rounded-[5px] border hairline border-slate-verdant/50 px-5 py-2.5 text-press-black transition hover:bg-bone-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        >
+          {connecting ? 'Connecting…' : 'Connect wallet to check'}
+        </button>
+      )}
+
+      {testnet ? (
+        <>
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+            Two ways to cover it. The official BSC testnet faucet works for any
+            wallet, and the sponsored mint below signs one free message that we pay
+            for.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <a
+              href={FAUCET_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="micro rounded-[5px] border hairline border-slate-verdant/50 px-5 py-2.5 text-press-black transition hover:bg-bone-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+            >
+              BSC testnet faucet →
+            </a>
+            {!holdsGas && (
+              <button
+                type="button"
+                disabled={phase === 'sending'}
+                onClick={() => void getGas()}
+                className="micro rounded-[5px] bg-highlighter-green px-5 py-2.5 text-typesetter-ink shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              >
+                {phase === 'sending'
+                  ? 'Sign the message in your wallet'
+                  : `Get 0.001 ${symbol} free`}
+              </button>
+            )}
+          </div>
+          <p className="mt-3 max-w-3xl text-xs leading-relaxed text-newsprint-gray">
+            The sponsored mint grants 10 test sUSD, and it sends 0.001 {symbol} only
+            when your {symbol} balance is exactly zero. If you already hold any{' '}
+            {symbol}, even a little, it will not top you up, so the faucet above is
+            the way. The mint itself costs you no gas.
+          </p>
+          {holdsGas && balance !== null && (
+            <p className="mt-2 max-w-3xl text-xs leading-relaxed text-press-black">
+              This wallet already holds {formatNative(balance)} {symbol}, so the
+              sponsored top-up will not fire here.
+            </p>
+          )}
+          {phase === 'error' && error && (
+            <p role="alert" className="mt-3 text-sm leading-relaxed text-press-black">
+              {error}
+            </p>
+          )}
+          {phase === 'sent' && (
+            <p className="mt-3 text-sm leading-relaxed text-press-black">
+              {gasTxHash ? (
+                <>
+                  Sent 0.001 {symbol} for gas, plus 10 test sUSD.{' '}
+                  <a
+                    href={`${explorerTxBase(chainId)}/tx/${gasTxHash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline decoration-press-black/30 underline-offset-2 hover:text-highlighter-green"
+                  >
+                    View the top-up
+                  </a>
+                  .
+                </>
+              ) : (
+                <>
+                  Minted, but no gas top-up was sent. That is what happens when the
+                  wallet already held {symbol}, and a failed top-up is not retried;
+                  use the faucet above if you are still short.
+                </>
+              )}
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+          Keep a little {symbol} in the wallet before you register. There is no
+          sponsored top-up on mainnet.
+        </p>
+      )}
+    </div>
   )
 }
 
