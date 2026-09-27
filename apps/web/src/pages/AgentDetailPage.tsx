@@ -10,7 +10,7 @@ import {
   shortAddress,
   timeAgo,
 } from '@agora/core'
-import { activateBoost, deliverTask, getAgentDetail, getBoostStatus, getTask, retryTask, type DeliverData, type DeliverTool, type HireTask } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getTask, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import { chainLabel } from '../lib/contracts'
 import {
@@ -971,6 +971,27 @@ function parseStructuredInput(
   return { ok: true, input: parsed as Record<string, unknown> }
 }
 
+// The buyer's next step depends on what the server has the job at: only a
+// Submitted job can be attested complete, a Funded one still needs delivery (or
+// a refund), and a terminal job is done. A completion is never offered for a
+// state the server has not confirmed.
+export type CompletionOffer = 'complete' | 'refund' | 'none'
+
+export function completionOffer(status: string | null | undefined): CompletionOffer {
+  if (status === 'Submitted') return 'complete'
+  if (status === 'Funded') return 'refund'
+  return 'none'
+}
+
+// The x402 deliver response carries the ERC-8183 advance the server persisted,
+// so the panel knows the job without a second read.
+interface JobAdvance {
+  advanced: boolean
+  jobId?: string
+  status?: JobStatus
+  note?: string
+}
+
 function DeliveryPanel({ paymentId }: { paymentId: string }) {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'blocked'>('idle')
   const [data, setData] = useState<DeliverData | null>(null)
@@ -984,6 +1005,11 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
   const [running, setRunning] = useState(false)
   const [hireTask, setHireTask] = useState<HireTask | null>(null)
   const [retrying, setRetrying] = useState(false)
+  // the job the server reported after a delivery; null until one is confirmed
+  const [job, setJob] = useState<{ id: string; status: JobStatus } | null>(null)
+  const [completing, setCompleting] = useState(false)
+  const [completeError, setCompleteError] = useState<string | null>(null)
+  const [completeNote, setCompleteNote] = useState<string | null>(null)
 
   async function loadCapabilities() {
     setPhase('loading')
@@ -1023,10 +1049,14 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
       const body = tool
         ? { paymentId, tool, args: JSON.parse(argsText || '{}') as Record<string, unknown> }
         : { paymentId, task: taskText, ...(structured.input ? { input: structured.input } : {}) }
-      const d = await deliverTask(body)
+      const d = (await deliverTask(body)) as DeliverData & { taskId?: string; jobAdvance?: JobAdvance }
       setOutput(d.text || '(the agent returned no text)')
       if (d.error) setRunError(d.error)
       if (d.taskId) await refreshTask(d.taskId)
+      // the server persisted the ERC-8183 advance, so render what it reported
+      if (d.jobAdvance?.jobId && d.jobAdvance.status) {
+        setJob({ id: d.jobAdvance.jobId, status: d.jobAdvance.status })
+      }
     } catch (e) {
       setRunError(deliveryErrorText(e))
     } finally {
@@ -1052,9 +1082,29 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
     }
   }
 
+  async function completeJob() {
+    if (!job) return
+    setCompleting(true)
+    setCompleteError(null)
+    setCompleteNote(null)
+    try {
+      const updated = await actOnJob(job.id, 'complete', { reason: 'complete' })
+      // only what the server confirmed: the returned job is the new state
+      setJob({ id: updated.id, status: updated.status })
+      setCompleteNote('Completed. The deliverable is attested and the hire is settled.')
+    } catch (e) {
+      // the server's own reason, rather than a generic failure
+      setCompleteError((e as Error).message)
+    } finally {
+      setCompleting(false)
+    }
+  }
+
   const tools: DeliverTool[] = data?.tools ?? []
   const selected = tools.find((t) => t.name === tool)
   const structured = parseStructuredInput(inputText)
+  // the completion affordance is entirely a function of the server-confirmed status
+  const offer = completionOffer(job?.status)
 
   return (
     <div className="mt-4 rounded-[10px] border hairline border-slate-verdant/40 p-4">
@@ -1083,6 +1133,56 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
             >
               {retrying ? 'Retrying…' : 'Retry delivery'}
             </button>
+          )}
+        </div>
+      )}
+
+      {/* the buyer's task ends where the delivery happened: attest the Submitted
+          job here, with the full list and refund path one link away */}
+      {job && (
+        <div className="mt-3 rounded-[8px] border hairline border-slate-verdant/30 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="micro text-newsprint-gray">ERC-8183 job {job.status}</span>
+            {offer !== 'none' && (
+              <Link
+                to="/ongoing"
+                className="micro text-newsprint-gray transition hover:text-press-black"
+              >
+                Full list and refund path
+              </Link>
+            )}
+          </div>
+          {offer === 'complete' && (
+            <>
+              <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+                Your deliverable is recorded and the job is Submitted. Attest it complete
+                to settle this hire.
+              </p>
+              <button
+                type="button"
+                onClick={completeJob}
+                disabled={completing}
+                className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              >
+                {completing ? 'Signing…' : 'Complete job'}
+              </button>
+            </>
+          )}
+          {offer === 'refund' && (
+            <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+              The job is still Funded, so there is nothing to complete yet. The full list
+              has the reject and refund path.
+            </p>
+          )}
+          {completeNote && (
+            <p className="mt-2 text-[11px] leading-relaxed text-highlighter-green">
+              {completeNote}
+            </p>
+          )}
+          {completeError && (
+            <p className="mt-2 rounded-[8px] border hairline border-press-black/20 bg-bone-white p-2 text-[11px] leading-relaxed text-press-black">
+              {completeError}
+            </p>
           )}
         </div>
       )}
