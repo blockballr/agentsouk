@@ -5,16 +5,20 @@
 # copies them in. next.config.ts sets output: "standalone" whenever VERCEL is
 # unset, which is every host including this one.
 #
-# PORT is deliberately not set: Render assigns it and the standalone server
+# PORT is deliberately not set: the host assigns it and the standalone server
 # reads process.env.PORT. HOSTNAME is set because the standalone server binds
 # it, and a container hostname is not a bindable address.
+#
+# The build logs which step it is on, because a host build log is the only
+# place a failure is visible.
 
 FROM node:22-slim AS build
 WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
 COPY . .
-RUN npm ci
-RUN npm run build
-RUN cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/
+RUN echo "== install ==" && npm ci --no-audit --no-fund
+RUN echo "== build ==" && npm run build
+RUN echo "== assemble standalone ==" && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/ && ls -la .next/standalone | head -20
 
 FROM node:22-slim
 WORKDIR /app
