@@ -19,7 +19,10 @@ services:
     plan: starter
     buildCommand: npm ci && npm run build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/
     startCommand: node .next/standalone/server.js
-    healthCheckPath: /api/stats
+    # health check and keep-alive target: /api/chain reads only the configured
+    # target chain and its settlement asset, so a frequent ping costs no upstream
+    # call. /api/stats talks to 8004scan and must not be pinged on a timer.
+    healthCheckPath: /api/chain
     envVars:
       - key: NODE_VERSION
         value: "22"
@@ -34,9 +37,11 @@ services:
         value: "97"
       # settlement rail read by src/app/api/x402/settle/route.ts. sandbox
       # records a receipt and moves no funds; prod relays with RELAY_PRIVATE_KEY;
-      # b402 uses B402_CLIENT_ID and B402_ACCESS_TOKEN.
+      # b402 uses B402_CLIENT_ID and B402_ACCESS_TOKEN. Set this to prod for the
+      # live API: the Vercel deployment runs prod, and sandbox here would look
+      # healthy while quietly settling nothing on chain.
       - key: FACILITATOR_MODE
-        value: sandbox
+        value: prod
       # 8004scan tier key, read by src/lib/scanner.ts and the snapshot builder
       - key: EIGHT004_API_KEY
         sync: false
