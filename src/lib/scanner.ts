@@ -82,6 +82,7 @@ interface RawAgent {
   supported_trust_models: string[];
   a2a_endpoint?: string | null;
   mcp_server?: string | null;
+  web_endpoint?: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -159,6 +160,35 @@ export function resolveIndexBuildTarget(
   return { chainId, snapshotFile: snapshotFileFor(chainId) };
 }
 
+// A web service is neither A2A nor MCP, so the registry gives it no dedicated
+// field. It appears either in the normalized services object keyed by protocol
+// or in the raw offchain registration file, so read whichever is present.
+function webEndpointFromDetail(data: AgentDetail): string | null {
+  const services = data.services;
+  if (services && typeof services === "object" && !Array.isArray(services)) {
+    const web = (services as Record<string, unknown>).web;
+    if (web && typeof web === "object" && !Array.isArray(web)) {
+      const endpoint = (web as Record<string, unknown>).endpoint;
+      if (typeof endpoint === "string" && endpoint.length > 0) return endpoint;
+    }
+  }
+  const offchain = data.raw_metadata?.offchain_content;
+  const list =
+    offchain && typeof offchain === "object" && !Array.isArray(offchain)
+      ? (offchain as Record<string, unknown>).services
+      : undefined;
+  if (Array.isArray(list)) {
+    for (const entry of list) {
+      if (!entry || typeof entry !== "object") continue;
+      const name = (entry as Record<string, unknown>).name;
+      if (typeof name !== "string" || name.toLowerCase() !== "web") continue;
+      const endpoint = (entry as Record<string, unknown>).endpoint;
+      if (typeof endpoint === "string" && endpoint.length > 0) return endpoint;
+    }
+  }
+  return null;
+}
+
 export async function fetchAgentDetail(
   chainId: number,
   tokenId: string,
@@ -191,6 +221,7 @@ export async function fetchAgentDetail(
   data.a2a_endpoint = str(data.a2a_endpoint);
   data.mcp_server = str(data.mcp_server);
   data.agent_url = str(data.agent_url);
+  data.web_endpoint = webEndpointFromDetail(data);
   data.supported_trust_models = Array.isArray(data.supported_trust_models)
     ? data.supported_trust_models
     : [];
@@ -228,6 +259,7 @@ function buildSummary(raw: RawAgent): AgentSummary {
     // the shelf gate judges reachability from these, so normalize absent to null
     a2a_endpoint: raw.a2a_endpoint ?? null,
     mcp_server: raw.mcp_server ?? null,
+    web_endpoint: raw.web_endpoint ?? null,
     category,
     categoryScores: scores,
   };
@@ -250,7 +282,8 @@ export function summaryFromRegistration(input: {
   const name = (draft.name ?? "").trim();
   const description = (draft.description ?? "").trim();
   const endpoint = (draft.endpoint ?? "").trim();
-  // the marketplace shelves callable protocols only; a web service is neither
+  // a web service is shelved too, but it is browser-invoked, so the marketplace
+  // can never call it; the summary carries it as its own endpoint kind
   const kind = draft.endpointKind ?? "web";
   const { category, scores } = classifyAgent(`${name} ${description}`.trim());
   return {
@@ -272,6 +305,7 @@ export function summaryFromRegistration(input: {
     supported_trust_models: [],
     a2a_endpoint: kind === "A2A" && endpoint ? endpoint : null,
     mcp_server: kind === "MCP" && endpoint ? endpoint : null,
+    web_endpoint: kind === "web" && endpoint ? endpoint : null,
     is_active: true,
     created_at: input.createdAt,
     category,
@@ -285,15 +319,16 @@ export function shelfRefusalReason(a: {
   category?: string | null;
   a2a_endpoint?: string | null;
   mcp_server?: string | null;
+  web_endpoint?: string | null;
 }): string {
   if (!a.category || a.category === "general") {
     return "the classifier reads the name and description as general, so the shelf has no category to file it under";
   }
-  const endpoints = [a.a2a_endpoint, a.mcp_server].filter(
+  const endpoints = [a.a2a_endpoint, a.mcp_server, a.web_endpoint].filter(
     (u): u is string => typeof u === "string" && u.length > 0,
   );
   if (endpoints.length === 0) {
-    return "it has no A2A or MCP endpoint the marketplace can call, and a web service is not shelved";
+    return "it declares no endpoint at all: no MCP server, no A2A endpoint and no web service URL";
   }
   const reasons = endpoints
     .map((u) => privateEndpointReason(u))
@@ -903,15 +938,22 @@ export async function getAgentByToken(
   try {
     const detail = await fetchAgentDetail(chainId, tokenId, LIVE_DETAIL_TIMEOUT_MS, true);
     if (detail) {
+      // A live registry record can omit the web service it failed to parse, while
+      // the cached summary already knows it; keep the browser-invoked label rather
+      // than dropping it from a page that has been telling the truth until now.
+      const merged = {
+        ...detail,
+        web_endpoint: detail.web_endpoint ?? cached?.web_endpoint ?? null,
+      };
       // Served regardless, because the caller asked for this exact agent by id; shelved only if it
       // qualifies, so a direct read cannot smuggle an unqualified listing into browse.
-      if (shouldCacheShelfAgent(chainId, targetChainId()) && isShelfReady(detail)) {
+      if (shouldCacheShelfAgent(chainId, targetChainId()) && isShelfReady(merged)) {
         index.agents.set(
-          indexKey(detail.chain_id, detail.token_id),
-          summaryFromDetail(detail),
+          indexKey(merged.chain_id, merged.token_id),
+          summaryFromDetail(merged),
         );
       }
-      return detail;
+      return merged;
     }
   } catch (e) {
     // A definitive not-found evicts, because the registry said the agent is gone.

@@ -158,6 +158,8 @@ export interface AgentSummary {
   supported_trust_models: string[];
   a2a_endpoint?: string | null;
   mcp_server?: string | null;
+  // a web service the owner declared; it is browser-invoked, so the marketplace cannot call it
+  web_endpoint?: string | null;
   is_active: boolean;
   created_at: string;
   // enriched client-side
@@ -186,6 +188,8 @@ export interface AgentDetail {
   services: unknown | null;
   a2a_endpoint: string | null;
   mcp_server: string | null;
+  // a web service the owner declared; browser-invoked, never called by the marketplace
+  web_endpoint?: string | null;
   agent_url: string | null;
   total_feedbacks: number;
   total_validations: number;

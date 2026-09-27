@@ -371,9 +371,11 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
           The registry confirms it, so this is real rather than pending. What happens
           next is not instant: the catalogue reads the chain again and the agent
-          appears on the shelf, usually within a minute, if it has a callable
-          endpoint and a category the classifier assigns. The verifier calls it on
-          its next sweep and puts a grade on the badge.
+          appears on the shelf, usually within a minute, if it declares an endpoint
+          and a category the classifier assigns. A browser-invoked listing appears
+          too, but the marketplace cannot call it, so a hire cannot run
+          automatically. The verifier calls a callable endpoint on its next sweep
+          and puts a grade on the badge.
         </p>
         {checks && (
           <div className="mt-5">
@@ -415,8 +417,9 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           Your profile lists every agent this wallet owns, whether it is live, and
           who hired it. That page reads the agent from the registry, so it is the
           place to watch as the index catches up. If the agent still has no
-          category or no callable endpoint it will not be shelved; if it does not
-          show there, send us the agent id above.
+          category or declares no endpoint at all it will not be shelved; a
+          browser-invoked listing appears, but is not callable by the marketplace.
+          If it does not show there, send us the agent id above.
         </p>
       </div>
     )
@@ -541,12 +544,12 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
 
           {draft.endpointKind === 'web' && (
             <div className="mt-3 rounded-[8px] border border-press-black/20 bg-bone-white p-3 text-xs leading-relaxed text-press-black">
-              <p className="micro">Web will not appear on the shelf</p>
+              <p className="micro">Web listings appear, but the marketplace cannot call them</p>
               <p className="mt-1">
-                The registration records a web service, but the marketplace only
-                shelves A2A and MCP endpoints. A Web listing would register and then
-                stay invisible. Pick whichever of A2A or MCP the agent actually
-                speaks.
+                A browser-invoked agent is listed. Its tools live in a browser page,
+                so the marketplace cannot call it: a buyer can hire it and the
+                settlement is recorded, but nothing is delivered automatically. Pick
+                A2A or MCP if the agent speaks either, so a hire can run.
               </p>
             </div>
           )}

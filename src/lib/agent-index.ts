@@ -34,6 +34,7 @@ export function summaryFromDetail(detail: AgentDetail): AgentSummary {
     supported_trust_models: detail.supported_trust_models ?? [],
     a2a_endpoint: detail.a2a_endpoint,
     mcp_server: detail.mcp_server,
+    web_endpoint: detail.web_endpoint ?? null,
     is_active: detail.is_active,
     created_at: detail.created_at,
     category,
@@ -58,15 +59,21 @@ export function dueForRefresh(
   return now - lastRefreshAt >= cooldownMs;
 }
 
-/** Whether an agent belongs on the shelf: one publicly reachable endpoint and a real category. */
+/**
+ * Whether an agent belongs on the shelf: one publicly reachable endpoint and a
+ * real category. A web endpoint qualifies, because a browser-invoked agent is a
+ * listing worth showing; the marketplace still cannot call it, which every view
+ * of it says.
+ */
 export function isShelfReady(a: {
   a2a_endpoint?: string | null;
   mcp_server?: string | null;
+  web_endpoint?: string | null;
   category?: string | null;
 }): boolean {
   const classified = Boolean(a.category) && a.category !== "general";
   if (!classified) return false;
-  const endpoints = [a.a2a_endpoint, a.mcp_server].filter(
+  const endpoints = [a.a2a_endpoint, a.mcp_server, a.web_endpoint].filter(
     (u): u is string => typeof u === "string" && u.length > 0,
   );
   return endpoints.some((u) => privateEndpointReason(u) === null);
@@ -179,12 +186,14 @@ export type SnapshotEndpointRegime = "endpoints-available" | "no-endpoints";
 export interface EndpointBearing {
   a2a_endpoint?: string | null;
   mcp_server?: string | null;
+  web_endpoint?: string | null;
 }
 
 function carriesEndpoint(a: EndpointBearing): boolean {
   return (
     (typeof a.a2a_endpoint === "string" && a.a2a_endpoint.length > 0) ||
-    (typeof a.mcp_server === "string" && a.mcp_server.length > 0)
+    (typeof a.mcp_server === "string" && a.mcp_server.length > 0) ||
+    (typeof a.web_endpoint === "string" && a.web_endpoint.length > 0)
   );
 }
 

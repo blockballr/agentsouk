@@ -82,6 +82,7 @@ import {
   registrationUrl,
   type RegistrationDraft,
 } from "../src/lib/registry-write";
+import { isShelfReady } from "../src/lib/agent-index";
 import {
   queryAgents,
   shelfRefusalReason,
@@ -227,7 +228,7 @@ describe("the summary built from a confirmed claim", () => {
     expect(s.x402_supported).toBe(true);
   });
 
-  it("does not shelve a web service, because the shelf calls a2a and mcp only", () => {
+  it("shelves a web service, carried as browser-invoked rather than mislabelled", () => {
     const s = summaryFromRegistration({
       chainId: 97,
       tokenId: "1",
@@ -238,7 +239,8 @@ describe("the summary built from a confirmed claim", () => {
     });
     expect(s.a2a_endpoint).toBeNull();
     expect(s.mcp_server).toBeNull();
-    expect(shelfRefusalReason(s)).toMatch(/no A2A or MCP endpoint/);
+    expect(s.web_endpoint).toBe(QUALIFYING.endpoint);
+    expect(isShelfReady(s)).toBe(true);
   });
 
   it("names the classifier when a general reading keeps an agent off the shelf", () => {

@@ -383,6 +383,25 @@ export interface JobAdvance {
   note?: string;
 }
 
+// A browser-invoked agent is a real listing, but its tools live in a browser page
+// the marketplace cannot call. A settled hire that tries to deliver to one gets
+// that case named, not the generic empty-endpoint line, so the buyer knows why.
+export const BROWSER_INVOKED_DELIVERY_REFUSAL =
+  "This agent is browser-invoked: its tools live in a browser page, so the marketplace cannot call it. The hire settled, but nothing could be delivered.";
+
+export const NO_ENDPOINT_DELIVERY_REFUSAL =
+  "This agent has no callable endpoint registered (no MCP server, no A2A endpoint), so settlement can be recorded but nothing can be delivered.";
+
+export function noEndpointDeliveryMessage(detail: {
+  a2a_endpoint?: string | null;
+  mcp_server?: string | null;
+  web_endpoint?: string | null;
+}): string {
+  return !detail.mcp_server && !detail.a2a_endpoint && detail.web_endpoint
+    ? BROWSER_INVOKED_DELIVERY_REFUSAL
+    : NO_ENDPOINT_DELIVERY_REFUSAL;
+}
+
 export async function deliver(input: DeliverInput): Promise<
   | (DeliverOutcome & {
       agent: { chainId: number; tokenId: string; name: string };
@@ -441,8 +460,7 @@ export async function deliver(input: DeliverInput): Promise<
       outcome = await deliverA2a(detail.a2a_endpoint, input.task, input.input);
     }
   } else {
-    const error =
-      "This agent has no callable endpoint registered (no MCP server, no A2A endpoint), so settlement can be recorded but nothing can be delivered.";
+    const error = noEndpointDeliveryMessage(detail);
     const triedRun = Boolean(input.tool || input.task);
     if (triedRun) {
       trackedId =

@@ -104,7 +104,11 @@ async function fetchPerformanceProbe(
   }
 }
 
-type DetailWithSession = AgentDetail & { activeSession?: ActiveSession }
+type DetailWithSession = AgentDetail & {
+  activeSession?: ActiveSession
+  // the web service the registry record declared; browser-invoked, never called by the marketplace
+  web_endpoint?: string | null
+}
 
 function formatExpiry(iso: string): string {
   const d = new Date(iso)
@@ -148,7 +152,7 @@ function isOnchainSettlement(mode: ActiveSession['mode'] | undefined): boolean {
 
 export function AgentDetailPage() {
   const { chainId = '56', tokenId = '' } = useParams()
-  const [detail, setDetail] = useState<AgentDetail | null>(null)
+  const [detail, setDetail] = useState<DetailWithSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [perfProbe, setPerfProbe] = useState<PerformanceProbe | null>(null)
@@ -222,7 +226,7 @@ export function AgentDetailPage() {
   const explorer = explorerBase(chainId)
   const bscScan = `${explorer}/token/${detail.contract_address}?a=${detail.token_id}`
   const ownerScan = `${explorer}/address/${detail.owner_address}`
-  const activeSession = (detail as DetailWithSession).activeSession
+  const activeSession = detail.activeSession
   const verificationProbe = detail.verification
     ? isProbeCheck(detail.chain_id, detail.verification.quality)
     : false
@@ -453,7 +457,9 @@ export function AgentDetailPage() {
                   ? 'The agent is invoked over MCP, so it can call the tools it publishes.'
                   : detail.a2a_endpoint
                     ? 'The agent is invoked over A2A, so it receives the messages you send it.'
-                    : 'No callable endpoint is published for this agent.'}
+                    : detail.web_endpoint
+                      ? 'This agent is browser-invoked: its tools live in a browser page, so the marketplace cannot call it and a hire cannot run automatically.'
+                      : 'No callable endpoint is published for this agent.'}
               </li>
             </ul>
           </div>
@@ -1279,32 +1285,51 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
   )
 }
 
-function EndpointPanel({ detail }: { detail: AgentDetail }) {
-  const rows: { label: string; value: string }[] = []
-  if (detail.a2a_endpoint) rows.push({ label: 'A2A', value: detail.a2a_endpoint })
-  if (detail.mcp_server) rows.push({ label: 'MCP', value: detail.mcp_server })
-  if (detail.agent_url) rows.push({ label: 'Agent URL', value: detail.agent_url })
-  if (detail.endpoint_verified_domain) {
-    rows.push({ label: 'Verified domain', value: detail.endpoint_verified_domain })
+function EndpointPanel({ detail }: { detail: DetailWithSession }) {
+  const rows: { label: string; value: string; callable: boolean }[] = []
+  if (detail.a2a_endpoint) rows.push({ label: 'A2A', value: detail.a2a_endpoint, callable: true })
+  if (detail.mcp_server) rows.push({ label: 'MCP', value: detail.mcp_server, callable: true })
+  if (detail.web_endpoint) {
+    rows.push({ label: 'Web (browser-invoked)', value: detail.web_endpoint, callable: false })
   }
+  if (detail.agent_url) rows.push({ label: 'Agent URL', value: detail.agent_url, callable: false })
+  if (detail.endpoint_verified_domain) {
+    rows.push({ label: 'Verified domain', value: detail.endpoint_verified_domain, callable: false })
+  }
+
+  const web = detail.web_endpoint ?? null
+  const callable = rows.filter((r) => r.callable)
 
   if (rows.length === 0) {
     return (
       <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
-        This agent publishes no callable endpoint, so a hire cannot reach it. Treat the listing as
+        This agent publishes no endpoint at all, so a hire cannot reach it. Treat the listing as
         reference only.
       </p>
     )
   }
 
-  const only = rows.length === 1
   return (
     <>
       <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
-        {only
-          ? 'Invoked over the one protocol this agent publishes.'
-          : `Invoked over ${rows.length} protocols this agent publishes.`}
+        {callable.length === 0
+          ? 'The marketplace cannot call this agent.'
+          : callable.length === 1
+            ? 'Invoked over the one endpoint the marketplace can call.'
+            : `Invoked over the ${callable.length} endpoints the marketplace can call.`}
       </p>
+
+      {/* a web-only listing is real, but there is nothing a hire can reach */}
+      {web && callable.length === 0 && (
+        <div className="mt-4 rounded-[10px] border hairline border-press-black/30 bg-bone-white p-4 text-sm leading-relaxed text-press-black">
+          <p className="micro">Invoked from a browser page</p>
+          <p className="mt-1">
+            Its tools live in a browser page, so the marketplace cannot call it. A hire can be
+            recorded, but nothing can be delivered to it automatically.
+          </p>
+        </div>
+      )}
+
       <div className="mt-5 space-y-3">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between gap-4">
