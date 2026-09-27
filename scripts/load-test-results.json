@@ -1,0 +1,424 @@
+{
+  "generatedAt": "2026-09-27T05:51:32.335Z",
+  "target": {
+    "site": "https://agentsouk.xyz",
+    "api": "https://agentsouk.xyz/api",
+    "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+    "asset": "/assets/index-UjstZ34l.js"
+  },
+  "config": {
+    "levels": [
+      {
+        "concurrency": 5,
+        "windowMs": 6000
+      },
+      {
+        "concurrency": 25,
+        "windowMs": 8000
+      },
+      {
+        "concurrency": 100,
+        "windowMs": 8000
+      },
+      {
+        "concurrency": 250,
+        "windowMs": 8000
+      }
+    ],
+    "mix": [
+      {
+        "name": "doc",
+        "weight": 1
+      },
+      {
+        "name": "asset",
+        "weight": 1
+      },
+      {
+        "name": "agents",
+        "weight": 4
+      },
+      {
+        "name": "sessions",
+        "weight": 3
+      },
+      {
+        "name": "hires",
+        "weight": 1
+      }
+    ],
+    "thinkTimeMs": [
+      300,
+      800
+    ],
+    "requestTimeoutMs": 20000,
+    "maxRequests": 8000,
+    "thresholds": {
+      "maxErrorRate": 0.1,
+      "maxP95Ms": 5000
+    }
+  },
+  "levels": [
+    {
+      "concurrency": 5,
+      "windowMs": 6000,
+      "requests": 32,
+      "successes": 32,
+      "failures": 0,
+      "errorRate": 0,
+      "throughputRps": 4.72,
+      "p50": 517,
+      "p95": 912,
+      "p99": 920,
+      "max": 920,
+      "statusCounts": {
+        "200": 32
+      },
+      "networkCauses": {},
+      "endpoints": {
+        "doc": {
+          "requests": 2,
+          "successes": 2,
+          "failures": 0,
+          "successRate": 1,
+          "failuresByStatus": {},
+          "p50": 157,
+          "p95": 654,
+          "p99": 654,
+          "max": 654,
+          "avg": 405,
+          "sampleErrors": []
+        },
+        "asset": {
+          "requests": 8,
+          "successes": 8,
+          "failures": 0,
+          "successRate": 1,
+          "failuresByStatus": {},
+          "p50": 422,
+          "p95": 920,
+          "p99": 920,
+          "max": 920,
+          "avg": 511,
+          "sampleErrors": []
+        },
+        "agents": {
+          "requests": 13,
+          "successes": 13,
+          "failures": 0,
+          "successRate": 1,
+          "failuresByStatus": {},
+          "p50": 464,
+          "p95": 893,
+          "p99": 893,
+          "max": 893,
+          "avg": 550,
+          "sampleErrors": []
+        },
+        "sessions": {
+          "requests": 9,
+          "successes": 9,
+          "failures": 0,
+          "successRate": 1,
+          "failuresByStatus": {},
+          "p50": 520,
+          "p95": 696,
+          "p99": 696,
+          "max": 696,
+          "avg": 558,
+          "sampleErrors": []
+        },
+        "hires": {
+          "requests": 0,
+          "successes": 0,
+          "failures": 0,
+          "successRate": null,
+          "failuresByStatus": {},
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0,
+          "avg": 0,
+          "sampleErrors": []
+        }
+      }
+    },
+    {
+      "concurrency": 25,
+      "windowMs": 8000,
+      "requests": 172,
+      "successes": 172,
+      "failures": 0,
+      "errorRate": 0,
+      "throughputRps": 17.59,
+      "p50": 501,
+      "p95": 2042,
+      "p99": 4393,
+      "max": 4455,
+      "statusCounts": {
+        "200": 172
+      },
+      "networkCauses": {},
+      "endpoints": {
+        "doc": {
+          "requests": 16,
+          "successes": 16,
+          "failures": 0,
+          "successRate": 1,
+          "failuresByStatus": {},
+          "p50": 184,
+          "p95": 834,
+          "p99": 834,
+          "max": 834,
+          "avg": 284,
+          "sampleErrors": []
+        },
+        "asset": {
+          "requests": 17,
+          "successes": 17,
+          "failures": 0,
+          "successRate": 1,
+          "failuresByStatus": {},
+          "p50": 327,
+          "p95": 2389,
+          "p99": 2389,
+          "max": 2389,
+          "avg": 583,
+          "sampleErrors": []
+        },
+        "agents": {
+          "requests": 68,
+          "successes": 68,
+          "failures": 0,
+          "successRate": 1,
+          "failuresByStatus": {},
+          "p50": 518,
+          "p95": 4169,
+          "p99": 4393,
+          "max": 4393,
+          "avg": 831,
+          "sampleErrors": []
+        },
+        "sessions": {
+          "requests": 55,
+          "successes": 55,
+          "failures": 0,
+          "successRate": 1,
+          "failuresByStatus": {},
+          "p50": 514,
+          "p95": 1902,
+          "p99": 4455,
+          "max": 4455,
+          "avg": 647,
+          "sampleErrors": []
+        },
+        "hires": {
+          "requests": 16,
+          "successes": 16,
+          "failures": 0,
+          "successRate": 1,
+          "failuresByStatus": {},
+          "p50": 500,
+          "p95": 633,
+          "p99": 633,
+          "max": 633,
+          "avg": 472,
+          "sampleErrors": []
+        }
+      }
+    },
+    {
+      "concurrency": 100,
+      "windowMs": 8000,
+      "requests": 347,
+      "successes": 291,
+      "failures": 56,
+      "errorRate": 0.1614,
+      "throughputRps": 30.72,
+      "p50": 508,
+      "p95": 10484,
+      "p99": 10496,
+      "max": 10505,
+      "statusCounts": {
+        "200": 291,
+        "NETWORK": 56
+      },
+      "networkCauses": {
+        "UND_ERR_CONNECT_TIMEOUT": 56
+      },
+      "endpoints": {
+        "doc": {
+          "requests": 32,
+          "successes": 26,
+          "failures": 6,
+          "successRate": 0.8125,
+          "failuresByStatus": {
+            "NETWORK": 6
+          },
+          "p50": 295,
+          "p95": 10490,
+          "p99": 10492,
+          "max": 10492,
+          "avg": 2223,
+          "sampleErrors": [
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.409Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.410Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.411Z"
+            }
+          ]
+        },
+        "asset": {
+          "requests": 34,
+          "successes": 28,
+          "failures": 6,
+          "successRate": 0.8235,
+          "failuresByStatus": {
+            "NETWORK": 6
+          },
+          "p50": 408,
+          "p95": 10488,
+          "p99": 10489,
+          "max": 10489,
+          "avg": 2596,
+          "sampleErrors": [
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.410Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.413Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.413Z"
+            }
+          ]
+        },
+        "agents": {
+          "requests": 125,
+          "successes": 109,
+          "failures": 16,
+          "successRate": 0.872,
+          "failuresByStatus": {
+            "NETWORK": 16
+          },
+          "p50": 483,
+          "p95": 10478,
+          "p99": 10497,
+          "max": 10505,
+          "avg": 1934,
+          "sampleErrors": [
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.408Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.409Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.410Z"
+            }
+          ]
+        },
+        "sessions": {
+          "requests": 109,
+          "successes": 92,
+          "failures": 17,
+          "successRate": 0.844,
+          "failuresByStatus": {
+            "NETWORK": 17
+          },
+          "p50": 520,
+          "p95": 10486,
+          "p99": 10494,
+          "max": 10496,
+          "avg": 2394,
+          "sampleErrors": [
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.409Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.410Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.411Z"
+            }
+          ]
+        },
+        "hires": {
+          "requests": 47,
+          "successes": 36,
+          "failures": 11,
+          "successRate": 0.766,
+          "failuresByStatus": {
+            "NETWORK": 11
+          },
+          "p50": 520,
+          "p95": 10489,
+          "p99": 10498,
+          "max": 10498,
+          "avg": 3053,
+          "sampleErrors": [
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.408Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.409Z"
+            },
+            {
+              "status": "NETWORK",
+              "error": "fetch failed: UND_ERR_CONNECT_TIMEOUT",
+              "at": "2026-09-27T05:51:59.410Z"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "summary": {
+    "levelsRun": 3,
+    "stoppedEarly": true,
+    "stopReason": "stopped after concurrency=100: error rate 16.1% > 10% and p95 10484ms > 5000ms",
+    "firstBreach": {
+      "concurrency": 100,
+      "errorRate": 0.1614,
+      "p95": 10484,
+      "breachedError": true,
+      "breachedLatency": true
+    },
+    "totalRequests": 551,
+    "totalSuccesses": 495,
+    "totalFailures": 56,
+    "overallSuccessRate": 0.8984
+  }
+}
