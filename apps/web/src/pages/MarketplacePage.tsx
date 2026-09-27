@@ -30,6 +30,7 @@ export function MarketplacePage() {
   const [result, setResult] = useState<{
     items: AgentSummary[]
     snapshotTotal: number | null
+    registryTotal: number | null
     snapshotTime: string | null
     lastTopUpAt: number | null
     total: number
@@ -118,6 +119,7 @@ export function MarketplacePage() {
           setResult({
             items: r.items,
             snapshotTotal: r.snapshotTotal,
+            registryTotal: r.registryTotal,
             snapshotTime: r.snapshotTime,
             lastTopUpAt: r.lastTopUpAt,
             total: r.total,
@@ -174,9 +176,9 @@ export function MarketplacePage() {
         </h1>
         {loading && !result ? (
           <p className="micro text-newsprint-gray">Loading agents</p>
-        ) : result?.snapshotTotal ? (
+        ) : result?.registryTotal ? (
           <p className="micro text-newsprint-gray">
-            {result.snapshotTotal.toLocaleString('en-US')} agents registered
+            {result.registryTotal.toLocaleString('en-US')} agents registered
           </p>
         ) : null}
       </div>
@@ -220,9 +222,9 @@ export function MarketplacePage() {
             </a>{' '}
             on {chainLabel(chainId)}
             {result
-              ? result.snapshotTotal
-                ? ` · ${result.total.toLocaleString('en-US')} shown of ${result.snapshotTotal.toLocaleString('en-US')} registered`
-                : ` · ${result.total.toLocaleString('en-US')} shown`
+              ? result.registryTotal
+                ? ` · ${(result.snapshotTotal ?? result.total).toLocaleString('en-US')} shown of ${result.registryTotal.toLocaleString('en-US')} registered`
+                : ` · ${(result.snapshotTotal ?? result.total).toLocaleString('en-US')} shown`
               : ''}
             {freshness ? ` · ${freshness}` : ''}
           </p>

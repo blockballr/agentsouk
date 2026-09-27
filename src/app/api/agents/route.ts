@@ -59,9 +59,12 @@ export async function GET(req: NextRequest) {
     chainId: targetChainId(),
     ...result,
     items,
-    // the browse header reads these; snapshotTotal is the registry total behind the
-    // shelf, and the timestamps are the freshness the server can actually attest
+    // the proof strip reads both: snapshotTotal is how many agents the committed
+    // snapshot holds, registryTotal how many the registry reports for this chain
+    // (null when the snapshot never recorded one), and the timestamps are the
+    // freshness the server can actually attest
     snapshotTotal: result.indexStatus.snapshotTotal,
+    registryTotal: result.indexStatus.registryTotal,
     counts: result.categoryCounts,
     snapshotTime: result.indexStatus.snapshotTime,
     lastTopUpAt: result.indexStatus.lastTopUpAt,

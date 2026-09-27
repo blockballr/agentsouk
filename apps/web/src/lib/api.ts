@@ -15,7 +15,11 @@ export interface AgentsQuery {
 export interface AgentsResult {
   items: AgentSummary[]
   total: number
+  // agents held in the committed snapshot
   snapshotTotal: number | null
+  // agents the registry reports for the served chain, null when the snapshot
+  // never recorded one
+  registryTotal: number | null
   // provenance the server can attest: when the snapshot was taken, and when the
   // process last topped it up from the registry (null until a live refresh lands)
   snapshotTime: string | null
@@ -38,6 +42,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     items?: AgentSummary[]
     total?: number
     snapshotTotal?: number | null
+    registryTotal?: number | null
     snapshotTime?: string | null
     lastTopUpAt?: number | null
     counts?: Record<string, number>
@@ -53,6 +58,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     items,
     total: body.total ?? 0,
     snapshotTotal: body.snapshotTotal ?? null,
+    registryTotal: body.registryTotal ?? null,
     snapshotTime: typeof body.snapshotTime === 'string' ? body.snapshotTime : null,
     lastTopUpAt:
       typeof body.lastTopUpAt === 'number' && Number.isFinite(body.lastTopUpAt)
@@ -372,6 +378,101 @@ export async function revokeSession(paymentId: string, client?: string | null): 
   const res = await fetch(`${BASE}/sessions${qs}`, { method: 'DELETE' })
   const body = await res.json().catch(() => null)
   if (!res.ok || !body?.success) throw new Error(body?.error ?? `revoke ${res.status}`)
+}
+
+export interface AgentVerification {
+  status: 'delivered' | 'gated' | 'dead' | 'unreachable'
+  checkedAt: string
+  responseMs: number
+  quality?: { grade: 'good' | 'partial' | 'poor'; reason: string; model: string }
+  concurrency?: 'parallel-ok' | 'single-ok' | 'untested'
+  detail?: string
+}
+
+export interface OwnedAgent {
+  chainId: number
+  tokenId: string
+  agentId: string
+  name: string
+  description: string | null
+  category: string
+  contractAddress: string
+  ownerAddress: string
+  isVerified: boolean
+  isActive: boolean
+  x402Supported: boolean
+  healthScore: number | null
+  createdAt: string
+  verification: AgentVerification | null
+}
+
+export interface OwnedAgentsResult {
+  agents: OwnedAgent[]
+  chainId: number | null
+  counts: { agents: number; categories: Record<string, number> }
+}
+
+// The listings a wallet owns, read from the registry's owner index. Each row carries
+// the verifier's badge so the profile can show whether the endpoint answered.
+export async function getAgentsByOwner(owner: string): Promise<OwnedAgentsResult> {
+  const res = await fetch(`${BASE}/agents/by-owner?owner=${encodeURIComponent(owner)}`)
+  if (!res.ok) throw new Error(`owned agents ${res.status}`)
+  const body = await readJsonBody<{
+    agents?: OwnedAgent[]
+    chainId?: number
+    counts?: { agents?: number; categories?: Record<string, number> }
+  }>(res, 'owned agents')
+  const agents = body.agents ?? []
+  const chain = body.chainId ?? agents[0]?.chainId
+  const chainId = typeof chain === 'number' && Number.isFinite(chain) && chain > 0 ? chain : null
+  return {
+    agents,
+    chainId,
+    counts: {
+      agents: body.counts?.agents ?? agents.length,
+      categories: body.counts?.categories ?? {},
+    },
+  }
+}
+
+export interface PayeeHire {
+  paymentId: string
+  chainId: number
+  tokenId: string
+  agentName: string
+  client: string
+  payTo: string
+  txHash: string | null
+  mode: 'sandbox' | 'prod' | 'b402'
+  amount: string
+  symbol: string
+  // decimals of the settlement asset, or null when the chain is unconfigured
+  decimals: number | null
+  active: boolean
+  createdAt: string
+}
+
+export interface HiresByPayeeResult {
+  hires: PayeeHire[]
+  counts: { hires: number }
+  source: 'postgres' | 'memory'
+}
+
+// Hires paid to a wallet's agents. The payee is the agent's receiving wallet.
+export async function getHiresByPayee(payee: string): Promise<HiresByPayeeResult> {
+  const res = await fetch(`${BASE}/hires/by-payee?payee=${encodeURIComponent(payee)}`)
+  if (!res.ok) throw new Error(`received hires ${res.status}`)
+  const body = await readJsonBody<{
+    hires?: PayeeHire[]
+    counts?: { hires?: number }
+    source?: 'postgres' | 'memory'
+  }>(res, 'received hires')
+  const hires = body.hires ?? []
+  return {
+    hires,
+    counts: { hires: body.counts?.hires ?? hires.length },
+    source: body.source === 'postgres' ? 'postgres' : 'memory',
+  }
 }
 
 export type JobAction = 'complete' | 'reject' | 'claimRefund' | 'submit'

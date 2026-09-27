@@ -240,7 +240,11 @@ interface IndexState {
   lastRefreshAt: number | null;
   lastTopUpAt: number | null;
   lastWarmAt: number | null;
+  // the committed snapshot's own size, and the registry total it recorded, if any
   snapshotTotal: number | null;
+  snapshotRegistryTotal: number | null;
+  // the last registry pagination total a live read saw, used only without a snapshot
+  liveUpstreamTotal: number | null;
   error: string | null;
 }
 
@@ -254,15 +258,72 @@ const index: IndexState = {
   lastTopUpAt: null,
   lastWarmAt: null,
   snapshotTotal: null,
+  snapshotRegistryTotal: null,
+  liveUpstreamTotal: null,
   error: null,
 };
+
+interface SnapshotSource {
+  pages?: number;
+  fetched: number;
+  // The upstream total the build observed. A curated snapshot can carry its own
+  // shelf size here, so it is never read as a registry total.
+  upstreamTotal: number | null;
+  deduped: number;
+  scoutAdded?: number;
+  // The registry total recorded at build time, when the writer knew it. This is the
+  // only denominator a fresh instance and a topped-up one can agree on.
+  registryTotal?: number | null;
+}
 
 interface SnapshotFile {
   version: number;
   snapshotTime: string;
-  source: { pages: number; fetched: number; upstreamTotal: number; deduped: number };
+  source: SnapshotSource;
   counts: Record<string, number>;
   agents: AgentSummary[];
+}
+
+export interface ShelfCounts {
+  // Agents held in the committed snapshot. Null means no snapshot was loaded.
+  snapshotTotal: number | null;
+  // Agents the registry reports for the served chain. Null means unknown.
+  registryTotal: number | null;
+}
+
+function nonNegativeCount(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? Math.floor(value)
+    : null;
+}
+
+// A registry cannot have zero agents, so zero is no total and is reported as
+// unknown rather than as an "of 0" denominator.
+function positiveCount(value: number | null | undefined): number | null {
+  const count = nonNegativeCount(value);
+  return count !== null && count > 0 ? count : null;
+}
+
+// A fresh instance reads the committed snapshot while a topped-up instance reads the
+// live registry, so the denominator comes from what both can see: the registry total
+// recorded in the snapshot. A live pagination total is used only when there is no
+// snapshot to disagree with.
+export function resolveShelfCounts(input: {
+  snapshotAgents: number | null;
+  snapshotRegistryTotal: number | null;
+  liveUpstreamTotal: number | null;
+}): ShelfCounts {
+  const snapshotTotal = nonNegativeCount(input.snapshotAgents);
+  if (snapshotTotal !== null) {
+    return {
+      snapshotTotal,
+      registryTotal: positiveCount(input.snapshotRegistryTotal),
+    };
+  }
+  return {
+    snapshotTotal: null,
+    registryTotal: positiveCount(input.liveUpstreamTotal),
+  };
 }
 
 let snapshotLoaded = false;
@@ -316,7 +377,10 @@ async function loadSnapshot(): Promise<boolean> {
       if (!shouldAdmitSnapshotEntry(a, regime)) continue;
       index.agents.set(indexKey(a.chain_id, a.token_id), a);
     }
-    index.snapshotTotal = snap.source.upstreamTotal;
+    // The snapshot's own size, never source.upstreamTotal: a curated snapshot can
+    // carry its shelf size there, so it is not a registry total.
+    index.snapshotTotal = snap.agents.length;
+    index.snapshotRegistryTotal = positiveCount(snap.source.registryTotal);
     index.totalFetched = snap.agents.length;
     index.lastWarmAt = Date.now();
     snapshotTime = snap.snapshotTime;
@@ -352,7 +416,7 @@ export async function warmIndex(opts: WarmOptions = {}): Promise<void> {
         index.error = (e as Error).message;
         break;
       }
-      index.snapshotTotal = body.meta.pagination.total;
+      index.liveUpstreamTotal = body.meta.pagination.total;
       for (const raw of body.data) {
         index.agents.set(indexKey(raw.chain_id, raw.token_id), buildSummary(raw));
       }
@@ -386,7 +450,7 @@ export async function refreshIndexFromLive(
       fetched: 0,
       added: 0,
       total: index.agents.size,
-      upstreamTotal: index.snapshotTotal,
+      upstreamTotal: index.liveUpstreamTotal,
       error: "refresh already running",
     };
   }
@@ -413,7 +477,7 @@ export async function refreshIndexFromLive(
         error = (e as Error).message;
         break;
       }
-      index.snapshotTotal = body.meta.pagination.total;
+      index.liveUpstreamTotal = body.meta.pagination.total;
       for (const raw of body.data) {
         const summary = buildSummary(raw);
         // Shelve only what the marketplace would stand behind: a new registration appears once it
@@ -444,7 +508,7 @@ export async function refreshIndexFromLive(
     fetched,
     added,
     total: index.agents.size,
-    upstreamTotal: index.snapshotTotal,
+    upstreamTotal: index.liveUpstreamTotal,
     error,
   };
 }
@@ -494,6 +558,7 @@ export interface QueryResult {
   indexStatus: {
     totalFetched: number;
     snapshotTotal: number | null;
+    registryTotal: number | null;
     lastWarmAt: number | null;
     // When the last successful live top up of the frozen snapshot completed, so
     // the response can report shelf freshness without waiting on the in-flight one.
@@ -564,6 +629,12 @@ export async function queryAgents(
   const start = (page - 1) * limit;
   const paged = items.slice(start, start + limit);
 
+  const shelfCounts = resolveShelfCounts({
+    snapshotAgents: index.snapshotTotal,
+    snapshotRegistryTotal: index.snapshotRegistryTotal,
+    liveUpstreamTotal: index.liveUpstreamTotal,
+  });
+
   return {
     items: paged,
     total,
@@ -571,7 +642,8 @@ export async function queryAgents(
     limit,
     indexStatus: {
       totalFetched: index.totalFetched,
-      snapshotTotal: index.snapshotTotal,
+      snapshotTotal: shelfCounts.snapshotTotal,
+      registryTotal: shelfCounts.registryTotal,
       lastWarmAt: index.lastWarmAt,
       lastTopUpAt: index.lastTopUpAt,
       warming: index.warming,
