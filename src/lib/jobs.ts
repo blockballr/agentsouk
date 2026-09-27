@@ -145,9 +145,19 @@ export async function getJobByPaymentAsync(
   const id = byPayment.get(paymentId);
   const local = id ? jobs.get(id) : undefined;
   if (local) return local;
-  const stored = await loadJobByPayment(paymentId);
+  const stored = await loadJobByPaymentDurable(paymentId);
   if (stored) return cache(stored);
   return undefined;
+}
+
+// The indexed payment read is the cheap path, but the durable row can hold its
+// paymentId only in the payload, which is the record the delivery is paid to act
+// on. A miss falls back to a bounded payload scan rather than reporting no job.
+async function loadJobByPaymentDurable(paymentId: string): Promise<Job | undefined> {
+  const indexed = await loadJobByPayment(paymentId);
+  if (indexed) return indexed;
+  const recent = await loadJobs(200);
+  return recent.find((j) => j.paymentId === paymentId);
 }
 
 export function getJobByPayment(paymentId: string): Job | undefined {
@@ -239,6 +249,30 @@ export function submitJob(input: {
   if (input.taskId) job.taskId = input.taskId;
   push(job, "Submitted", input.provider, "deliverable recorded");
   void saveJob(job);
+  return job;
+}
+
+// The delivery path's submit: the job is resolved through the durable store and the
+// Submitted write is awaited, so the transition cannot be recorded in one process's
+// map and lost before the store holds it. The rules are the same as submitJob: only
+// the provider or the marketplace relay may submit, and only a Funded job at that.
+export async function submitJobAsync(input: {
+  jobId: string;
+  provider: string;
+  deliverable: string;
+  taskId?: string;
+}): Promise<Job | undefined> {
+  const job = await getJobAsync(input.jobId);
+  if (!job) return undefined;
+  if (job.status !== "Funded") return job;
+  if (input.provider.toLowerCase() !== job.provider.toLowerCase() &&
+      input.provider.toLowerCase() !== "marketplace") {
+    return undefined;
+  }
+  job.deliverable = input.deliverable;
+  if (input.taskId) job.taskId = input.taskId;
+  push(job, "Submitted", input.provider, "deliverable recorded");
+  await saveJob(job);
   return job;
 }
 
