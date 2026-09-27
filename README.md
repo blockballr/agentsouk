@@ -138,3 +138,11 @@ The project also aligns with the partner track: Altana sessions (own-wallet paym
 | scripts/prod-settle-test.mjs | End-to-end x402 settlement test against BNB Chain mainnet (prod mode). |
 | docs/termix-advantage-report.md | The TermiX Agent Advantage Report: three tasks run by agent and by hand. |
 | data/agents.json | Current snapshot of 172 real BSC agents. |
+## Deployment
+
+Two surfaces are served from this repository.
+
+- The API is the Next.js app on Vercel, project agora, aliased to api.agentsouk.xyz. The project is connected to this repository, so a push to main builds and deploys production.
+- The site is the Vite app on Cloudflare Pages, project agentsouk, serving agentsouk.xyz. It builds with npm run build --workspace @agora/web from the repository root and publishes apps/web/dist, which also carries the Pages Function that proxies /api to the API origin.
+
+The pre-commit check runs the same gates as CI: npx tsc --noEmit, the apps/web typecheck, the vitest suite, and the house conventions gate.
