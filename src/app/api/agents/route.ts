@@ -58,6 +58,10 @@ export async function GET(req: NextRequest) {
     // state the chain this catalogue is served on, so a client never has to guess it
     chainId: targetChainId(),
     ...result,
+    // the catalogue's own freshness rides in indexStatus: catalogueRefreshedAt is
+    // the shared store's refresh time (null when unknown) and catalogueSource says
+    // whether the store or the committed snapshot is serving
+    indexStatus: result.indexStatus,
     items,
     // the proof strip reads both: snapshotTotal is how many agents the committed
     // snapshot holds, registryTotal how many the registry reports for this chain

@@ -27,11 +27,17 @@ import {
 } from "./agent-index";
 import {
   deleteShelfAgent,
+  loadCatalogueMeta,
   loadRegistryTotal,
   loadShelfAgents,
+  readShelfAgents,
+  saveCatalogueMeta,
   saveRegistryTotal,
   saveShelfAgents,
   shelfStoreMode,
+  type CatalogueMeta,
+  type CatalogueMetaInput,
+  type DurableShelfRead,
   type ShelfStoreMode,
   summaryFromRow,
 } from "./shelf-store";
@@ -44,6 +50,9 @@ const REFRESH_FETCH_TIMEOUT_MS = 6000;
 // At most one live top-up per process per cooldown, so browse traffic cannot hammer the registry.
 const REFRESH_COOLDOWN_MS = 60_000;
 const SHELF_REFRESH_PAGES = 1;
+// A store read is trusted this long, so a listing another instance admitted shows
+// up within half a minute without every browse re-reading the database.
+const SHELF_STORE_TTL_MS = 30_000;
 
 function apiKey(): string | undefined {
   const k = process.env.EIGHT004_API_KEY;
@@ -336,6 +345,9 @@ export function shelfRefusalReason(a: {
   return `its endpoint is not publicly reachable: ${reasons[0] ?? "unknown endpoint fault"}`;
 }
 
+// Which side of the catalogue is serving: the shared store, or the committed file.
+export type CatalogueSource = "store" | "snapshot";
+
 // in-memory index, warmed lazily and living for the process lifetime
 
 interface IndexState {
@@ -355,6 +367,11 @@ interface IndexState {
   storedRegistryTotal: number | null;
   // the last registry pagination total a live read saw, used only without a snapshot
   liveUpstreamTotal: number | null;
+  // the shared catalogue's own refresh time, from the store's meta; null until a
+  // refresh has recorded one, so the page falls back to the snapshot's date
+  catalogueRefreshedAt: string | null;
+  // "store" once the shared store holds this chain's rows, otherwise the snapshot
+  catalogueSource: CatalogueSource;
   error: string | null;
 }
 
@@ -371,6 +388,8 @@ const index: IndexState = {
   snapshotRegistryTotal: null,
   storedRegistryTotal: null,
   liveUpstreamTotal: null,
+  catalogueRefreshedAt: null,
+  catalogueSource: "snapshot",
   error: null,
 };
 
@@ -442,36 +461,100 @@ export function resolveShelfCounts(input: {
 
 let snapshotLoaded = false;
 let snapshotTime: string | null = null;
-// The shared store is read once per process and again on the refresh cadence,
-// never per request.
+// The shared store is read at process start and again past the store TTL, never
+// per request.
 let durableMerged = false;
 let durableReadAt: number | null = null;
+// Seeding is a once-per-process act, so a store that stays empty after the write
+// is not re-seeded on every store TTL.
+let seededStore = false;
 let registryTotalLoaded = false;
 
 // force the next query to re-read the snapshot file (used after scout curation)
 export function invalidateSnapshot(): void {
   snapshotLoaded = false;
   durableMerged = false;
+  durableReadAt = null;
   registryTotalLoaded = false;
 }
 
+// A store read reports whether it actually ran, so an unavailable database's
+// empty result is never taken for an empty catalogue.
+async function readDurableShelf(chainId: number): Promise<DurableShelfRead> {
+  try {
+    return await readShelfAgents(chainId);
+  } catch {
+    // a store module without the status reader cannot prove the shelf is empty,
+    // so the plain read's empty result is reported as an unsuccessful read
+    return { rows: await loadShelfAgents(chainId), ok: false };
+  }
+}
+
+// The store is the catalogue, so when it holds no rows for this chain but the
+// snapshot does, seed it once. Never deletes, and never runs on a read that
+// failed, because an unavailable database is not an empty catalogue.
+async function seedStoreFromSnapshot(chainId: number): Promise<void> {
+  if (seededStore) return;
+  const snapshotAgents = Array.from(index.agents.values()).filter(
+    (a) => a.chain_id === chainId,
+  );
+  if (snapshotAgents.length === 0) return;
+  seededStore = true;
+  await saveShelfAgents(snapshotAgents);
+  index.catalogueSource = "store";
+}
+
+// Read the store's own refresh record. A missing or unreadable record leaves the
+// time unknown rather than inventing one.
+async function readCatalogueMeta(
+  chainId: number,
+): Promise<CatalogueMeta | null> {
+  try {
+    return await loadCatalogueMeta(chainId);
+  } catch {
+    // a store that cannot answer leaves the freshness claim to the snapshot
+    return null;
+  }
+}
+
+async function loadCatalogueMetaInto(chainId: number): Promise<void> {
+  const meta = await readCatalogueMeta(chainId);
+  if (meta) index.catalogueRefreshedAt = meta.refreshedAt;
+}
+
 // Merge the fleet's durable shelf over whatever is already in memory. A read
-// runs once per process unless forced, so a browse cannot turn the database into
-// the new bottleneck; a due refresh forces a fresh read.
+// inside the TTL is reused, so a browse cannot turn the database into the new
+// bottleneck; a forced read or one past the TTL goes back to the store.
 async function mergeDurableShelf(force = false): Promise<number> {
-  if (durableMerged && !force) return 0;
+  const now = Date.now();
+  if (
+    durableMerged &&
+    !force &&
+    durableReadAt !== null &&
+    now - durableReadAt < SHELF_STORE_TTL_MS
+  ) {
+    return 0;
+  }
   durableMerged = true;
-  durableReadAt = Date.now();
-  const rows = await loadShelfAgents(targetChainId());
+  durableReadAt = now;
+  const chainId = targetChainId();
+  const read = await readDurableShelf(chainId);
   let merged = 0;
-  for (const row of rows) {
+  for (const row of read.rows) {
     const summary = summaryFromRow(row);
     // the store can hold several chains; the gate already ran, this keeps the
     // shelf to the chain this deployment serves
-    if (!summary || summary.chain_id !== targetChainId()) continue;
+    if (!summary || summary.chain_id !== chainId) continue;
     index.agents.set(indexKey(summary.chain_id, summary.token_id), summary);
     merged += 1;
   }
+  if (read.ok) {
+    // rows for this chain make the store the source; an empty successful read
+    // against a populated snapshot means the store still needs seeding
+    if (merged > 0) index.catalogueSource = "store";
+    else await seedStoreFromSnapshot(chainId);
+  }
+  await loadCatalogueMetaInto(chainId);
   return merged;
 }
 
@@ -496,6 +579,42 @@ async function observeRegistryTotal(
   await saveRegistryTotal(chainId, observed);
   const durable = await loadRegistryTotal(chainId);
   if (durable !== null) index.storedRegistryTotal = durable;
+}
+
+async function writeCatalogueMeta(
+  chainId: number,
+  meta: CatalogueMetaInput,
+): Promise<void> {
+  try {
+    await saveCatalogueMeta(chainId, meta);
+  } catch {
+    // recording the refresh is best effort; a miss leaves the previous record
+  }
+}
+
+// One write per successful refresh, after the agents are persisted: the time, the
+// registry total the refresh observed and the size of the catalogue it served.
+async function recordCatalogueRefresh(
+  chainId: number,
+  observedTotal: number | null,
+  admittedCount: number,
+): Promise<void> {
+  const refreshedAt = new Date().toISOString();
+  const shelfSize = Array.from(index.agents.values()).filter(
+    (a) => a.chain_id === chainId,
+  ).length;
+  await writeCatalogueMeta(chainId, {
+    refreshedAt,
+    registryTotal: positiveCount(observedTotal) ?? index.storedRegistryTotal,
+    shelfSize,
+  });
+  // Report only what the shared store can attest: read the record back, so an
+  // in-memory refresh without a store never becomes a freshness claim.
+  const meta = await readCatalogueMeta(chainId);
+  if (meta) index.catalogueRefreshedAt = meta.refreshedAt;
+  if (shelfStoreMode() === "shared" && admittedCount > 0) {
+    index.catalogueSource = "store";
+  }
 }
 
 // the snapshot is the primary catalogue, and live warming only fills in when it
@@ -671,7 +790,10 @@ export async function refreshIndexFromLive(
   index.error = error;
   // Only a clean pull counts as a top up; a failed one leaves the clock at the
   // last time the shelf actually gained live data.
-  if (error === null) index.lastTopUpAt = Date.now();
+  if (error === null) {
+    index.lastTopUpAt = Date.now();
+    await recordCatalogueRefresh(chainId, observedTotal, admitted.length);
+  }
   return {
     pages: done,
     fetched,
@@ -738,6 +860,12 @@ export interface QueryResult {
     warming: boolean;
     error: string | null;
     snapshotTime: string | null;
+    // The shared catalogue's own refresh time, from the store's meta; null when
+    // the store has never recorded one, so the page falls back to the snapshot.
+    catalogueRefreshedAt: string | null;
+    // "store" when the shared store holds this chain's rows, otherwise the
+    // committed snapshot is serving.
+    catalogueSource: CatalogueSource;
     // "shared" means the top up is backed by the durable store; "per-process"
     // means this instance only knows what it learned itself
     shelfMode: ShelfStoreMode;
@@ -823,6 +951,8 @@ export async function queryAgents(
       warming: index.warming,
       error: index.error,
       snapshotTime,
+      catalogueRefreshedAt: index.catalogueRefreshedAt,
+      catalogueSource: index.catalogueSource,
       shelfMode: shelfStoreMode(),
       lastDurableReadAt: durableReadAt,
     },

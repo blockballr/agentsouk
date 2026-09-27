@@ -26,6 +26,18 @@ export interface AgentsResult {
   lastTopUpAt: number | null
   counts: Record<string, number>
   chainId: number | null
+  // the catalogue's own state, from the shared store rather than the committed file
+  indexStatus: IndexStatus
+}
+
+// The catalogue's own state, reported by the server from the shared store rather
+// than from the committed file.
+export interface IndexStatus {
+  // ISO time the shared catalogue was last refreshed; null when the store has
+  // never recorded one, so the page falls back to the snapshot's date
+  catalogueRefreshedAt: string | null
+  // "store" when the shared store holds this chain's rows, otherwise "snapshot"
+  catalogueSource: 'store' | 'snapshot'
 }
 
 export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> {
@@ -47,6 +59,10 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     lastTopUpAt?: number | null
     counts?: Record<string, number>
     chainId?: number
+    indexStatus?: {
+      catalogueRefreshedAt?: string | null
+      catalogueSource?: string
+    }
   }>(res, 'agents')
   const items: AgentSummary[] = body.items ?? []
   // the server states the chain it serves; fall back to the catalogue only when the
@@ -54,6 +70,16 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   const chain = body.chainId ?? items[0]?.chain_id
   const chainId = typeof chain === 'number' && Number.isFinite(chain) && chain > 0 ? chain : null
   if (chainId !== null) setTargetChain(chainId)
+  // only the store can attest a refresh time; an absent or malformed value stays
+  // null so the page never presents a made-up freshness figure
+  const indexStatus: IndexStatus = {
+    catalogueRefreshedAt:
+      typeof body.indexStatus?.catalogueRefreshedAt === 'string'
+        ? body.indexStatus.catalogueRefreshedAt
+        : null,
+    catalogueSource:
+      body.indexStatus?.catalogueSource === 'store' ? 'store' : 'snapshot',
+  }
   return {
     items,
     total: body.total ?? 0,
@@ -66,6 +92,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
         : null,
     counts: body.counts ?? {},
     chainId,
+    indexStatus,
   }
 }
 
