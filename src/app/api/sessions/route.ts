@@ -5,6 +5,7 @@ import { getJobByPayment, listJobs, type Job } from "@/lib/jobs";
 import {
   cancelAuthorizationDurable,
   getPaymentDurable,
+  listPaymentsByClient,
   revokeSessionDurable,
 } from "@/lib/receipts-store";
 import { cacheKeys, cached, invalidate, invalidatePrefix } from "@/lib/short-cache";
@@ -21,6 +22,27 @@ function sameAddr(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
+// The durable view of one wallet's open sessions, in the shape the page already
+// renders, so an instance that never handled the settlement still lists them.
+async function sessionsFromStore(client: string) {
+  const stored = await listPaymentsByClient(client);
+  const now = Date.now();
+  return stored
+    .filter((p) => p.activated && new Date(p.session.expiresAt).getTime() > now)
+    .map((p) => ({
+      paymentId: p.paymentId,
+      chainId: p.agent.chainId,
+      tokenId: p.agent.tokenId,
+      agentName: p.agent.name,
+      client: p.client,
+      spendCapUsd: p.session.spendCapUsd,
+      expiresAt: p.session.expiresAt,
+      mode: p.mode,
+      createdAt: p.createdAt,
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
 // GET /api/sessions?client=... joined view for the Ongoing page; with client, only that
 // wallet's hire sessions, jobs, and tasks are returned
 
@@ -33,9 +55,18 @@ export async function GET(req: NextRequest) {
 }
 
 async function ongoingBundle(client: string) {
-  const sessions = listActiveSessions().filter(
+  const ledgerSessions = listActiveSessions().filter(
     (s) => !client || sameAddr(s.client, client),
   );
+  // The ledger above lives in one instance's memory, so a wallet whose hires were
+  // settled elsewhere would see an empty page that claims it has no hires. The
+  // receipts store is the shared record, so it fills in whatever the ledger lacks.
+  const durableSessions = client ? await sessionsFromStore(client) : [];
+  const seenPayments = new Set(ledgerSessions.map((s) => s.paymentId));
+  const sessions = [
+    ...ledgerSessions,
+    ...durableSessions.filter((s) => !seenPayments.has(s.paymentId)),
+  ];
   // Two independent reads, run together so a cache miss pays one round trip.
   const [allTasks, allJobs] = await Promise.all([listTasks(200), listJobs(200)]);
   const jobs = allJobs.filter((j) => !client || sameAddr(j.client, client));
