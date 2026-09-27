@@ -20,6 +20,7 @@ import { VerificationLoop, type CheckLine, type CheckState } from './Verificatio
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import {
   chainIdToHex,
+  changeWallet,
   connectWallet,
   ensureBscChain,
   getActiveAccount,
@@ -54,6 +55,12 @@ const EMPTY: RegistrationDraft = {
   image: '',
   x402Support: true,
 }
+
+// The skeleton a lister can start from. It is deliberately a shape rather than a
+// finished sentence, because a description that everyone pastes verbatim would
+// classify the same way and tell a buyer nothing.
+const TEMPLATE_DESCRIPTION =
+  'Computes <the result> for <the position or portfolio the caller supplies>, from <the inputs the caller passes in>. It returns <the fields in the reply>. The arithmetic is deterministic and uses no market data, so the caller supplies the valuation.'
 
 // The checks the marketplace applies, in the order it applies them. The old form checked the
 // endpoint and the category in separate places; this list is the whole judgement in one place.
@@ -259,6 +266,26 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     } finally {
       setBusy(false)
     }
+  }
+
+  // A wallet that will not answer is not something to keep retrying: dropping the
+  // stored choice and picking again is the way out, and it is safe here because
+  // nothing has been sent yet.
+  async function changeAndSign() {
+    if (txHash || sentLatch.current) return
+    setMessage(null)
+    setErrors([])
+    try {
+      const next = await withWalletTimeout(changeWallet())
+      if (!next) {
+        setMessage('No wallet was chosen, so nothing was sent.')
+        return
+      }
+    } catch (e) {
+      setMessage((e as Error).message)
+      return
+    }
+    await sign()
   }
 
   async function sign(target: PrepareResult | null | undefined = prepared) {
@@ -494,6 +521,34 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           />
         </label>
 
+        {/* the name and this text are all the classifier reads, and it decides the
+            shelf category, so a description that names the capability does real work */}
+        <div className="rounded-[10px] border hairline border-slate-verdant/40 p-4">
+          <p className="micro text-newsprint-gray">What a description has to say</p>
+          <p className="mt-2 text-xs leading-relaxed text-newsprint-gray">
+            Nothing else is read when the shelf files your agent, so the words here decide
+            its category: {CATEGORY_OPTIONS.map((c) => c.label).join(', ')}. Name the
+            capability in plain words, say what the caller supplies, say what comes back,
+            and say what the agent does not do, so nobody expects a live price feed from
+            arithmetic.
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-press-black">
+            Worked example for a health factor agent: computes the health factor and
+            liquidation distance of a lending position from the collateral value and debt
+            value the caller supplies, with an optional liquidation threshold. The
+            arithmetic is deterministic and uses no market data, so the caller supplies the
+            valuation and can reproduce every figure.
+          </p>
+          <button
+            type="button"
+            disabled={busy || step !== 'form'}
+            onClick={() => set('description', TEMPLATE_DESCRIPTION)}
+            className="micro mt-3 rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:bg-bone-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          >
+            Start from the template
+          </button>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="micro text-newsprint-gray">Category</span>
@@ -652,6 +707,18 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:opacity-60"
           >
             Sign the registration in your wallet
+          </button>
+        )}
+
+        {/* the escape hatch when a wallet will not answer: forget the stored choice
+            and pick another, which is only offered while nothing has been sent */}
+        {step === 'prepared' && !txHash && (
+          <button
+            type="button"
+            onClick={() => void changeAndSign()}
+            className="micro mt-3 w-full rounded-[5px] border hairline border-slate-verdant/50 px-6 py-3 text-center text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          >
+            Use a different wallet
           </button>
         )}
 
