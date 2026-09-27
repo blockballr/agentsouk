@@ -314,26 +314,42 @@ const verificationTone: Record<string, string> = {
   unreachable: 'border-slate-verdant/45 text-newsprint-gray',
 }
 
-function verificationLabel(status: string): string {
-  return status === 'delivered' ? 'verified delivered' : status
+// chain 97 has no paid-hire verifier: its delivered verdicts come from the scout
+// liveness probe in probeToVerification, so they are reachability rather than delivery
+const BSC_TESTNET_CHAIN_ID = 97
+
+function isProbeCheck(chainId: number, quality?: { model: string }): boolean {
+  if (quality?.model === 'deterministic') return true
+  return chainId === BSC_TESTNET_CHAIN_ID && !quality
+}
+
+function verificationLabel(status: string, probe: boolean): string {
+  if (status !== 'delivered') return status
+  return probe ? 'endpoint reachable' : 'verified delivered'
 }
 
 function VerificationBadge({
   status,
   checkedAt,
+  chainId,
   quality,
 }: {
   status: string
   checkedAt: string
+  chainId: number
   quality?: { grade: 'good' | 'partial' | 'poor'; reason: string; model: string }
 }) {
-  const title =
-    quality
-      ? `AI review: ${quality.grade} - ${quality.reason} (checked ${checkedAt.slice(0, 10)})`
+  const probe = isProbeCheck(chainId, quality)
+  const title = quality
+    ? probe
+      ? `Deterministic probe: ${quality.grade} - ${quality.reason} (checked ${checkedAt.slice(0, 10)})`
+      : `AI review: ${quality.grade} - ${quality.reason} (checked ${checkedAt.slice(0, 10)})`
+    : probe && status === 'delivered'
+      ? `Endpoint answered a liveness probe (checked ${checkedAt})`
       : `Shopper checked ${checkedAt}`
   return (
     <BadgeCell tone={verificationTone[status] ?? verificationTone.dead} title={title}>
-      {verificationLabel(status)}
+      {verificationLabel(status, probe)}
     </BadgeCell>
   )
 }
@@ -474,7 +490,7 @@ function AgentCard({
           <div className="flex items-start justify-center gap-x-10">
             <Stat label="Score" value={formatScore(agent.total_score)} />
             <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '·'} />
-            <Stat label="Hires" value={formatNumber(agent.total_feedbacks)} />
+            <Stat label="Feedback" value={formatNumber(agent.total_feedbacks)} />
           </div>
         </dl>
 
@@ -483,6 +499,7 @@ function AgentCard({
             <VerificationBadge
               status={agent.verification.status}
               checkedAt={agent.verification.checkedAt}
+              chainId={agent.chain_id}
               quality={agent.verification.quality}
             />
           ) : (
