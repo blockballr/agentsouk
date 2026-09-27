@@ -90,7 +90,7 @@ export async function DELETE(req: NextRequest) {
     );
   }
   const client = req.nextUrl.searchParams.get("client")?.trim() ?? "";
-  if (client && !sameAddr(stored.client, client)) {
+  if (!client || !sameAddr(stored.client, client)) {
     return NextResponse.json(
       { success: false, error: "not the session owner" },
       { status: 403 },

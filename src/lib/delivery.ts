@@ -181,6 +181,14 @@ interface AgentCard {
 async function deliverA2a(endpoint: string, task: string): Promise<DeliverOutcome> {
   // the registry's a2a_endpoint usually points at the agent card; the messaging
   // url lives inside it
+  const endpointBlocked = privateEndpointReason(endpoint);
+  if (endpointBlocked) {
+    return {
+      protocol: "a2a",
+      ok: false,
+      error: `${endpointBlocked}. the agent's registry record points there, so the owner needs to publish a public endpoint.`,
+    };
+  }
   let messagingUrl = endpoint;
   try {
     const ctl = new AbortController();

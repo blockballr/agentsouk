@@ -82,8 +82,16 @@ async function fetchInBatches(
 
 export async function POST(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
-  const secret = sp.get("secret") ?? process.env.INDEX_SECRET ?? "dev";
-  if (secret !== (process.env.INDEX_SECRET ?? "dev")) {
+  const configured = process.env.INDEX_SECRET;
+  if (!configured) {
+    return NextResponse.json(
+      { success: false, error: "index secret is not configured" },
+      { status: 503 },
+    );
+  }
+  const bearer = /^Bearer\s+(.+)$/i.exec(req.headers.get("authorization") ?? "")?.[1]?.trim();
+  const secret = bearer || sp.get("secret");
+  if (!secret || secret !== configured) {
     return NextResponse.json({ success: false, error: "bad secret" }, { status: 401 });
   }
 

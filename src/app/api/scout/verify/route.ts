@@ -22,8 +22,16 @@ function sleep(ms: number) {
 // probes endpoints, and writes data/scout/verifications.json
 
 export async function POST(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get("secret");
-  if (secret !== (process.env.INDEX_SECRET ?? "dev")) {
+  const configured = process.env.INDEX_SECRET;
+  if (!configured) {
+    return NextResponse.json(
+      { success: false, error: "index secret is not configured" },
+      { status: 503 },
+    );
+  }
+  const bearer = /^Bearer\s+(.+)$/i.exec(req.headers.get("authorization") ?? "")?.[1]?.trim();
+  const secret = bearer || req.nextUrl.searchParams.get("secret");
+  if (!secret || secret !== configured) {
     return NextResponse.json({ success: false, error: "unauthorized" }, { status: 401 });
   }
 

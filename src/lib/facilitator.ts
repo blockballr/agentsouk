@@ -186,6 +186,23 @@ export async function settleSandbox(
   const pr: PaymentRequirements = req.paymentRequirements;
   const auth = checks.auth;
 
+  // mirror the prod asset pin: the signed chain must have a configured asset and
+  // the offered asset must be it, so a self-signed authorization over an
+  // arbitrary token cannot activate a receipt
+  const signedChainId = chainIdFromNetwork(pr.network);
+  if (signedChainId === null) {
+    return fail(`Unrecognised payment network ${pr.network}`);
+  }
+  let expectedAsset: string;
+  try {
+    expectedAsset = settlementAsset(signedChainId).address;
+  } catch {
+    return fail("Unsupported settlement asset");
+  }
+  if (normalizeAddress(pr.asset) !== normalizeAddress(expectedAsset)) {
+    return fail("Unsupported settlement asset");
+  }
+
   const paymentId = req.paymentId ?? crypto.randomUUID();
   const now = new Date();
   const receipt: Receipt = {

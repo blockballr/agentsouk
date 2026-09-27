@@ -14,5 +14,7 @@ export async function GET(
   if (!payment) {
     return NextResponse.json({ error: "receipt not found" }, { status: 404 });
   }
-  return NextResponse.json(payment);
+  // never hand back the buyer's signed EIP-3009 authorization
+  const { paymentPayload, ...receipt } = payment;
+  return NextResponse.json(receipt);
 }
