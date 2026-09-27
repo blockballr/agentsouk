@@ -42,6 +42,18 @@ for (const f of tracked) {
   if (lost > 0 && !dataDir.test(f)) {
     problems.push(`${lost} replacement character(s) in ${f}, so bytes were lost`);
   }
+
+  // Control characters other than tab, LF and CR. A 0x07 byte standing where a
+  // letter should be is what made a committed README render as "project ?gora",
+  // and an above-127 scan cannot see it because 0x07 is valid ascii.
+  let control = 0;
+  for (const ch of text) {
+    const n = ch.codePointAt(0);
+    if ((n < 32 && n !== 9 && n !== 10 && n !== 13) || n === 127) control += 1;
+  }
+  if (control > 0) {
+    problems.push(`${control} control character(s) in ${f}, which corrupt the rendered text`);
+  }
 }
 
 if (problems.length > 0) {
