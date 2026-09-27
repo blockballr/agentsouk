@@ -62,7 +62,7 @@ export function Footer() {
               rel="noreferrer"
               className="underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green"
             >
-              Support on Telegram
+              Agent Souk support on Telegram
             </a>
           </p>
         </div>
