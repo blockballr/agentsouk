@@ -11,6 +11,8 @@ import {
 } from "./types";
 import { classifyAgent, relevanceScore } from "./categories";
 import { isPancakeSwapAgent } from "./pancakeswap";
+import { privateEndpointReason } from "./endpoint";
+import type { RegistrationDraft } from "@agora/core";
 import {
   AgentRemovedError,
   classifyLiveReadFailure,
@@ -231,6 +233,74 @@ function buildSummary(raw: RawAgent): AgentSummary {
   };
 }
 
+// A confirmed registration is a chain fact; whether our shelf will carry it is a
+// separate judgement. Build the summary the shelf stores from what the lister
+// declared and what the chain minted. Fields the chain cannot report for a
+// brand-new token (feedback, verification) take the zero state of that token,
+// never an invented value.
+export function summaryFromRegistration(input: {
+  chainId: number;
+  tokenId: string;
+  owner: string;
+  registry: string;
+  draft: RegistrationDraft;
+  createdAt: string;
+}): AgentSummary {
+  const draft = input.draft;
+  const name = (draft.name ?? "").trim();
+  const description = (draft.description ?? "").trim();
+  const endpoint = (draft.endpoint ?? "").trim();
+  // the marketplace shelves callable protocols only; a web service is neither
+  const kind = draft.endpointKind ?? "web";
+  const { category, scores } = classifyAgent(`${name} ${description}`.trim());
+  return {
+    agent_id: `${input.chainId}:${input.registry.toLowerCase()}:${input.tokenId}`,
+    token_id: input.tokenId,
+    chain_id: input.chainId,
+    contract_address: input.registry.toLowerCase(),
+    owner_address: input.owner,
+    name,
+    description: description || null,
+    image_url: draft.image?.trim() ? draft.image.trim() : null,
+    is_verified: false,
+    star_count: 0,
+    x402_supported: draft.x402Support ?? true,
+    total_score: 0,
+    average_score: 0,
+    total_feedbacks: 0,
+    health_score: null,
+    supported_trust_models: [],
+    a2a_endpoint: kind === "A2A" && endpoint ? endpoint : null,
+    mcp_server: kind === "MCP" && endpoint ? endpoint : null,
+    is_active: true,
+    created_at: input.createdAt,
+    category,
+    categoryScores: scores,
+  };
+}
+
+// Why the shelf will not carry this agent, in the lister's terms, so a refusal
+// comes back as a sentence rather than silence.
+export function shelfRefusalReason(a: {
+  category?: string | null;
+  a2a_endpoint?: string | null;
+  mcp_server?: string | null;
+}): string {
+  if (!a.category || a.category === "general") {
+    return "the classifier reads the name and description as general, so the shelf has no category to file it under";
+  }
+  const endpoints = [a.a2a_endpoint, a.mcp_server].filter(
+    (u): u is string => typeof u === "string" && u.length > 0,
+  );
+  if (endpoints.length === 0) {
+    return "it has no A2A or MCP endpoint the marketplace can call, and a web service is not shelved";
+  }
+  const reasons = endpoints
+    .map((u) => privateEndpointReason(u))
+    .filter((r): r is string => r !== null);
+  return `its endpoint is not publicly reachable: ${reasons[0] ?? "unknown endpoint fault"}`;
+}
+
 // in-memory index, warmed lazily and living for the process lifetime
 
 interface IndexState {
@@ -426,6 +496,28 @@ async function loadSnapshot(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export interface ShelfAdmission {
+  admitted: boolean;
+  reason?: string;
+}
+
+// Admit a proven registration at once. The snapshot is loaded first so a later
+// browse does not clear an entry the snapshot never carried, then the memory
+// shelf serves it on this instance and the durable store carries it to the
+// fleet. Refusal is a sentence, never a thrown error, because the registration
+// is a chain fact and the shelf decision must not fail it.
+export async function admitConfirmedAgent(
+  summary: AgentSummary,
+): Promise<ShelfAdmission> {
+  if (!isShelfReady(summary)) {
+    return { admitted: false, reason: shelfRefusalReason(summary) };
+  }
+  await loadSnapshot();
+  index.agents.set(indexKey(summary.chain_id, summary.token_id), summary);
+  await saveShelfAgents([summary]);
+  return { admitted: true };
 }
 
 export interface WarmOptions {

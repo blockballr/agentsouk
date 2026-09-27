@@ -18,6 +18,11 @@ import {
   parseAgentId,
   type RegistrationProof,
 } from "@/lib/listing-claims";
+import {
+  admitConfirmedAgent,
+  summaryFromRegistration,
+  type ShelfAdmission,
+} from "@/lib/scanner";
 
 export const dynamic = "force-dynamic";
 
@@ -224,6 +229,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "claim not found" }, { status: 404 });
   }
 
+  // The verification above proved the agent exists and belongs to the caller, so
+  // it can go on our shelf now rather than waiting for an indexer to notice it.
+  // Admission is deliberately not allowed to fail the registration: the chain
+  // fact stands whatever the shelf decides, and a refusal is reported instead.
+  let admission: ShelfAdmission;
+  try {
+    const summary = summaryFromRegistration({
+      chainId: confirmed.chainId,
+      tokenId: agentId,
+      owner: confirmed.owner,
+      registry: registryAddress(confirmed.chainId),
+      draft: confirmed.draft,
+      createdAt: confirmed.confirmedAt ?? new Date().toISOString(),
+    });
+    admission = await admitConfirmedAgent(summary);
+  } catch (e) {
+    admission = { admitted: false, reason: `the shelf could not be reached: ${brief(e)}` };
+  }
+
   return NextResponse.json({
     success: true,
     claimId: confirmed.claimId,
@@ -233,5 +257,7 @@ export async function POST(req: NextRequest) {
     agentUri: confirmed.agentUri,
     verified: true,
     verification: verdict.detail,
+    listed: admission.admitted,
+    listingReason: admission.reason ?? null,
   });
 }
