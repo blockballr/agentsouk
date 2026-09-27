@@ -29,7 +29,12 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   if (query.pcs) sp.set('pcs', '1')
   const res = await fetch(`${BASE}/agents?${sp}`)
   if (!res.ok) throw new Error(`agents ${res.status}`)
-  const body = await res.json()
+  const body = await readJsonBody<{
+    items?: AgentSummary[]
+    total?: number
+    snapshotTotal?: number | null
+    counts?: Record<string, number>
+  }>(res, 'agents')
   const items: AgentSummary[] = body.items ?? []
   // learn the chain from the catalogue rather than shipping it as a constant, so
   // a hardcoded chain cannot silently disagree with the deployment
@@ -49,14 +54,14 @@ export async function getAgentDetail(
 ): Promise<AgentDetail | null> {
   const res = await fetch(`${BASE}/agents/${chainId}/${tokenId}`)
   if (!res.ok) return null
-  const body = await res.json()
+  const body = await readJsonBody<{ data?: AgentDetail }>(res, 'agent')
   return body.data ?? null
 }
 
 export async function getReceipt(paymentId: string): Promise<Receipt | null> {
   const res = await fetch(`${BASE}/receipts/${paymentId}`)
   if (!res.ok) return null
-  return (await res.json()) as Receipt
+  return readJsonBody<Receipt>(res, 'receipt')
 }
 
 export interface X402Requirements {
@@ -79,7 +84,7 @@ export async function getHireRequirements(
     body: JSON.stringify({ chainId: Number(chainId), tokenId, client }),
   })
   if (!res.ok) throw new Error(`requirements ${res.status}`)
-  const body: X402Requirements = await res.json()
+  const body = await readJsonBody<X402Requirements>(res, 'requirements')
   if (!body.success) throw new Error('requirements unavailable')
   return body.data
 }
@@ -170,7 +175,10 @@ export async function getCompareCommentary(
       body: JSON.stringify(body),
     })
     if (!res.ok) return null
-    const data: { success?: boolean; commentary?: unknown; model?: unknown } = await res.json()
+    const data = await readJsonBody<{ success?: boolean; commentary?: unknown; model?: unknown }>(
+      res,
+      'commentary',
+    )
     if (!data.success || typeof data.commentary !== 'string' || !data.commentary.trim()) {
       return null
     }
@@ -186,7 +194,7 @@ export async function getCompareCommentary(
 // A route that throws answers with an empty body, and res.json() then reports
 // "Unexpected end of JSON input", which tells the reader nothing. Read the
 // body as text first so the status and the real reason survive.
-async function readJsonBody<T>(res: Response, what: string): Promise<T> {
+export async function readJsonBody<T>(res: Response, what: string): Promise<T> {
   const raw = await res.text().catch(() => '')
   if (raw) {
     try {
@@ -196,7 +204,7 @@ async function readJsonBody<T>(res: Response, what: string): Promise<T> {
     }
   }
   if (res.status === 502 || res.status === 504) {
-    throw new Error(`${what}: the marketplace timed out reaching the agent, try again`)
+    throw new Error(`${what} returned ${res.status}: the marketplace timed out reaching the agent, try again`)
   }
   throw new Error(`${what} returned ${res.status} with no readable answer`)
 }
@@ -238,20 +246,22 @@ export interface HireTask {
   history: { at: string; status: string; note?: string }[]
 }
 
-export async function getTask(taskId: string): Promise<{
+export interface TaskBundle {
   task: HireTask
   retry: { allowed: boolean; delayMs?: number }
   metrics: { tokenId: string; delivered: number; failed: number; gated: number; total: number; successRate: number; avgQuality: number }
-} | null> {
+}
+
+export async function getTask(taskId: string): Promise<TaskBundle | null> {
   const res = await fetch(`${BASE}/tasks/${taskId}`)
   if (!res.ok) return null
-  return res.json()
+  return readJsonBody<TaskBundle>(res, 'task')
 }
 
 export async function getTasksByPayment(paymentId: string): Promise<HireTask[]> {
   const res = await fetch(`${BASE}/tasks?paymentId=${encodeURIComponent(paymentId)}`)
   if (!res.ok) return []
-  const body = await res.json()
+  const body = await readJsonBody<{ tasks?: HireTask[] }>(res, 'tasks')
   return body.tasks ?? []
 }
 
@@ -323,7 +333,11 @@ export async function getOngoing(client?: string | null): Promise<OngoingBundle>
   const qs = client ? `?client=${encodeURIComponent(client)}` : ''
   const res = await fetch(`${BASE}/sessions${qs}`)
   if (!res.ok) throw new Error(`sessions ${res.status}`)
-  const body = await res.json()
+  const body = await readJsonBody<{
+    sessions?: OngoingBundle['sessions']
+    recentTasks?: OngoingBundle['recentTasks']
+    counts?: OngoingBundle['counts']
+  }>(res, 'sessions')
   return {
     sessions: body.sessions ?? [],
     recentTasks: body.recentTasks ?? [],
