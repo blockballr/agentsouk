@@ -29,13 +29,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install
-        # npm install rather than npm ci: the committed lock is not in sync with
-        # package.json (missing @base-org/account@2.5.13, brotli-wasm@3.0.1,
-        # ox@0.6.9, https-proxy-agent@5.0.1, agent-base@6.0.2, and axios and
-        # @coinbase/cdp-sdk pinned below what package.json asks for), so a clean
-        # ci install fails on any host. This regenerates in place and proceeds.
-        # Regenerate the lock properly and switch this back to npm ci.
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Build the site
         run: npm run build --workspace @agora/web
       - name: Publish to Cloudflare Pages
