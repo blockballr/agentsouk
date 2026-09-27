@@ -7,6 +7,7 @@ import { MAX_DELIVERY_ATTEMPTS, shouldRetry, retryDelayMs } from "./retry";
 import { scoreDelivery, type QualityResult } from "./quality";
 import { recordDeliveryMetric } from "./metrics";
 import {
+  insertHireTaskIfAbsent,
   loadHireTask,
   loadHireTaskByPayment,
   loadHireTasks,
@@ -62,18 +63,15 @@ function cache(task: HireTask): HireTask {
   return task;
 }
 
-export function createHireTask(input: {
+export interface TaskSeed {
   paymentId: string;
   chainId: number;
   tokenId: string;
   agentName: string;
-}): HireTask {
-  const existingId = byPayment.get(input.paymentId);
-  if (existingId) {
-    const existing = tasks.get(existingId);
-    if (existing) return existing;
-  }
-  const task: HireTask = {
+}
+
+function buildHireTask(input: TaskSeed): HireTask {
+  return {
     id: randomUUID(),
     paymentId: input.paymentId,
     chainId: input.chainId,
@@ -86,7 +84,15 @@ export function createHireTask(input: {
     updatedAt: now(),
     history: [{ at: now(), status: "ready", note: "session settled" }],
   };
-  return cache(task);
+}
+
+export function createHireTask(input: TaskSeed): HireTask {
+  const existingId = byPayment.get(input.paymentId);
+  if (existingId) {
+    const existing = tasks.get(existingId);
+    if (existing) return existing;
+  }
+  return cache(buildHireTask(input));
 }
 
 export async function getTaskAsync(taskId: string): Promise<HireTask | undefined> {
@@ -193,12 +199,24 @@ export function nextRetryDelayMs(task: HireTask): number {
   return retryDelayMs(task.attempts);
 }
 
-// ensure a task exists for a payment (settle creates it; deliver can recover)
-export function ensureTaskForPayment(input: {
-  paymentId: string;
-  chainId: number;
-  tokenId: string;
-  agentName: string;
-}): HireTask {
-  return createHireTask(input);
+// ensure a task exists for a payment (settle creates it; deliver can recover).
+// The durable store is consulted before creating so a second instance adopts
+// the existing row, and the conditional insert closes the create/create race
+// when a unique index on payment_id is in place.
+export async function ensureTaskForPayment(input: TaskSeed): Promise<HireTask> {
+  const local = getTaskByPayment(input.paymentId);
+  if (local) return local;
+
+  const stored = await loadHireTaskByPayment(input.paymentId);
+  if (stored) return cache(stored);
+
+  const candidate = buildHireTask(input);
+  const inserted = await insertHireTaskIfAbsent(candidate);
+  if (inserted) return cache(inserted);
+
+  // either another instance won the race, or the unique index is not in place
+  // yet because the pre-existing duplicates have not been cleaned up
+  const winner = await loadHireTaskByPayment(input.paymentId);
+  if (winner) return cache(winner);
+  return cache(candidate);
 }

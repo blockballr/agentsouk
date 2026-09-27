@@ -5,7 +5,6 @@ import { privateEndpointReason } from "@/lib/endpoint";
 import { getPaymentDurable } from "./receipts-store";
 import {
   ensureTaskForPayment,
-  getTaskByPayment,
   markTaskDelivered,
   markTaskFailed,
   markTaskRunning,
@@ -404,13 +403,14 @@ export async function deliver(input: DeliverInput): Promise<
   let trackedId = input.taskId;
   if (!trackedId && willRun) {
     trackedId =
-      getTaskByPayment(input.paymentId)?.id ??
-      ensureTaskForPayment({
-        paymentId: input.paymentId,
-        chainId: receipt.agent.chainId,
-        tokenId: receipt.agent.tokenId,
-        agentName: receipt.agent.name,
-      }).id;
+      (
+        await ensureTaskForPayment({
+          paymentId: input.paymentId,
+          chainId: receipt.agent.chainId,
+          tokenId: receipt.agent.tokenId,
+          agentName: receipt.agent.name,
+        })
+      ).id;
   }
   if (willRun && trackedId) {
     markTaskRunning(trackedId, {
@@ -437,13 +437,14 @@ export async function deliver(input: DeliverInput): Promise<
     if (triedRun) {
       trackedId =
         trackedId ??
-        getTaskByPayment(input.paymentId)?.id ??
-        ensureTaskForPayment({
-          paymentId: input.paymentId,
-          chainId: receipt.agent.chainId,
-          tokenId: receipt.agent.tokenId,
-          agentName: receipt.agent.name,
-        }).id;
+        (
+          await ensureTaskForPayment({
+            paymentId: input.paymentId,
+            chainId: receipt.agent.chainId,
+            tokenId: receipt.agent.tokenId,
+            agentName: receipt.agent.name,
+          })
+        ).id;
       markTaskRunning(trackedId, { tool: input.tool, args: input.args, taskText: input.task });
       markTaskFailed(trackedId, error);
     }

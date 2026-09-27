@@ -44,6 +44,17 @@ async function init(): Promise<boolean> {
         await sql!`
           create index if not exists hire_tasks_payment_idx on hire_tasks (payment_id)
         `;
+        // The unique index is the durable guard against two instances creating a
+        // task for the same payment. It cannot be built while duplicates predate
+        // it, so a failure here must leave the store usable; run the cleanup SQL
+        // reported with this change, then the index builds on the next connect.
+        try {
+          await sql!`
+            create unique index if not exists hire_tasks_payment_uniq
+              on hire_tasks (payment_id)
+          `;
+        } catch {
+        }
         await sql!`
           create table if not exists jobs (
             id text primary key,
@@ -83,6 +94,27 @@ export async function saveHireTask(task: HireTask): Promise<void> {
         updated_at = now()
     `;
   } catch {
+  }
+}
+
+// Insert only if no task for this payment exists yet. Returns the task that was
+// stored, or undefined when another writer already owns the payment. Requires
+// the unique index on payment_id; without it postgres rejects the conflict
+// target and this returns undefined, leaving callers to fall back to a lookup.
+export async function insertHireTaskIfAbsent(
+  task: HireTask,
+): Promise<HireTask | undefined> {
+  if (!(await init()) || !sql) return undefined;
+  try {
+    const rows = await sql`
+      insert into hire_tasks (id, payment_id, payload, updated_at)
+      values (${task.id}, ${task.paymentId}, ${sql.json(task as never)}, now())
+      on conflict (payment_id) do nothing
+      returning payload
+    `;
+    return rows[0]?.payload as HireTask | undefined;
+  } catch {
+    return undefined;
   }
 }
 
