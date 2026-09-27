@@ -71,6 +71,25 @@ async function fetchHires(wallet) {
   return Array.isArray(body.hires) ? body.hires : [];
 }
 
+// A hire against an agent the buyer owns pays the buyer's own wallet, so it is a
+// self-dealing round trip rather than marketplace evidence. The marketplace grades
+// itself on this report, so such hires are left out, the same line
+// docs/hire-requests.md draws for the house agent. An unreadable list excludes
+// nothing, so a slow read degrades to the previous behaviour rather than guessing.
+async function fetchOwnedTokenIds(wallet) {
+  try {
+    const { status, body } = await fetchJson(
+      `${BASE}/api/agents/by-owner?owner=${encodeURIComponent(wallet)}`,
+      {},
+      45000,
+    );
+    if (status !== 200 || !body?.success) return new Set();
+    return new Set((Array.isArray(body.agents) ? body.agents : []).map((a) => String(a.tokenId)));
+  } catch {
+    return new Set();
+  }
+}
+
 function isDelivered(task) {
   return task?.status === "delivered" && typeof task.result === "string" && task.result.length > 0;
 }
@@ -217,7 +236,7 @@ function buildVerdict({ category, name, paymentId, chainId, agentSeconds, output
       winner: agentHasApy ? "agent" : "manual",
       notes: agentHasApy
         ? `${name} returned venue-native Venus supply APYs with the observed block number in ${fmt(agentSeconds)}s from the real settled hire ${paymentId} on chain ${chainId}; the manual pass pulled DefiLlama's BSC stablecoin pool table and built a weighted allocation with a blended APY in ${fmt(manual.seconds)}s. The agent's rates come from the protocol directly; the manual pass wins on explicit allocation math.`
-        : `${name}'s delivered hire on chain ${chainId} returned no APY figure for the requested wallet, so it does not answer the yield question and the manual DefiLlama pass wins. ${note}.`,
+        : `${name}'s delivered hire on chain ${chainId} returned no APY figure, so it does not answer the yield question and the manual DefiLlama pass wins. ${note}.`,
     };
   }
   const agentAnswersGrid = /grid|bound|level|rebalanc/i.test(output);
@@ -232,10 +251,20 @@ function buildVerdict({ category, name, paymentId, chainId, agentSeconds, output
 async function buildTasks(opts) {
   const listFallbacks = [];
   const hires = await fetchHires(opts.wallet);
-  const candidates = hires
-    .filter((h) => h.category && MANUALS[h.category])
-    // only hires that actually settled on chain count as the published evidence
-    .filter((h) => h.mode === "prod" && h.txHash)
+  const ownedTokens = await fetchOwnedTokenIds(opts.wallet);
+  // only hires that actually settled on chain count as the published evidence
+  const settled = hires.filter(
+    (h) => h.category && MANUALS[h.category] && h.mode === "prod" && h.txHash,
+  );
+  for (const hire of settled) {
+    if (ownedTokens.has(String(hire.tokenId))) {
+      console.log(
+        `skip ${hire.category}: hire ${hire.paymentId} is against agent ${hire.tokenId}, owned by the buyer wallet ${opts.wallet}, so it is self-dealing and not marketplace evidence`,
+      );
+    }
+  }
+  const candidates = settled
+    .filter((h) => !ownedTokens.has(String(h.tokenId)))
     .filter((h) => !opts.only || h.paymentId === opts.only)
     .sort((a, b) => String(b.createdAt ?? "").localeCompare(String(a.createdAt ?? "")));
 
@@ -318,7 +347,7 @@ function buildReport(wallet, tasks) {
   const methodology = [
     `Run date: ${generatedAt}. Each task below is a real hire made by the participant wallet ${wallet} through the Agent Souk marketplace at ${BASE} on BSC testnet chain 97, settled on chain in sUSD, then read back from the marketplace's own task record.`,
     "Agent time is measured from the task record's own history, from the timestamp the task entered running to the timestamp it was recorded delivered. It is not a stopwatch in the producing script, because the hire happened before the capture was assembled; the manual side is the only side timed live, with Date.now() around its real execution.",
-    `The manual side runs the same prompt with the same hand-run implementation used by scripts/run-advantage-tasks.mjs, factored into scripts/advantage-manual.mjs, against live public sources; manual cost is wall-clock time at a stated 50 USD per hour.`,
+    `The manual side runs the hand-run implementation shared with scripts/run-advantage-tasks.mjs, factored into scripts/advantage-manual.mjs, against live public sources; each hired task carries its own prompt and the manual pass answers the matching category question, so the two sides are compared on outcome rather than on identical wording. Manual cost is wall-clock time at a stated 50 USD per hour.`,
     "agentOutput is the verbatim result the agent returned, and quality is the grader's own record where the marketplace stored one.",
     "Manual sources: Venus Core reads (vToken exchange rates, cash and borrows, comptroller markets, close factor, oracle prices, account snapshots) over public BSC RPC with fallbacks (bsc-dataseed.binance.org, 1rpc.io/bnb, bsc.publicnode.com, bsc-dataseed1.defiwallet.vm.binance.org); DefiLlama public yields API (yields.llama.fi/pools); Binance public klines endpoint (BNBUSDT 1d x30).",
     "Only categories that had a delivered prod hire at assembly time appear here; a category with no delivered hire is omitted rather than padded.",
