@@ -6,6 +6,7 @@ import {
   getJob,
   getJobAsync,
   jobActionMessage,
+  persistJob,
   rejectJob,
   submitJob,
   type Job,
@@ -114,15 +115,17 @@ export async function POST(
     return NextResponse.json({ error: "signature does not authorize this action" }, { status: 401 });
   }
 
+  // Every transition is the point of its request, so the durable write is
+  // awaited before the response rather than left floating past the invocation.
   if (jobAction === "complete") {
     const next = completeJob({ jobId, evaluator: by, reason: body?.reason });
     if (!next) return NextResponse.json({ error: "complete rejected" }, { status: 403 });
-    return NextResponse.json({ success: true, job: next });
+    return NextResponse.json({ success: true, job: await persistJob(next) });
   }
   if (jobAction === "reject") {
     const next = rejectJob({ jobId, by, reason: body?.reason });
     if (!next) return NextResponse.json({ error: "reject rejected" }, { status: 403 });
-    return NextResponse.json({ success: true, job: next });
+    return NextResponse.json({ success: true, job: await persistJob(next) });
   }
   if (jobAction === "submit") {
     const next = submitJob({
@@ -131,9 +134,9 @@ export async function POST(
       deliverable: body?.deliverable ?? "",
     });
     if (!next) return NextResponse.json({ error: "submit rejected" }, { status: 403 });
-    return NextResponse.json({ success: true, job: next });
+    return NextResponse.json({ success: true, job: await persistJob(next) });
   }
   const next = claimRefund(jobId, by);
   if (!next) return NextResponse.json({ error: "refund not allowed yet" }, { status: 409 });
-  return NextResponse.json({ success: true, job: next });
+  return NextResponse.json({ success: true, job: await persistJob(next) });
 }

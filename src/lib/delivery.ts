@@ -9,7 +9,7 @@ import {
   markTaskFailed,
   markTaskRunning,
 } from "./tasks";
-import { getJobByPaymentAsync, submitJob, type JobStatus } from "./jobs";
+import { getJobByPaymentAsync, persistJob, submitJob, type JobStatus } from "./jobs";
 
 // the delivery half of hire: a settled receipt unlocks invoking the agent's own endpoint.
 // Two JSON-RPC protocols exist: MCP (initialize, tools/list, tools/call) and A2A (agent card, message/send); agents that gate direct calls behind their own x402 payment are surfaced as gated, not faked.
@@ -506,6 +506,10 @@ export async function deliver(input: DeliverInput): Promise<
           deliverable: outcome.text.slice(0, 500),
           taskId: trackedId,
         });
+        // The transition is the point of the delivery, so its durable write is
+        // awaited before the response; a floating write let the panel report
+        // Submitted while the store still held Funded.
+        if (submitted) await persistJob(submitted);
         jobAdvance = {
           advanced: submitted?.status === "Submitted",
           jobId: job.id,

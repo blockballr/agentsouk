@@ -88,6 +88,15 @@ function cache(job: Job): Job {
   return job;
 }
 
+// The mutators stay synchronous for their many in-memory callers. A request whose
+// point is the transition awaits this so the durable row lands before the response
+// returns, instead of a floating write a serverless runtime may freeze past.
+// The returned job is the object just written, so callers report persisted state.
+export async function persistJob(job: Job): Promise<Job> {
+  await saveJob(job);
+  return job;
+}
+
 export function createJob(input: {
   client: string;
   provider: string;
