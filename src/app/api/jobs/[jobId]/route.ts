@@ -4,6 +4,7 @@ import {
   claimRefund,
   completeJob,
   getJob,
+  getJobAsync,
   jobActionMessage,
   rejectJob,
   submitJob,
@@ -67,7 +68,10 @@ export async function POST(
   }
   const jobAction = action as JobAction;
 
-  const job = getJob(jobId);
+  // The action has to see a job another instance created, so it reads through to
+  // the durable store rather than only this process's map, which is what made a
+  // submitted job answer "job not found" when the panel asked to complete it.
+  const job = await getJobAsync(jobId);
   if (!job) return NextResponse.json({ error: "job not found" }, { status: 404 });
 
   const required = requiredSigner(job, jobAction);
