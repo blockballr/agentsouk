@@ -131,14 +131,16 @@ function sessionModeLabel(mode: ActiveSession['mode']): string {
 // A listed agent is either answering, not answering, or not yet swept. The upstream
 // index saying nothing is not a status, so it is never rendered as one: our own
 // verifier's reading comes first, then a real index reading, then the sweep state.
-function statusFor(detail: AgentDetail): string {
+// The reading and its provenance are kept separate so the metric box can show the
+// word large and the check time as a caption instead of clipping a sentence.
+function statusFor(detail: AgentDetail): { value: string; note?: string } {
   const v = detail.verification
   if (v?.status) {
-    return v.checkedAt ? `${v.status}, checked ${formatDate(v.checkedAt)}` : v.status
+    return v.checkedAt ? { value: v.status, note: `checked ${formatDate(v.checkedAt)}` } : { value: v.status }
   }
   const upstream = (detail.health_status ?? '').trim()
-  if (upstream && upstream.toLowerCase() !== 'unknown') return `${upstream}, from the index`
-  return detail.is_active ? 'not yet swept' : 'inactive'
+  if (upstream && upstream.toLowerCase() !== 'unknown') return { value: upstream, note: 'from the index' }
+  return { value: detail.is_active ? 'not yet swept' : 'inactive' }
 }
 
 // covers all three modes, so a production hire is never labelled sandboxed
@@ -415,7 +417,7 @@ export function AgentDetailPage() {
                 <h2 className="micro text-newsprint-gray">Health &amp; activity</h2>
                 <div className="mt-6 grid grid-cols-2 gap-6">
                   <BigMetric label="Health score" value={detail.health_score !== null ? formatScore(detail.health_score) : 'n/a'} />
-                  <BigMetric label="Status" value={statusFor(detail)} />
+                  <BigMetric label="Status" value={statusFor(detail).value} note={statusFor(detail).note} />
                 </div>
               </div>
 
@@ -1420,13 +1422,14 @@ function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
   )
 }
 
-function BigMetric({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function BigMetric({ label, value, accent, note }: { label: string; value: string; accent?: boolean; note?: string }) {
   return (
     <div>
       <div className="micro text-newsprint-gray">{label}</div>
       <div className={`mt-2 truncate font-serif text-[28px] leading-none ${accent ? 'text-highlighter-green' : 'text-press-black'}`}>
         {value}
       </div>
+      {note ? <div className="micro mt-2 text-newsprint-gray">{note}</div> : null}
     </div>
   )
 }
