@@ -22,6 +22,10 @@ export interface A2AEnvelope {
 export function parseA2A(raw: unknown): A2AEnvelope {
   const empty: A2AEnvelope = { state: undefined, text: "", parts: 0, isJson: false };
   let value = raw;
+  // A JSON string body is unwrapped. If it holds no A2A fields it is the
+  // deliverable itself (an artifact payload), so it is kept as text rather than
+  // discarded as an empty envelope.
+  let jsonStringBody: string | null = null;
 
   if (typeof value === "string") {
     const trimmed = value.trim();
@@ -29,6 +33,7 @@ export function parseA2A(raw: unknown): A2AEnvelope {
     if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
       try {
         value = JSON.parse(trimmed);
+        jsonStringBody = trimmed;
       } catch {
         return { state: undefined, text: trimmed, parts: 1, isJson: false };
       }
@@ -41,7 +46,12 @@ export function parseA2A(raw: unknown): A2AEnvelope {
   if (!value || typeof value !== "object") return empty;
   const obj = value as Record<string, unknown>;
 
-  const status = obj.status as Record<string, unknown> | undefined;
+  // The real A2A task reply nests the task under result: the state and artifacts
+  // sit at result.task.status / result.task.artifacts, while a plain message reply
+  // keeps result.status / result.parts.
+  const result = obj.result as Record<string, unknown> | undefined;
+  const task = (result?.task ?? obj.task) as Record<string, unknown> | undefined;
+  const status = (task?.status ?? obj.status) as Record<string, unknown> | undefined;
   const state =
     (typeof status?.state === "string" && status.state) ||
     (typeof obj.state === "string" && obj.state) ||
@@ -67,7 +77,10 @@ export function parseA2A(raw: unknown): A2AEnvelope {
     else if (part.parts !== undefined) collect(part.parts);
   };
 
-  const result = obj.result as Record<string, unknown> | undefined;
+  if (task) {
+    if (Array.isArray(task.artifacts)) task.artifacts.forEach(collect);
+    collect(task.status);
+  }
   if (result) {
     if (Array.isArray(result.artifacts)) result.artifacts.forEach(collect);
     collect(result.status);
@@ -79,12 +92,24 @@ export function parseA2A(raw: unknown): A2AEnvelope {
   if (typeof obj.text === "string") parts.push(obj.text);
 
   const text = parts.map((p) => p.trim()).filter(Boolean).join("\n").trim();
+  if (!text && jsonStringBody && !looksLikeA2aEnvelope(obj)) {
+    return { state, text: jsonStringBody, parts: 1, isJson: true };
+  }
+
   const isJson =
     typeof raw === "string"
       ? raw.trim().startsWith("{") || raw.trim().startsWith("[")
       : Boolean(result?.artifacts || obj.artifacts);
 
   return { state, text, parts: parts.length, isJson };
+}
+
+// Fields that mark a reply as an A2A envelope rather than a bare deliverable
+// payload; a payload such as the Venus opportunity list has none of them.
+const A2A_ENVELOPE_KEYS = ["task", "status", "result", "message", "parts", "artifacts", "content", "text", "state"];
+
+function looksLikeA2aEnvelope(obj: Record<string, unknown>): boolean {
+  return A2A_ENVELOPE_KEYS.some((key) => key in obj);
 }
 
 /** Score a delivery deterministically and structurally. */

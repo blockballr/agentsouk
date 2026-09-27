@@ -206,6 +206,83 @@ export function normalizeDeliverInput(
   return { ok: true, input: value as Record<string, unknown> };
 }
 
+// A reply is only a deliverable if the buyer can read the agent's own content.
+// The chain-97 agents answer message/send with a task envelope: the agent's words
+// sit at result.task.status.message.parts and the payload at result.task.artifacts.
+// A plain message reply keeps its parts at result.parts. Reading the message first
+// and the artifacts last keeps the stored result the content, never the envelope.
+// The whole deliverable is capped so one huge artifact cannot bloat the stored
+// result and the API response; the cap is A2A_DELIVERABLE_MAX_CHARS below.
+export const A2A_DELIVERABLE_MAX_CHARS = 12000;
+
+const A2A_NO_DELIVERABLE =
+  "The agent replied without a deliverable: the task carried no message text and returned no artifact content.";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+// A text part contributes its string; a data part is the payload the buyer asked
+// for, so it is kept as pretty JSON rather than dropped.
+function partsToChunks(parts: unknown): string[] {
+  if (!Array.isArray(parts)) return [];
+  const chunks: string[] = [];
+  for (const raw of parts) {
+    if (!isRecord(raw)) continue;
+    if (typeof raw.text === "string" && raw.text.trim()) chunks.push(raw.text.trim());
+    else if (typeof raw.value === "string" && raw.value.trim()) chunks.push(raw.value.trim());
+    else if (raw.data !== undefined) chunks.push(JSON.stringify(raw.data, null, 2));
+  }
+  return chunks;
+}
+
+// An artifact is normally a wrapper with parts; a few agents inline text or data.
+function artifactToChunks(artifact: unknown): string[] {
+  if (!isRecord(artifact)) return [];
+  const fromParts = partsToChunks(artifact.parts);
+  if (fromParts.length) return fromParts;
+  if (typeof artifact.text === "string" && artifact.text.trim()) return [artifact.text.trim()];
+  if (artifact.data !== undefined) return [JSON.stringify(artifact.data, null, 2)];
+  return [];
+}
+
+export interface A2aDeliverable {
+  text: string;
+  found: boolean;
+}
+
+export function extractA2aDeliverable(result: unknown): A2aDeliverable {
+  if (!isRecord(result)) return { text: A2A_NO_DELIVERABLE, found: false };
+  const task = isRecord(result.task) ? result.task : undefined;
+  const taskStatus = task && isRecord(task.status) ? task.status : undefined;
+  const status = taskStatus ?? (isRecord(result.status) ? result.status : undefined);
+  const message = status && isRecord(status.message) ? status.message : undefined;
+
+  const chunks: string[] = [
+    ...partsToChunks(message?.parts),
+    ...partsToChunks(result.parts),
+  ];
+  const artifacts: unknown[] = [];
+  if (task && Array.isArray(task.artifacts)) artifacts.push(...task.artifacts);
+  if (Array.isArray(result.artifacts)) artifacts.push(...result.artifacts);
+  for (const artifact of artifacts) chunks.push(...artifactToChunks(artifact));
+
+  const seen = new Set<string>();
+  const unique = chunks.filter((chunk) => {
+    if (seen.has(chunk)) return false;
+    seen.add(chunk);
+    return true;
+  });
+  if (unique.length === 0) return { text: A2A_NO_DELIVERABLE, found: false };
+
+  const joined = unique.join("\n");
+  const text =
+    joined.length > A2A_DELIVERABLE_MAX_CHARS
+      ? `${joined.slice(0, A2A_DELIVERABLE_MAX_CHARS)}\n[truncated: deliverable over ${A2A_DELIVERABLE_MAX_CHARS} characters]`
+      : joined;
+  return { text, found: true };
+}
+
 async function deliverA2a(
   endpoint: string,
   task: string,
@@ -271,13 +348,11 @@ async function deliverA2a(
     return { protocol: "a2a", ok: false, error: `message/send failed: ${send.body.error.message}` };
   }
 
-  const result = send.body.result as { parts?: { kind?: string; text?: string }[] } | undefined;
-  const parts = result?.parts ?? [];
-  const text = parts
-    .map((p) => (typeof p.text === "string" ? p.text : ""))
-    .filter(Boolean)
-    .join("\n");
-  return { protocol: "a2a", ok: true, kind: "deliverable", text: text || JSON.stringify(send.body.result ?? {}).slice(0, 400) };
+  const extracted = extractA2aDeliverable(send.body.result);
+  if (!extracted.found) {
+    return { protocol: "a2a", ok: false, error: extracted.text };
+  }
+  return { protocol: "a2a", ok: true, kind: "deliverable", text: extracted.text };
 }
 
 export interface DeliverOutcome {
