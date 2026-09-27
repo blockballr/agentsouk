@@ -9,7 +9,7 @@ import {
   markTaskFailed,
   markTaskRunning,
 } from "./tasks";
-import { getJobByPayment, submitJob } from "./jobs";
+import { getJobByPaymentAsync, submitJob, type JobStatus } from "./jobs";
 
 // the delivery half of hire: a settled receipt unlocks invoking the agent's own endpoint.
 // Two JSON-RPC protocols exist: MCP (initialize, tools/list, tools/call) and A2A (agent card, message/send); agents that gate direct calls behind their own x402 payment are surfaced as gated, not faked.
@@ -374,11 +374,21 @@ export interface DeliverInput {
   taskId?: string;
 }
 
+// What delivery did to the ERC-8183 job. A delivery that cannot advance its job
+// reports why here instead of leaving an unexplained Funded job behind.
+export interface JobAdvance {
+  advanced: boolean;
+  jobId?: string;
+  status?: JobStatus;
+  note?: string;
+}
+
 export async function deliver(input: DeliverInput): Promise<
   | (DeliverOutcome & {
       agent: { chainId: number; tokenId: string; name: string };
       paymentId: string;
       taskId?: string;
+      jobAdvance?: JobAdvance;
     })
   | { ok: false; error: string; taskId?: string }
 > {
@@ -451,6 +461,7 @@ export async function deliver(input: DeliverInput): Promise<
     return { ok: false, error, taskId: trackedId };
   }
 
+  let jobAdvance: JobAdvance | undefined;
   if (willRun && trackedId) {
     if (outcome.ok && outcome.kind === "deliverable" && outcome.text && !outcome.isError) {
       markTaskDelivered(trackedId, {
@@ -460,15 +471,32 @@ export async function deliver(input: DeliverInput): Promise<
         args: input.args,
         taskText: input.task,
       });
-      // ERC-8183 Submitted: provider work is ready for evaluator attestation
-      const job = getJobByPayment(input.paymentId);
-      if (job) {
-        submitJob({
+      // ERC-8183 Submitted: provider work is ready for evaluator attestation.
+      // The job may have been opened by another instance at settle, so the lookup
+      // reads the durable store rather than only this process's map.
+      const job = await getJobByPaymentAsync(input.paymentId);
+      if (!job) {
+        // a delivered task with no job is the defect this reports: stay visible
+        jobAdvance = {
+          advanced: false,
+          note: `delivery succeeded but no ERC-8183 job exists for payment ${input.paymentId}; the evaluator cannot attest until one does`,
+        };
+      } else if (job.status === "Funded") {
+        const submitted = submitJob({
           jobId: job.id,
           provider: "marketplace",
           deliverable: outcome.text.slice(0, 500),
           taskId: trackedId,
         });
+        jobAdvance = {
+          advanced: submitted?.status === "Submitted",
+          jobId: job.id,
+          status: submitted?.status ?? job.status,
+        };
+      } else {
+        // Submitted or terminal: a second advance would overwrite the recorded
+        // deliverable, so the job is left where it is and the state is reported
+        jobAdvance = { advanced: false, jobId: job.id, status: job.status };
       }
     } else if (!outcome.ok || outcome.gated || outcome.isError) {
       markTaskFailed(trackedId, outcome.error ?? outcome.text ?? "delivery failed", {
@@ -483,5 +511,6 @@ export async function deliver(input: DeliverInput): Promise<
     agent: { chainId: receipt.agent.chainId, tokenId: receipt.agent.tokenId, name: receipt.agent.name },
     paymentId: input.paymentId,
     taskId: trackedId,
+    jobAdvance,
   };
 }
