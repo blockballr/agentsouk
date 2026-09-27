@@ -236,9 +236,9 @@ export function OngoingPage() {
       )}
 
       {account && (
-        <div className="mt-10 space-y-4">
+        <div className="mt-10 grid gap-4 xl:grid-cols-2">
           {sessions.length === 0 && !error && (
-            <div className="rounded-[14px] border hairline border-slate-verdant/40 p-10">
+            <div className="rounded-[14px] border hairline border-slate-verdant/40 p-10 xl:col-span-2">
               <p className="text-[15px] text-newsprint-gray">
                 No active hires for this wallet on this server instance.
               </p>
