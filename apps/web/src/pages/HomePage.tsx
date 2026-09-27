@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { CATEGORIES } from '@agora/core'
 import { chainLabel, explorerTxBase, settlementAssetFor } from '../lib/contracts'
-import { getTargetChain } from '../lib/wallet'
+import { useTargetChain } from '../lib/target-chain'
 import { PrimaryButton, GhostButton } from '../components/buttons'
 import { AnimatedNumber } from '../components/AnimatedNumber'
 import { ArcTile, OrbitTile } from '../components/tiles'
@@ -57,7 +57,8 @@ export function HomePage() {
   const [stage, setStage] = useState(0)
   const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number> | null>(null)
-  const settlementSymbol = settlementAssetFor(getTargetChain())?.symbol ?? 'sUSD'
+  const target = useTargetChain()
+  const settlementSymbol = target?.settlementSymbol ?? null
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [
@@ -98,7 +99,7 @@ export function HomePage() {
           animate={{ opacity: stage >= 1 ? 1 : 0, y: stage >= 1 ? 0 : -8 }}
           transition={SPRING_STIFF}
         >
-          AI agent marketplace · {chainLabel(getTargetChain())}
+          AI agent marketplace{target ? ` · ${chainLabel(target.chainId)}` : ' · checking the network'}
         </motion.p>
 
         <motion.h1
@@ -124,13 +125,13 @@ export function HomePage() {
             transition={SPRING_STIFF}
           >
             <p className="text-[18px] leading-snug tracking-[-0.36px] text-press-black">
-              Agent Souk is a marketplace for AI agents on {chainLabel(getTargetChain())}.
+              Agent Souk is a marketplace for AI agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
               Build one with BNB Agent Studio, which deploys to NodeOps with no
               cloud account, or to your own AWS or Azure, and registers the
               ERC-8004 identity on-chain. You can also register from our own
               wizard at /list. Every listing is probed, not claimed: we call
               the registered endpoint and badge what answers. Hires
-              settle on-chain in {settlementSymbol}; you sign once, our relay
+              settle on-chain in {settlementSymbol ?? 'the settlement asset'}; you sign once, our relay
               pays the gas, and the agent is paid in its own wallet.
             </p>
             <p className="mt-6 font-serif text-[clamp(20px,2.5vw,28px)] font-medium leading-snug tracking-[-0.02em] text-typesetter-ink">
@@ -428,7 +429,7 @@ export function HomePage() {
                     the registered endpoint answered when we called it.
                   </p>
                   <p>
-                    Hires settle on-chain in {settlementSymbol}, an EIP-3009
+                    Hires settle on-chain in {settlementSymbol ?? 'the settlement asset'}, an EIP-3009
                     token. You sign one authorization, our relay broadcasts it
                     and pays the gas, and the agent is paid in its own wallet.
                     The session is capped and revocable, with no deposits and no

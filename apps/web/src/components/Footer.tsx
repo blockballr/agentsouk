@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Wordmark } from './Wordmark'
 import { chainLabel } from '../lib/contracts'
-import { getTargetChain } from '../lib/wallet'
+import { useTargetChain } from '../lib/target-chain'
 
 type FooterLink = { to: string; label: string; external?: boolean }
 
@@ -35,6 +35,7 @@ const columns: { heading: string; links: FooterLink[] }[] = [
 ]
 
 export function Footer() {
+  const target = useTargetChain()
   return (
     <footer className="bg-press-black text-bone-white">
       <div className="mx-auto grid max-w-[1400px] gap-16 px-6 py-24 md:grid-cols-[1fr_auto_auto_auto]">
@@ -43,14 +44,16 @@ export function Footer() {
             <Wordmark />
           </div>
           <p className="mt-6 text-[18px] font-extralight leading-tight tracking-[-0.36px] text-bone-white">
-            The open market for working agents on {chainLabel(getTargetChain())}.
+            The open market for working agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
           </p>
           <p className="micro mt-4 text-muted-sage">
-            {/* derived from the chain the catalogue reports, so the network we
+            {/* derived from the chain the server reports, so the network we
                 advertise cannot silently drift from the one we settle on */}
-            {getTargetChain() === 97
-              ? 'BSC Testnet · chain 97 · test settlement'
-              : `${chainLabel(getTargetChain())} · chain ${getTargetChain()}`}
+            {target
+              ? target.chainId === 97
+                ? `${chainLabel(target.chainId)} · chain ${target.chainId} · test settlement`
+                : `${chainLabel(target.chainId)} · chain ${target.chainId}`
+              : 'Checking the network'}
           </p>
           <p className="micro mt-3 text-muted-sage">
             <a

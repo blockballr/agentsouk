@@ -4,6 +4,7 @@
 import { hashTypedData, recoverAddress } from "viem";
 import { TRANSFER_TYPES, rpcUrlsFor } from '@agora/core'
 import { explorerTxBase } from './contracts'
+import { setTargetChainState } from './target-chain'
 
 interface Eip1193Provider {
   request(args: { method: string; params?: unknown[] | object }): Promise<unknown>;
@@ -40,7 +41,11 @@ export function chainIdToHex(chainId: number): string {
 }
 
 export function setTargetChain(chainId: number): void {
-  if (Number.isFinite(chainId) && chainId > 0) targetChainId = chainId;
+  if (Number.isFinite(chainId) && chainId > 0) {
+    targetChainId = chainId;
+    // tell the shared store so render surfaces can leave their pending state
+    setTargetChainState(chainId);
+  }
 }
 
 export function getTargetChain(): number {

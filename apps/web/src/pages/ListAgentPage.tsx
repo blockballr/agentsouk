@@ -8,7 +8,8 @@ import {
   mintRequestMessage,
   shortAddress,
 } from '@agora/core'
-import { connectWallet, getActiveAccount, getProvider, getTargetChain } from '../lib/wallet'
+import { connectWallet, getActiveAccount, getProvider } from '../lib/wallet'
+import { useTargetChain } from '../lib/target-chain'
 import { FAUCET_URL, MINT_PER_CLICK, isTestnet, readNativeBalance } from '../lib/mint'
 import {
   chainLabel,
@@ -19,7 +20,7 @@ import {
   SETTLEMENT_ASSET_BY_CHAIN,
   settlementAssetFor,
 } from '../lib/contracts'
-import { getAgentDetail, getAgents } from '../lib/api'
+import { getAgentDetail } from '../lib/api'
 import { RegisterWizard } from '../components/RegisterWizard'
 
 const checklist = [
@@ -72,21 +73,11 @@ function formatNative(wei: bigint): string {
 
 export function ListAgentPage() {
   const [foundTokenId, setFoundTokenId] = useState<string | null>(null)
-  // The chain is learned from the catalogue the same way the marketplace learns
-  // it, so a direct load cannot keep a compiled-in mainnet default and hand a
-  // testnet participant the wrong gas advice.
-  const [chain, setChain] = useState(getTargetChain())
-  useEffect(() => {
-    let cancelled = false
-    void getAgents({ limit: 1 })
-      .then(() => {
-        if (!cancelled) setChain(getTargetChain())
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  // The chain comes from the shared store, which starts unknown and learns the
+  // deployment's chain once from the server, so a direct load cannot paint a
+  // compiled-in mainnet default and hand a testnet participant wrong advice.
+  const target = useTargetChain()
+  const chain = target?.chainId ?? null
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
       <p className="micro text-newsprint-gray">List your agent</p>
@@ -103,7 +94,7 @@ export function ListAgentPage() {
         build it, meet the checklist, check that you are on the market.
       </p>
 
-      <CreateSection />
+      <CreateSection chainId={chain} />
       {/* register straight from here, for a participant who would rather not
           install the CLI. Sits after the Studio path because both are valid and
           the Studio route is the one the brief describes. */}
@@ -116,14 +107,22 @@ export function ListAgentPage() {
             The same registration without the CLI. You send one transaction from your own wallet,
             and the registry records you as the owner.
           </p>
-          <GasRequirement chainId={chain} />
-          <div className="mt-8">
-            <RegisterWizard chainId={chain} />
-          </div>
+          {chain === null ? (
+            <p className="mt-8 text-sm leading-relaxed text-newsprint-gray">
+              Checking the network before the registration step.
+            </p>
+          ) : (
+            <>
+              <GasRequirement chainId={chain} />
+              <div className="mt-8">
+                <RegisterWizard chainId={chain} />
+              </div>
+            </>
+          )}
         </div>
       </div>
-      <ChecklistSection />
-      <LookupSection onFound={setFoundTokenId} />
+      <ChecklistSection chainId={chain} />
+      <LookupSection chainId={chain} onFound={setFoundTokenId} />
       <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
     </section>
   )
@@ -365,11 +364,11 @@ function GasRequirement({ chainId }: { chainId: number }) {
   )
 }
 
-function CreateSection() {
+function CreateSection({ chainId }: { chainId: number | null }) {
   // the addresses we publish are the ones for the chain this deployment serves
-  const chain = getTargetChain()
-  const registryAddress = registryFor(chain) ?? REGISTRY_BY_CHAIN[56]
-  const settlementAsset = settlementAssetFor(chain) ?? SETTLEMENT_ASSET_BY_CHAIN[56]
+  const chainName = chainId === null ? null : chainId === 97 ? 'BSC testnet' : 'BSC'
+  const registryAddress = chainId === null ? null : registryFor(chainId) ?? REGISTRY_BY_CHAIN[56]
+  const settlementAsset = chainId === null ? null : settlementAssetFor(chainId) ?? SETTLEMENT_ASSET_BY_CHAIN[56]
   return (
     <div className="mt-16">
       <div className="flex flex-wrap items-baseline justify-between gap-4 border-t hairline border-slate-verdant/40 pt-8">
@@ -411,15 +410,19 @@ function CreateSection() {
             Describe the agent in Cursor or Claude Code and ask Studio to
             deploy. Studio scaffolds the agent, deploys it, registers the
             ERC-8004 identity on{' '}
-            {getTargetChain() === 97 ? 'BSC testnet' : 'BSC'} (registry{' '}
-            <a
-              href={explorerAddressUrl(getTargetChain(), registryAddress)}
-              target="_blank"
-              rel="noreferrer"
-              className="font-mono text-[13px] break-all text-press-black hover:text-highlighter-green"
-            >
-              {registryAddress}
-            </a>
+            {chainName ?? 'the target network'} (registry{' '}
+            {chainId !== null && registryAddress ? (
+              <a
+                href={explorerAddressUrl(chainId, registryAddress)}
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono text-[13px] break-all text-press-black hover:text-highlighter-green"
+              >
+                {registryAddress}
+              </a>
+            ) : (
+              'pending'
+            )}
             ), binds the agent wallet, and registers the ERC-8183 task
             interface. x402 payment comes configured by default.
           </p>
@@ -438,16 +441,20 @@ function CreateSection() {
             if you want to bring your own cloud and configure it yourself.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-            Hires on this deployment settle in {settlementAsset.symbol} (EIP-3009,
+            Hires on this deployment settle in {settlementAsset?.symbol ?? 'the settlement asset'} (EIP-3009,
             one signature per hire, relayed){' '}
-            <a
-              href={explorerAddressUrl(getTargetChain(), settlementAsset.address)}
-              target="_blank"
-              rel="noreferrer"
-              className="font-mono text-[13px] break-all text-press-black hover:text-highlighter-green"
-            >
-              {settlementAsset.address}
-            </a>
+            {chainId !== null && settlementAsset ? (
+              <a
+                href={explorerAddressUrl(chainId, settlementAsset.address)}
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono text-[13px] break-all text-press-black hover:text-highlighter-green"
+              >
+                {settlementAsset.address}
+              </a>
+            ) : (
+              'pending'
+            )}
             .
           </p>
         </li>
@@ -482,7 +489,7 @@ function CreateSection() {
   )
 }
 
-function ChecklistSection() {
+function ChecklistSection({ chainId }: { chainId: number | null }) {
   return (
     <div className="mt-16">
       <div className="border-t hairline border-slate-verdant/40 pt-8">
@@ -514,7 +521,7 @@ function ChecklistSection() {
         verification just makes the honest agents legible to buyers.
       </p>
 
-      <PromptGenerator />
+      <PromptGenerator chainId={chainId} />
     </div>
   )
 }
@@ -540,13 +547,21 @@ function buildDescription(
   return text
 }
 
-function buildPrompt(category: CategoryKey, name: string, goal: string): string {
+function buildPrompt(
+  category: CategoryKey,
+  name: string,
+  goal: string,
+  chainId: number | null,
+): string {
   const def = categoryDef(category)
   const description = buildDescription(def, name, goal)
   const label = name.trim() || `a ${def.label.toLowerCase()} agent`
   // derived, not pasted: the registry must be the one this deployment indexes
-  const chain = getTargetChain()
-  const registryAddress = registryFor(chain) ?? REGISTRY_BY_CHAIN[56]
+  const networkName = chainId === null ? 'the target network' : chainLabel(chainId)
+  const registryAddress = chainId === null ? null : registryFor(chainId) ?? REGISTRY_BY_CHAIN[56]
+  const registryNote = registryAddress
+    ? `(registry ${registryAddress}${chainId === 97 ? ', chain 97' : ''})`
+    : '(registry pending)'
   return [
     'Install the bnb CLI, describe this agent to Studio, and ship it end to end. Studio scaffolds the agent, deploys it, and registers the ERC-8004 identity on BSC. The agent to build is:',
     '',
@@ -564,11 +579,11 @@ function buildPrompt(category: CategoryKey, name: string, goal: string): string 
     '',
     // The registry address must be the one this deployment indexes (chain 97), and the origin
     // the judged domain; a mainnet registry or wrong origin makes listing silently fail.
-    `When done, the agent must be registered on ${chainLabel(getTargetChain())} ERC-8004 (registry ${registryAddress}${getTargetChain() === 97 ? ', chain 97' : ''}) and appear when searched on agentsouk.xyz.`,
+    `When done, the agent must be registered on ${networkName} ERC-8004 ${registryNote} and appear when searched on agentsouk.xyz.`,
   ].join('\n')
 }
 
-function PromptGenerator() {
+function PromptGenerator({ chainId }: { chainId: number | null }) {
   const [category, setCategory] = useState<CategoryKey>('rebalancing')
   const [name, setName] = useState('')
   const [goal, setGoal] = useState('')
@@ -576,7 +591,7 @@ function PromptGenerator() {
   const [copied, setCopied] = useState(false)
 
   function generate() {
-    setPrompt(buildPrompt(category, name, goal))
+    setPrompt(buildPrompt(category, name, goal, chainId))
     setCopied(false)
   }
 
@@ -682,7 +697,13 @@ function PromptGenerator() {
 }
 
 
-function LookupSection({ onFound }: { onFound: (tokenId: string) => void }) {
+function LookupSection({
+  chainId,
+  onFound,
+}: {
+  chainId: number | null
+  onFound: (tokenId: string) => void
+}) {
   const [input, setInput] = useState('')
   const [state, setState] = useState<LookupState>({ phase: 'idle' })
 
@@ -692,11 +713,12 @@ function LookupSection({ onFound }: { onFound: (tokenId: string) => void }) {
       setState({ phase: 'invalid' })
       return
     }
+    // the chain the site is actually serving, from the shared store, never a
+    // compiled-in 56 that sent every lookup to the wrong network
+    if (chainId === null) return
     setState({ phase: 'loading' })
     try {
-      // the chain the site is actually serving, learned from the catalogue, not
-      // a compiled-in 56 that sent every lookup to the wrong network
-      const agent = await getAgentDetail(String(getTargetChain()), tokenId)
+      const agent = await getAgentDetail(String(chainId), tokenId)
       if (agent) {
         onFound(tokenId)
         setState({ phase: 'found', agent })
@@ -741,10 +763,10 @@ function LookupSection({ onFound }: { onFound: (tokenId: string) => void }) {
         />
         <button
           type="submit"
-          disabled={state.phase === 'loading'}
+          disabled={state.phase === 'loading' || chainId === null}
           className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {state.phase === 'loading' ? 'Checking…' : 'Look up'}
+          {state.phase === 'loading' ? 'Checking…' : chainId === null ? 'Checking the network…' : 'Look up'}
         </button>
       </form>
 
