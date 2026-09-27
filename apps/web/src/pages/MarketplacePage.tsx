@@ -32,7 +32,7 @@ export function MarketplacePage() {
     snapshotTotal: number | null
     registryTotal: number | null
     snapshotTime: string | null
-    lastTopUpAt: number | null
+    catalogueRefreshedAt: string | null
     total: number
   } | null>(null)
   // the network is unknown until the market answers; do not paint the compiled
@@ -121,7 +121,7 @@ export function MarketplacePage() {
             snapshotTotal: r.snapshotTotal,
             registryTotal: r.registryTotal,
             snapshotTime: r.snapshotTime,
-            lastTopUpAt: r.lastTopUpAt,
+            catalogueRefreshedAt: r.indexStatus.catalogueRefreshedAt,
             total: r.total,
           })
           setChainId(r.chainId)
@@ -155,17 +155,16 @@ export function MarketplacePage() {
       : result.items
     : []
 
-  // One freshness figure, never a guess: a live top-up is newer than the snapshot.
-  const freshness = useMemo(() => {
-    if (!result) return null
-    if (result.lastTopUpAt) {
-      return `catalogue refreshed ${new Date(result.lastTopUpAt).toISOString().slice(0, 10)}`
-    }
-    if (result.snapshotTime) {
-      return `snapshot taken ${result.snapshotTime.slice(0, 10)}`
-    }
-    return null
-  }, [result])
+  // The catalogue's own freshness: the shared store's refresh time when it has
+  // one, otherwise the committed snapshot's date, and nothing when neither.
+  const freshness = useMemo(
+    () =>
+      catalogueFreshnessLabel(
+        result?.catalogueRefreshedAt ?? null,
+        result?.snapshotTime ?? null,
+      ),
+    [result],
+  )
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
@@ -388,6 +387,35 @@ export function MarketplacePage() {
   )
 }
 
+// The catalogue's freshness in one line: the store's own refresh time as a
+// relative age when it is known and real, otherwise the committed snapshot's
+// date. A future or unparseable refresh time is not freshness, so it falls back
+// rather than claiming a time that cannot be true.
+export function catalogueFreshnessLabel(
+  catalogueRefreshedAt: string | null,
+  snapshotTime: string | null,
+  now: number = Date.now(),
+): string | null {
+  const relative = catalogueRefreshedAt
+    ? relativeAgeLabel(catalogueRefreshedAt, now)
+    : null
+  if (relative) return `catalogue refreshed ${relative}`
+  if (snapshotTime) return `snapshot taken ${snapshotTime.slice(0, 10)}`
+  return null
+}
+
+function relativeAgeLabel(iso: string, now: number): string | null {
+  const at = new Date(iso).getTime()
+  if (!Number.isFinite(at) || at > now) return null
+  const minutes = Math.floor((now - at) / 60_000)
+  if (minutes < 1) return 'less than a minute ago'
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  const days = Math.floor(hours / 24)
+  return `${days} day${days === 1 ? '' : 's'} ago`
+}
+
 function labelFor(key: string): string {
   return CATEGORIES.find((c) => c.key === key)?.label ?? 'All agents'
 }
@@ -473,7 +501,7 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`micro transition focus-visible:outline-2 focus-visible:outline-highlighter-green ${
+      className={`micro py-2 transition focus-visible:outline-2 focus-visible:outline-highlighter-green lg:py-0 ${
         active
           ? 'text-press-black underline decoration-highlighter-green decoration-2 underline-offset-8'
           : 'text-newsprint-gray hover:text-press-black'

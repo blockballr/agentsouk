@@ -35,9 +35,14 @@ export function Nav() {
                 </NavLink>
               </li>
             ))}
+            {/* the plain text links belong in this one row: a group that also holds
+                the boxed controls is taller, so its text centres against a different
+                box height and the row reads misaligned */}
+            <li>
+              <AboutLink />
+            </li>
           </ul>
           <div className="hidden lg:flex lg:items-center lg:gap-8">
-            <AboutLink />
             <ThemeToggle />
             <CartLink />
             <ProfileLink />
@@ -47,7 +52,7 @@ export function Nav() {
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-10 w-10 items-center justify-center text-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black lg:hidden"
+            className="flex h-11 w-11 items-center justify-center text-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black lg:hidden"
           >
             <MenuIcon />
           </button>
@@ -92,7 +97,7 @@ function CartLink() {
     <Link
       to="/cart"
       aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
-      className="micro flex items-center gap-2 rounded-[4px] border hairline border-slate-verdant/40 px-2.5 py-1.5 text-newsprint-gray transition-colors hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+      className="micro flex h-9 items-center gap-2 rounded-[4px] border hairline border-slate-verdant/40 px-2.5 text-newsprint-gray transition-colors hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
     >
       <CartGlyph />
       {count > 0 ? <span className="tabular-nums text-press-black">{count}</span> : null}
@@ -123,7 +128,7 @@ function ProfileLink({ onClick }: { onClick?: () => void }) {
       onClick={onClick}
       aria-label="Profile, your listings"
       className={({ isActive }) =>
-        `micro flex items-center gap-2 rounded-[4px] border hairline px-2.5 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
+        `micro flex h-9 items-center gap-2 rounded-[4px] border hairline px-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
           isActive
             ? 'border-highlighter-green text-press-black'
             : 'border-slate-verdant/40 text-newsprint-gray hover:text-press-black'
