@@ -27,14 +27,10 @@ settle and receipt routes into the facilitator, which settles in sandbox, prod o
 
 ```mermaid
 flowchart LR
-    R[ERC-8004 registry on BSC] --> A[8004scan API]
-    A --> S[scanner.ts server-only client + categories.ts classify at ingest]
-    S --> B[build route: snapshot to data/agents.json]
-    B --> W[warmIndex in-memory index]
-    W --> API[/api/agents route/]
-    API --> P[pages: / via queryAgents, /agents, /compare]
-    P --> X[x402 hire flow: requirements, settle, receipt]
-    X --> F[facilitator: sandbox, prod, or b402 settlement]
+    R[ERC-8004 registry] --> A[8004scan API]
+    A --> S[scanner and shelf]
+    S --> P[pages and detail]
+    P --> X[x402 hire and facilitator]
 ```
 
 The full design, covering the classification rules, the snapshot builder, the payment path and the
