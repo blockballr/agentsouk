@@ -4,6 +4,7 @@
 import { hashTypedData, recoverAddress } from "viem";
 import { TRANSFER_TYPES, rpcUrlsFor } from '@agora/core'
 import { explorerTxBase } from './contracts'
+import { showWalletPicker } from '../components/WalletPicker'
 import { reloadOnceForStaleChunk } from './stale-chunk'
 import { setTargetChainState } from './target-chain'
 
@@ -260,6 +261,11 @@ function initWalletConnect(): Promise<Eip1193Provider> {
       })
       .catch((e) => {
         wcInit = null;
+        // a stale tab can be missing this chunk as well, so take one reload to
+        // pick up the build that has it instead of failing with a module error
+        if (reloadOnceForStaleChunk()) {
+          throw new Error("Reloading to pick up the current build.");
+        }
         throw e;
       });
   }
@@ -317,24 +323,12 @@ export async function getProvider(): Promise<Eip1193Provider> {
 
 // open the picker UI (no-op fallback: legacy window provider); resolves null
 // when the user dismisses it
-let pickerSession: Promise<WalletOption | null> | null = null;
 export async function openWalletPicker(): Promise<WalletOption | null> {
   const injected = await listInjectedWallets();
   const options = pickerOptions(injected);
-  if (!pickerSession) {
-    pickerSession = import("../components/WalletPicker")
-      .then(({ showWalletPicker }) => showWalletPicker(options))
-      .catch((error) => {
-        // an older build can ask for a chunk the current deploy has replaced;
-        // reload to pick it up instead of failing the connect flow
-        if (reloadOnceForStaleChunk()) return null;
-        throw error;
-      })
-      .finally(() => {
-        pickerSession = null;
-      });
-  }
-  return pickerSession;
+  // the picker is bundled into the entry rather than fetched on demand, so a
+  // connect can never fail because a deploy replaced the chunk it wanted
+  return showWalletPicker(options);
 }
 
 export function clearWalletChoice(): void {
