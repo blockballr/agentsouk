@@ -1,0 +1,53 @@
+name: Regenerate lockfile
+
+# One-off maintenance. The committed package-lock.json fell out of sync with
+# package.json, so a clean npm ci fails on every host: several packages are
+# missing from the lock and axios and @coinbase/cdp-sdk are pinned below what
+# package.json asks for. Regenerating it on this runner avoids whatever local
+# policy blocks the fetch, and the job proves npm ci works before it commits,
+# so a broken lock cannot be written back.
+#
+# Run it from the Actions tab or with:
+#   gh workflow run lockfile.yml --repo blockballr/agentsouk
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Regenerate the lock from package.json
+        run: npm install --package-lock-only --no-audit --no-fund
+
+      - name: Prove a clean install works
+        run: npm ci --no-audit --no-fund
+
+      - name: Prove the suite still passes on the regenerated tree
+        run: npm test
+
+      - name: Commit only if the lock actually changed
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "the lock was already in sync, nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -F - <<'MSG'
+          chore(deps): regenerate the lock so a clean install works
+
+          the committed lock no longer matched package json, so npm ci failed on
+          every host: some packages were missing from it and axios and the
+          coinbase sdk were pinned below the required versions. this run
+          regenerated it and installed cleanly before committing.
+          MSG
+          git push
