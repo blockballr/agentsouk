@@ -399,7 +399,7 @@ export function OngoingPage() {
             authorization on the settlement token when the stored payload and
             relay key allow it; the cancellation transaction is linked below.
           </p>
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 grid gap-4 xl:grid-cols-2">
             {recent.map(({ task, job }) => (
               <article
                 key={task.id}

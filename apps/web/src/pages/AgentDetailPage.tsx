@@ -10,7 +10,7 @@ import {
   shortAddress,
   timeAgo,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getTask, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getTask, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import { chainLabel } from '../lib/contracts'
 import {
@@ -160,10 +160,42 @@ export function AgentDetailPage() {
   const [perfProbe, setPerfProbe] = useState<PerformanceProbe | null>(null)
   // the connected viewer, so owner-only affordances can be hidden from everyone else
   const [viewer, setViewer] = useState<string | null>(null)
+  // the viewer's live hire for this agent, found through the receipts store rather
+  // than the instance's own ledger
+  const [durableHire, setDurableHire] = useState<{ paymentId: string } | null>(null)
 
   useEffect(() => {
     void getActiveAccount().then(setViewer)
   }, [])
+
+  // The agent's active session can only be seen by the instance that settled it,
+  // because that ledger lives in memory. The wallet's own hires come from the
+  // receipts store instead, so a session is found even when another instance
+  // answered the request and the page would otherwise offer to sell it again.
+  useEffect(() => {
+    if (!viewer) {
+      setDurableHire(null)
+      return
+    }
+    let cancelled = false
+    getHiresByWallet(viewer)
+      .then((hires) => {
+        if (cancelled) return
+        const now = Date.now()
+        const mine = hires
+          .filter((h) => String(h.chainId) === String(chainId) && String(h.tokenId) === String(tokenId))
+          .filter((h) => !h.expiresAt || new Date(h.expiresAt).getTime() > now)
+          .sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')))
+        setDurableHire(mine[0] ? { paymentId: mine[0].paymentId } : null)
+      })
+      .catch(() => {
+        // a failed lookup must not turn into a claim: fall back to the ledger only
+        if (!cancelled) setDurableHire(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [viewer, chainId, tokenId])
 
   useEffect(() => {
     let cancelled = false
@@ -233,8 +265,8 @@ export function AgentDetailPage() {
   // viewer keeps the hire panel, because the session is not theirs to spend
   const mySession =
     activeSession && viewer && activeSession.client.toLowerCase() === viewer.toLowerCase()
-      ? activeSession
-      : undefined
+      ? { paymentId: activeSession.paymentId }
+      : durableHire
   const verificationProbe = detail.verification
     ? isProbeCheck(detail.chain_id, detail.verification.quality)
     : false

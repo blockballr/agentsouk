@@ -485,6 +485,27 @@ export interface HiresByPayeeResult {
   source: 'postgres' | 'memory'
 }
 
+// A wallet's own hires, read from the receipts store rather than any instance's
+// ledger, so a live session is found even when another instance settled it.
+export interface WalletHire {
+  paymentId: string
+  chainId: number
+  tokenId: string
+  agentName?: string
+  client?: string
+  mode?: string
+  spendCapUsd?: number
+  createdAt?: string
+  expiresAt?: string
+}
+
+export async function getHiresByWallet(wallet: string): Promise<WalletHire[]> {
+  const res = await fetch(`${BASE}/hires/by-wallet?wallet=${encodeURIComponent(wallet)}`)
+  if (!res.ok) return []
+  const body = await readJsonBody<{ hires?: WalletHire[] }>(res, 'hires')
+  return body.hires ?? []
+}
+
 // Hires paid to a wallet's agents. The payee is the agent's receiving wallet.
 export async function getHiresByPayee(payee: string): Promise<HiresByPayeeResult> {
   const res = await fetch(`${BASE}/hires/by-payee?payee=${encodeURIComponent(payee)}`)
