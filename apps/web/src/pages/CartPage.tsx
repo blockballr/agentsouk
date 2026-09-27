@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getCart, removeFromCart, subscribe, type CartItem } from '../lib/cart'
 import { connectWallet, ensureBscChain } from '../lib/wallet'
 import { hireErrorText, runHire } from '../lib/hire'
+import { explorerTxBase } from '../lib/contracts'
 
 const PRICE_USD = 2
 
@@ -13,10 +14,14 @@ interface Step {
   error?: string
 }
 
+type SettlementMode = 'sandbox' | 'prod' | 'b402'
+
 interface Receipt {
   name: string
   paymentId?: string
   txHash?: string
+  chainId: number
+  mode?: SettlementMode
 }
 
 const statusLabel: Record<Exclude<StepStatus, 'failed'>, string> = {
@@ -25,6 +30,11 @@ const statusLabel: Record<Exclude<StepStatus, 'failed'>, string> = {
   signing: 'Signing',
   settling: 'Settling',
   done: 'Settled',
+}
+
+// a hash is only a transaction when something was broadcast; a sandbox string is synthetic
+function isOnchainSettlement(mode: Receipt['mode']): boolean {
+  return mode === 'prod' || mode === 'b402'
 }
 
 export function CartPage() {
@@ -79,7 +89,14 @@ export function CartPage() {
         settled.push(key)
         setReceipts((prev) => ({
           ...prev,
-          [key]: { name: item.name, paymentId: outcome.paymentId, txHash: outcome.txHash },
+          [key]: {
+            name: item.name,
+            paymentId: outcome.paymentId,
+            txHash: outcome.txHash,
+            chainId: item.chainId,
+            // the receipt mode is authoritative; settle details cover a receipt that did not load
+            mode: outcome.receipt?.mode ?? outcome.settle?.details?.mode,
+          },
         }))
       }
       // a rejected signature means the user said stop: leave the rest queued
@@ -142,14 +159,19 @@ export function CartPage() {
                 <div className="flex flex-wrap items-center gap-4 font-mono text-[11px] text-newsprint-gray">
                   {r.paymentId ? <span>paymentId {r.paymentId}</span> : null}
                   {r.txHash ? (
-                    <a
-                      href={`https://bscscan.com/tx/${r.txHash}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline decoration-highlighter-green underline-offset-4 hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green"
-                    >
-                      tx {r.txHash.slice(0, 10)}...
-                    </a>
+                    isOnchainSettlement(r.mode) ? (
+                      <a
+                        href={`${explorerTxBase(r.chainId)}/tx/${r.txHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline decoration-highlighter-green underline-offset-4 hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green"
+                      >
+                        tx {r.txHash.slice(0, 10)}...
+                      </a>
+                    ) : (
+                      // labelled: the sandbox hash is derived from the payment id, not a transaction
+                      <span>settlement {r.txHash.slice(0, 10)}... (sandbox, not a transaction)</span>
+                    )
                   ) : null}
                 </div>
               </li>
