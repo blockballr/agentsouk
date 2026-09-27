@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-09-26T10:27:35.294Z",
+  "capturedAt": "2026-09-27T05:54:47.506Z",
   "chainId": 97,
   "results": [
     {
@@ -11,7 +11,7 @@
       "endpointVerified": false,
       "messagingUrl": "https://rangekeeper-agent.moisescisnerosdl.workers.dev/",
       "status": "empty",
-      "detail": "responded but returned no text",
+      "detail": "responded without a JSON-RPC result",
       "httpStatus": 200
     },
     {
@@ -22,8 +22,8 @@
       "registryHealth": "unknown",
       "endpointVerified": false,
       "messagingUrl": "https://bench-bnb.vercel.app/a2a",
-      "status": "delivers",
-      "detail": "{\"kind\":\"message\",\"role\":\"agent\",\"messageId\":\"bench-ref-mui8weha\",\"parts\":[{\"kind\":\"data\",\"data\":{\"error\":\"MISSING_AUDITION_CONTEXT\",\"message\":\"need the fork RPC endpoint, the account holding the position, and its key. Send them as metadata (rpcUrl, account, accountPrivateKey) or in a data part (rpc",
+      "status": "input_required",
+      "detail": "{\"error\":\"MISSING_AUDITION_CONTEXT\",\"message\":\"need the fork RPC endpoint, the account holding the position, and its key. Send them as metadata (rpcUrl, account, accountPrivateKey) or in a data part (rpc_url, account, account_private_key).\",\"missing\":[\"rpc_url\",\"account\",\"account_private_key\"]}",
       "httpStatus": 200
     },
     {
@@ -46,8 +46,8 @@
       "registryHealth": "unknown",
       "endpointVerified": false,
       "messagingUrl": "https://holon.lingoai.io/agents/rebalancing/a2a",
-      "status": "delivers",
-      "detail": "{\"status\":\"quoted\",\"price\":\"1000000000000000000\",\"currency\":\"0xce24439f2d9c6a2289f741120fe202248b666666\",\"valid_until\":1790419325,\"provider_address\":\"0x361Ab4dc6eDAE20d04B53e959d9f4a92aDE06445\",\"agent_id\":340460,\"request\":{\"task_description\":\"Capability check from Agent Souk. Reply with one line nam",
+      "status": "gated",
+      "detail": "agent returned a price quote and gates the work behind its own escrow",
       "httpStatus": 200
     },
     {
@@ -59,7 +59,7 @@
       "endpointVerified": false,
       "messagingUrl": "http://hevo-agents.fly.dev/yield",
       "status": "empty",
-      "detail": "responded but returned no text",
+      "detail": "responded without a JSON-RPC result",
       "httpStatus": 404
     },
     {
@@ -71,7 +71,7 @@
       "endpointVerified": false,
       "messagingUrl": "http://hevo-agents.fly.dev/rebalance",
       "status": "empty",
-      "detail": "responded but returned no text",
+      "detail": "responded without a JSON-RPC result",
       "httpStatus": 404
     },
     {
@@ -82,9 +82,8 @@
       "registryHealth": "unknown",
       "endpointVerified": false,
       "messagingUrl": "http://localhost:8080/",
-      "status": "empty",
-      "detail": "non json response: Not Found",
-      "httpStatus": 404
+      "status": "unreachable",
+      "detail": "fetch failed"
     },
     {
       "tokenId": "2018",
@@ -95,7 +94,7 @@
       "endpointVerified": false,
       "messagingUrl": "http://hevo-agents.fly.dev/grid",
       "status": "empty",
-      "detail": "responded but returned no text",
+      "detail": "responded without a JSON-RPC result",
       "httpStatus": 404
     },
     {
@@ -106,8 +105,8 @@
       "registryHealth": "unknown",
       "endpointVerified": false,
       "messagingUrl": "https://holon.lingoai.io/agents/grid-trading/a2a",
-      "status": "delivers",
-      "detail": "{\"status\":\"quoted\",\"price\":\"1000000000000000000\",\"currency\":\"0xce24439f2d9c6a2289f741120fe202248b666666\",\"valid_until\":1790419334,\"provider_address\":\"0x361Ab4dc6eDAE20d04B53e959d9f4a92aDE06445\",\"agent_id\":340455,\"request\":{\"task_description\":\"Capability check from Agent Souk. Reply with one line nam",
+      "status": "gated",
+      "detail": "agent returned a price quote and gates the work behind its own escrow",
       "httpStatus": 200
     },
     {
@@ -119,7 +118,7 @@
       "endpointVerified": false,
       "messagingUrl": "https://yieldrouter-agent.moisescisnerosdl.workers.dev/",
       "status": "empty",
-      "detail": "responded but returned no text",
+      "detail": "responded without a JSON-RPC result",
       "httpStatus": 200
     },
     {
@@ -130,8 +129,8 @@
       "registryHealth": "degraded",
       "endpointVerified": false,
       "messagingUrl": "https://marque.trade/agents/sluicegate/a2a",
-      "status": "delivers",
-      "detail": "{\"kind\":\"task\",\"status\":{\"state\":\"completed\"},\"artifacts\":[{\"parts\":[{\"kind\":\"text\",\"text\":\"{\\\"error\\\":\\\"the task does not state the asset, the size in USD, the allowed protocols, the minimum improvement in bps, the APR currently earned\\\",\\\"need\\\":\\\"net APR is size-dependent and the threshold is the",
+      "status": "input_required",
+      "detail": "{\"error\":\"the task does not state the asset, the size in USD\",\"need\":\"net APR depends on the asset and the size being moved, so neither can be assumed\"}",
       "httpStatus": 200
     },
     {
@@ -142,9 +141,8 @@
       "registryHealth": "unknown",
       "endpointVerified": false,
       "messagingUrl": "http://localhost:8080/",
-      "status": "empty",
-      "detail": "non json response: Not Found",
-      "httpStatus": 404
+      "status": "unreachable",
+      "detail": "fetch failed"
     },
     {
       "tokenId": "2162",
@@ -154,8 +152,8 @@
       "registryHealth": "unknown",
       "endpointVerified": false,
       "messagingUrl": "https://marque.trade/agents/sluicegate/a2a",
-      "status": "delivers",
-      "detail": "{\"kind\":\"task\",\"status\":{\"state\":\"completed\"},\"artifacts\":[{\"parts\":[{\"kind\":\"text\",\"text\":\"{\\\"error\\\":\\\"the task does not state the asset, the size in USD, the allowed protocols, the minimum improvement in bps, the APR currently earned\\\",\\\"need\\\":\\\"net APR is size-dependent and the threshold is the",
+      "status": "input_required",
+      "detail": "{\"error\":\"the task does not state the asset, the size in USD\",\"need\":\"net APR depends on the asset and the size being moved, so neither can be assumed\"}",
       "httpStatus": 200
     },
     {
@@ -167,7 +165,7 @@
       "endpointVerified": false,
       "messagingUrl": "https://mandate-provider-yield.onrender.com/mandate/capability",
       "status": "empty",
-      "detail": "responded but returned no text",
+      "detail": "responded without a JSON-RPC result",
       "httpStatus": 405
     },
     {
@@ -179,7 +177,7 @@
       "endpointVerified": false,
       "messagingUrl": "https://mandate-provider-yield.onrender.com/mandate/capability",
       "status": "empty",
-      "detail": "responded but returned no text",
+      "detail": "responded without a JSON-RPC result",
       "httpStatus": 405
     },
     {
@@ -214,8 +212,8 @@
       "registryHealth": "unknown",
       "endpointVerified": false,
       "messagingUrl": "https://holon.lingoai.io/agents/yield/a2a",
-      "status": "delivers",
-      "detail": "{\"status\":\"quoted\",\"price\":\"1000000000000000000\",\"currency\":\"0xce24439f2d9c6a2289f741120fe202248b666666\",\"valid_until\":1790419350,\"provider_address\":\"0x361Ab4dc6eDAE20d04B53e959d9f4a92aDE06445\",\"agent_id\":340456,\"request\":{\"task_description\":\"Capability check from Agent Souk. Reply with one line nam",
+      "status": "gated",
+      "detail": "agent returned a price quote and gates the work behind its own escrow",
       "httpStatus": 200
     },
     {
@@ -239,7 +237,7 @@
       "endpointVerified": false,
       "messagingUrl": "http://hevo-agents.fly.dev/sentinel",
       "status": "empty",
-      "detail": "responded but returned no text",
+      "detail": "responded without a JSON-RPC result",
       "httpStatus": 404
     },
     {
@@ -250,8 +248,8 @@
       "registryHealth": "degraded",
       "endpointVerified": false,
       "messagingUrl": "https://marque.trade/agents/keel/a2a",
-      "status": "delivers",
-      "detail": "{\"kind\":\"task\",\"status\":{\"state\":\"completed\"},\"artifacts\":[{\"parts\":[{\"kind\":\"text\",\"text\":\"{\\\"error\\\":\\\"no BNB Smart Chain address found in the task\\\",\\\"need\\\":\\\"a 0x address to read\\\"}\"}]}]}",
+      "status": "input_required",
+      "detail": "{\"error\":\"no BNB Smart Chain address found in the task\",\"need\":\"a 0x address to read\"}",
       "httpStatus": 200
     }
   ]

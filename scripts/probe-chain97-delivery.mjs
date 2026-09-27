@@ -10,17 +10,40 @@ const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 const TASK =
   "Capability check from Agent Souk. Reply with one line naming what you do and the input you need to do it. No funds are attached to this message.";
 
-function classify(status, body) {
-  if (status === 402) return { status: "gated", detail: "agent gates direct calls behind its own x402 payment" };
-  if (body?.error) return { status: "error", detail: `message/send failed: ${body.error.message}` };
-  const parts = body?.result?.parts ?? [];
-  const text = parts
-    .map((p) => (typeof p.text === "string" ? p.text : ""))
+function collectText(parts) {
+  return (parts ?? [])
+    .map((p) => (typeof p.text === "string" ? p.text : p?.data !== undefined ? JSON.stringify(p.data) : ""))
     .filter(Boolean)
     .join("\n")
     .trim();
-  if (text) return { status: "delivers", detail: text.slice(0, 300) };
-  if (body?.result) return { status: "delivers", detail: JSON.stringify(body.result).slice(0, 300) };
+}
+
+function classify(status, body) {
+  if (status === 402) return { status: "gated", detail: "agent gates direct calls behind its own x402 payment" };
+  if (body?.error) return { status: "error", detail: `message/send failed: ${body.error.message}` };
+  const result = body?.result;
+  if (!result) return { status: "empty", detail: "responded without a JSON-RPC result" };
+
+  // erc-8183 or x402 price quote: negotiation, not a deliverable
+  if (result.status === "quoted" || result.price || result.negotiation_hash) {
+    return { status: "gated", detail: "agent returned a price quote and gates the work behind its own escrow" };
+  }
+
+  // A2A answers arrive either as result.parts or as a task envelope whose
+  // artifacts and message parts carry the text
+  const task = result.task;
+  const artifacts = task?.artifacts ?? result.artifacts ?? [];
+  const messageParts = task?.status?.message?.parts ?? result.parts ?? [];
+  const artifactParts = artifacts.flatMap((a) => a.parts ?? []);
+  const text = [collectText(messageParts), collectText(artifactParts)].filter(Boolean).join("\n").trim();
+
+  if (text) {
+    // a completed task that only asks for more inputs is not a deliverable
+    if (/\b(error|need|requires|missing)\b/i.test(text)) {
+      return { status: "input_required", detail: text.slice(0, 300) };
+    }
+    return { status: "delivers", detail: text.slice(0, 300) };
+  }
   return { status: "empty", detail: "responded but returned no text" };
 }
 

@@ -1,0 +1,133 @@
+{
+  "capturedAt": "2026-09-27T05:52:48.530Z",
+  "chainId": 97,
+  "marketplaceApi": "https://api.agentsouk.xyz",
+  "buyer": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+  "disclosure": "Team verification activity on our own keys. This is the Agent Souk delivery sweep already disclosed as team activity in the tracking document. Volume is deliberately limited to one hire per category.",
+  "funding": {
+    "note": "minted sUSD to the buyer so it can pay the hires",
+    "txHash": "0xc4e60e1f1789b2c69eff19c28c243736485a113d66ffa24664b746458f581155",
+    "explorerUrl": "https://testnet.bscscan.com/tx/0xc4e60e1f1789b2c69eff19c28c243736485a113d66ffa24664b746458f581155"
+  },
+  "categories": {
+    "yield": {
+      "agent": "YieldPilot",
+      "tokenId": "2044",
+      "category": "yield",
+      "registryEndpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/yieldpilot/.well-known/agent-card.json",
+      "messagingUrl": "https://spotriq-production.up.railway.app/v1/reference-agents/yieldpilot/a2a",
+      "task": "Scan the current Venus supply-yield opportunities on BNB Smart Chain for wallet 0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4 and report the current base supply APY per market with the block number observed.",
+      "agentWallet": "0x08a594e828133D18A43918cc804754f46dAF44dB",
+      "tokenSymbol": "Agent Souk Test USD",
+      "settlement": {
+        "source": "marketplace-api",
+        "mode": "prod",
+        "txHash": "0x201818fe26bb7f58a7b175ecb55236bfb34c68579a95292ee03bc2c2360659e0",
+        "explorerUrl": "https://testnet.bscscan.com/tx/0x201818fe26bb7f58a7b175ecb55236bfb34c68579a95292ee03bc2c2360659e0",
+        "paymentId": "hire0aa9e8204b7f"
+      },
+      "delivery": {
+        "httpStatus": 200,
+        "isJsonRpcError": false,
+        "jsonRpcError": null,
+        "deliverable": "{\"capability\":\"yield\",\"action\":\"scan_opportunities\",\"snapshot\":{\"walletAddress\":\"0xe5655abbefbb9e1427174f8dc826880e9d1d4bc4\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425339\",\"observedAt\":\"2026-09-27T05:52:18.795Z\",\"opportunities\":[{\"opportunityId\":\"venus:0x94d1820b2d1c7c7452a163983dc888cec546b77d:0x2e7222e51c0f6e98610a1543aa3836e092cde62c:0xe5655abbefbb9e1427174f8dc826880e9d1d4bc4\",\"protocol\":\"Venus\",\"network\":\"testnet\",\"chainId\":97,\"poolKind\":\"CORE\",\"poolName\":\"Core Pool\",\"comptroller\":\"0x94d1820b2d1c7c7452a163983dc888cec546b77d\",\"vToken\":\"0x2e7222e51c0f6e98610a1543aa3836e092cde62c\",\"underlying\":{\"address\":\"0x0000000000000000000000000000000000000000\",\"symbol\":\"tBNB\",\"name\":\"tBNB\",\"decimals\":18,\"isNative\":true},\"walletBalanceRaw\":\"295511926000000000\",\"walletBalanceFormatted\":\"0.295511926\",\"existingSupplyUnderlyingRaw\":\"0\",\"existingSupplyFormatted\":\"0\",\"currentSupplyRatePerBlockRaw\":\"5024257989\",\"currentSupplyApyPercent\":\"23.44435\",\"currentRateType\":\"CURRENT_PROTOCOL_APY\",\"availableLiquidityRaw\":\"19642295903065008236\",\"blockNumber\":\"133425339\",\"observedAt\":\"2026-09-27T05:52:18.795Z\",\"evidence\":[{\"evidenceId\":\"ev_14f8c8f4-707d-42a1-ac01-f4709a5f1f37\",\"subjectType\":\"wallet\",\"subjectId\":\"0xe5655abbefbb9e1427174f8dc826880e9d1d4bc4\",\"metric\":\"wallet.native_balance\",\"value\":\"295511926000000000\",\"unit\":\"wei\",\"provenance\":\"external\",\"sourceName\":\"BNB Smart Chain JSON-RPC\",\"sourceId\":\"bsc-rpc\",\"truthLayer\":\"CANONICAL_ONCHAIN\",\"sourceRef\":\"https://testnet.bscscan.com/block/133425339\",\"observedAt\":\"2026-09-27T05:52:20.270Z\",\"confidence\":\"high\",\"methodVersion\":\"wallet.native-balance@1.0.0\",\"methodInputs\":[\"0xe5655abbefbb9e1427174f8dc826880e9d1d4bc4\",\"133425339\",\"https://bsc-testnet-dataseed.bnbchain.org\"],\"freshnessAssessment\":{\"metric\":\"wallet.native_balance\",\"targetAgeSeconds\":30,\"warnAgeSeconds\":60,\"hardExpirySeconds\":120,\"ageSeconds\":0,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425339\",\"finality\":\"LATEST\"}},{\"evidenceId\":\"ev_3aac787f-6539-479e-a1ed-45c01c99c188\",\"subjectType\":\"venus-yield-position\",\"subjectId\":\"0x94d1820b2d1c7c7452a163983dc888cec546b77d:0x2e7222e51c0f6e98610a1543aa3836e092cde62c:0xe5655abbefbb9e1427174f8dc826880e9d1d4bc4\",\"metric\":\"yield.position\",\"value\":\"0\",\"unit\":\"underlying-raw\",\"provenance\":\"external\",\"sourceName\":\"Venus Protocol\",\"sourceId\":\"venus\",\"truthLayer\":\"PROTOCOL_STATE\",\"sourceRef\":\"https://testnet.bscscan.com/address/0x2e7222e51c0f6e98610a1543aa3836e092cde62c\",\"observedAt\":\"2026-09-27T05:52:18.795Z\",\"confidence\":\"high\",\"methodVersion\":\"venus.market-position@1.0.0\",\"methodInputs\":[\"vToken.getAccountSnapshot\"],\"freshnessAssessment\":{\"metric\":\"yield.position\",\"targetAgeSeconds\":60,\"warnAgeSeconds\":300,\"hardExpirySeconds\":900,\"ageSeconds\":1,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425339\"}},{\"evidenceId\":\"ev_50c66ff2-0f0e-44d5-b678-9dc1da421098\",\"subjectType\":\"venus-yield-market\",\"subjectId\":\"0x94d1820b2d1c7c7452a163983dc888cec546b77d:0x2e7222e51c0f6e98610a1543aa3836e092cde62c:0xe5655abbefbb9e1427174f8dc826880e9d1d4bc4\",\"metric\":\"yield.current_rate\",\"value\":\"23.44435\",\"unit\":\"percent-apy\",\"provenance\":\"marketplace-derived\",\"sourceName\":\"Spotriq Derived\",\"sourceId\":\"spotriq-derived\",\"truthLayer\":\"MARKETPLACE_DERIVED\",\"observedAt\":\"2026-09-27T05:52:18.795Z\",\"confidence\":\"high\",\"methodVersion\":\"venus.supply-apy@1.0.0\",\"methodInputs\":[\"vToken.supplyRatePerBlock\",\"115200\",\"365\"],\"limitation\":\"Current base Venus supply APY only. It is variable and excludes incentives/Prime rewards, transaction costs, agent fees, taxes, and realised performance.\",\"freshnessAssessment\":{\"metric\":\"yield.current_rate\",\"targetAgeSeconds\":300,\"warnAgeSeconds\":600,\"hardExpirySeconds\":900,\"ageSeconds\":1,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425339\"}}],\"coverage\":{\"walletBalance\":\"AVAILABLE\",\"existingSupply\":\"AVAILABLE\",\"currentRate\":\"AVAILABLE\",\"incentives\":\"NOT_SUPPORTED\",\"estimatedNet\":\"NOT_SUPPORTED\",\"realisedYield\":\"NOT_SUPPORTED\"},\"limitations\":[\"Current base supply APY is variable and can change with market utilization.\",\"Spotriq has not included XVS/Prime incentives, gas, agent fees, tax effects, or realised historical yield in this rate.\",\"A supported market and wallet balance do not establish that supplying the asset is appropriate for the user; risk tolerance and liquidity needs are not inferred.\",\"Supply caps, paused actions, and transaction-time eligibility must be refreshed before any future activation or execution.\"]}],\"coverage\":{\"venusMarkets\":\"AVAILABLE\",\"pancakeSwapYieldContext\":\"NOT_AVAILABLE\",\"failedMarketRefs\":[],\"truncated\":false},\"limitations\":[\"This Yield data path currently uses Venus base supply-rate opportunities for wallet-held or already-supplied assets.\",\"PancakeSwap concentrated-liquidity positions are detected elsewhere, but live fee APR/realised LP yield is not yet calculated because the required historical fee and valuation inputs are not in the current adapter.\"]},\"assessment\":{\"note\":\"Current protocol/base supply rates only. Incentives, gas-adjusted net yield, taxes and realised performance are not fabricated.\"}}\nYieldPilot completed scan_opportunities using deterministic Spotriq protocol readers.",
+        "delivered": true
+      },
+      "quality": {
+        "score": 0.8,
+        "grade": "good",
+        "reason": "completed with 1 artifact part"
+      }
+    },
+    "health-factor": {
+      "agent": "VenusGuard",
+      "tokenId": "2046",
+      "category": "health-factor",
+      "registryEndpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/venusguard/.well-known/agent-card.json",
+      "messagingUrl": "https://spotriq-production.up.railway.app/v1/reference-agents/venusguard/a2a",
+      "task": "Inspect the Venus Core and isolated lending position for wallet 0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4 on BNB Smart Chain and report the account liquidity, any shortfall and the health state.",
+      "agentWallet": "0x08a594e828133D18A43918cc804754f46dAF44dB",
+      "tokenSymbol": "Agent Souk Test USD",
+      "settlement": {
+        "source": "marketplace-api",
+        "mode": "prod",
+        "txHash": "0xb9c541888d92a006b5b4c1757e80bd94f8e65332daa672157d9504b5468bea8d",
+        "explorerUrl": "https://testnet.bscscan.com/tx/0xb9c541888d92a006b5b4c1757e80bd94f8e65332daa672157d9504b5468bea8d",
+        "paymentId": "hiree3362b4f2be8"
+      },
+      "delivery": {
+        "httpStatus": 200,
+        "isJsonRpcError": false,
+        "jsonRpcError": null,
+        "deliverable": "{\"capability\":\"health\",\"action\":\"inspect_health\",\"snapshot\":{\"walletAddress\":\"0xe5655abbefbb9e1427174f8dc826880e9d1d4bc4\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425367\",\"observedAt\":\"2026-09-27T05:52:31.447Z\",\"contracts\":{\"network\":\"testnet\",\"protocolShareReserve\":\"0x25c7c7D6Bf710949fD7f03364E9BA19a1b3c10E3\",\"corePoolComptroller\":\"0x94d1820b2d1c7c7452a163983dc888cec546b77d\",\"poolRegistry\":\"0xc85491616fa949e048f3aac39fbf5b0703800667\",\"vBNB\":\"0x2e7222e51c0f6e98610a1543aa3836e092cde62c\",\"wBNB\":\"0xae13d989dac2f0debff460ac112a837c89baa7cd\"},\"positions\":[],\"coverage\":{\"corePool\":\"AVAILABLE\",\"isolatedPools\":\"AVAILABLE\",\"failedComptrollers\":[]}},\"assessment\":{\"note\":\"Current protocol state with explicit partial-data semantics. No automatic protective transaction is authorized by this read.\"}}\nVenusGuard completed inspect_health using deterministic Spotriq protocol readers.",
+        "delivered": true,
+        "note": "Real Venus protocol read at block 133425367 for our own relay wallet; the wallet carries no borrow, so the health factor is not applicable and positions is empty."
+      },
+      "quality": {
+        "score": 0.8,
+        "grade": "good",
+        "reason": "completed with 1 artifact part"
+      }
+    },
+    "rebalancing": {
+      "agent": "RangeKeeper",
+      "tokenId": "2017",
+      "category": "rebalancing",
+      "registryEndpoint": "https://spotriq-production.up.railway.app/v1/reference-agents/rangekeeper/.well-known/agent-card.json",
+      "messagingUrl": "https://spotriq-production.up.railway.app/v1/reference-agents/rangekeeper/a2a",
+      "task": "Analyse PancakeSwap V3 position 1 on BNB Smart Chain and report the current range state, tick, price and liquidity.",
+      "agentWallet": "0x08a594e828133D18A43918cc804754f46dAF44dB",
+      "tokenSymbol": "Agent Souk Test USD",
+      "settlement": {
+        "source": "marketplace-api",
+        "mode": "prod",
+        "txHash": "0xfc03e36ef73c68d071f302f299a2bf99abf9211cefe6bb4707faa5f09e05313b",
+        "explorerUrl": "https://testnet.bscscan.com/tx/0xfc03e36ef73c68d071f302f299a2bf99abf9211cefe6bb4707faa5f09e05313b",
+        "paymentId": "hire4466bed05985"
+      },
+      "delivery": {
+        "httpStatus": 200,
+        "isJsonRpcError": false,
+        "jsonRpcError": null,
+        "deliverable": "{\"capability\":\"rebalancing\",\"action\":\"analyze_position\",\"position\":{\"protocol\":\"PancakeSwap\",\"version\":\"V3\",\"network\":\"testnet\",\"chainId\":97,\"positionManager\":\"0x427bf5b37357632377ecbec9de3626c71a5396c1\",\"tokenId\":\"1\",\"owner\":\"0x261af0030618a52fa767997ed310174b3bc3b77f\",\"pool\":{\"protocol\":\"PancakeSwap\",\"version\":\"V3\",\"network\":\"testnet\",\"chainId\":97,\"poolAddress\":\"0xd44c8b7f8d1a37b6175a0c2959aed4b961c2f4d3\",\"token0\":{\"address\":\"0x0fb5d7c73fa349a90392f873a4fa1ecf6a3d0a96\",\"isNative\":false,\"decimals\":18,\"symbol\":\"USDT\",\"name\":\"MOCK Token\"},\"token1\":{\"address\":\"0x3304dd20f6fe094cb0134a6c8ae07ece26c7b6a7\",\"isNative\":false,\"decimals\":18,\"symbol\":\"BUSD\",\"name\":\"MOCK Token\"},\"feePips\":500,\"currentLpFeePips\":500,\"tickSpacing\":10,\"currentTick\":-392,\"sqrtPriceX96\":\"77690630262910958973891090696\",\"liquidityRaw\":\"2031161756035739815346061\",\"currentPriceToken0InToken1\":\"0.961563837116\",\"blockNumber\":\"133425386\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"evidence\":[{\"evidenceId\":\"ev_2ccd78d9-0f9d-4559-843d-0c1afd75343b\",\"subjectType\":\"liquidity-position\",\"subjectId\":\"V3:1\",\"metric\":\"pancakeswap.pool.tick\",\"value\":-392,\"unit\":\"tick\",\"provenance\":\"external\",\"sourceName\":\"PancakeSwap\",\"sourceId\":\"pancakeswap\",\"truthLayer\":\"PROTOCOL_STATE\",\"sourceRef\":\"https://testnet.bscscan.com/address/0x427bF5b37357632377eCbEC9de3626C71A5396c1\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"confidence\":\"high\",\"methodVersion\":\"pancakeswap.v3-position@1.0.0\",\"methodInputs\":[\"133425386\"],\"freshnessAssessment\":{\"metric\":\"pancakeswap.pool.tick\",\"targetAgeSeconds\":30,\"warnAgeSeconds\":60,\"hardExpirySeconds\":120,\"ageSeconds\":0,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425386\",\"finality\":\"LATEST\"}},{\"evidenceId\":\"ev_6e47ec8e-5a46-4f62-a72f-e92ae6280d08\",\"subjectType\":\"liquidity-position\",\"subjectId\":\"V3:1\",\"metric\":\"pancakeswap.pool.liquidity\",\"value\":\"2031161756035739815346061\",\"unit\":\"liquidity-raw\",\"provenance\":\"external\",\"sourceName\":\"PancakeSwap\",\"sourceId\":\"pancakeswap\",\"truthLayer\":\"PROTOCOL_STATE\",\"sourceRef\":\"https://testnet.bscscan.com/address/0x427bF5b37357632377eCbEC9de3626C71A5396c1\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"confidence\":\"high\",\"methodVersion\":\"pancakeswap.v3-position@1.0.0\",\"methodInputs\":[\"133425386\"],\"freshnessAssessment\":{\"metric\":\"pancakeswap.pool.liquidity\",\"targetAgeSeconds\":30,\"warnAgeSeconds\":60,\"hardExpirySeconds\":120,\"ageSeconds\":0,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425386\",\"finality\":\"LATEST\"}},{\"evidenceId\":\"ev_79a94cc0-cf69-43c5-8326-8f42c8b7b9c2\",\"subjectType\":\"liquidity-position\",\"subjectId\":\"V3:1\",\"metric\":\"market.current_price\",\"value\":\"0.961563837116\",\"unit\":\"token1-per-token0\",\"provenance\":\"marketplace-derived\",\"sourceName\":\"Spotriq Derived\",\"sourceId\":\"spotriq-derived\",\"truthLayer\":\"MARKETPLACE_DERIVED\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"confidence\":\"high\",\"methodVersion\":\"pancakeswap.cl-sqrt-price@1.0.0\",\"methodInputs\":[\"77690630262910958973891090696\"],\"freshnessAssessment\":{\"metric\":\"market.current_price\",\"targetAgeSeconds\":30,\"warnAgeSeconds\":60,\"hardExpirySeconds\":120,\"ageSeconds\":0,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425386\",\"finality\":\"LATEST\"}}]},\"tickLower\":-400,\"tickUpper\":400,\"liquidityRaw\":\"505041665305649661607\",\"rangeState\":\"NEAR_LOWER\",\"distanceToLowerTicks\":8,\"distanceToUpperTicks\":792,\"recordedTokensOwed0Raw\":\"0\",\"recordedTokensOwed1Raw\":\"0\",\"feeGrowthInside0LastX128\":\"0\",\"feeGrowthInside1LastX128\":\"0\",\"blockNumber\":\"133425386\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"evidence\":[{\"evidenceId\":\"ev_c813f193-c082-472d-906c-b21f1186c163\",\"subjectType\":\"liquidity-position\",\"subjectId\":\"V3:1\",\"metric\":\"liquidity.position\",\"value\":\"505041665305649661607\",\"unit\":\"liquidity-raw\",\"provenance\":\"external\",\"sourceName\":\"PancakeSwap\",\"sourceId\":\"pancakeswap\",\"truthLayer\":\"PROTOCOL_STATE\",\"sourceRef\":\"https://testnet.bscscan.com/address/0x427bF5b37357632377eCbEC9de3626C71A5396c1\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"confidence\":\"high\",\"methodVersion\":\"pancakeswap.v3-position@1.0.0\",\"methodInputs\":[\"0x261af0030618a52fa767997ed310174b3bc3b77f\",\"1\",\"133425386\"],\"freshnessAssessment\":{\"metric\":\"liquidity.position\",\"targetAgeSeconds\":30,\"warnAgeSeconds\":60,\"hardExpirySeconds\":120,\"ageSeconds\":0,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425386\",\"finality\":\"LATEST\"}},{\"evidenceId\":\"ev_2ccd78d9-0f9d-4559-843d-0c1afd75343b\",\"subjectType\":\"liquidity-position\",\"subjectId\":\"V3:1\",\"metric\":\"pancakeswap.pool.tick\",\"value\":-392,\"unit\":\"tick\",\"provenance\":\"external\",\"sourceName\":\"PancakeSwap\",\"sourceId\":\"pancakeswap\",\"truthLayer\":\"PROTOCOL_STATE\",\"sourceRef\":\"https://testnet.bscscan.com/address/0x427bF5b37357632377eCbEC9de3626C71A5396c1\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"confidence\":\"high\",\"methodVersion\":\"pancakeswap.v3-position@1.0.0\",\"methodInputs\":[\"133425386\"],\"freshnessAssessment\":{\"metric\":\"pancakeswap.pool.tick\",\"targetAgeSeconds\":30,\"warnAgeSeconds\":60,\"hardExpirySeconds\":120,\"ageSeconds\":0,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425386\",\"finality\":\"LATEST\"}},{\"evidenceId\":\"ev_6e47ec8e-5a46-4f62-a72f-e92ae6280d08\",\"subjectType\":\"liquidity-position\",\"subjectId\":\"V3:1\",\"metric\":\"pancakeswap.pool.liquidity\",\"value\":\"2031161756035739815346061\",\"unit\":\"liquidity-raw\",\"provenance\":\"external\",\"sourceName\":\"PancakeSwap\",\"sourceId\":\"pancakeswap\",\"truthLayer\":\"PROTOCOL_STATE\",\"sourceRef\":\"https://testnet.bscscan.com/address/0x427bF5b37357632377eCbEC9de3626C71A5396c1\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"confidence\":\"high\",\"methodVersion\":\"pancakeswap.v3-position@1.0.0\",\"methodInputs\":[\"133425386\"],\"freshnessAssessment\":{\"metric\":\"pancakeswap.pool.liquidity\",\"targetAgeSeconds\":30,\"warnAgeSeconds\":60,\"hardExpirySeconds\":120,\"ageSeconds\":0,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425386\",\"finality\":\"LATEST\"}},{\"evidenceId\":\"ev_af3c473f-a166-4cd3-9ed4-a6888bc04214\",\"subjectType\":\"liquidity-position\",\"subjectId\":\"V3:1\",\"metric\":\"liquidity.range_state\",\"value\":\"NEAR_LOWER\",\"provenance\":\"marketplace-derived\",\"sourceName\":\"Spotriq Derived\",\"sourceId\":\"spotriq-derived\",\"truthLayer\":\"MARKETPLACE_DERIVED\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"confidence\":\"high\",\"methodVersion\":\"pancakeswap.cl-range-state@1.0.0\",\"methodInputs\":[\"-392\",\"-400\",\"400\",\"505041665305649661607\",\"10\"],\"freshnessAssessment\":{\"metric\":\"liquidity.range_state\",\"targetAgeSeconds\":30,\"warnAgeSeconds\":60,\"hardExpirySeconds\":120,\"ageSeconds\":0,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425386\",\"finality\":\"LATEST\"}},{\"evidenceId\":\"ev_79a94cc0-cf69-43c5-8326-8f42c8b7b9c2\",\"subjectType\":\"liquidity-position\",\"subjectId\":\"V3:1\",\"metric\":\"market.current_price\",\"value\":\"0.961563837116\",\"unit\":\"token1-per-token0\",\"provenance\":\"marketplace-derived\",\"sourceName\":\"Spotriq Derived\",\"sourceId\":\"spotriq-derived\",\"truthLayer\":\"MARKETPLACE_DERIVED\",\"observedAt\":\"2026-09-27T05:52:40.140Z\",\"confidence\":\"high\",\"methodVersion\":\"pancakeswap.cl-sqrt-price@1.0.0\",\"methodInputs\":[\"77690630262910958973891090696\"],\"freshnessAssessment\":{\"metric\":\"market.current_price\",\"targetAgeSeconds\":30,\"warnAgeSeconds\":60,\"hardExpirySeconds\":120,\"ageSeconds\":0,\"state\":\"FRESH\"},\"availability\":\"AVAILABLE\",\"chainContext\":{\"chain\":\"BSC\",\"network\":\"testnet\",\"chainId\":97,\"blockNumber\":\"133425386\",\"finality\":\"LATEST\"}}],\"coverage\":{\"ownership\":\"AVAILABLE\",\"poolState\":\"AVAILABLE\",\"tokenMetadata\":\"AVAILABLE\",\"fees\":\"RECORDED_ONLY\",\"valuation\":\"NOT_SUPPORTED\"}},\"assessment\":{\"rangeState\":\"NEAR_LOWER\",\"currentTick\":-392,\"tickLower\":-400,\"tickUpper\":400,\"note\":\"Current deterministic position state only. This is not a profit forecast or authority to rebalance.\"}}\nRangeKeeper completed analyze_position using deterministic Spotriq protocol readers.",
+        "delivered": true
+      },
+      "quality": {
+        "score": 0.8,
+        "grade": "good",
+        "reason": "completed with 1 artifact part"
+      }
+    },
+    "grid-trading": {
+      "agent": "Hevo Grid",
+      "tokenId": "2018",
+      "category": "grid-trading",
+      "registryEndpoint": "https://hevo-agents.fly.dev/grid/.well-known/agent-card.json",
+      "messagingUrl": "https://hevo-agents.fly.dev/grid/a2a",
+      "task": "Compute a grid trading plan for BNB/USDT on PancakeSwap between 500 and 700 USDT with 20 levels and 1000 USDT total size, and return the levels and order sizes.",
+      "agentWallet": "0x26dFfA1C42ff523Ee70F208a22424A2aEa4Df928",
+      "tokenSymbol": "Agent Souk Test USD",
+      "settlement": {
+        "source": "marketplace-api",
+        "mode": "prod",
+        "txHash": "0x977f6ac23d8dbecad7e8498131aac9b292b081ab62d52cc7927db4629b8fa346",
+        "explorerUrl": "https://testnet.bscscan.com/tx/0x977f6ac23d8dbecad7e8498131aac9b292b081ab62d52cc7927db4629b8fa346",
+        "paymentId": "hire65e585ba4e70"
+      },
+      "delivery": {
+        "httpStatus": 200,
+        "isJsonRpcError": false,
+        "jsonRpcError": null,
+        "deliverable": "{\"status\":\"quoted\",\"price\":\"10000000000000000000\",\"currency\":\"0xc70B8741B8B07A6d61E54fd4B20f22Fa648E5565\",\"valid_until\":1790489268,\"negotiation_hash\":\"0x6a96d4fab91b3b0b61efb011847e16f71dd53ca5226fbe0dc2dd0a5c9c6202f9\",\"provider_sig\":\"0x7c5d83089ef1a4ba248ff8622f1c4efda2d3de7fa4fd8d72a7781bfe3df76afb043c96e35b84c177bdd59c19ae043bf56a1032c3acf39b6b5e259cfcec8dcc661c\",\"provider_address\":\"0x26dFfA1C42ff523Ee70F208a22424A2aEa4Df928\",\"agent_id\":2018}",
+        "delivered": false,
+        "note": "The reply is an ERC-8183 price quote, not a grid plan. Hevo Grid gates the actual work behind its own escrow, so no grid deliverable is obtainable through an x402 hire."
+      },
+      "quality": {
+        "score": 0,
+        "grade": "poor",
+        "reason": "no artifact or text in the reply"
+      }
+    }
+  },
+  "gridTradingNote": "No chain-97 grid-trading agent returns a grid deliverable over A2A. Grid Runner (2173) exposes only negotiate and notify_funded; Hevo Grid (2018) and LingoAI Grid Trading (1853) return only an ERC-8183 price quote and gate the actual work behind their own escrow."
+}
