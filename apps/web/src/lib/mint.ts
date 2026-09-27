@@ -2,11 +2,13 @@
 
 import { encodeFunctionData, parseUnits } from 'viem'
 import { rpcUrlsFor } from '@agora/core'
+import { SETTLEMENT_ASSET_BY_CHAIN } from './contracts'
 
 export const TEST_CHAIN_ID = 97
 
-// sUSD, our EIP-3009 settlement token on BSC testnet.
-export const SUSD_ADDRESS = '0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53' as const
+// sUSD, our EIP-3009 settlement token on BSC testnet, read from the per-chain
+// table so its address cannot drift from what the hire flow signs against.
+export const SUSD_ADDRESS = SETTLEMENT_ASSET_BY_CHAIN[TEST_CHAIN_ID].address as `0x${string}`
 
 // selector 0x40c10f19, same shape as WETH9's mint
 const SUSD_ABI = [
@@ -103,7 +105,7 @@ export async function readNativeBalance(
   return null
 }
 
-export const SUSD_SYMBOL = 'sUSD'
+export const SUSD_SYMBOL = SETTLEMENT_ASSET_BY_CHAIN[TEST_CHAIN_ID].symbol
 export const SUSD_DECIMALS = 18
 
 /** Ask the connected wallet to display sUSD via EIP-747; false if unsupported or declined. */

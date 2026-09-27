@@ -3,6 +3,7 @@
 
 import { hashTypedData, recoverAddress } from "viem";
 import { TRANSFER_TYPES, rpcUrlsFor } from '@agora/core'
+import { explorerTxBase } from './contracts'
 
 interface Eip1193Provider {
   request(args: { method: string; params?: unknown[] | object }): Promise<unknown>;
@@ -59,19 +60,19 @@ function webRpcUrls(chainId: number): string[] {
 function chainParams(chainId: number) {
   if (chainId === 97) {
     return {
-      chainId: chainIdToHex(97),
+      chainId: chainIdToHex(chainId),
       chainName: "BNB Smart Chain Testnet",
       nativeCurrency: { name: "tBNB", symbol: "tBNB", decimals: 18 },
-      rpcUrls: webRpcUrls(97),
-      blockExplorerUrls: ["https://testnet.bscscan.com"],
+      rpcUrls: webRpcUrls(chainId),
+      blockExplorerUrls: [explorerTxBase(chainId)],
     };
   }
   return {
-    chainId: chainIdToHex(56),
+    chainId: chainIdToHex(chainId),
     chainName: "BNB Smart Chain",
     nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
-    rpcUrls: webRpcUrls(56),
-    blockExplorerUrls: ["https://bscscan.com"],
+    rpcUrls: webRpcUrls(chainId),
+    blockExplorerUrls: [explorerTxBase(chainId)],
   };
 }
 
@@ -238,7 +239,8 @@ function initWalletConnect(): Promise<Eip1193Provider> {
       .then(async ({ EthereumProvider }) => {
         const provider = await EthereumProvider.init({
           projectId,
-          chains: [56],
+          // follow the deployment's target chain, not a fixed mainnet id
+          chains: [targetChainId],
           showQrModal: true,
           metadata: {
             name: "Agent Souk",
