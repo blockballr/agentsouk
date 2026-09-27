@@ -1,7 +1,7 @@
 import type { AgentDetail, AgentSummary, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
-import { setTargetChain } from './wallet'
+import { getActiveAccount, getProvider, setTargetChain } from './wallet'
 
 export interface AgentsQuery {
   category?: string
@@ -358,15 +358,58 @@ export async function revokeSession(paymentId: string, client?: string | null): 
   if (!res.ok || !body?.success) throw new Error(body?.error ?? `revoke ${res.status}`)
 }
 
+export type JobAction = 'complete' | 'reject' | 'claimRefund' | 'submit'
+
+// Must match jobActionMessage in src/lib/jobs.ts. It binds the action to one job
+// and one address so the server cannot be replayed against a different job or action.
+export function jobActionMessage(input: {
+  jobId: string
+  action: JobAction
+  address: string
+  reason?: string
+  deliverable?: string
+}): string {
+  return [
+    'Agent Souk job action',
+    `jobId: ${input.jobId}`,
+    `action: ${input.action}`,
+    `address: ${input.address.toLowerCase()}`,
+    `reason: ${input.reason ?? ''}`,
+    `deliverable: ${input.deliverable ?? ''}`,
+  ].join('\n')
+}
+
 export async function actOnJob(
   jobId: string,
-  action: 'complete' | 'reject' | 'claimRefund' | 'submit',
+  action: JobAction,
   body: { by?: string; reason?: string; deliverable?: string } = {},
 ): Promise<Erc8183Job> {
+  const address = body.by ?? (await getActiveAccount())
+  if (!address) throw new Error('Connect a wallet to act on this job.')
+
+  const message = jobActionMessage({
+    jobId,
+    action,
+    address,
+    reason: body.reason,
+    deliverable: body.deliverable,
+  })
+  const provider = await getProvider()
+  const signature = (await provider.request({
+    method: 'personal_sign',
+    params: [message, address],
+  })) as string
+
   const res = await fetch(`${BASE}/jobs/${jobId}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ action, ...body }),
+    body: JSON.stringify({
+      action,
+      by: address,
+      reason: body.reason,
+      deliverable: body.deliverable,
+      signature,
+    }),
   })
   const payload = await res.json().catch(() => null)
   if (!res.ok || !payload?.job) throw new Error(payload?.error ?? `job ${res.status}`)

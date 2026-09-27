@@ -55,6 +55,26 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+// The exact text a caller signs to drive a job. It binds the action to one job
+// and one address, so a signature cannot be replayed against another job or action.
+// The browser builds the same string in apps/web/src/lib/api.ts; keep them in step.
+export function jobActionMessage(input: {
+  jobId: string;
+  action: string;
+  address: string;
+  reason?: string;
+  deliverable?: string;
+}): string {
+  return [
+    "Agent Souk job action",
+    `jobId: ${input.jobId}`,
+    `action: ${input.action}`,
+    `address: ${input.address.toLowerCase()}`,
+    `reason: ${input.reason ?? ""}`,
+    `deliverable: ${input.deliverable ?? ""}`,
+  ].join("\n");
+}
+
 function push(job: Job, status: JobStatus, by: string, reason?: string): void {
   job.status = status;
   job.updatedAt = nowIso();
@@ -200,9 +220,11 @@ export function submitJob(input: {
   const job = jobs.get(input.jobId);
   if (!job) return undefined;
   if (job.status !== "Funded") return job;
+  // only the provider may submit; the marketplace relay is the one internal caller
+  // that runs after its own delivery, and any other address is refused
   if (input.provider.toLowerCase() !== job.provider.toLowerCase() &&
       input.provider.toLowerCase() !== "marketplace") {
-    // marketplace relay submits on behalf of the provider after delivery
+    return undefined;
   }
   job.deliverable = input.deliverable;
   if (input.taskId) job.taskId = input.taskId;
