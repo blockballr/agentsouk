@@ -188,9 +188,17 @@ export function MarketplacePage() {
         className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-y hairline border-slate-verdant/40 py-3"
       >
         <p className="micro text-newsprint-gray">
-          {chainId === null
-            ? 'Checking the network'
-            : `${chainLabel(chainId)} · chain ${chainId} · hires settle on-chain in ${settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}`}
+          {chainId === null ? (
+            'Checking the network'
+          ) : (
+            <>
+              {chainLabel(chainId)} · chain {chainId} · hires settle on-chain in{' '}
+              {/* normal-case: the micro class uppercases, and the symbol is sUSD not SUSD */}
+              <span className="normal-case">
+                {settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}
+              </span>
+            </>
+          )}
         </p>
         <Link
           to="/about"
