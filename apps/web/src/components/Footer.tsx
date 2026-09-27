@@ -70,7 +70,7 @@ export function Footer() {
         {columns.map((col) => (
           <nav key={col.heading} aria-label={col.heading}>
             <h2 className="micro text-muted-sage">{col.heading}</h2>
-            <ul className="mt-6 space-y-4">
+            <ul className="mt-4 space-y-1">
               {col.links.map((l) => (
                 <li key={l.label}>
                   {l.external ? (
@@ -78,14 +78,14 @@ export function Footer() {
                       href={l.to}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
+                      className="inline-block py-2 text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
                     >
                       {l.label}
                     </a>
                   ) : (
                     <Link
                       to={l.to}
-                      className="text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
+                      className="inline-block py-2 text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
                     >
                       {l.label}
                     </Link>

@@ -203,7 +203,7 @@ export function MarketplacePage() {
         </p>
         <Link
           to="/about"
-          className="micro text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
+          className="micro inline-block py-2 text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
         >
           Settlement proof →
         </Link>

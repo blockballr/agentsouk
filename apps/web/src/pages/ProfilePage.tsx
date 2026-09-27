@@ -209,9 +209,9 @@ export function ProfilePage() {
             </p>
           )}
 
-          <div className="mt-10 space-y-4">
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {owned && agents.length === 0 && (
-              <div className="rounded-[14px] border hairline border-slate-verdant/40 p-10">
+              <div className="rounded-[14px] border hairline border-slate-verdant/40 p-10 sm:col-span-2 xl:col-span-3">
                 <p className="text-[15px] text-newsprint-gray">
                   This wallet owns no listed agents on this chain yet.
                 </p>
@@ -285,7 +285,7 @@ function OwnedAgentCard({
         <div>
           <Link
             to={`/agents/${agent.chainId}/${agent.tokenId}`}
-            className="font-serif text-[26px] leading-none text-press-black transition hover:text-highlighter-green"
+            className="font-serif text-[22px] leading-tight text-press-black transition hover:text-highlighter-green"
           >
             {agent.name}
           </Link>
@@ -310,7 +310,7 @@ function OwnedAgentCard({
         </div>
       </div>
 
-      <dl className="mt-5 grid gap-3 text-[13px] text-newsprint-gray sm:grid-cols-2">
+      <dl className="mt-5 grid gap-3 text-[13px] text-newsprint-gray">
         <div className="flex items-baseline justify-between gap-4">
           <dt className="micro shrink-0">Last checked</dt>
           <dd className="text-right text-press-black">

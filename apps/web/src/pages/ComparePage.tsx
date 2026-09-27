@@ -612,7 +612,7 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`micro transition focus-visible:outline-2 focus-visible:outline-highlighter-green ${
+      className={`micro py-2 transition focus-visible:outline-2 focus-visible:outline-highlighter-green lg:py-0 ${
         active
           ? 'text-press-black underline decoration-highlighter-green decoration-2 underline-offset-8'
           : 'text-newsprint-gray hover:text-press-black'
