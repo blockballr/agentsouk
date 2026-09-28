@@ -23,9 +23,11 @@ export async function GET(
   const verifications = await loadVerifications();
   await hydrateBoostsFromDb();
   const verification = verifications.get(agent.token_id);
-  const skills = agent.a2a_endpoint
-    ? ((await fetchAgentCardSkills(agent.a2a_endpoint, 4000)) ?? undefined)
-    : undefined;
+  const skills =
+    agent.skills ??
+    (agent.a2a_endpoint
+      ? ((await fetchAgentCardSkills(agent.a2a_endpoint, 4000)) ?? undefined)
+      : undefined);
   const data = verification ? { ...agent, verification } : agent;
   const withSkills = skills ? { ...data, skills } : data;
   const withPcs = isPancakeSwapAgent(agent.name, agent.description ?? "")

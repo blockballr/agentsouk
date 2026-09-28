@@ -139,6 +139,28 @@ export interface Verification {
   concurrency?: "parallel-ok" | "single-ok" | "untested";
 }
 
+// What an agent declares about how it is called: the skills on its A2A card, or
+// its MCP tools. Captured at admission so any listing, third-party ones the
+// sweep picks up included, can show what the agent expects without a per-view
+// fetch.
+export interface AgentCardSkill {
+  id?: string;
+  name?: string;
+  description?: string;
+  examples?: string[];
+  inputModes?: string[];
+  inputSchema?: {
+    type?: string;
+    properties?: Record<string, { type?: string; description?: string }>;
+    required?: string[];
+    examples?: Record<string, unknown>[];
+  };
+  outputSchema?: {
+    type?: string;
+    properties?: Record<string, { type?: string; description?: string }>;
+  };
+}
+
 export interface AgentSummary {
   agent_id: string;
   token_id: string;
@@ -167,6 +189,7 @@ export interface AgentSummary {
   categoryScores?: Partial<Record<CategoryKey, number>>;
   verification?: Verification;
   pcs?: boolean;
+  skills?: AgentCardSkill[];
 }
 
 export interface AgentDetail {
@@ -217,4 +240,5 @@ export interface AgentDetail {
   updated_at: string;
   verification?: Verification;
   pcs?: boolean;
+  skills?: AgentCardSkill[];
 }

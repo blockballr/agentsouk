@@ -29,6 +29,16 @@ export interface ReferenceYieldSkill {
   examples: string[];
   inputModes: string[];
   outputModes: string[];
+  inputSchema?: {
+    type: string;
+    properties: Record<string, { type: string; description: string }>;
+    required: string[];
+    examples?: Record<string, unknown>[];
+  };
+  outputSchema?: {
+    type: string;
+    properties: Record<string, { type: string; description: string }>;
+  };
 }
 
 export interface ReferenceYieldCard {
@@ -90,6 +100,26 @@ export function referenceYieldCard(origin: string): ReferenceYieldCard {
         ],
         inputModes: ["text/plain", "application/json"],
         outputModes: ["text/plain", "application/json"],
+        inputSchema: {
+          type: "object",
+          properties: {
+            principalUsd: { type: "number", description: "principal in USD" },
+            grossApyPercent: { type: "number", description: "gross annual rate in percent" },
+            compoundingPerYear: { type: "number", description: "compounding frequency per year, defaults to 12" },
+            feeBps: { type: "number", description: "fee in basis points, defaults to 200" },
+          },
+          required: ["principalUsd", "grossApyPercent"],
+          examples: [{ principalUsd: 10000, grossApyPercent: 12, compoundingPerYear: 12, feeBps: 200 }],
+        },
+        outputSchema: {
+          type: "object",
+          properties: {
+            effectiveAnnualRatePercent: { type: "number", description: "effective annual rate after compounding" },
+            netRatePercent: { type: "number", description: "net rate after the fee" },
+            feeDragPercent: { type: "number", description: "the fee drag in percentage points" },
+            projectedEarningsUsd: { type: "number", description: "projected one year earnings after fees" },
+          },
+        },
       },
     ],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],

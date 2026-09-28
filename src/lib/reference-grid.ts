@@ -32,6 +32,16 @@ export interface GridAgentSkill {
   examples: string[];
   inputModes: string[];
   outputModes: string[];
+  inputSchema?: {
+    type: string;
+    properties: Record<string, { type: string; description: string }>;
+    required: string[];
+    examples?: Record<string, unknown>[];
+  };
+  outputSchema?: {
+    type: string;
+    properties: Record<string, { type: string; description: string }>;
+  };
 }
 
 export interface GridAgentCard {
@@ -93,6 +103,29 @@ export function gridAgentCard(origin: string): GridAgentCard {
         ],
         inputModes: ["text/plain", "application/json"],
         outputModes: ["text/plain", "application/json"],
+        inputSchema: {
+          type: "object",
+          properties: {
+            lowerUsd: { type: "number", description: "lower price of the range in USD" },
+            upperUsd: { type: "number", description: "upper price of the range in USD" },
+            levels: { type: "number", description: "number of price rungs, 2 to 200" },
+            orderSizeUsd: { type: "number", description: "value placed at each rung in USD" },
+            feeBps: { type: "number", description: "optional round trip fee in basis points, defaults to 10" },
+          },
+          required: ["lowerUsd", "upperUsd", "levels", "orderSizeUsd"],
+          examples: [{ lowerUsd: 1000, upperUsd: 2000, levels: 11, orderSizeUsd: 100, feeBps: 10 }],
+        },
+        outputSchema: {
+          type: "object",
+          properties: {
+            spacingUsd: { type: "number", description: "spacing between rungs in USD" },
+            firstRungUsd: { type: "number", description: "price of the first rung" },
+            lastRungUsd: { type: "number", description: "price of the last rung" },
+            committedUsd: { type: "number", description: "value committed across the ladder" },
+            netCaptureUsd: { type: "number", description: "net capture of one completed round trip" },
+            totalNetCaptureUsd: { type: "number", description: "total net capture across a full traversal" },
+          },
+        },
       },
     ],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],

@@ -26,6 +26,16 @@ export interface ReferenceAgentSkill {
   examples: string[];
   inputModes: string[];
   outputModes: string[];
+  inputSchema?: {
+    type: string;
+    properties: Record<string, { type: string; description: string }>;
+    required: string[];
+    examples?: Record<string, unknown>[];
+  };
+  outputSchema?: {
+    type: string;
+    properties: Record<string, { type: string; description: string }>;
+  };
 }
 
 export interface ReferenceAgentCard {
@@ -87,6 +97,31 @@ export function referenceAgentCard(origin: string): ReferenceAgentCard {
         ],
         inputModes: ["text/plain", "application/json"],
         outputModes: ["text/plain", "application/json"],
+        inputSchema: {
+          type: "object",
+          properties: {
+            valueAUsd: { type: "number", description: "value of asset A in USD" },
+            valueBUsd: { type: "number", description: "value of asset B in USD" },
+            targetAPercent: { type: "number", description: "target share of asset A, a percentage from 0 to 100" },
+            thresholdPercent: { type: "number", description: "optional drift threshold in percentage points, defaults to 5" },
+            symbolA: { type: "string", description: "optional label for asset A" },
+            symbolB: { type: "string", description: "optional label for asset B" },
+          },
+          required: ["valueAUsd", "valueBUsd", "targetAPercent"],
+          examples: [{ valueAUsd: 700, valueBUsd: 300, targetAPercent: 50, thresholdPercent: 5, symbolA: "BNB", symbolB: "USDT" }],
+        },
+        outputSchema: {
+          type: "object",
+          properties: {
+            totalUsd: { type: "number", description: "portfolio total in USD" },
+            currentAPercent: { type: "number", description: "current weight of asset A" },
+            driftAPercent: { type: "number", description: "drift of asset A in percentage points" },
+            rebalanceWarranted: { type: "boolean", description: "whether a drift exceeds the threshold" },
+            valueToMoveUsd: { type: "number", description: "USD value to move when a rebalance is warranted" },
+            fromSymbol: { type: "string", description: "asset to move value from" },
+            toSymbol: { type: "string", description: "asset to move value to" },
+          },
+        },
       },
     ],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],

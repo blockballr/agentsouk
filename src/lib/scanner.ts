@@ -12,6 +12,7 @@ import {
 import { classifyAgent, relevanceScore } from "./categories";
 import { isPancakeSwapAgent } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
+import { captureAgentSkills } from "./agent-interface";
 import type { RegistrationDraft } from "@agora/core";
 import {
   AgentRemovedError,
@@ -668,9 +669,11 @@ export async function admitConfirmedAgent(
   if (!isShelfReady(summary)) {
     return { admitted: false, reason: shelfRefusalReason(summary) };
   }
+  const skills = await captureAgentSkills(summary).catch(() => null);
+  const entry = skills ? { ...summary, skills } : summary;
   await loadSnapshot();
-  index.agents.set(indexKey(summary.chain_id, summary.token_id), summary);
-  await saveShelfAgents([summary]);
+  index.agents.set(indexKey(entry.chain_id, entry.token_id), entry);
+  await saveShelfAgents([entry]);
   return { admitted: true };
 }
 
@@ -721,6 +724,11 @@ export interface RefreshReport {
   upstreamTotal: number | null;
   error: string | null;
 }
+
+// How many newly admitted agents to inspect for their declared interface per top
+// up. A card fetch or MCP handshake per agent is fine for a handful, but doing it
+// for a whole page would stall the pull behind dead endpoints.
+const CAPTURE_PER_TOPUP = 6;
 
 // Reads through to 8004scan because the committed snapshot is frozen at deploy
 // time; a failed pull leaves the snapshot untouched rather than emptying the shelf.
@@ -780,6 +788,18 @@ export async function refreshIndexFromLive(
     // persist the admitted entries so the whole fleet, and the next process,
     // sees what this pull learned
     await saveShelfAgents(admitted);
+    // capture what each newly admitted agent declares about how it is called,
+    // bounded and best effort, so the shelf carries it without a per-view fetch
+    const toCapture = admitted
+      .filter((s) => !index.agents.get(indexKey(s.chain_id, s.token_id))?.skills)
+      .slice(0, CAPTURE_PER_TOPUP);
+    for (const s of toCapture) {
+      const skills = await captureAgentSkills(s).catch(() => null);
+      if (!skills) continue;
+      const entry = { ...s, skills };
+      index.agents.set(indexKey(s.chain_id, s.token_id), entry);
+      await saveShelfAgents([entry]);
+    }
     // the registry total this pull observed is shared too, so the denominator is
     // the same on an instance that just topped up and one that never did
     await observeRegistryTotal(chainId, observedTotal);
