@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { queryAgents } from "@/lib/scanner";
 import { targetChainId } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
+import { loadStaleTokens } from "@/lib/verifications-store";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,11 @@ export async function GET(req: NextRequest) {
   // route does; without it a lister cannot see whether the endpoint answered or
   // when it was last checked
   const verifications = await loadVerifications();
+  // since when each token has been failing, so the owner's page can show the
+  // maintenance countdown before the seven day delist
+  const staleByToken = new Map(
+    (await loadStaleTokens(0)).map((t) => [t.tokenId, t.failingSince]),
+  );
   const agents = catalogue.items
     .filter((a) => sameAddr(a.owner_address, owner))
     .map((a) => ({
@@ -40,6 +46,7 @@ export async function GET(req: NextRequest) {
       healthScore: a.health_score,
       createdAt: a.created_at,
       verification: verifications.get(a.token_id) ?? null,
+      failingSince: staleByToken.get(a.token_id) ?? null,
     }));
   const categories: Record<string, number> = {};
   for (const a of agents) {
