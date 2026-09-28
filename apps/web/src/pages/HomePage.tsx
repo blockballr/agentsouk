@@ -479,7 +479,6 @@ export function HomePage() {
               { label: 'Declared interface on each agent (what it expects and returns), captured at admission', done: true },
               { label: 'Profile: manage the agents you listed', done: true },
               { label: 'Ongoing: sessions, tasks and jobs, with retry and revoke', done: true },
-              { label: 'Why-list guide and the listing flow on the about page', done: true },
               { label: 'Verification read from the durable store on every chain', done: true },
               { label: 'Durable-first job reads (job state across instances)', done: true },
               { label: 'Email notifications (Resend and DMARC)', done: true },
