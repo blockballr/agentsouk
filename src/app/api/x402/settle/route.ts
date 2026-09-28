@@ -3,13 +3,13 @@ import { settleSandbox, settleProd } from "@/lib/facilitator";
 import { resolveFacilitatorMode } from "@/lib/facilitator-mode";
 import { SettleRequest } from "@/lib/x402";
 import { createHireTask } from "@/lib/tasks";
-import { fundJob } from "@/lib/jobs";
+import { fundJob, persistJob } from "@/lib/jobs";
 
 export const dynamic = "force-dynamic";
 
 const DEFAULT_BUDGET_USD = 2;
 
-function afterSettlement(
+async function afterSettlement(
   result: {
     success: boolean;
     paymentId?: string;
@@ -29,16 +29,21 @@ function afterSettlement(
     tokenId: agent.tokenId,
     agentName: agent.name,
   });
-  const job = fundJob({
-    paymentId: result.paymentId,
-    client,
-    provider,
-    description: `Hire ${agent.name}`,
-    chainId: agent.chainId,
-    tokenId: agent.tokenId,
-    agentName: agent.name,
-    budgetUsd,
-  });
+  // The fund leg is the point of this request, so its durable write is awaited
+  // like submit and complete: a floating write lets a later deliver on another
+  // instance miss the job it was just told exists.
+  const job = await persistJob(
+    fundJob({
+      paymentId: result.paymentId,
+      client,
+      provider,
+      description: `Hire ${agent.name}`,
+      chainId: agent.chainId,
+      tokenId: agent.tokenId,
+      agentName: agent.name,
+      budgetUsd,
+    }),
+  );
   return { ...result, taskId: task.id, jobId: job.id, jobStatus: job.status };
 }
 
@@ -82,13 +87,13 @@ export async function POST(req: NextRequest) {
           symbol: agent.symbol ?? "USDC",
         },
       });
-      const wrapped = afterSettlement(result, agent, body, budgetUsd);
+      const wrapped = await afterSettlement(result, agent, body, budgetUsd);
       return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
     }
 
     case "b402": {
       const result = await settleB402(body, agent);
-      const wrapped = afterSettlement(result, agent, body, budgetUsd);
+      const wrapped = await afterSettlement(result, agent, body, budgetUsd);
       return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
     }
 
@@ -101,7 +106,7 @@ export async function POST(req: NextRequest) {
           symbol: agent.symbol ?? "USDC",
         },
       });
-      const wrapped = afterSettlement(result, agent, body, budgetUsd);
+      const wrapped = await afterSettlement(result, agent, body, budgetUsd);
       return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
     }
   }
