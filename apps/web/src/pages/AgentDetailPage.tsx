@@ -179,6 +179,13 @@ export function AgentDetailPage() {
   // the viewer's live hire for this agent, found through the receipts store rather
   // than the instance's own ledger
   const [durableHire, setDurableHire] = useState<{ paymentId: string } | null>(null)
+  // the last run's deliverable and job, lifted out of the sidebar so the result
+  // renders full width in the main column instead of inside the narrow hire form
+  const [runResult, setRunResult] = useState<{
+    output: string | null
+    job: { id: string; status: JobStatus } | null
+    task: HireTask | null
+  } | null>(null)
 
   useEffect(() => {
     void getActiveAccount().then(setViewer)
@@ -507,6 +514,10 @@ export function AgentDetailPage() {
               </dl>
             </div>
           )}
+
+          {runResult && (runResult.output || runResult.task || runResult.job) && (
+            <ResultPanel result={runResult} />
+          )}
         </div>
 
         <aside className="h-fit rounded-[14px] border hairline border-slate-verdant/40 p-8 lg:sticky lg:top-8">
@@ -547,7 +558,7 @@ export function AgentDetailPage() {
               bought, so offering the hire again invites paying twice for it. */}
           {mySession ? (
             <div className="mt-6">
-              <DeliveryPanel paymentId={mySession.paymentId} />
+              <DeliveryPanel paymentId={mySession.paymentId} onResult={setRunResult} />
             </div>
           ) : (
             <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
@@ -1120,7 +1131,13 @@ interface JobAdvance {
   note?: string
 }
 
-function DeliveryPanel({ paymentId }: { paymentId: string }) {
+function DeliveryPanel({
+  paymentId,
+  onResult,
+}: {
+  paymentId: string
+  onResult?: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
+}) {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'blocked'>('idle')
   const [data, setData] = useState<DeliverData | null>(null)
   const [blocked, setBlocked] = useState<string | null>(null)
@@ -1138,6 +1155,11 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
   const [completing, setCompleting] = useState(false)
   const [completeError, setCompleteError] = useState<string | null>(null)
   const [completeNote, setCompleteNote] = useState<string | null>(null)
+
+  // hand the deliverable and job up so the page renders them full width
+  useEffect(() => {
+    onResult?.({ output, job: job ? { id: job.id, status: job.status } : null, task: hireTask })
+  }, [output, job, hireTask, onResult])
 
   async function loadCapabilities() {
     setPhase('loading')
@@ -1429,10 +1451,41 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
         </p>
       )}
 
-      {output && (
+      {!onResult && output && (
         <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-[8px] border hairline border-slate-verdant/40 bg-bone-white p-3 font-mono text-[11px] leading-relaxed text-press-black">
           {output}
         </pre>
+      )}
+    </div>
+  )
+}
+
+function ResultPanel({
+  result,
+}: {
+  result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }
+}) {
+  const { output, job, task } = result
+  return (
+    <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="micro text-newsprint-gray">Result</h2>
+        <div className="flex flex-wrap items-center gap-4 text-[11px] text-newsprint-gray">
+          {task && <span>task {task.status}</span>}
+          {task?.quality && (
+            <span>
+              quality {task.quality.grade} ({task.quality.score})
+            </span>
+          )}
+          {job && <span>job {job.status}</span>}
+        </div>
+      </div>
+      {output ? (
+        <pre className="mt-4 max-h-[420px] overflow-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-xs leading-relaxed text-press-black">
+          {output}
+        </pre>
+      ) : (
+        <p className="mt-4 text-sm text-newsprint-gray">No deliverable yet.</p>
       )}
     </div>
   )
