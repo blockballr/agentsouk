@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import {
   waitForTransactionReceipt,
+  withSendTimeout,
   type TransactionReceipt,
 } from "../apps/web/src/lib/register";
 
@@ -43,6 +44,22 @@ describe("waiting for a transaction receipt", () => {
       readTimeoutMs: 20,
     });
     expect(out).toBeNull();
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it("a hanging send rejects in time with the latch and hash untouched, so the wizard can retry", async () => {
+    let latched = false;
+    let txHash: string | null = null;
+    const started = Date.now();
+    const err = await withSendTimeout(hang(), 30).then(
+      () => null,
+      (e) => e as Error,
+    );
+    expect(err).not.toBeNull();
+    expect(err.message).toContain("did not answer");
+    expect(err.message).toContain("Nothing was sent");
+    expect(latched).toBe(false);
+    expect(txHash).toBeNull();
     expect(Date.now() - started).toBeLessThan(2000);
   });
 });

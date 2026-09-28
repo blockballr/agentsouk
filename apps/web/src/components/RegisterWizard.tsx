@@ -11,6 +11,7 @@ import {
   probeEndpoint,
   tokenIdFromReceipt,
   waitForTransactionReceipt,
+  withSendTimeout,
   type ConfirmResult,
   type EndpointProbe,
   type PrepareResult,
@@ -300,16 +301,18 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
       const account =
         (await getActiveAccount()) ?? (await withWalletTimeout(connectWallet()))
       // sent from the participant's own wallet, so the registry records them as owner
-      hash = (await provider.request({
-        method: 'eth_sendTransaction',
-        params: [
-          {
-            from: account,
-            to: target.registryAddress,
-            data: target.registerCalldata,
-          },
-        ],
-      })) as `0x${string}`
+      hash = (await withSendTimeout(
+        provider.request({
+          method: 'eth_sendTransaction',
+          params: [
+            {
+              from: account,
+              to: target.registryAddress,
+              data: target.registerCalldata,
+            },
+          ],
+        }) as Promise<`0x${string}`>,
+      )) as `0x${string}`
     } catch (e) {
       const err = e as Error & { code?: number }
       // the timeout's own sentence is the useful one, because it says what to do

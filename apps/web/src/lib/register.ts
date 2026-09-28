@@ -91,6 +91,31 @@ export const RECEIPT_POLL_MS = 2_500
 // allowed to hang the whole wait past its budget.
 export const POLL_READ_TIMEOUT_MS = 15_000
 
+// 120s fits a human finding the phone and confirming where 25s would cut them off, without letting a dead provider wedge the wizard for minutes.
+export const SEND_TIMEOUT_MS = 120_000
+
+export function withSendTimeout<T>(work: Promise<T>, timeoutMs: number = SEND_TIMEOUT_MS): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(
+        new Error(
+          'Your wallet did not answer in time. Nothing was sent. Press the button below to try again.',
+        ),
+      )
+    }, timeoutMs)
+    work.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
 function withPollTimeout<T>(work: Promise<T>, timeoutMs: number): Promise<T | null> {
   return new Promise<T | null>((resolve) => {
     const timer = setTimeout(() => resolve(null), timeoutMs)
