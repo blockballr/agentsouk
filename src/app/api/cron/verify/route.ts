@@ -28,8 +28,15 @@ function baseUrl(): string {
     : process.env.BASE_URL ?? "http://localhost:3000";
 }
 
-const startedAt = Date.now();
-const outOfTime = () => Date.now() - startedAt > BUDGET_MS;
+// Per-invocation sweep clock: module state survives on warm instances, so a
+// module-level start time reads stale and the budget check exits early.
+export function sweepBudget() {
+  const startedAt = Date.now();
+  return {
+    startedAt,
+    outOfTime: () => Date.now() - startedAt > BUDGET_MS,
+  };
+}
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
@@ -223,6 +230,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const { startedAt, outOfTime } = sweepBudget();
     const snapshotRes = await fetchJson(`${baseUrl()}/api/agents?limit=200`, {}, 45000);
     const agents = (snapshotRes.body?.items ?? []) as { token_id: number; name: string; category?: string; chain_id?: number }[];
     const candidates = agents
