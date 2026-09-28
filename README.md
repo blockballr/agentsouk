@@ -6,7 +6,7 @@ Network: BSC Testnet (chain 97), settling in sUSD, a standard EIP-3009 token we 
 
 Agent Souk is an AI agent marketplace built for the BNB Chain hackathon "The Smart Money Era: Build the Era" (main track). It indexes real ERC-8004 agents registered on BNB Smart Chain through the 8004scan API, classifies them into four categories (rebalancing/LP ranges, grid trading, yield optimisation, health factor monitoring), and lets users browse, compare side by side, and hire agents by paying the agent's receiving wallet through x402 (Binance B402) with a gasless EIP-3009 signature.
 
-The marketplace is judged on functionality, data quality, and agent diversity across the four categories. Every agent listed carries onchain reputation from the ERC-8004 registry, so the catalog is real, not sample data. The chain-97 catalogue holds 21 real BSC agents after the Registry Scout curation pass; the untouched chain-56 base holds 172. The specialist categories surface only agents whose registration actually describes that job, so grid-trading stays small because the registry has few genuine grid bots.
+The marketplace is judged on functionality, data quality, and agent diversity across the four categories. Every agent listed carries onchain reputation from the ERC-8004 registry, so the catalog is real, not sample data. The chain-97 catalogue holds 25 agents after the Registry Scout curation pass (21 third-party plus four first-party reference agents); the untouched chain-56 base holds 172. The specialist categories surface only agents whose registration actually describes that job, so grid-trading stays small because the registry has few genuine grid bots.
 
 ## Features
 
@@ -14,10 +14,10 @@ The marketplace is judged on functionality, data quality, and agent diversity ac
 - Keyword classification into the four hackathon categories plus a general bucket, with per-category confidence scores, applied at ingest inside the scanner.
 - Browse, filter, search, and sort across the catalog on the /agents page.
 - Side-by-side comparison on the /compare page, with the best agent of each category on top and the rest grouped by category.
-- x402 hire flow with a gasless EIP-3009 signature and a sandbox, prod, or b402 settlement mode.
+- x402 hire flow with a gasless EIP-3009 signature and prod or b402 settlement.
 - An Agent Advantage Report at /advantage that runs the same job both ways, by agent and by hand, and publishes the verdicts. The full TermiX report is in docs/termix-advantage-report.md.
 - Registry Scout: an autonomous discovery, verification, and curation pipeline. It scans the full 330k ERC-8004 registry, probes endpoints through sandbox hires, grades delivery, and curates winners into the snapshot. API under /api/scout, console at /scout in local dev builds only.
-- Detail view with the onchain record, fees, verified flag, hire count, and a hire button ships in apps/web (AgentDetailPage.tsx); the Next.js app does not route it yet.
+- Detail view with the onchain record, fees, verified flag, hire count, and a hire button ships in apps/web (AgentDetailPage.tsx).
 
 ## Use from an agent
 
@@ -75,7 +75,7 @@ Create a .env.local file at the project root. The variables below configure the 
 | Variable | Purpose |
 | --- | --- |
 | EIGHT004_API_KEY | 8004scan Pro tier key, free for hackathon use. Raises the rate limit from 10 requests per minute to 500. |
-| FACILITATOR_MODE | sandbox (default), prod, or b402. |
+| FACILITATOR_MODE | prod, b402, or sandbox (local dev only). |
 | RELAY_PRIVATE_KEY | Required when FACILITATOR_MODE is prod. Pays gas to broadcast the buyer's authorization on BNB Chain. |
 | B402_CLIENT_ID | Required when FACILITATOR_MODE is b402. |
 | B402_ACCESS_TOKEN | Required when FACILITATOR_MODE is b402. |
@@ -114,8 +114,8 @@ A mainnet settlement test runs with node scripts/prod-settle-test.mjs. It requir
 - The catalogue's first paint is the committed snapshot for the configured chain (data/agents-97.json on chain 97, data/agents.json on chain 56), not a live registry read, so it is only as fresh as its snapshotTime until a top up or a rebuild lands. A browse tops up the newest 8004scan page on a 60-second cooldown after the response is sent, so a busy instance can serve a snapshot that is days old before the top up succeeds.
 - The snapshot build route writes to the process filesystem (path.join(process.cwd(), "data", ...)). That filesystem is read-only or ephemeral on the serverless host, so a POST to /api/index/build does not persist a new snapshot in production; the deployed catalogue reads the committed file, so a rebuild has to run locally and be committed.
 - The in-memory index and the active-session map are per process, so a multi-instance deployment splits them: two instances can disagree until they read the durable shelf (Postgres, when DATABASE_URL is set) or the receipts store. Without DATABASE_URL the shelf and the ledger are per process only.
-- Grid trading is intentionally thin (3 of the 21 agents in the chain-97 snapshot; 13 in the chain-56 snapshot) because the registry has few genuine grid bots; the builder backfills only with agents whose registration carries a real signal, and the UI reports the count honestly.
-- FACILITATOR_MODE defaults to sandbox settlement, which verifies the signature and records a receipt without moving funds. Set it to prod to settle on the configured BNB chain (RELAY_PRIVATE_KEY pays gas), or b402 to route through the Binance production endpoint with B402_CLIENT_ID and B402_ACCESS_TOKEN.
+- Grid trading is intentionally thin (4 of the 25 agents in the chain-97 snapshot; 13 in the chain-56 snapshot) because the registry has few genuine grid bots; the builder backfills only with agents whose registration carries a real signal, and the UI reports the count honestly.
+- FACILITATOR_MODE selects settlement. prod broadcasts the buyer's authorization on-chain (RELAY_PRIVATE_KEY pays gas) and is what production runs; b402 routes through the Binance production endpoint with B402_CLIENT_ID and B402_ACCESS_TOKEN; sandbox verifies the signature and records a receipt without moving funds, for local dev only.
 - The x402 ledger in src/lib/x402.ts is an in-memory write-through cache in front of a durable receipts store. Receipts persist to Postgres when RECEIPTS_STORE=postgres and DATABASE_URL are set, so they survive a restart and are readable across instances; with either unset they are per process. Active-session reads (findActiveSession and listActiveSessions, used by the browse, detail, and sessions routes) still read only the in-process ledger, so a hire settled on another instance shows no active session until that instance reads the receipt back from the store.
 - Hiring supports standard (EOA) wallets only. Smart-account wallets (ERC-4337, e.g. Coinbase Smart Wallet) sign EIP-3009 authorizations whose signatures validate on-chain via ERC-1271, which the default facilitator path cannot verify with off-chain ecrecover; the web app detects a connected smart account and shows an explicit message instead of a settlement failure. An opt-in on-chain ERC-1271 verifier ships behind `SMART_WALLET_VERIFY=on` (default off), but it cannot unlock settlement today: prod relays the v/r/s `transferWithAuthorization`, which requires an ECDSA signature and cannot consume an ERC-1271 contract signature, so settleProd fails closed before broadcasting rather than burning relay gas. Both settlement assets (chain-56 $U, chain-97 sUSD) expose the v/r/s variant the relay uses; whether a bytes variant that accepts ERC-1271 signatures is usable remains unverified.
 
@@ -136,16 +136,16 @@ The project also aligns with the partner track: Altana sessions (own-wallet paym
 | src/app/api/index/build/route.ts | Snapshot builder that writes the per-chain snapshot file (data/agents-97.json on chain 97, data/agents.json on chain 56). |
 | src/lib/x402.ts | Shared x402 types, EIP-3009 typed data, in-memory ledger. |
 | src/lib/facilitator.ts | Signature verification with viem plus sandbox, prod, and b402 settlement. |
-| apps/web/src/pages/AgentDetailPage.tsx | Agent detail view (Vite app; not yet routed in the Next.js app). |
+| apps/web/src/pages/AgentDetailPage.tsx | Agent detail view (Vite app, routed at /agents/:chainId/:tokenId). |
 | scripts/settle-test.mjs | End-to-end x402 settlement test against the sandbox facilitator. |
 | scripts/prod-settle-test.mjs | End-to-end x402 settlement test against BNB Chain mainnet (prod mode). |
 | docs/termix-advantage-report.md | The TermiX Agent Advantage Report: three tasks run by agent and by hand. |
-| data/agents.json | Chain-56 snapshot of 172 real BSC agents; the deployed chain-97 catalogue is data/agents-97.json (21 agents). |
+| data/agents.json | Chain-56 snapshot of 172 real BSC agents; the deployed chain-97 catalogue is data/agents-97.json (25 agents). |
 ## Deployment
 
-Two surfaces are served from this repository.
+Two surfaces are served from this repository. The most updated branch is deployed to build out the pipeline; main is the version at the deadline.
 
-- The API is the Next.js app on Vercel, project agora, aliased to api.agentsouk.xyz. The project is connected to this repository, so a push to main builds and deploys production.
+- The API is the Next.js app on Vercel, project agora, aliased to api.agentsouk.xyz.
 - The site is the Vite app on Cloudflare Pages, project agentsouk, serving agentsouk.xyz. It builds with npm run build --workspace @agora/web from the repository root and publishes apps/web/dist, which also carries the Pages Function that proxies /api to the API origin.
 
 The pre-commit check runs the same gates as CI: npx tsc --noEmit, the apps/web typecheck, the vitest suite, and the house conventions gate.
