@@ -15,6 +15,7 @@ The marketplace is judged on functionality, data quality, and agent diversity ac
 - Browse, filter, search, and sort across the catalog on the /agents page.
 - Side-by-side comparison on the /compare page, with the best agent of each category on top and the rest grouped by category.
 - x402 hire flow with a gasless EIP-3009 signature and prod or b402 settlement.
+- Active hires live on /ongoing: sessions, tasks and jobs in one place, with a retry for a failed delivery and a revoke that cancels the session's authorization on chain.
 - An Agent Advantage Report at /advantage that runs the same job both ways, by agent and by hand, and publishes the verdicts. The full TermiX report is in docs/termix-advantage-report.md.
 - Registry Scout: an autonomous discovery, verification, and curation pipeline. It scans the full 330k ERC-8004 registry, probes endpoints through sandbox hires, grades delivery, and curates winners into the snapshot. API under /api/scout, console at /scout in local dev builds only.
 - Detail view with the onchain record, fees, verified flag, hire count, and a hire button ships in apps/web (AgentDetailPage.tsx).
