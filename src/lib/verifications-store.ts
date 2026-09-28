@@ -126,3 +126,68 @@ export async function loadVerificationsFromDb(): Promise<Map<string, RecordedVer
   }
   return byToken;
 }
+
+export interface SweepQueueEntry {
+  tokenId: string;
+  name: string;
+  category: string;
+}
+
+// Fresh listings jump the sweep queue so a new badge reflects a real probe within
+// a sweep or two instead of waiting for a scheduled pass to notice the token.
+// The table is tiny by design: one row per token, drained oldest-first with a
+// per-run cap at the call site, so a listing flood cannot spend the relay dry.
+export async function enqueueSweep(tokenId: string, name: string, category: string): Promise<boolean> {
+  if (!(await ensureTable()) || !sql) return false;
+  try {
+    await sql`
+      create table if not exists sweep_queue (
+        token_id text primary key,
+        name text not null default '',
+        category text not null default '',
+        created_at timestamptz not null default now()
+      )
+    `;
+    await sql`
+      insert into sweep_queue (token_id, name, category)
+      values (${tokenId}, ${name}, ${category})
+      on conflict (token_id) do nothing
+    `;
+    return true;
+  } catch (e) {
+    console.error("[verifications] sweep enqueue failed", tokenId, (e as Error).message);
+    return false;
+  }
+}
+
+export async function takeSweepQueue(limit: number): Promise<SweepQueueEntry[]> {
+  const capped = Math.max(1, Math.min(25, Math.floor(limit) || 1));
+  if (!(await ensureTable()) || !sql) return [];
+  try {
+    const rows = (await sql`
+      delete from sweep_queue
+      where token_id in (
+        select token_id from sweep_queue order by created_at asc limit ${capped}
+      )
+      returning token_id, name, category
+    `) as { token_id: string; name: string; category: string }[];
+    return rows.map((r) => ({ tokenId: r.token_id, name: r.name, category: r.category }));
+  } catch (e) {
+    console.error("[verifications] sweep dequeue failed", (e as Error).message);
+    return [];
+  }
+}
+
+// Tokens that already hold a verification row, so selection can prefer the ones
+// still waiting on their first probe. Best effort: an empty set simply keeps the
+// old score-ranked order instead of failing the sweep.
+export async function loadVerifiedTokenIds(): Promise<Set<string>> {
+  if (!(await ensureTable()) || !sql) return new Set();
+  try {
+    const rows = (await sql`select token_id from verifications`) as { token_id: string }[];
+    return new Set(rows.map((r) => String(r.token_id)));
+  } catch (e) {
+    console.error("[verifications] verified ids read failed", (e as Error).message);
+    return new Set();
+  }
+}

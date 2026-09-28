@@ -211,6 +211,46 @@ async function classify(cand: { chainId: number; tokenId: string; name: string; 
   return { status: "dead" as const, detail: "a2a send not ok" };
 }
 
+export interface SweepCandidate {
+  chainId: number;
+  tokenId: string;
+  name: string;
+  category: string;
+}
+
+// Queued fresh listings lead, then tokens still waiting on their first probe,
+// then the score-ranked fill. Each token appears once and the total never
+// exceeds the limit, so a new listing is swept within a run or two while the
+// per-run spend stays bounded.
+export function mergeSweepCandidates(
+  queued: { tokenId: string; name: string; category: string }[],
+  agents: { token_id: number; name: string; category?: string; chain_id?: number }[],
+  chainId: number,
+  limit: number,
+  verifiedIds: Set<string> = new Set(),
+): SweepCandidate[] {
+  const queuedIds = new Set(queued.map((q) => q.tokenId));
+  const rest = agents.filter((a) => (a.chain_id ?? chainId) === chainId && !queuedIds.has(String(a.token_id)));
+  const fill = [...rest]
+    .sort((a, b) => {
+      const fa = verifiedIds.has(String(a.token_id)) ? 1 : 0;
+      const fb = verifiedIds.has(String(b.token_id)) ? 1 : 0;
+      if (fa !== fb) return fa - fb;
+      return (b as any).average_score ?? 0 - ((a as any).average_score ?? 0);
+    })
+    .slice(0, Math.max(0, limit - queued.length))
+    .map((a) => ({
+      chainId,
+      tokenId: String(a.token_id),
+      name: a.name,
+      category: a.category ?? "general",
+    }));
+  return [
+    ...queued.map((q) => ({ chainId, tokenId: q.tokenId, name: q.name, category: q.category })),
+    ...fill,
+  ];
+}
+
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
@@ -231,18 +271,14 @@ export async function GET(req: NextRequest) {
 
   try {
     const { startedAt, outOfTime } = sweepBudget();
+    // Fresh listings go first, capped per run so a listing flood cannot spend the
+    // relay dry: at most three priority hires plus the score-ranked fill below.
+    const { takeSweepQueue, loadVerifiedTokenIds } = await import("@/lib/verifications-store");
+    const queued = await takeSweepQueue(3);
+    const verifiedIds = await loadVerifiedTokenIds();
     const snapshotRes = await fetchJson(`${baseUrl()}/api/agents?limit=200`, {}, 45000);
     const agents = (snapshotRes.body?.items ?? []) as { token_id: number; name: string; category?: string; chain_id?: number }[];
-    const candidates = agents
-      .filter((a) => (a.chain_id ?? CHAIN_ID) === CHAIN_ID)
-      .sort((a, b) => (b as any).average_score ?? 0 - ((a as any).average_score ?? 0))
-      .slice(0, VERIFY_LIMIT)
-      .map((a) => ({
-        chainId: CHAIN_ID,
-        tokenId: String(a.token_id),
-        name: a.name,
-        category: a.category ?? "general",
-      }));
+    const candidates = mergeSweepCandidates(queued, agents, CHAIN_ID, VERIFY_LIMIT, verifiedIds);
 
     const { upsertVerification } = await import("@/lib/verifications-store");
     const results: { tokenId: string; name: string; status: string; responseMs: number; detail?: string }[] = [];
