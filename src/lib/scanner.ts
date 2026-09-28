@@ -842,6 +842,7 @@ export interface QueryOptions {
   ensureWarm?: boolean;
   maxWarmPages?: number;
   pcs?: boolean;
+  verifications?: Map<string, { status?: string }>;
 }
 
 export interface QueryResult {
@@ -877,7 +878,7 @@ export interface QueryResult {
 export async function queryAgents(
   opts: QueryOptions = {},
 ): Promise<QueryResult> {
-  const { category, q, sort = "score", page = 1, limit = 24 } = opts;
+  const { category, q, sort = "score", page = 1, limit = 24, verifications } = opts;
   const chainId = targetChainId();
   const hasSnapshot = await loadSnapshot();
   // no-op once the process has merged; covers the no-snapshot path too, where
@@ -924,7 +925,7 @@ export async function queryAgents(
     categoryCounts[key] = (categoryCounts[key] ?? 0) + 1;
   }
 
-  items = sortAgents(items, sort, category);
+  items = sortAgents(items, sort, category, verifications);
 
   const total = items.length;
   const start = (page - 1) * limit;
@@ -964,6 +965,7 @@ function sortAgents(
   items: AgentSummary[],
   sort: string,
   category?: string,
+  verifications?: Map<string, { status?: string }>,
 ): AgentSummary[] {
   const copy = [...items];
   switch (sort) {
@@ -984,8 +986,8 @@ function sortAgents(
     case "reachability": {
       const rank: Record<string, number> = { delivered: 4, gated: 3, dead: 2, unreachable: 1 };
       copy.sort((a, b) => {
-        const ra = rank[a.verification?.status ?? ""] ?? 0;
-        const rb = rank[b.verification?.status ?? ""] ?? 0;
+        const ra = rank[verifications?.get(a.token_id)?.status ?? ""] ?? 0;
+        const rb = rank[verifications?.get(b.token_id)?.status ?? ""] ?? 0;
         if (ra !== rb) return rb - ra;
         return b.total_score - a.total_score || b.total_feedbacks - a.total_feedbacks;
       });

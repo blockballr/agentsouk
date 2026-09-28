@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
   const maxWarmPages = Math.min(12, Math.max(1, Number(sp.get("warmPages") ?? 6) || 6));
   const pcs = sp.get("pcs") === "1";
 
+  const verifications = await loadVerifications();
+
   const result = await queryAgents({
     category,
     q,
@@ -28,10 +30,10 @@ export async function GET(req: NextRequest) {
     ensureWarm: warm,
     maxWarmPages,
     pcs,
+    verifications,
   });
 
   await hydrateBoostsFromDb();
-  const verifications = await loadVerifications();
 
   // paid boosts sort first within the page the query already selected
   const ranked = [...result.items].sort((a, b) => {
