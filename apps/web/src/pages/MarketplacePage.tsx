@@ -222,8 +222,8 @@ export function MarketplacePage() {
             on {chainLabel(chainId)}
             {result
               ? result.registryTotal
-                ? ` · ${(result.snapshotTotal ?? result.total).toLocaleString('en-US')} shown of ${result.registryTotal.toLocaleString('en-US')} registered`
-                : ` · ${(result.snapshotTotal ?? result.total).toLocaleString('en-US')} shown`
+                ? ` · ${result.total.toLocaleString('en-US')} shown of ${result.registryTotal.toLocaleString('en-US')} registered`
+                : ` · ${result.total.toLocaleString('en-US')} shown`
               : ''}
             {freshness ? ` · ${freshness}` : ''}
           </p>
