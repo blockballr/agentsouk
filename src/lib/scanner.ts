@@ -13,6 +13,7 @@ import { classifyAgent, relevanceScore } from "./categories";
 import { isPancakeSwapAgent } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
+import { loadDelisted } from "./delist-store";
 import type { RegistrationDraft } from "@agora/core";
 import {
   AgentRemovedError,
@@ -914,7 +915,11 @@ export async function queryAgents(
   }
 
   // Only the target chain belongs on this shelf; a live read for another chain cannot leak in.
-  const shelf = Array.from(index.agents.values()).filter((a) => a.chain_id === chainId);
+  // a delisted token leaves the shelf even though its on-chain registration stands
+  const delisted = await loadDelisted().catch(() => new Set<string>());
+  const shelf = Array.from(index.agents.values()).filter(
+    (a) => a.chain_id === chainId && !delisted.has(a.token_id),
+  );
   let items = shelf;
 
   if (category && category !== "all") {
