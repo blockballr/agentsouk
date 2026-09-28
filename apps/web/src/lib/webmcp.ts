@@ -59,7 +59,7 @@ export interface WebMcpModelContextLike {
 }
 
 const CATEGORY_VALUES = ['all', ...CATEGORY_KEYS, 'general']
-const SORTS = ['score', 'newest', 'feedback', 'health']
+const SORTS = ['score', 'newest', 'feedback', 'health', 'reachability']
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -73,9 +73,9 @@ function asNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
-function asSort(value: unknown): 'score' | 'newest' | 'feedback' | 'health' | undefined {
+function asSort(value: unknown): 'score' | 'newest' | 'feedback' | 'health' | 'reachability' | undefined {
   const sort = asString(value)
-  return sort && SORTS.includes(sort) ? (sort as 'score' | 'newest' | 'feedback' | 'health') : undefined
+  return sort && SORTS.includes(sort) ? (sort as 'score' | 'newest' | 'feedback' | 'health' | 'reachability') : undefined
 }
 
 function textResult(text: string): WebMcpToolResult {
@@ -173,7 +173,7 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
         },
         sort: {
           type: 'string',
-          enum: ['score', 'newest', 'feedback', 'health'],
+          enum: ['score', 'newest', 'feedback', 'health', 'reachability'],
           description: 'Ranking. Defaults to score.',
         },
         page: {
@@ -206,7 +206,7 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
     name: 'get_agent',
     title: 'Get one agent',
     description:
-      "Get one agent's full registry detail, including its verification status (delivered, gated, dead or unreachable), score, owner, agent wallet, and its MCP or A2A endpoint if it has one. Call this before hiring to learn how the agent is invoked.",
+      "Get one agent's full registry detail, including its verification status (delivered, gated, stale or unreachable), score, owner, agent wallet, and its MCP or A2A endpoint if it has one. Call this before hiring to learn how the agent is invoked.",
     inputSchema: {
       type: 'object',
       properties: {

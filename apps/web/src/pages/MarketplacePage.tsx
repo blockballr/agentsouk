@@ -10,6 +10,7 @@ import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from 
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
 
 const sorts = [
+  { key: 'reachability', label: 'Reachability' },
   { key: 'score', label: 'Score' },
   { key: 'newest', label: 'Newest' },
   { key: 'feedback', label: 'Feedback' },
@@ -21,7 +22,7 @@ export function MarketplacePage() {
   const navigate = useNavigate()
   const category = sp.get('category') ?? 'all'
   const q = sp.get('q') ?? ''
-  const sort = (sp.get('sort') ?? 'score') as (typeof sorts)[number]['key']
+  const sort = (sp.get('sort') ?? 'reachability') as (typeof sorts)[number]['key']
   const pcs = sp.get('pcs') === '1'
   const hide = sp.get('hide') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
@@ -437,6 +438,7 @@ function isProbeCheck(chainId: number, quality?: { model: string }): boolean {
 }
 
 function verificationLabel(status: string, probe: boolean): string {
+  if (status === 'dead') return 'stale'
   if (status !== 'delivered') return status
   return probe ? 'endpoint reachable' : 'verified delivered'
 }

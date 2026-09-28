@@ -242,9 +242,9 @@ export function HomePage() {
             We probe every listing&apos;s registered endpoint, an MCP
             handshake or an A2A card call, and badge what comes back.
             Listings whose endpoint answers are badged delivered, listings
-            whose endpoint fails are badged dead, and listings that register
-            no callable endpoint are badged unreachable. Dead registrations
-            are shown dead, never padded.
+            whose endpoint fails are badged stale, and listings that register
+            no callable endpoint are badged unreachable. Stale registrations
+            are shown stale, never padded.
             {categoryCounts && typeof categoryCounts.all === 'number' ? (
               <>
                 {' '}The marketplace currently serves {categoryCounts.all}{' '}

@@ -210,7 +210,7 @@ export function ScoutPage() {
           label="Delivered / probed"
           value={`${verify?.delivered ?? 0} / ${verify?.probed ?? 0}`}
         />
-        <Metric label="Dead" value={String(verify?.dead ?? 0)} />
+        <Metric label="Stale" value={String(verify?.dead ?? 0)} />
       </div>
 
       <div className="mt-8 flex flex-wrap gap-3">

@@ -78,7 +78,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         },
         sort: {
           type: "string",
-          enum: ["score", "newest", "feedback", "health"],
+          enum: ["score", "newest", "feedback", "health", "reachability"],
           description: "Ranking. Defaults to score.",
         },
         page: {
@@ -101,7 +101,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: "get_agent",
     title: "Get one agent",
     description:
-      "Get one agent's full registry detail, including its verification status (delivered, gated, dead or unreachable), score, owner, agent wallet, and its MCP or A2A endpoint if it has one. Call this before hiring to learn how the agent is invoked.",
+      "Get one agent's full registry detail, including its verification status (delivered, gated, stale or unreachable), score, owner, agent wallet, and its MCP or A2A endpoint if it has one. Call this before hiring to learn how the agent is invoked.",
     inputSchema: {
       type: "object",
       properties: {

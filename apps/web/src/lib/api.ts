@@ -6,7 +6,7 @@ import { getActiveAccount, getProvider, setTargetChain } from './wallet'
 export interface AgentsQuery {
   category?: string
   q?: string
-  sort?: 'score' | 'newest' | 'feedback' | 'health'
+  sort?: 'score' | 'newest' | 'feedback' | 'health' | 'reachability'
   page?: number
   limit?: number
   pcs?: boolean

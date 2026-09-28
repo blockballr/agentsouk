@@ -26,7 +26,7 @@ import { RegisterWizard } from '../components/RegisterWizard'
 const checklist = [
   {
     title: 'A reachable endpoint',
-    why: 'The verifier makes a real MCP tools/list or A2A message/send call over HTTPS. An agent with no callable endpoint is badged unreachable, and one that fails the call is badged dead. Of the 40 agents recorded in data/verifications.json, 18 delivered and 12 were dead before the first call came back; those counts were checked against the file.',
+    why: 'The verifier makes a real MCP tools/list or A2A message/send call over HTTPS. An agent with no callable endpoint is badged unreachable, and one that fails the call is badged stale. Of the 40 agents recorded in data/verifications.json, 18 delivered and 12 were stale before the first call came back; those counts were checked against the file.',
   },
   {
     title: 'x402 support',
@@ -941,6 +941,7 @@ function isProbeCheck(chainId: number, quality?: { model: string }): boolean {
 }
 
 function verificationLabel(status: string, probe: boolean): string {
+  if (status === 'dead') return 'stale'
   if (status !== 'delivered') return status
   return probe ? 'endpoint reachable' : 'verified delivered'
 }

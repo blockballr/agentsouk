@@ -12,7 +12,7 @@ import {
 } from "@/lib/compare-store";
 import { AgentSummary, CategoryKey, CATEGORIES } from "@/lib/types";
 
-type SortKey = "score" | "newest" | "feedback" | "health";
+type SortKey = "score" | "newest" | "feedback" | "health" | "reachability";
 
 interface BrowseResponse {
   success: boolean;
@@ -33,6 +33,7 @@ interface BrowseResponse {
 }
 
 const SORTS: { key: SortKey; label: string }[] = [
+  { key: "reachability", label: "Reachability" },
   { key: "score", label: "Top rated" },
   { key: "newest", label: "Newest" },
   { key: "feedback", label: "Most hires" },
@@ -42,7 +43,7 @@ const SORTS: { key: SortKey; label: string }[] = [
 export function BrowseClient({ initialCategory }: { initialCategory?: string }) {
   const [category, setCategory] = useState(initialCategory ?? "all");
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<SortKey>("score");
+  const [sort, setSort] = useState<SortKey>("reachability");
   const [items, setItems] = useState<AgentSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);

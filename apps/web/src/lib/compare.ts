@@ -1,13 +1,13 @@
 import type { AgentDetail } from '@agora/core'
 import { CATEGORIES, CATEGORY_KEYS, classifyAgent } from '@agora/core'
 
-// best-in-category selection: rank by total_score, total_feedbacks, verification status
-// (delivered > gated > dead/unreachable > absent), AI quality grade, then list order
+// best-in-category selection: reachability leads (delivered > gated > dead/unreachable
+// > absent), then total_score, total_feedbacks, AI quality grade, then list order
 
 const VERIFICATION_RANK: Record<string, number> = {
-  delivered: 3,
-  gated: 2,
-  dead: 1,
+  delivered: 4,
+  gated: 3,
+  dead: 2,
   unreachable: 1,
 }
 
@@ -88,11 +88,11 @@ export function bestByCategory<T extends RankableAgent>(agents: T[]): Record<str
 function ranksBetter<T extends RankableAgent>(agents: T[], a: number, b: number): boolean {
   const x = agents[a]
   const y = agents[b]
-  if (x.total_score !== y.total_score) return x.total_score > y.total_score
-  if (x.total_feedbacks !== y.total_feedbacks) return x.total_feedbacks > y.total_feedbacks
   const vx = VERIFICATION_RANK[x.verification?.status ?? ''] ?? 0
   const vy = VERIFICATION_RANK[y.verification?.status ?? ''] ?? 0
   if (vx !== vy) return vx > vy
+  if (x.total_score !== y.total_score) return x.total_score > y.total_score
+  if (x.total_feedbacks !== y.total_feedbacks) return x.total_feedbacks > y.total_feedbacks
   const gx = GRADE_RANK[x.verification?.quality?.grade ?? ''] ?? 0
   const gy = GRADE_RANK[y.verification?.quality?.grade ?? ''] ?? 0
   if (gx !== gy) return gx > gy

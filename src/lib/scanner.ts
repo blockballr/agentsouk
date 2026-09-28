@@ -836,7 +836,7 @@ function scheduleShelfTopUp(): void {
 export interface QueryOptions {
   category?: string;
   q?: string;
-  sort?: "score" | "newest" | "feedback" | "health";
+  sort?: "score" | "newest" | "feedback" | "health" | "reachability";
   page?: number;
   limit?: number;
   ensureWarm?: boolean;
@@ -981,6 +981,16 @@ function sortAgents(
         (a, b) => (b.health_score ?? -1) - (a.health_score ?? -1),
       );
       break;
+    case "reachability": {
+      const rank: Record<string, number> = { delivered: 4, gated: 3, dead: 2, unreachable: 1 };
+      copy.sort((a, b) => {
+        const ra = rank[a.verification?.status ?? ""] ?? 0;
+        const rb = rank[b.verification?.status ?? ""] ?? 0;
+        if (ra !== rb) return rb - ra;
+        return b.total_score - a.total_score || b.total_feedbacks - a.total_feedbacks;
+      });
+      break;
+    }
     case "score":
     default:
       if (category && category !== "all") {

@@ -47,6 +47,7 @@ function isProbeCheck(chainId: number, quality?: { model: string }): boolean {
 }
 
 function verificationLabel(status: string, probe: boolean): string {
+  if (status === 'dead') return 'stale'
   if (status !== 'delivered') return status
   return probe ? 'endpoint reachable' : 'verified delivered'
 }
