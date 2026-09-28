@@ -102,18 +102,7 @@ function asVerification(row: VerificationRow, checkedAt: string | null): Recorde
   return verification;
 }
 
-async function loadOnce(): Promise<Map<string, RecordedVerification>> {
-  const chainId = targetChainId();
-  if (chainId !== BSC_CHAIN_ID) {
-    return loadScoutFile(chainId);
-  }
-  try {
-    const { loadVerificationsFromDb } = await import("./verifications-store");
-    const db = await loadVerificationsFromDb();
-    if (db.size > 0) return db;
-  } catch {
-  }
-
+async function loadMainnetFile(): Promise<Map<string, RecordedVerification>> {
   const byToken = new Map<string, RecordedVerification>();
   try {
     const fs = await import("node:fs/promises");
@@ -126,6 +115,24 @@ async function loadOnce(): Promise<Map<string, RecordedVerification>> {
     }
   } catch {
   }
+  return byToken;
+}
+
+async function loadOnce(): Promise<Map<string, RecordedVerification>> {
+  const chainId = targetChainId();
+  // read the durable store on every chain; the per-chain file is the fallback
+  const byToken =
+    chainId === BSC_CHAIN_ID ? await loadMainnetFile() : await loadScoutFile(chainId);
+
+  try {
+    const { loadVerificationsFromDb } = await import("./verifications-store");
+    const db = await loadVerificationsFromDb();
+    for (const [tokenId, v] of db) {
+      byToken.set(tokenId, v);
+    }
+  } catch {
+  }
+
   return byToken;
 }
 
