@@ -37,12 +37,14 @@ async function ensureTable(): Promise<boolean> {
               checked_at timestamptz not null,
               quality jsonb,
               concurrency text,
-              detail text
+              detail text,
+              failing_since timestamptz
             )
           `;
           // create-if-not-exists leaves an existing table alone, so add the
           // refusal reason to deployments that predate it
           await sql!`alter table verifications add column if not exists detail text`;
+          await sql!`alter table verifications add column if not exists failing_since timestamptz`;
         })(),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("verifications db connect timeout")), 4000),
@@ -70,8 +72,8 @@ export async function upsertVerification(
   if (!(await ensureTable()) || !sql) return false;
   try {
     await sql`
-      insert into verifications (token_id, name, category, status, response_ms, checked_at, quality, concurrency, detail)
-      values (${tokenId}, ${name}, ${category}, ${status}, ${responseMs}, now(), ${quality ? JSON.stringify(quality) : null}::jsonb, ${concurrency ?? null}, ${detail ?? null})
+      insert into verifications (token_id, name, category, status, response_ms, checked_at, quality, concurrency, detail, failing_since)
+      values (${tokenId}, ${name}, ${category}, ${status}, ${responseMs}, now(), ${quality ? JSON.stringify(quality) : null}::jsonb, ${concurrency ?? null}, ${detail ?? null}, ${status === "delivered" ? null : new Date()})
       on conflict (token_id) do update set
         name = excluded.name,
         category = excluded.category,
@@ -80,7 +82,12 @@ export async function upsertVerification(
         checked_at = now(),
         quality = excluded.quality,
         concurrency = excluded.concurrency,
-        detail = excluded.detail
+        detail = excluded.detail,
+        failing_since = case
+          when excluded.status = 'delivered' then null
+          when verifications.failing_since is null then now()
+          else verifications.failing_since
+        end
     `;
     return true;
   } catch (e) {
@@ -189,5 +196,49 @@ export async function loadVerifiedTokenIds(): Promise<Set<string>> {
   } catch (e) {
     console.error("[verifications] verified ids read failed", (e as Error).message);
     return new Set();
+  }
+}
+
+export interface StaleToken {
+  tokenId: string;
+  name: string;
+  category: string;
+  status: string;
+  failingSince: string;
+}
+
+// Tokens the verifier has read as not-delivered continuously for at least the
+// window, so maintenance can warn the owner and then delist. A delivered reading
+// clears failing_since, so a token never reaches here on a single bad sweep.
+export async function loadStaleTokens(olderThanMs: number): Promise<StaleToken[]> {
+  if (!(await ensureTable()) || !sql) return [];
+  try {
+    const rows = (await sql`
+      select token_id, name, category, status, failing_since
+      from verifications
+      where failing_since is not null
+        and status <> 'delivered'
+        and extract(epoch from (now() - failing_since)) * 1000 >= ${olderThanMs}
+      order by failing_since asc
+    `) as {
+      token_id: string;
+      name: string;
+      category: string;
+      status: string;
+      failing_since: unknown;
+    }[];
+    return rows.map((r) => ({
+      tokenId: String(r.token_id),
+      name: r.name,
+      category: r.category,
+      status: r.status,
+      failingSince:
+        r.failing_since instanceof Date
+          ? r.failing_since.toISOString()
+          : String(r.failing_since),
+    }));
+  } catch (e) {
+    console.error("[verifications] stale read failed", (e as Error).message);
+    return [];
   }
 }
