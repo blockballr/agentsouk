@@ -9,6 +9,7 @@ import {
   endpointRefusal,
   prepareRegistration,
   probeEndpoint,
+  probeListing,
   tokenIdFromReceipt,
   waitForTransactionReceipt,
   withSendTimeout,
@@ -128,6 +129,8 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
   const [probing, setProbing] = useState(false)
   // latched in the same tick as the send, so a repeat click can never reach eth_sendTransaction twice
   const sentLatch = useRef(false)
+  // one live probe per listing: retries of the check must not spend a second hire
+  const sweepFired = useRef<string | null>(null)
   // null until the lister proceeds; each entry updates as its check runs
   const [checks, setChecks] = useState<CheckLine[] | null>(null)
 
@@ -289,6 +292,28 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     await sign()
   }
 
+  // The badge follows a real probe, so the wizard runs one for a fresh callable
+  // listing instead of leaving the sweep check waiting on a later pass.
+  async function runSweep(chain: number, agentId: string) {
+    mark('sweep', 'checking', 'Probing the registered endpoint now; the badge follows whether it answers.')
+    try {
+      const probe = await probeListing(chain, agentId)
+      if (probe.skipped) {
+        mark('sweep', 'passed', 'Already probed recently; the badge follows the latest record.')
+        return
+      }
+      const status = probe.verification?.status
+      const detail = probe.verification?.detail
+      if (status === 'delivered') {
+        mark('sweep', 'passed', detail ? `The endpoint answered: ${detail}` : 'The endpoint answered.')
+      } else {
+        mark('sweep', 'failed', detail ?? 'The endpoint did not answer.')
+      }
+    } catch (e) {
+      mark('sweep', 'failed', (e as Error).message)
+    }
+  }
+
   async function sign(target: PrepareResult | null | undefined = prepared) {
     if (!target || txHash || sentLatch.current) return
     setMessage(null)
@@ -419,6 +444,17 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     if (confirmed.status === 'confirmed') {
       mark('confirm', 'passed', confirmed.verification?.detail ?? 'The chain agrees with the registration.')
       setStep('listed')
+      // A callable listing earns its first probe right away instead of waiting
+      // for a scheduled pass; browser-invoked listings keep the waiting text
+      // since the marketplace cannot call them. Keyed per agent so a recheck
+      // of the same send never spends a second hire.
+      if (draft.endpointKind !== 'web' && target) {
+        const key = `${target.chainId}:${confirmed.agentId}`
+        if (sweepFired.current !== key) {
+          sweepFired.current = key
+          void runSweep(target.chainId, confirmed.agentId)
+        }
+      }
       return
     }
     const detail = confirmed.verification?.detail ?? 'The chain did not agree with that registration.'
@@ -440,8 +476,8 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           appears on the shelf, usually within a minute, if it declares an endpoint
           and a category the classifier assigns. A browser-invoked listing appears
           too, but the marketplace cannot call it, so a hire cannot run
-          automatically. The verifier calls a callable endpoint on its next sweep
-          and puts a grade on the badge.
+          automatically. The verifier probes a callable endpoint right away and
+          puts a grade on the badge; the check above shows what it found.
         </p>
         {checks && (
           <div className="mt-5">
