@@ -288,9 +288,12 @@ default is `sandbox`, verified by `settleSandbox` in `src/lib/facilitator.ts`:
    checks the signature against `from`.
 5. Receipt. A receipt records the payment id, the settlement transaction hash,
    the agent, the client, the payTo, the amount, and a session with a spend cap
-   of 10 USD expiring in 24 hours. Receipts are persisted through
-   `src/lib/receipts-store.ts` into postgres when `RECEIPTS_STORE=postgres` and
-   `DATABASE_URL` are set, and fall back to an in-process map otherwise.
+   of 5 USD expiring in 24 hours. The session is capped, expiring and revocable:
+   the owner can revoke it, which cancels the authorization on chain, and the
+   active hires, their tasks and their jobs are read on `/ongoing`. Receipts are
+   persisted through `src/lib/receipts-store.ts` into postgres when
+   `RECEIPTS_STORE=postgres` and `DATABASE_URL` are set, and fall back to an
+   in-process map otherwise.
 
 The transaction hash on a receipt is whatever the active mode produced. In
 `sandbox` nothing is broadcast, so the hash is synthetic: a fixed prefix followed
