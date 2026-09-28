@@ -23,6 +23,7 @@ import {
   summaryFromRegistration,
   type ShelfAdmission,
 } from "@/lib/scanner";
+import { enqueueSweep } from "@/lib/verifications-store";
 
 export const dynamic = "force-dynamic";
 
@@ -244,6 +245,18 @@ export async function POST(req: NextRequest) {
       createdAt: confirmed.confirmedAt ?? new Date().toISOString(),
     });
     admission = await admitConfirmedAgent(summary);
+    // A fresh listing jumps the sweep queue so its badge reflects a real probe
+    // instead of waiting for a scheduled pass to notice it. Best effort only:
+    // the confirmation must never fail because the queue could not be reached.
+    // Unadmitted listings are skipped since a sweep without a callable endpoint
+    // would spend a hire to learn nothing.
+    if (admission.admitted) {
+      try {
+        await enqueueSweep(agentId, summary.name, summary.category ?? "general");
+      } catch {
+        // the listing stands regardless; the next scheduled sweep covers it
+      }
+    }
   } catch (e) {
     admission = { admitted: false, reason: `the shelf could not be reached: ${brief(e)}` };
   }
