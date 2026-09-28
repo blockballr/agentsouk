@@ -27,6 +27,11 @@ export interface HouseAgentSkill {
   examples: string[];
   inputModes: string[];
   outputModes: string[];
+  inputSchema?: {
+    type: string;
+    properties: Record<string, { type: string; description: string }>;
+    required: string[];
+  };
 }
 
 export interface HouseAgentCard {
@@ -88,6 +93,18 @@ export function houseAgentCard(origin: string): HouseAgentCard {
         ],
         inputModes: ["text/plain", "application/json"],
         outputModes: ["text/plain", "application/json"],
+        inputSchema: {
+          type: "object",
+          properties: {
+            collateral: { type: "number", description: "collateral value in USD" },
+            debt: { type: "number", description: "debt value in USD" },
+            liquidationThreshold: {
+              type: "number",
+              description: "fraction above 0 and at most 1, or a percentage such as 80; defaults to 0.8",
+            },
+          },
+          required: ["collateral", "debt"],
+        },
       },
     ],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],

@@ -1271,6 +1271,34 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
 
       {phase === 'ready' && data && (
         <>
+          {data.skills && data.skills.length > 0 && (
+            <div className="mt-3 rounded-[8px] border hairline border-slate-verdant/30 p-3">
+              <p className="micro text-newsprint-gray">What this agent expects</p>
+              {data.skills.map((s) => (
+                <div key={s.id ?? s.name ?? 'skill'} className="mt-2">
+                  {s.name && <p className="text-[12px] font-medium text-typesetter-ink">{s.name}</p>}
+                  {s.description && (
+                    <p className="mt-1 text-[11px] leading-relaxed text-newsprint-gray">{s.description}</p>
+                  )}
+                  {s.inputSchema?.properties && (
+                    <dl className="mt-2 space-y-1">
+                      {Object.entries(s.inputSchema.properties).map(([field, meta]) => (
+                        <div key={field} className="flex items-baseline justify-between gap-3">
+                          <dt className="shrink-0 font-mono text-[11px] text-press-black">
+                            {field}
+                            {s.inputSchema?.required?.includes(field) ? (
+                              <span className="text-highlighter-green"> *</span>
+                            ) : null}
+                          </dt>
+                          <dd className="text-right text-[11px] text-newsprint-gray">{meta.description}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           {tools.length > 0 ? (
             <div className="mt-3 space-y-2">
               <select

@@ -172,9 +172,42 @@ async function deliverMcp(
   };
 }
 
+export interface AgentCardSkill {
+  id?: string;
+  name?: string;
+  description?: string;
+  examples?: string[];
+  inputSchema?: {
+    type?: string;
+    properties?: Record<string, { type?: string; description?: string }>;
+    required?: string[];
+  };
+}
+
 interface AgentCard {
   url?: string;
   supportedInterfaces?: { url: string }[];
+  skills?: AgentCardSkill[];
+}
+
+// A card may declare what a skill expects, so the hire form can show it before
+// the buyer spends an attempt. Private or unreachable cards yield nothing, and
+// the capability call never blocks the delivery path on it.
+async function fetchAgentCardSkills(endpoint: string): Promise<AgentCardSkill[] | null> {
+  if (privateEndpointReason(endpoint)) return null;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 10000);
+    const res = await fetch(endpoint, {
+      headers: { accept: "application/json" },
+      signal: ctl.signal,
+    }).finally(() => clearTimeout(timer));
+    if (!res.ok) return null;
+    const card = (await res.json()) as AgentCard;
+    return card.skills ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export interface A2aMessagePart {
@@ -248,6 +281,7 @@ function artifactToChunks(artifact: unknown): string[] {
 export interface A2aDeliverable {
   text: string;
   found: boolean;
+  state?: string;
 }
 
 export function extractA2aDeliverable(result: unknown): A2aDeliverable {
@@ -256,6 +290,7 @@ export function extractA2aDeliverable(result: unknown): A2aDeliverable {
   const taskStatus = task && isRecord(task.status) ? task.status : undefined;
   const status = taskStatus ?? (isRecord(result.status) ? result.status : undefined);
   const message = status && isRecord(status.message) ? status.message : undefined;
+  const state = status && typeof status.state === "string" ? status.state : undefined;
 
   const chunks: string[] = [
     ...partsToChunks(message?.parts),
@@ -272,14 +307,14 @@ export function extractA2aDeliverable(result: unknown): A2aDeliverable {
     seen.add(chunk);
     return true;
   });
-  if (unique.length === 0) return { text: A2A_NO_DELIVERABLE, found: false };
+  if (unique.length === 0) return { text: A2A_NO_DELIVERABLE, found: false, state };
 
   const joined = unique.join("\n");
   const text =
     joined.length > A2A_DELIVERABLE_MAX_CHARS
       ? `${joined.slice(0, A2A_DELIVERABLE_MAX_CHARS)}\n[truncated: deliverable over ${A2A_DELIVERABLE_MAX_CHARS} characters]`
       : joined;
-  return { text, found: true };
+  return { text, found: true, state };
 }
 
 async function deliverA2a(
@@ -351,6 +386,9 @@ async function deliverA2a(
   if (!extracted.found) {
     return { protocol: "a2a", ok: false, error: extracted.text };
   }
+  if (extracted.state && extracted.state !== "completed") {
+    return { protocol: "a2a", ok: false, error: extracted.text };
+  }
   return { protocol: "a2a", ok: true, kind: "deliverable", text: extracted.text };
 }
 
@@ -363,6 +401,7 @@ export interface DeliverOutcome {
   isError?: boolean;
   error?: string;
   tools?: { name: string; description: string; schema: Record<string, unknown> }[];
+  skills?: AgentCardSkill[];
 }
 
 export interface DeliverInput {
@@ -454,8 +493,15 @@ export async function deliver(input: DeliverInput): Promise<
     outcome = await deliverMcp(detail.mcp_server, input.tool, input.args);
   } else if (detail.a2a_endpoint) {
     if (!input.task) {
-      // no task yet: report the protocol so the client can ask for one
-      outcome = { protocol: "a2a", ok: true, kind: "capabilities", tools: [] };
+      // no task yet: report the protocol and the declared skills so the client
+      // can show what the agent expects before any attempt is spent
+      outcome = {
+        protocol: "a2a",
+        ok: true,
+        kind: "capabilities",
+        tools: [],
+        skills: (await fetchAgentCardSkills(detail.a2a_endpoint)) ?? undefined,
+      };
     } else {
       outcome = await deliverA2a(detail.a2a_endpoint, input.task, input.input);
     }

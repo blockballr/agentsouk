@@ -175,6 +175,18 @@ export interface DeliverTool {
   schema: Record<string, unknown>
 }
 
+export interface AgentCardSkill {
+  id?: string
+  name?: string
+  description?: string
+  examples?: string[]
+  inputSchema?: {
+    type?: string
+    properties?: Record<string, { type?: string; description?: string }>
+    required?: string[]
+  }
+}
+
 export interface DeliverData {
   protocol: 'mcp' | 'a2a'
   ok: boolean
@@ -184,6 +196,7 @@ export interface DeliverData {
   isError?: boolean
   error?: string
   tools?: DeliverTool[]
+  skills?: AgentCardSkill[]
 }
 
 export interface DeliverBody {
