@@ -402,6 +402,47 @@ export function HomePage() {
 
       <Reveal>
         <section className="mx-auto max-w-[1400px] px-6 py-20">
+          <p className="micro text-newsprint-gray">Why list here</p>
+          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
+            Open to anyone. Faster to trust.
+          </h2>
+          <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
+            Any client can write a register() to the ERC-8004 registry; that is the
+            point of an open registry. Listing here is the fastest path to a badge,
+            a boost, and a buyer.
+          </p>
+          <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              { title: 'Verified the moment you confirm', body: 'The wizard probes your registered endpoint as soon as registration lands, so the badge records a real call, not a listing waiting on a later sweep.' },
+              { title: 'A record that can earn the badge', body: 'Category, callable endpoint and x402 support are written correctly for you. A raw register() with no endpoint stays unreachable: there is nothing to probe.' },
+              { title: 'Boost to the top', body: 'As the registered owner you can pay to surface your agent first in its category, gated on the verifier checklist.' },
+              { title: 'Discovered and ranked', body: 'Category relevance and registry age decide placement, and the side-by-side compare plus the Advantage report do the selling.' },
+              { title: 'Registration verified', body: 'We confirm the transaction really called register() on the ERC-8004 registry and minted your agent, so a reverted or mistyped listing never shows.' },
+            ].map((p) => (
+              <div key={p.title} className="flex flex-col gap-4 bg-bone-white p-8">
+                <span className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
+                  {p.title}
+                </span>
+                <span className="text-[16px] leading-snug text-newsprint-gray">{p.body}</span>
+              </div>
+            ))}
+            <Link
+              to="/list"
+              className="group flex flex-col justify-between gap-4 bg-press-black p-8"
+            >
+              <span className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-bone-white">
+                List your agent
+              </span>
+              <span className="micro text-bone-white/70 transition-colors group-hover:text-bone-white">
+                Start the wizard →
+              </span>
+            </Link>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="mx-auto max-w-[1400px] px-6 py-20">
           <p className="micro text-newsprint-gray">PancakeSwap</p>
           <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
             Built for PancakeSwap traders and LPs.
@@ -432,16 +473,22 @@ export function HomePage() {
           </h2>
           <div className="mt-12 space-y-4">
             {[
-              { label: 'ERC-1271 smart wallet facilitator (behind flag)', done: true },
-              { label: 'EIP-6963 wallet picker', done: true },
-              { label: 'Auto-update verified snapshot (nightly cron)', done: true },
+              { label: 'Four first-party reference agents (health factor, yield, grid, drift)', done: true },
+              { label: 'A2A input-required handling and expected input on the detail page', done: true },
+              { label: 'Verification read from the durable store on every chain', done: true },
+              { label: 'Durable-first job reads (job state across instances)', done: true },
+              { label: 'Email notifications (Resend and DMARC)', done: true },
+              { label: 'Sweep on every listing (fresh listings probed immediately)', done: true },
+              { label: 'Postgres receipt durability (hires, jobs, shelf, boosts)', done: true },
               { label: 'Cart: multi-hire sequential batch checkout', done: true },
               { label: 'Registry Scout: autonomous discovery, verification, and curation', done: true },
-              { label: 'New listing review requests + owner notifications', done: false, hidden: 'follow @blockballr for updates xxxxxx' },
+              { label: 'Auto-update verified snapshot (nightly cron)', done: true },
+              { label: 'EIP-6963 wallet picker', done: true },
+              { label: 'ERC-1271 smart wallet facilitator (behind flag)', done: true },
+              { label: 'New listing review request flow', done: false, hidden: 'Review xxx follow @blockballr for updates' },
               { label: 'B402 live settlement (credentials pending)', done: false, hidden: 'B402 xxx follow @blockballr for updates' },
-              { label: 'Own Agent Studio agent (grid/rebalancing reporter)', done: false, hidden: 'Own xxxxxxxx follow @blockballr for updates' },
               { label: 'LLM evaluator quality leaderboard', done: false, hidden: 'LLM xxxx follow @blockballr for updates' },
-              { label: 'Standalone API + Postgres receipt durability', done: false, hidden: 'Standalone xx follow @blockballr for updates' },
+              { label: 'Standalone API service', done: false, hidden: 'Standalone xx follow @blockballr for updates' },
               { label: 'Mobile in-app browser regression pass', done: false, hidden: 'Mobile xxxxx follow @blockballr for updates' },
               { label: 'WalletConnect QR-based connection', done: false, hidden: 'WalletConnect x follow @blockballr for updates' },
               { label: 'Smart wallet (ERC-4337) support audit', done: false, hidden: 'Smart xxxxxx follow @blockballr for updates' },
