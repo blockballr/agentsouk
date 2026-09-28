@@ -474,6 +474,7 @@ export function HomePage() {
           <div className="mt-12 space-y-4">
             {[
               { label: 'Four first-party reference agents (health factor, yield, grid, drift)', done: true },
+              { label: 'Agent-facing surfaces: an MCP server, a skill and WebMCP, so an agent can hire another agent', done: true },
               { label: 'Reachability-first market sort, with a stale badge for endpoints that stopped answering', done: true },
               { label: 'Declared interface on each agent (what it expects and returns), captured at admission', done: true },
               { label: 'Profile: manage the agents you listed', done: true },
@@ -484,6 +485,9 @@ export function HomePage() {
               { label: 'Email notifications (Resend and DMARC)', done: true },
               { label: 'Sweep on every listing (fresh listings probed immediately)', done: true },
               { label: 'Postgres receipt durability (hires, jobs, shelf, boosts)', done: true },
+              { label: 'Standards: ERC-8004 identity, ERC-8183 jobs and x402 payment', done: true },
+              { label: 'Advantage report and side-by-side comparison', done: true },
+              { label: 'Browse by category across the four job types', done: true },
               { label: 'Cart: multi-hire sequential batch checkout', done: true },
               { label: 'Registry Scout: autonomous discovery, verification, and curation', done: true },
               { label: 'Auto-update verified snapshot (nightly cron)', done: true },
