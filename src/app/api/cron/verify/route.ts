@@ -238,6 +238,8 @@ export async function GET(req: NextRequest) {
 
     const { upsertVerification } = await import("@/lib/verifications-store");
     const results: { tokenId: string; name: string; status: string; responseMs: number; detail?: string }[] = [];
+    // counted from the write results, so a sweep that cannot reach the store reports it instead of reading as done
+    let persisted = 0;
 
     for (const cand of candidates) {
       if (outOfTime()) break;
@@ -245,12 +247,12 @@ export async function GET(req: NextRequest) {
       try {
         const verdict = await classify(cand);
         const ms = Date.now() - t0;
-        await upsertVerification(cand.tokenId, cand.name, cand.category, verdict.status, ms, undefined, verdict.detail);
+        if (await upsertVerification(cand.tokenId, cand.name, cand.category, verdict.status, ms, undefined, verdict.detail)) persisted += 1;
         results.push({ tokenId: cand.tokenId, name: cand.name, status: verdict.status, responseMs: ms, detail: verdict.detail });
       } catch (e) {
         const ms = Date.now() - t0;
         const detail = `sweep error: ${(e as Error).message}`;
-        await upsertVerification(cand.tokenId, cand.name, cand.category, "dead", ms, undefined, detail);
+        if (await upsertVerification(cand.tokenId, cand.name, cand.category, "dead", ms, undefined, detail)) persisted += 1;
         results.push({ tokenId: cand.tokenId, name: cand.name, status: "dead", responseMs: ms, detail });
       }
     }
@@ -261,6 +263,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       verified: results.length,
+      persisted,
       budget: `${Math.round((Date.now() - startedAt) / 1000)}s`,
       tally,
       results,

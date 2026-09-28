@@ -66,8 +66,8 @@ export async function upsertVerification(
   quality?: Verification["quality"],
   detail?: string,
   concurrency?: Verification["concurrency"],
-): Promise<void> {
-  if (!(await ensureTable()) || !sql) return;
+): Promise<boolean> {
+  if (!(await ensureTable()) || !sql) return false;
   try {
     await sql`
       insert into verifications (token_id, name, category, status, response_ms, checked_at, quality, concurrency, detail)
@@ -82,8 +82,12 @@ export async function upsertVerification(
         concurrency = excluded.concurrency,
         detail = excluded.detail
     `;
-  } catch {
-    // best-effort: file fallback or stale data is acceptable
+    return true;
+  } catch (e) {
+    // a silent write is how a sweep can report a verdict the page never shows,
+    // so a failed write is logged and reported, never swallowed
+    console.error("[verifications] upsert failed", tokenId, (e as Error).message);
+    return false;
   }
 }
 
