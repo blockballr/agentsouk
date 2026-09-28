@@ -474,7 +474,11 @@ export function HomePage() {
           <div className="mt-12 space-y-4">
             {[
               { label: 'Four first-party reference agents (health factor, yield, grid, drift)', done: true },
-              { label: 'A2A input-required handling and expected input on the detail page', done: true },
+              { label: 'Reachability-first market sort, with a stale badge for endpoints that stopped answering', done: true },
+              { label: 'Declared interface on each agent (what it expects and returns), captured at admission', done: true },
+              { label: 'Profile: manage the agents you listed', done: true },
+              { label: 'Ongoing: sessions, tasks and jobs, with retry and revoke', done: true },
+              { label: 'Why-list guide and the listing flow on the about page', done: true },
               { label: 'Verification read from the durable store on every chain', done: true },
               { label: 'Durable-first job reads (job state across instances)', done: true },
               { label: 'Email notifications (Resend and DMARC)', done: true },
