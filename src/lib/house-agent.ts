@@ -31,6 +31,11 @@ export interface HouseAgentSkill {
     type: string;
     properties: Record<string, { type: string; description: string }>;
     required: string[];
+    examples?: Record<string, unknown>[];
+  };
+  outputSchema?: {
+    type: string;
+    properties: Record<string, { type: string; description: string }>;
   };
 }
 
@@ -104,6 +109,16 @@ export function houseAgentCard(origin: string): HouseAgentCard {
             },
           },
           required: ["collateral", "debt"],
+          examples: [{ collateral: 10000, debt: 6500, liquidationThreshold: 0.8 }],
+        },
+        outputSchema: {
+          type: "object",
+          properties: {
+            healthFactor: { type: "number", description: "the computed health factor" },
+            state: { type: "string", description: "healthy, caution, or liquidatable" },
+            liquidationCapacity: { type: "number", description: "collateral counted toward liquidation" },
+            liquidationDistancePercent: { type: "number", description: "how far collateral can fall before liquidation" },
+          },
         },
       },
     ],

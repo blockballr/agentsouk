@@ -421,6 +421,67 @@ export function AgentDetailPage() {
                 </div>
               </div>
 
+              {detail.skills && detail.skills.length > 0 && (
+                <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
+                  <h2 className="micro text-newsprint-gray">What this agent expects</h2>
+                  <div className="mt-4 space-y-5">
+                    {detail.skills.map((s) => (
+                      <div key={s.id ?? s.name ?? 'skill'}>
+                        {s.inputSchema?.properties && (
+                          <dl className="space-y-1.5">
+                            {Object.entries(s.inputSchema.properties).map(([field, meta]) => (
+                              <div key={field} className="flex items-baseline justify-between gap-4">
+                                <dt className="shrink-0 font-mono text-xs text-press-black">
+                                  {field}
+                                  {s.inputSchema?.required?.includes(field) ? (
+                                    <span className="text-highlighter-green"> *</span>
+                                  ) : null}
+                                </dt>
+                                <dd className="text-right text-xs text-newsprint-gray">{meta.description}</dd>
+                              </div>
+                            ))}
+                          </dl>
+                        )}
+                        {s.inputSchema?.examples && s.inputSchema.examples.length > 0 && (
+                          <p className="mt-2 break-all font-mono text-[11px] leading-relaxed text-newsprint-gray">
+                            send {JSON.stringify(s.inputSchema.examples[0])}
+                          </p>
+                        )}
+                        {!s.inputSchema && (
+                          <>
+                            {s.examples && s.examples.length > 0 && (
+                              <ul className="space-y-1 text-[13px] leading-relaxed text-newsprint-gray">
+                                {s.examples.map((e) => (
+                                  <li key={e}>{e}</li>
+                                ))}
+                              </ul>
+                            )}
+                            {s.inputModes && s.inputModes.length > 0 && (
+                              <p className="mt-2 text-[11px] uppercase tracking-[0.01em] text-newsprint-gray">
+                                accepts {s.inputModes.join(', ')}
+                              </p>
+                            )}
+                          </>
+                        )}
+                        {s.outputSchema?.properties && (
+                          <div className="mt-3">
+                            <p className="micro text-newsprint-gray">Returns</p>
+                            <dl className="mt-2 space-y-1.5">
+                              {Object.entries(s.outputSchema.properties).map(([field, meta]) => (
+                                <div key={field} className="flex items-baseline justify-between gap-4">
+                                  <dt className="shrink-0 font-mono text-xs text-press-black">{field}</dt>
+                                  <dd className="text-right text-xs text-newsprint-gray">{meta.description}</dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
                 <h2 className="micro text-newsprint-gray">Endpoints</h2>
                 <EndpointPanel detail={detail} />
@@ -1271,34 +1332,6 @@ function DeliveryPanel({ paymentId }: { paymentId: string }) {
 
       {phase === 'ready' && data && (
         <>
-          {data.skills && data.skills.length > 0 && (
-            <div className="mt-3 rounded-[8px] border hairline border-slate-verdant/30 p-3">
-              <p className="micro text-newsprint-gray">What this agent expects</p>
-              {data.skills.map((s) => (
-                <div key={s.id ?? s.name ?? 'skill'} className="mt-2">
-                  {s.name && <p className="text-[12px] font-medium text-typesetter-ink">{s.name}</p>}
-                  {s.description && (
-                    <p className="mt-1 text-[11px] leading-relaxed text-newsprint-gray">{s.description}</p>
-                  )}
-                  {s.inputSchema?.properties && (
-                    <dl className="mt-2 space-y-1">
-                      {Object.entries(s.inputSchema.properties).map(([field, meta]) => (
-                        <div key={field} className="flex items-baseline justify-between gap-3">
-                          <dt className="shrink-0 font-mono text-[11px] text-press-black">
-                            {field}
-                            {s.inputSchema?.required?.includes(field) ? (
-                              <span className="text-highlighter-green"> *</span>
-                            ) : null}
-                          </dt>
-                          <dd className="text-right text-[11px] text-newsprint-gray">{meta.description}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
           {tools.length > 0 ? (
             <div className="mt-3 space-y-2">
               <select

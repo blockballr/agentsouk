@@ -153,4 +153,21 @@ export interface AgentDetail {
   updated_at: string;
   verification?: Verification;
   pcs?: boolean;
+  skills?: {
+    id?: string;
+    name?: string;
+    description?: string;
+    examples?: string[];
+    inputModes?: string[];
+    inputSchema?: {
+      type?: string;
+      properties?: Record<string, { type?: string; description?: string }>;
+      required?: string[];
+      examples?: Record<string, unknown>[];
+    };
+    outputSchema?: {
+      type?: string;
+      properties?: Record<string, { type?: string; description?: string }>;
+    };
+  }[];
 }

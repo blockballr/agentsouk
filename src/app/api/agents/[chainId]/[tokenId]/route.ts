@@ -4,6 +4,7 @@ import { loadVerifications } from "@/lib/verifications";
 import { isPancakeSwapAgent } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
 import { getBoost, hydrateBoostsFromDb } from "@/lib/boosts";
+import { fetchAgentCardSkills } from "@/lib/delivery";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +23,14 @@ export async function GET(
   const verifications = await loadVerifications();
   await hydrateBoostsFromDb();
   const verification = verifications.get(agent.token_id);
+  const skills = agent.a2a_endpoint
+    ? ((await fetchAgentCardSkills(agent.a2a_endpoint, 4000)) ?? undefined)
+    : undefined;
   const data = verification ? { ...agent, verification } : agent;
+  const withSkills = skills ? { ...data, skills } : data;
   const withPcs = isPancakeSwapAgent(agent.name, agent.description ?? "")
-    ? { ...data, pcs: true }
-    : data;
+    ? { ...withSkills, pcs: true }
+    : withSkills;
   const activeSession = findActiveSession(Number(chainId), tokenId);
   const boost = getBoost(Number(chainId), tokenId);
   const withBoost = boost

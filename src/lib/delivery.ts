@@ -177,10 +177,16 @@ export interface AgentCardSkill {
   name?: string;
   description?: string;
   examples?: string[];
+  inputModes?: string[];
   inputSchema?: {
     type?: string;
     properties?: Record<string, { type?: string; description?: string }>;
     required?: string[];
+    examples?: Record<string, unknown>[];
+  };
+  outputSchema?: {
+    type?: string;
+    properties?: Record<string, { type?: string; description?: string }>;
   };
 }
 
@@ -190,14 +196,12 @@ interface AgentCard {
   skills?: AgentCardSkill[];
 }
 
-// A card may declare what a skill expects, so the hire form can show it before
-// the buyer spends an attempt. Private or unreachable cards yield nothing, and
-// the capability call never blocks the delivery path on it.
-async function fetchAgentCardSkills(endpoint: string): Promise<AgentCardSkill[] | null> {
+// a card may declare what a skill expects; private or unreachable cards yield nothing
+export async function fetchAgentCardSkills(endpoint: string, timeoutMs = 10000): Promise<AgentCardSkill[] | null> {
   if (privateEndpointReason(endpoint)) return null;
   try {
     const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 10000);
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
     const res = await fetch(endpoint, {
       headers: { accept: "application/json" },
       signal: ctl.signal,
@@ -493,8 +497,7 @@ export async function deliver(input: DeliverInput): Promise<
     outcome = await deliverMcp(detail.mcp_server, input.tool, input.args);
   } else if (detail.a2a_endpoint) {
     if (!input.task) {
-      // no task yet: report the protocol and the declared skills so the client
-      // can show what the agent expects before any attempt is spent
+      // no task yet: report the protocol and the declared skills
       outcome = {
         protocol: "a2a",
         ok: true,
