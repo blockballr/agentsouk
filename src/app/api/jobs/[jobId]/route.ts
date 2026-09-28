@@ -3,7 +3,6 @@ import { verifyMessage } from "viem";
 import {
   claimRefund,
   completeJob,
-  getJob,
   getJobAsync,
   jobActionMessage,
   persistJob,
@@ -45,7 +44,7 @@ export async function GET(
   { params }: { params: Promise<{ jobId: string }> },
 ) {
   const { jobId } = await params;
-  const job = getJob(jobId);
+  const job = await getJobAsync(jobId);
   if (!job) return NextResponse.json({ error: "job not found" }, { status: 404 });
   return NextResponse.json({ success: true, job });
 }

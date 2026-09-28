@@ -128,11 +128,12 @@ export function createJob(input: {
 }
 
 export async function getJobAsync(jobId: string): Promise<Job | undefined> {
-  const local = jobs.get(jobId);
-  if (local) return local;
+  // Durable first: an instance that funded the job before another submitted it
+  // still holds the Funded object, and serving that stale copy is what answered
+  // "job is Funded" for a job the store already held as Submitted.
   const stored = await loadJob(jobId);
   if (stored) return cache(stored);
-  return undefined;
+  return jobs.get(jobId);
 }
 
 export function getJob(jobId: string): Job | undefined {
@@ -174,7 +175,11 @@ function onTargetChain(job: Job): boolean {
 export async function listJobs(limit = 50): Promise<Job[]> {
   const fromDb = await loadJobs(limit * 2);
   for (const j of fromDb) {
-    if (!jobs.has(j.id)) cache(j);
+    // The store wins over memory: an instance that only ever saw the Funded
+    // write must not keep serving it after another instance persisted Submitted.
+    // Set the maps directly; a read path must not save anything back.
+    jobs.set(j.id, j);
+    if (j.paymentId) byPayment.set(j.paymentId, j.id);
   }
   return [...jobs.values()]
     .filter(onTargetChain)
@@ -185,7 +190,8 @@ export async function listJobs(limit = 50): Promise<Job[]> {
 export async function listJobsForClient(client: string, limit = 50): Promise<Job[]> {
   const fromDb = await loadJobsByClient(client, limit * 2);
   for (const j of fromDb) {
-    if (!jobs.has(j.id)) cache(j);
+    jobs.set(j.id, j);
+    if (j.paymentId) byPayment.set(j.paymentId, j.id);
   }
   return [...jobs.values()]
     .filter((j) => j.client.toLowerCase() === client.toLowerCase())
