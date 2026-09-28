@@ -332,11 +332,11 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     sentLatch.current = true
     setTxHash(hash)
     mark('transaction', 'checking', `Sent ${hash}. Waiting for the transaction to confirm.`)
-    await checkTransaction(hash)
+    await checkTransaction(hash, target)
   }
 
-  async function checkTransaction(hash: `0x${string}`) {
-    if (!prepared) return
+  async function checkTransaction(hash: `0x${string}`, target: PrepareResult | null | undefined = prepared) {
+    if (!target) return
     setErrors([])
     setStep('confirming')
     setMessage('Waiting for the transaction to confirm. This usually takes a few seconds.')
@@ -384,7 +384,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
       'The transaction mined. Reading the registry receipt for the new agent id.',
     )
 
-    const agentId = tokenIdFromReceipt(receipt.logs ?? [], prepared.registryAddress)
+    const agentId = tokenIdFromReceipt(receipt.logs ?? [], target.registryAddress)
     if (!agentId) {
       const detail =
         'The transaction is on the chain, but the registry did not report a new agent id. Do not send it again. Check the transaction or send us the hash and we will look at it.'
@@ -403,7 +403,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     let confirmed: ConfirmResult
     try {
       confirmed = await confirmRegistration({
-        claimId: prepared.claimId,
+        claimId: target.claimId,
         agentId,
         txHash: hash,
       })
