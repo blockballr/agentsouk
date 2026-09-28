@@ -333,6 +333,12 @@ function OwnedAgentCard({
         </div>
       </dl>
 
+      {agent.failingSince ? (
+        <p className="mt-5 rounded-[8px] border hairline border-press-black/20 bg-bone-white p-3 text-[12px] leading-relaxed text-press-black">
+          Not answering for {Math.max(0, Math.floor((Date.now() - Date.parse(agent.failingSince)) / 86400000))} of 7 days. It leaves the market on day 8 unless it answers; one delivered check resets the clock.
+        </p>
+      ) : null}
+
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Link
           to={`/agents/${agent.chainId}/${agent.tokenId}`}

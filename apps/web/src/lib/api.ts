@@ -462,6 +462,7 @@ export interface OwnedAgent {
   healthScore: number | null
   createdAt: string
   verification: AgentVerification | null
+  failingSince?: string | null
 }
 
 export interface OwnedAgentsResult {
