@@ -2,6 +2,8 @@
 // module scope reads stale on the next invocation and the budget check exits
 // before the first candidate, reporting verified:0 after minutes of nothing.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
 import { sweepBudget } from "../src/app/api/cron/verify/route";
 
 const OVER_BUDGET_MS = 5 * 60 * 1000;
