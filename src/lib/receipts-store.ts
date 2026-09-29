@@ -119,6 +119,47 @@ export async function listPaymentsByClient(
   return cached;
 }
 
+// Every wallet that has settled at least one prod hire, with how many it settled, so
+// a report can enumerate candidates without a ledger read per wallet. The hire count
+// is the point: four categories cannot be completed in fewer than four hires, so a
+// candidate below that threshold is skipped without any further read. The memory
+// cache is unioned in and the source reported, because a short list from memory is
+// an incomplete answer rather than a definitive zero.
+export async function listProdClients(): Promise<{
+  candidates: { wallet: string; hires: number }[];
+  source: "postgres" | "memory";
+}> {
+  const found = new Map<string, number>();
+  for (const p of listPayments()) {
+    if (p.mode !== "prod" && p.mode !== "b402") continue;
+    const c = (p.client ?? "").toLowerCase();
+    if (c) found.set(c, (found.get(c) ?? 0) + 1);
+  }
+  if (postgresEnabled() && sql && (await init())) {
+    try {
+      const rows = await sql`
+        select lower(payload->>'client') as client, count(*) as hires from receipts
+        where lower(payload->>'mode') in ('prod', 'b402')
+        group by 1
+      `;
+      for (const r of rows) {
+        const c = String(r.client ?? "").toLowerCase();
+        if (c) found.set(c, Number(r.hires ?? 0));
+      }
+      return {
+        candidates: [...found].map(([wallet, hires]) => ({ wallet, hires })),
+        source: "postgres",
+      };
+    } catch {
+      // fall through to the memory cache
+    }
+  }
+  return {
+    candidates: [...found].map(([wallet, hires]) => ({ wallet, hires })),
+    source: "memory",
+  };
+}
+
 // Lists every receipt paid to a wallet, newest first, from the durable store: the
 // income side of the same rows listPaymentsByClient reads for a payer. The payTo is
 // the agent's receiving wallet, so a lister asking "did anyone hire me" reads here.
