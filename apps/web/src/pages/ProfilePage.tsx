@@ -383,14 +383,16 @@ function OwnedAgentCard({
         >
           Registry record
         </a>
-        <button
-          type="button"
-          onClick={() => void onRecheck()}
-          disabled={rechecking}
-          className="micro rounded-[5px] border hairline border-highlighter-green/50 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
-        >
-          {rechecking ? 'Probing...' : 'Re-check now'}
-        </button>
+        {verification?.status !== 'delivered' ? (
+          <button
+            type="button"
+            onClick={() => void onRecheck()}
+            disabled={rechecking}
+            className="micro rounded-[5px] border hairline border-highlighter-green/50 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+          >
+            {rechecking ? 'Probing...' : 'Re-check now'}
+          </button>
+        ) : null}
         <span className="font-mono text-[11px] text-newsprint-gray">
           {shortAddress(agent.contractAddress, 8)}
         </span>
