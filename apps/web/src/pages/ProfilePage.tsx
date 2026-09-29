@@ -4,6 +4,7 @@ import { CATEGORIES, formatUnits, shortAddress, timeAgo } from '@agora/core'
 import {
   getAgentsByOwner,
   getHiresByPayee,
+  recheckAgent,
   type OwnedAgent,
   type OwnedAgentsResult,
   type PayeeHire,
@@ -235,6 +236,7 @@ export function ProfilePage() {
                 agent={agent}
                 received={receivedByToken.get(`${agent.chainId}:${agent.tokenId}`) ?? 0}
                 source={hiresSource}
+                onRechecked={() => void load()}
               />
             ))}
           </div>
@@ -270,14 +272,41 @@ function OwnedAgentCard({
   agent,
   received,
   source,
+  onRechecked,
 }: {
   agent: OwnedAgent
   received: number
   source: HiresSource
+  onRechecked: () => void
 }) {
   const explorer = explorerTxBase(agent.chainId)
   const registryUrl = `${explorer}/token/${agent.contractAddress}?a=${agent.tokenId}`
   const verification = agent.verification
+  const [rechecking, setRechecking] = useState(false)
+  const [recheckNote, setRecheckNote] = useState<string | null>(null)
+  const [recheckError, setRecheckError] = useState<string | null>(null)
+
+  // A single fresh probe, signed by the owner. It bypasses the twenty hour
+  // reprobe window for this token, so a lister does not have to wait for the
+  // next sweep to learn whether their endpoint answers.
+  async function onRecheck() {
+    setRechecking(true)
+    setRecheckNote(null)
+    setRecheckError(null)
+    try {
+      const result = await recheckAgent(agent.chainId, agent.tokenId)
+      setRecheckNote(
+        result.skipped
+          ? 'Checked within the last twenty hours, so nothing new was probed.'
+          : 'Fresh probe recorded. The badge above updates in a moment.',
+      )
+      onRechecked()
+    } catch (e) {
+      setRecheckError(hireErrorText(e))
+    } finally {
+      setRechecking(false)
+    }
+  }
 
   return (
     <article className="rounded-[14px] border hairline border-slate-verdant/40 p-6">
@@ -354,10 +383,25 @@ function OwnedAgentCard({
         >
           Registry record
         </a>
+        <button
+          type="button"
+          onClick={() => void onRecheck()}
+          disabled={rechecking}
+          className="micro rounded-[5px] border hairline border-highlighter-green/50 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+        >
+          {rechecking ? 'Probing...' : 'Re-check now'}
+        </button>
         <span className="font-mono text-[11px] text-newsprint-gray">
           {shortAddress(agent.contractAddress, 8)}
         </span>
       </div>
+
+      {recheckNote ? (
+        <p className="mt-3 text-[12px] leading-relaxed text-newsprint-gray">{recheckNote}</p>
+      ) : null}
+      {recheckError ? (
+        <p className="mt-3 text-[12px] leading-relaxed text-press-black">{recheckError}</p>
+      ) : null}
     </article>
   )
 }

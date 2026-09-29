@@ -494,6 +494,51 @@ export async function getAgentsByOwner(owner: string): Promise<OwnedAgentsResult
   }
 }
 
+// Must match recheckMessage in src/app/api/agents/[chainId]/[tokenId]/verify/route.ts.
+// It binds the probe to one token and one owner, so a signature cannot be replayed
+// against a different listing.
+export function recheckMessage(chainId: number, tokenId: string, owner: string): string {
+  return [
+    'Agent Souk re-check',
+    `chainId: ${chainId}`,
+    `tokenId: ${tokenId}`,
+    `owner: ${owner.toLowerCase()}`,
+  ].join('\n')
+}
+
+export interface RecheckResult {
+  // true when the twenty hour window still held and nothing new was probed
+  skipped: boolean
+  // true when an owner signature bypassed that window
+  forced: boolean
+  verification: AgentVerification | null
+}
+
+// Force a fresh probe of one owned listing. The owner signs, so the reprobe
+// window is bypassed for this token only; anyone else keeps the twenty hour cap.
+export async function recheckAgent(chainId: number, tokenId: string): Promise<RecheckResult> {
+  const owner = await getActiveAccount()
+  if (!owner) throw new Error('Connect the wallet that owns this listing.')
+  const message = recheckMessage(chainId, tokenId, owner)
+  const provider = await getProvider()
+  const signature = (await provider.request({
+    method: 'personal_sign',
+    params: [message, owner],
+  })) as string
+  const res = await fetch(`${BASE}/agents/${chainId}/${tokenId}/verify`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ force: true, owner, signature }),
+  })
+  const payload = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(payload?.error ?? `re-check ${res.status}`)
+  return {
+    skipped: Boolean(payload?.skipped),
+    forced: Boolean(payload?.forced),
+    verification: (payload?.verification ?? null) as AgentVerification | null,
+  }
+}
+
 export interface PayeeHire {
   paymentId: string
   chainId: number
