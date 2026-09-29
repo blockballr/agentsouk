@@ -76,17 +76,4 @@ next-env.d.ts
 /contracts/lib/
 /broadcast/
 
-# internal working documents and scripts, never published
-/docs/demo-cue-sheet.md
-/docs/voiceover-script.md
-/docs/tweet-log.md
-/docs/tracking-submission.md
-/docs/generate_voiceover.py
-/docs/souk_voiceover.py
-/docs/soukfull_voiceover.py
-/docs/house-agents/
-/scripts/demo/
-/scripts/post-hire-test.mjs
-/scripts/preview-server.mjs
-/scripts/seed-ongoing-demo.mjs
-/scripts/tasks-unit-test.mjs
+/scripts/dev-ongoing-states.mjs
