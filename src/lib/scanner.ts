@@ -14,7 +14,7 @@ import { isPancakeSwapAgent } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
 import { loadDelisted } from "./delist-store";
-import type { RegistrationDraft } from "@agora/core";
+import { LISTABLE_CATEGORIES, type RegistrationDraft } from "@agora/core";
 import {
   AgentRemovedError,
   classifyLiveReadFailure,
@@ -276,6 +276,15 @@ function buildSummary(raw: RawAgent): AgentSummary {
   };
 }
 
+// The tab the lister chose in the form, or null when the claim carries nothing to
+// file under. The claim outlives the form, so the value is checked again here.
+function declaredCategory(value: string | null | undefined): CategoryKey | null {
+  if (!value) return null;
+  return (LISTABLE_CATEGORIES as readonly string[]).includes(value)
+    ? (value as CategoryKey)
+    : null;
+}
+
 // A confirmed registration is a chain fact; whether our shelf will carry it is a
 // separate judgement. Build the summary the shelf stores from what the lister
 // declared and what the chain minted. Fields the chain cannot report for a
@@ -296,7 +305,12 @@ export function summaryFromRegistration(input: {
   // a web service is shelved too, but it is browser-invoked, so the marketplace
   // can never call it; the summary carries it as its own endpoint kind
   const kind = draft.endpointKind ?? "web";
-  const { category, scores } = classifyAgent(`${name} ${description}`.trim());
+  // The lister picks the shelf in the form, so that choice is what files the
+  // agent. The classifier only fills in when the form carried nothing to file it
+  // under, and its reading stays in categoryScores so the two remain comparable.
+  const declared = declaredCategory(draft.category);
+  const classified = classifyAgent(`${name} ${description}`.trim());
+  const category = declared ?? classified.category;
   return {
     agent_id: `${input.chainId}:${input.registry.toLowerCase()}:${input.tokenId}`,
     token_id: input.tokenId,
@@ -320,7 +334,8 @@ export function summaryFromRegistration(input: {
     is_active: true,
     created_at: input.createdAt,
     category,
-    categoryScores: scores,
+    categoryScores: classified.scores,
+    ...(declared ? { declared_category: declared } : {}),
   };
 }
 
@@ -333,7 +348,7 @@ export function shelfRefusalReason(a: {
   web_endpoint?: string | null;
 }): string {
   if (!a.category || a.category === "general") {
-    return "the classifier reads the name and description as general, so the shelf has no category to file it under";
+    return "no category was chosen for it and the classifier reads the name and description as general, so the shelf has no category to file it under";
   }
   const endpoints = [a.a2a_endpoint, a.mcp_server, a.web_endpoint].filter(
     (u): u is string => typeof u === "string" && u.length > 0,
@@ -345,6 +360,16 @@ export function shelfRefusalReason(a: {
     .map((u) => privateEndpointReason(u))
     .filter((r): r is string => r !== null);
   return `its endpoint is not publicly reachable: ${reasons[0] ?? "unknown endpoint fault"}`;
+}
+
+// A later re-read of the text must not undo the shelf the owner chose at
+// registration, and the reading from the text stays in categoryScores for it.
+function keepDeclared(next: AgentSummary): AgentSummary {
+  const declared =
+    next.declared_category ??
+    index.agents.get(indexKey(next.chain_id, next.token_id))?.declared_category;
+  if (!declared) return next;
+  return { ...next, declared_category: declared, category: declared };
 }
 
 // Which side of the catalogue is serving: the shared store, or the committed file.
@@ -704,7 +729,10 @@ export async function warmIndex(opts: WarmOptions = {}): Promise<void> {
       index.liveUpstreamTotal = body.meta.pagination.total;
       observedTotal = positiveCount(body.meta.pagination.total);
       for (const raw of body.data) {
-        index.agents.set(indexKey(raw.chain_id, raw.token_id), buildSummary(raw));
+        index.agents.set(
+          indexKey(raw.chain_id, raw.token_id),
+          keepDeclared(buildSummary(raw)),
+        );
       }
       index.warmedPages.add(page);
       index.totalFetched += body.data.length;
@@ -773,7 +801,7 @@ export async function refreshIndexFromLive(
       index.liveUpstreamTotal = body.meta.pagination.total;
       observedTotal = positiveCount(body.meta.pagination.total);
       for (const raw of body.data) {
-        const summary = buildSummary(raw);
+        const summary = keepDeclared(buildSummary(raw));
         // Shelve only what the marketplace would stand behind: a new registration appears once it
         // has a callable endpoint and a category, never unclassified or unverifiable.
         if (!isShelfReady(summary)) continue;
@@ -1122,7 +1150,7 @@ export async function getAgentByToken(
       if (shouldCacheShelfAgent(chainId, targetChainId()) && isShelfReady(merged)) {
         index.agents.set(
           indexKey(merged.chain_id, merged.token_id),
-          summaryFromDetail(merged),
+          keepDeclared(summaryFromDetail(merged)),
         );
       }
       return merged;

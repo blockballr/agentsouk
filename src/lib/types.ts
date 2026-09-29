@@ -186,6 +186,9 @@ export interface AgentSummary {
   created_at: string;
   // enriched client-side
   category?: CategoryKey | "general";
+  // the tab the lister picked in the registration form. It outranks a later
+  // reading of the text, so the shelf files the agent where its owner filed it.
+  declared_category?: CategoryKey;
   categoryScores?: Partial<Record<CategoryKey, number>>;
   verification?: Verification;
   pcs?: boolean;

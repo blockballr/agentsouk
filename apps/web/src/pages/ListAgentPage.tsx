@@ -34,7 +34,7 @@ const checklist = [
   },
   {
     title: 'An honest category description',
-    why: 'The classifier reads your registration name and description. Say what the agent does in the category\u2019s own words: rebalancing and LP ranges, grid trading, yield optimisation, health factor monitoring. Padding or keyword stuffing does not survive the classifier.',
+    why: 'You pick the shelf category in the form; this description is what search, relevance and buyers read. Say what the agent does in that category\u2019s own words: rebalancing and LP ranges, grid trading, yield optimisation, health factor monitoring. It has to be true, because buyers read it before they hire.',
   },
   {
     title: 'A graded response',
@@ -576,7 +576,7 @@ function buildPrompt(
     '',
     `${label} (${def.label}).`,
     '',
-    'Registration description to use, so buyers and the classifier read an honest summary:',
+    'Registration description to use, so search and buyers read an honest summary:',
     description,
     '',
     'Acceptance criteria. The work is done only when all of these hold:',

@@ -75,7 +75,7 @@ function initialChecks(): CheckLine[] {
   return [
     { id: 'endpoint', title: 'Endpoint address rule', state: 'waiting' },
     { id: 'card', title: 'The agent card answers', state: 'waiting' },
-    { id: 'classifier', title: 'Category the classifier assigns', state: 'waiting' },
+    { id: 'classifier', title: 'Shelf category and search words', state: 'waiting' },
     { id: 'terms', title: 'Registration terms from the server', state: 'waiting' },
     { id: 'transaction', title: 'Transaction sent and mined', state: 'waiting' },
     { id: 'confirm', title: 'Registration confirmed on chain', state: 'waiting' },
@@ -200,30 +200,31 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
       return
     }
 
-    // 3. the classifier, not the dropdown, decides the shelf. A general reading still registers,
-    // so it is reported as a failure to shelve rather than a reason to stop the loop.
+    // 3. the shelf files the agent under the category chosen in the form, so this
+    // check reports what search and relevance read, and that still runs on the text.
     mark('classifier', 'checking')
     await nextPaint()
     const text = `${draft.name} ${draft.description}`.trim()
+    const shelfTab = categoryDef(draft.category).label
     if (!text) {
       mark(
         'classifier',
-        'failed',
-        'The name and description are both empty, so the classifier has nothing to place and the shelf has no category to file it under.',
+        'passed',
+        `The shelf files this under ${shelfTab}. The description is empty, so search has nothing to match and a buyer reading the page learns nothing before hiring.`,
       )
     } else {
       const { category } = classifyAgent(text)
       if (category === 'general') {
         mark(
           'classifier',
-          'failed',
-          'The name and description read as general, not one of the four categories. Registration still succeeds, but the shelf has nothing to file it under, so it will not appear. Say what the agent does in the category words: rebalancing, LP ranges, grid trading, yield or APR, health factor.',
+          'passed',
+          `The shelf files this under ${shelfTab}. The description reads as general, so the words buyers search for will not reach it: say what the agent does in that category's own words, such as rebalancing, LP ranges, grid trading, yield or APR, health factor.`,
         )
       } else {
         mark(
           'classifier',
           'passed',
-          `The classifier reads this as ${categoryDef(category).label}, so that is the shelf it will appear under.`,
+          `The shelf files this under ${shelfTab}, and the description also reads as ${categoryDef(category).label}, so search reaches it both ways.`,
         )
       }
     }
@@ -467,17 +468,29 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
   const displayChain = prepared?.chainId ?? chainId
 
   if (step === 'listed' && result) {
+    // the shelf decides separately from the chain, so its verdict is reported here
+    // instead of on a profile that will not show the agent at all
+    const refused = result.listed === false
+    const shelfTab = categoryDef(draft.category).label
     return (
-      <div className="rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-8">
-        <h3 className="font-serif text-2xl font-medium">Your agent is registered</h3>
+      <div
+        className={`rounded-[14px] border hairline p-8 ${
+          refused
+            ? 'border-slate-verdant/60 bg-bone-white'
+            : 'border-highlighter-green/50 bg-highlighter-green/5'
+        }`}
+      >
+        <h3 className="font-serif text-2xl font-medium">
+          {refused ? 'Registered, but not on the shelf' : 'Your agent is registered'}
+        </h3>
         <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-          The registry confirms it, so this is real rather than pending. What happens
-          next is not instant: the catalogue reads the chain again and the agent
-          appears on the shelf, usually within a minute, if it declares an endpoint
-          and a category the classifier assigns. A browser-invoked listing appears
-          too, but the marketplace cannot call it, so a hire cannot run
-          automatically. The verifier probes a callable endpoint right away and
-          puts a grade on the badge; the check above shows what it found.
+          {refused ? (
+            `The registry confirms the registration, so the token is yours and the transaction below is real. The shelf declined to carry it: ${
+              result.listingReason ?? 'it did not pass the shelf gate'
+            }. The registration stands either way, and the catalogue reads the chain again on its next pull, so a listing whose endpoint starts answering publicly is shelved then.`
+          ) : (
+            `The registry confirms it, so the registration is settled. The shelf files it under ${shelfTab}, and the catalogue reads the chain again, so it appears within a minute. A browser-invoked listing appears too, but the marketplace cannot call it, so a hire cannot run automatically. The verifier probes a callable endpoint right away and puts a grade on the badge; the check above shows what it found.`
+          )}
         </p>
         {checks && (
           <div className="mt-5">
@@ -516,12 +529,9 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           Open your listings
         </Link>
         <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
-          Your profile lists every agent this wallet owns, whether it is live, and
-          who hired it. That page reads the agent from the registry, so it is the
-          place to watch as the index catches up. If the agent still has no
-          category or declares no endpoint at all it will not be shelved; a
-          browser-invoked listing appears, but is not callable by the marketplace.
-          If it does not show there, send us the agent id above.
+          {refused
+            ? 'Your profile lists every agent this wallet owns and whether it is live, so this one shows there as registered while it stays off the shelf. The reason above is the whole story: if it names the endpoint, fixing the endpoint is what lets the next catalogue pull shelve it. If it does not show there, send us the agent id above.'
+            : 'Your profile lists every agent this wallet owns, whether it is live, and who hired it. That page reads the agent from the registry, so it is the place to watch as the index catches up. If the agent declares no endpoint, or one that does not answer publicly, it will not be shelved; a browser-invoked listing appears, but is not callable by the marketplace. If it does not show there, send us the agent id above.'}
         </p>
       </div>
     )
@@ -560,16 +570,18 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           />
         </label>
 
-        {/* the name and this text are all the classifier reads, and it decides the
-            shelf category, so a description that names the capability does real work */}
+        {/* the category select below files the shelf; this text is what search,
+            relevance and buyers read, so a description that names the capability
+            does real work for the lister either way */}
         <div className="rounded-[10px] border hairline border-slate-verdant/40 p-4">
           <p className="micro text-newsprint-gray">What a description has to say</p>
           <p className="mt-2 text-xs leading-relaxed text-newsprint-gray">
-            Nothing else is read when the shelf files your agent, so the words here decide
-            its category: {CATEGORY_OPTIONS.map((c) => c.label).join(', ')}. Name the
-            capability in plain words, say what the caller supplies, say what comes back,
-            and say what the agent does not do, so nobody expects a live price feed from
-            arithmetic.
+            The shelf files your agent under the category you pick below. Search,
+            relevance and buyers read these words instead, so name the capability in
+            plain words from that category&apos;s own vocabulary ({
+              CATEGORY_OPTIONS.map((c) => c.label).join(', ')
+            }), say what the caller supplies, say what comes back, and say what the
+            agent does not do, so nobody expects a live price feed from arithmetic.
           </p>
           <p className="mt-3 text-xs leading-relaxed text-press-black">
             Worked example for a health factor agent: computes the health factor and
@@ -647,8 +659,9 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           <p className="micro text-newsprint-gray">Before you spend gas</p>
           <p className="mt-2 text-xs leading-relaxed text-newsprint-gray">
             A registration can succeed on chain and still be useless on the shelf.
-            Two things decide that: the endpoint has to answer, and the classifier
-            has to place the agent in one of the four categories.
+            Two things decide that: the endpoint has to answer, and the description
+            has to say in plain words what the agent does, so buyers searching for
+            it can reach it.
           </p>
 
           {endpointFault ? (
@@ -820,16 +833,17 @@ function EndpointProbeResult({ probe }: { probe: EndpointProbe }) {
   )
 }
 
-// The classifier reads the name and description, not the category dropdown, so a
-// listing whose text reads as general is registered but never shelved.
+// The shelf files under the category chosen in the form; this reports what search
+// will read, because the text still decides whether buyers reach the listing.
 function CategoryCheck({ draft }: { draft: RegistrationDraft }) {
+  const shelfTab = categoryDef(draft.category).label
   const text = `${draft.name} ${draft.description}`.trim()
   if (!text) {
     return (
       <p className="mt-3 text-xs leading-relaxed text-newsprint-gray">
-        The classifier reads the name and the description. With both still empty it
-        has nothing to place, so this would register as general and stay off the
-        shelf.
+        The shelf files this under {shelfTab}. With the name and description still
+        empty, search has nothing to match and a buyer reading the page learns
+        nothing before hiring.
       </p>
     )
   }
@@ -837,11 +851,11 @@ function CategoryCheck({ draft }: { draft: RegistrationDraft }) {
   if (category === 'general') {
     return (
       <div className="mt-3 rounded-[8px] border border-press-black/20 bg-bone-white p-3 text-xs leading-relaxed text-press-black">
-        <p className="micro">The classifier will not place this</p>
+        <p className="micro">The description does not name a category</p>
         <p className="mt-1">
-          The name and description read as general, so the shelf has no category to
-          file this under and it would not appear in one of the four. Say what the
-          agent does in the category&apos;s own words, for example rebalancing or LP
+          The shelf files this under {shelfTab} either way, but the text reads as
+          general, so buyers searching for it will not reach it. Say what the agent
+          does in the category&apos;s own words, for example rebalancing or LP
           ranges, grid trading, yield or APR, or health factor and liquidation.
         </p>
       </div>
@@ -849,8 +863,8 @@ function CategoryCheck({ draft }: { draft: RegistrationDraft }) {
   }
   return (
     <p className="mt-3 text-xs leading-relaxed text-newsprint-gray">
-      The classifier reads this as {categoryDef(category).label}, so that is the
-      shelf it would appear under.
+      The shelf files this under {shelfTab}, and the description also reads as{' '}
+      {categoryDef(category).label}, so search reaches it both ways.
     </p>
   )
 }

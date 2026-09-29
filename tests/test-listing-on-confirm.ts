@@ -190,7 +190,7 @@ describe("a proven registration is shelved at confirmation", () => {
     expect(catalogue.items.some((a) => a.token_id === "4244")).toBe(false);
   });
 
-  it("refuses an unclassified agent with a reason and still confirms", async () => {
+  it("files an unclassified agent under the category its lister chose", async () => {
     const draft: RegistrationDraft = {
       ...QUALIFYING,
       name: "Helper Bot",
@@ -202,11 +202,34 @@ describe("a proven registration is shelved at confirmation", () => {
 
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
+    expect(body.listed).toBe(true);
+    expect(body.listingReason).toBeNull();
+
+    const catalogue = await queryAgents({ q: "Helper Bot", limit: 10 });
+    const filed = catalogue.items.find((a) => a.token_id === "4245");
+    expect(filed).toBeTruthy();
+    expect(filed?.category).toBe("health-factor");
+  });
+
+  it("refuses a claim that carries no category, with a reason, and still confirms", async () => {
+    const draft: RegistrationDraft = {
+      ...QUALIFYING,
+      name: "Helper Bot",
+      description: "A general purpose assistant that answers anything at all.",
+      endpoint: "https://helper.example/a2a",
+      // a claim from before the form required a category to file under
+      category: undefined as unknown as RegistrationDraft["category"],
+    };
+    const claim = await prepareClaim(draft, "4246");
+    const { res, body } = await confirm(claim.claimId, "4246");
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
     expect(body.listed).toBe(false);
     expect(String(body.listingReason)).toMatch(/general/);
 
     const catalogue = await queryAgents({ q: "Helper Bot", limit: 10 });
-    expect(catalogue.items.some((a) => a.token_id === "4245")).toBe(false);
+    expect(catalogue.items.some((a) => a.token_id === "4246")).toBe(false);
   });
 });
 
@@ -243,7 +266,7 @@ describe("the summary built from a confirmed claim", () => {
     expect(isShelfReady(s)).toBe(true);
   });
 
-  it("names the classifier when a general reading keeps an agent off the shelf", () => {
+  it("files an agent under the category its lister chose, whatever the text reads", () => {
     const s = summaryFromRegistration({
       chainId: 97,
       tokenId: "2",
@@ -253,6 +276,26 @@ describe("the summary built from a confirmed claim", () => {
         ...QUALIFYING,
         name: "Helper Bot",
         description: "A general purpose assistant that answers anything at all.",
+      },
+      createdAt: "2026-09-27T00:00:00.000Z",
+    });
+    expect(s.category).toBe("health-factor");
+    expect(s.declared_category).toBe("health-factor");
+    expect(isShelfReady(s)).toBe(true);
+  });
+
+  it("names the classifier when a claim carries no category at all", () => {
+    const s = summaryFromRegistration({
+      chainId: 97,
+      tokenId: "2",
+      owner: env.OWNER,
+      registry: env.REGISTRY,
+      draft: {
+        ...QUALIFYING,
+        name: "Helper Bot",
+        description: "A general purpose assistant that answers anything at all.",
+        // a claim from before the form required a category to file under
+        category: undefined as unknown as RegistrationDraft["category"],
       },
       createdAt: "2026-09-27T00:00:00.000Z",
     });

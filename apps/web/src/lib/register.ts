@@ -17,6 +17,9 @@ export interface ConfirmResult {
   agentId: string
   txHash: string
   agentUri: string
+  // the shelf's own verdict, carried so a refusal is reported with the registration
+  listed?: boolean
+  listingReason?: string | null
   verification?: { verified?: boolean; detail?: string }
 }
 

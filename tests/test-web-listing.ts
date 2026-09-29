@@ -72,13 +72,26 @@ describe("shelf admission for a web listing", () => {
       isShelfReady({ web_endpoint: "https://browser-agent.example/mcp", category: null }),
     ).toBe(false);
 
+    // a claim from before the form required a category: nothing chosen, text general
+    const s = summaryFor({
+      ...WEB_DRAFT,
+      name: "Helper",
+      description: "A general purpose assistant that answers anything at all.",
+      category: undefined as unknown as RegistrationDraft["category"],
+    });
+    expect(isShelfReady(s)).toBe(false);
+    expect(shelfRefusalReason(s)).toMatch(/general/);
+  });
+
+  it("files a general reading under the category the lister chose", () => {
     const s = summaryFor({
       ...WEB_DRAFT,
       name: "Helper",
       description: "A general purpose assistant that answers anything at all.",
     });
-    expect(isShelfReady(s)).toBe(false);
-    expect(shelfRefusalReason(s)).toMatch(/general/);
+    expect(s.category).toBe("rebalancing");
+    expect(s.declared_category).toBe("rebalancing");
+    expect(isShelfReady(s)).toBe(true);
   });
 
   it("still refuses an agent that declares no endpoint at all", () => {
