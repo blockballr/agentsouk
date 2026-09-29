@@ -420,6 +420,10 @@ function HiresPanel({
   chainId: number | null
 }) {
   const network = chainId ? chainLabel(chainId) : null
+  // A live session is still spending; an ended one is history. They read
+  // differently, so the panel keeps them apart rather than interleaving them.
+  const active = (hires ?? []).filter((h) => h.active)
+  const ended = (hires ?? []).filter((h) => !h.active)
   return (
     <div className="mt-16">
       <p className="micro text-newsprint-gray">Hires received</p>
@@ -462,13 +466,29 @@ function HiresPanel({
         </p>
       )}
 
-      {hires && hires.length > 0 && (
-        <div className="mt-6 space-y-3">
-          {hires.map((hire) => (
-            <HireRow key={hire.paymentId} hire={hire} />
-          ))}
+      {active.length > 0 && (
+        <div className="mt-6">
+          <p className="micro text-newsprint-gray">Active sessions · {active.length}</p>
+          <HireGrid hires={active} />
         </div>
       )}
+
+      {ended.length > 0 && (
+        <div className="mt-12">
+          <p className="micro text-newsprint-gray">Ended · {ended.length}</p>
+          <HireGrid hires={ended} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HireGrid({ hires }: { hires: PayeeHire[] }) {
+  return (
+    <div className="mt-4 grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {hires.map((hire) => (
+        <HireRow key={hire.paymentId} hire={hire} />
+      ))}
     </div>
   )
 }
