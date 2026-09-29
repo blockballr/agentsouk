@@ -1108,9 +1108,14 @@ export async function getAgentByToken(
       // A live registry record can omit the web service it failed to parse, while
       // the cached summary already knows it; keep the browser-invoked label rather
       // than dropping it from a page that has been telling the truth until now.
+      // The callable endpoints need the same treatment: a fresh registration is
+      // admitted locally with its endpoint, and the upstream index catches up later,
+      // so a missing field here is a lag rather than a removal.
       const merged = {
         ...detail,
         web_endpoint: detail.web_endpoint ?? cached?.web_endpoint ?? null,
+        a2a_endpoint: detail.a2a_endpoint ?? cached?.a2a_endpoint ?? null,
+        mcp_server: detail.mcp_server ?? cached?.mcp_server ?? null,
       };
       // Served regardless, because the caller asked for this exact agent by id; shelved only if it
       // qualifies, so a direct read cannot smuggle an unqualified listing into browse.
