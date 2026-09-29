@@ -18,17 +18,7 @@ function authorized(req: NextRequest): boolean {
   return (req.headers.get("authorization") ?? "") === `Bearer ${secret}`;
 }
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { success: false, error: "no maintenance secret configured" },
-      { status: 503 },
-    );
-  }
-  if (!authorized(req)) {
-    return NextResponse.json({ success: false, error: "unauthorized" }, { status: 401 });
-  }
-
+async function run(): Promise<NextResponse> {
   const stale = await loadStaleTokens(STALE_MS);
   const delisted: string[] = [];
   for (const token of stale) {
@@ -51,10 +41,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   });
 }
 
-// The pass changes state, so a GET is refused rather than run by accident.
-export function GET(): NextResponse {
-  return NextResponse.json(
-    { success: false, error: "maintenance is POST with the cron secret" },
-    { status: 405, headers: { allow: "POST" } },
-  );
+// The secret gates every verb, so a call without it changes nothing regardless
+// of method. That is the real control; the method only decides who can ask.
+function refusal(req: NextRequest): NextResponse | null {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json(
+      { success: false, error: "no maintenance secret configured" },
+      { status: 503 },
+    );
+  }
+  if (!authorized(req)) {
+    return NextResponse.json({ success: false, error: "unauthorized" }, { status: 401 });
+  }
+  return null;
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const denied = refusal(req);
+  if (denied) return denied;
+  return run();
+}
+
+// The scheduler issues a GET, so this verb runs the same pass. Only a caller
+// holding the bearer secret reaches it, which keeps an accidental request from
+// delisting anything.
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const denied = refusal(req);
+  if (denied) return denied;
+  return run();
 }
