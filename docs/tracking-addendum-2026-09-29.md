@@ -1,18 +1,12 @@
 # Tracking addendum, 29 September 2026
 
-This covers additions and corrections to `tracking-submission.md`, which was submitted on
-27 September but nothing here changes what was declared. It adds three things the brief asks for and that have changed or were missing: the event signatures, a
-runnable verification call, and a correction to the team wallet list.
+This covers additions and corrections to `tracking-submission.md`, which was submitted on 27 September but nothing here changes what was declared. It adds three things the brief asks for and that have changed or were missing: the event signatures, a runnable verification call, and a correction to the team wallet list.
 
 ## 1. Event signatures
 
-The brief asks for the events that represent a hire, a deposit, a job completion
-and a rating, with signatures. Settlement is one EIP-3009
-`transferWithAuthorization` call on the settlement token, and it emits two events.
-This is what a settled hire looks like on chain.
+The brief asks for the events that represent a hire, a deposit, a job completion and a rating, with signatures. Settlement is one EIP-3009 `transferWithAuthorization` call on the settlement token, and it emits two events. This is what a settled hire looks like on chain.
 
-Settlement token, chain 97:
-`0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53` (sUSD, 18 decimals)
+Settlement token, chain 97: `0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53` (sUSD, 18 decimals)
 
 | Event | Signature | topic0 |
 |---|---|---|
@@ -29,43 +23,31 @@ Reading them against the four quest events:
 | Job completion | the marketplace's own job record, which is held off chain. Job `ab91e68f-ac01-4c5f-940c-6717b9c8acf4` reached Completed on 27 September for Keel (token 2238), after Open, Funded and Submitted. Its deliverable is on `GET /api/jobs/[jobId]` and its settlement is in section 1 of the original |
 | Rating | the registry feedback record, read through the API |
 
-Only the hire, the deposit and a revocation are chain events, so those are the
-only three that carry a topic hash. Completion is the marketplace's own record,
-and rating comes from the registry.
+Only the hire, the deposit and a revocation are chain events, so those are the only three that carry a topic hash. Completion is the marketplace's own record, and rating comes from the registry.
 
-`AuthorizationCanceled` appears only on a revocation, so the revocation row in
-section 1 of the original carries one log and the others carry two.
+`AuthorizationCanceled` appears only on a revocation, so the revocation row in section 1 of the original carries one log and the others carry two.
 
 ## 2. A runnable verification call
 
-Section 4 of the original gives this endpoint as a template. Here it is as a call
-that returns data:
+Section 4 of the original gives this endpoint as a template. Here it is as a call that returns data:
 
 ```
 GET https://api.agentsouk.xyz/api/hires/by-wallet?wallet=0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713
 ```
 
-It returns four hires, one in each of the four quest categories. That wallet is
-the declared buyer, so the call demonstrates the query itself; the activity it
-returns is ours. A wallet with no settlements returns an empty list, and the response
-reports whether it answered from the durable store, so an empty answer can be
-told apart from an incomplete one.
+It returns four hires, one in each of the four quest categories. That wallet is the declared buyer, so the call demonstrates the query itself; the activity it returns is ours. A wallet with no settlements returns an empty list, and the response reports whether it answered from the durable store, so an empty answer can be told apart from an incomplete one.
+
+There is also `GET /api/quest/completed`, which lists the wallets that have completed the quest, oldest first, each with its four settlements and its listing. Completion is a settled hire in each of the four categories plus a listing of its own. It reads settlements made through this marketplace, and it treats a wallet as having listed once it owns an admitted listing.
 
 ## 3. Reading the chain
 
-The public BSC testnet RPCs are intermittent, and a read can return an empty
-result for a transaction that is mined and confirmed. Section 5 of the original
-says the Binance seed endpoints did not resolve; on 29 September the opposite was
-observed, with `https://bsc-testnet-rpc.publicnode.com` returning empty for
-confirmed transactions that `https://data-seed-prebsc-1-s1.binance.org:8545`
-resolved. Neither endpoint is reliable in both directions.
+The public BSC testnet RPCs are intermittent, and a read can return an empty result for a transaction that is mined and confirmed. Section 5 of the original says the Binance seed endpoints did not resolve; on 29 September the opposite was observed, with `https://bsc-testnet-rpc.publicnode.com` returning empty for confirmed transactions that `https://data-seed-prebsc-1-s1.binance.org:8545` resolved. Neither endpoint is reliable in both directions.
 
 The explorer links below need no RPC.
 
 ## 4. The four category proofs, verifiable without an RPC
 
-All four are `status 0x1` on chain 97. Transaction hashes as in section 1 of the
-original.
+All four are `status 0x1` on chain 97. Transaction hashes as in section 1 of the original.
 
 | Category | Transaction |
 |---|---|
@@ -85,8 +67,7 @@ health-factor https://testnet.bscscan.com/tx/0xf10142bdcf534c69f18c862dd365f21ee
 
 ## 5. Team wallets: five addresses
 
-Section 5 of the original declares three addresses. Two more are ours and should
-be excluded from quest scoring.
+Section 5 of the original declares three addresses. Two more are ours and should be excluded from quest scoring.
 
 | Role | Address |
 |---|---|
@@ -96,20 +77,11 @@ be excluded from quest scoring.
 | Deployment wallet | `0x52DA44aB471455437fc17979c52E501f6b8d0EAF` |
 | Spare identity, declared and unused | `0x5188d3b15271bD0eD56B1dE86B50198d4497c4e5` |
 
-`GET /api/quest/progress` and `GET /api/quest/completed` count only a wallet's own
-settled hires and exclude these five addresses, so the split above holds in the code
-that scores the quest.
+`GET /api/quest/progress` and `GET /api/quest/completed` count only a wallet's own settled hires and exclude these five addresses, so the split above holds in the code that scores the quest.
 
-The third is the one that matters. `0x84fedaBd1b83443aD86796C15619494878B64180`
-owns our five reference listings in the catalogue (tokens 2504, 2521, 2522, 2524
-and 2526) and is the payer in the worked example in section 1. The original calls
-it a participant in section 6, which is wrong: it is ours, and anything it does
-should be read as team activity.
+The third is the one that matters. `0x84fedaBd1b83443aD86796C15619494878B64180` owns our five reference listings in the catalogue (tokens 2504, 2521, 2522, 2524 and 2526) and is the payer in the worked example in section 1. The original calls it a participant in section 6, which is wrong: it is ours, and anything it does should be read as team activity.
 
-On-chain state, read on 2026-09-29. The public RPCs are intermittent, so which
-endpoint answers varies; these reads used
-`https://data-seed-prebsc-1-s1.binance.org:8545` for chain 97 and
-`https://bsc-dataseed.binance.org` for chain 56.
+On-chain state, read on 2026-09-29. The public RPCs are intermittent, so which endpoint answers varies; these reads used `https://data-seed-prebsc-1-s1.binance.org:8545` for chain 97 and `https://bsc-dataseed.binance.org` for chain 56.
 
 | Address | chain 97 nonce | chain 97 balance | chain 56 nonce | chain 56 balance |
 |---|---|---|---|---|
@@ -119,23 +91,12 @@ endpoint answers varies; these reads used
 | 0x52DA44aB471455437fc17979c52E501f6b8d0EAF | 0 | 0 | 9 | 0.00008342 BNB |
 | 0x5188d3b15271bD0eD56B1dE86B50198d4497c4e5 | 0 | 0 | 0 | 0 |
 
-The relay's chain 97 nonce moved from 63 to 139 between the two reads, and the
-sUSD position moved with it: the relay now holds 999,856 of the 1,000,148.5 in
-circulation, against 999,956 of 1,000,099.5 on 27 September.
+The relay's chain 97 nonce moved from 63 to 139 between the two reads, and the sUSD position moved with it: the relay now holds 999,856 of the 1,000,148.5 in circulation, against 999,956 of 1,000,099.5 on 27 September.
 
 Two things in section 5 of the original are superseded by this section:
 
-- The third row of the role table describes its address as "the intended
-  registering owner of the agent the team will list... Currently unused". That
-  description belongs to `0x5188d3b15271bD0eD56B1dE86B50198d4497c4e5`, the spare.
-  The address in that row, `0x84fedaBd1b83443aD86796C15619494878B64180`, already
-  owns five live listings and is described in the table above.
-- The closing sentence of the spare-identity note says it "needs to be the
-  registering owner of the ERC-8004 listing on chain 97". There is no plan to
-  list under it; the team's listings are already registered under the agent owner
-  above.
+- The third row of the role table describes its address as "the intended registering owner of the agent the team will list... Currently unused". That description belongs to `0x5188d3b15271bD0eD56B1dE86B50198d4497c4e5`, the spare. The address in that row, `0x84fedaBd1b83443aD86796C15619494878B64180`, already owns five live listings and is described in the table above. - The closing sentence of the spare-identity note says it "needs to be the registering owner of the ERC-8004 listing on chain 97". There is no plan to list under it; the team's listings are already registered under the agent owner above.
 
 ## 6. Not changed
 
-The declared network remains BSC testnet, chain 97. The mainnet cutover to chain
-56 happens after the campaign concludes; this addendum does not move it.
+The declared network remains BSC testnet, chain 97. The mainnet cutover to chain 56 happens after the campaign concludes; this addendum does not move it.
