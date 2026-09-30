@@ -9,7 +9,7 @@ const links = [
   { to: '/', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
   { to: '/ongoing', label: 'Ongoing' },
-  { to: '/list', label: 'List your agent' },
+  { to: '/list', label: 'List agent' },
 ]
 
 export function Nav() {
@@ -120,7 +120,7 @@ function AboutLink({ onClick }: { onClick?: () => void }) {
         }`
       }
     >
-      Proof and about
+      About
     </NavLink>
   )
 }

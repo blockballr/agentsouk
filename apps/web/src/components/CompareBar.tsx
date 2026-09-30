@@ -238,7 +238,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                       onClick={() => startAddToCartRefs(hire.winners)}
                       disabled={cartBusy || hire.winners.length === 0}
                       title={hire.winners.length === 0 ? 'Tick Include in hire on an agent in the table' : undefined}
-                      className="micro rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-night-ink disabled:cursor-not-allowed disabled:opacity-40"
+                      className="gloss micro rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-night-ink disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {cartPhase === 'adding'
                         ? 'Adding…'
@@ -257,7 +257,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                     onClick={onCompare}
                     disabled={count < 2}
                     title={count < 2 ? 'Pick one more agent to compare' : undefined}
-                    className="micro rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-night-ink disabled:cursor-not-allowed disabled:opacity-40"
+                    className="gloss micro rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-night-ink disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {count < 2 ? 'Pick one more' : `Compare ${count}`}
                   </button>

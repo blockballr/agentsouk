@@ -444,7 +444,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
     const shelfTab = categoryDef(draft.category).label
     return (
       <div
-        className={`rounded-[14px] border hairline p-8 ${
+        className={`metal rounded-[14px] border hairline p-8 ${
           refused
             ? 'border-slate-verdant/60 bg-bone-white'
             : 'border-highlighter-green/50 bg-highlighter-green/5'

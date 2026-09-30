@@ -1113,7 +1113,7 @@ function HirePanel({
         <button
           type="button"
           disabled
-          className="micro w-full rounded-[5px] bg-highlighter-green/60 px-6 py-5 text-on-highlighter"
+          className="gloss micro w-full rounded-[5px] bg-highlighter-green/60 px-6 py-5 text-on-highlighter"
         >
           Connecting wallet…
         </button>
@@ -1720,7 +1720,7 @@ function ResultPanel({
   const rateable = !!rate && !!output && (job ? job.status === 'Completed' : task?.status === 'delivered')
   // tinted so the answer, and the rating under it, is the first thing the buyer's eye lands on
   return (
-    <div className="rounded-[14px] border hairline border-highlighter-green/60 bg-highlighter-green/[0.07] p-8">
+    <div className="metal rounded-[14px] border hairline border-highlighter-green/60 bg-highlighter-green/[0.07] p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="micro text-newsprint-gray">Result</h2>
         <div className="flex flex-wrap items-center gap-4 text-[11px] text-newsprint-gray">

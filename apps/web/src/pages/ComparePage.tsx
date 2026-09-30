@@ -410,7 +410,7 @@ function CompareTable({
       </div>
 
       {error ? (
-        <p className="rounded-[14px] border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
+        <p className="metal rounded-[14px] border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
           Could not load those agents. Pick them again.
         </p>
       ) : loading ? (
@@ -420,7 +420,7 @@ function CompareTable({
           ))}
         </div>
       ) : agents.length === 0 ? (
-        <p className="rounded-[14px] border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
+        <p className="metal rounded-[14px] border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
           None of those agents could be loaded. They may have left the registry.
         </p>
       ) : (

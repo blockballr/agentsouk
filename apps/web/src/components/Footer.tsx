@@ -10,6 +10,7 @@ const columns: { heading: string; links: FooterLink[] }[] = [
     heading: 'Market',
     links: [
       { to: '/agents', label: 'All agents' },
+      { to: '/agents?category=rebalancing', label: 'Rebalancing' },
       { to: '/agents?category=health-factor', label: 'Health factor' },
       { to: '/agents?category=grid-trading', label: 'Grid trading' },
       { to: '/agents?category=yield', label: 'Yield' },
@@ -27,7 +28,7 @@ const columns: { heading: string; links: FooterLink[] }[] = [
   {
     heading: 'Project',
     links: [
-      { to: '/about', label: 'Proof and about' },
+      { to: '/about', label: 'About' },
       { to: '/advantage', label: 'Advantage report' },
       { to: '/profile', label: 'Your listings' },
       { to: 'https://github.com/blockballr/agentsouk', label: 'Source on GitHub', external: true },

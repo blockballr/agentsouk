@@ -219,14 +219,14 @@ export function OngoingPage() {
       </p>
 
       {!account && (
-        <div className="mt-10 rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:p-10">
+        <div className="mt-10 metal rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:p-10">
           <p className="text-[15px] text-press-black">Connect the wallet you hired with.</p>
           <p className="mt-2 text-[13px] text-newsprint-gray">Hires are kept per wallet, so this is how we find yours.</p>
           <button
             type="button"
             onClick={onConnect}
             disabled={connecting}
-            className="micro mt-6 rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60"
+            className="gloss micro mt-6 rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60"
           >
             {connecting ? 'Connecting…' : 'Connect wallet'}
           </button>
@@ -251,12 +251,12 @@ export function OngoingPage() {
       )}
 
       {account && data && items.length === 0 && !error && (
-        <div className="mt-10 rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:p-10">
+        <div className="mt-10 metal rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:p-10">
           <p className="text-[15px] text-press-black">Nothing hired with this wallet yet.</p>
           <p className="mt-2 text-[13px] text-newsprint-gray">Hire an agent and it shows up here while you use it.</p>
           <Link
             to="/agents"
-            className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95"
+            className="gloss micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95"
           >
             Browse agents
           </Link>
@@ -309,8 +309,8 @@ export function OngoingPage() {
 }
 
 const STATE_DOT: Record<HireGroup, string> = {
-  needs: 'bg-highlighter-green',
-  progress: 'bg-highlighter-green motion-safe:animate-pulse',
+  needs: 'glow bg-highlighter-green',
+  progress: 'glow bg-highlighter-green motion-safe:animate-pulse',
   finished: 'border hairline border-newsprint-gray bg-transparent',
 }
 

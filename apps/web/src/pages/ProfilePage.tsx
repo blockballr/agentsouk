@@ -170,7 +170,7 @@ export function ProfilePage() {
       </p>
 
       {!account && (
-        <div className="mt-10 rounded-[14px] border hairline border-slate-verdant/40 p-10">
+        <div className="mt-10 metal rounded-[14px] border hairline border-slate-verdant/40 p-10">
           <p className="text-[15px] text-typesetter-ink">
             Connect the wallet you listed with.
           </p>
@@ -213,7 +213,7 @@ export function ProfilePage() {
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {owned && agents.length === 0 && (
-              <div className="rounded-[14px] border hairline border-slate-verdant/40 p-10 sm:col-span-2 xl:col-span-3">
+              <div className="metal rounded-[14px] border hairline border-slate-verdant/40 p-10 sm:col-span-2 xl:col-span-3">
                 <p className="text-[15px] text-newsprint-gray">
                   This wallet owns no listed agents on this chain yet.
                 </p>
@@ -248,7 +248,7 @@ export function ProfilePage() {
             chainId={settledChain}
           />
 
-          <div className="mt-16 rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-8">
+          <div className="mt-16 metal rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-8">
             <h2 className="font-serif text-2xl font-medium">List another agent</h2>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-newsprint-gray">
               One transaction from your wallet registers it, with you as the owner.
@@ -310,7 +310,7 @@ function OwnedAgentCard({
   }
 
   return (
-    <article className="rounded-[14px] border hairline border-slate-verdant/40 p-6">
+    <article className="metal rounded-[14px] border hairline border-slate-verdant/40 p-6">
       <Link
         to={`/agents/${agent.chainId}/${agent.tokenId}`}
         className="font-serif text-[22px] leading-tight text-press-black hover:underline"
@@ -462,7 +462,7 @@ function HiresPanel({
       </div>
 
       {others.length > 0 && (
-        <details className="group mt-8 rounded-[14px] border hairline border-slate-verdant/30">
+        <details className="group mt-8 metal rounded-[14px] border hairline border-slate-verdant/30">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <span className="text-[14px] text-press-black">
               Checks and test hires <span className="text-newsprint-gray">· {others.length}</span>

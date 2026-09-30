@@ -457,7 +457,7 @@ function AgentCard({
   const reviews = agent.total_feedbacks
   return (
     <article
-      className={`relative flex flex-col rounded-[12px] border hairline bg-bone-white transition duration-150 hover:border-press-black/40 hover:shadow-[0_16px_32px_-20px_rgba(0,0,0,0.4)] motion-safe:hover:-translate-y-0.5 ${
+      className={`metal relative flex flex-col rounded-[12px] border hairline bg-bone-white transition duration-150 hover:border-press-black/40 hover:shadow-[0_16px_32px_-20px_rgba(0,0,0,0.4)] motion-safe:hover:-translate-y-0.5 ${
         checked ? 'border-highlighter-green ring-1 ring-highlighter-green' : 'border-slate-verdant/35'
       }`}
     >

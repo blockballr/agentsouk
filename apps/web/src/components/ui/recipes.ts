@@ -12,7 +12,7 @@ const BUTTON_BASE =
   'micro inline-flex min-h-10 items-center justify-center gap-2 rounded-[5px] text-center transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-60'
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {
-  primary: 'bg-highlighter-green text-on-highlighter hover:brightness-95',
+  primary: 'gloss bg-highlighter-green text-on-highlighter hover:brightness-95',
   secondary: 'border hairline border-slate-verdant/50 text-press-black hover:border-press-black',
   quiet: 'text-newsprint-gray underline decoration-newsprint-gray/40 underline-offset-4 hover:text-press-black',
 }
@@ -49,7 +49,7 @@ const CARD_PAD: Record<CardPad, string> = {
 }
 
 export function card(tone: CardTone = 'plain', pad: CardPad = 'lg'): string {
-  return cx('rounded-[14px] border hairline', CARD_TONE[tone], CARD_PAD[pad])
+  return cx('metal rounded-[14px] border hairline', CARD_TONE[tone], CARD_PAD[pad])
 }
 
 // the small uppercase label that heads every panel and slot

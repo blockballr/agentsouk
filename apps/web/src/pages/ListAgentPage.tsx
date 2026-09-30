@@ -264,7 +264,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
   }
 
   return (
-    <div className="mt-8 rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-6">
+    <div className="mt-8 metal rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h3 className="font-serif text-xl font-medium">Gas to register</h3>
         <span className="micro text-newsprint-gray">{chainLabel(chainId)}</span>
@@ -500,7 +500,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
       </ol>
 
       <p className="mt-6 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-        Agent Souk does not build or host agents. It is where buyers find them and where we check them.
+        Studio builds and deploys the agent. Agent Souk is where buyers find it and where we check it.
       </p>
     </div>
   )
@@ -928,9 +928,9 @@ function FoundAgent({ agent }: { agent: AgentDetail }) {
   const verdict = verdictFor(agent.chain_id, agent.verification)
 
   return (
-    <div className="rounded-[14px] border hairline border-highlighter-green/60 p-6 sm:p-8">
+    <div className="metal rounded-[14px] border hairline border-highlighter-green/60 p-6 sm:p-8">
       <p className="flex items-center gap-2 text-[14px] font-medium text-press-black">
-        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-highlighter-green" />
+        <span aria-hidden="true" className="glow h-2 w-2 rounded-full bg-highlighter-green" />
         Listed. Your agent is on the market now.
       </p>
       <p className="mt-4 font-serif text-2xl font-medium">{agent.name}</p>

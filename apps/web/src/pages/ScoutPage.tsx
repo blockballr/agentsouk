@@ -237,7 +237,7 @@ export function ScoutPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="mt-8 rounded-[14px] border hairline border-slate-verdant/40 p-10">
+        <div className="mt-8 metal rounded-[14px] border hairline border-slate-verdant/40 p-10">
           <p className="text-[15px] text-newsprint-gray">No scout candidates loaded yet.</p>
           <p className="mt-2 text-[13px] text-newsprint-gray/80">
             Click Run discover (needs INDEX_SECRET), then Refresh. Candidates appear here.
@@ -250,7 +250,7 @@ export function ScoutPage() {
             return (
               <article
                 key={c.agent_id}
-                className="rounded-[12px] border hairline border-slate-verdant/40 p-4"
+                className="metal rounded-[12px] border hairline border-slate-verdant/40 p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>

@@ -21,7 +21,7 @@ export function PrimaryButton({
     <button
       type={type}
       className={cx(
-        'group micro inline-flex items-center gap-2.5 rounded-[5px] bg-highlighter-green px-[30px] py-5 text-on-highlighter shadow-lg motion-safe:transition-[transform,filter,box-shadow] motion-safe:duration-150 hover:scale-[1.03] hover:brightness-95 hover:shadow-[rgba(16,94,29,0.55)_1px_10px_26px_0px] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black',
+        'gloss group micro inline-flex items-center gap-2.5 rounded-[5px] bg-highlighter-green px-[30px] py-5 text-on-highlighter shadow-lg motion-safe:transition-[transform,filter,box-shadow] motion-safe:duration-150 hover:scale-[1.03] hover:brightness-95 hover:shadow-[rgba(16,94,29,0.55)_1px_10px_26px_0px] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black',
         className,
       )}
       {...rest}
