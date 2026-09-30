@@ -1,8 +1,12 @@
 // the grid agent's A2A route answers a PancakeSwap pair request end to end: the
-// JSON-RPC envelope carries the centred plan and the pool it was read from, with the
-// chain read replaced by a fixed mainnet quote
+// JSON-RPC envelope carries the centred plan and the pool it was read from, on the
+// deployment's own chain, with the chain read replaced by a fixed quote
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+
+vi.hoisted(() => {
+  process.env.TARGET_CHAIN = "97";
+});
 
 vi.mock("server-only", () => ({}));
 
@@ -36,18 +40,20 @@ function send(data: Record<string, unknown>) {
 }
 
 describe("grid agent A2A route, PancakeSwap mode", () => {
-  it("returns the centred plan and names the mainnet pool it read", async () => {
+  it("returns the centred plan and names the pool it read on the market's chain", async () => {
     const res = await POST(send({ input: { pair: "WBNB/USDT", widthPct: 10, levels: 11, orderSizeUsd: 100 } }));
     const body = (await res.json()) as {
       result: { task: { status: { state: string; message: { parts: { text: string }[] } }; artifacts: { parts: { data: Record<string, unknown> }[] }[] } };
     };
     const task = body.result.task;
     expect(task.status.state).toBe("completed");
-    expect(task.status.message.parts[0].text).toContain("read from the 0.05% pool 0x36696169c63e42cd08ce11f5deebbcebae652050 at block 63000000 on BNB Chain mainnet");
+    expect(task.status.message.parts[0].text).toContain(
+      "read from the 0.05% pool 0x36696169c63e42cd08ce11f5deebbcebae652050 at block 63000000 on BSC testnet, so it is a testnet price",
+    );
     const artifact = task.artifacts[0].parts[0].data;
-    expect(artifact.source).toMatchObject({ dex: "PancakeSwap v3", chainId: 56, feeTier: 500 });
+    expect(artifact.source).toMatchObject({ dex: "PancakeSwap v3", chainId: 97, feeTier: 500 });
     expect((artifact.inputs as Record<string, number>).lowerUsd).toBeCloseTo(759.985999 * 0.95, 4);
-    expect(read.readPancakePrice).toHaveBeenCalledWith(56, "WBNB", "USDT", expect.objectContaining({ feeTier: undefined }));
+    expect(read.readPancakePrice).toHaveBeenCalledWith(97, "WBNB", "USDT", expect.objectContaining({ feeTier: undefined }));
   });
 
   it("keeps the plain planner for a request that names two prices", async () => {

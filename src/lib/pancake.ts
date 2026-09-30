@@ -4,10 +4,6 @@
 
 export const PANCAKE_V3_FACTORY = "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865" as const; // same on 56 and 97
 
-// prices are read from mainnet whatever chain hires settle on: testnet pools hold
-// play money, so their price says nothing about BNB, and a read moves no funds
-export const PRICE_CHAIN_ID = 56;
-
 // fee tiers in hundredths of a basis point: 100 is 0.01%, 500 is 0.05%
 export const PANCAKE_FEE_TIERS = [100, 500, 2500, 10000] as const;
 

@@ -13,7 +13,7 @@ export const GRID_AGENT_VERSION = "1.1.0";
 export const GRID_AGENT_CATEGORY = "grid-trading";
 export const GRID_AGENT_PROTOCOL_VERSION = "0.3.0";
 export const GRID_AGENT_DESCRIPTION =
-  "Plans a grid trading ladder over a price range the caller supplies: a lower price, an upper price, the number of price rungs, the value placed at each rung, and an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic. By default it uses no market data; name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pair's live price on BNB Chain mainnet, stating the pool and the block it read, so every figure can still be reproduced.";
+  "Plans a grid trading ladder over a price range the caller supplies: a lower price, an upper price, the number of price rungs, the value placed at each rung, and an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic. By default it uses no market data; name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pair's current PancakeSwap price, stating the chain, the pool and the block it read, so every figure can still be reproduced.";
 export const GRID_TOOL_DESCRIPTION =
   "Plans a grid trading ladder over a price range the caller supplies: a lower price, an upper price, the number of price rungs, the value placed at each rung, and an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic and uses no market data, so the caller supplies the range and the size and can reproduce every figure.";
 export const GRID_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
@@ -99,7 +99,7 @@ export function gridAgentCard(origin: string): GridAgentCard {
         id: "plan_grid",
         name: "Grid ladder planning",
         description:
-          "Plans a grid trading ladder from a lower price, an upper price, a rung count and a value per rung, with an optional round trip fee in basis points. Returns the rung spacing, the first and last rung prices, the value committed, the gross, fee and net capture of one round trip, and the total net capture across a full traversal. Instead of the two prices, name a PancakeSwap pair such as WBNB/USDT and a width in percent: the range is centred on the pair's live price on BNB Chain mainnet, and the answer names the pool and the block it read. Read-only; it never trades.",
+          "Plans a grid trading ladder from a lower price, an upper price, a rung count and a value per rung, with an optional round trip fee in basis points. Returns the rung spacing, the first and last rung prices, the value committed, the gross, fee and net capture of one round trip, and the total net capture across a full traversal. Instead of the two prices, name a PancakeSwap pair such as WBNB/USDT and a width in percent: the range is centred on the pair's current PancakeSwap price on the chain this marketplace runs on, and the answer names the pool and the block it read. Read-only; it never trades.",
         tags: ["grid-trading", "grid", "trading", "ladder", "range", "orders"],
         examples: [
           "Plan a grid from lower 1000 to upper 2000 with 11 levels and 100 per order",
@@ -371,7 +371,7 @@ export interface GridPriceSource {
 
 function sourceSentence(s: GridPriceSource): string {
   const quote = s.pair.split("/")[1] ?? "";
-  return `The range is centred on the PancakeSwap v3 ${s.pair} price of ${s.price} ${quote}, read from the ${feeTierLabel(s.feeTier)} pool ${s.pool} at block ${s.blockNumber} on ${chainName(s.chainId)}, ${s.widthPct}% wide${s.feeFromPool ? ", with the pool's own round trip fee" : ""}. The arithmetic on that price is deterministic, so every figure can be reproduced from that block.`;
+  return `The range is centred on the PancakeSwap v3 ${s.pair} price of ${s.price} ${quote}, read from the ${feeTierLabel(s.feeTier)} pool ${s.pool} at block ${s.blockNumber} on ${chainName(s.chainId)}${s.chainId === 97 ? ", so it is a testnet price rather than a market one" : ""}, ${s.widthPct}% wide${s.feeFromPool ? ", with the pool's own round trip fee" : ""}. The arithmetic on that price is deterministic, so every figure can be reproduced from that block.`;
 }
 
 function stateLabel(state: GridPlanState): string {

@@ -11,6 +11,8 @@ import { decideGridAgentTaskLive } from "../src/lib/reference-grid-live";
 
 // WBNB/USDT 0.05% on BNB Chain mainnet, read on 30 Sep 2026; USDT sorts first, so WBNB is token1
 const SQRT = BigInt("2873933985273352576414902182");
+// the same pair's 0.05% pool on BSC testnet, whose price is a test value
+const TESTNET_SQRT = BigInt("25198607551688324341071279158");
 const EXPECTED_WBNB_IN_USDT = 1 / (Number(SQRT) / 2 ** 96) ** 2;
 const BLOCK = BigInt(63_000_000);
 
@@ -108,8 +110,16 @@ describe("reading a PancakeSwap pool", () => {
 });
 
 describe("the grid agent's PancakeSwap mode", () => {
-  it("centres the ladder on the mainnet price by default and states the pool and block", async () => {
-    const reply = await decideGridAgentTaskLive("", { input: ORDER }, { reader: reader(POOLS) });
+  it("reads the testnet pool on a testnet market and says the price is a testnet one", async () => {
+    const reply = await decideGridAgentTaskLive("", { input: ORDER }, { chainId: 97, reader: reader(POOLS, TESTNET_SQRT) });
+    expect(reply.state).toBe("completed");
+    expect((reply.artifact.source as { chainId: number; price: number }).chainId).toBe(97);
+    expect((reply.artifact.source as { price: number }).price).toBeCloseTo(1 / (Number(TESTNET_SQRT) / 2 ** 96) ** 2, 5);
+    expect(reply.text).toContain("on BSC testnet, so it is a testnet price rather than a market one");
+  });
+
+  it("centres the ladder on a mainnet market's price and states the pool and block", async () => {
+    const reply = await decideGridAgentTaskLive("", { input: ORDER }, { chainId: 56, reader: reader(POOLS) });
     expect(reply.state).toBe("completed");
     const inputs = reply.artifact.inputs as Record<string, number>;
     const source = reply.artifact.source as { price: number; chainId: number };

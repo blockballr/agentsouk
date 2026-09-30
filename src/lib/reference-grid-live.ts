@@ -1,6 +1,6 @@
 import "server-only";
 
-import { PANCAKE_FEE_TIERS, PRICE_CHAIN_ID, isUsdQuote, supportedPairs } from "./pancake";
+import { PANCAKE_FEE_TIERS, isUsdQuote, supportedPairs } from "./pancake";
 import { readPancakePrice, type PoolReader } from "./pancake-read";
 import {
   GRID_AGENT_CATEGORY,
@@ -14,6 +14,7 @@ import {
   type GridAgentReply,
   type GridPriceSource,
 } from "./reference-grid";
+import { targetChainId } from "./types";
 
 // the grid agent's PancakeSwap mode: a named pair and a width stand in for the two
 // prices, read from the pool at one block; everything else is the ordinary planner
@@ -75,7 +76,8 @@ export async function decideGridAgentTaskLive(
     (fields.pair !== undefined && (hasGridIntent(task) || fields.widthPct !== undefined));
   if (!pairAsked || rangeGiven) return decideGridAgentTask(task, input);
 
-  const chainId = opts.chainId ?? PRICE_CHAIN_ID;
+  // the pool on the chain this marketplace settles on, so a testnet market reads a testnet pool
+  const chainId = opts.chainId ?? targetChainId();
   const pairs = supportedPairs(chainId).join(" or ");
   const missing: string[] = [];
   const problems: string[] = [];
