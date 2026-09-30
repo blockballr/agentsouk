@@ -8,6 +8,7 @@ import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from 
 import { bestByCategory } from '../lib/compare'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
+import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
 
 const sorts = [
   { key: 'reachability', label: 'Reachability' },
@@ -635,7 +636,13 @@ function AgentCard({
           ) : (
             <BadgeCell />
           )}
-          <BadgeCell />
+          {isOperatedByAgentSouk(agent.owner_address) ? (
+            <BadgeCell tone="border-press-black/40 text-press-black" title={OPERATED_BY_TITLE}>
+              {OPERATED_BY_LABEL}
+            </BadgeCell>
+          ) : (
+            <BadgeCell />
+          )}
           <BadgeCell />
         </div>
         {agent.verification ? (

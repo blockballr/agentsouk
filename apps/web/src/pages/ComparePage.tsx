@@ -6,6 +6,7 @@ import { getAgentDetail, getAgents, getCompareCommentary } from '../lib/api'
 import { bestByCategory, categoryGroups, categoryOf } from '../lib/compare'
 import { CompareBar } from '../components/CompareBar'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
+import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
 
 export function ComparePage() {
   const [sp, setSp] = useSearchParams()
@@ -277,6 +278,7 @@ function Picker({
                     <span className="block truncate font-serif text-lg font-medium">{a.name}</span>
                     <span className="mt-0.5 block text-[11px] uppercase tracking-[0.01em] text-newsprint-gray">
                       {a.category} · {shortAddress(a.owner_address)}
+                      {isOperatedByAgentSouk(a.owner_address) ? ` · ${OPERATED_BY_LABEL}` : ''}
                     </span>
                   </span>
                   <span className="text-sm tabular-nums text-newsprint-gray">
@@ -481,7 +483,10 @@ function CompareCard({
         )}
       </div>
 
-      <p className="micro mt-3 text-newsprint-gray">Owner {shortAddress(agent.owner_address)}</p>
+      <p className="micro mt-3 text-newsprint-gray" title={isOperatedByAgentSouk(agent.owner_address) ? OPERATED_BY_TITLE : undefined}>
+        Owner {shortAddress(agent.owner_address)}
+        {isOperatedByAgentSouk(agent.owner_address) ? ` · ${OPERATED_BY_LABEL}` : ''}
+      </p>
 
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
         {metrics.map((m) => (
