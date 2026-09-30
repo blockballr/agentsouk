@@ -201,6 +201,24 @@ export async function saveShelfAgents(
   }
 }
 
+// two numbers stand for a chain's whole shelf, so a reader can tell whether a full read, which
+// is what spends the database's transfer allowance, would change anything it already holds
+export async function readShelfVersion(chainId: number): Promise<string | null> {
+  const c = client();
+  if (!(await init()) || !c) return null;
+  try {
+    const [r] = await c`
+      select count(*)::int as n, max(updated_at) as at
+      from shelf_agents
+      where chain_id = ${chainId}
+    `;
+    const at = r?.at instanceof Date ? r.at.toISOString() : String(r?.at ?? "");
+    return `${r?.n ?? 0}:${at}`;
+  } catch {
+    return null;
+  }
+}
+
 export interface DurableShelfRead {
   rows: ShelfAgentRow[];
   // true only when the store is configured and the query ran. An absent or

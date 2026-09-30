@@ -35,6 +35,7 @@ import {
   loadShelfAgents,
   readShelfAgent,
   readShelfAgents,
+  readShelfVersion,
   saveCatalogueMeta,
   saveRegistryTotal,
   saveShelfAgents,
@@ -494,6 +495,8 @@ let snapshotTime: string | null = null;
 // per request.
 let durableMerged = false;
 let durableReadAt: number | null = null;
+// the store's fingerprint when the rows in memory were read, so an unchanged shelf is not re-read
+let durableVersion: string | null = null;
 // Seeding is a once-per-process act, so a store that stays empty after the write
 // is not re-seeded on every store TTL.
 let seededStore = false;
@@ -504,6 +507,7 @@ export function invalidateSnapshot(): void {
   snapshotLoaded = false;
   durableMerged = false;
   durableReadAt = null;
+  durableVersion = null;
   registryTotalLoaded = false;
 }
 
@@ -516,6 +520,15 @@ async function readDurableShelf(chainId: number): Promise<DurableShelfRead> {
     // a store module without the status reader cannot prove the shelf is empty,
     // so the plain read's empty result is reported as an unsuccessful read
     return { rows: await loadShelfAgents(chainId), ok: false };
+  }
+}
+
+// a store module without the fingerprint reader, or one that fails, just means a full read
+async function readShelfFingerprint(chainId: number): Promise<string | null> {
+  try {
+    return await readShelfVersion(chainId);
+  } catch {
+    return null;
   }
 }
 
@@ -564,10 +577,16 @@ async function mergeDurableShelf(force = false): Promise<number> {
   ) {
     return 0;
   }
+  const chainId = targetChainId();
+  const version = await readShelfFingerprint(chainId);
+  if (durableMerged && !force && version !== null && version === durableVersion) {
+    durableReadAt = now;
+    return 0;
+  }
   durableMerged = true;
   durableReadAt = now;
-  const chainId = targetChainId();
   const read = await readDurableShelf(chainId);
+  if (read.ok) durableVersion = version;
   let merged = 0;
   for (const row of read.rows) {
     const summary = summaryFromRow(row);

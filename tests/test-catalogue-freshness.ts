@@ -21,6 +21,7 @@ const env = vi.hoisted(() => {
       saved: [] as unknown[][],
       metaWrites: 0,
       reads: 0,
+      version: null as string | null,
     },
   };
 });
@@ -33,6 +34,8 @@ vi.mock("../src/lib/shelf-store", () => ({
   deleteShelfAgent: async () => {},
   loadRegistryTotal: async () => null,
   loadShelfAgents: async () => env.state.rows,
+  // null means no fingerprint, so every read past the TTL is a full read, as before
+  readShelfVersion: async () => env.state.version,
   saveRegistryTotal: async () => {},
   saveShelfAgents: async (summaries: unknown[]) => {
     env.state.saved.push(summaries);
@@ -138,6 +141,7 @@ beforeEach(() => {
   env.state.saved = [];
   env.state.metaWrites = 0;
   env.state.reads = 0;
+  env.state.version = null;
 });
 
 afterEach(() => {
@@ -285,6 +289,39 @@ describe("reading the store on a TTL", () => {
     clock += 31_000;
     await queryAgents({ limit: 5 });
     expect(env.state.reads).toBe(2);
+  });
+
+  // each full read spends the database's transfer allowance, so past the TTL only a fingerprint
+  // that moved, or one that could not be read, earns another
+  it("reads again past the TTL only when the store's fingerprint moved", async () => {
+    const now = vi.spyOn(Date, "now");
+    let clock = 1_000_000_000;
+    now.mockImplementation(() => clock);
+    env.state.rows = [row("1")];
+    env.state.version = "1:2026-09-30T00:00:00.000Z";
+    const { queryAgents } = await freshScanner();
+
+    await queryAgents({ limit: 5 });
+    expect(env.state.reads).toBe(1);
+
+    clock += 31_000;
+    await queryAgents({ limit: 5 });
+    expect(env.state.reads).toBe(1);
+
+    clock += 31_000;
+    env.state.rows = [row("1"), row("2")];
+    env.state.version = "2:2026-09-30T00:01:00.000Z";
+    await queryAgents({ limit: 5 });
+    expect(env.state.reads).toBe(2);
+    // the new row reached the shelf, and finding it spent no further read inside the TTL
+    const found = await queryAgents({ q: "Yield Agent 2", limit: 50 });
+    expect(found.items.some((a) => a.token_id === "2")).toBe(true);
+    expect(env.state.reads).toBe(2);
+
+    clock += 31_000;
+    env.state.version = null;
+    await queryAgents({ limit: 5 });
+    expect(env.state.reads).toBe(3);
   });
 });
 

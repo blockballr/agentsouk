@@ -104,6 +104,18 @@ export async function upsertVerification(
   }
 }
 
+// the same fingerprint for the verdicts: a changed count or a newer check means a full read is due
+export async function loadVerificationsVersion(): Promise<string | null> {
+  if (!(await ensureTable()) || !sql) return null;
+  try {
+    const [r] = await sql`select count(*)::int as n, max(checked_at) as at from verifications`;
+    const at = r?.at instanceof Date ? r.at.toISOString() : String(r?.at ?? "");
+    return `${r?.n ?? 0}:${at}`;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadVerificationsFromDb(): Promise<Map<string, RecordedVerification>> {
   const byToken = new Map<string, RecordedVerification>();
   if (!(await ensureTable()) || !sql) return byToken;

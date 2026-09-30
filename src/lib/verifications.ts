@@ -50,7 +50,7 @@ export function unreachableEndpointVerdict(
 }
 
 const CACHE_MS = 30_000;
-let cache: { at: number; chain: number; map: Map<string, RecordedVerification> } | null = null;
+let cache: { at: number; chain: number; map: Map<string, RecordedVerification>; version?: string | null } | null = null;
 let inflight: Promise<Map<string, RecordedVerification>> | null = null;
 
 interface VerificationRow {
@@ -157,17 +157,31 @@ async function loadScoutFile(chainId: number): Promise<Map<string, RecordedVerif
   return byToken;
 }
 
+async function verificationsVersion(): Promise<string | null> {
+  try {
+    const { loadVerificationsVersion } = await import("./verifications-store");
+    return await loadVerificationsVersion();
+  } catch {
+    return null;
+  }
+}
+
 export async function loadVerifications(): Promise<Map<string, RecordedVerification>> {
   const chain = targetChainId();
   if (cache && cache.chain === chain && Date.now() - cache.at < CACHE_MS) return cache.map;
   if (inflight) return inflight;
-  inflight = loadOnce()
-    .then((map) => {
-      cache = { at: Date.now(), chain, map };
-      return map;
-    })
-    .finally(() => {
-      inflight = null;
-    });
+  inflight = (async () => {
+    const version = await verificationsVersion();
+    // an unchanged table means the verdicts in hand are current, so only the fingerprint crossed the wire
+    if (cache && cache.chain === chain && version !== null && cache.version === version) {
+      cache = { ...cache, at: Date.now() };
+      return cache.map;
+    }
+    const map = await loadOnce();
+    cache = { at: Date.now(), chain, map, version };
+    return map;
+  })().finally(() => {
+    inflight = null;
+  });
   return inflight;
 }
