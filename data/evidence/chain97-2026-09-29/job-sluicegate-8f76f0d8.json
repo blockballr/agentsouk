@@ -1,0 +1,52 @@
+{
+  "capturedAt": "2026-09-29T18:15:28.299Z",
+  "request": "GET https://api.agentsouk.xyz/api/jobs/8f76f0d8-774d-463c-b48d-7960fceef846",
+  "status": 200,
+  "body": {
+    "success": true,
+    "job": {
+      "id": "8f76f0d8-774d-463c-b48d-7960fceef846",
+      "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+      "status": "Completed",
+      "taskId": "19dfdcba-6b11-4a92-a103-d9efee6ba439",
+      "chainId": 97,
+      "history": [
+        {
+          "at": "2026-09-29T17:42:33.197Z",
+          "by": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+          "status": "Open"
+        },
+        {
+          "at": "2026-09-29T17:42:33.197Z",
+          "by": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+          "reason": "x402 settlement",
+          "status": "Funded"
+        },
+        {
+          "at": "2026-09-29T17:42:37.385Z",
+          "by": "marketplace",
+          "reason": "deliverable recorded",
+          "status": "Submitted"
+        },
+        {
+          "at": "2026-09-29T17:42:38.495Z",
+          "by": "0xc76ea6e8533c9fe1d25ff9fa3bd7d0edfdf46713",
+          "reason": "complete",
+          "status": "Completed"
+        }
+      ],
+      "tokenId": "2237",
+      "provider": "0x253F7Ad5D52099C4a2293418a661e9974DfB5e84",
+      "agentName": "Sluicegate",
+      "budgetUsd": 2,
+      "createdAt": "2026-09-29T17:42:33.197Z",
+      "evaluator": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+      "expiredAt": "2026-09-30T17:42:33.197Z",
+      "paymentId": "pay_e2e_d56af3a01ec6d171ee152a2a",
+      "updatedAt": "2026-09-29T17:42:38.495Z",
+      "attestation": "complete",
+      "deliverable": "{\"recommend\":true,\"venue\":\"venus\",\"netAprPct\":3.231067173435965,\"aprSources\":[{\"value\":3.2312899907216552,\"source\":\"Venus vUSDT supplyRatePerBlock at block 124758531, compounded over 70080000 blocks/year\",\"timestamp\":\"2026-09-29T17:42:36.621Z\"},{\"value\":0,\"source\":\"token incentives; zero until an incentive source is wired in, and reported as zero rather than omitted\",\"timestamp\":\"2026-09-29T17:42:36.621Z\"}],\"switchingCost\":{\"gasUsd\":0.0223,\"swapUsd\":0,\"exitUsd\":0},\"usesLeverage\":false,\"improveme",
+      "description": "Hire Sluicegate"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "capturedAt": "2026-09-29T18:15:26.653Z",
+  "request": "GET https://api.agentsouk.xyz/api/receipts/pay_e2e_3d01cacf908bb3c6beb13924",
+  "status": 200,
+  "body": {
+    "mode": "prod",
+    "agent": {
+      "name": "Keel",
+      "chainId": 97,
+      "tokenId": "2238"
+    },
+    "payTo": "0xdF1074a272C53A1a10b96Fa0201Eb58bbbaaFe00",
+    "amount": "2000000000000000000",
+    "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+    "symbol": "sUSD",
+    "txHash": "0x449842344748b265ec0b27577e9dd894e375366a69685e1440aeb2afdf520a98",
+    "session": {
+      "expiresAt": "2026-09-30T17:42:21.376Z",
+      "spendCapUsd": 5
+    },
+    "activated": true,
+    "createdAt": "2026-09-29T17:42:21.376Z",
+    "paymentId": "pay_e2e_3d01cacf908bb3c6beb13924"
+  }
+}

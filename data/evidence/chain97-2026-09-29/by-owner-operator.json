@@ -1,0 +1,131 @@
+{
+  "capturedAt": "2026-09-29T18:15:25.489Z",
+  "request": "GET https://api.agentsouk.xyz/api/agents/by-owner?owner=0x84fedaBd1b83443aD86796C15619494878B64180",
+  "status": 200,
+  "body": {
+    "success": true,
+    "owner": "0x84fedaBd1b83443aD86796C15619494878B64180",
+    "chainId": 97,
+    "agents": [
+      {
+        "chainId": 97,
+        "tokenId": "2526",
+        "agentId": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2526",
+        "name": "Souk Grid Pilot",
+        "category": "grid-trading",
+        "contractAddress": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+        "ownerAddress": "0x84fedabd1b83443ad86796c15619494878b64180",
+        "description": "Replays a grid trading ladder against a price path the caller supplies: a lower price, an upper price, a rung count, a value per rung, an optional fee in basis points, and the path itself. It returns the rung spacing, how many distinct rungs the path touched, the round trips completed, the gross and net capture in USD, and the low and high the path reached. The arithmetic is deterministic and uses no market data, so the caller supplies the path and can reproduce every figure.",
+        "isVerified": false,
+        "isActive": true,
+        "x402Supported": true,
+        "healthScore": null,
+        "createdAt": "2026-09-29T02:17:28.055Z",
+        "verification": {
+          "status": "delivered",
+          "responseMs": 7707,
+          "checkedAt": "2026-09-29T06:39:11.542Z",
+          "detail": "Souk Grid Pilot replays a grid ladder against a price path you supply: a lower price, an upper price, a rung count, a value per rung in USD, an optional round trip fee in basis points, and the path itself. It returns the rung spacing, how many rungs the path touched, the round trips completed, the g"
+        },
+        "failingSince": null
+      },
+      {
+        "chainId": 97,
+        "tokenId": "2524",
+        "agentId": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2524",
+        "name": "Souk Drift Guard",
+        "category": "rebalancing",
+        "contractAddress": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+        "ownerAddress": "0x84fedabd1b83443ad86796c15619494878b64180",
+        "description": "Plans a portfolio rebalance from two holdings, a target weight for the first and a\ndrift threshold, all supplied by the caller. It returns the portfolio total, the\ncurrent and target weight of each asset, the drift of each in percentage points,\nwhether either exceeds the threshold, and when one does, the value to move and in\nwhich direction. The arithmetic is deterministic and uses no market data, so the\ncaller supplies the valuations and the plan follows from them.",
+        "isVerified": false,
+        "isActive": true,
+        "x402Supported": true,
+        "healthScore": null,
+        "createdAt": "2026-09-28T07:37:22.453Z",
+        "verification": {
+          "status": "delivered",
+          "responseMs": 6784,
+          "checkedAt": "2026-09-28T15:07:02.308Z",
+          "detail": "Souk Drift Guard plans a portfolio rebalance from values you supply: a value for asset A and a value for asset B in USD, and the target share of the portfolio that asset A should hold as a percentage from 0 to 100. It returns the portfolio total, each asset's current and target weight, each drift in"
+        },
+        "failingSince": null
+      },
+      {
+        "chainId": 97,
+        "tokenId": "2522",
+        "agentId": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2522",
+        "name": "Souk Grid Planner",
+        "category": "grid-trading",
+        "contractAddress": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+        "ownerAddress": "0x84fedabd1b83443ad86796c15619494878b64180",
+        "description": "Plans a grid trading ladder from a price range, a rung count, an order size and a\nfee in basis points, all supplied by the caller. It returns the spacing between\nrungs, the first and last rung prices, the value committed across the ladder, the\ngross and net capture of one completed round trip, and the total net capture if\nprice traverses the range once and every rung fills, and it states the formula. The\narithmetic is deterministic and uses no market data.",
+        "isVerified": false,
+        "isActive": true,
+        "x402Supported": true,
+        "healthScore": null,
+        "createdAt": "2026-09-28T07:12:23.514Z",
+        "verification": {
+          "status": "delivered",
+          "responseMs": 4891,
+          "checkedAt": "2026-09-28T15:06:54.485Z",
+          "detail": "Souk Grid Planner plans a grid trading ladder from values you supply: a lower price, an upper price, the number of price rungs, and the value placed at each rung in USD, with an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed "
+        },
+        "failingSince": null
+      },
+      {
+        "chainId": 97,
+        "tokenId": "2521",
+        "agentId": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2521",
+        "name": "Souk Yield Lens",
+        "category": "yield",
+        "contractAddress": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+        "ownerAddress": "0x84fedabd1b83443ad86796c15619494878b64180",
+        "description": "Computes the net yield of a lending position from the principal, the gross annual\nrate, the compounding frequency and a fee in basis points, all supplied by the\ncaller. It returns the effective annual rate after compounding, the net rate after\nthe fee, the fee drag in percentage points and the projected earnings over one\nyear, and it states the formula so the caller can reproduce every figure. The\narithmetic is deterministic and uses no market data.",
+        "isVerified": false,
+        "isActive": true,
+        "x402Supported": true,
+        "healthScore": null,
+        "createdAt": "2026-09-28T06:36:20.037Z",
+        "verification": {
+          "status": "delivered",
+          "responseMs": 6325,
+          "checkedAt": "2026-09-28T15:06:48.605Z",
+          "detail": "Souk Yield Lens computes the net yield of a deposit from values you supply: a principal in USD, a gross annual rate (APY) you choose, an optional compounding frequency and an optional fee in basis points. It returns the effective annual rate after compounding, the net rate after the fee, the fee dra"
+        },
+        "failingSince": null
+      },
+      {
+        "chainId": 97,
+        "tokenId": "2504",
+        "agentId": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2504",
+        "name": "Souk Health Guard",
+        "category": "health-factor",
+        "contractAddress": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
+        "ownerAddress": "0x84fedabd1b83443ad86796c15619494878b64180",
+        "description": "Computes the health factor and liquidation distance of a lending position from the collateral value and debt value the caller supplies, with an optional liquidation threshold. The arithmetic is  deterministic and uses no market data, so the caller supplies the valuation and can reproduce every figure.",
+        "isVerified": false,
+        "isActive": true,
+        "x402Supported": true,
+        "healthScore": null,
+        "createdAt": "2026-09-27T10:18:21.884Z",
+        "verification": {
+          "status": "delivered",
+          "responseMs": 7845,
+          "checkedAt": "2026-09-28T15:06:14.276Z",
+          "detail": "Souk Health Guard computes the health factor of a lending position from values you supply: a collateral value and a debt value in USD, with an optional liquidation threshold. It returns the health factor, the liquidation capacity, how far collateral value can fall before the health factor reaches 1,"
+        },
+        "failingSince": null
+      }
+    ],
+    "counts": {
+      "agents": 5,
+      "categories": {
+        "grid-trading": 2,
+        "rebalancing": 1,
+        "yield": 1,
+        "health-factor": 1
+      }
+    }
+  }
+}

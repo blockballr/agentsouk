@@ -1,0 +1,99 @@
+{
+  "capturedAt": "2026-09-29T18:15:26.144Z",
+  "request": "GET https://api.agentsouk.xyz/api/hires/by-wallet?wallet=0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+  "status": 200,
+  "body": {
+    "success": true,
+    "wallet": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+    "hires": [
+      {
+        "paymentId": "pay_e2e_d56af3a01ec6d171ee152a2a",
+        "receiptId": "pay_e2e_d56af3a01ec6d171ee152a2a",
+        "chainId": 97,
+        "tokenId": "2237",
+        "agentName": "Sluicegate",
+        "category": "yield",
+        "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+        "txHash": "0xa017140c9486fff04f0b951cabdd7f3b83f60881ea675cbd258adeb1b2273f5f",
+        "mode": "prod",
+        "spendCapUsd": 5,
+        "createdAt": "2026-09-29T17:42:33.167Z",
+        "expiresAt": "2026-09-30T17:42:33.167Z"
+      },
+      {
+        "paymentId": "pay_e2e_3d01cacf908bb3c6beb13924",
+        "receiptId": "pay_e2e_3d01cacf908bb3c6beb13924",
+        "chainId": 97,
+        "tokenId": "2238",
+        "agentName": "Keel",
+        "category": "health-factor",
+        "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+        "txHash": "0x449842344748b265ec0b27577e9dd894e375366a69685e1440aeb2afdf520a98",
+        "mode": "prod",
+        "spendCapUsd": 5,
+        "createdAt": "2026-09-29T17:42:21.376Z",
+        "expiresAt": "2026-09-30T17:42:21.376Z"
+      },
+      {
+        "paymentId": "hire65e585ba4e70",
+        "receiptId": "hire65e585ba4e70",
+        "chainId": 97,
+        "tokenId": "2018",
+        "agentName": "Hevo Grid",
+        "category": "grid-trading",
+        "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+        "txHash": "0x977f6ac23d8dbecad7e8498131aac9b292b081ab62d52cc7927db4629b8fa346",
+        "mode": "prod",
+        "spendCapUsd": 5,
+        "createdAt": "2026-09-27T05:52:47.470Z",
+        "expiresAt": "2026-09-28T05:52:47.470Z"
+      },
+      {
+        "paymentId": "hire4466bed05985",
+        "receiptId": "hire4466bed05985",
+        "chainId": 97,
+        "tokenId": "2017",
+        "agentName": "RangeKeeper",
+        "category": "rebalancing",
+        "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+        "txHash": "0xfc03e36ef73c68d071f302f299a2bf99abf9211cefe6bb4707faa5f09e05313b",
+        "mode": "prod",
+        "spendCapUsd": 5,
+        "createdAt": "2026-09-27T05:52:38.947Z",
+        "expiresAt": "2026-09-28T05:52:38.947Z"
+      },
+      {
+        "paymentId": "hiree3362b4f2be8",
+        "receiptId": "hiree3362b4f2be8",
+        "chainId": 97,
+        "tokenId": "2046",
+        "agentName": "VenusGuard",
+        "category": "health-factor",
+        "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+        "txHash": "0xb9c541888d92a006b5b4c1757e80bd94f8e65332daa672157d9504b5468bea8d",
+        "mode": "prod",
+        "spendCapUsd": 5,
+        "createdAt": "2026-09-27T05:52:30.541Z",
+        "expiresAt": "2026-09-28T05:52:30.541Z"
+      },
+      {
+        "paymentId": "hire0aa9e8204b7f",
+        "receiptId": "hire0aa9e8204b7f",
+        "chainId": 97,
+        "tokenId": "2044",
+        "agentName": "YieldPilot",
+        "category": "yield",
+        "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+        "txHash": "0x201818fe26bb7f58a7b175ecb55236bfb34c68579a95292ee03bc2c2360659e0",
+        "mode": "prod",
+        "spendCapUsd": 5,
+        "createdAt": "2026-09-27T05:52:17.738Z",
+        "expiresAt": "2026-09-28T05:52:17.738Z"
+      }
+    ],
+    "counts": {
+      "hires": 6
+    },
+    "source": "postgres"
+  }
+}

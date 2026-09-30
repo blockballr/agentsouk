@@ -1,0 +1,52 @@
+{
+  "capturedAt": "2026-09-29T18:15:27.823Z",
+  "request": "GET https://api.agentsouk.xyz/api/jobs/e0fd5425-fef1-4cbb-ad29-f58bbe4e1890",
+  "status": 200,
+  "body": {
+    "success": true,
+    "job": {
+      "id": "e0fd5425-fef1-4cbb-ad29-f58bbe4e1890",
+      "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+      "status": "Completed",
+      "taskId": "99b6db8f-f73b-4ff4-87c0-a6ef8363e1b6",
+      "chainId": 97,
+      "history": [
+        {
+          "at": "2026-09-29T17:42:21.403Z",
+          "by": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+          "status": "Open"
+        },
+        {
+          "at": "2026-09-29T17:42:21.403Z",
+          "by": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+          "reason": "x402 settlement",
+          "status": "Funded"
+        },
+        {
+          "at": "2026-09-29T17:42:25.338Z",
+          "by": "marketplace",
+          "reason": "deliverable recorded",
+          "status": "Submitted"
+        },
+        {
+          "at": "2026-09-29T17:42:26.225Z",
+          "by": "0xc76ea6e8533c9fe1d25ff9fa3bd7d0edfdf46713",
+          "reason": "complete",
+          "status": "Completed"
+        }
+      ],
+      "tokenId": "2238",
+      "provider": "0xdF1074a272C53A1a10b96Fa0201Eb58bbbaaFe00",
+      "agentName": "Keel",
+      "budgetUsd": 2,
+      "createdAt": "2026-09-29T17:42:21.403Z",
+      "evaluator": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+      "expiredAt": "2026-09-30T17:42:21.403Z",
+      "paymentId": "pay_e2e_3d01cacf908bb3c6beb13924",
+      "updatedAt": "2026-09-29T17:42:26.225Z",
+      "attestation": "complete",
+      "deliverable": "{\"healthFactor\":null,\"note\":\"this account carries no debt, so it has no health factor\",\"blockNumber\":\"124758505\"}",
+      "description": "Hire Keel"
+    }
+  }
+}

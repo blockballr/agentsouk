@@ -1,0 +1,25 @@
+{
+  "capturedAt": "2026-09-29T18:15:27.154Z",
+  "request": "GET https://api.agentsouk.xyz/api/receipts/pay_e2e_d56af3a01ec6d171ee152a2a",
+  "status": 200,
+  "body": {
+    "mode": "prod",
+    "agent": {
+      "name": "Sluicegate",
+      "chainId": 97,
+      "tokenId": "2237"
+    },
+    "payTo": "0x253F7Ad5D52099C4a2293418a661e9974DfB5e84",
+    "amount": "2000000000000000000",
+    "client": "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713",
+    "symbol": "sUSD",
+    "txHash": "0xa017140c9486fff04f0b951cabdd7f3b83f60881ea675cbd258adeb1b2273f5f",
+    "session": {
+      "expiresAt": "2026-09-30T17:42:33.167Z",
+      "spendCapUsd": 5
+    },
+    "activated": true,
+    "createdAt": "2026-09-29T17:42:33.167Z",
+    "paymentId": "pay_e2e_d56af3a01ec6d171ee152a2a"
+  }
+}
