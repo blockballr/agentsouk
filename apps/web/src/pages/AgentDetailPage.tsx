@@ -37,6 +37,7 @@ import {
   signAndSettleHire,
   type HireRequirementsData,
 } from '../lib/hire'
+import { button, card, cx } from '../components/ui'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -305,7 +306,7 @@ export function AgentDetailPage() {
         </p>
         <Link
           to="/agents"
-          className="micro mt-8 inline-block rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className={cx(button('primary', 'lg'), 'mt-8')}
         >
           Back to market
         </Link>
@@ -348,7 +349,7 @@ export function AgentDetailPage() {
           <button
             type="button"
             onClick={() => hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="micro flex min-h-11 w-full items-center justify-center rounded-[5px] bg-highlighter-green px-4 text-on-highlighter focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white"
+            className={cx(button('primary', 'md'), 'flex w-full focus-visible:outline-bone-white')}
           >
             {mySession ? 'Run a task in your session' : jobSeller ? 'How this agent is hired' : `Hire ${detail.name}`}
           </button>
@@ -436,7 +437,7 @@ export function AgentDetailPage() {
 
         <aside
           ref={setHirePanel}
-          className="h-fit scroll-mt-4 self-start rounded-[14px] border hairline border-slate-verdant/40 p-6 sm:p-8 lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1"
+          className={cx(card('plain', 'md'), 'h-fit scroll-mt-4 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1')}
         >
           {ownSession && mySession && (
             <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
@@ -528,7 +529,7 @@ export function AgentDetailPage() {
           {/* permissions are part of the buying decision, read after what the agent does and
               what it answered; a job seller is not bought this way, so it shows none */}
           {!jobSeller && (
-            <section className="rounded-[14px] border hairline border-slate-verdant/40 p-6 sm:p-8">
+            <section className={card('plain', 'md')}>
               <h2 className="font-serif text-[22px] font-medium text-press-black">What you are authorising</h2>
               <ul className="mt-4 space-y-2.5 text-[14px] leading-relaxed text-newsprint-gray">
                 <li>
@@ -552,7 +553,7 @@ export function AgentDetailPage() {
             </section>
           )}
 
-          <details className="group rounded-[14px] border hairline border-slate-verdant/40">
+          <details className={cx(card('plain', 'none'), 'group')}>
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 sm:px-8 [&::-webkit-details-marker]:hidden">
               <span>
                 <span className="block font-serif text-[22px] font-medium text-press-black">On-chain details</span>
@@ -685,7 +686,7 @@ function ProofStrip({
   reviews: number
 }) {
   return (
-    <dl className="mt-8 grid overflow-hidden rounded-[14px] border hairline border-slate-verdant/40 sm:grid-cols-3">
+    <dl className={cx(card('plain', 'none'), 'mt-8 grid overflow-hidden sm:grid-cols-3')}>
       <div className="p-5">
         <dt className="micro text-newsprint-gray">Last check</dt>
         <dd className="mt-2 flex items-center gap-2 text-[18px] font-medium text-press-black">
@@ -723,7 +724,7 @@ function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['
   const work = skills.filter((s) => !isJobStepSkill(s, skills))
   const alsoJobs = work.length > 0 && work.length < skills.length
   return (
-    <section className="rounded-[14px] border hairline border-slate-verdant/40 p-6 sm:p-8">
+    <section className={card('plain', 'md')}>
       <h2 className="font-serif text-[26px] font-medium leading-tight text-press-black">What it does and how to use it</h2>
       {skills.length === 0 ? (
         <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
@@ -1102,7 +1103,7 @@ function HirePanel({
         <button
           type="button"
           onClick={startHire}
-          className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-5 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className={cx(button('primary', 'xl'), 'w-full')}
         >
           Hire {name}
         </button>
@@ -1527,7 +1528,7 @@ function DeliveryPanel({
               type="button"
               onClick={retry}
               disabled={retrying}
-              className="micro mt-3 w-full rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+              className={cx(button('secondary', 'sm'), 'mt-3 w-full')}
             >
               {retrying ? 'Retrying…' : 'Retry delivery'}
             </button>
@@ -1560,7 +1561,7 @@ function DeliveryPanel({
                 type="button"
                 onClick={completeJob}
                 disabled={completing}
-                className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className={cx(button('primary', 'md'), 'mt-3 w-full')}
               >
                 {completing ? 'Signing…' : 'Complete job'}
               </button>
@@ -1588,7 +1589,7 @@ function DeliveryPanel({
         <button
           type="button"
           onClick={loadCapabilities}
-          className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className={cx(button('primary', 'md'), 'mt-3 w-full')}
         >
           Load capabilities
         </button>
@@ -1634,7 +1635,7 @@ function DeliveryPanel({
                 type="button"
                 onClick={run}
                 disabled={running}
-                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className={cx(button('primary', 'md'), 'w-full')}
               >
                 {running ? 'Running…' : `Run ${tool}`}
               </button>
@@ -1678,7 +1679,7 @@ function DeliveryPanel({
                 type="button"
                 onClick={run}
                 disabled={running || !taskText.trim() || !structured.ok}
-                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className={cx(button('primary', 'md'), 'w-full')}
               >
                 {running ? 'Running…' : 'Run task'}
               </button>
@@ -1715,7 +1716,8 @@ function ResultPanel({
   rate?: { chainId: number; tokenId: string; agentName: string; paymentId?: string }
 }) {
   const { output, job, task } = result
-  const rateable = !!rate && !!output && (task?.status === 'delivered' || job?.status === 'Completed')
+  // a hire with a job is rated once the buyer completes it; one without a job ends at delivery
+  const rateable = !!rate && !!output && (job ? job.status === 'Completed' : task?.status === 'delivered')
   // tinted so the answer, and the rating under it, is the first thing the buyer's eye lands on
   return (
     <div className="rounded-[14px] border hairline border-highlighter-green/60 bg-highlighter-green/[0.07] p-8">
@@ -1759,7 +1761,7 @@ function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
   const truncated = raw.length > 400 ? `${raw.slice(0, 400)}…` : raw
 
   return (
-    <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
+    <div className={cx(card('plain', 'lg'), 'mt-6')}>
       <h2 className="micro text-newsprint-gray">Self-reported performance</h2>
       <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
         Self-reported by the agent&apos;s own endpoint. Not verified by Agent Souk.

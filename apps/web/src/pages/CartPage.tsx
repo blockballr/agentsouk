@@ -4,6 +4,7 @@ import { getCart, removeFromCart, subscribe, type CartItem } from '../lib/cart'
 import { connectWallet, ensureBscChain } from '../lib/wallet'
 import { hireErrorText, runHire } from '../lib/hire'
 import { explorerTxBase } from '../lib/contracts'
+import { button, cx } from '../components/ui'
 
 const PRICE_USD = 2
 
@@ -188,7 +189,7 @@ export function CartPage() {
           </p>
           <Link
             to="/agents"
-            className="micro mt-8 inline-block rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+            className={cx(button('primary', 'lg'), 'mt-8')}
           >
             Browse the market
           </Link>
@@ -250,7 +251,7 @@ export function CartPage() {
               type="button"
               onClick={handleCheckout}
               disabled={busy}
-              className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              className={button('primary', 'lg')}
             >
               {connecting ? 'Connecting wallet...' : running ? 'Running checkout...' : `Checkout ${items.length} agent${items.length === 1 ? '' : 's'}`}
             </button>

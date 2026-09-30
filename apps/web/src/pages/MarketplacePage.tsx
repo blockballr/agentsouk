@@ -10,6 +10,7 @@ import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from 
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
+import { button, cx } from '../components/ui'
 
 const sorts = [
   {
@@ -615,7 +616,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       <button
         type="button"
         onClick={onRetry}
-        className="micro mt-8 rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className={cx(button('primary', 'lg'), 'mt-8')}
       >
         Retry
       </button>
@@ -633,7 +634,7 @@ function EmptyState({ onReset }: { onReset: () => void }) {
       <button
         type="button"
         onClick={onReset}
-        className="micro mt-8 rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className={cx(button('primary', 'lg'), 'mt-8')}
       >
         Show all agents
       </button>

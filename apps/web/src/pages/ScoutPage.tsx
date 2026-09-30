@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { button } from '../components/ui'
 
 type ScoutCandidate = {
   agent_id: string
@@ -175,7 +176,7 @@ export function ScoutPage() {
         <button
           type="button"
           onClick={() => void load()}
-          className="micro rounded-[5px] border hairline border-slate-verdant/50 px-4 py-2.5 text-press-black hover:border-press-black"
+          className={button('secondary', 'md')}
         >
           Refresh
         </button>
@@ -183,7 +184,7 @@ export function ScoutPage() {
           type="button"
           onClick={() => void runDiscover()}
           disabled={running === 'discover'}
-          className="micro rounded-[5px] bg-highlighter-green px-4 py-2.5 text-on-highlighter shadow hover:brightness-95 disabled:opacity-60"
+          className={button('primary', 'md')}
         >
           {running === 'discover' ? 'Discovering…' : 'Run discover'}
         </button>

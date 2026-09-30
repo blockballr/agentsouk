@@ -44,15 +44,27 @@ describe("rating calldata", () => {
 describe("hires this browser has rated", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("remembers a rated hire so it stops asking", () => {
+  it("remembers a rated hire and the stars it was given", () => {
     const store = new Map<string, string>();
     vi.stubGlobal("localStorage", {
       getItem: (k: string) => store.get(k) ?? null,
       setItem: (k: string, v: string) => void store.set(k, v),
     });
-    markRated("pay_1");
-    expect(ratedHires().has("pay_1")).toBe(true);
+    markRated("pay_1", 4);
+    expect(ratedHires().get("pay_1")).toBe(4);
     expect(ratedHires().has("pay_2")).toBe(false);
+  });
+
+  it("reads a rating saved before the stars were kept as rated with no stars", () => {
+    const store = new Map<string, string>([["souk.rated", JSON.stringify(["pay_old"])]]);
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+    });
+    expect(ratedHires().get("pay_old")).toBeNull();
+    markRated("pay_new", 5);
+    expect(ratedHires().get("pay_old")).toBeNull();
+    expect(ratedHires().get("pay_new")).toBe(5);
   });
 
   it("asks again rather than failing when storage is blocked", () => {
@@ -64,7 +76,7 @@ describe("hires this browser has rated", () => {
         throw new Error("blocked");
       },
     });
-    expect(() => markRated("pay_1")).not.toThrow();
+    expect(() => markRated("pay_1", 3)).not.toThrow();
     expect(ratedHires().size).toBe(0);
   });
 });

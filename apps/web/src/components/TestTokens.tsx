@@ -9,6 +9,7 @@ import {
   watchSusd,
 } from '../lib/mint'
 import { connectWallet, getProvider } from '../lib/wallet'
+import { button, cx } from './ui'
 
 type Phase = 'idle' | 'reading' | 'minting' | 'done' | 'error'
 
@@ -256,7 +257,7 @@ export function TestTokens({
                   type="button"
                   disabled={phase === 'minting' || phase === 'reading'}
                   onClick={() => void mint()}
-                  className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter transition hover:brightness-95 disabled:opacity-60"
+                  className={cx(button('primary', 'xl'), 'w-full')}
                 >
                   {phase === 'minting' ? (
                     'Sign the message in your wallet'

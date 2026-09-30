@@ -14,6 +14,7 @@ import { hireErrorText } from '../lib/hire'
 import { connectWallet, getActiveAccount, getProvider } from '../lib/wallet'
 import { ratedHires } from '../lib/rating'
 import { RateAgent } from '../components/RateAgent'
+import { Action, Dialog, LABEL, RatingBoxes, ResultBox, TextSlot, button, card, cx } from '../components/ui'
 import { revokeRequestMessage } from '@agora/core'
 
 interface RevokeOutcome {
@@ -271,7 +272,7 @@ export function OngoingPage() {
               <h2 className="micro text-newsprint-gray">
                 {g.title} · {list.length}
               </h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+              <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {list.map((it) => (
                   <HireRow
                     key={it.key}
@@ -313,6 +314,26 @@ const STATE_DOT: Record<HireGroup, string> = {
   finished: 'border hairline border-newsprint-gray bg-transparent',
 }
 
+// every hire fills the same card: fixed slots in a fixed order at a fixed height, so a row
+// of them reads evenly, and anything longer than its slot opens in a dialog instead
+// every hire fills the same card: fixed slots in a fixed order at a fixed height, so a row
+// of them reads evenly, and anything longer than its slot opens in a dialog instead
+// every hire fills the same card: fixed slots in a fixed order at a fixed height, so a row
+// of them reads evenly, and anything longer than its slot opens in a dialog instead
+// every hire is built from the same parts in the same order at a fixed height, so a row of
+// cards reads evenly, and anything longer than its slot opens in a dialog instead
+// every hire is built from the same parts in the same order at a fixed height, so a row of
+// cards reads evenly, and anything longer than its slot opens in a dialog instead
+// every hire is built from the same parts in the same order at a fixed height, so a row of
+// cards reads evenly, and anything longer than its slot opens in a dialog instead
+// every hire is built from the same parts in the same order at a fixed height, so a row of
+// cards reads evenly, and anything longer than its slot opens in a dialog instead
+// every hire is built from the same parts in the same order at a fixed height, so a row of
+// cards reads evenly, and anything longer than its slot opens in a dialog instead
+// every hire is built from the same parts in the same order at a fixed height, so a row of
+// cards reads evenly, and anything longer than its slot opens in a dialog instead
+// every hire is built from the same parts in the same order at a fixed height, so a row of
+// cards reads evenly, and anything longer than its slot opens in a dialog instead
 function HireRow({
   item,
   state,
@@ -337,133 +358,154 @@ function HireRow({
   const { session, task, job } = item
   const agentHref = `/agents/${item.chainId}/${item.tokenId}`
   const asked = task?.taskText ?? task?.tool
-  // a rating needs work to rate: a delivered task or a job the buyer completed
-  const rateable = task?.status === 'delivered' || job?.status === 'Completed'
-  const [rating, setRating] = useState(false)
-  const [rated] = useState(() => ratedHires().has(item.key))
-  const primary =
-    'micro rounded-[5px] bg-highlighter-green px-4 py-2.5 text-on-highlighter shadow-sm transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:opacity-60'
-  const secondary =
-    'micro rounded-[5px] border hairline border-slate-verdant/50 px-4 py-2.5 text-press-black transition hover:border-press-black focus-visible:outline-2 focus-visible:outline-press-black disabled:opacity-60'
+  // a hire with a job is rated once the buyer completes it; one without a job ends at delivery
+  const rateable = job ? job.status === 'Completed' : task?.status === 'delivered'
+  // undefined until rated; a number is the rating given, null one saved before ratings were kept
+  const [rated, setRated] = useState<number | null | undefined>(() => ratedHires().get(item.key))
+  const [dialog, setDialog] = useState<'full' | 'rate' | 'revoke' | null>(null)
+  const shown = answerOf(task?.result ?? job?.deliverable ?? null, task?.error ?? null)
+  const meta = [
+    item.live && session ? `${formatExpiry(session.expiresAt)} · $${session.spendCapUsd} cap` : 'Session ended',
+    session?.mode === 'sandbox' ? 'test settlement' : null,
+    job ? `$${job.budgetUsd} job` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   return (
-    <article
-      className={`rounded-[14px] border hairline p-5 sm:p-6 ${
-        state.group === 'needs' ? 'border-press-black/35' : 'border-slate-verdant/35'
-      }`}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
-        <div className="min-w-0">
-          <Link to={agentHref} className="font-serif text-[24px] leading-tight text-press-black hover:underline">
-            {item.agentName}
-          </Link>
-          <p className="mt-1 flex items-center gap-2 text-[14px] font-medium text-press-black">
-            <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${STATE_DOT[state.group]}`} />
-            {state.label}
-          </p>
-          {state.note ? <p className="mt-1 text-[13px] text-newsprint-gray">{state.note}</p> : null}
-        </div>
-        <p className="text-[13px] text-newsprint-gray sm:text-right">
-          {item.live && session ? `${formatExpiry(session.expiresAt)} · $${session.spendCapUsd} cap` : 'Session ended'}
-          {session?.mode === 'sandbox' ? ' · test settlement' : ''}
-          {job ? <span className="block">Job budget ${job.budgetUsd}</span> : null}
-        </p>
-      </div>
-
-      {asked ? (
-        <p className="mt-4 text-[13px] text-newsprint-gray">
-          You asked: <span className="text-press-black">{asked.length > 160 ? `${asked.slice(0, 160)}…` : asked}</span>
-        </p>
-      ) : null}
-      {task?.error ? (
-        <p className="mt-2 text-[13px] leading-relaxed text-press-black">{task.error}</p>
-      ) : null}
-      {task?.result || job?.deliverable ? <ResultView text={task?.result ?? job?.deliverable ?? ''} /> : null}
-
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        {state.action === 'complete' && (
-          <>
-            <button type="button" onClick={onComplete} disabled={busy} className={primary}>
-              Complete job
-            </button>
-            <button type="button" onClick={onReject} disabled={busy} className={secondary}>
-              Reject
-            </button>
-          </>
-        )}
-        {state.action === 'retry' && (
-          <button type="button" onClick={onRetry} disabled={busy} className={primary}>
-            Retry delivery
-          </button>
-        )}
-        {state.action === 'run' ? (
-          <Link to={agentHref} className={primary}>
-            Run a task
-          </Link>
-        ) : item.live ? (
-          <Link to={agentHref} className={secondary}>
-            Open agent
-          </Link>
-        ) : null}
-        {job?.status === 'Funded' && task?.status !== 'running' && !task?.result && (
-          <button type="button" onClick={onReject} disabled={busy} className={secondary}>
-            Reject before work
-          </button>
-        )}
-        {rateable && !rated && !rating && (
-          <button type="button" onClick={() => setRating(true)} className={secondary}>
-            Rate agent
-          </button>
-        )}
-        {rateable && rated && <span className="micro text-newsprint-gray">Rated</span>}
-        {/* only a live session can be revoked; an ended one has nothing left to spend */}
+    <article className={cx(card(state.group === 'needs' ? 'strong' : 'plain', 'sm'), 'flex h-[520px] min-w-0 flex-col [overflow-wrap:anywhere]')}>
+      <div className="flex items-start justify-between gap-3">
+        <Link to={agentHref} className="min-w-0 truncate font-serif text-[22px] leading-tight text-press-black hover:underline">
+          {item.agentName}
+        </Link>
+        {/* the buyer's control over a live session, so it is the plainest button on the card; an
+            ended session has nothing left to spend and shows none */}
         {item.live && (
           <button
             type="button"
             onClick={onRevoke}
             disabled={busy}
-            className="micro ml-auto px-1 py-2.5 text-newsprint-gray underline decoration-newsprint-gray/40 underline-offset-4 transition hover:text-press-black disabled:opacity-60"
+            className={cx(button('secondary', 'sm'), 'shrink-0 border-press-black/70 hover:bg-press-black hover:text-bone-white')}
           >
             {revoking ? 'Revoking…' : 'Revoke session'}
           </button>
         )}
       </div>
-      {rating ? (
-        <RateAgent chainId={item.chainId} tokenId={item.tokenId} agentName={item.agentName} paymentId={item.key} />
+      <p className="mt-1 flex items-center gap-2 text-[14px] font-medium text-press-black">
+        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${STATE_DOT[state.group]}`} />
+        <span className="truncate">{state.label}</span>
+      </p>
+      <TextSlot lines={2} className="mt-1">{state.note ?? ''}</TextSlot>
+      <TextSlot lines={1} className="mt-1 text-[12px]">{meta}</TextSlot>
+      <TextSlot lines={2} className="mt-3">
+        {asked ? (
+          <>
+            You asked: <span className="text-press-black">{asked}</span>
+          </>
+        ) : (
+          'No task sent yet.'
+        )}
+      </TextSlot>
+
+      <ResultBox
+        className="mt-3 flex-1"
+        label={shown.label}
+        preview={shown.preview}
+        moreLabel={shown.full ? `View full ${shown.label === 'Result' ? 'result' : 'reply'}` : undefined}
+        onMore={shown.full ? () => setDialog('full') : undefined}
+      />
+
+      {/* the actions in an even two-column grid, then the rating on its own line; the result box
+          above takes whatever height is left, which always holds its four lines */}
+      <div className="mt-3 flex shrink-0 flex-col gap-2">
+        <div className="grid grid-cols-2 gap-2 empty:hidden">
+          {state.action === 'complete' && (
+            <>
+              <Action variant="primary" onClick={onComplete} disabled={busy} className="w-full">
+                Complete job
+              </Action>
+              <Action onClick={onReject} disabled={busy} className="w-full">
+                Reject
+              </Action>
+            </>
+          )}
+          {state.action === 'retry' && (
+            <Action variant="primary" onClick={onRetry} disabled={busy} className="w-full">
+              Retry delivery
+            </Action>
+          )}
+          {state.action === 'run' ? (
+            <Action variant="primary" to={agentHref} className="w-full">
+              Run a task
+            </Action>
+          ) : item.live ? (
+            <Action to={agentHref} className="w-full">
+              Open agent
+            </Action>
+          ) : null}
+          {item.live && job?.status === 'Funded' && task?.status !== 'running' && !task?.result && (
+            <Action onClick={onReject} disabled={busy} className="w-full">
+              Reject before work
+            </Action>
+          )}
+          {rateable && rated === undefined && (
+            <Action onClick={() => setDialog('rate')} className="w-full">
+              Rate agent
+            </Action>
+          )}
+          {revoke && (
+            <Action onClick={() => setDialog('revoke')} className="w-full">
+              Revoke details
+            </Action>
+          )}
+        </div>
+        {rateable && rated !== undefined && (
+          <div className="flex h-7 items-center gap-3">
+            <span className={LABEL}>Rated</span>
+            <RatingBoxes value={rated} label={rated ? `Rated ${rated} of 5` : 'Rated'} />
+          </div>
+        )}
+      </div>
+
+      {dialog === 'full' && shown.full ? (
+        <Dialog title={`${item.agentName} · ${shown.label}`} onClose={() => setDialog(null)}>
+          <pre className="whitespace-pre-wrap break-words font-mono text-[12px] leading-relaxed text-press-black">{shown.full}</pre>
+        </Dialog>
       ) : null}
-      {revoke ? <RevokeNote outcome={revoke} chainId={item.chainId} /> : null}
+      {dialog === 'rate' ? (
+        <Dialog title={`Rate ${item.agentName}`} onClose={() => setDialog(null)}>
+          <RateAgent
+            chainId={item.chainId}
+            tokenId={item.tokenId}
+            agentName={item.agentName}
+            paymentId={item.key}
+            onRated={setRated}
+          />
+        </Dialog>
+      ) : null}
+      {dialog === 'revoke' && revoke ? (
+        <Dialog title={`${item.agentName} · revoke`} onClose={() => setDialog(null)}>
+          <RevokeNote outcome={revoke} chainId={item.chainId} />
+        </Dialog>
+      ) : null}
     </article>
   )
 }
 
-function ResultView({ text }: { text: string }) {
+interface Answer {
+  label: string
+  preview: string
+  full: string | null
+}
+
+// a reply carrying an error is labelled as the agent's, not as a result
+function answerOf(result: string | null, reply: string | null): Answer {
+  const text = result ?? reply
+  if (!text) return { label: 'Result', preview: 'No result yet.', full: null }
   const r = readableResult(text)
-  return (
-    <div className="mt-4 rounded-[10px] bg-echo-green/30 p-4">
-      <p className="micro text-newsprint-gray">Result</p>
-      {r.kind === 'fields' ? (
-        <dl className="mt-2 grid gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-[max-content_1fr]">
-          {r.fields.map(([k, v]) => (
-            <div key={k} className="contents">
-              <dt className="text-newsprint-gray">{k}</dt>
-              <dd className="break-words text-press-black">{v}</dd>
-            </div>
-          ))}
-        </dl>
-      ) : (
-        <p className="mt-2 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-press-black">
-          {r.text.length > 600 ? `${r.text.slice(0, 600)}…` : r.text}
-        </p>
-      )}
-      {r.kind === 'fields' || text.length > 600 ? (
-        <details className="mt-2">
-          <summary className="micro cursor-pointer text-newsprint-gray hover:text-press-black">Full result</summary>
-          <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-[8px] border hairline border-slate-verdant/30 bg-bone-white p-3 font-mono text-[11px] leading-relaxed text-press-black">
-            {text}
-          </pre>
-        </details>
-      ) : null}
-    </div>
-  )
+  const erred = r.kind === 'fields' && r.fields.some(([k]) => /^error$/i.test(k))
+  const label = !result || erred ? 'Agent replied' : 'Result'
+  const preview = r.kind === 'fields' ? r.fields.map(([k, v]) => `${k}: ${v}`).join(' · ') : r.text
+  return { label, preview, full: text }
 }
 
 function RevokeNote({ outcome, chainId }: { outcome: RevokeOutcome; chainId: number }) {

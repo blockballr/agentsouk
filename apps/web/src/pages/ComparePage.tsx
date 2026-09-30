@@ -18,6 +18,7 @@ import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from 
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
 import { builtWithFrom } from '../lib/onchain-meta'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
+import { card, cx } from '../components/ui'
 
 export function ComparePage() {
   const [sp, setSp] = useSearchParams()
@@ -270,7 +271,7 @@ function Picker({
           ))}
         </div>
       ) : (
-        <ul className="mt-6 overflow-hidden rounded-[14px] border hairline border-slate-verdant/40">
+        <ul className={cx(card('plain', 'none'), 'mt-6 overflow-hidden')}>
           {options.map((a) => {
             const key = keyFor(a)
             const checked = selected.includes(key)
@@ -424,7 +425,7 @@ function CompareTable({
         </p>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-[14px] border hairline border-slate-verdant/40">
+          <div className={cx(card('plain', 'none'), 'overflow-x-auto')}>
             <table className="w-full min-w-[560px] border-collapse text-left text-[14px]">
               <thead>
                 <tr>

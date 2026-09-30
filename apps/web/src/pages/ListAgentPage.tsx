@@ -24,6 +24,7 @@ import {
 } from '../lib/contracts'
 import { getAgentDetail } from '../lib/api'
 import { RegisterWizard } from '../components/RegisterWizard'
+import { button, card, cx } from '../components/ui'
 
 const checklist = [
   {
@@ -96,14 +97,14 @@ export function ListAgentPage() {
         <button
           type="button"
           onClick={() => document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          className="micro min-h-11 rounded-[5px] bg-highlighter-green px-5 text-on-highlighter transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className={button('primary', 'lg')}
         >
           Register an agent
         </button>
         <button
           type="button"
           onClick={() => document.getElementById('token-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-          className="micro min-h-11 rounded-[5px] border hairline border-slate-verdant/50 px-5 text-press-black transition hover:border-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className={button('secondary', 'lg')}
         >
           Already registered? Look it up
         </button>
@@ -302,7 +303,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
           type="button"
           disabled={connecting}
           onClick={() => void connect()}
-          className="micro mt-4 rounded-[5px] border hairline border-slate-verdant/50 px-5 py-2.5 text-press-black transition hover:bg-bone-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className={cx(button('secondary', 'lg'), 'mt-4')}
         >
           {connecting ? 'Connecting…' : 'Connect wallet to check'}
         </button>
@@ -318,7 +319,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
               href={FAUCET_URL}
               target="_blank"
               rel="noreferrer"
-              className="micro rounded-[5px] border hairline border-slate-verdant/50 px-5 py-2.5 text-press-black transition hover:bg-bone-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              className={button('secondary', 'lg')}
             >
               BSC testnet faucet →
             </a>
@@ -327,7 +328,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
                 type="button"
                 disabled={phase === 'sending'}
                 onClick={() => void getGas()}
-                className="micro rounded-[5px] bg-highlighter-green px-5 py-2.5 text-on-highlighter shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className={button('primary', 'lg')}
               >
                 {phase === 'sending' ? (
                   'Sign the message in your wallet'
@@ -408,7 +409,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
       </div>
 
       <ol className="mt-8 grid gap-6 md:grid-cols-3">
-        <li className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
+        <li className={card('plain', 'lg')}>
           <p className="micro text-newsprint-gray">Step 1</p>
           <p className="mt-4 font-serif text-xl font-medium">Install the CLI</p>
           <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
@@ -419,7 +420,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
             {'\n'}bag skills install
           </pre>
         </li>
-        <li className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
+        <li className={card('plain', 'lg')}>
           <p className="micro text-newsprint-gray">Step 2</p>
           <p className="mt-4 font-serif text-xl font-medium">
             Describe it in your editor
@@ -476,7 +477,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
             .
           </p>
         </li>
-        <li className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
+        <li className={card('plain', 'lg')}>
           <p className="micro text-newsprint-gray">Step 3</p>
           <p className="mt-4 font-serif text-xl font-medium">
             Note your task interface
@@ -622,7 +623,7 @@ function PromptGenerator({ chainId }: { chainId: number | null }) {
     'border hairline input-hairline w-full bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
 
   return (
-    <div className="mt-12 rounded-[14px] border hairline border-slate-verdant/40 p-8">
+    <div className={cx(card('plain', 'lg'), 'mt-12')}>
       <h3 className="font-serif text-2xl font-medium tracking-[-0.02em]">
         Generate your Agent Studio prompt
       </h3>
@@ -680,7 +681,7 @@ function PromptGenerator({ chainId }: { chainId: number | null }) {
       <button
         type="button"
         onClick={generate}
-        className="micro mt-6 rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className={cx(button('primary', 'lg'), 'mt-6')}
       >
         Generate prompt
       </button>
@@ -772,7 +773,7 @@ function LookupSection({
         <button
           type="submit"
           disabled={state.phase === 'loading' || chainId === null}
-          className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-60"
+          className={button('primary', 'lg')}
         >
           {state.phase === 'loading' ? 'Checking…' : chainId === null ? 'Checking the network…' : 'Look up'}
         </button>
@@ -906,7 +907,7 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
           <button
             type="submit"
             disabled={phase === 'sending'}
-            className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-60"
+            className={button('primary', 'lg')}
           >
             {phase === 'sending' ? 'Sending…' : 'Request review'}
           </button>

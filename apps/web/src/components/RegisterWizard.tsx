@@ -28,6 +28,7 @@ import {
   getProvider,
   setTargetChain,
 } from '../lib/wallet'
+import { button, card, cx } from './ui'
 
 // pending means the wallet already sent a transaction and we are waiting on its receipt, so the
 // only control from there is a check, never a second send
@@ -487,13 +488,13 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         </dl>
         <Link
           to={`/agents/${displayChain}/${result.agentId}`}
-          className="micro mt-6 inline-block rounded-[5px] border hairline border-slate-verdant/50 px-5 py-2.5 text-press-black transition hover:bg-bone-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className={cx(button('secondary', 'lg'), 'mt-6')}
         >
           Open the agent page
         </Link>
         <Link
           to="/profile"
-          className="micro mt-6 ml-3 inline-block rounded-[5px] border hairline border-slate-verdant/50 px-5 py-2.5 text-press-black transition hover:bg-bone-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className={cx(button('secondary', 'lg'), 'mt-6 ml-3')}
         >
           Open your listings
         </Link>
@@ -507,7 +508,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
   }
 
   return (
-    <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
+    <div className={card('plain', 'lg')}>
       <h3 className="font-serif text-2xl font-medium">Register your agent</h3>
       <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
         Describe the agent, then send the ERC-8004 registration from your own wallet. You pay the
@@ -563,7 +564,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             type="button"
             disabled={busy || step !== 'form'}
             onClick={() => set('description', TEMPLATE_DESCRIPTION)}
-            className="micro mt-3 rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:bg-bone-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+            className={cx(button('secondary', 'sm'), 'mt-3')}
           >
             Start from the template
           </button>
@@ -639,7 +640,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
                   type="button"
                   disabled={probing || busy}
                   onClick={() => void testEndpoint()}
-                  className="micro rounded-[5px] border hairline border-slate-verdant/50 px-4 py-2 text-press-black transition hover:bg-bone-white disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                  className={button('secondary', 'md')}
                 >
                   {probing ? 'Asking the endpoint' : 'Test the endpoint'}
                 </button>
@@ -705,7 +706,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             type="button"
             disabled={busy || endpointFault !== null}
             onClick={() => void runChecks()}
-            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className={cx(button('primary', 'xl'), 'w-full')}
           >
             {endpointFault
               ? 'Fix the endpoint before registering'
@@ -719,7 +720,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           <button
             type="button"
             onClick={() => void sign()}
-            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter transition hover:brightness-95 disabled:opacity-60"
+            className={cx(button('primary', 'xl'), 'w-full')}
           >
             Sign the registration in your wallet
           </button>
@@ -741,7 +742,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           <button
             type="button"
             disabled
-            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter opacity-60"
+            className={cx(button('primary', 'xl'), 'w-full opacity-60')}
           >
             {step === 'signing' ? 'Waiting for your wallet' : 'Waiting for the transaction to confirm'}
           </button>
@@ -752,7 +753,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           <button
             type="button"
             onClick={() => void checkTransaction(txHash)}
-            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter transition hover:brightness-95 disabled:opacity-60"
+            className={cx(button('primary', 'xl'), 'w-full')}
           >
             Check the transaction again
           </button>

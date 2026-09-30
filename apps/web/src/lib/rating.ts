@@ -47,20 +47,29 @@ export function feedbackCalldata(tokenId: string, stars: number): `0x${string}` 
 // a second rating, so this spares the buyer a repeat rather than guarding against one
 const RATED_KEY = 'souk.rated'
 
-export function ratedHires(): Set<string> {
+// each rated hire keeps the stars it was given; a rating saved before the stars were kept
+// reads as rated with no stars
+export function ratedHires(): Map<string, number | null> {
   try {
-    const raw = JSON.parse(localStorage.getItem(RATED_KEY) ?? '[]')
-    return new Set(Array.isArray(raw) ? raw.filter((v): v is string => typeof v === 'string') : [])
+    const raw: unknown = JSON.parse(localStorage.getItem(RATED_KEY) ?? '{}')
+    if (Array.isArray(raw)) {
+      return new Map(raw.filter((v): v is string => typeof v === 'string').map((id) => [id, null]))
+    }
+    if (raw && typeof raw === 'object') {
+      return new Map(Object.entries(raw).map(([id, v]) => [id, typeof v === 'number' ? v : null]))
+    }
   } catch {
-    return new Set()
+    // storage blocked; nothing is remembered
   }
+  return new Map()
 }
 
-export function markRated(paymentId: string): void {
+export function markRated(paymentId: string, stars: number): void {
   try {
     const rated = ratedHires()
-    rated.add(paymentId)
-    localStorage.setItem(RATED_KEY, JSON.stringify([...rated].slice(-200)))
+    rated.delete(paymentId)
+    rated.set(paymentId, stars)
+    localStorage.setItem(RATED_KEY, JSON.stringify(Object.fromEntries([...rated].slice(-200))))
   } catch {
     // storage blocked or full; the rating itself is already on chain
   }

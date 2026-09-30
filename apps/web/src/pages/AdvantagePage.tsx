@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getTargetChain } from '../lib/wallet'
+import { card, cx } from '../components/ui'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -289,7 +290,7 @@ export function captureLead(measuredAt?: string, now: Date = new Date()): string
 
 function VerdictCard({ task }: { task: AdvantageTask }) {
   return (
-    <div className="flex flex-col gap-4 rounded-[14px] border hairline border-slate-verdant/40 p-8">
+    <div className={cx(card('plain', 'lg'), 'flex flex-col gap-4')}>
       <p className="micro text-newsprint-gray">{task.category}</p>
       <p className="font-serif text-2xl font-medium">{task.verdict.winner}</p>
       <dl className="mt-auto space-y-2 text-sm text-newsprint-gray">
@@ -317,7 +318,7 @@ function VerdictCard({ task }: { task: AdvantageTask }) {
 function TaskDetail({ task, report }: { task: AdvantageTask; report: AdvantageReport }) {
   const chainId = task.agent.chainId ?? report.network?.chainId ?? getTargetChain()
   return (
-    <article className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
+    <article className={card('plain', 'lg')}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="micro text-newsprint-gray">{task.category}</span>
         <SettleBadge task={task} explorer={report.network?.explorer} />

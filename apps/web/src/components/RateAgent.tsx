@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { markRated, rateAgent, type RatingResult } from '../lib/rating'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
+import { RatingBoxes, button, cx } from './ui'
 
 type Phase = 'idle' | 'sending' | 'done' | 'error'
 
@@ -12,11 +13,13 @@ export function RateAgent({
   tokenId,
   agentName,
   paymentId,
+  onRated,
 }: {
   chainId: number
   tokenId: string
   agentName: string
   paymentId?: string
+  onRated?: (stars: number) => void
 }) {
   const [stars, setStars] = useState(0)
   const [phase, setPhase] = useState<Phase>('idle')
@@ -29,7 +32,10 @@ export function RateAgent({
     setError(null)
     try {
       const sent = await rateAgent(chainId, tokenId, stars)
-      if (paymentId && sent.confirmed !== false) markRated(paymentId)
+      if (sent.confirmed !== false) {
+        if (paymentId) markRated(paymentId, stars)
+        onRated?.(stars)
+      }
       setResult(sent)
       setPhase('done')
     } catch (e) {
@@ -63,31 +69,20 @@ export function RateAgent({
   return (
     <div className="mt-3 rounded-[8px] border hairline border-slate-verdant/30 p-3">
       <p className="micro text-newsprint-gray">Rate {agentName}</p>
-      <div className="mt-2 flex gap-1" role="radiogroup" aria-label={`Rate ${agentName} out of five`}>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            role="radio"
-            aria-checked={stars === n}
-            aria-label={`${n} of 5`}
-            onClick={() => setStars(n)}
-            disabled={phase === 'sending'}
-            className={`h-8 w-8 rounded-[5px] border hairline text-sm transition disabled:opacity-60 ${
-              n <= stars
-                ? 'border-highlighter-green/70 bg-highlighter-green/15 text-press-black'
-                : 'border-slate-verdant/40 text-newsprint-gray hover:border-press-black'
-            }`}
-          >
-            {n}
-          </button>
-        ))}
+      <div className="mt-2">
+        <RatingBoxes
+          value={stars || null}
+          onPick={setStars}
+          disabled={phase === 'sending'}
+          size="md"
+          label={`Rate ${agentName} out of five`}
+        />
       </div>
       <button
         type="button"
         onClick={send}
         disabled={!stars || phase === 'sending'}
-        className="micro mt-3 w-full rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+        className={cx(button('secondary', 'sm'), 'mt-3 w-full')}
       >
         {phase === 'sending' ? 'Waiting for your wallet…' : 'Send rating'}
       </button>

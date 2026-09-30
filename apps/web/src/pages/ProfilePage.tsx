@@ -13,6 +13,7 @@ import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
+import { button, card, cx } from '../components/ui'
 
 type HiresSource = 'postgres' | 'memory' | null
 
@@ -180,7 +181,7 @@ export function ProfilePage() {
             type="button"
             onClick={onConnect}
             disabled={connecting}
-            className="micro mt-6 rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60"
+            className={cx(button('primary', 'md'), 'mt-6')}
           >
             {connecting ? 'Connecting...' : 'Connect wallet'}
           </button>
@@ -198,7 +199,7 @@ export function ProfilePage() {
               type="button"
               onClick={() => void load()}
               disabled={loading}
-              className="micro rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+              className={button('secondary', 'sm')}
             >
               {loading ? 'Reading...' : 'Refresh'}
             </button>
@@ -221,7 +222,7 @@ export function ProfilePage() {
                 </p>
                 <Link
                   to="/list"
-                  className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95"
+                  className={cx(button('primary', 'md'), 'mt-6')}
                 >
                   List an agent
                 </Link>
@@ -254,7 +255,7 @@ export function ProfilePage() {
             </p>
             <Link
               to="/list"
-              className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow transition hover:brightness-95"
+              className={cx(button('primary', 'lg'), 'mt-6')}
             >
               Open the listing wizard
             </Link>
@@ -350,7 +351,7 @@ function OwnedAgentCard({
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Link
           to={`/agents/${agent.chainId}/${agent.tokenId}`}
-          className="micro rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black"
+          className={button('secondary', 'sm')}
         >
           Open agent page
         </Link>
@@ -358,7 +359,7 @@ function OwnedAgentCard({
           href={registryUrl}
           target="_blank"
           rel="noreferrer"
-          className="micro rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black"
+          className={button('secondary', 'sm')}
         >
           Registry record
         </a>
@@ -437,7 +438,7 @@ function HiresPanel({
         {agentGroups.map((list) => {
           const first = list[0]
           return (
-            <section key={`${first.chainId}:${first.tokenId}`} className="rounded-[14px] border hairline border-slate-verdant/40">
+            <section key={`${first.chainId}:${first.tokenId}`} className={card('plain', 'none')}>
               <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b hairline border-slate-verdant/25 px-5 py-4">
                 <Link
                   to={`/agents/${first.chainId}/${first.tokenId}`}
