@@ -151,7 +151,7 @@ export function CartPage() {
             {summary.map(([key, r]) => (
               <li key={key} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-highlighter-green" aria-hidden="true">
+                  <span className="text-green-ink" aria-hidden="true">
                     <CheckGlyph />
                   </span>
                   <span className="text-sm font-medium text-press-black">{r.name}</span>
@@ -320,7 +320,7 @@ function StepLabel({ step, error }: { step: StepStatus; error?: string }) {
     return <span className="max-w-[220px] text-right font-mono text-[11px] text-newsprint-gray">{error ?? 'Failed.'}</span>
   }
   return (
-    <span className={`micro ${step === 'done' ? 'text-highlighter-green' : 'text-newsprint-gray'}`}>
+    <span className={`micro ${step === 'done' ? 'text-green-ink' : 'text-newsprint-gray'}`}>
       {statusLabel[step]}
       {step === 'done' ? ' ✓' : ''}
     </span>

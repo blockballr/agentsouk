@@ -366,7 +366,7 @@ function SettleBadge({ task, explorer }: { task: AdvantageTask; explorer?: strin
   const ref = task.agent.settlementRef ?? task.agent.txHash
   const isProd = task.agent.settleMode === 'prod'
   const label = isProd ? 'settled on-chain' : 'sandbox session, no funds moved'
-  const tone = isProd ? 'border-highlighter-green/50 text-highlighter-green' : 'border-slate-verdant/40 text-slate-verdant'
+  const tone = isProd ? 'border-highlighter-green/50 text-green-ink' : 'border-slate-verdant/40 text-slate-verdant'
 
   if (isProd && ref && explorer) {
     return (

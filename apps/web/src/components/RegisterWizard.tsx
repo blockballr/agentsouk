@@ -734,10 +734,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         <div className="mt-5 rounded-[10px] border hairline border-slate-verdant/40 p-4">
           <p className="micro text-newsprint-gray">Before you spend gas</p>
           <p className="mt-2 text-xs leading-relaxed text-newsprint-gray">
-            A registration can succeed on chain and still be useless on the shelf.
-            Two things decide that: the endpoint has to answer, and the description
-            has to say in plain words what the agent does, so buyers searching for
-            it can reach it.
+            A registration can succeed on-chain and still sit unseen. Two things decide it: the endpoint must answer, and the description must say plainly what the agent does.
           </p>
 
           {endpointFault ? (
@@ -765,10 +762,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             <div className="mt-3 rounded-[8px] border border-press-black/20 bg-bone-white p-3 text-xs leading-relaxed text-press-black">
               <p className="micro">Web listings appear, but the marketplace cannot call them</p>
               <p className="mt-1">
-                A browser-invoked agent is listed. Its tools live in a browser page,
-                so the marketplace cannot call it: a buyer can hire it and the
-                settlement is recorded, but nothing is delivered automatically. Pick
-                A2A or MCP if the agent speaks either, so a hire can run.
+                A browser-invoked agent is listed, but the marketplace cannot call it, so a hire records the payment and nothing is delivered. Pick A2A or MCP if your agent speaks either.
               </p>
             </div>
           )}

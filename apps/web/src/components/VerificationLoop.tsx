@@ -22,7 +22,7 @@ const STATE_LABEL: Record<CheckState, string> = {
 const STATE_TONE: Record<CheckState, string> = {
   waiting: 'border-slate-verdant/45 text-newsprint-gray',
   checking: 'border-press-black/30 text-press-black',
-  passed: 'border-highlighter-green/50 text-highlighter-green',
+  passed: 'border-highlighter-green/50 text-green-ink',
   failed: 'border-press-black text-press-black',
   undetermined: 'border-slate-verdant/45 text-newsprint-gray',
 }

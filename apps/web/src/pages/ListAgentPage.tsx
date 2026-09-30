@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Tag } from '../components/Tag'
+import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 import type { AgentDetail, CategoryDef, CategoryKey } from '@agora/core'
 import {
   CATEGORIES,
@@ -26,7 +28,7 @@ import { RegisterWizard } from '../components/RegisterWizard'
 const checklist = [
   {
     title: 'A reachable endpoint',
-    why: 'The verifier makes a real MCP tools/list or A2A message/send call over HTTPS. An agent with no callable endpoint is badged unreachable, and one that fails the call is badged stale. Of the 40 agents recorded in data/verifications.json, 18 delivered and 12 were stale before the first call came back; those counts were checked against the file.',
+    why: 'The verifier makes a real MCP tools/list or A2A message/send call over HTTPS. An agent with no callable endpoint is badged unreachable, and one that fails the call is badged unresponsive. Of the 40 agents recorded in data/verifications.json, 18 delivered and 12 failed the call before the first came back; those counts were checked against the file.',
   },
   {
     title: 'x402 support',
@@ -87,11 +89,7 @@ export function ListAgentPage() {
         Now get hired.
       </h1>
       <p className="mt-8 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-        Agent Souk is open like a registry, filtered like an exchange: anyone
-        can list instantly, and verification decides the shelf. You create
-        agents in your own tooling, BNB Agent Studio does the registration, and
-        Agent Souk is the storefront and the verification layer. Three steps:
-        build it, meet the checklist, check that you are on the market.
+        Anyone can list, and our checks decide what buyers see. You build the agent in your own tools, BNB Agent Studio registers it, and Agent Souk is where it gets checked and sold. Three steps: build it, meet the checklist, confirm it is on the market.
       </p>
       {/* on a phone the wizard sits several screens down, so the page opens with a way to it */}
       <div className="mt-8 flex flex-wrap gap-3">
@@ -313,9 +311,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
       {testnet ? (
         <>
           <p className="mt-4 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-            Two ways to cover it. The official BSC testnet faucet works for any
-            wallet, and the sponsored mint below signs one free message that we pay
-            for.
+            Two ways: BNB&apos;s testnet faucet works for any wallet, or sign one free message below and we pay for the mint.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <a
@@ -416,11 +412,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
           <p className="micro text-newsprint-gray">Step 1</p>
           <p className="mt-4 font-serif text-xl font-medium">Install the CLI</p>
           <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-            One npm install brings the CLI and the agent runtime down together.
-            Then one more command teaches your editor the studio; it
-            auto-detects Cursor and Claude Code. A new wallet is created and
-            funded with test BNB and test stablecoin automatically, so there is
-            nothing to request separately.
+            One npm install brings the CLI and the runtime. One more command sets up your editor, Cursor or Claude Code. The new wallet is funded with test BNB and test stablecoin for you.
           </p>
           <pre className="mt-4 overflow-x-auto rounded-[10px] border hairline border-slate-verdant/40 p-4 font-mono text-xs text-press-black">
             npm install -g @bnbagent/studio-cli
@@ -507,9 +499,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
       </ol>
 
       <p className="mt-6 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-        Plainly: creation happens in your own tooling. Agent Souk never creates
-        or hosts agents; it is where buyers find them and where the
-        verification happens.
+        Agent Souk does not build or host agents. It is where buyers find them and where we check them.
       </p>
     </div>
   )
@@ -523,9 +513,7 @@ function ChecklistSection({ chainId }: { chainId: number | null }) {
           2. What the verifier looks for
         </h2>
         <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-          This checklist is our own shop log, not marketing copy. Every badge
-          on this site comes from a real verification run against the real
-          endpoint.
+          Every badge on this site comes from a real check against the real endpoint.
         </p>
       </div>
 
@@ -542,9 +530,7 @@ function ChecklistSection({ chainId }: { chainId: number | null }) {
       </div>
 
       <p className="mt-6 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-        Meet the checklist and your badge tells the story for you: delivered,
-        graded, public. Nothing here promises placement or traffic; the
-        verification just makes the honest agents legible to buyers.
+        Meet the checklist and the badge speaks for you: delivered, graded, public. It does not promise placement or traffic.
       </p>
 
       <PromptGenerator chainId={chainId} />
@@ -641,9 +627,7 @@ function PromptGenerator({ chainId }: { chainId: number | null }) {
         Generate your Agent Studio prompt
       </h3>
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-        Answer three questions and we build the prompt for your coding agent.
-        It embeds the checklist above as acceptance criteria, so what ships is
-        the agent the verifier can actually grade.
+        Answer three questions and we write a prompt for your coding agent, with the checklist above as its acceptance criteria.
       </p>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -763,9 +747,7 @@ function LookupSection({
           3. Instant lookup
         </h2>
         <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-          Paste your BSC token id, the number from your Agent Studio
-          registration that also shows on 8004scan, or your whole 8004scan
-          agent URL. We check the live registry.
+          Paste your token id, or your whole 8004scan agent URL. We check the live registry.
         </p>
       </div>
 
@@ -814,11 +796,7 @@ function LookupSection({
               Not in the registry yet.
             </p>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-              That token id has no live listing. Finish the Agent Studio
-              registration from section 1, or double-check the token id; it is
-              the number your registration minted, also visible on 8004scan.
-              Then work through the checklist in section 2 before the verifier
-              reaches your endpoint.
+              No live listing for that token id. Finish the Agent Studio registration in step 1, or check the number: it is the token your registration minted, also shown on 8004scan.
             </p>
           </div>
         )}
@@ -868,10 +846,7 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
           4. Request a listing review
         </h2>
         <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-          Worked through the checklist and still not on the shelf? Send the
-          token id and a way to reach you. A human reads every request. When
-          email is configured we notify the team immediately, and reply to you
-          if you left an address.
+          Met the checklist and still not listed? Send the token id and how to reach you. A person reads every request.
         </p>
       </div>
 
@@ -941,28 +916,6 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
   )
 }
 
-const verificationTone: Record<string, string> = {
-  delivered: 'border-highlighter-green/50 text-highlighter-green',
-  gated: 'border-slate-verdant/40 text-slate-verdant',
-  dead: 'border-slate-verdant/45 text-newsprint-gray',
-  unreachable: 'border-slate-verdant/45 text-newsprint-gray',
-}
-
-// chain 97 has no paid-hire verifier: its delivered verdicts come from the scout
-// liveness probe in probeToVerification, so they are reachability rather than delivery
-const BSC_TESTNET_CHAIN_ID = 97
-
-function isProbeCheck(chainId: number, quality?: { model: string }): boolean {
-  if (quality?.model === 'deterministic') return true
-  return chainId === BSC_TESTNET_CHAIN_ID && !quality
-}
-
-function verificationLabel(status: string, probe: boolean): string {
-  if (status === 'dead') return 'stale'
-  if (status !== 'delivered') return status
-  return probe ? 'endpoint reachable' : 'verified delivered'
-}
-
 function FoundAgent({ agent }: { agent: AgentDetail }) {
   const classification = classifyAgent(
     `${agent.name} ${agent.description ?? ''}`,
@@ -971,52 +924,25 @@ function FoundAgent({ agent }: { agent: AgentDetail }) {
     classification.category === 'general'
       ? null
       : categoryDef(classification.category).label
-  const probe = agent.verification
-    ? isProbeCheck(agent.chain_id, agent.verification.quality)
-    : false
+  const verdict = verdictFor(agent.chain_id, agent.verification)
 
   return (
-    <div className="rounded-[14px] border hairline border-highlighter-green/50 p-8">
-      <p className="micro text-highlighter-green">
-        listed. your agent is on the market now.
+    <div className="rounded-[14px] border hairline border-highlighter-green/60 p-6 sm:p-8">
+      <p className="flex items-center gap-2 text-[14px] font-medium text-press-black">
+        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-highlighter-green" />
+        Listed. Your agent is on the market now.
       </p>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <p className="font-serif text-2xl font-medium">{agent.name}</p>
-        {category && (
-          <span className="micro rounded-full border hairline border-slate-verdant/45 px-2.5 py-1 text-newsprint-gray">
-            {category}
-          </span>
-        )}
-        {agent.x402_supported && (
-          <span className="micro rounded-full border hairline border-highlighter-green/40 px-2 py-1 text-highlighter-green">
-            x402
-          </span>
-        )}
-        {agent.pcs && (
-          <span
-            title="PancakeSwap-native agent"
-            className="micro rounded-full border hairline border-slate-verdant/45 px-2 py-1 text-newsprint-gray"
-          >
-            PCS
-          </span>
-        )}
-        {agent.verification && (
-          <span
-            title={
-              agent.verification.quality
-                ? probe
-                  ? `Deterministic probe: ${agent.verification.quality.grade} - ${agent.verification.quality.reason} (checked ${agent.verification.checkedAt.slice(0, 10)})`
-                  : `AI review: ${agent.verification.quality.grade} - ${agent.verification.quality.reason} (checked ${agent.verification.checkedAt.slice(0, 10)})`
-                : probe && agent.verification.status === 'delivered'
-                  ? `Endpoint answered a liveness probe (checked ${agent.verification.checkedAt})`
-                  : `Shopper checked ${agent.verification.checkedAt}`
-            }
-            className={`micro rounded-full border hairline px-2.5 py-1 ${verificationTone[agent.verification.status] ?? verificationTone.dead}`}
-          >
-            {verificationLabel(agent.verification.status, probe)}
-          </span>
-        )}
+      <p className="mt-4 font-serif text-2xl font-medium">{agent.name}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {category ? <Tag>{category}</Tag> : null}
+        {agent.x402_supported ? <Tag title="Takes payment per call over x402">x402</Tag> : null}
+        {agent.pcs ? <Tag title="Says it works with PancakeSwap">PancakeSwap</Tag> : null}
       </div>
+      <p className="mt-3 flex items-center gap-2 text-[13px]" title={verdict.explain}>
+        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[verdict.tone]}`} />
+        <span className="font-medium text-press-black">{verdict.label}</span>
+        <span className="text-newsprint-gray">· {verdict.explain}</span>
+      </p>
       {agent.description && (
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
           {agent.description}

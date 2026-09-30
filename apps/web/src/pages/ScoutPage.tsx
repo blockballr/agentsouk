@@ -41,7 +41,7 @@ type VerifyView = {
 }
 
 const statusTone: Record<string, string> = {
-  delivered: 'border-highlighter-green/50 text-highlighter-green',
+  delivered: 'border-highlighter-green/50 text-green-ink',
   dead: 'border-press-black/30 text-press-black',
   unreachable: 'border-slate-verdant/40 text-newsprint-gray',
   gated: 'border-slate-verdant/40 text-newsprint-gray',
@@ -191,7 +191,7 @@ export function ScoutPage() {
           type="button"
           onClick={() => void runVerify()}
           disabled={running === 'verify'}
-          className="micro rounded-[5px] border hairline border-highlighter-green/50 px-4 py-2.5 text-highlighter-green hover:bg-highlighter-green/10 disabled:opacity-60"
+          className="micro rounded-[5px] border hairline border-highlighter-green/50 px-4 py-2.5 text-green-ink hover:bg-highlighter-green/10 disabled:opacity-60"
         >
           {running === 'verify' ? 'Verifying…' : 'Run verify (8)'}
         </button>
@@ -221,7 +221,7 @@ export function ScoutPage() {
             onClick={() => setFilter(key)}
             className={`micro rounded-full border hairline px-3 py-1.5 ${
               filter === key
-                ? 'border-highlighter-green bg-highlighter-green/10 text-highlighter-green'
+                ? 'border-highlighter-green bg-highlighter-green/10 text-green-ink'
                 : 'border-slate-verdant/40 text-newsprint-gray'
             }`}
           >

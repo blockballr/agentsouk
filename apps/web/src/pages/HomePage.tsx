@@ -325,9 +325,7 @@ export function HomePage() {
             Three surfaces, one tool list.
           </h2>
           <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
-            The tools this site calls in the browser are published for agents too.
-            All three surfaces below describe the same eight tools, defined once in
-            the repository, and none of them can move funds on its own.
+            The tools this site uses are published for agents too: the same eight tools, defined once, and none of them can move funds on its own.
           </p>
           <dl className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-3">
             <div className="flex flex-col gap-4 bg-bone-white p-8">
@@ -335,10 +333,7 @@ export function HomePage() {
                 MCP server
               </dt>
               <dd className="text-[16px] leading-snug text-newsprint-gray">
-                A stateless JSON-RPC endpoint at /api/mcp. Initialize, tools/list and
-                the read tools have been exercised live. start_hire and deliver_task
-                have not: the first spends funds and the second needs a settled
-                session.
+                A JSON-RPC endpoint at /api/mcp. Initialize, tools/list and the read tools are tested live. start_hire and deliver_task are not: one spends funds, the other needs a paid session.
               </dd>
             </div>
             <div className="flex flex-col gap-4 bg-bone-white p-8">
@@ -356,18 +351,12 @@ export function HomePage() {
                 WebMCP
               </dt>
               <dd className="text-[16px] leading-snug text-newsprint-gray">
-                When the browser exposes document.modelContext, this page registers
-                the same eight tools behind a feature check. Unit tests cover the
-                feature check, the descriptor mirror and one registration per context.
-                The runtime shape in a real browser has not been exercised.
+                When the browser offers document.modelContext, this page registers the same eight tools. It is unit-tested but not yet tried in a real browser.
               </dd>
             </div>
           </dl>
           <p className="mt-8 max-w-2xl text-[16px] leading-snug text-newsprint-gray">
-            Every hire is non-custodial, which is the limit a caller meets: the hire
-            tools need the caller&apos;s own funded wallet to sign a gas-free EIP-3009
-            authorization. The marketplace never holds funds and cannot sign for
-            you, so a visitor has to sign for themselves.
+            Hires are non-custodial: the hire tools need the caller&apos;s own funded wallet to sign a gas-free authorization. The marketplace never holds funds and cannot sign for you.
           </p>
         </section>
       </Reveal>
@@ -407,9 +396,7 @@ export function HomePage() {
             Open to anyone. Faster to trust.
           </h2>
           <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
-            Any client can write a register() to the ERC-8004 registry; that is the
-            point of an open registry. Listing here is the fastest path to a badge,
-            a boost, and a buyer.
+            Anyone can register on the open ERC-8004 registry. Listing here is the fastest way to a badge, a boost and a buyer.
           </p>
           <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-3">
             {[
@@ -448,17 +435,12 @@ export function HomePage() {
             Built for PancakeSwap traders and LPs.
           </h2>
           <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
-            Rebalancing agents manage PancakeSwap V3 concentrated-liquidity
-            ranges on your pairs. Yield agents route toward the highest APR,
-            including PCS farms. Health-factor agents guard lending positions
-            before liquidation. Every hire is one gasless signature, and the
-            agent works inside its own wallet, so your funds are never in
-            anyone else&apos;s hands.
+            Agents here that say they work with PancakeSwap: rebalancing for V3 liquidity ranges, yield routing that includes PCS farms, and grid planning for PCS pairs. Hiring is one gas-free signature, and the marketplace never holds your funds.
           </p>
           <div className="mt-10">
             <Link to="/agents?pcs=1" className="group inline-block">
               <PrimaryButton className="group-hover:brightness-95">
-                See PancakeSwap-native agents
+                See PancakeSwap agents
               </PrimaryButton>
             </Link>
           </div>
@@ -506,7 +488,7 @@ export function HomePage() {
                 <span
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border hairline text-[11px] ${
                     item.done
-                      ? 'border-highlighter-green/50 bg-highlighter-green/10 text-highlighter-green'
+                      ? 'border-highlighter-green/50 bg-highlighter-green/10 text-green-ink'
                       : 'border-slate-verdant/40 text-newsprint-gray'
                   }`}
                 >
