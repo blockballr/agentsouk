@@ -46,7 +46,7 @@ export function QuestNudge() {
             writeQuestMode(wallet, 'active')
             navigate('/quest')
           }}
-          className="micro inline-flex min-h-11 items-center rounded-[5px] bg-highlighter-green px-5 text-typesetter-ink transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className="micro inline-flex min-h-11 items-center rounded-[5px] bg-highlighter-green px-5 text-on-highlighter transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
         >
           Start the quest
         </button>
