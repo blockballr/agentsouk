@@ -147,6 +147,22 @@ export async function loadHireTaskByPayment(
   }
 }
 
+export async function loadHireTasksByPayments(
+  paymentIds: readonly string[],
+): Promise<HireTask[]> {
+  if (paymentIds.length === 0 || !(await init()) || !sql) return [];
+  try {
+    const rows = await sql`
+      select payload from hire_tasks
+      where payment_id in ${sql([...paymentIds])}
+      order by updated_at desc
+    `;
+    return rows.map((r) => r.payload as HireTask);
+  } catch {
+    return [];
+  }
+}
+
 export async function loadHireTasks(limit = 100): Promise<HireTask[]> {
   if (!(await init()) || !sql) return [];
   try {
@@ -221,6 +237,45 @@ export async function loadJobs(limit = 100): Promise<Job[]> {
       limit ${limit}
     `;
     return rows.map((r) => r.payload as Job);
+  } catch {
+    return [];
+  }
+}
+
+// one agent's jobs and tasks, the rows its track record is computed from
+export async function loadJobsByToken(
+  chainId: number,
+  tokenId: string,
+  limit = 500,
+): Promise<Job[]> {
+  if (!(await init()) || !sql) return [];
+  try {
+    const rows = await sql`
+      select payload from jobs
+      where payload->>'tokenId' = ${tokenId} and payload->>'chainId' = ${String(chainId)}
+      order by updated_at desc
+      limit ${limit}
+    `;
+    return rows.map((r) => r.payload as Job);
+  } catch {
+    return [];
+  }
+}
+
+export async function loadHireTasksByToken(
+  chainId: number,
+  tokenId: string,
+  limit = 500,
+): Promise<HireTask[]> {
+  if (!(await init()) || !sql) return [];
+  try {
+    const rows = await sql`
+      select payload from hire_tasks
+      where payload->>'tokenId' = ${tokenId} and payload->>'chainId' = ${String(chainId)}
+      order by updated_at desc
+      limit ${limit}
+    `;
+    return rows.map((r) => r.payload as HireTask);
   } catch {
     return [];
   }
