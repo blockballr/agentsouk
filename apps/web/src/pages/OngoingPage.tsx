@@ -208,7 +208,7 @@ export function OngoingPage() {
   const standaloneRevocations = Object.entries(revokeResults).filter(([paymentId]) => !shownKeys.has(paymentId))
 
   return (
-    <section className="mx-auto max-w-[1100px] px-6 pb-24 pt-10">
+    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
       <p className="micro text-newsprint-gray">Ongoing</p>
       <h1 className="mt-4 font-serif text-[clamp(40px,6vw,88px)] font-medium leading-[0.9] tracking-[-0.04em]">
         Your hires.
@@ -271,7 +271,7 @@ export function OngoingPage() {
               <h2 className="micro text-newsprint-gray">
                 {g.title} · {list.length}
               </h2>
-              <div className="mt-4 space-y-4">
+              <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 {list.map((it) => (
                   <HireRow
                     key={it.key}
