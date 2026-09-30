@@ -188,7 +188,7 @@ export function CartPage() {
           </p>
           <Link
             to="/agents"
-            className="micro mt-8 inline-block rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+            className="micro mt-8 inline-block rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
           >
             Browse the market
           </Link>
@@ -250,7 +250,7 @@ export function CartPage() {
               type="button"
               onClick={handleCheckout}
               disabled={busy}
-              className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+              className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
             >
               {connecting ? 'Connecting wallet...' : running ? 'Running checkout...' : `Checkout ${items.length} agent${items.length === 1 ? '' : 's'}`}
             </button>
@@ -286,7 +286,7 @@ function StatusMark({ status }: { status: StepStatus }) {
   if (status === 'done') {
     return (
       <span
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-highlighter-green text-typesetter-ink"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-highlighter-green text-on-highlighter"
         aria-hidden="true"
       >
         <CheckGlyph />

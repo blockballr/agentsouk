@@ -290,7 +290,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                           ? 'Select agents with the checkboxes in the compare table'
                           : undefined
                       }
-                      className="micro rounded-[5px] bg-highlighter-green px-5 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white disabled:cursor-not-allowed disabled:opacity-40"
+                      className="micro rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {cartPhase === 'adding'
                         ? 'Adding…'
@@ -342,7 +342,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                   type="button"
                   onClick={onCompare}
                   disabled={count < 2}
-                  className="micro rounded-[5px] bg-highlighter-green px-5 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white disabled:cursor-not-allowed disabled:opacity-40"
+                  className="micro rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Compare {count >= 2 ? `${count} agents` : ''}
                 </button>

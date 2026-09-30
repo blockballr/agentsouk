@@ -98,7 +98,7 @@ export function ListAgentPage() {
         <button
           type="button"
           onClick={() => document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          className="micro min-h-11 rounded-[5px] bg-highlighter-green px-5 text-typesetter-ink transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className="micro min-h-11 rounded-[5px] bg-highlighter-green px-5 text-on-highlighter transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
         >
           Register an agent
         </button>
@@ -331,7 +331,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
                 type="button"
                 disabled={phase === 'sending'}
                 onClick={() => void getGas()}
-                className="micro rounded-[5px] bg-highlighter-green px-5 py-2.5 text-typesetter-ink shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="micro rounded-[5px] bg-highlighter-green px-5 py-2.5 text-on-highlighter shadow-lg transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               >
                 {phase === 'sending' ? (
                   'Sign the message in your wallet'
@@ -696,7 +696,7 @@ function PromptGenerator({ chainId }: { chainId: number | null }) {
       <button
         type="button"
         onClick={generate}
-        className="micro mt-6 rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className="micro mt-6 rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
       >
         Generate prompt
       </button>
@@ -790,7 +790,7 @@ function LookupSection({
         <button
           type="submit"
           disabled={state.phase === 'loading' || chainId === null}
-          className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-60"
+          className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-60"
         >
           {state.phase === 'loading' ? 'Checking…' : chainId === null ? 'Checking the network…' : 'Look up'}
         </button>
@@ -931,7 +931,7 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
           <button
             type="submit"
             disabled={phase === 'sending'}
-            className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="micro rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:cursor-not-allowed disabled:opacity-60"
           >
             {phase === 'sending' ? 'Sending…' : 'Request review'}
           </button>

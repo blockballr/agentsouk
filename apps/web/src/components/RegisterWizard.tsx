@@ -818,7 +818,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             type="button"
             disabled={busy || endpointFault !== null}
             onClick={() => void runChecks()}
-            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {endpointFault
               ? 'Fix the endpoint before registering'
@@ -832,7 +832,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           <button
             type="button"
             onClick={() => void sign()}
-            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:opacity-60"
+            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter transition hover:brightness-95 disabled:opacity-60"
           >
             Sign the registration in your wallet
           </button>
@@ -854,7 +854,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           <button
             type="button"
             disabled
-            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink opacity-60"
+            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter opacity-60"
           >
             {step === 'signing' ? 'Waiting for your wallet' : 'Waiting for the transaction to confirm'}
           </button>
@@ -865,7 +865,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
           <button
             type="button"
             onClick={() => void checkTransaction(txHash)}
-            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:opacity-60"
+            className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter transition hover:brightness-95 disabled:opacity-60"
           >
             Check the transaction again
           </button>

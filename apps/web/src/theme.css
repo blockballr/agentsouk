@@ -8,6 +8,8 @@
   --color-newsprint-gray: #516254;
   --color-muted-sage: #c8d2c8;
   --color-highlighter-green: #2bee4b;
+  /* text on the green stays near black in both themes: the flipping ink read 1.4:1 on it in dark mode */
+  --color-on-highlighter: #0b0f0c;
   --color-shadow-moss: #93b799;
   --color-echo-green: #c4e4c9;
   --color-switch-knob: #fafffa;
