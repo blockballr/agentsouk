@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { AgentDetail, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import {
@@ -1314,7 +1314,7 @@ export function completionOffer(status: string | null | undefined): CompletionOf
   return 'none'
 }
 
-// a job that is completed, rejected or expired has closed its hire, so the panel offers a new one
+// a job that is completed, rejected or expired has closed its hire
 export function jobClosed(status: string | null | undefined): boolean {
   return status === 'Completed' || status === 'Rejected' || status === 'Expired'
 }
@@ -1360,8 +1360,14 @@ function DeliveryPanel({
     onResult?.({ output, job: job ? { id: job.id, status: job.status } : null, task: hireTask })
   }, [output, job, hireTask, onResult])
 
+  const closedRef = useRef(onClosed)
+  useEffect(() => {
+    closedRef.current = onClosed
+  })
+
   // a reload remounts this panel empty, so read back what the payment already
-  // earned, and let a run that finished first keep its own state
+  // earned, and let a run that finished first keep its own state; a hire whose job
+  // closed before this visit is handed back, so the page opens on a fresh hire
   useEffect(() => {
     let cancelled = false
     Promise.all([
@@ -1369,6 +1375,10 @@ function DeliveryPanel({
       getJobByPayment(paymentId).catch(() => null),
     ]).then(([tasks, stored]) => {
       if (cancelled) return
+      if (stored && jobClosed(stored.status)) {
+        closedRef.current?.()
+        return
+      }
       const task = tasks[0]
       if (task) {
         setHireTask((cur) => cur ?? task)
@@ -1462,7 +1472,7 @@ function DeliveryPanel({
       const updated = await actOnJob(job.id, 'complete', { reason: 'complete' })
       // only what the server confirmed: the returned job is the new state
       setJob({ id: updated.id, status: updated.status })
-      setCompleteNote('Completed. The deliverable is attested and this hire is closed. Hire again to start a new one.')
+      setCompleteNote('Completed. The deliverable is attested and this hire is closed.')
     } catch (e) {
       // the server's own reason, rather than a generic failure
       setCompleteError((e as Error).message)
@@ -1477,8 +1487,8 @@ function DeliveryPanel({
   // the completion affordance is entirely a function of the server-confirmed status
   const offer = completionOffer(job?.status)
 
-  // a completed, rejected or expired job has closed this hire, so the panel stops offering
-  // another run and leads back to a fresh one; the result stays on the page
+  // a job closed during this visit keeps its attestation here and its rating with the result;
+  // the next visit, or a reload, opens on a fresh hire
   if (job && jobClosed(job.status)) {
     return (
       <div className="mt-4 rounded-[10px] border hairline border-highlighter-green/50 p-4" role="status">
@@ -1486,18 +1496,9 @@ function DeliveryPanel({
         <p className="mt-2 text-[11px] leading-relaxed text-green-ink">
           {completeNote ??
             (job.status === 'Completed'
-              ? 'Completed. The deliverable is attested and this hire is closed. Hire again to start a new one.'
-              : `The job is ${job.status.toLowerCase()}, so this hire is closed. Hire again to start a new one.`)}
+              ? 'Completed. The deliverable is attested and this hire is closed.'
+              : `The job is ${job.status.toLowerCase()}, so this hire is closed.`)}
         </p>
-        {onClosed && (
-          <button
-            type="button"
-            onClick={onClosed}
-            className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
-          >
-            Hire again
-          </button>
-        )}
       </div>
     )
   }
