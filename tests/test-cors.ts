@@ -37,6 +37,15 @@ describe("cors on the api", () => {
     expect(res.headers.get("access-control-max-age")).toBe("86400");
   });
 
+  it("allows a branch preview of the Pages project but not a lookalike", async () => {
+    const { proxy } = await load("https://agentsouk.pages.dev");
+    const ok = proxy(request("https://ui-uplift.agentsouk.pages.dev"));
+    expect(ok.headers.get("access-control-allow-origin")).toBe("https://ui-uplift.agentsouk.pages.dev");
+    for (const bad of ["https://evil-agentsouk.pages.dev", "https://x.agentsouk.pages.dev.evil.example", "http://ui-uplift.agentsouk.pages.dev"]) {
+      expect(proxy(request(bad)).headers.get("access-control-allow-origin")).toBeNull();
+    }
+  });
+
   it("gives no origin to a site that is not on the list", async () => {
     const { proxy } = await load("https://agentsouk.pages.dev");
     const res = proxy(request("https://elsewhere.example"));
