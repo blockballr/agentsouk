@@ -2,6 +2,7 @@ import type { AgentDetail, AgentSummary, PaymentRequirements, PreviewResult, Rec
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 import { getActiveAccount, getProvider, setTargetChain } from './wallet'
+import { visitSeed } from './rotation'
 
 export interface AgentsQuery {
   category?: string
@@ -10,6 +11,8 @@ export interface AgentsQuery {
   page?: number
   limit?: number
   pcs?: boolean
+  // the visit's rotation seed, which orders the working agents under "Working first"
+  seed?: string
 }
 
 export interface AgentsResult {
@@ -48,6 +51,8 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   if (query.page && query.page > 1) sp.set('page', String(query.page))
   if (query.limit) sp.set('limit', String(query.limit))
   if (query.pcs) sp.set('pcs', '1')
+  // every caller rotates by the visit, so search and compare stay stable while a tab is open
+  sp.set('seed', query.seed ?? visitSeed())
   const res = await fetch(`${BASE}/agents?${sp}`)
   if (!res.ok) throw new Error(`agents ${res.status}`)
   const body = await readJsonBody<{

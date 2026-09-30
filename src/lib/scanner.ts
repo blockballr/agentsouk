@@ -14,6 +14,7 @@ import { isPancakeSwapAgent, readsPancakeSwap } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
 import { loadDelisted } from "./delist-store";
+import { rotationSeed, withoutHouseAgents, workingFirst } from "./working-rotation";
 import { LISTABLE_CATEGORIES, type RegistrationDraft } from "@agora/core";
 import {
   AgentRemovedError,
@@ -913,6 +914,10 @@ export interface QueryOptions {
   maxWarmPages?: number;
   pcs?: boolean;
   verifications?: Map<string, { status?: string }>;
+  // the visitor's rotation seed for "Working first"; absent, the order turns over hourly
+  seed?: string | null;
+  // the verifier's sweep sees the team's agents even while the shelf hides them
+  includeHouse?: boolean;
 }
 
 export interface QueryResult {
@@ -966,9 +971,10 @@ export async function queryAgents(
   // Only the target chain belongs on this shelf; a live read for another chain cannot leak in.
   // a delisted token leaves the shelf even though its on-chain registration stands
   const delisted = await loadDelisted().catch(() => new Set<string>());
-  const shelf = Array.from(index.agents.values()).filter(
+  const onChain = Array.from(index.agents.values()).filter(
     (a) => a.chain_id === chainId && !delisted.has(a.token_id),
   );
+  const shelf = opts.includeHouse ? onChain : withoutHouseAgents(onChain, verifications);
   let items = shelf;
 
   if (category && category !== "all") {
@@ -999,7 +1005,7 @@ export async function queryAgents(
     categoryCounts[key] = (categoryCounts[key] ?? 0) + 1;
   }
 
-  items = sortAgents(items, sort, category, verifications);
+  items = sortAgents(items, sort, category, verifications, rotationSeed(opts.seed));
 
   const total = items.length;
   const start = (page - 1) * limit;
@@ -1040,6 +1046,7 @@ function sortAgents(
   sort: string,
   category?: string,
   verifications?: Map<string, { status?: string }>,
+  seed: string = rotationSeed(null),
 ): AgentSummary[] {
   const copy = [...items];
   switch (sort) {
@@ -1057,16 +1064,8 @@ function sortAgents(
         (a, b) => (b.health_score ?? -1) - (a.health_score ?? -1),
       );
       break;
-    case "reachability": {
-      const rank: Record<string, number> = { delivered: 4, gated: 3, dead: 2, unreachable: 1 };
-      copy.sort((a, b) => {
-        const ra = rank[verifications?.get(a.token_id)?.status ?? ""] ?? 0;
-        const rb = rank[verifications?.get(b.token_id)?.status ?? ""] ?? 0;
-        if (ra !== rb) return rb - ra;
-        return b.total_score - a.total_score || b.total_feedbacks - a.total_feedbacks;
-      });
-      break;
-    }
+    case "reachability":
+      return workingFirst(copy, verifications, seed);
     case "score":
     default:
       if (category && category !== "all") {

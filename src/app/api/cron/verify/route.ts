@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
     const { takeSweepQueue, loadVerifiedTokenIds } = await import("@/lib/verifications-store");
     const queued = await takeSweepQueue(3);
     const verifiedIds = await loadVerifiedTokenIds();
-    const snapshotRes = await fetchJson(`${baseUrl()}/api/agents?limit=200`, {}, 45000);
+    const snapshotRes = await fetchJson(`${baseUrl()}/api/agents?limit=200&house=all`, {}, 45000);
     const agents = (snapshotRes.body?.items ?? []) as { token_id: number; name: string; category?: string; chain_id?: number }[];
     const candidates = mergeSweepCandidates(queued, agents, CHAIN_ID, VERIFY_LIMIT, verifiedIds);
 

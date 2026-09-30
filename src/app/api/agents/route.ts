@@ -32,6 +32,8 @@ export async function GET(req: NextRequest) {
     maxWarmPages,
     pcs,
     verifications,
+    seed: sp.get("seed"),
+    includeHouse: sp.get("house") === "all",
   });
 
   await hydrateBoostsFromDb();

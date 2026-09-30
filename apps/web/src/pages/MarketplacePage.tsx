@@ -12,7 +12,11 @@ import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 
 const sorts = [
-  { key: 'reachability', label: 'Working first' },
+  {
+    key: 'reachability',
+    label: 'Working first',
+    title: 'Agents that delivered on their last check come first, in an order that changes with each visit so every working agent is seen.',
+  },
   { key: 'score', label: 'Score' },
   { key: 'newest', label: 'Newest' },
   { key: 'feedback', label: 'Most reviewed' },
@@ -259,6 +263,7 @@ export function MarketplacePage() {
               <button
                 key={s.key}
                 type="button"
+                title={'title' in s ? s.title : undefined}
                 onClick={() => setParam('sort', s.key)}
                 className={`micro rounded-[5px] px-3 py-2 transition focus-visible:outline-2 focus-visible:outline-highlighter-green ${
                   sort === s.key
