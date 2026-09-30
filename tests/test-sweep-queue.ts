@@ -58,6 +58,23 @@ describe("sweep candidate merge", () => {
     expect(out.map((c) => c.tokenId)).toEqual(["2", "1"]);
   });
 
+  // the comparator once read b.score ?? (0 - a.score), so any scored agent sorted
+  // as "greater" and the fill kept registry order instead of ranking
+  it("ranks the fill by score, highest first", () => {
+    const out = mergeSweepCandidates(
+      [],
+      [
+        { token_id: 1, name: "A", chain_id: 97, average_score: 10 },
+        { token_id: 2, name: "B", chain_id: 97, average_score: 50 },
+        { token_id: 3, name: "C", chain_id: 97, average_score: 30 },
+        { token_id: 4, name: "D", chain_id: 97 },
+      ],
+      97,
+      4,
+    );
+    expect(out.map((c) => c.tokenId)).toEqual(["2", "3", "1", "4"]);
+  });
+
   it("excludes other chains and defaults a missing category", () => {
     const out = mergeSweepCandidates([], [{ token_id: 5, name: "E", chain_id: 56 }], 97, 5);
     expect(out).toEqual([]);

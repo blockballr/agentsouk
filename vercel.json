@@ -2,7 +2,23 @@
   "crons": [
     {
       "path": "/api/cron/verify",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/verify",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/verify",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/verify",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/cron/verify",
+      "schedule": "0 21 * * *"
     },
     {
       "path": "/api/cron/maintenance",

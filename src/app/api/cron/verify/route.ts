@@ -34,7 +34,7 @@ export function sweepBudget() {
 // per-run spend stays bounded.
 export function mergeSweepCandidates(
   queued: { tokenId: string; name: string; category: string }[],
-  agents: { token_id: number; name: string; category?: string; chain_id?: number }[],
+  agents: { token_id: number; name: string; category?: string; chain_id?: number; average_score?: number }[],
   chainId: number,
   limit: number,
   verifiedIds: Set<string> = new Set(),
@@ -46,7 +46,7 @@ export function mergeSweepCandidates(
       const fa = verifiedIds.has(String(a.token_id)) ? 1 : 0;
       const fb = verifiedIds.has(String(b.token_id)) ? 1 : 0;
       if (fa !== fb) return fa - fb;
-      return (b as any).average_score ?? 0 - ((a as any).average_score ?? 0);
+      return (b.average_score ?? 0) - (a.average_score ?? 0);
     })
     .slice(0, Math.max(0, limit - queued.length))
     .map((a) => ({
