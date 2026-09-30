@@ -1,16 +1,20 @@
 // The first party grid-trading reference agent: a real endpoint Agent Souk can
 // list through its own wizard. It plans a grid ladder from caller-supplied
-// prices and sizes, so every figure is deterministic and reproducible. It reads
-// no market prices and invents none; when a required value is absent it asks for
-// it rather than guessing.
+// prices and sizes, so every figure is deterministic and reproducible. By default
+// it reads no market prices and invents none; named a PancakeSwap pair and a width
+// instead of a range, it centres the ladder on that pool's price at a stated block.
+// When a required value is absent it asks for it rather than guessing.
 
 import { privateEndpointReason } from "./endpoint";
+import { chainName, feeTierLabel, parsePair } from "./pancake";
 
 export const GRID_AGENT_NAME = "Souk Grid Planner";
-export const GRID_AGENT_VERSION = "1.0.0";
+export const GRID_AGENT_VERSION = "1.1.0";
 export const GRID_AGENT_CATEGORY = "grid-trading";
 export const GRID_AGENT_PROTOCOL_VERSION = "0.3.0";
 export const GRID_AGENT_DESCRIPTION =
+  "Plans a grid trading ladder over a price range the caller supplies: a lower price, an upper price, the number of price rungs, the value placed at each rung, and an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic. By default it uses no market data; name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pair's live price on BNB Chain mainnet, stating the pool and the block it read, so every figure can still be reproduced.";
+export const GRID_TOOL_DESCRIPTION =
   "Plans a grid trading ladder over a price range the caller supplies: a lower price, an upper price, the number of price rungs, the value placed at each rung, and an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic and uses no market data, so the caller supplies the range and the size and can reproduce every figure.";
 export const GRID_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const GRID_AGENT_CARD_PATH = "/api/reference/grid/.well-known/agent-card.json";
@@ -95,10 +99,11 @@ export function gridAgentCard(origin: string): GridAgentCard {
         id: "plan_grid",
         name: "Grid ladder planning",
         description:
-          "Plans a grid trading ladder from a lower price, an upper price, a rung count and a value per rung, with an optional round trip fee in basis points. Returns the rung spacing, the first and last rung prices, the value committed, the gross, fee and net capture of one round trip, and the total net capture across a full traversal. Read-only deterministic arithmetic with no market data.",
+          "Plans a grid trading ladder from a lower price, an upper price, a rung count and a value per rung, with an optional round trip fee in basis points. Returns the rung spacing, the first and last rung prices, the value committed, the gross, fee and net capture of one round trip, and the total net capture across a full traversal. Instead of the two prices, name a PancakeSwap pair such as WBNB/USDT and a width in percent: the range is centred on the pair's live price on BNB Chain mainnet, and the answer names the pool and the block it read. Read-only; it never trades.",
         tags: ["grid-trading", "grid", "trading", "ladder", "range", "orders"],
         examples: [
           "Plan a grid from lower 1000 to upper 2000 with 11 levels and 100 per order",
+          "Plan a grid on WBNB/USDT 10% wide, levels 11, order size 100",
           "What spacing and net capture does a grid trading ladder have",
         ],
         inputModes: ["text/plain", "application/json"],
@@ -106,14 +111,21 @@ export function gridAgentCard(origin: string): GridAgentCard {
         inputSchema: {
           type: "object",
           properties: {
-            lowerUsd: { type: "number", description: "lower price of the range in USD" },
-            upperUsd: { type: "number", description: "upper price of the range in USD" },
+            lowerUsd: { type: "number", description: "lower price of the range in USD; leave out when naming a pair" },
+            upperUsd: { type: "number", description: "upper price of the range in USD; leave out when naming a pair" },
             levels: { type: "number", description: "number of price rungs, 2 to 200" },
             orderSizeUsd: { type: "number", description: "value placed at each rung in USD" },
-            feeBps: { type: "number", description: "optional round trip fee in basis points, defaults to 10" },
+            feeBps: { type: "number", description: "optional round trip fee in basis points; 0 by default, or the pool's own round trip fee when a pair is named" },
+            pair: { type: "string", description: "instead of lowerUsd and upperUsd: a PancakeSwap pair priced in dollars, WBNB/USDT" },
+            widthPct: { type: "number", description: "with a pair: the range width in percent, centred on the pool price" },
+            feeTier: { type: "number", description: "with a pair: optional pool fee tier, 100, 500, 2500 or 10000; the deepest pool otherwise" },
           },
-          required: ["lowerUsd", "upperUsd", "levels", "orderSizeUsd"],
-          examples: [{ lowerUsd: 1000, upperUsd: 2000, levels: 11, orderSizeUsd: 100, feeBps: 10 }],
+          // the range is either two prices or a pair and a width, so only the rest is always required
+          required: ["levels", "orderSizeUsd"],
+          examples: [
+            { lowerUsd: 1000, upperUsd: 2000, levels: 11, orderSizeUsd: 100, feeBps: 10 },
+            { pair: "WBNB/USDT", widthPct: 10, levels: 11, orderSizeUsd: 100 },
+          ],
         },
         outputSchema: {
           type: "object",
@@ -168,11 +180,14 @@ export interface GridInputFields {
   levels?: number;
   orderSizeUsd?: number;
   feeBps?: number;
+  pair?: { base: string; quote: string };
+  widthPct?: number;
+  feeTier?: number;
   // names of fields that were present but whose value could not be parsed
   invalid: string[];
 }
 
-type GridNumericField = "lowerUsd" | "upperUsd" | "levels" | "orderSizeUsd" | "feeBps";
+type GridNumericField = "lowerUsd" | "upperUsd" | "levels" | "orderSizeUsd" | "feeBps" | "widthPct" | "feeTier";
 
 const INPUT_ALIASES: Record<string, GridNumericField> = {
   lower: "lowerUsd",
@@ -214,6 +229,12 @@ const INPUT_ALIASES: Record<string, GridNumericField> = {
   feebp: "feeBps",
   feetbps: "feeBps",
   roundtripfeebps: "feeBps",
+  widthpct: "widthPct",
+  width: "widthPct",
+  widthpercent: "widthPct",
+  rangepct: "widthPct",
+  feetier: "feeTier",
+  poolfee: "feeTier",
 };
 
 function round(value: number, digits = 4): number {
@@ -243,9 +264,15 @@ export function extractGridInput(value: unknown): GridInputFields {
       : record;
 
   for (const [key, raw] of Object.entries(source)) {
+    if (key.toLowerCase() === "pair" && typeof raw === "string") {
+      const pair = parsePair(raw);
+      if (pair) out.pair = pair;
+      else if (raw.trim()) out.invalid.push("pair");
+      continue;
+    }
     const field = INPUT_ALIASES[key.toLowerCase().replace(/[\s_-]/g, "")];
     if (!field || out[field] !== undefined) continue;
-    const parsed = toNumber(raw);
+    const parsed = toNumber(field === "widthPct" && typeof raw === "string" ? raw.replace(/%\s*$/, "") : raw);
     if (parsed !== undefined) out[field] = parsed;
     else if (raw !== undefined && raw !== null && String(raw).trim() !== "") {
       out.invalid.push(field);
@@ -276,6 +303,13 @@ export function parseGridText(task: string): GridInputFields {
   if (orderSize !== undefined) out.orderSizeUsd = orderSize;
   const feeBps = labelledNumber(task, "fee\\s*bps|fee\\s*in\\s*bps|round\\s*trip\\s*fee|fees?");
   if (feeBps !== undefined) out.feeBps = feeBps;
+  const pair = parsePair(task);
+  if (pair) out.pair = pair;
+  // "10% wide" or "width 10": a width is read only when it is labelled as one
+  const width =
+    /(\d+(?:\.\d+)?)\s*(?:%|percent)\s*(?:wide|width|range|band)\b/i.exec(task) ??
+    /\bwidth\s*(?:of\s*)?(\d+(?:\.\d+)?)/i.exec(task);
+  if (width) out.widthPct = Number(width[1]);
   return out;
 }
 
@@ -286,7 +320,10 @@ export function mergeGridInput(
   const fromText = parseGridText(task);
   const fromInput = extractGridInput(input);
   // structured input wins over text when both name the same field
-  const merged: GridInputFields = { ...fromText, ...fromInput };
+  const merged: GridInputFields = { ...fromText };
+  for (const [key, value] of Object.entries(fromInput)) {
+    if (value !== undefined) (merged as unknown as Record<string, unknown>)[key] = value;
+  }
   merged.invalid = [...fromText.invalid, ...fromInput.invalid];
   return merged;
 }
@@ -319,17 +356,41 @@ export function planGrid(input: GridPlanInput): GridPlanResult {
   };
 }
 
+export interface GridPriceSource {
+  dex: "PancakeSwap v3";
+  chainId: number;
+  pair: string;
+  pool: string;
+  feeTier: number;
+  tick: number;
+  price: number;
+  blockNumber: number;
+  widthPct: number;
+  feeFromPool: boolean;
+}
+
+function sourceSentence(s: GridPriceSource): string {
+  const quote = s.pair.split("/")[1] ?? "";
+  return `The range is centred on the PancakeSwap v3 ${s.pair} price of ${s.price} ${quote}, read from the ${feeTierLabel(s.feeTier)} pool ${s.pool} at block ${s.blockNumber} on ${chainName(s.chainId)}, ${s.widthPct}% wide${s.feeFromPool ? ", with the pool's own round trip fee" : ""}. The arithmetic on that price is deterministic, so every figure can be reproduced from that block.`;
+}
+
 function stateLabel(state: GridPlanState): string {
   return state === "planned"
     ? "planned, because the net capture of a round trip is greater than zero"
     : "fee-dominated, because the fee cost consumes the gross capture";
 }
 
-function answerText(result: GridPlanResult): string {
-  return `Grid plan for a range of ${result.lowerUsd} USD to ${result.upperUsd} USD across ${result.levels} rungs. Spacing is ${result.spacingUsd} USD between rungs, from a first rung at ${result.firstRungUsd} USD to a last rung at ${result.lastRungUsd} USD, committing ${result.committedUsd} USD across the ladder. One completed round trip buys at ${result.firstRungUsd} USD and sells one rung higher: gross capture ${result.grossCaptureUsd} USD, the round trip fee at ${result.feeBps} bps is ${result.feeCostUsd} USD, and the net capture is ${result.netCaptureUsd} USD. If price traverses the whole range once and every rung fills, ${result.roundTripsInFullTraversal} round trips complete for a total net capture of ${result.totalNetCaptureUsd} USD. State: ${stateLabel(result.state)}. This is deterministic arithmetic on the values you supplied, with no market data, so you can reproduce every figure.`;
+function answerText(result: GridPlanResult, source?: GridPriceSource): string {
+  const closing = source
+    ? sourceSentence(source)
+    : "This is deterministic arithmetic on the values you supplied, with no market data, so you can reproduce every figure.";
+  return `Grid plan for a range of ${result.lowerUsd} USD to ${result.upperUsd} USD across ${result.levels} rungs. Spacing is ${result.spacingUsd} USD between rungs, from a first rung at ${result.firstRungUsd} USD to a last rung at ${result.lastRungUsd} USD, committing ${result.committedUsd} USD across the ladder. One completed round trip buys at ${result.firstRungUsd} USD and sells one rung higher: gross capture ${result.grossCaptureUsd} USD, the round trip fee at ${result.feeBps} bps is ${result.feeCostUsd} USD, and the net capture is ${result.netCaptureUsd} USD. If price traverses the whole range once and every rung fills, ${result.roundTripsInFullTraversal} round trips complete for a total net capture of ${result.totalNetCaptureUsd} USD. State: ${stateLabel(result.state)}. ${closing}`;
 }
 
-function resultArtifact(result: GridPlanResult): Record<string, unknown> {
+function resultArtifact(result: GridPlanResult, source?: GridPriceSource): Record<string, unknown> {
+  const rangeAssumption = source
+    ? `The range is centred on the PancakeSwap v3 ${source.pair} price read from pool ${source.pool} at block ${source.blockNumber}: lowerUsd = price * (1 - widthPct / 200) and upperUsd = price * (1 + widthPct / 200), with ${source.pair.split("/")[1]} taken as USD. The order size is supplied by the caller.`
+    : "The price range and the order size are supplied by the caller; no market data is fetched.";
   return {
     capability: GRID_AGENT_CATEGORY,
     action: "plan_grid",
@@ -357,8 +418,12 @@ function resultArtifact(result: GridPlanResult): Record<string, unknown> {
       totalNetCaptureUsd: result.totalNetCaptureUsd,
       state: result.state,
     },
+    ...(source ? { source } : {}),
     assumptions: [
-      "The price range and the order size are supplied by the caller; no market data is fetched.",
+      rangeAssumption,
+      ...(source?.feeFromPool
+        ? [`feeBps defaults to the pool's round trip fee, twice its ${feeTierLabel(source.feeTier)} tier.`]
+        : []),
       "One round trip buys at the first rung and sells one rung higher, so its quantity is orderSizeUsd / lowerUsd.",
       "feeBps is the round trip cost applied to orderSizeUsd, so feeCostUsd = orderSizeUsd * feeBps / 10000.",
       "A full traversal completes levels - 1 round trips, and totalNetCaptureUsd scales the per round trip net capture by that count.",
@@ -368,7 +433,7 @@ function resultArtifact(result: GridPlanResult): Record<string, unknown> {
 }
 
 export function capabilityText(): string {
-  return `Souk Grid Planner plans a grid trading ladder from values you supply: a lower price, an upper price, the number of price rungs, and the value placed at each rung in USD, with an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic and uses no market data, so you can reproduce every figure. Send the values as a data part, for example { kind: "data", data: { input: { lowerUsd: 1000, upperUsd: 2000, levels: 11, orderSizeUsd: 100, feeBps: 10 } } }, using the plan_grid skill.`;
+  return `Souk Grid Planner plans a grid trading ladder from values you supply: a lower price, an upper price, the number of price rungs, and the value placed at each rung in USD, with an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic and uses no market data, so you can reproduce every figure. Send the values as a data part, for example { kind: "data", data: { input: { lowerUsd: 1000, upperUsd: 2000, levels: 11, orderSizeUsd: 100, feeBps: 10 } } }, using the plan_grid skill. Or name a PancakeSwap pair and a width instead of the two prices, for example { pair: "WBNB/USDT", widthPct: 10, levels: 11, orderSizeUsd: 100 }, and the ladder is centred on that pool's live price, with the pool and block stated.`;
 }
 
 export function capabilityArtifact(): Record<string, unknown> {
@@ -378,7 +443,7 @@ export function capabilityArtifact(): Record<string, unknown> {
     skill: "plan_grid",
     status: "ok",
     required: ["lowerUsd", "upperUsd", "levels", "orderSizeUsd"],
-    optional: ["feeBps"],
+    optional: ["feeBps", "pair", "widthPct", "feeTier"],
     formula: GRID_FORMULA,
     defaults: {
       feeBps: DEFAULT_FEE_BPS,
@@ -391,7 +456,7 @@ export function capabilityArtifact(): Record<string, unknown> {
       data: { input: { lowerUsd: 1000, upperUsd: 2000, levels: 11, orderSizeUsd: 100, feeBps: 10 } },
     },
     limitations: [
-      "The caller supplies the range and the size; this agent does not read market prices.",
+      "The caller supplies the range and the size, or names a PancakeSwap pair whose live price centres the range.",
       "The result is a read-only plan and never a transaction.",
     ],
   };
@@ -453,9 +518,14 @@ export interface GridAgentReply {
 
 const GRID_INTENT = /\bgrid\b|ladder|rung|\bdca\b|accumulation\s+grid|trading\s+range/i;
 
+export function hasGridIntent(task: string): boolean {
+  return GRID_INTENT.test(task);
+}
+
 export function decideGridAgentTask(
   task: string,
   input?: Record<string, unknown>,
+  source?: GridPriceSource,
 ): GridAgentReply {
   const fields = mergeGridInput(input, task);
   const hasAny =
@@ -535,5 +605,5 @@ export function decideGridAgentTask(
     orderSizeUsd: orderSize as number,
     feeBps: feeBps ?? DEFAULT_FEE_BPS,
   });
-  return { state: "completed", text: answerText(result), artifact: resultArtifact(result) };
+  return { state: "completed", text: answerText(result, source), artifact: resultArtifact(result, source) };
 }

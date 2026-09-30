@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  GRID_AGENT_DESCRIPTION,
   GRID_AGENT_NAME,
+  GRID_TOOL_DESCRIPTION,
   GRID_AGENT_VERSION,
   decideGridAgentTask,
 } from "@/lib/reference-grid";
@@ -14,7 +14,8 @@ export const dynamic = "force-dynamic";
 // no session is issued, no server stream is opened, and every call is one JSON
 // request and one JSON reply. The tool is a thin adapter over the same
 // decideGridAgentTask the A2A route answers with, so the arithmetic lives in
-// one place and is never forked.
+// one place. It is the plain planner only: the PancakeSwap pair mode, which reads
+// the chain, is offered over A2A.
 
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -53,7 +54,7 @@ const TOOLS: GridAgentMcpTool[] = [
   {
     name: "plan_grid",
     title: "Plan a grid trading ladder",
-    description: GRID_AGENT_DESCRIPTION,
+    description: GRID_TOOL_DESCRIPTION,
     inputSchema: {
       type: "object",
       properties: {

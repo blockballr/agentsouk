@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { GRID_AGENT_CATEGORY, decideGridAgentTask, type GridAgentReply } from "@/lib/reference-grid";
+import { GRID_AGENT_CATEGORY, type GridAgentReply } from "@/lib/reference-grid";
+import { decideGridAgentTaskLive } from "@/lib/reference-grid-live";
 
 export const dynamic = "force-dynamic";
 
@@ -111,7 +112,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return rpcError(id, -32602, "Invalid params: message/send requires params.message.parts");
   }
 
-  const reply = decideGridAgentTask(message.task, message.input);
+  // a named PancakeSwap pair reads the pool first; any other request is the plain planner
+  const reply = await decideGridAgentTaskLive(message.task, message.input);
   return NextResponse.json(
     { jsonrpc: "2.0", id, result: { task: taskEnvelope(reply) } },
     { headers: JSON_HEADERS },
