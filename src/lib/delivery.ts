@@ -111,7 +111,29 @@ async function mcpCall(
 
 // the verifier reads these sentences to record gated instead of dead, so the
 // wording and the pattern live together
-export const GATED_RE = /gates direct calls behind its own (x402|login)/i;
+export const GATED_RE = /gates direct calls behind its own (x402|login|ERC-8183 job)/i;
+
+// a seller that takes work only through an on-chain ERC-8183 job answers a direct task with a
+// quote, or with the skills it will accept, rather than doing the work; it is alive, so gated
+export function jobSellerReply(result: unknown): string | null {
+  if (!isRecord(result)) return null;
+  const quoted =
+    result.status === "quoted" ||
+    typeof result.negotiation_hash === "string" ||
+    (isRecord(result.response) && typeof result.response.accepted === "boolean" && "request_hash" in result);
+  const parts = Array.isArray(result.parts) ? result.parts : [];
+  const asksForSkill = parts.some(
+    (p) =>
+      isRecord(p) &&
+      isRecord(p.data) &&
+      Array.isArray(p.data.skills) &&
+      p.data.skills.some((k) => typeof k === "string" && /^negotiate/i.test(k)),
+  );
+  if (!quoted && !asksForSkill) return null;
+  return quoted
+    ? "This agent gates direct calls behind its own ERC-8183 job: it answered with a price quote and starts work only once a job is funded on BNB Chain's contracts, which the marketplace does not place yet."
+    : "This agent gates direct calls behind its own ERC-8183 job: it accepts only its negotiate and notify_funded skills and starts work once a job is funded on BNB Chain's contracts, which the marketplace does not place yet.";
+}
 
 // an endpoint behind its own login answered, so the agent is alive but cannot be
 // called anonymously, which is how the marketplace calls; gated, not dead
@@ -405,6 +427,8 @@ async function deliverA2a(
   if (send.body.error) {
     return { protocol: "a2a", ok: false, error: `message/send failed: ${send.body.error.message}` };
   }
+  const jobSeller = jobSellerReply(send.body.result);
+  if (jobSeller) return { protocol: "a2a", ok: false, gated: true, error: jobSeller };
 
   const extracted = extractA2aDeliverable(send.body.result);
   if (!extracted.found) {

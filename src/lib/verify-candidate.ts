@@ -62,7 +62,7 @@ export async function fetchJson(url: string, opts: RequestInit = {}, timeoutMs =
   }
 }
 
-async function settleHire(cand: { chainId: number; tokenId: string; name: string }): Promise<{ ok: true; paymentId: string } | { ok: false; detail: string }> {
+async function settleHire(cand: { chainId: number; tokenId: string; name: string }): Promise<{ ok: true; paymentId: string } | { ok: false; detail: string; gated?: true }> {
   const reqRes = await fetchJson(`${baseUrl()}/api/x402/requirements`, {
     method: "POST",
     headers: JSON_HEADERS,
@@ -80,6 +80,15 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
     extra: { name: string; version: string };
     [k: string]: unknown;
   } | undefined;
+  // a job seller is refused a direct hire before anything is paid; it is alive, so gated
+  if (reqRes.status === 409 && reqRes.body?.sellsByJob) {
+    return {
+      ok: false,
+      gated: true,
+      detail:
+        "This agent gates direct calls behind its own ERC-8183 job: its card offers negotiate and notify_funded, so no direct paid hire was made.",
+    };
+  }
   if (reqRes.status !== 200 || !pr) {
     return { ok: false, detail: `requirements failed (${reqRes.status})` };
   }
@@ -179,7 +188,7 @@ export async function verifyCandidate(cand: VerifyCandidate): Promise<VerifyVerd
   }
 
   const hire = await settleHire(cand);
-  if (!hire.ok) return { status: "dead", detail: hire.detail };
+  if (!hire.ok) return { status: hire.gated ? "gated" : "dead", detail: hire.detail };
 
   const cap = await deliverJson(hire.paymentId);
   if (cap.status === 402 || cap.body?.success === false) {

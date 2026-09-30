@@ -117,7 +117,14 @@ export function probeToVerification(
   responseMs: number;
   checkedAt: string;
 } {
-  const status = probe.ok ? "delivered" : probe.detail.includes("no callable") ? "unreachable" : "dead";
+  // a card or endpoint behind its own login answered, so it is alive; gated keeps the delist clock off
+  const status = probe.ok
+    ? "delivered"
+    : /^(a2a|mcp) (401|403)$/.test(probe.detail)
+      ? "gated"
+      : probe.detail.includes("no callable")
+        ? "unreachable"
+        : "dead";
   return {
     tokenId: candidate.token_id,
     name: candidate.name,

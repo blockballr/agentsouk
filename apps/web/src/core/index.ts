@@ -13,3 +13,4 @@ export * from "../../../../packages/core/src/registration";
 // Same reason: the wallet is told which endpoints to use, and the server falls
 // back through the same list, so both read it from one module.
 export * from "../../../../packages/core/src/rpc";
+export * from "../../../../packages/core/src/job-seller";

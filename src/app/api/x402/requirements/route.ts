@@ -9,6 +9,7 @@ import {
   randomNonce,
 } from "@/lib/x402";
 import { parseUnits } from "@/lib/format";
+import { JOB_SELLER_NOTE, sellsByJob } from "@agora/core";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,14 @@ export async function POST(req: NextRequest) {
   const detail = await fetchAgentDetail(chainId, body.tokenId);
   if (!detail) {
     return NextResponse.json({ success: false, error: "agent not found" }, { status: 404 });
+  }
+  // a direct payment to a job seller settles and then delivers nothing, so it is refused here,
+  // which every hire path (the site, MCP and the skill) passes through before anyone signs
+  if (sellsByJob(detail.skills)) {
+    return NextResponse.json(
+      { success: false, sellsByJob: true, error: `${detail.name}: ${JOB_SELLER_NOTE}` },
+      { status: 409 },
+    );
   }
 
   const priceUsd = body.amountUsd ?? DEFAULT_HIRE_PRICE_USD;

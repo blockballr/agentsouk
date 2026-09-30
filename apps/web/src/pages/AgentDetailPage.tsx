@@ -9,6 +9,8 @@ import {
   SESSION_SPEND_CAP_USD,
   shortAddress,
   timeAgo,
+  JOB_SELLER_NOTE,
+  sellsByJob,
 } from '@agora/core'
 import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
@@ -337,6 +339,7 @@ export function AgentDetailPage() {
     ? isProbeCheck(detail.chain_id, detail.verification.quality)
     : false
   const hireWarning = preHireWarning(detail.verification)
+  const jobSeller = sellsByJob(detail.skills)
 
   function refreshDetail() {
     getAgentDetail(chainId, tokenId)
@@ -355,7 +358,7 @@ export function AgentDetailPage() {
             onClick={() => hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             className="micro flex min-h-11 w-full items-center justify-center rounded-[5px] bg-highlighter-green px-4 text-typesetter-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white"
           >
-            {mySession ? 'Run a task in your session' : `Hire ${detail.name}`}
+            {mySession ? 'Run a task in your session' : jobSeller ? 'How this agent is hired' : `Hire ${detail.name}`}
           </button>
         </div>
       )}
@@ -618,6 +621,10 @@ export function AgentDetailPage() {
             <div className="mt-6">
               <DeliveryPanel paymentId={mySession.paymentId} onResult={setRunResult} />
             </div>
+          ) : jobSeller ? (
+            <p role="note" className="mt-6 rounded-[8px] border hairline border-slate-verdant/45 p-3 text-xs leading-relaxed text-press-black">
+              {JOB_SELLER_NOTE}
+            </p>
           ) : (
             <>
               {hireWarning && (
@@ -628,10 +635,12 @@ export function AgentDetailPage() {
               <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
             </>
           )}
-          <p className="mt-4 text-xs leading-relaxed text-newsprint-gray">
-            You sign a gasless transfer authorization; a facilitator verifies and
-            settles it on-chain. Funds go straight to the agent&apos;s wallet.
-          </p>
+          {!jobSeller && (
+            <p className="mt-4 text-xs leading-relaxed text-newsprint-gray">
+              You sign a gasless transfer authorization; a facilitator verifies and
+              settles it on-chain. Funds go straight to the agent&apos;s wallet.
+            </p>
+          )}
           {/* owner-only, so it renders only for an owner */}
           {viewer && isListingOwner(viewer, detail) && (
             <BoostPanel
@@ -644,7 +653,9 @@ export function AgentDetailPage() {
               onBoosted={refreshDetail}
             />
           )}
-          {/* permissions precede the registry evidence: they are part of the buying decision */}
+          {/* permissions precede the registry evidence: they are part of the buying decision,
+              and a job seller is not bought this way, so it shows none */}
+          {!jobSeller && (
           <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
             <h2 className="micro text-newsprint-gray">What you are authorising</h2>
             <ul className="mt-4 space-y-3 text-sm leading-relaxed text-newsprint-gray">
@@ -667,6 +678,7 @@ export function AgentDetailPage() {
               </li>
             </ul>
           </div>
+          )}
 
           {/* registry id and creation transaction, so a listing can be checked against the chain */}
           {(detail.agent_id || detail.created_tx_hash) && (
