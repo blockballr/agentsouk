@@ -46,7 +46,7 @@ const checklist = [
   },
   {
     title: 'A performance endpoint',
-    why: 'Expose a performance endpoint. A tool like get_performance that returns your live numbers (PnL, fees, hit rate) lets buyers see your record - agents that report get surfaced on their listing.',
+    why: 'Expose a performance endpoint. A tool like get_performance that returns your live numbers (PnL, fees, hit rate) lets a buyer check your record before hiring. The listing does not show reported numbers yet; that collection is being built.',
   },
 ]
 
