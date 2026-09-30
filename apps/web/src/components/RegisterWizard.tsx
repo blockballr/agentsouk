@@ -19,6 +19,7 @@ import {
   type TransactionReceipt,
 } from '../lib/register'
 import { VerificationLoop, type CheckLine, type CheckState } from './VerificationLoop'
+import { recheckAgent } from '../lib/api'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import {
   chainIdToHex,
@@ -93,6 +94,11 @@ function nextPaint(): Promise<void> {
 // yet, so a retry cannot become a second transaction.
 const WALLET_TIMEOUT_MS = 25_000
 
+// 8004scan can take a few minutes to index a fresh token, and until it does the
+// probe answers "agent not found", so that answer waits and asks again
+const INDEX_WAIT_MS = 20_000
+const INDEX_ATTEMPTS = 6
+
 function withWalletTimeout<T>(work: Promise<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -131,6 +137,8 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
   const sentLatch = useRef(false)
   // one live probe per listing: retries of the check must not spend a second hire
   const sweepFired = useRef<string | null>(null)
+  const [sweepRetry, setSweepRetry] = useState<{ chainId: number; agentId: string } | null>(null)
+  const [rechecking, setRechecking] = useState(false)
   // null until the lister proceeds; each entry updates as its check runs
   const [checks, setChecks] = useState<CheckLine[] | null>(null)
 
@@ -295,23 +303,76 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
 
   // The badge follows a real probe, so the wizard runs one for a fresh callable
   // listing instead of leaving the sweep check waiting on a later pass.
-  async function runSweep(chain: number, agentId: string) {
-    mark('sweep', 'checking', 'Probing the registered endpoint now; the badge follows whether it answers.')
+  async function runSweep(chain: number, agentId: string, attempt = 1) {
+    mark(
+      'sweep',
+      'checking',
+      attempt === 1
+        ? 'Probing the registered endpoint now; the badge follows whether it answers.'
+        : `Waiting for the registry index to list the agent, attempt ${attempt} of ${INDEX_ATTEMPTS}.`,
+    )
     try {
       const probe = await probeListing(chain, agentId)
-      if (probe.skipped) {
-        mark('sweep', 'passed', 'Already probed recently; the badge follows the latest record.')
+      sweepVerdict(chain, agentId, probe.verification, probe.skipped)
+    } catch (e) {
+      const text = (e as Error).message
+      if (text === 'agent not found' && attempt < INDEX_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, INDEX_WAIT_MS))
+        return runSweep(chain, agentId, attempt + 1)
+      }
+      mark('sweep', 'failed', text)
+      setSweepRetry({ chainId: chain, agentId })
+    }
+  }
+
+  // a skipped probe reports the recorded verdict, which can be a failure, so it
+  // is read the same way as a fresh one rather than passed on trust
+  function sweepVerdict(
+    chain: number,
+    agentId: string,
+    verification: { status?: string; detail?: string } | null | undefined,
+    skipped?: boolean,
+  ) {
+    const detail = verification?.detail
+    if (verification?.status === 'delivered') {
+      mark('sweep', 'passed', detail ? `The endpoint answered: ${detail}` : 'The endpoint answered.')
+      setSweepRetry(null)
+      return
+    }
+    const found =
+      verification?.status === 'gated'
+        ? 'the endpoint answered behind its own access gate'
+        : verification?.status === 'unreachable'
+          ? 'there is no endpoint the marketplace can call'
+          : 'the endpoint did not answer'
+    const lead = skipped ? `The last probe, within twenty hours, found ${found}` : `The probe found ${found}`
+    mark('sweep', 'failed', detail ? `${lead}: ${detail}` : `${lead}.`)
+    setSweepRetry({ chainId: chain, agentId })
+  }
+
+  // the owner signs a message, not a transaction, so the probe skips the twenty
+  // hour wait for this listing only
+  async function recheckSweep() {
+    if (!sweepRetry) return
+    setRechecking(true)
+    mark('sweep', 'checking', 'Probing the registered endpoint again.')
+    try {
+      const r = await recheckAgent(sweepRetry.chainId, sweepRetry.agentId)
+      // a skipped answer to a signed request means the server did not take the
+      // signature as the owner's, so the old verdict came back unchanged
+      if (r.skipped && !r.forced) {
+        mark(
+          'sweep',
+          'failed',
+          'The signature was not accepted as the owner, so the last probe stands. Connect the wallet that registered the agent and try again.',
+        )
         return
       }
-      const status = probe.verification?.status
-      const detail = probe.verification?.detail
-      if (status === 'delivered') {
-        mark('sweep', 'passed', detail ? `The endpoint answered: ${detail}` : 'The endpoint answered.')
-      } else {
-        mark('sweep', 'failed', detail ?? 'The endpoint did not answer.')
-      }
+      sweepVerdict(sweepRetry.chainId, sweepRetry.agentId, r.verification, r.skipped)
     } catch (e) {
       mark('sweep', 'failed', (e as Error).message)
+    } finally {
+      setRechecking(false)
     }
   }
 
@@ -495,6 +556,21 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
         {checks && (
           <div className="mt-5">
             <VerificationLoop checks={checks} />
+          </div>
+        )}
+        {sweepRetry && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={recheckSweep}
+              disabled={rechecking}
+              className="micro rounded-[5px] border hairline border-slate-verdant/50 px-4 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
+            >
+              {rechecking ? 'Re-checking…' : 'Re-check now'}
+            </button>
+            <span className="text-xs text-newsprint-gray">
+              Your wallet signs a message, not a transaction, so it pays nothing.
+            </span>
           </div>
         )}
         <dl className="mt-5 space-y-3 text-sm">
