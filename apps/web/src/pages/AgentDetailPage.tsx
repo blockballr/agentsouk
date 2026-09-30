@@ -400,6 +400,14 @@ export function AgentDetailPage() {
                     Built with {builtWith.label}
                   </Tag>
                 ) : null}
+                {detail.pancakeswapPositions ? (
+                  <Tag
+                    href={`${explorer}/token/${detail.pancakeswapPositions.positionManager}?a=${detail.pancakeswapPositions.wallet}`}
+                    title={`Read on chain: ${detail.pancakeswapPositions.held} in the agent's wallet, which the link lists, and ${detail.pancakeswapPositions.staked} staked in PancakeSwap's farm`}
+                  >
+                    {positionsLabel(detail.pancakeswapPositions.held, detail.pancakeswapPositions.staked)}
+                  </Tag>
+                ) : null}
               </div>
             </div>
           </header>
@@ -633,6 +641,13 @@ export function AgentDetailPage() {
       </div>
     </div>
   )
+}
+
+// the count belongs to the wallet, which several agents can share, so the label says so;
+// staked positions sit in the farm rather than the wallet, so they are named apart
+function positionsLabel(held: number, staked: number): string {
+  const n = held + staked
+  return `Wallet has ${n} PancakeSwap position${n === 1 ? '' : 's'}${staked ? ` (${staked} staked)` : ''}`
 }
 
 function ProofStrip({

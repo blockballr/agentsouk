@@ -153,6 +153,8 @@ export interface AgentDetail {
   updated_at: string;
   verification?: Verification;
   pcs?: boolean;
+  // PancakeSwap v3 positions the agent's wallet holds or has staked, read on chain
+  pancakeswapPositions?: { wallet: string; held: number; staked: number; positionManager: string; checkedAt: string };
   skills?: {
     id?: string;
     name?: string;

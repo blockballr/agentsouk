@@ -6,6 +6,7 @@ import { findActiveSession } from "@/lib/x402";
 import { sessionRevoked } from "@/lib/receipts-store";
 import { getBoost, hydrateBoostsFromDb } from "@/lib/boosts";
 import { fetchAgentCardSkills } from "@/lib/delivery";
+import { readPancakePositions } from "@/lib/pancake-positions";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,10 @@ export async function GET(
   if (!agent) {
     return NextResponse.json({ error: "agent not found" }, { status: 404 });
   }
+  // the wallet the agent registered, read for PancakeSwap v3 positions while the rest of the
+  // page loads; never the owner's, whose personal activity is not the agent's
+  const wallet = "agent_wallet" in agent ? agent.agent_wallet : null;
+  const positions = readPancakePositions(Number(chainId), wallet);
   const verifications = await loadVerifications();
   await hydrateBoostsFromDb();
   const verification = verifications.get(agent.token_id);
@@ -43,7 +48,10 @@ export async function GET(
   const withBoost = boost
     ? { ...withPcs, boosted: true, boostExpiresAt: boost.expiresAt }
     : withPcs;
+  const held = await positions;
+  // only positions that exist are shown; a failed read and an empty wallet both say nothing
+  const withPositions = held && held.held + held.staked > 0 ? { ...withBoost, pancakeswapPositions: held } : withBoost;
   return NextResponse.json({
-    data: activeSession ? { ...withBoost, activeSession } : withBoost,
+    data: activeSession ? { ...withPositions, activeSession } : withPositions,
   });
 }
