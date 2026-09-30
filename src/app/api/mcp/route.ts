@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { CATEGORIES, settlementAsset, targetChainId } from "@/lib/types";
+import { CATEGORIES, targetChainId } from "@/lib/types";
 import {
   MCP_INSTRUCTIONS,
   MCP_PROTOCOL_VERSION,
@@ -301,17 +301,10 @@ async function startHire(req: NextRequest, args: Record<string, unknown>): Promi
   const agentData = isRecord(detail.body.data) ? detail.body.data : {};
   const name = asString(agentData.name) ?? "Agent";
 
-  let symbol = "USDC";
-  try {
-    symbol = settlementAsset(chainId).symbol;
-  } catch {
-    // a chain without a configured asset is a settle failure the route reports
-  }
-
   const settleBody: Record<string, unknown> = {
     paymentRequirements: requirements,
     paymentPayload: payment,
-    agent: { chainId, tokenId, name, symbol },
+    agent: { chainId, tokenId, name },
   };
   const paymentId = asString(args.paymentId);
   if (paymentId) settleBody.paymentId = paymentId;

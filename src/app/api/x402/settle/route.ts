@@ -48,11 +48,11 @@ async function afterSettlement(
 }
 
 // FACILITATOR_MODE=prod relays the buyer's EIP-3009 authorization on-chain from a relay
-// wallet (RELAY_PRIVATE_KEY, capped at 5 USDC). b402 routes through the live Binance x402 API (B402_CLIENT_ID + B402_ACCESS_TOKEN); sandbox verifies the signature and records a local receipt.
+// wallet (RELAY_PRIVATE_KEY, capped at 5 of the settlement asset). b402 routes through the live Binance x402 API (B402_CLIENT_ID + B402_ACCESS_TOKEN); sandbox verifies the signature and records a local receipt.
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as
     | (SettleRequest & {
-        agent?: { chainId: number; tokenId: string; name: string; symbol: string };
+        agent?: { chainId: number; tokenId: string; name: string; symbol?: string };
         amountUsd?: number;
       })
     | null;
@@ -68,7 +68,6 @@ export async function POST(req: NextRequest) {
     chainId: 56,
     tokenId: "0",
     name: "Unknown agent",
-    symbol: "USDC",
   };
 
   const budgetUsd = typeof body.amountUsd === "number" && body.amountUsd > 0
@@ -80,12 +79,7 @@ export async function POST(req: NextRequest) {
   switch (mode) {
     case "prod": {
       const result = await settleProd(body, {
-        agent: {
-          chainId: agent.chainId,
-          tokenId: agent.tokenId,
-          name: agent.name,
-          symbol: agent.symbol ?? "USDC",
-        },
+        agent: { chainId: agent.chainId, tokenId: agent.tokenId, name: agent.name },
       });
       const wrapped = await afterSettlement(result, agent, body, budgetUsd);
       return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
@@ -99,12 +93,7 @@ export async function POST(req: NextRequest) {
 
     case "sandbox": {
       const result = await settleSandbox(body, {
-        agent: {
-          chainId: agent.chainId,
-          tokenId: agent.tokenId,
-          name: agent.name,
-          symbol: agent.symbol ?? "USDC",
-        },
+        agent: { chainId: agent.chainId, tokenId: agent.tokenId, name: agent.name },
       });
       const wrapped = await afterSettlement(result, agent, body, budgetUsd);
       return NextResponse.json(wrapped, { status: wrapped.success ? 200 : 402 });
@@ -175,7 +164,8 @@ async function settleB402(
         client: body.paymentPayload.payload.authorization.from,
         payTo: body.paymentRequirements.payTo,
         amount: body.paymentRequirements.amount,
-        symbol: agent.symbol ?? "USDC",
+        // b402 records no receipt, so this only echoes the caller's own label back
+        symbol: agent.symbol ?? "",
         verified: true,
         mode: "b402",
       },

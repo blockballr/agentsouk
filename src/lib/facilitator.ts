@@ -17,6 +17,7 @@ import {
   explorerBaseFor,
   settlementAsset,
   targetChainId,
+  type SettlementAsset,
 } from "./types";
 import {
   EIP3009_TYPES,
@@ -86,7 +87,8 @@ function normalizeAddress(addr: string): `0x${string}` {
 }
 
 export interface SettleContext {
-  agent: { chainId: number; tokenId: string; name: string; symbol: string };
+  // no symbol here: a receipt records the pinned asset's own, not a label the caller sends
+  agent: { chainId: number; tokenId: string; name: string };
 }
 
 // opt-in smart wallet (ERC-1271) verification; default off so the mainnet
@@ -193,13 +195,13 @@ export async function settleSandbox(
   if (signedChainId === null) {
     return fail(`Unrecognised payment network ${pr.network}`);
   }
-  let expectedAsset: string;
+  let asset: SettlementAsset;
   try {
-    expectedAsset = settlementAsset(signedChainId).address;
+    asset = settlementAsset(signedChainId);
   } catch {
     return fail("Unsupported settlement asset");
   }
-  if (normalizeAddress(pr.asset) !== normalizeAddress(expectedAsset)) {
+  if (normalizeAddress(pr.asset) !== normalizeAddress(asset.address)) {
     return fail("Unsupported settlement asset");
   }
 
@@ -218,7 +220,7 @@ export async function settleSandbox(
     client: auth.from,
     payTo: pr.payTo,
     amount: pr.amount,
-    symbol: ctx.agent.symbol,
+    symbol: asset.symbol,
     activated: true,
     session: {
       spendCapUsd: SESSION_SPEND_CAP_USD,
@@ -238,7 +240,7 @@ export async function settleSandbox(
       client: auth.from,
       payTo: pr.payTo,
       amount: pr.amount,
-      symbol: ctx.agent.symbol,
+      symbol: asset.symbol,
       verified: true,
       mode: "sandbox",
     },
@@ -504,7 +506,7 @@ export async function settleProd(
       client: auth.from,
       payTo: pr.payTo,
       amount: pr.amount,
-      symbol: ctx.agent.symbol,
+      symbol: asset.symbol,
       activated: true,
       session: {
         spendCapUsd: SESSION_SPEND_CAP_USD,
@@ -523,7 +525,7 @@ export async function settleProd(
         client: auth.from,
         payTo: pr.payTo,
         amount: pr.amount,
-        symbol: ctx.agent.symbol,
+        symbol: asset.symbol,
         verified: true,
         mode: "prod",
         // chain-aware explorer, so a chain-97 receipt does not link to mainnet
