@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { listPaymentsByClient, receiptsMode } from "@/lib/receipts-store";
 import { queryAgents } from "@/lib/scanner";
 import { CATEGORY_KEYS, type CategoryKey } from "@agora/core";
+import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
 
 export const dynamic = "force-dynamic";
 
@@ -9,16 +10,6 @@ export const dynamic = "force-dynamic";
 // hired in, what it has listed, and whether that completes the quest. A hire is
 // counted only when it is the wallet's own, settled, non-excluded activity, so
 // wash and team activity can never complete a wallet.
-
-const TEAM_WALLETS = new Set(
-  [
-    "0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4", // relay / broadcaster
-    "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713", // buyer / authorizer
-    "0x84fedaBd1b83443aD86796C15619494878B64180", // agent owner, holds our five listings
-    "0x52DA44aB471455437fc17979c52E501f6b8d0EAF", // deployment wallet
-    "0x5188d3b15271bD0eD56B1dE86B50198d4497c4e5", // declared agent identity
-  ].map((a) => a.toLowerCase()),
-);
 
 export async function GET(req: NextRequest) {
   const wallet = req.nextUrl.searchParams.get("wallet")?.trim() ?? "";
@@ -32,7 +23,7 @@ export async function GET(req: NextRequest) {
     queryAgents({ limit: 5000 }),
   ]);
   const byToken = new Map(catalogue.items.map((a) => [`${a.chain_id}:${a.token_id}`, a]));
-  const isTeam = TEAM_WALLETS.has(w);
+  const isTeam = isTeamWallet(w);
 
   const categories: Record<string, boolean> = {};
   for (const key of CATEGORY_KEYS) categories[key] = false;
@@ -42,7 +33,7 @@ export async function GET(req: NextRequest) {
     if (!p.activated) continue;
     // the team's own activity and the verifier sweep are never a wallet's quest progress
     if (isTeam) continue;
-    if (String(p.paymentId).startsWith("verify_")) continue;
+    if (isVerifierPayment(p.paymentId)) continue;
     // sandbox moves no funds, so it is not a settlement
     if (p.mode !== "prod" && p.mode !== "b402") continue;
     const key = `${p.agent.chainId}:${p.agent.tokenId}`;
