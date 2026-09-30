@@ -324,6 +324,27 @@ function rememberProdNonce(nonce: string): void {
 // returns false on a replay. A configured store that cannot be reached falls
 // back to the local set: the chain rejects a reused nonce anyway, so refusing
 // here would turn a store blip into a settlement outage.
+// two instances settling at once can read the same pending relay nonce, and the
+// loser is refused before anything is spent, so it reads the nonce again and resends
+// a resend cannot pay twice: the buyer's authorization is single use on chain
+const NONCE_CLASH = /nonce too low|replacement transaction underpriced|nonce has already been used/i;
+
+export async function sendWithNonceRetry(
+  send: () => Promise<`0x${string}`>,
+  retries = 3,
+  pauseMs = 150,
+): Promise<`0x${string}`> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await send();
+    } catch (e) {
+      const text = e instanceof Error ? e.message : String(e);
+      if (attempt >= retries || !NONCE_CLASH.test(text)) throw e;
+      await new Promise((r) => setTimeout(r, pauseMs * (attempt + 1) + Math.random() * pauseMs));
+    }
+  }
+}
+
 export async function claimProdNonce(nonce: string): Promise<boolean> {
   if (seenProdNonces.has(nonce)) return false;
   const sql = await nonceDb();
@@ -457,10 +478,12 @@ export async function settleProd(
     ],
     });
 
-    const hash = await walletClient.sendTransaction({
-      to: asset.address,
-      data,
-    });
+    const hash = await sendWithNonceRetry(() =>
+      walletClient.sendTransaction({
+        to: asset.address,
+        data,
+      }),
+    );
     // race: if this wait times out but the tx still lands on-chain, funds
     // moved with no receipt recorded
     const onchain = await publicClient.waitForTransactionReceipt({ hash });
