@@ -8,6 +8,10 @@ import { NextRequest, NextResponse } from "next/server";
 // deployment cannot cut the site off from its API
 const SITE_ORIGINS = ["https://agentsouk.xyz", "https://www.agentsouk.xyz", "https://agentsouk.pages.dev"];
 
+// a branch preview of our own Pages project, such as ui-uplift.agentsouk.pages.dev;
+// only that project can serve names under it, and the anchors refuse lookalikes
+const PAGES_PREVIEW = /^https:\/\/[a-z0-9-]+\.agentsouk\.pages\.dev$/;
+
 const ALLOWED = [
   ...(process.env.WEB_ORIGIN ?? "*").split(","),
   ...SITE_ORIGINS,
@@ -19,7 +23,7 @@ export function proxy(req: NextRequest) {
   const origin = req.headers.get("origin") ?? "";
   const allow = ALLOWED.includes("*")
     ? "*"
-    : ALLOWED.includes(origin)
+    : ALLOWED.includes(origin) || PAGES_PREVIEW.test(origin)
       ? origin
       : null;
   if (req.method === "OPTIONS") {
