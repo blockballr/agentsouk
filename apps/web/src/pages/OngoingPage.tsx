@@ -12,6 +12,8 @@ import { mergeSessions, stabiliseSessions } from '../lib/ongoing-merge'
 import { hireItems, hireState, readableResult, type HireGroup, type HireItem, type HireState } from '../lib/hire-state'
 import { hireErrorText } from '../lib/hire'
 import { connectWallet, getActiveAccount, getProvider } from '../lib/wallet'
+import { ratedHires } from '../lib/rating'
+import { RateAgent } from '../components/RateAgent'
 import { revokeRequestMessage } from '@agora/core'
 
 interface RevokeOutcome {
@@ -335,6 +337,10 @@ function HireRow({
   const { session, task, job } = item
   const agentHref = `/agents/${item.chainId}/${item.tokenId}`
   const asked = task?.taskText ?? task?.tool
+  // a rating needs work to rate: a delivered task or a job the buyer completed
+  const rateable = task?.status === 'delivered' || job?.status === 'Completed'
+  const [rating, setRating] = useState(false)
+  const [rated] = useState(() => ratedHires().has(item.key))
   const primary =
     'micro rounded-[5px] bg-highlighter-green px-4 py-2.5 text-on-highlighter shadow-sm transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:opacity-60'
   const secondary =
@@ -403,6 +409,12 @@ function HireRow({
             Reject before work
           </button>
         )}
+        {rateable && !rated && !rating && (
+          <button type="button" onClick={() => setRating(true)} className={secondary}>
+            Rate agent
+          </button>
+        )}
+        {rateable && rated && <span className="micro text-newsprint-gray">Rated</span>}
         {/* only a live session can be revoked; an ended one has nothing left to spend */}
         {item.live && (
           <button
@@ -415,6 +427,9 @@ function HireRow({
           </button>
         )}
       </div>
+      {rating ? (
+        <RateAgent chainId={item.chainId} tokenId={item.tokenId} agentName={item.agentName} paymentId={item.key} />
+      ) : null}
       {revoke ? <RevokeNote outcome={revoke} chainId={item.chainId} /> : null}
     </article>
   )

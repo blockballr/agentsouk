@@ -11,6 +11,16 @@ export const SETTLEMENT_ASSET_BY_CHAIN: Record<number, { symbol: string; address
   97: { symbol: 'sUSD', address: '0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53' },
 }
 
+// the ERC-8004 reputation registry a rating is written to, v2.0.0 on both chains
+export const REPUTATION_BY_CHAIN: Record<number, string> = {
+  56: '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63',
+  97: '0x8004B663056A597Dffe9eCcC1965A193B7388713',
+}
+
+export function reputationRegistryFor(chainId: number): string | null {
+  return REPUTATION_BY_CHAIN[chainId] ?? null
+}
+
 export function registryFor(chainId: number): string | null {
   return REGISTRY_BY_CHAIN[chainId] ?? null
 }

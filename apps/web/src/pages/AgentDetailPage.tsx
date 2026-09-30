@@ -15,6 +15,7 @@ import {
 } from '@agora/core'
 import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
+import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
 import { Tag } from '../components/Tag'
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
@@ -528,7 +529,15 @@ export function AgentDetailPage() {
 
         <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
           {runResult && (runResult.output || runResult.task || runResult.job) && (
-            <ResultPanel result={runResult} />
+            <ResultPanel
+              result={runResult}
+              // the registry refuses an owner's feedback on their own agent, so the owner is not offered it
+              rate={
+                viewer && isListingOwner(viewer, detail)
+                  ? undefined
+                  : { chainId: Number(chainId), tokenId: detail.token_id, agentName: detail.name, paymentId: mySession?.paymentId }
+              }
+            />
           )}
 
           <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} />
@@ -1655,10 +1664,13 @@ function DeliveryPanel({
 
 function ResultPanel({
   result,
+  rate,
 }: {
   result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }
+  rate?: { chainId: number; tokenId: string; agentName: string; paymentId?: string }
 }) {
   const { output, job, task } = result
+  const rateable = !!rate && !!output && (task?.status === 'delivered' || job?.status === 'Completed')
   return (
     <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1680,6 +1692,7 @@ function ResultPanel({
       ) : (
         <p className="mt-4 text-sm text-newsprint-gray">No deliverable yet.</p>
       )}
+      {rateable && rate ? <RateAgent {...rate} /> : null}
     </div>
   )
 }
