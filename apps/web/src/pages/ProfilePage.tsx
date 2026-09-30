@@ -180,7 +180,7 @@ export function ProfilePage() {
             type="button"
             onClick={onConnect}
             disabled={connecting}
-            className="micro mt-6 rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60"
+            className="micro mt-6 rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60"
           >
             {connecting ? 'Connecting...' : 'Connect wallet'}
           </button>
@@ -223,7 +223,7 @@ export function ProfilePage() {
                 </p>
                 <Link
                   to="/list"
-                  className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95"
+                  className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95"
                 >
                   List an agent
                 </Link>
@@ -257,7 +257,7 @@ export function ProfilePage() {
             </p>
             <Link
               to="/list"
-              className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-5 py-3 text-typesetter-ink shadow transition hover:brightness-95"
+              className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow transition hover:brightness-95"
             >
               Open the listing wizard
             </Link>
@@ -422,8 +422,11 @@ function HiresPanel({
   const network = chainId ? chainLabel(chainId) : null
   // A live session is still spending; an ended one is history. They read
   // differently, so the panel keeps them apart rather than interleaving them.
-  const active = (hires ?? []).filter((h) => h.active)
-  const ended = (hires ?? []).filter((h) => !h.active)
+  // our probes and the lister's own test hires are kept out of the customer lists
+  const customers = (hires ?? []).filter((h) => !h.payer || h.payer === 'buyer')
+  const others = (hires ?? []).filter((h) => h.payer && h.payer !== 'buyer')
+  const active = customers.filter((h) => h.active)
+  const ended = customers.filter((h) => !h.active)
   return (
     <div className="mt-16">
       <p className="micro text-newsprint-gray">Hires received</p>
@@ -452,14 +455,13 @@ function HiresPanel({
         </p>
       )}
 
-      {source === 'postgres' && hires && hires.length === 0 && (
+      {source === 'postgres' && hires && customers.length === 0 && (
         <p className="mt-6 text-[15px] text-newsprint-gray">
-          No hires recorded yet. When a buyer settles a session to one of your
-          agents, the payment appears here.
+          No buyer has hired your agents yet. Their payments appear here.
         </p>
       )}
 
-      {source === 'memory' && hires && hires.length === 0 && (
+      {source === 'memory' && hires && customers.length === 0 && (
         <p className="mt-6 text-[15px] text-newsprint-gray">
           Nothing recorded on this instance, which is not proof that nobody
           hired you.
@@ -477,6 +479,13 @@ function HiresPanel({
         <div className="mt-12">
           <p className="micro text-newsprint-gray">Ended · {ended.length}</p>
           <HireGrid hires={ended} />
+        </div>
+      )}
+
+      {others.length > 0 && (
+        <div className="mt-12">
+          <p className="micro text-newsprint-gray">Checks and test hires · {others.length}</p>
+          <HireGrid hires={others} />
         </div>
       )}
     </div>
@@ -509,8 +518,17 @@ function HireRow({ hire }: { hire: PayeeHire }) {
             {hire.agentName}
           </Link>
           <p className="mt-2 text-[13px] text-newsprint-gray">
-            paid by{' '}
-            <span className="font-mono text-press-black">{shortAddress(hire.client)}</span>{' '}
+            {hire.payer === 'check' ? (
+              <span className="text-press-black">Agent Souk check</span>
+            ) : hire.payer === 'self' ? (
+              <span className="text-press-black">Your own test</span>
+            ) : hire.payer === 'team' ? (
+              <span className="text-press-black">Agent Souk team</span>
+            ) : (
+              <>
+                paid by <span className="font-mono text-press-black">{shortAddress(hire.client)}</span>
+              </>
+            )}{' '}
             · {formatHireAmount(hire)}{' '}
             <span className="text-press-black">{hire.symbol}</span>{' '}
             · {modeLabel(hire.mode)} · {timeAgo(hire.createdAt)}
@@ -523,7 +541,7 @@ function HireRow({ hire }: { hire: PayeeHire }) {
               : 'border-slate-verdant/45 text-newsprint-gray'
           }`}
         >
-          {hire.active ? 'active session' : 'ended'}
+          {hire.payer === 'check' ? 'check' : hire.active ? 'active session' : 'ended'}
         </span>
       </div>
       {canLinkTx && hire.txHash && (

@@ -561,6 +561,8 @@ export interface PayeeHire {
   symbol: string
   // decimals of the settlement asset, or null when the chain is unconfigured
   decimals: number | null
+  // who paid, as the server reads it: a verifier probe, the lister's own wallet, a team wallet, or a buyer
+  payer?: 'check' | 'self' | 'team' | 'buyer'
   active: boolean
   createdAt: string
 }
