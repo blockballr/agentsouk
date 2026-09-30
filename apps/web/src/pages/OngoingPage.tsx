@@ -11,9 +11,10 @@ import {
   type OngoingBundle,
 } from '../lib/api'
 import { explorerTxBase } from '../lib/contracts'
-import { mergeSessions } from '../lib/ongoing-merge'
+import { mergeSessions, stabiliseSessions } from '../lib/ongoing-merge'
 import { hireErrorText } from '../lib/hire'
-import { connectWallet, getActiveAccount } from '../lib/wallet'
+import { connectWallet, getActiveAccount, getProvider } from '../lib/wallet'
+import { revokeRequestMessage } from '@agora/core'
 
 interface RevokeOutcome {
   attempted: boolean
@@ -27,14 +28,28 @@ interface RevokeOutcome {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
+// the server holds each wallet's view for five seconds, so a faster poll only
+// re-reads the same answer
+const POLL_MS = 5000
+
 // The revoke response carries the on-chain cancellation result, which api.ts's
 // revokeSession discards, so call the endpoint directly to keep the transaction hash.
 async function revokeSessionWithCancel(
   paymentId: string,
   client: string,
 ): Promise<RevokeOutcome | null> {
-  const qs = `?paymentId=${encodeURIComponent(paymentId)}&client=${encodeURIComponent(client)}`
-  const res = await fetch(`${API_BASE}/sessions${qs}`, { method: 'DELETE' })
+  // the buyer signs a message, not a transaction, so nobody who only knows the
+  // paymentId can revoke the session
+  const provider = await getProvider()
+  const signature = (await provider.request({
+    method: 'personal_sign',
+    params: [revokeRequestMessage(paymentId, client), client],
+  })) as string
+  const res = await fetch(`${API_BASE}/sessions?paymentId=${encodeURIComponent(paymentId)}`, {
+    method: 'DELETE',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ client, signature }),
+  })
   const body = await res.json().catch(() => null)
   if (!res.ok || !body?.success) throw new Error(body?.error ?? `revoke ${res.status}`)
   return (body.onchain as RevokeOutcome | undefined) ?? null
@@ -109,14 +124,16 @@ export function OngoingPage() {
       ])
       const walletHires = hires.status === 'fulfilled' ? hires.value : []
       if (bundle.status === 'fulfilled') {
-        setData({ ...bundle.value, sessions: mergeSessions(bundle.value.sessions, walletHires) })
+        const merged = mergeSessions(bundle.value.sessions, walletHires)
+        setData((prev) => ({ ...bundle.value, sessions: stabiliseSessions(prev?.sessions, merged) }))
         setError(null)
         return
       }
       if (hires.status === 'fulfilled') {
         // The ledger is unavailable but the wallet's own hires still stand. Counts
         // are left absent rather than reported as zero.
-        setData({ sessions: mergeSessions([], walletHires), recentTasks: [] })
+        const merged = mergeSessions([], walletHires)
+        setData((prev) => ({ sessions: stabiliseSessions(prev?.sessions, merged), recentTasks: [] }))
         setError(null)
         return
       }
@@ -126,13 +143,21 @@ export function OngoingPage() {
     }
   }, [account])
 
+  // a hidden tab stops polling and catches up the moment it is shown again
   useEffect(() => {
     void load()
     if (!account) return
     const id = window.setInterval(() => {
-      void load()
-    }, 2500)
-    return () => window.clearInterval(id)
+      if (document.visibilityState !== 'hidden') void load()
+    }, POLL_MS)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void load()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [load, account])
 
   async function onConnect() {

@@ -359,9 +359,11 @@ an A2A agent, pass `task`, and add `input` when the agent reads structured data.
 Do not attempt these. They are out of scope on purpose.
 
 - Revoke a session on the caller's behalf. There is no revoke tool. Revocation is
-  a separate API call, `DELETE /api/sessions?paymentId=...&client=<owner wallet>`,
-  and the route checks that the caller is the session owner. The marketplace will
-  not cancel someone else's authorization.
+  a separate API call, `DELETE /api/sessions?paymentId=...` with a JSON body of
+  `client` and `signature`, where the session owner's wallet signs the message
+  `revokeRequestMessage(paymentId, client)` exported by `@agora/core`. A paymentId
+  alone is not enough, and the marketplace will not cancel someone else's
+  authorization.
 - Publish or register an agent without the owner's wallet. There is no register
   tool here. Listing runs through `/api/agents/register`, which mints a claim and
   returns registry calldata that the owner's own wallet must send to the ERC-8004

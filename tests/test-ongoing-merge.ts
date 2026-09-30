@@ -4,7 +4,7 @@
 // runs newest first, and an expired hire leaves the live list while an undated
 // hire stays.
 import { describe, expect, it } from "vitest";
-import { mergeSessions } from "../apps/web/src/lib/ongoing-merge";
+import { mergeSessions, stabiliseSessions } from "../apps/web/src/lib/ongoing-merge";
 import type {
   ActiveHireSession,
   Erc8183Job,
@@ -145,5 +145,47 @@ describe("mergeSessions", () => {
 
   it("stays empty when neither source has a hire", () => {
     expect(mergeSessions([], [], NOW)).toEqual([]);
+  });
+});
+
+// polls can land on instances that disagree about a hire, and swapping the card
+// between them is what made the output box and buttons appear and disappear
+describe("stabiliseSessions", () => {
+  const entry = (paymentId: string, t: HireTask | null, j: Erc8183Job | null) => ({
+    session: session({ paymentId }),
+    task: t,
+    job: j,
+  });
+  const later = "2026-09-27T09:00:00.000Z";
+
+  it("passes the first poll through", () => {
+    const first = [entry("req_a", task("req_a"), null)];
+    expect(stabiliseSessions(null, first)).toBe(first);
+  });
+
+  it("keeps the last known task and job when a poll comes back without them", () => {
+    const before = [entry("req_a", task("req_a"), job("req_a"))];
+    const [out] = stabiliseSessions(before, [entry("req_a", null, null)]);
+    expect(out.task?.id).toBe("task-req_a");
+    expect(out.job?.status).toBe("Funded");
+  });
+
+  it("never lets an older copy replace a newer one", () => {
+    const done = { ...job("req_a"), status: "Completed" as const, updatedAt: later };
+    const [out] = stabiliseSessions([entry("req_a", null, done)], [entry("req_a", null, job("req_a"))]);
+    expect(out.job?.status).toBe("Completed");
+  });
+
+  it("lets a newer update through", () => {
+    const submitted = { ...job("req_a"), status: "Submitted" as const, updatedAt: later };
+    const delivered = { ...task("req_a"), status: "delivered" as const, result: "hf 1.6", updatedAt: later };
+    const [out] = stabiliseSessions([entry("req_a", task("req_a"), job("req_a"))], [entry("req_a", delivered, submitted)]);
+    expect(out.job?.status).toBe("Submitted");
+    expect(out.task?.result).toBe("hf 1.6");
+  });
+
+  it("drops a session the next poll no longer lists, so a revoke leaves at once", () => {
+    const out = stabiliseSessions([entry("req_a", task("req_a"), null), entry("req_b", null, null)], [entry("req_b", null, null)]);
+    expect(out.map((e) => e.session.paymentId)).toEqual(["req_b"]);
   });
 });

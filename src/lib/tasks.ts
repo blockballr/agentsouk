@@ -11,6 +11,7 @@ import {
   loadHireTask,
   loadHireTaskByPayment,
   loadHireTasks,
+  loadHireTasksByPayments,
   saveHireTask,
 } from "./durable-store";
 
@@ -126,6 +127,23 @@ export function getTaskByPayment(paymentId: string): HireTask | undefined {
 export function listTasksByPayment(paymentId: string): HireTask[] {
   const t = getTaskByPayment(paymentId);
   return t ? [t] : [];
+}
+
+// one wallet's tasks read by its own payments, so the answer does not depend on
+// which instance holds them or on a newest-n window the verifier's sweeps fill
+// rows read here are kept in memory without being written back
+export async function listTasksForPayments(paymentIds: readonly string[]): Promise<HireTask[]> {
+  const wanted = new Set(paymentIds);
+  for (const row of await loadHireTasksByPayments(paymentIds)) {
+    const held = tasks.get(row.id);
+    if (!held || held.updatedAt < row.updatedAt) {
+      tasks.set(row.id, row);
+      byPayment.set(row.paymentId, row.id);
+    }
+  }
+  return [...tasks.values()]
+    .filter((t) => wanted.has(t.paymentId))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function listTasks(limit = 50): Promise<HireTask[]> {

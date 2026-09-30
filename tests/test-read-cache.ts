@@ -26,16 +26,22 @@ vi.mock("@/lib/receipts-store", () => receipts);
 const x402 = vi.hoisted(() => ({ listActiveSessions: vi.fn((): unknown[] => []) }));
 vi.mock("@/lib/x402", () => x402);
 
-const tasks = vi.hoisted(() => ({ listTasks: vi.fn(async () => []) }));
+const tasks = vi.hoisted(() => ({
+  listTasks: vi.fn(async () => []),
+  listTasksForPayments: vi.fn(async () => []),
+}));
 vi.mock("@/lib/tasks", () => tasks);
 
 const jobs = vi.hoisted(() => ({
   listJobs: vi.fn(async () => []),
+  listJobsForClient: vi.fn(async () => []),
   getJobByPayment: vi.fn(() => undefined),
 }));
 vi.mock("@/lib/jobs", () => jobs);
 
 import { NextRequest } from "next/server";
+import { privateKeyToAccount } from "viem/accounts";
+import { revokeRequestMessage } from "@agora/core";
 import { cached, invalidate, invalidatePrefix } from "../src/lib/short-cache";
 import { GET as hiresGet } from "../src/app/api/hires/by-wallet/route";
 import {
@@ -231,7 +237,9 @@ describe("sessions read", () => {
     vi.resetAllMocks();
     x402.listActiveSessions.mockReturnValue([]);
     tasks.listTasks.mockResolvedValue([]);
+    tasks.listTasksForPayments.mockResolvedValue([]);
     jobs.listJobs.mockResolvedValue([]);
+    jobs.listJobsForClient.mockResolvedValue([]);
     jobs.getJobByPayment.mockReturnValue(undefined);
     receipts.getPaymentDurable.mockResolvedValue(undefined);
     receipts.revokeSessionDurable.mockResolvedValue(false);
@@ -242,22 +250,27 @@ describe("sessions read", () => {
   });
 
   it("serves a hit, and a revoke is visible on the very next read", async () => {
-    const active = activeSession({ paymentId: "pay-r", client: WALLET_A });
+    // a revoke now needs the buyer's signature, so this session belongs to a real key
+    const buyer = privateKeyToAccount(`0x${"33".repeat(32)}`);
+    const active = activeSession({ paymentId: "pay-r", client: buyer.address });
     x402.listActiveSessions.mockReturnValue([active]);
-    const url = `/api/sessions?client=${WALLET_A}`;
+    const url = `/api/sessions?client=${buyer.address}`;
 
     const before = await (await sessionsGet(get(url))).json();
     expect(before.sessions).toHaveLength(1);
     // the second read is a cache hit, so the durable store is not scanned again
     await sessionsGet(get(url));
-    expect(tasks.listTasks).toHaveBeenCalledTimes(1);
-    expect(jobs.listJobs).toHaveBeenCalledTimes(1);
+    expect(tasks.listTasksForPayments).toHaveBeenCalledTimes(1);
+    expect(jobs.listJobsForClient).toHaveBeenCalledTimes(1);
 
-    receipts.getPaymentDurable.mockResolvedValue({ client: WALLET_A });
+    receipts.getPaymentDurable.mockResolvedValue({ client: buyer.address });
     receipts.revokeSessionDurable.mockResolvedValue(true);
+    const signature = await buyer.signMessage({ message: revokeRequestMessage("pay-r", buyer.address) });
     const del = await sessionsDelete(
-      new NextRequest(`http://localhost${url}&paymentId=pay-r`, {
+      new NextRequest(`http://localhost/api/sessions?paymentId=pay-r`, {
         method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ client: buyer.address, signature }),
       }),
     );
     expect(del.status).toBe(200);
@@ -266,7 +279,7 @@ describe("sessions read", () => {
     const after = await (await sessionsGet(get(url))).json();
     expect(after.sessions).toHaveLength(0);
     // the write dropped the entry, so the read scanned the store again
-    expect(tasks.listTasks).toHaveBeenCalledTimes(2);
+    expect(tasks.listTasksForPayments).toHaveBeenCalledTimes(2);
   });
 
   it("keys the answer per wallet", async () => {

@@ -39,6 +39,26 @@ function sessionFromHire(hire: WalletHire): ActiveHireSession {
   }
 }
 
+function newer<T extends { updatedAt: string }>(before: T | null, after: T | null): T | null {
+  if (!before) return after
+  if (!after) return before
+  return after.updatedAt >= before.updatedAt ? after : before
+}
+
+// consecutive polls can be answered by instances that disagree, so a poll that
+// comes back without a hire's task or job, or with an older copy, must not undo
+// what the page already shows: the newer record wins and an absent one keeps the last
+// a session the new poll no longer lists is dropped, so a revoke still leaves at once
+export function stabiliseSessions(previous: SessionEntry[] | null | undefined, next: SessionEntry[]): SessionEntry[] {
+  if (!previous?.length) return next
+  const before = new Map(previous.map((entry) => [entry.session.paymentId, entry]))
+  return next.map((entry) => {
+    const prior = before.get(entry.session.paymentId)
+    if (!prior) return entry
+    return { ...entry, task: newer(prior.task, entry.task), job: newer(prior.job, entry.job) }
+  })
+}
+
 // Merge the instance's own ledger with the wallet's durable hires, keyed by
 // payment id. The bundle wins a collision because only it carries the task and
 // job; the wallet list fills the gap left by an instance that never settled the

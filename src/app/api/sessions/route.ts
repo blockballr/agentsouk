@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listActiveSessions } from "@/lib/x402";
-import { listTasks } from "@/lib/tasks";
-import { getJobByPayment, listJobs, type Job } from "@/lib/jobs";
+import { listTasks, listTasksForPayments } from "@/lib/tasks";
+import { getJobByPayment, listJobs, listJobsForClient, type Job } from "@/lib/jobs";
 import {
   cancelAuthorizationDurable,
   getPaymentDurable,
@@ -11,12 +11,13 @@ import {
 import type { StoredPayment } from "@/lib/x402";
 import { cacheKeys, cached, invalidate, invalidatePrefix } from "@/lib/short-cache";
 import { explorerBaseFor } from "@/lib/types";
+import { verifyBoostOwnership } from "@/lib/boost-auth";
+import { revokeRequestMessage } from "@agora/core";
 
 export const dynamic = "force-dynamic";
 
-// Ongoing polls every 2.5s. A five second window serves at most one durable
-// scan per wallet per window, collapsing a poll burst onto one read, while the
-// view never trails the poll cadence by more than two intervals.
+// Ongoing polls every five seconds. A five second window serves at most one
+// durable read per wallet per window, collapsing a poll burst onto one read.
 const SESSIONS_TTL_MS = 5000;
 
 function sameAddr(a: string, b: string): boolean {
@@ -76,19 +77,24 @@ async function ongoingBundle(client: string) {
     ...ledgerSessions,
     ...durableSessions.filter((s) => !seenPayments.has(s.paymentId)),
   ];
-  // Two independent reads, run together so a cache miss pays one round trip.
-  const [allTasks, allJobs] = await Promise.all([listTasks(200), listJobs(200)]);
-  const jobs = allJobs.filter((j) => !client || sameAddr(j.client, client));
   const paymentIds = new Set(sessions.map((s) => s.paymentId));
-  const scopedTasks = client
-    ? allTasks.filter(
-        (t) =>
-          paymentIds.has(t.paymentId) ||
-          jobs.some((j) => j.paymentId === t.paymentId),
-      )
-    : allTasks;
+  let jobs: Job[];
+  let scopedTasks: Awaited<ReturnType<typeof listTasks>>;
+  if (client) {
+    // this wallet's own jobs and the tasks for exactly its payments, durable first,
+    // so every instance answers alike and no one else's work can crowd them out
+    jobs = await listJobsForClient(client, 100);
+    const jobPayments = jobs.flatMap((j) => (j.paymentId ? [j.paymentId] : []));
+    scopedTasks = await listTasksForPayments([...new Set([...paymentIds, ...jobPayments])]);
+  } else {
+    const [allTasks, allJobs] = await Promise.all([listTasks(200), listJobs(200)]);
+    jobs = allJobs;
+    scopedTasks = allTasks;
+  }
 
-  const byPaymentTask = new Map(scopedTasks.map((t) => [t.paymentId, t]));
+  // newest first, so the first task seen for a payment is its latest
+  const byPaymentTask = new Map<string, (typeof scopedTasks)[number]>();
+  for (const t of scopedTasks) if (!byPaymentTask.has(t.paymentId)) byPaymentTask.set(t.paymentId, t);
   const byPaymentJob = new Map(
     jobs.filter((j) => j.paymentId).map((j) => [j.paymentId as string, j]),
   );
@@ -143,10 +149,32 @@ export async function DELETE(req: NextRequest) {
       { status: 404 },
     );
   }
-  const client = req.nextUrl.searchParams.get("client")?.trim() ?? "";
+  const body = (await req.json().catch(() => null)) as { client?: unknown; signature?: unknown } | null;
+  const client =
+    typeof body?.client === "string" ? body.client.trim() : req.nextUrl.searchParams.get("client")?.trim() ?? "";
   if (!client || !sameAddr(stored.client, client)) {
     return NextResponse.json(
       { success: false, error: "not the session owner" },
+      { status: 403 },
+    );
+  }
+  // the paymentId and client are public through the hires API, so a revoke,
+  // which also drops the hire from quest progress, needs the buyer's signature
+  const signature = typeof body?.signature === "string" ? body.signature : "";
+  if (!signature) {
+    return NextResponse.json(
+      { success: false, error: "sign the revoke with the wallet that hired the agent" },
+      { status: 401 },
+    );
+  }
+  const verdict = await verifyBoostOwnership({
+    message: revokeRequestMessage(paymentId, stored.client),
+    signature,
+    expectedOwner: stored.client,
+  });
+  if (!verdict.ok) {
+    return NextResponse.json(
+      { success: false, error: "the signature is not from the wallet that hired the agent" },
       { status: 403 },
     );
   }
