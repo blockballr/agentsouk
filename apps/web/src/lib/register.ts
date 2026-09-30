@@ -23,26 +23,6 @@ export interface ConfirmResult {
   verification?: { verified?: boolean; detail?: string }
 }
 
-export interface ListingProbe {
-  success: boolean;
-  skipped?: boolean;
-  verification?: { status?: string; detail?: string; checkedAt?: string };
-  error?: string;
-}
-
-// Runs the marketplace's own verification probe for a fresh listing and reports
-// what it found. The server refuses tokens it cannot call, so this never spends
-// a hire on an unadmitted listing.
-export async function probeListing(chainId: number, agentId: string): Promise<ListingProbe> {
-  const res = await fetch(`${BASE}/agents/${chainId}/${agentId}/verify`, { method: 'POST' });
-  const body = (await res.json().catch(() => null)) as
-    | (ListingProbe & { success: boolean; error?: string })
-    | null;
-  if (!body) throw new Error('No response from the verification probe.');
-  if (!body.success) throw new Error(body.error ?? 'The probe could not run.');
-  return body;
-}
-
 export async function prepareRegistration(
   draft: RegistrationDraft,
   owner: string,

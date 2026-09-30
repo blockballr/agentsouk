@@ -464,7 +464,7 @@ export function HomePage() {
               { label: 'Verification read from the durable store on every chain', done: true },
               { label: 'Durable-first job reads (job state across instances)', done: true },
               { label: 'Email notifications (Resend and DMARC)', done: true },
-              { label: 'Sweep on every listing (fresh listings probed immediately)', done: true },
+              { label: 'Sweep on every listing, with an owner re-check from the profile', done: true },
               { label: 'Postgres receipt durability (hires, jobs, shelf, boosts)', done: true },
               { label: 'Standards: ERC-8004 identity, ERC-8183 jobs and x402 payment', done: true },
               { label: 'Advantage report and side-by-side comparison', done: true },
