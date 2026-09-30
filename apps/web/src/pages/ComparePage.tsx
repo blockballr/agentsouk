@@ -1,12 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { AgentDetail, AgentSummary } from '@agora/core'
-import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
+import {
+  CATEGORIES,
+  JOB_SELLER_NOTE,
+  formatNumber,
+  formatScore,
+  isJobStepSkill,
+  sellsByJob,
+  shortAddress,
+  timeAgo,
+} from '@agora/core'
 import { getAgentDetail, getAgents, getCompareCommentary } from '../lib/api'
 import { bestByCategory, categoryGroups, categoryOf } from '../lib/compare'
 import { CompareBar } from '../components/CompareBar'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
+import { builtWithFrom } from '../lib/onchain-meta'
+import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 
 export function ComparePage() {
   const [sp, setSp] = useSearchParams()
@@ -85,10 +96,13 @@ export function ComparePage() {
 
   // re-sync selection to the bests of every freshly loaded set (or the whole set when no
   // bests exist), so stale selections from an earlier compare die here
+  // a job-only seller refuses a direct hire, so the pick in each category is the best agent
+  // that can be hired directly, even when a job seller holds the Best badge
   useEffect(() => {
     if (agents.length === 0) return
-    const winners = Object.values(bestByCategory(agents)).filter((id): id is string => id !== null)
-    setSelectedIds(winners.length > 0 ? winners : agents.map((a) => a.agent_id))
+    const hireable = agents.filter((a) => !sellsByJob(a.skills))
+    const winners = Object.values(bestByCategory(hireable)).filter((id): id is string => id !== null)
+    setSelectedIds(winners.length > 0 ? winners : hireable.map((a) => a.agent_id))
   }, [agents])
 
   function toggleSelected(id: string) {
@@ -205,9 +219,8 @@ function Picker({
 
   return (
     <div className="mt-12">
-      <p className="micro text-newsprint-gray">
-        Shortlist agents. Selections carry across filters, so you can match any
-        mix of categories.
+      <p className="max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
+        Pick two or more agents to see them side by side. Your picks stay as you switch category.
       </p>
       <div className="mt-6 flex flex-wrap items-center gap-6">
         <FilterChip active={category === 'all'} onClick={() => setCategory('all')}>
@@ -222,16 +235,16 @@ function Picker({
             {c.label}
           </FilterChip>
         ))}
-        <label className="micro text-newsprint-gray" htmlFor="compare-search">
-          Search
+        <label className="sr-only" htmlFor="compare-search">
+          Search agents
         </label>
         <input
           id="compare-search"
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Name, endpoint, tag"
-          className="border hairline input-hairline w-56 bg-transparent px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          placeholder="Search name, endpoint or tag"
+          className="border hairline input-hairline w-full rounded-[6px] bg-transparent px-3 py-2 text-base sm:w-64 sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
         />
       </div>
 
@@ -257,7 +270,7 @@ function Picker({
           ))}
         </div>
       ) : (
-        <ul className="mt-8 border hairline border-slate-verdant/40">
+        <ul className="mt-6 overflow-hidden rounded-[14px] border hairline border-slate-verdant/40">
           {options.map((a) => {
             const key = keyFor(a)
             const checked = selected.includes(key)
@@ -276,14 +289,12 @@ function Picker({
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-serif text-lg font-medium">{a.name}</span>
-                    <span className="mt-0.5 block text-[11px] uppercase tracking-[0.01em] text-newsprint-gray">
-                      {a.category} · {shortAddress(a.owner_address)}
-                      {isOperatedByAgentSouk(a.owner_address) ? ` · ${OPERATED_BY_LABEL}` : ''}
+                    <span className="mt-0.5 block text-[12px] text-newsprint-gray">
+                      {categoryName(a.category)} ·{' '}
+                      {isOperatedByAgentSouk(a.owner_address) ? OPERATED_BY_LABEL : shortAddress(a.owner_address)}
                     </span>
                   </span>
-                  <span className="text-sm tabular-nums text-newsprint-gray">
-                    {formatScore(a.total_score)}
-                  </span>
+                  <VerdictInline agent={a} />
                 </label>
               </li>
             )
@@ -291,10 +302,6 @@ function Picker({
         </ul>
       )}
 
-      <p className="mt-10 text-xs text-newsprint-gray">
-        Pick at least two to build the table, the floating bar takes over
-        from there.
-      </p>
     </div>
   )
 }
@@ -314,27 +321,96 @@ function CompareTable({
   checkedIds: string[]
   onToggleChecked: (id: string) => void
 }) {
-  const winnerByCategory = useMemo(() => bestByCategory(agents), [agents])
-  const groups = useMemo(() => categoryGroups(agents), [agents])
+  const winnerIds = useMemo(
+    () => new Set(Object.values(bestByCategory(agents)).filter((id): id is string => id !== null)),
+    [agents],
+  )
+  // columns read by category, the best of each first, so a winner sits beside its rivals
+  const columns = useMemo(
+    () =>
+      categoryGroups(agents).flatMap((g) =>
+        [...g.agents]
+          .sort((a, b) => Number(winnerIds.has(b.agent_id)) - Number(winnerIds.has(a.agent_id)))
+          .map((agent) => ({ agent, category: g.label })),
+      ),
+    [agents, winnerIds],
+  )
+
+  const rows: { label: string; cell: (a: AgentDetail) => ReactNode }[] = [
+    {
+      label: 'Last check',
+      cell: (a) => {
+        const v = verdictFor(a.chain_id, a.verification)
+        return (
+          <span title={v.explain}>
+            <span className="flex items-center gap-2 font-medium text-press-black">
+              <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[v.tone]}`} />
+              {v.label}
+            </span>
+            {a.verification ? (
+              <span className="mt-0.5 block text-[12px] text-newsprint-gray">checked {timeAgo(a.verification.checkedAt)}</span>
+            ) : null}
+          </span>
+        )
+      },
+    },
+    {
+      label: 'How you pay',
+      // our relay settles a direct hire whatever the agent advertises, so only job sellers differ
+      cell: (a) => (sellsByJob(a.skills) ? 'By ERC-8183 job' : 'Per call, x402'),
+    },
+    {
+      label: 'What it does',
+      cell: (a) => {
+        const names = (a.skills ?? [])
+          .filter((s) => !isJobStepSkill(s, a.skills ?? []))
+          .map((s) => s.name ?? s.id)
+          .filter((n): n is string => Boolean(n))
+        if (names.length === 0) return <span className="text-newsprint-gray">{a.description?.slice(0, 90) || 'No skill list'}</span>
+        return (
+          <ul className="space-y-0.5">
+            {names.slice(0, 3).map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+            {names.length > 3 ? <li className="text-newsprint-gray">and {names.length - 3} more</li> : null}
+          </ul>
+        )
+      },
+    },
+    { label: 'Registry score', cell: (a) => formatScore(a.total_score) },
+    { label: 'Reviews', cell: (a) => formatNumber(a.total_feedbacks) },
+    { label: 'Health', cell: (a) => (a.health_score !== null ? formatScore(a.health_score) : 'n/a') },
+    {
+      label: 'Built with',
+      cell: (a) => builtWithFrom(a.raw_metadata?.onchain ?? [])?.label ?? <span className="text-newsprint-gray">Not stated</span>,
+    },
+    {
+      label: 'Owner',
+      cell: (a) =>
+        isOperatedByAgentSouk(a.owner_address) ? (
+          <span title={OPERATED_BY_TITLE}>{OPERATED_BY_LABEL}</span>
+        ) : (
+          <span className="font-mono text-[12px]">{shortAddress(a.owner_address)}</span>
+        ),
+    },
+  ]
 
   return (
     <div id="compare-table" className="mt-12 scroll-mt-8">
-      <div className="mb-8 flex items-center justify-between">
-        <p className="micro text-newsprint-gray">
-          {agents.length} of {agents.length} loaded
-        </p>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="micro text-newsprint-gray">{agents.length} agents</p>
         <button
           type="button"
           onClick={onClear}
-          className="micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          className="micro min-h-11 text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green sm:min-h-0"
         >
-          Clear selection
+          Start over
         </button>
       </div>
 
       {error ? (
-        <p className="border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
-          Could not load the selected agents. Go back and pick again.
+        <p className="rounded-[14px] border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
+          Could not load those agents. Pick them again.
         </p>
       ) : loading ? (
         <div className="animate-pulse space-y-3" role="status" aria-label="Loading comparison">
@@ -343,183 +419,87 @@ function CompareTable({
           ))}
         </div>
       ) : agents.length === 0 ? (
-        <p className="border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
+        <p className="rounded-[14px] border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
           None of those agents could be loaded. They may have left the registry.
         </p>
       ) : (
-        <div className="space-y-12">
-          <CompareWinners agents={agents} winners={winnerByCategory} checkedIds={checkedIds} onToggleChecked={onToggleChecked} />
-          {groups.map((g) => (
-            <CompareGroup
-              key={g.category}
-              label={g.label}
-              agents={g.agents}
-              winnerId={winnerByCategory[g.category] ?? null}
-              checkedIds={checkedIds}
-              onToggleChecked={onToggleChecked}
-            />
-          ))}
-          <p className="mt-4 text-xs text-newsprint-gray">
-            Best in category is highlighted, ranked by on-chain score, then
-            feedback, then verification status. Switch an agent on to include it
-            in your hire; the winners are pre-selected.
+        <>
+          <div className="overflow-x-auto rounded-[14px] border hairline border-slate-verdant/40">
+            <table className="w-full min-w-[560px] border-collapse text-left text-[14px]">
+              <thead>
+                <tr>
+                  <th scope="col" className="sticky left-0 z-10 w-[132px] bg-bone-white p-4 align-bottom sm:w-[160px]">
+                    <span className="sr-only">Fact</span>
+                  </th>
+                  {columns.map(({ agent: a, category }) => {
+                    const best = winnerIds.has(a.agent_id)
+                    const checked = checkedIds.includes(a.agent_id)
+                    return (
+                      <th
+                        key={a.agent_id}
+                        scope="col"
+                        className={`min-w-[190px] border-l hairline border-slate-verdant/25 p-4 align-top font-normal ${best ? 'bg-highlighter-green/[0.07]' : ''}`}
+                      >
+                        <span className="micro block text-newsprint-gray">{category}</span>
+                        <Link
+                          to={`/agents/${a.chain_id}/${a.token_id}`}
+                          className="mt-1 block font-serif text-[19px] font-medium leading-tight text-press-black hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                        >
+                          {a.name}
+                        </Link>
+                        {best ? (
+                          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-press-black px-2 py-0.5 text-[11px] font-[550] text-bone-white">
+                            <TrophyIcon className="h-3 w-3" />
+                            Best in {category.toLowerCase()}
+                          </span>
+                        ) : null}
+                        {sellsByJob(a.skills) ? (
+                          <p className="mt-3 text-[13px] text-newsprint-gray" title={JOB_SELLER_NOTE}>
+                            Hired by ERC-8183 job, not here
+                          </p>
+                        ) : (
+                          <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-2 text-[13px] text-press-black sm:min-h-0">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => onToggleChecked(a.agent_id)}
+                              className="h-4 w-4 accent-highlighter-green"
+                            />
+                            Include in hire
+                          </label>
+                        )}
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.label} className="border-t hairline border-slate-verdant/25">
+                    <th scope="row" className="micro sticky left-0 z-10 bg-bone-white p-4 align-top font-[550] text-newsprint-gray">
+                      {r.label}
+                    </th>
+                    {columns.map(({ agent: a }) => (
+                      <td
+                        key={a.agent_id}
+                        className={`border-l hairline border-slate-verdant/25 p-4 align-top text-press-black ${winnerIds.has(a.agent_id) ? 'bg-highlighter-green/[0.07]' : ''}`}
+                      >
+                        {r.cell(a)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 max-w-3xl text-[13px] leading-relaxed text-newsprint-gray">
+            Best in each category goes to the agent whose last check went best, then the higher
+            registry score, then more reviews. The best agent you can hire directly in each category
+            starts ticked.
           </p>
-        </div>
+        </>
       )}
     </div>
-  )
-}
-
-// the best agent of each represented category, one same-shaped card per category so
-// metrics read across categories without a horizontal scroll
-function CompareWinners({
-  agents,
-  winners,
-  checkedIds,
-  onToggleChecked,
-}: {
-  agents: AgentDetail[]
-  winners: Record<string, string | null>
-  checkedIds: string[]
-  onToggleChecked: (id: string) => void
-}) {
-  const entries = Object.entries(winners)
-    .filter((entry): entry is [string, string] => entry[1] !== null)
-    .map(([category, id]) => ({ category, agent: agents.find((a) => a.agent_id === id) }))
-    .filter((e): e is { category: string; agent: AgentDetail } => e.agent !== undefined)
-
-  if (entries.length === 0) return null
-
-  const label = (key: string) => {
-    const def = CATEGORIES.find((c) => c.key === key)
-    return def ? def.label : 'General'
-  }
-
-  return (
-    <section aria-label="Best in each category">
-      <p className="micro text-newsprint-gray">Best in each category</p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {entries.map(({ category, agent }) => (
-          <CompareCard key={category} agent={agent} winner checked={checkedIds.includes(agent.agent_id)} onToggle={onToggleChecked} categoryLabel={label(category)} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-// every other compared agent, grouped by category, as the same card shape so
-// nothing about the comparison demands a table
-function CompareGroup({
-  label,
-  agents,
-  winnerId,
-  checkedIds,
-  onToggleChecked,
-}: {
-  label: string
-  agents: AgentDetail[]
-  winnerId: string | null
-  checkedIds: string[]
-  onToggleChecked: (id: string) => void
-}) {
-  return (
-    <section aria-label={label}>
-      <p className="micro text-newsprint-gray">
-        {label}
-        {winnerId ? ' · best highlighted' : ''}
-      </p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {agents.map((a) => (
-          <CompareCard key={a.agent_id} agent={a} winner={a.agent_id === winnerId} checked={checkedIds.includes(a.agent_id)} onToggle={onToggleChecked} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function CompareCard({
-  agent,
-  winner,
-  checked,
-  onToggle,
-  categoryLabel,
-}: {
-  agent: AgentDetail
-  winner: boolean
-  checked: boolean
-  onToggle: (id: string) => void
-  categoryLabel?: string
-}) {
-  const metrics: { label: string; value: string }[] = [
-    { label: 'Score', value: formatScore(agent.total_score) },
-    { label: 'Avg feedback', value: formatScore(agent.average_score) },
-    { label: 'Feedback', value: formatNumber(agent.total_feedbacks) },
-    { label: 'Health', value: agent.health_score !== null ? formatScore(agent.health_score) : 'n/a' },
-    { label: 'Verified', value: agent.is_verified ? 'yes' : 'no' },
-    { label: 'x402', value: agent.x402_supported ? 'yes' : 'no' },
-  ]
-
-  return (
-    <article
-      className={`flex flex-col rounded-[14px] border hairline p-6 transition ${
-        winner ? 'border-highlighter-green/60 bg-highlighter-green/10' : 'border-slate-verdant/40'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          {categoryLabel && <p className="micro text-newsprint-gray">{categoryLabel}</p>}
-          <Link
-            to={`/agents/${agent.chain_id}/${agent.token_id}`}
-            className="mt-1 block font-serif text-lg font-medium leading-tight hover:text-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green"
-          >
-            {agent.name}
-          </Link>
-        </div>
-        {winner && (
-          <span className="flex shrink-0 items-center gap-1 rounded-full border hairline border-highlighter-green/50 bg-highlighter-green/10 px-2 py-1 text-highlighter-green">
-            <TrophyIcon className="h-3 w-3" />
-            <span className="micro normal-case">Best</span>
-          </span>
-        )}
-      </div>
-
-      <p className="micro mt-3 text-newsprint-gray" title={isOperatedByAgentSouk(agent.owner_address) ? OPERATED_BY_TITLE : undefined}>
-        Owner {shortAddress(agent.owner_address)}
-        {isOperatedByAgentSouk(agent.owner_address) ? ` · ${OPERATED_BY_LABEL}` : ''}
-      </p>
-
-      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
-        {metrics.map((m) => (
-          <div key={m.label} className="min-w-0">
-            <dt className="micro text-newsprint-gray">{m.label}</dt>
-            <dd className="mt-0.5 text-sm tabular-nums text-press-black">{m.value}</dd>
-          </div>
-        ))}
-      </dl>
-
-      {agent.a2a_endpoint && (
-        <a
-          href={agent.a2a_endpoint}
-          target="_blank"
-          rel="noreferrer"
-          className="micro mt-4 truncate text-press-black hover:text-highlighter-green focus-visible:outline-2 focus-visible:outline-highlighter-green"
-          title={agent.a2a_endpoint}
-        >
-          {agent.a2a_endpoint}
-        </a>
-      )}
-
-      <label className="mt-5 flex cursor-pointer items-center gap-2 border-t hairline border-slate-verdant/40 pt-4 text-sm">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={() => onToggle(agent.agent_id)}
-          aria-label={`Hire ${agent.name}`}
-          className="h-4 w-4 accent-highlighter-green"
-        />
-        Hire for a paid session
-      </label>
-    </article>
   )
 }
 
@@ -662,17 +642,16 @@ function ShortlistSearch({
   return (
     <div className="mt-12">
       <div className="flex flex-wrap items-center gap-6">
-        <p className="micro text-newsprint-gray">Add more agents</p>
         <label className="micro text-newsprint-gray" htmlFor="compare-add-search">
-          Search
+          Add another agent
         </label>
         <input
           id="compare-add-search"
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Name, endpoint, tag"
-          className="border hairline input-hairline w-56 bg-transparent px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          placeholder="Search name, endpoint or tag"
+          className="border hairline input-hairline w-full rounded-[6px] bg-transparent sm:w-64 px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
         />
       </div>
 
@@ -709,12 +688,7 @@ function ShortlistSearch({
                     <span className="min-w-0 flex-1 truncate text-sm font-medium">
                       {a.name}
                     </span>
-                    <span className="micro text-newsprint-gray">
-                      {a.category}
-                    </span>
-                    <span className="text-sm tabular-nums text-newsprint-gray">
-                      {formatScore(a.total_score)}
-                    </span>
+                    <VerdictInline agent={a} />
                   </label>
                 </li>
               )
@@ -724,4 +698,19 @@ function ShortlistSearch({
       ) : null}
     </div>
   )
+}
+
+function VerdictInline({ agent }: { agent: AgentSummary }) {
+  const v = verdictFor(agent.chain_id, agent.verification)
+  return (
+    <span className="flex shrink-0 items-center gap-2 text-[13px] text-press-black" title={v.explain}>
+      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${VERDICT_DOT[v.tone]}`} />
+      {v.label}
+    </span>
+  )
+}
+
+function categoryName(key: AgentSummary['category']): string {
+  if (!key || key === 'general') return 'General'
+  return CATEGORIES.find((c) => c.key === key)?.label ?? key
 }
