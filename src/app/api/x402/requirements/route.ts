@@ -10,6 +10,7 @@ import {
 } from "@/lib/x402";
 import { parseUnits } from "@/lib/format";
 import { JOB_SELLER_NOTE, sellsByJob } from "@agora/core";
+import { fetchAgentCardSkills } from "@/lib/delivery";
 
 export const dynamic = "force-dynamic";
 
@@ -37,8 +38,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "agent not found" }, { status: 404 });
   }
   // a direct payment to a job seller settles and then delivers nothing, so it is refused here,
-  // which every hire path (the site, MCP and the skill) passes through before anyone signs
-  if (sellsByJob(detail.skills)) {
+  // which every hire path (the site, MCP and the skill) passes through before anyone signs;
+  // the live registry read carries no skills, so the card is read as the agent page reads it
+  const skills =
+    detail.skills ?? (detail.a2a_endpoint ? await fetchAgentCardSkills(detail.a2a_endpoint, 4000) : null);
+  if (sellsByJob(skills)) {
     return NextResponse.json(
       { success: false, sellsByJob: true, error: `${detail.name}: ${JOB_SELLER_NOTE}` },
       { status: 409 },

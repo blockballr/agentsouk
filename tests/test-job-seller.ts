@@ -28,15 +28,29 @@ const STUDIO_SKILLS = [
   { name: "notify_funded", description: "Notifies the agent that a job is funded on-chain" },
 ];
 
-function agent(skills: unknown[]) {
+const CARD = "https://hevo-agents.fly.dev/rebalance/.well-known/agent-card.json";
+
+// the live registry read carries no skills, as in production; the card holds them
+function agent() {
   return {
     token_id: "1865",
     chain_id: 97,
     name: "Hevo Rebalance",
     owner_address: "0x06f757064043e57dbbccd6d95ee1113d9796c715",
     agent_wallet: "0x06f757064043e57dbbccd6d95ee1113d9796c715",
-    skills,
+    a2a_endpoint: CARD,
   };
+}
+
+function serveCard(skills: unknown[]) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) =>
+      String(url) === CARD
+        ? new Response(JSON.stringify({ name: "Hevo Rebalance", skills }), { status: 200 })
+        : new Response("not found", { status: 404 }),
+    ),
+  );
 }
 
 async function requirements() {
@@ -119,8 +133,13 @@ describe("a job seller's answer to a direct task", () => {
 });
 
 describe("the hire requirements", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("refuse a direct hire of a job seller before anyone signs", async () => {
-    detail.current = agent(STUDIO_SKILLS);
+    detail.current = agent();
+    serveCard(STUDIO_SKILLS);
     const { res, body } = await requirements();
     expect(res.status).toBe(409);
     expect(body.sellsByJob).toBe(true);
@@ -128,7 +147,8 @@ describe("the hire requirements", () => {
   });
 
   it("still price an ordinary agent", async () => {
-    detail.current = agent([{ name: "plan_rebalance", description: "Plans a rebalance" }]);
+    detail.current = agent();
+    serveCard([{ name: "plan_rebalance", description: "Plans a rebalance" }]);
     const { res, body } = await requirements();
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
