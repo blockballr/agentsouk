@@ -40,9 +40,9 @@ const steps = [
   },
 ]
 
-// Recorded settlement evidence, one slot per chain. The testnet hire below is the
-// strongest one we hold: its authorizer is a buyer wallet that is not one of ours,
-// whereas the team's own proof suite was authorised by our own buyer. The mainnet
+// Recorded settlement evidence, one slot per chain. The testnet hire below was
+// authorised by our agent-owner wallet, a declared team wallet, and paid a third-party
+// agent's own wallet, so it proves settlement to a wallet we do not control. The mainnet
 // slot stays pending until the cutover produces a real transaction, never a
 // placeholder hash. When a hire whose work was completed exists, it replaces this
 // one, because a settled hire with a delivered result is stronger still.
@@ -54,7 +54,7 @@ const settlementEvidence = [
     agent: 'Grid Runner',
     amount: 2,
     payer: '0x84fedaBd1b83443aD86796C15619494878B64180',
-    note: 'authorised by a buyer wallet that is not one of ours',
+    note: "authorised by our agent-owner wallet, paid to Grid Runner's own wallet, a third-party agent",
   },
 ] as const
 
