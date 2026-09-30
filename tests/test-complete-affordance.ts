@@ -3,7 +3,7 @@
 // so it can only appear for a state the server has confirmed: Submitted offers
 // completion, Funded offers nothing but the refund path, terminal offers nothing.
 import { describe, expect, it } from "vitest";
-import { completionOffer } from "../apps/web/src/pages/AgentDetailPage";
+import { completionOffer, jobClosed } from "../apps/web/src/pages/AgentDetailPage";
 
 describe("completion affordance from the job status", () => {
   it("offers complete while the job is Submitted", () => {
@@ -22,5 +22,15 @@ describe("completion affordance from the job status", () => {
     for (const status of [null, undefined, "Open", "Rejected", "Expired", ""]) {
       expect(completionOffer(status), String(status)).toBe("none");
     }
+  });
+});
+
+describe("a closed hire", () => {
+  it("closes on a completed, rejected or expired job and hands back the hire button", () => {
+    for (const status of ["Completed", "Rejected", "Expired"]) expect(jobClosed(status), status).toBe(true);
+  });
+
+  it("keeps the run open while the job is still in flight or unknown", () => {
+    for (const status of [null, undefined, "", "Open", "Funded", "Submitted"]) expect(jobClosed(status), String(status)).toBe(false);
   });
 });

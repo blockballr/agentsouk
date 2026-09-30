@@ -197,6 +197,8 @@ export function AgentDetailPage() {
   // the viewer's live hire for this agent, found through the receipts store rather
   // than the instance's own ledger
   const [durableHire, setDurableHire] = useState<{ paymentId: string } | null>(null)
+  // a session whose job has closed stays live on the server until it expires, but it is spent
+  const [closedPaymentId, setClosedPaymentId] = useState<string | null>(null)
   // the last run's deliverable and job, lifted out of the sidebar so the result
   // renders full width in the main column instead of inside the narrow hire form
   const [runResult, setRunResult] = useState<{
@@ -264,6 +266,9 @@ export function AgentDetailPage() {
     let cancelled = false
     setLoading(true)
     setError(false)
+    // the page stays mounted when search moves it to another agent, so the last one's run goes
+    setRunResult(null)
+    setClosedPaymentId(null)
     getAgentDetail(chainId, tokenId)
       .then((d) => {
         if (!cancelled) setDetail(d)
@@ -318,7 +323,8 @@ export function AgentDetailPage() {
   // a session is shown only to the wallet that bought it; anyone else sees an ordinary hire panel
   const ownSession =
     activeSession && viewer && activeSession.client.toLowerCase() === viewer.toLowerCase() ? activeSession : null
-  const mySession = ownSession ? { paymentId: ownSession.paymentId } : durableHire
+  const heldSession = ownSession ? { paymentId: ownSession.paymentId } : durableHire
+  const mySession = heldSession && heldSession.paymentId !== closedPaymentId ? heldSession : null
   const hireWarning = preHireWarning(detail.verification)
   const jobSeller = sellsByJob(detail.skills)
 
@@ -432,7 +438,7 @@ export function AgentDetailPage() {
           ref={setHirePanel}
           className="h-fit scroll-mt-4 self-start rounded-[14px] border hairline border-slate-verdant/40 p-6 sm:p-8 lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto"
         >
-          {ownSession && (
+          {ownSession && mySession && (
             <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
               <p className="micro text-press-black">Session active</p>
               <div className="mt-3 space-y-2 text-xs">
@@ -471,7 +477,7 @@ export function AgentDetailPage() {
               bought, so offering the hire again invites paying twice for it. */}
           {mySession ? (
             <div className="mt-6">
-              <DeliveryPanel paymentId={mySession.paymentId} onResult={setRunResult} />
+              <DeliveryPanel paymentId={mySession.paymentId} onResult={setRunResult} onClosed={() => setClosedPaymentId(mySession.paymentId)} />
             </div>
           ) : jobSeller ? (
             <p role="note" className="mt-4 text-sm leading-relaxed text-press-black">
@@ -484,7 +490,7 @@ export function AgentDetailPage() {
                   {hireWarning}
                 </p>
               )}
-              <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
+              <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} onResult={setRunResult} onClosed={setClosedPaymentId} />
             </>
           )}
           {/* owner-only, so it renders only for an owner */}
@@ -511,7 +517,7 @@ export function AgentDetailPage() {
                 </li>
                 <li>
                   A session capped at ${SESSION_SPEND_CAP_USD} that ends in {SESSION_HOURS} hours. Later
-                  calls draw on it until you revoke it.
+                  calls draw on it until you revoke it, or until its job is completed or rejected.
                 </li>
                 <li>
                   {detail.mcp_server
@@ -528,6 +534,9 @@ export function AgentDetailPage() {
         </aside>
 
         <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
+          <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} />
+
+          {/* the answer sits under what the agent expects, whichever path produced it */}
           {runResult && (runResult.output || runResult.task || runResult.job) && (
             <ResultPanel
               result={runResult}
@@ -535,12 +544,10 @@ export function AgentDetailPage() {
               rate={
                 viewer && isListingOwner(viewer, detail)
                   ? undefined
-                  : { chainId: Number(chainId), tokenId: detail.token_id, agentName: detail.name, paymentId: mySession?.paymentId }
+                  : { chainId: Number(chainId), tokenId: detail.token_id, agentName: detail.name, paymentId: mySession?.paymentId ?? runResult.task?.paymentId }
               }
             />
           )}
-
-          <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} />
 
           {perfProbe && <PerformanceSection probe={perfProbe} />}
 
@@ -1013,11 +1020,15 @@ function HirePanel({
   tokenId,
   name,
   onHired,
+  onResult,
+  onClosed,
 }: {
   chainId: string
   tokenId: string
   name: string
   onHired: () => void
+  onResult?: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
+  onClosed?: (paymentId: string) => void
 }) {
   const [step, setStep] = useState<HireStep>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -1227,7 +1238,7 @@ function HirePanel({
               wallet.
             </p>
           )}
-          <DeliveryPanel paymentId={result.paymentId} />
+          <DeliveryPanel paymentId={result.paymentId} onResult={onResult} onClosed={() => { onClosed?.(result.paymentId); reset(); onHired() }} />
         </div>
       )}
 
@@ -1303,6 +1314,11 @@ export function completionOffer(status: string | null | undefined): CompletionOf
   return 'none'
 }
 
+// a job that is completed, rejected or expired has closed its hire, so the panel offers a new one
+export function jobClosed(status: string | null | undefined): boolean {
+  return status === 'Completed' || status === 'Rejected' || status === 'Expired'
+}
+
 // The x402 deliver response carries the ERC-8183 advance the server persisted,
 // so the panel knows the job without a second read.
 interface JobAdvance {
@@ -1315,9 +1331,11 @@ interface JobAdvance {
 function DeliveryPanel({
   paymentId,
   onResult,
+  onClosed,
 }: {
   paymentId: string
   onResult?: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
+  onClosed?: () => void
 }) {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'blocked'>('idle')
   const [data, setData] = useState<DeliverData | null>(null)
@@ -1444,7 +1462,7 @@ function DeliveryPanel({
       const updated = await actOnJob(job.id, 'complete', { reason: 'complete' })
       // only what the server confirmed: the returned job is the new state
       setJob({ id: updated.id, status: updated.status })
-      setCompleteNote('Completed. The deliverable is attested and the hire is closed.')
+      setCompleteNote('Completed. The deliverable is attested and this hire is closed. Hire again to start a new one.')
     } catch (e) {
       // the server's own reason, rather than a generic failure
       setCompleteError((e as Error).message)
@@ -1458,6 +1476,31 @@ function DeliveryPanel({
   const structured = parseStructuredInput(inputText)
   // the completion affordance is entirely a function of the server-confirmed status
   const offer = completionOffer(job?.status)
+
+  // a completed, rejected or expired job has closed this hire, so the panel stops offering
+  // another run and leads back to a fresh one; the result stays on the page
+  if (job && jobClosed(job.status)) {
+    return (
+      <div className="mt-4 rounded-[10px] border hairline border-highlighter-green/50 p-4" role="status">
+        <p className="micro text-newsprint-gray">ERC-8183 job {job.status}</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-green-ink">
+          {completeNote ??
+            (job.status === 'Completed'
+              ? 'Completed. The deliverable is attested and this hire is closed. Hire again to start a new one.'
+              : `The job is ${job.status.toLowerCase()}, so this hire is closed. Hire again to start a new one.`)}
+        </p>
+        {onClosed && (
+          <button
+            type="button"
+            onClick={onClosed}
+            className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          >
+            Hire again
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="mt-4 rounded-[10px] border hairline border-slate-verdant/40 p-4">
@@ -1671,8 +1714,9 @@ function ResultPanel({
 }) {
   const { output, job, task } = result
   const rateable = !!rate && !!output && (task?.status === 'delivered' || job?.status === 'Completed')
+  // tinted so the answer, and the rating under it, is the first thing the buyer's eye lands on
   return (
-    <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
+    <div className="rounded-[14px] border hairline border-highlighter-green/60 bg-highlighter-green/[0.07] p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="micro text-newsprint-gray">Result</h2>
         <div className="flex flex-wrap items-center gap-4 text-[11px] text-newsprint-gray">
