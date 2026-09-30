@@ -161,6 +161,14 @@ async function loadJobByPaymentDurable(paymentId: string): Promise<Job | undefin
   return recent.find((j) => j.paymentId === paymentId);
 }
 
+// durable first, for the reason getJobAsync is: a page reload must see the state
+// another instance persisted, not a Funded copy this instance kept from settle
+export async function getJobByPaymentFresh(paymentId: string): Promise<Job | undefined> {
+  const stored = await loadJobByPaymentDurable(paymentId);
+  const job = stored ? cache(stored) : getJobByPayment(paymentId);
+  return job && onTargetChain(job) ? job : undefined;
+}
+
 export function getJobByPayment(paymentId: string): Job | undefined {
   const id = byPayment.get(paymentId);
   return id ? jobs.get(id) : undefined;

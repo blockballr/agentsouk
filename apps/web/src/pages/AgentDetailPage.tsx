@@ -10,7 +10,7 @@ import {
   shortAddress,
   timeAgo,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getTask, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import { chainLabel } from '../lib/contracts'
 import {
@@ -50,6 +50,22 @@ function verificationLabel(status: string, probe: boolean): string {
   if (status === 'dead') return 'stale'
   if (status !== 'delivered') return status
   return probe ? 'endpoint reachable' : 'verified delivered'
+}
+
+// the listing stays on the shelf, so a buyer about to sign is told what the last
+// check found, because settlement does not wait for the agent to answer
+export function preHireWarning(verification?: { status: string; checkedAt: string }): string | null {
+  if (!verification) return null
+  const found =
+    verification.status === 'dead'
+      ? 'got no usable answer from this agent'
+      : verification.status === 'unreachable'
+        ? 'found no endpoint the marketplace can call'
+        : verification.status === 'gated'
+          ? 'found the endpoint behind its own access gate'
+          : null
+  if (!found) return null
+  return `The last check on ${verification.checkedAt.slice(0, 10)} ${found}. Payment settles to the agent's wallet when you sign, before it is asked for anything.`
 }
 
 function explorerBase(chainId: string): string {
@@ -293,6 +309,7 @@ export function AgentDetailPage() {
   const verificationProbe = detail.verification
     ? isProbeCheck(detail.chain_id, detail.verification.quality)
     : false
+  const hireWarning = preHireWarning(detail.verification)
 
   function refreshDetail() {
     getAgentDetail(chainId, tokenId)
@@ -561,7 +578,14 @@ export function AgentDetailPage() {
               <DeliveryPanel paymentId={mySession.paymentId} onResult={setRunResult} />
             </div>
           ) : (
-            <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
+            <>
+              {hireWarning && (
+                <p role="note" className="mt-6 rounded-[8px] border hairline border-slate-verdant/45 p-3 text-xs leading-relaxed text-newsprint-gray">
+                  {hireWarning}
+                </p>
+              )}
+              <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
+            </>
           )}
           <p className="mt-4 text-xs leading-relaxed text-newsprint-gray">
             You sign a gasless transfer authorization; a facilitator verifies and
@@ -1160,6 +1184,28 @@ function DeliveryPanel({
   useEffect(() => {
     onResult?.({ output, job: job ? { id: job.id, status: job.status } : null, task: hireTask })
   }, [output, job, hireTask, onResult])
+
+  // a reload remounts this panel empty, so read back what the payment already
+  // earned, and let a run that finished first keep its own state
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      getTasksByPayment(paymentId).catch(() => [] as HireTask[]),
+      getJobByPayment(paymentId).catch(() => null),
+    ]).then(([tasks, stored]) => {
+      if (cancelled) return
+      const task = tasks[0]
+      if (task) {
+        setHireTask((cur) => cur ?? task)
+        const result = task.result
+        if (result) setOutput((cur) => cur ?? result)
+      }
+      if (stored) setJob((cur) => cur ?? { id: stored.id, status: stored.status })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [paymentId])
 
   async function loadCapabilities() {
     setPhase('loading')

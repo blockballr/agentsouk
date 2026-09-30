@@ -52,6 +52,7 @@ vi.mock("../src/lib/durable-store", async (importOriginal) => {
 import { NextRequest } from "next/server";
 import { privateKeyToAccount } from "viem/accounts";
 import { GET, POST as actOnJob } from "../src/app/api/jobs/[jobId]/route";
+import { GET as listJobsRoute } from "../src/app/api/jobs/route";
 import { fundJob, getJobAsync, listJobs } from "../src/lib/jobs";
 
 const KEY = "0x0000000000000000000000000000000000000000000000000000000000000001";
@@ -116,5 +117,49 @@ describe("durable-first job reads", () => {
     const finalRow = committed.rows.get(funded.id) as { status: string; attestation?: string };
     expect(finalRow.status).toBe("Completed");
     expect(finalRow.attestation).toBe("complete");
+  });
+
+  // a reloaded detail page restores its run pane from this read, so it must
+  // answer with the one job the payment funded, or with none
+  it("returns the job one payment funded, and nothing for an unknown payment", async () => {
+    const funded = fundJob({
+      paymentId: "pay_reload_test",
+      client: SIGNER,
+      provider: PROVIDER,
+      description: "reload test",
+      chainId: 97,
+      tokenId: "2504",
+      agentName: "Souk Health Guard",
+      budgetUsd: 2,
+    });
+
+    const found = await listJobsRoute(new NextRequest("http://localhost/api/jobs?paymentId=pay_reload_test"));
+    const body = (await found.json()) as { jobs: { id: string; status: string }[] };
+    expect(body.jobs.map((j) => j.id)).toEqual([funded.id]);
+    expect(body.jobs[0].status).toBe("Funded");
+
+    const none = await listJobsRoute(new NextRequest("http://localhost/api/jobs?paymentId=pay_unknown"));
+    expect(((await none.json()) as { jobs: unknown[] }).jobs).toEqual([]);
+  });
+
+  // settle left Funded in this instance's memory while another instance stored
+  // Submitted; a reload that read memory first offered Refund instead of Complete
+  it("serves the stored Submitted row by payment over a stale Funded copy", async () => {
+    const funded = fundJob({
+      paymentId: "pay_reload_stale",
+      client: SIGNER,
+      provider: PROVIDER,
+      description: "stale reload test",
+      chainId: 97,
+      tokenId: "2504",
+      agentName: "Souk Health Guard",
+      budgetUsd: 2,
+    });
+    const row = clone(committed.rows.get(funded.id)) as Record<string, unknown>;
+    row.status = "Submitted";
+    committed.rows.set(funded.id, row);
+
+    const res = await listJobsRoute(new NextRequest("http://localhost/api/jobs?paymentId=pay_reload_stale"));
+    expect(((await res.json()) as { jobs: { status: string }[] }).jobs[0].status).toBe("Submitted");
   });
 });

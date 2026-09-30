@@ -327,6 +327,15 @@ export async function getTasksByPayment(paymentId: string): Promise<HireTask[]> 
   return body.tasks ?? []
 }
 
+// the job behind one hire, so a reload finds the run pane's state instead of
+// offering an empty panel for work that already settled
+export async function getJobByPayment(paymentId: string): Promise<Erc8183Job | null> {
+  const res = await fetch(`${BASE}/jobs?paymentId=${encodeURIComponent(paymentId)}`)
+  if (!res.ok) return null
+  const body = await readJsonBody<{ jobs?: Erc8183Job[] }>(res, 'jobs')
+  return body.jobs?.[0] ?? null
+}
+
 export async function retryTask(taskId: string): Promise<HireTask | null> {
   const res = await fetch(`${BASE}/tasks/${taskId}/retry`, { method: 'POST' })
   const body = await res.json().catch(() => null)

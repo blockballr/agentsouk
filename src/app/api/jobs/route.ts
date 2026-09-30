@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createJob, getJob, listJobs } from "@/lib/jobs";
+import { createJob, getJob, getJobByPaymentFresh, listJobs } from "@/lib/jobs";
 import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -8,6 +8,12 @@ export const dynamic = "force-dynamic";
 // POST /api/jobs - create an Open job (client = wallet or "browser")
 
 export async function GET(req: NextRequest) {
+  const paymentId = req.nextUrl.searchParams.get("paymentId")?.trim();
+  // one hire's job, so a page reload can restore the run pane it already earned
+  if (paymentId) {
+    const job = await getJobByPaymentFresh(paymentId);
+    return NextResponse.json({ success: true, jobs: job ? [job] : [] });
+  }
   const limit = Math.min(100, Math.max(1, Number(req.nextUrl.searchParams.get("limit") ?? 50) || 50));
   return NextResponse.json({ success: true, jobs: await listJobs(limit) });
 }
