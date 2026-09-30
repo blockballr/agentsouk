@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAgentByToken } from "@/lib/scanner";
 import { loadVerifications } from "@/lib/verifications";
-import { isPancakeSwapAgent } from "@/lib/pancakeswap";
+import { isPancakeSwapAgent, readsPancakeSwap } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
 import { sessionRevoked } from "@/lib/receipts-store";
 import { getBoost, hydrateBoostsFromDb } from "@/lib/boosts";
@@ -31,9 +31,10 @@ export async function GET(
       : undefined);
   const data = verification ? { ...agent, verification } : agent;
   const withSkills = skills ? { ...data, skills } : data;
-  const withPcs = isPancakeSwapAgent(agent.name, agent.description ?? "")
-    ? { ...withSkills, pcs: true }
-    : withSkills;
+  const withPcs =
+    readsPancakeSwap(Number(chainId), tokenId) || isPancakeSwapAgent(agent.name, agent.description ?? "")
+      ? { ...withSkills, pcs: true }
+      : withSkills;
   const found = findActiveSession(Number(chainId), tokenId);
   // a revoke recorded on another instance never reaches this ledger, so the
   // durable receipt decides whether the page is still offered run controls

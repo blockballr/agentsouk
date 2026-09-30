@@ -20,6 +20,16 @@ export function pancakeSwapScore(name: string, description: string): number {
   return PCS_SIGNALS.reduce((score, [re, weight]) => (re.test(text) ? score + weight : score), 0);
 }
 
+// agents this marketplace runs itself and has watched read PancakeSwap v3 on chain, so
+// their tag rests on what they do rather than on what their description says
+const PANCAKESWAP_READERS: Record<number, ReadonlySet<string>> = {
+  97: new Set(["2522"]), // Souk Grid Planner, pair mode reads the WBNB/USDT pool
+};
+
+export function readsPancakeSwap(chainId: number, tokenId: string): boolean {
+  return PANCAKESWAP_READERS[chainId]?.has(String(tokenId)) ?? false;
+}
+
 export function isPancakeSwapAgent(name: string, description: string): boolean {
   const text = `${name} ${description}`;
   return (

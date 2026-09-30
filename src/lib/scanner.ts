@@ -10,7 +10,7 @@ import {
   targetChainId,
 } from "./types";
 import { classifyAgent, relevanceScore } from "./categories";
-import { isPancakeSwapAgent } from "./pancakeswap";
+import { isPancakeSwapAgent, readsPancakeSwap } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
 import { loadDelisted } from "./delist-store";
@@ -984,10 +984,10 @@ export async function queryAgents(
     );
   }
   if (opts.pcs) {
-    // pancake swap surfacing: detector on registration text only, applied
-    // after the other filters so it composes with category/search
-    items = items.filter((a) =>
-      isPancakeSwapAgent(a.name, a.description ?? ""),
+    // pancake swap surfacing: registration text, or an agent we run that reads it on
+    // chain, applied after the other filters so it composes with category and search
+    items = items.filter(
+      (a) => readsPancakeSwap(a.chain_id, a.token_id) || isPancakeSwapAgent(a.name, a.description ?? ""),
     );
   }
 

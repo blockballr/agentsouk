@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { queryAgents } from "@/lib/scanner";
 import { targetChainId } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
-import { isPancakeSwapAgent } from "@/lib/pancakeswap";
+import { isPancakeSwapAgent, readsPancakeSwap } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
 import { revokedAmong } from "@/lib/receipts-store";
 import { hydrateBoostsFromDb, isBoosted } from "@/lib/boosts";
@@ -50,9 +50,10 @@ export async function GET(req: NextRequest) {
 
   const items = ranked.map((a, i) => {
     const verification = verifications.get(a.token_id);
-    const withPcs = isPancakeSwapAgent(a.name, a.description ?? "")
-      ? { ...a, pcs: true }
-      : a;
+    const withPcs =
+      readsPancakeSwap(a.chain_id, a.token_id) || isPancakeSwapAgent(a.name, a.description ?? "")
+        ? { ...a, pcs: true }
+        : a;
     const withVerification = verification ? { ...withPcs, verification } : withPcs;
     const found = sessions[i];
     const activeSession = found && !revoked.has(found.paymentId) ? found : undefined;
