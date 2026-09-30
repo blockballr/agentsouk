@@ -4,6 +4,7 @@ import { targetChainId } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
 import { isPancakeSwapAgent } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
+import { revokedAmong } from "@/lib/receipts-store";
 import { hydrateBoostsFromDb, isBoosted } from "@/lib/boosts";
 
 export const dynamic = "force-dynamic";
@@ -42,13 +43,19 @@ export async function GET(req: NextRequest) {
     return bb - ab;
   });
 
-  const items = ranked.map((a) => {
+  // the detail route asks the same durable question, so a revoke recorded
+  // elsewhere cannot leave a dead session showing live on the shelf
+  const sessions = ranked.map((a) => findActiveSession(a.chain_id, a.token_id));
+  const revoked = await revokedAmong(sessions.flatMap((s) => (s ? [s.paymentId] : [])));
+
+  const items = ranked.map((a, i) => {
     const verification = verifications.get(a.token_id);
     const withPcs = isPancakeSwapAgent(a.name, a.description ?? "")
       ? { ...a, pcs: true }
       : a;
     const withVerification = verification ? { ...withPcs, verification } : withPcs;
-    const activeSession = findActiveSession(a.chain_id, a.token_id);
+    const found = sessions[i];
+    const activeSession = found && !revoked.has(found.paymentId) ? found : undefined;
     const withSession = activeSession
       ? { ...withVerification, activeSession }
       : withVerification;

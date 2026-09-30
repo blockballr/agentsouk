@@ -20,7 +20,7 @@ import { BSC_TESTNET_CHAIN_ID, settlementAsset } from "./types";
 import { rpcTransport } from "./rpc";
 
 const sql = process.env.DATABASE_URL
-  ? postgres(process.env.DATABASE_URL, { max: 1, idle_timeout: 20 })
+  ? postgres(process.env.DATABASE_URL, { max: 1, idle_timeout: 20, connect_timeout: 5 })
   : null;
 
 let initPromise: Promise<boolean> | null = null;
@@ -207,6 +207,34 @@ export async function revokeSessionDurable(paymentId: string): Promise<boolean> 
   recordPayment(next);
   await saveReceipt(next);
   return true;
+}
+
+// the ledger lives in this instance, so a revoke written anywhere else leaves this copy active
+// one query answers for a whole page of sessions, and only a stored revoke reaches memory,
+// because a read that raced a revoke here can hold a stale true that must not switch it back on
+// without a durable store the ledger answer stands
+export async function revokedAmong(paymentIds: readonly string[]): Promise<Set<string>> {
+  const revoked = new Set<string>();
+  if (paymentIds.length === 0 || !postgresEnabled() || !sql || !(await init())) return revoked;
+  try {
+    const rows = await sql`
+      select payment_id from receipts
+      where payment_id in ${sql([...paymentIds])} and payload->>'activated' = 'false'
+    `;
+    for (const row of rows) {
+      const id = String(row.payment_id);
+      revoked.add(id);
+      const cur = getPayment(id);
+      if (cur?.activated) recordPayment({ ...cur, activated: false });
+    }
+  } catch {
+    // an unreachable store leaves the ledger answer standing
+  }
+  return revoked;
+}
+
+export async function sessionRevoked(paymentId: string): Promise<boolean> {
+  return (await revokedAmong([paymentId])).has(paymentId);
 }
 
 // The relay cancels the buyer's EIP-3009 nonce on the settlement token so the signed

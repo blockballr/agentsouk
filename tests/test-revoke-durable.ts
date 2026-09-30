@@ -5,7 +5,7 @@ import { describe, it, expect, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { recordPayment, getPayment } from "../src/lib/x402";
-import { revokeSessionDurable } from "../src/lib/receipts-store";
+import { revokeSessionDurable, sessionRevoked } from "../src/lib/receipts-store";
 
 describe("durable revoke", () => {
   it("revokes an in-memory session and persists activated false", async () => {
@@ -25,5 +25,11 @@ describe("durable revoke", () => {
 
   it("returns false for an unknown payment", async () => {
     expect(await revokeSessionDurable("does-not-exist")).toBe(false);
+  });
+
+  // without a durable store there is no second opinion, so the ledger answer
+  // stands and a live session is not hidden on a guess
+  it("leaves the ledger answer standing when no receipt is stored", async () => {
+    expect(await sessionRevoked("never-stored")).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import { getAgentByToken } from "@/lib/scanner";
 import { loadVerifications } from "@/lib/verifications";
 import { isPancakeSwapAgent } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
+import { sessionRevoked } from "@/lib/receipts-store";
 import { getBoost, hydrateBoostsFromDb } from "@/lib/boosts";
 import { fetchAgentCardSkills } from "@/lib/delivery";
 
@@ -33,7 +34,10 @@ export async function GET(
   const withPcs = isPancakeSwapAgent(agent.name, agent.description ?? "")
     ? { ...withSkills, pcs: true }
     : withSkills;
-  const activeSession = findActiveSession(Number(chainId), tokenId);
+  const found = findActiveSession(Number(chainId), tokenId);
+  // a revoke recorded on another instance never reaches this ledger, so the
+  // durable receipt decides whether the page is still offered run controls
+  const activeSession = found && !(await sessionRevoked(found.paymentId)) ? found : undefined;
   const boost = getBoost(Number(chainId), tokenId);
   const withBoost = boost
     ? { ...withPcs, boosted: true, boostExpiresAt: boost.expiresAt }
