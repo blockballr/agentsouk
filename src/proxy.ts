@@ -4,8 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 // WEB_ORIGIN is a comma-separated allowlist; the wildcard only when unset
 // the response echoes the request origin so credentials stay impossible and
 // multiple preview origins can be allowed explicitly
-const ALLOWED = (process.env.WEB_ORIGIN ?? "*")
-  .split(",")
+// the site's own origins are always allowed, so a partial WEB_ORIGIN on a
+// deployment cannot cut the site off from its API
+const SITE_ORIGINS = ["https://agentsouk.xyz", "https://www.agentsouk.xyz", "https://agentsouk.pages.dev"];
+
+const ALLOWED = [
+  ...(process.env.WEB_ORIGIN ?? "*").split(","),
+  ...SITE_ORIGINS,
+]
   .map((o) => o.trim())
   .filter(Boolean);
 
@@ -24,12 +30,16 @@ export function proxy(req: NextRequest) {
   return res;
 }
 
-function corsHeaders(allow: string | null): Record<string, string> {
+// revoke and relist are DELETE requests, and a day-long preflight cache keeps
+// a busy page from paying one extra request per write
+export function corsHeaders(allow: string | null): Record<string, string> {
   const headers: Record<string, string> = {
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "86400",
   };
   if (allow) headers["Access-Control-Allow-Origin"] = allow;
+  if (allow && allow !== "*") headers["Vary"] = "Origin";
   return headers;
 }
 
