@@ -14,18 +14,23 @@ const COMMENTARY_RATE = {
 };
 
 const LLM_API_KEY = process.env.LLM_EVAL_API_KEY ?? "";
-const PRIMARY_MODEL = process.env.LLM_EVAL_MODEL ?? "gemini-2.5-flash";
-const FALLBACK_MODEL = process.env.LLM_EVAL_FALLBACK_MODEL ?? "gemini-2.0-flash";
-// last resort: the free tier only allows 20 requests PER DAY per model, so
-// when both configured models have burned their daily allowance, this lite
-// sibling still has its own untouched bucket
-const LAST_RESORT_MODEL = "gemini-3.5-flash-lite";
-const BASE_URL =
-  process.env.LLM_EVAL_BASE_URL ??
-  "https://generativelanguage.googleapis.com/v1beta/openai";
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+const BASE_URL = process.env.LLM_EVAL_BASE_URL ?? GEMINI_BASE_URL;
+// the gemini names are defaults for gemini only, so any other OpenAI-compatible
+// provider runs exactly the models it is configured with
+// the lite model is a last resort: the free tier caps each model at 20 requests a
+// day, and it keeps its own bucket after both configured models have spent theirs
+const ON_GEMINI = BASE_URL === GEMINI_BASE_URL;
+const MODELS = [
+  process.env.LLM_EVAL_MODEL ?? (ON_GEMINI ? "gemini-2.5-flash" : ""),
+  process.env.LLM_EVAL_FALLBACK_MODEL ?? (ON_GEMINI ? "gemini-2.0-flash" : ""),
+  ON_GEMINI ? "gemini-3.5-flash-lite" : "",
+].filter((m, i, all) => m && all.indexOf(m) === i);
 
+// json mode on OpenAI refuses a request whose messages never say "json", and
+// the parser reads one key, so the prompt names both
 const SYSTEM_PROMPT =
-  "You are the marketplace's analyst. You receive only the metrics below - the same numbers the buyer sees in the comparison table. In 2-4 sentences explain the outcome: why the winner won, what the closest competitor's numbers mean as risk, one caveat. Never invent prices, PnL, performance data, or facts not in the metrics. Plain prose, no markdown.";
+  "You are the marketplace's analyst. You receive only the metrics below - the same numbers the buyer sees in the comparison table. In 2-4 sentences explain the outcome: why the winner won, what the closest competitor's numbers mean as risk, one caveat. Never invent prices, PnL, performance data, or facts not in the metrics. Answer with a JSON object whose only key is \"commentary\", holding that explanation as plain prose with no markdown.";
 
 interface AgentMetrics {
   name: unknown;
@@ -154,12 +159,9 @@ async function llmChat(model: string, userContent: string): Promise<string> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// model chain: configured primary, configured fallback, then the lite model
-// whose separate daily bucket usually still has room. no waits: the free
-// tier quota that actually binds is per-day, and waiting never frees it
 async function generateCommentary(userContent: string): Promise<{ commentary: string; model: string }> {
-  let lastError: unknown;
-  for (const model of [PRIMARY_MODEL, FALLBACK_MODEL, LAST_RESORT_MODEL]) {
+  let lastError: unknown = new Error("no commentary model configured");
+  for (const model of MODELS) {
     try {
       const commentary = await llmChat(model, userContent);
       return { commentary, model };

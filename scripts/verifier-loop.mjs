@@ -21,9 +21,12 @@ try {
   // no env file: quality reviews are skipped, deterministic verdicts stand
 }
 const LLM_EVAL_API_KEY = process.env.LLM_EVAL_API_KEY ?? "";
-const PRIMARY_MODEL = process.env.LLM_EVAL_MODEL ?? "gemini-2.5-flash";
-const FALLBACK_MODEL = process.env.LLM_EVAL_FALLBACK_MODEL ?? "gemini-2.0-flash";
-const BASE_URL = process.env.LLM_EVAL_BASE_URL ?? "https://generativelanguage.googleapis.com/v1beta/openai";
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+const BASE_URL = process.env.LLM_EVAL_BASE_URL ?? GEMINI_BASE_URL;
+// gemini names are defaults for gemini only; another provider runs what it is configured with
+const ON_GEMINI = BASE_URL === GEMINI_BASE_URL;
+const PRIMARY_MODEL = process.env.LLM_EVAL_MODEL ?? (ON_GEMINI ? "gemini-2.5-flash" : "");
+const FALLBACK_MODEL = process.env.LLM_EVAL_FALLBACK_MODEL ?? (ON_GEMINI ? "gemini-2.0-flash" : "");
 const LLM_DELAY_MS = 5000;
 const GRADES = new Set(["good", "partial", "poor"]);
 let lastLlmCallAt = 0;
@@ -262,7 +265,7 @@ async function llmChat(model, task, deliverableText) {
 // primary model first; on any failure (network, 429, 5xx, unparseable json)
 // retry ONCE with the fallback; if both fail return null -> no quality field
 async function reviewQuality(task, deliverableText) {
-  if (!LLM_EVAL_API_KEY) return null;
+  if (!LLM_EVAL_API_KEY || !PRIMARY_MODEL) return null;
   const pace = async () => {
     const wait = lastLlmCallAt + LLM_DELAY_MS - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
@@ -272,6 +275,7 @@ async function reviewQuality(task, deliverableText) {
     await pace();
     return await llmChat(PRIMARY_MODEL, task, deliverableText);
   } catch {
+    if (!FALLBACK_MODEL) return null;
     try {
       await pace();
       return await llmChat(FALLBACK_MODEL, task, deliverableText);
