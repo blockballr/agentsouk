@@ -323,7 +323,7 @@ export function AgentDetailPage() {
         </p>
         <Link
           to="/agents"
-          className="micro mt-8 inline-block rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className="micro mt-8 inline-block rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
         >
           Back to market
         </Link>
@@ -338,10 +338,10 @@ export function AgentDetailPage() {
   const activeSession = detail.activeSession
   // only the wallet that bought the session is offered its run controls; another
   // viewer keeps the hire panel, because the session is not theirs to spend
-  const mySession =
-    activeSession && viewer && activeSession.client.toLowerCase() === viewer.toLowerCase()
-      ? { paymentId: activeSession.paymentId }
-      : durableHire
+  // a session is shown only to the wallet that bought it; anyone else sees an ordinary hire panel
+  const ownSession =
+    activeSession && viewer && activeSession.client.toLowerCase() === viewer.toLowerCase() ? activeSession : null
+  const mySession = ownSession ? { paymentId: ownSession.paymentId } : durableHire
   const verificationProbe = detail.verification
     ? isProbeCheck(detail.chain_id, detail.verification.quality)
     : false
@@ -363,7 +363,7 @@ export function AgentDetailPage() {
           <button
             type="button"
             onClick={() => hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="micro flex min-h-11 w-full items-center justify-center rounded-[5px] bg-highlighter-green px-4 text-typesetter-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white"
+            className="micro flex min-h-11 w-full items-center justify-center rounded-[5px] bg-highlighter-green px-4 text-on-highlighter focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white"
           >
             {mySession ? 'Run a task in your session' : jobSeller ? 'How this agent is hired' : `Hire ${detail.name}`}
           </button>
@@ -411,7 +411,7 @@ export function AgentDetailPage() {
                   </span>
                 )}
                 {detail.x402_supported && (
-                  <span className="micro rounded-full bg-highlighter-green px-2.5 py-1 text-typesetter-ink">
+                  <span className="micro rounded-full bg-highlighter-green px-2.5 py-1 text-on-highlighter">
                     Accepts x402
                   </span>
                 )}
@@ -600,13 +600,13 @@ export function AgentDetailPage() {
           ref={setHirePanel}
           className="h-fit scroll-mt-4 rounded-[14px] border hairline border-slate-verdant/40 p-8 lg:sticky lg:top-8"
         >
-          {activeSession && (
+          {ownSession && (
             <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
               <p className="micro text-press-black">Session active</p>
               <div className="mt-3 space-y-2 text-xs">
-                <Row label="Spend cap" value={`$${activeSession.spendCapUsd}`} />
-                <Row label="Expires" value={formatExpiry(activeSession.expiresAt)} />
-                <Row label="Mode" value={sessionModeLabel(activeSession.mode)} />
+                <Row label="Spend cap" value={`$${ownSession.spendCapUsd}`} />
+                <Row label="Expires" value={formatExpiry(ownSession.expiresAt)} />
+                <Row label="Mode" value={sessionModeLabel(ownSession.mode)} />
               </div>
             </div>
           )}
@@ -1002,7 +1002,7 @@ function HirePanel({
         <button
           type="button"
           onClick={startHire}
-          className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-5 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-5 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
         >
           Hire {name}
         </button>
@@ -1012,7 +1012,7 @@ function HirePanel({
         <button
           type="button"
           disabled
-          className="micro w-full rounded-[5px] bg-highlighter-green/60 px-6 py-5 text-typesetter-ink"
+          className="micro w-full rounded-[5px] bg-highlighter-green/60 px-6 py-5 text-on-highlighter"
         >
           Connecting wallet…
         </button>
@@ -1042,8 +1042,8 @@ function HirePanel({
                   }
                   void signAndSettle()
                 }}
-                className={`micro w-full rounded-[5px] px-4 py-3 text-typesetter-ink shadow transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
-                  shortForHire ? 'bg-highlighter-green/40' : 'bg-highlighter-green hover:brightness-95'
+                className={`micro w-full rounded-[5px] px-4 py-3 shadow transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
+                  shortForHire ? 'bg-highlighter-green/40 text-press-black' : 'bg-highlighter-green text-on-highlighter hover:brightness-95'
                 }`}
               >
                 {shortForHire ? (
@@ -1429,7 +1429,7 @@ function DeliveryPanel({
                 type="button"
                 onClick={completeJob}
                 disabled={completing}
-                className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               >
                 {completing ? 'Signing…' : 'Complete job'}
               </button>
@@ -1458,7 +1458,7 @@ function DeliveryPanel({
         <button
           type="button"
           onClick={loadCapabilities}
-          className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+          className="micro mt-3 w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
         >
           Load capabilities
         </button>
@@ -1504,7 +1504,7 @@ function DeliveryPanel({
                 type="button"
                 onClick={run}
                 disabled={running}
-                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               >
                 {running ? 'Running…' : `Run ${tool}`}
               </button>
@@ -1548,7 +1548,7 @@ function DeliveryPanel({
                 type="button"
                 onClick={run}
                 disabled={running || !taskText.trim() || !structured.ok}
-                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="micro w-full rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               >
                 {running ? 'Running…' : 'Run task'}
               </button>

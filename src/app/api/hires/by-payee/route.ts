@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listPaymentsByPayee, receiptsMode } from "@/lib/receipts-store";
 import { settlementAsset } from "@/lib/types";
+import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
 
 export const dynamic = "force-dynamic";
 
@@ -32,11 +33,14 @@ async function hiresForPayee(payee: string) {
   // wallet, so the map below never reaches the store per payment.
   const stored = await listPaymentsByPayee(payee);
   const hires = stored.map((p) => {
-    // a stored amount is raw base units; the settlement asset states the decimals,
-    // so the page can show the figure the payer actually signed for
+    // decimals and symbol come from the chain's settlement asset, not the receipt,
+    // so older receipts that stored a caller's label still read what was paid
     let decimals: number | null = null;
+    let symbol = p.symbol;
     try {
-      decimals = settlementAsset(p.agent.chainId).decimals;
+      const asset = settlementAsset(p.agent.chainId);
+      decimals = asset.decimals;
+      symbol = asset.symbol;
     } catch {
       // an unconfigured chain leaves the amount unformatted rather than guessing
       decimals = null;
@@ -51,8 +55,16 @@ async function hiresForPayee(payee: string) {
       txHash: p.txHash ?? null,
       mode: p.mode,
       amount: p.amount,
-      symbol: p.symbol,
+      symbol,
       decimals,
+      // named here so a lister never reads our own probes or their own test hires as customers
+      payer: isVerifierPayment(p.paymentId)
+        ? "check"
+        : p.client.toLowerCase() === payee.toLowerCase()
+          ? "self"
+          : isTeamWallet(p.client)
+            ? "team"
+            : "buyer",
       active: p.activated,
       createdAt: p.createdAt,
     };

@@ -154,7 +154,7 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
         accepted: pr,
       },
       paymentRequirements: pr,
-      agent: { chainId: cand.chainId, tokenId: cand.tokenId, name: cand.name, symbol: "USDC" },
+      agent: { chainId: cand.chainId, tokenId: cand.tokenId, name: cand.name },
     }),
   });
   if (!(settleRes.status === 200 && settleRes.body?.success)) {

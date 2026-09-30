@@ -663,7 +663,7 @@ function AgentCard({
         title={inCart ? 'In cart' : 'Add to cart'}
         className={`absolute right-[56px] top-3 z-10 flex h-[18px] w-[18px] items-center justify-center rounded-full border hairline before:absolute before:-inset-3 before:content-[''] sm:right-[38px] sm:before:-inset-1 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-highlighter-green ${
           inCart
-            ? 'border-highlighter-green bg-highlighter-green text-typesetter-ink'
+            ? 'border-highlighter-green bg-highlighter-green text-on-highlighter'
             : 'border-slate-verdant/50 bg-bone-white/90 text-newsprint-gray hover:border-highlighter-green'
         }`}
       >
@@ -768,7 +768,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       <button
         type="button"
         onClick={onRetry}
-        className="micro mt-8 rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className="micro mt-8 rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
       >
         Retry
       </button>
@@ -786,7 +786,7 @@ function EmptyState({ onReset }: { onReset: () => void }) {
       <button
         type="button"
         onClick={onReset}
-        className="micro mt-8 rounded-[5px] bg-highlighter-green px-6 py-3 text-typesetter-ink shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className="micro mt-8 rounded-[5px] bg-highlighter-green px-6 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
       >
         Show all agents
       </button>

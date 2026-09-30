@@ -5,7 +5,6 @@ import {
   isTestnet,
   MINT_PER_CLICK,
   readErc20Balance,
-  readNativeBalance,
   SUSD_ADDRESS,
   watchSusd,
 } from '../lib/mint'
@@ -44,7 +43,6 @@ export function TestTokens({
   const [open, setOpen] = useState(false)
   const [phase, setPhase] = useState<Phase>('idle')
   const [balance, setBalance] = useState<bigint | null>(null)
-  const [native, setNative] = useState<bigint | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [txHash, setTxHash] = useState<string | null>(null)
   // set when this modal did the connecting, so the balance re-reads immediately
@@ -73,12 +71,7 @@ export function TestTokens({
     setPhase('reading')
     setError(null)
     try {
-      const [tokens, nativeHex] = await Promise.all([
-        readErc20Balance(SUSD_ADDRESS, addr as `0x${string}`, chainId),
-        readNativeBalance(addr as `0x${string}`, chainId),
-      ])
-      setBalance(tokens)
-      setNative(nativeHex)
+      setBalance(await readErc20Balance(SUSD_ADDRESS, addr as `0x${string}`, chainId))
     } catch (e) {
       setError((e as Error).message)
     }
@@ -179,15 +172,13 @@ export function TestTokens({
     }
   }
 
-  const outOfGas = native !== null && native === 0n
-
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
         style={nudge ? { animation: `shake 0.45s ${nudge}` } : undefined}
-        className="micro mt-3 w-full rounded-[5px] border border-highlighter-green/70 bg-highlighter-green/10 px-4 py-2 text-center text-highlighter-green transition hover:bg-highlighter-green/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green"
+        className="micro mt-3 w-full rounded-[5px] border border-highlighter-green bg-highlighter-green/15 px-4 py-2.5 text-center text-press-black transition hover:bg-highlighter-green/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
       >
         {shortOnTokens ? (
           // .micro uppercases its text, which would rewrite the sUSD symbol
@@ -203,26 +194,25 @@ export function TestTokens({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-[2px]"
           onClick={() => setOpen(false)}
         >
-          {/* Liquid glass: one set of classes serves both themes, and the scrim is plain black. */}
+          {/* a solid sheet of the page's own paper: the see-through glass turned muddy grey on the light theme */}
           <div
-            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/15 bg-bone-white/70 p-6 text-typesetter-ink shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_24px_60px_-12px_rgba(0,0,0,0.55)] backdrop-blur-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="test-tokens-title"
+            className="relative w-full max-w-md rounded-[14px] border border-press-black/20 bg-bone-white p-6 text-typesetter-ink shadow-[0_24px_60px_-16px_rgba(0,0,0,0.45)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 -top-16 h-32 bg-gradient-to-b from-white/25 to-transparent"
-            />
-            <h3 className="relative font-serif text-[22px] font-medium">Test tokens</h3>
-            <p className="relative mt-3 text-sm leading-relaxed text-newsprint-gray">
-              Hires on this deployment settle in <strong>sUSD</strong>, a token we deployed on
-              BSC testnet for the campaign. It has no value, and we pay for the mint, so you need
-              no BNB and no testnet funds to get started. Nothing here touches mainnet.
+            <h3 id="test-tokens-title" className="relative font-serif text-[24px] font-medium tracking-[-0.02em]">
+              Get test <span className="normal-case">sUSD</span>
+            </h3>
+            <p className="relative mt-2 text-sm leading-relaxed text-newsprint-gray">
+              Free tokens for hiring here. You sign a message and we pay the gas.
             </p>
 
-            <dl className="relative mt-4 space-y-2 text-sm">
+            <dl className="relative mt-4 space-y-2 rounded-[10px] border hairline border-slate-verdant/30 bg-highlighter-green/5 p-3 text-sm">
               <div className="flex justify-between">
                 <dt className="text-newsprint-gray">Your balance</dt>
                 <dd className="font-mono">
@@ -235,33 +225,15 @@ export function TestTokens({
               </div>
             </dl>
 
-            {!addr && (
-              <p className="relative mt-3 text-sm text-newsprint-gray">
-                No wallet connected yet. You will be asked to connect, then to sign one message.
-                There is no transaction and no gas, so this is free even with an empty wallet.
+
+            {error && (
+              <p role="alert" className="relative mt-3 rounded-[8px] border border-press-black/25 p-3 text-sm text-press-black">
+                {error}
               </p>
             )}
-
-            {shortOnTokens && !outOfGas && (
-              <p className="relative mt-3 text-sm text-newsprint-gray">
-                You are short for a hire. Minting is a transaction, so it costs a little BNB in
-                gas, but you do not pay any BNB when you hire.
-              </p>
-            )}
-
-            {outOfGas && (
-              <p className="relative mt-3 text-sm text-newsprint-gray">
-                This wallet holds no BNB, which does not matter here: you sign a message and we pay
-                for the mint, so the tokens are free either way.
-              </p>
-            )}
-
-            {error && <p className="relative mt-3 text-sm text-press-black">{error}</p>}
 
             {minted && (
-              <p className="relative mt-3 text-sm text-newsprint-gray">
-                Tokens minted. They will appear in your wallet once you add the token there.
-              </p>
+              <p className="relative mt-3 text-sm text-newsprint-gray">Minted. Add sUSD to your wallet to see the balance.</p>
             )}
 
             <div className="relative mt-5 flex flex-col gap-3">
@@ -269,15 +241,14 @@ export function TestTokens({
                 <button
                   type="button"
                   onClick={() => void mint()}
-                  className="micro w-full rounded-[5px] border hairline border-slate-verdant/50 px-6 py-3 text-center text-newsprint-gray transition hover:text-press-black"
+                  className="micro w-full rounded-[5px] border hairline border-press-black/40 px-6 py-3 text-center text-press-black transition hover:bg-highlighter-green/15"
                 >
                   Mint 10 more
                 </button>
               )}
               {minted && tokenAdded === false && (
                 <p className="text-xs leading-relaxed text-newsprint-gray">
-                  Your wallet did not add sUSD automatically. Add the token manually with the
-                  address below and your balance will show.
+                  Your wallet did not add sUSD itself. Add it with the address below.
                 </p>
               )}
               {!minted && (
@@ -285,7 +256,7 @@ export function TestTokens({
                   type="button"
                   disabled={phase === 'minting' || phase === 'reading'}
                   onClick={() => void mint()}
-                  className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-typesetter-ink transition hover:brightness-95 disabled:opacity-60"
+                  className="micro w-full rounded-[5px] bg-highlighter-green px-6 py-4 text-on-highlighter transition hover:brightness-95 disabled:opacity-60"
                 >
                   {phase === 'minting' ? (
                     'Sign the message in your wallet'
@@ -301,11 +272,19 @@ export function TestTokens({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="micro w-full px-4 py-2 text-center text-newsprint-gray"
+                className="micro w-full px-4 py-2 text-center text-newsprint-gray transition hover:text-press-black"
               >
                 Close
               </button>
             </div>
+
+            <details className="relative mt-2 text-xs leading-relaxed text-newsprint-gray">
+              <summary className="cursor-pointer transition hover:text-press-black">What is sUSD?</summary>
+              <p className="mt-2">
+                A token we deployed on BSC testnet for the campaign. It has no value, hires here settle in it,
+                and nothing touches mainnet.
+              </p>
+            </details>
 
             {txHash && (
               <p className="relative mt-3 break-all font-mono text-[10px] text-newsprint-gray">

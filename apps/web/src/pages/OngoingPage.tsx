@@ -267,7 +267,7 @@ export function OngoingPage() {
             type="button"
             onClick={onConnect}
             disabled={connecting}
-            className="micro mt-6 rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60"
+            className="micro mt-6 rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60"
           >
             {connecting ? 'Connecting…' : 'Connect wallet'}
           </button>
@@ -299,7 +299,7 @@ export function OngoingPage() {
               </p>
               <Link
                 to="/agents"
-                className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-typesetter-ink shadow transition hover:brightness-95"
+                className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95"
               >
                 Browse agents
               </Link>
@@ -336,7 +336,7 @@ export function OngoingPage() {
                       session with attempts left is meant to be used, not re-bought */}
                   <Link
                     to={`/agents/${session.chainId}/${session.tokenId}`}
-                    className="micro mt-3 inline-block rounded-[5px] bg-highlighter-green px-3 py-2 text-typesetter-ink shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                    className="micro mt-3 inline-block rounded-[5px] bg-highlighter-green px-3 py-2 text-on-highlighter shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
                   >
                     Open agent and run
                   </Link>
@@ -396,7 +396,7 @@ export function OngoingPage() {
                       type="button"
                       onClick={() => onJob(job.id, 'complete')}
                       disabled={jobBusy === job.id}
-                      className="micro rounded-[5px] bg-highlighter-green px-3 py-2 text-typesetter-ink shadow transition hover:brightness-95 disabled:opacity-60"
+                      className="micro rounded-[5px] bg-highlighter-green px-3 py-2 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60"
                     >
                       Complete job
                     </button>

@@ -183,7 +183,7 @@ export function ScoutPage() {
           type="button"
           onClick={() => void runDiscover()}
           disabled={running === 'discover'}
-          className="micro rounded-[5px] bg-highlighter-green px-4 py-2.5 text-typesetter-ink shadow hover:brightness-95 disabled:opacity-60"
+          className="micro rounded-[5px] bg-highlighter-green px-4 py-2.5 text-on-highlighter shadow hover:brightness-95 disabled:opacity-60"
         >
           {running === 'discover' ? 'Discovering…' : 'Run discover'}
         </button>
