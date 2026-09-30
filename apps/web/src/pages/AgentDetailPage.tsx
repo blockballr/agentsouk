@@ -60,12 +60,28 @@ export function preHireWarning(verification?: { status: string; checkedAt: strin
     verification.status === 'dead'
       ? 'got no usable answer from this agent'
       : verification.status === 'unreachable'
-        ? 'found no endpoint the marketplace can call'
+        ? 'found no endpoint it can call'
         : verification.status === 'gated'
           ? 'found the endpoint behind its own access gate'
           : null
   if (!found) return null
-  return `The last check on ${verification.checkedAt.slice(0, 10)} ${found}. Payment settles to the agent's wallet when you sign, before it is asked for anything.`
+  return `The marketplace last checked this agent on ${verification.checkedAt.slice(0, 10)} and ${found}. Payment settles to the agent's wallet when you sign, before it is asked for anything.`
+}
+
+// 8004scan's health probe arrives with the registry data while the verdict comes
+// from our own check, so each date names whose check it is
+export function freshnessLine(
+  updatedAt: string | null | undefined,
+  scanCheckedAt: string | null | undefined,
+  ourCheckedAt: string | null | undefined,
+  ago: (iso: string) => string = timeAgo,
+): string {
+  const record = `Registry record last updated ${updatedAt ? ago(updatedAt) : 'unknown'}.`
+  const ours = ourCheckedAt ? `the marketplace on ${ourCheckedAt.slice(0, 10)}` : null
+  if (scanCheckedAt && ours) return `${record} Endpoint probed by 8004scan ${ago(scanCheckedAt)}, and by ${ours}.`
+  if (scanCheckedAt) return `${record} Endpoint probed by 8004scan ${ago(scanCheckedAt)}.`
+  if (ours) return `${record} Endpoint checked by ${ours}.`
+  return record
 }
 
 function explorerBase(chainId: string): string {
@@ -702,11 +718,7 @@ export function AgentDetailPage() {
                 <div>
                   <dt className="micro text-newsprint-gray">Freshness</dt>
                   <dd className="mt-1 text-xs text-press-black">
-                    Registry record last updated{' '}
-                    {detail.updated_at ? timeAgo(detail.updated_at) : 'unknown'}
-                    {detail.health_checked_at
-                      ? `, endpoint last checked ${timeAgo(detail.health_checked_at)}`
-                      : ''}
+                    {freshnessLine(detail.updated_at, detail.health_checked_at, detail.verification?.checkedAt)}
                   </dd>
                 </div>
               </dl>
