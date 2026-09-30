@@ -17,7 +17,7 @@ vi.mock("../src/lib/scanner", () => ({
 }));
 
 import { NextRequest } from "next/server";
-import { JOB_SELLER_NOTE, sellsByJob } from "@agora/core";
+import { JOB_SELLER_NOTE, isJobStepSkill, sellsByJob } from "@agora/core";
 import { GATED_RE, jobSellerReply } from "../src/lib/delivery";
 import { POST as requirementsRoute } from "../src/app/api/x402/requirements/route";
 import { verifyCandidate } from "../src/lib/verify-candidate";
@@ -199,5 +199,21 @@ describe("the scout's liveness probe", () => {
     expect(probeToVerification(candidate, { tokenId: "1", ok: true, detail: "a2a card ok", protocol: "a2a" }, 10).status).toBe("delivered");
     expect(probeToVerification(candidate, { tokenId: "1", ok: false, detail: "a2a 500", protocol: "a2a" }, 10).status).toBe("dead");
     expect(probeToVerification(candidate, { tokenId: "1", ok: false, detail: "no callable endpoint", protocol: null }, 10).status).toBe("unreachable");
+  });
+});
+
+describe("job protocol steps", () => {
+  it("counts negotiate as a job step only on a card that runs the job protocol", () => {
+    const hybrid = [
+      { id: "read-health", name: "Read a Venus health factor" },
+      { id: "negotiate", description: "Negotiate an ERC-8183 job" },
+      { id: "notify_funded", description: "Notifies the agent that a job is funded" },
+    ];
+    expect(hybrid.map((s) => isJobStepSkill(s, hybrid))).toEqual([false, true, true]);
+    const haggler = [
+      { id: "negotiate", description: "Haggles a freight price with the carrier" },
+      { id: "quote", description: "Returns a freight quote" },
+    ];
+    expect(haggler.map((s) => isJobStepSkill(s, haggler))).toEqual([false, false]);
   });
 });

@@ -10,11 +10,16 @@ import {
   shortAddress,
   timeAgo,
   JOB_SELLER_NOTE,
+  isJobStepSkill,
   sellsByJob,
 } from '@agora/core'
 import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
-import { chainLabel } from '../lib/contracts'
+import { chainLabel, settlementAssetFor } from '../lib/contracts'
+import { Tag } from '../components/Tag'
+import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
+import { builtWithFrom, decodeMetaValue } from '../lib/onchain-meta'
+import { VERDICT_DOT, verdictFor, type Verdict } from '../lib/verdict'
 import {
   changeWallet,
   connectWallet,
@@ -31,28 +36,6 @@ import {
   signAndSettleHire,
   type HireRequirementsData,
 } from '../lib/hire'
-
-const verificationTone: Record<string, string> = {
-  delivered: 'border-highlighter-green/50 text-highlighter-green',
-  gated: 'border-slate-verdant/40 text-slate-verdant',
-  dead: 'border-slate-verdant/45 text-newsprint-gray',
-  unreachable: 'border-slate-verdant/45 text-newsprint-gray',
-}
-
-// chain 97 has no paid-hire verifier: its delivered verdicts come from the scout
-// liveness probe in probeToVerification, so they are reachability rather than delivery
-const BSC_TESTNET_CHAIN_ID = 97
-
-function isProbeCheck(chainId: number, quality?: { model: string }): boolean {
-  if (quality?.model === 'deterministic') return true
-  return chainId === BSC_TESTNET_CHAIN_ID && !quality
-}
-
-function verificationLabel(status: string, probe: boolean): string {
-  if (status === 'dead') return 'stale'
-  if (status !== 'delivered') return status
-  return probe ? 'endpoint reachable' : 'verified delivered'
-}
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -335,9 +318,6 @@ export function AgentDetailPage() {
   const ownSession =
     activeSession && viewer && activeSession.client.toLowerCase() === viewer.toLowerCase() ? activeSession : null
   const mySession = ownSession ? { paymentId: ownSession.paymentId } : durableHire
-  const verificationProbe = detail.verification
-    ? isProbeCheck(detail.chain_id, detail.verification.quality)
-    : false
   const hireWarning = preHireWarning(detail.verification)
   const jobSeller = sellsByJob(detail.skills)
 
@@ -348,6 +328,11 @@ export function AgentDetailPage() {
       })
       .catch(() => {})
   }
+
+  const verdict = verdictFor(detail.chain_id, detail.verification)
+  const builtWith = builtWithFrom(onchain)
+  const firstParty = isOperatedByAgentSouk(detail.owner_address)
+  const asset = settlementAssetFor(detail.chain_id)?.symbol ?? 'the settlement asset'
 
   return (
     <div className="mx-auto max-w-[1400px] px-6 pb-28 pt-10 lg:pb-10">
@@ -369,218 +354,74 @@ export function AgentDetailPage() {
         ← Marketplace
       </Link>
 
-      <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_340px]">
-        <div>
-          <div className="flex flex-col gap-6 rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:flex-row sm:items-start">
+      {/* phones read header, proof, hire, then the rest; wide screens keep hire in a sticky column */}
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_1fr] lg:gap-x-10">
+        <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+          <header className="flex flex-col gap-6 sm:flex-row sm:items-start">
             <img
               src={detail.image_url ?? '/inserts/arc.svg'}
-              alt={detail.name}
-              className="duotone h-24 w-24 shrink-0 rounded-[14px] object-cover"
+              alt=""
+              className="duotone h-20 w-20 shrink-0 rounded-[14px] object-cover sm:h-24 sm:w-24"
             />
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="font-serif text-[clamp(32px,5vw,56px)] font-medium leading-[0.95] tracking-[-0.03em]">
-                  {detail.name}
-                </h1>
-                {detail.is_verified && (
-                  <span className="micro rounded-full border hairline border-highlighter-green/50 px-2.5 py-1 text-highlighter-green">
-                    Verified
+              <h1 className="font-serif text-[clamp(32px,5vw,56px)] font-medium leading-[0.95] tracking-[-0.03em]">
+                {detail.name}
+              </h1>
+              <p className="mt-2 text-[13px] text-newsprint-gray">
+                {firstParty ? (
+                  <span className="text-press-black" title={OPERATED_BY_TITLE}>
+                    {OPERATED_BY_LABEL}
                   </span>
+                ) : (
+                  <>
+                    by{' '}
+                    <a href={ownerScan} target="_blank" rel="noreferrer" className="font-mono text-press-black hover:underline">
+                      {shortAddress(detail.owner_address)}
+                    </a>
+                  </>
                 )}
-                {detail.is_endpoint_verified && (
-                  <span className="micro rounded-full border hairline border-slate-verdant/40 px-2.5 py-1 text-slate-verdant">
-                    Endpoint verified
-                  </span>
-                )}
-                {detail.x402_supported && (
-                  <span className="micro rounded-full bg-highlighter-green px-2.5 py-1 text-on-highlighter">
-                    Accepts x402
-                  </span>
-                )}
-                {(detail as { boosted?: boolean }).boosted && (
-                  <span
-                    title="Paid boost: sorted higher on the marketplace"
-                    className="micro rounded-full border hairline border-highlighter-green/60 bg-highlighter-green/10 px-2.5 py-1 text-highlighter-green"
-                  >
-                    Boosted
-                  </span>
-                )}
-                {detail.verification && (
-                  <span
-                    title={
-                      detail.verification.quality
-                        ? verificationProbe
-                          ? `Deterministic probe: ${detail.verification.quality.grade} - ${detail.verification.quality.reason} (checked ${detail.verification.checkedAt.slice(0, 10)})`
-                          : `AI review: ${detail.verification.quality.grade} - ${detail.verification.quality.reason} (checked ${detail.verification.checkedAt.slice(0, 10)})`
-                        : verificationProbe && detail.verification.status === 'delivered'
-                          ? `Endpoint answered a liveness probe (checked ${detail.verification.checkedAt})`
-                          : `Shopper checked ${detail.verification.checkedAt}`
-                    }
-                    className={`micro rounded-full border hairline px-2.5 py-1 ${verificationTone[detail.verification.status] ?? verificationTone.dead}`}
-                  >
-                    {verificationLabel(detail.verification.status, verificationProbe)} · {detail.verification.checkedAt.slice(0, 10)}
-                  </span>
-                )}
-                {detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok' && (
-                  <span
-                    title="verified: two simultaneous calls both answered"
-                    className="micro rounded-full border hairline border-highlighter-green/50 px-2.5 py-1 text-highlighter-green"
-                  >
-                    handles concurrent requests
-                  </span>
-                )}
-              </div>
-              <p className="mt-4 text-[18px] leading-snug text-newsprint-gray">
-                {detail.description || 'No description registered on-chain.'}
+                {' · '}
+                <a href={bscScan} target="_blank" rel="noreferrer" className="text-press-black hover:underline">
+                  agent #{detail.token_id}
+                </a>
+                {' · listed '}
+                {formatDate(detail.created_at)}
               </p>
-              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[11px] uppercase tracking-[0.01em] text-newsprint-gray">
-                <span>
-                  Owner{' '}
-                  <a href={ownerScan} target="_blank" rel="noreferrer" className="font-mono text-press-black hover:text-highlighter-green">
-                    {shortAddress(detail.owner_address)}
-                  </a>
-                </span>
-                <span>Registered {formatDate(detail.created_at)}</span>
-                <span>
-                  Agent{' '}
-                  <a href={bscScan} target="_blank" rel="noreferrer" className="font-mono text-press-black hover:text-highlighter-green">
-                    #{detail.token_id}
-                  </a>
-                </span>
-                <span>Updated {timeAgo(detail.updated_at)}</span>
-              </div>
-              {detail.pcs && (
-                <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
-                  <span className="text-press-black">PancakeSwap-native:</span>{' '}
-                  this agent&apos;s own registration describes PancakeSwap V3
-                  liquidity work.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
-            <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
-              <h2 className="micro text-newsprint-gray">Reputation</h2>
-              <div className="mt-6 grid grid-cols-3 gap-6">
-                <BigMetric label="Total score" value={formatScore(detail.total_score)} accent />
-                <BigMetric label="Avg feedback" value={formatScore(detail.average_score)} />
-                <BigMetric label="Feedback" value={formatNumber(detail.total_feedbacks)} />
-              </div>
-              <div className="mt-8 space-y-5">
-                {scoreBars.map((b) => (
-                  <ScoreBar
-                    key={b.label}
-                    label={b.label}
-                    value={Number(detail[b.key]) || 0}
-                  />
-                ))}
+              <p className="mt-4 max-w-3xl text-[17px] leading-snug text-newsprint-gray">
+                {detail.description || 'No description on-chain.'}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {detail.is_verified ? <Tag title="Verified on the ERC-8004 registry index">Registry verified</Tag> : null}
+                {detail.is_endpoint_verified ? <Tag title="The endpoint's domain is verified">Domain verified</Tag> : null}
+                {detail.pcs ? <Tag title="Its own registration says it works with PancakeSwap; not yet checked on-chain">PancakeSwap</Tag> : null}
+                {(detail as { boosted?: boolean }).boosted ? <Tag title="Paid boost: sorted higher on the marketplace">Boosted</Tag> : null}
+                {builtWith ? (
+                  <Tag href={builtWith.href ?? undefined} title="From the BUILT_WITH record on-chain">
+                    Built with {builtWith.label}
+                  </Tag>
+                ) : null}
               </div>
             </div>
+          </header>
 
-            <div className="space-y-6">
-              <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
-                <h2 className="micro text-newsprint-gray">Health &amp; activity</h2>
-                <div className="mt-6 grid grid-cols-2 gap-6">
-                  <BigMetric label="Health score" value={detail.health_score !== null ? formatScore(detail.health_score) : 'n/a'} />
-                  <BigMetric label="Status" value={statusFor(detail).value} note={statusFor(detail).note} />
-                </div>
-              </div>
-
-              {detail.skills && detail.skills.length > 0 && (
-                <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
-                  <h2 className="micro text-newsprint-gray">What this agent expects</h2>
-                  <div className="mt-4 space-y-5">
-                    {detail.skills.map((s) => (
-                      <div key={s.id ?? s.name ?? 'skill'}>
-                        {s.inputSchema?.properties && (
-                          <dl className="space-y-1.5">
-                            {Object.entries(s.inputSchema.properties).map(([field, meta]) => (
-                              <div key={field} className="flex items-baseline justify-between gap-4">
-                                <dt className="shrink-0 font-mono text-xs text-press-black">
-                                  {field}
-                                  {s.inputSchema?.required?.includes(field) ? (
-                                    <span className="text-highlighter-green"> *</span>
-                                  ) : null}
-                                </dt>
-                                <dd className="text-right text-xs text-newsprint-gray">{meta.description}</dd>
-                              </div>
-                            ))}
-                          </dl>
-                        )}
-                        {s.inputSchema?.examples && s.inputSchema.examples.length > 0 && (
-                          <p className="mt-2 break-all font-mono text-[11px] leading-relaxed text-newsprint-gray">
-                            send {JSON.stringify(s.inputSchema.examples[0])}
-                          </p>
-                        )}
-                        {!s.inputSchema && (
-                          <>
-                            {s.examples && s.examples.length > 0 && (
-                              <ul className="space-y-1 text-[13px] leading-relaxed text-newsprint-gray">
-                                {s.examples.map((e) => (
-                                  <li key={e}>{e}</li>
-                                ))}
-                              </ul>
-                            )}
-                            {s.inputModes && s.inputModes.length > 0 && (
-                              <p className="mt-2 text-[11px] uppercase tracking-[0.01em] text-newsprint-gray">
-                                accepts {s.inputModes.join(', ')}
-                              </p>
-                            )}
-                          </>
-                        )}
-                        {s.outputSchema?.properties && (
-                          <div className="mt-3">
-                            <p className="micro text-newsprint-gray">Returns</p>
-                            <dl className="mt-2 space-y-1.5">
-                              {Object.entries(s.outputSchema.properties).map(([field, meta]) => (
-                                <div key={field} className="flex items-baseline justify-between gap-4">
-                                  <dt className="shrink-0 font-mono text-xs text-press-black">{field}</dt>
-                                  <dd className="text-right text-xs text-newsprint-gray">{meta.description}</dd>
-                                </div>
-                              ))}
-                            </dl>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="rounded-[14px] border hairline border-slate-verdant/40 p-8">
-                <h2 className="micro text-newsprint-gray">Endpoints</h2>
-                <EndpointPanel detail={detail} />
-              </div>
-            </div>
-          </div>
-
-          {perfProbe && <PerformanceSection probe={perfProbe} />}
-
-          {onchain.length > 0 && (
-            <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
-              <h2 className="micro text-newsprint-gray">On-chain metadata</h2>
-              <dl className="mt-6 grid grid-cols-1 bg-bone-white pl-px pt-px sm:grid-cols-2">
-                {onchain.map((m) => (
-                  <div key={m.key} className="-ml-px -mt-px border hairline border-slate-verdant/40 bg-bone-white p-4">
-                    <dt className="micro text-newsprint-gray">{m.key}</dt>
-                    <dd className="mt-2 break-words font-mono text-xs leading-relaxed text-press-black">
-                      {typeof m.value === 'string' ? m.value : JSON.stringify(m.value)}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          )}
-
-          {runResult && (runResult.output || runResult.task || runResult.job) && (
-            <ResultPanel result={runResult} />
-          )}
+          <ProofStrip
+            verdict={verdict}
+            checkedAt={detail.verification?.checkedAt ?? null}
+            parallel={detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok'}
+            payment={
+              jobSeller
+                ? { value: 'By ERC-8183 job', note: 'Escrowed on-chain, released on delivery' }
+                : { value: 'Per call', note: `Paid over x402 in ${asset}, straight to its wallet` }
+            }
+            network={chainLabel(detail.chain_id)}
+            score={detail.total_score > 0 ? formatScore(detail.total_score) : null}
+            reviews={detail.total_feedbacks}
+          />
         </div>
 
         <aside
           ref={setHirePanel}
-          className="h-fit scroll-mt-4 rounded-[14px] border hairline border-slate-verdant/40 p-8 lg:sticky lg:top-8"
+          className="h-fit scroll-mt-4 self-start rounded-[14px] border hairline border-slate-verdant/40 p-6 sm:p-8 lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto"
         >
           {ownSession && (
             <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
@@ -592,28 +433,30 @@ export function AgentDetailPage() {
               </div>
             </div>
           )}
-          <h2 className="micro text-newsprint-gray">
-            {mySession ? 'Run a task in your session' : 'Hire this agent'}
+          <h2 className="font-serif text-[24px] font-medium leading-tight text-press-black">
+            {mySession ? 'Run a task' : jobSeller ? 'How to hire' : 'Hire this agent'}
           </h2>
-          <div className="mt-6 space-y-4 text-[11px] uppercase tracking-[0.01em] text-newsprint-gray">
-            <div className="flex justify-between">
-              <span>Model</span>
-              <span className="text-press-black">Pay per request</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Session</span>
-              {/* reflects what the facilitator actually sets on the session,
-                  rather than a second opinion in the markup: this said $10 while
-                  production issued $5, so a live session contradicted the page */}
-              <span className="text-press-black">
-                {SESSION_HOURS}h · ${SESSION_SPEND_CAP_USD} cap
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Network</span>
-              <span className="text-press-black">{chainLabel(Number(chainId))}</span>
-            </div>
-          </div>
+          {!jobSeller && (
+            <dl className="mt-4 space-y-2 text-[13px]">
+              <div className="flex justify-between gap-4">
+                <dt className="text-newsprint-gray">Pricing</dt>
+                <dd className="text-press-black">Per request</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-newsprint-gray">Session</dt>
+                {/* reflects what the facilitator actually sets on the session,
+                    rather than a second opinion in the markup: this said $10 while
+                    production issued $5, so a live session contradicted the page */}
+                <dd className="text-press-black">
+                  {SESSION_HOURS}h, ${SESSION_SPEND_CAP_USD} cap
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-newsprint-gray">Network</dt>
+                <dd className="text-press-black">{chainLabel(Number(chainId))}</dd>
+              </div>
+            </dl>
+          )}
           {/* A wallet that already holds a live session should land on the run
               controls rather than on a second signature: the session is already
               bought, so offering the hire again invites paying twice for it. */}
@@ -622,7 +465,7 @@ export function AgentDetailPage() {
               <DeliveryPanel paymentId={mySession.paymentId} onResult={setRunResult} />
             </div>
           ) : jobSeller ? (
-            <p role="note" className="mt-6 rounded-[8px] border hairline border-slate-verdant/45 p-3 text-xs leading-relaxed text-press-black">
+            <p role="note" className="mt-4 text-sm leading-relaxed text-press-black">
               {JOB_SELLER_NOTE}
             </p>
           ) : (
@@ -634,12 +477,6 @@ export function AgentDetailPage() {
               )}
               <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
             </>
-          )}
-          {!jobSeller && (
-            <p className="mt-4 text-xs leading-relaxed text-newsprint-gray">
-              You sign a gasless transfer authorization; a facilitator verifies and
-              settles it on-chain. Funds go straight to the agent&apos;s wallet.
-            </p>
           )}
           {/* owner-only, so it renders only for an owner */}
           {viewer && isListingOwner(viewer, detail) && (
@@ -653,93 +490,340 @@ export function AgentDetailPage() {
               onBoosted={refreshDetail}
             />
           )}
-          {/* permissions precede the registry evidence: they are part of the buying decision,
+          {/* permissions sit with the hire: they are part of the buying decision,
               and a job seller is not bought this way, so it shows none */}
           {!jobSeller && (
-          <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
-            <h2 className="micro text-newsprint-gray">What you are authorising</h2>
-            <ul className="mt-4 space-y-3 text-sm leading-relaxed text-newsprint-gray">
-              <li>
-                One EIP-3009 transfer authorization for the hire amount, scoped to this agent&apos;s
-                wallet. Nothing is approved for later, and there is no blanket token approval.
-              </li>
-              <li>
-                A session capped at ${SESSION_SPEND_CAP_USD} and expiring in {SESSION_HOURS} hours.
-                Every later call draws on that cap until you revoke it.
-              </li>
-              <li>
-                {detail.mcp_server
-                  ? 'The agent is invoked over MCP, so it can call the tools it publishes.'
-                  : detail.a2a_endpoint
-                    ? 'The agent is invoked over A2A, so it receives the messages you send it.'
-                    : detail.web_endpoint
-                      ? 'This agent is browser-invoked: its tools live in a browser page, so the marketplace cannot call it and a hire cannot run automatically.'
-                      : 'No callable endpoint is published for this agent.'}
-              </li>
-            </ul>
-          </div>
-          )}
-
-          {/* registry id and creation transaction, so a listing can be checked against the chain */}
-          {(detail.agent_id || detail.created_tx_hash) && (
-            <div className="mt-6 rounded-[14px] border hairline border-slate-verdant/40 p-8">
-              <h2 className="micro text-newsprint-gray">Registry record</h2>
-              <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-                This listing is an ERC-8004 registration. Check it against the registry and the
-                transaction that created it.
-              </p>
-              <dl className="mt-5 space-y-3">
-                {detail.agent_id && (
-                  <div>
-                    <dt className="micro text-newsprint-gray">Registry ID</dt>
-                    <dd className="mt-1 break-all font-mono text-xs text-press-black">
-                      {detail.agent_id}
-                    </dd>
-                  </div>
-                )}
-                {detail.contract_address && (
-                  <div>
-                    <dt className="micro text-newsprint-gray">Registry contract</dt>
-                    <dd className="mt-1 break-all font-mono text-xs">
-                      <a
-                        href={`${explorerBase(chainId)}/address/${detail.contract_address}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-press-black hover:text-highlighter-green"
-                      >
-                        {detail.contract_address}
-                      </a>
-                    </dd>
-                  </div>
-                )}
-                {detail.created_tx_hash && (
-                  <div>
-                    <dt className="micro text-newsprint-gray">Registration transaction</dt>
-                    <dd className="mt-1 break-all font-mono text-xs">
-                      <a
-                        href={`${explorerBase(chainId)}/tx/${detail.created_tx_hash}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-press-black hover:text-highlighter-green"
-                      >
-                        {detail.created_tx_hash}
-                      </a>
-                    </dd>
-                  </div>
-                )}
-                <div>
-                  <dt className="micro text-newsprint-gray">Freshness</dt>
-                  <dd className="mt-1 text-xs text-press-black">
-                    {freshnessLine(detail.updated_at, detail.health_checked_at, detail.verification?.checkedAt)}
-                  </dd>
-                </div>
-              </dl>
+            <div className="mt-6 border-t hairline border-slate-verdant/30 pt-5">
+              <h3 className="micro text-newsprint-gray">What you are authorising</h3>
+              <ul className="mt-3 space-y-2.5 text-[13px] leading-relaxed text-newsprint-gray">
+                <li>
+                  One gas-free transfer of the hire amount to this agent&apos;s wallet. No standing
+                  token approval.
+                </li>
+                <li>
+                  A session capped at ${SESSION_SPEND_CAP_USD} that ends in {SESSION_HOURS} hours. Later
+                  calls draw on it until you revoke it.
+                </li>
+                <li>
+                  {detail.mcp_server
+                    ? 'The agent is called over MCP, so it can run the tools it publishes.'
+                    : detail.a2a_endpoint
+                      ? 'The agent is called over A2A, so it receives the messages you send.'
+                      : detail.web_endpoint
+                        ? 'This agent runs in a browser page, so the marketplace cannot call it for you.'
+                        : 'No callable endpoint is published for this agent.'}
+                </li>
+              </ul>
             </div>
           )}
-
         </aside>
+
+        <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
+          {runResult && (runResult.output || runResult.task || runResult.job) && (
+            <ResultPanel result={runResult} />
+          )}
+
+          <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} />
+
+          {perfProbe && <PerformanceSection probe={perfProbe} />}
+
+          <details className="group rounded-[14px] border hairline border-slate-verdant/40">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 sm:px-8 [&::-webkit-details-marker]:hidden">
+              <span>
+                <span className="block font-serif text-[22px] font-medium text-press-black">On-chain details</span>
+                <span className="mt-1 block text-[13px] text-newsprint-gray">
+                  Registry record, reputation, endpoints and metadata
+                </span>
+              </span>
+              <span aria-hidden="true" className="text-newsprint-gray transition group-open:rotate-180">
+                ▾
+              </span>
+            </summary>
+            <div className="divide-y hairline divide-slate-verdant/25 border-t hairline border-slate-verdant/25">
+              <section className="p-6 sm:px-8">
+                <h3 className="micro text-newsprint-gray">Registry record</h3>
+                <dl className="mt-4 space-y-3">
+                  {detail.agent_id && (
+                    <div>
+                      <dt className="micro text-newsprint-gray">Registry ID</dt>
+                      <dd className="mt-1 break-all font-mono text-xs text-press-black">{detail.agent_id}</dd>
+                    </div>
+                  )}
+                  {detail.contract_address && (
+                    <div>
+                      <dt className="micro text-newsprint-gray">Registry contract</dt>
+                      <dd className="mt-1 break-all font-mono text-xs">
+                        <a
+                          href={`${explorer}/address/${detail.contract_address}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-press-black hover:underline"
+                        >
+                          {detail.contract_address}
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                  {detail.created_tx_hash && (
+                    <div>
+                      <dt className="micro text-newsprint-gray">Registration transaction</dt>
+                      <dd className="mt-1 break-all font-mono text-xs">
+                        <a
+                          href={`${explorer}/tx/${detail.created_tx_hash}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-press-black hover:underline"
+                        >
+                          {detail.created_tx_hash}
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                  <div>
+                    <dt className="micro text-newsprint-gray">Freshness</dt>
+                    <dd className="mt-1 text-xs text-press-black">
+                      {freshnessLine(detail.updated_at, detail.health_checked_at, detail.verification?.checkedAt)}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="p-6 sm:px-8">
+                <h3 className="micro text-newsprint-gray">Reputation on the registry index</h3>
+                <div className="mt-5 grid grid-cols-2 gap-6 sm:grid-cols-4">
+                  <BigMetric label="Total score" value={formatScore(detail.total_score)} />
+                  <BigMetric label="Avg feedback" value={formatScore(detail.average_score)} />
+                  <BigMetric label="Feedback" value={formatNumber(detail.total_feedbacks)} />
+                  <BigMetric
+                    label="Health"
+                    value={detail.health_score !== null ? formatScore(detail.health_score) : 'n/a'}
+                    note={statusFor(detail).value}
+                  />
+                </div>
+                <div className="mt-6 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                  {scoreBars.map((b) => (
+                    <ScoreBar key={b.label} label={b.label} value={Number(detail[b.key]) || 0} />
+                  ))}
+                </div>
+              </section>
+
+              <section className="p-6 sm:px-8">
+                <h3 className="micro text-newsprint-gray">Endpoints</h3>
+                <EndpointPanel detail={detail} />
+              </section>
+
+              {onchain.length > 0 && (
+                <section className="p-6 sm:px-8">
+                  <h3 className="micro text-newsprint-gray">On-chain metadata</h3>
+                  <dl className="mt-4 space-y-3">
+                    {onchain.map((m) => (
+                      <div key={m.key}>
+                        <dt className="micro text-newsprint-gray">{m.key}</dt>
+                        <dd className="mt-1 break-all font-mono text-xs leading-relaxed text-press-black">
+                          {decodeMetaValue(m.value)}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
+            </div>
+          </details>
+        </div>
       </div>
     </div>
+  )
+}
+
+function ProofStrip({
+  verdict,
+  checkedAt,
+  parallel,
+  payment,
+  network,
+  score,
+  reviews,
+}: {
+  verdict: Verdict
+  checkedAt: string | null
+  parallel: boolean
+  payment: { value: string; note: string }
+  network: string
+  score: string | null
+  reviews: number
+}) {
+  return (
+    <dl className="mt-8 grid overflow-hidden rounded-[14px] border hairline border-slate-verdant/40 sm:grid-cols-3">
+      <div className="p-5">
+        <dt className="micro text-newsprint-gray">Last check</dt>
+        <dd className="mt-2 flex items-center gap-2 text-[18px] font-medium text-press-black">
+          <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${VERDICT_DOT[verdict.tone]}`} />
+          {verdict.label}
+        </dd>
+        <dd className="mt-1 text-[13px] leading-snug text-newsprint-gray">
+          {verdict.explain}
+          {checkedAt ? ` Checked ${timeAgo(checkedAt)}.` : ''}
+          {parallel ? ' Handles parallel calls.' : ''}
+        </dd>
+      </div>
+      <div className="border-t hairline border-slate-verdant/30 p-5 sm:border-l sm:border-t-0">
+        <dt className="micro text-newsprint-gray">How you pay</dt>
+        <dd className="mt-2 text-[18px] font-medium text-press-black">{payment.value}</dd>
+        <dd className="mt-1 text-[13px] leading-snug text-newsprint-gray">
+          {payment.note}, on {network}.
+        </dd>
+      </div>
+      <div className="border-t hairline border-slate-verdant/30 p-5 sm:border-l sm:border-t-0">
+        <dt className="micro text-newsprint-gray">Registry reputation</dt>
+        <dd className="mt-2 text-[18px] font-medium text-press-black">{score ? `Score ${score}` : 'No score yet'}</dd>
+        <dd className="mt-1 text-[13px] leading-snug text-newsprint-gray">
+          {reviews > 0 ? `${formatNumber(reviews)} on-chain review${reviews === 1 ? '' : 's'}` : 'No on-chain reviews yet'}
+        </dd>
+      </div>
+    </dl>
+  )
+}
+
+// the skills an agent publishes, told as what it does and what to send, so a buyer can
+// hire it without reading a schema
+function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['skills']>; jobSeller: boolean }) {
+  // the job protocol's own steps are plumbing, so they are named once rather than listed as work
+  const work = skills.filter((s) => !isJobStepSkill(s, skills))
+  const alsoJobs = work.length > 0 && work.length < skills.length
+  return (
+    <section className="rounded-[14px] border hairline border-slate-verdant/40 p-6 sm:p-8">
+      <h2 className="font-serif text-[26px] font-medium leading-tight text-press-black">What it does and how to use it</h2>
+      {skills.length === 0 ? (
+        <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
+          This agent publishes no skill list, so its description above is all it says about itself.
+          Its endpoints are under On-chain details.
+        </p>
+      ) : jobSeller ? (
+        <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
+          It works through ERC-8183 jobs: it quotes a price, you fund escrow on-chain, and it delivers
+          against the job. Its description above says what the work is.
+        </p>
+      ) : null}
+      {!jobSeller && work.length > 0 && (
+        <div className="mt-2 divide-y hairline divide-slate-verdant/25">
+          {work.map((s) => (
+            <SkillBlock key={s.id ?? s.name ?? 'skill'} skill={s} />
+          ))}
+        </div>
+      )}
+      {!jobSeller && alsoJobs && (
+        <p className="border-t hairline border-slate-verdant/25 pt-4 text-[13px] leading-relaxed text-newsprint-gray">
+          It also sells the same work through ERC-8183 jobs, for buyers who want payment held in escrow
+          until delivery.
+        </p>
+      )}
+    </section>
+  )
+}
+
+function SkillBlock({ skill: s }: { skill: NonNullable<AgentDetail['skills']>[number] }) {
+  const inputs = s.inputSchema?.properties ? Object.entries(s.inputSchema.properties) : []
+  const outputs = s.outputSchema?.properties ? Object.entries(s.outputSchema.properties) : []
+  const example = s.inputSchema?.examples?.[0]
+  return (
+    <div className="py-6">
+      <h3 className="text-[17px] font-medium text-press-black">{s.name ?? s.id ?? 'Skill'}</h3>
+      {s.description ? <p className="mt-1.5 text-sm leading-relaxed text-newsprint-gray">{s.description}</p> : null}
+      {(inputs.length > 0 || outputs.length > 0) && (
+      <div className="mt-4 grid gap-5 md:grid-cols-2">
+        {inputs.length > 0 && (
+          <div>
+            <p className="micro text-newsprint-gray">You send</p>
+            <FieldList fields={inputs} required={s.inputSchema?.required ?? []} />
+          </div>
+        )}
+        {outputs.length > 0 && (
+          <div>
+            <p className="micro text-newsprint-gray">You get back</p>
+            <FieldList fields={outputs} required={[]} />
+          </div>
+        )}
+      </div>
+      )}
+      {example ? (
+        <div className="mt-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="micro text-newsprint-gray">Example you can send as is</p>
+            <CopyButton text={JSON.stringify(example)} />
+          </div>
+          <pre className="mt-2 overflow-x-auto rounded-[10px] border hairline border-slate-verdant/30 bg-echo-green/30 p-3 font-mono text-[12px] leading-relaxed text-press-black">
+            {JSON.stringify(example, null, 2)}
+          </pre>
+        </div>
+      ) : null}
+      {!s.inputSchema && s.examples && s.examples.length > 0 && (
+        <div className="mt-4">
+          <p className="micro text-newsprint-gray">Try asking</p>
+          <ul className="mt-2 space-y-1.5">
+            {s.examples.map((e) => (
+              <li key={e} className="flex items-start justify-between gap-3 text-[14px] leading-relaxed text-press-black">
+                <span>&ldquo;{e}&rdquo;</span>
+                <CopyButton text={e} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {!s.inputSchema && s.inputModes && s.inputModes.length > 0 && (
+        <p className="mt-3 text-[12px] text-newsprint-gray">Send it {inputModeWords(s.inputModes)}</p>
+      )}
+    </div>
+  )
+}
+
+// a buyer reads formats, not MIME types
+function inputModeWords(modes: string[]): string {
+  const words = modes.map((m) =>
+    m === 'text/plain' || m === 'text' ? 'plain text' : m === 'application/json' || m === 'data' ? 'JSON' : m,
+  )
+  return [...new Set(words)].join(' or ')
+}
+
+function FieldList({
+  fields,
+  required,
+}: {
+  fields: [string, { type?: string; description?: string }][]
+  required: string[]
+}) {
+  return (
+    <dl className="mt-2 space-y-2">
+      {fields.map(([field, meta]) => (
+        <div key={field}>
+          <dt className="flex flex-wrap items-baseline gap-2">
+            <span className="font-mono text-[13px] text-press-black">{field}</span>
+            {meta.type ? <span className="text-[11px] text-newsprint-gray">{meta.type}</span> : null}
+            {required.includes(field) ? (
+              <span className="text-[11px] font-medium text-press-black">required</span>
+            ) : null}
+          </dt>
+          {meta.description ? <dd className="text-[13px] leading-snug text-newsprint-gray">{meta.description}</dd> : null}
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void navigator.clipboard?.writeText(text).then(() => {
+          setCopied(true)
+          window.setTimeout(() => setCopied(false), 1500)
+        })
+      }}
+      className="micro shrink-0 rounded-[5px] border hairline border-slate-verdant/40 px-2.5 py-1 text-newsprint-gray transition hover:border-press-black/50 hover:text-press-black focus-visible:outline-2 focus-visible:outline-press-black"
+    >
+      {copied ? 'Copied' : 'Copy'}
+    </button>
   )
 }
 
@@ -849,7 +933,7 @@ function BoostPanel({
   if (alreadyBoosted) {
     return (
       <div className="mt-6 rounded-[10px] border hairline border-highlighter-green/40 p-4">
-        <p className="micro text-highlighter-green">Boosted listing</p>
+        <p className="micro text-green-ink">Boosted listing</p>
         <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
           This agent sorts higher on the marketplace while the boost is active.
         </p>
@@ -867,7 +951,7 @@ function BoostPanel({
       {status && !status.eligible && (
         <ul className="mt-3 space-y-1 text-[11px] text-newsprint-gray">
           {status.checks.map((c) => (
-            <li key={c.key} className={c.ok ? 'text-highlighter-green' : 'text-press-black'}>
+            <li key={c.key} className={c.ok ? 'text-green-ink' : 'text-press-black'}>
               {c.ok ? '✓' : '·'} {c.label}
               {!c.ok && c.detail ? ` · ${c.detail}` : ''}
             </li>
@@ -883,7 +967,7 @@ function BoostPanel({
         type="button"
         onClick={() => void boost()}
         disabled={phase === 'busy' || (status !== null && !status.eligible)}
-        className="micro mt-3 w-full rounded-[5px] border hairline border-highlighter-green/50 px-3 py-2 text-highlighter-green transition hover:bg-highlighter-green/10 disabled:opacity-50"
+        className="micro mt-3 w-full rounded-[5px] border hairline border-highlighter-green/50 px-3 py-2 text-green-ink transition hover:bg-highlighter-green/10 disabled:opacity-50"
       >
         {phase === 'busy'
           ? 'Activating…'
@@ -1008,7 +1092,7 @@ function HirePanel({
           {step === 'preview' ? (
             <div className="mt-4 space-y-2">
               {shortForHire && (
-                <p className="rounded-[10px] border border-highlighter-green/40 bg-highlighter-green/10 p-3 text-xs leading-relaxed text-highlighter-green">
+                <p className="rounded-[10px] border border-highlighter-green/40 bg-highlighter-green/10 p-3 text-xs leading-relaxed text-green-ink">
                   This wallet does not hold enough sUSD for the ${option.amountUsd} hire. Get 10
                   free below, then sign.
                 </p>
@@ -1081,7 +1165,7 @@ function HirePanel({
 
       {step === 'hired' && result && (
         <div className="rounded-[10px] border hairline border-highlighter-green/50 p-4">
-          <p className="micro text-highlighter-green">Agent activated</p>
+          <p className="micro text-green-ink">Agent activated</p>
           <div className="mt-3 space-y-2 text-xs">
             <Row label="Payment" value={result.paymentId} mono />
             {receipt && (
@@ -1131,7 +1215,7 @@ function HirePanel({
           {/* 0xe450d38c is ERC20InsufficientBalance. A raw viem revert string is
               not an explanation, so name the cause and point at what fixes it. */}
           {/e450d38c|InsufficientBalance|insufficient balance/i.test(error) && (
-            <p className="mt-2 rounded-[10px] border border-highlighter-green/40 bg-highlighter-green/10 p-3 text-xs leading-relaxed text-highlighter-green">
+            <p className="mt-2 rounded-[10px] border border-highlighter-green/40 bg-highlighter-green/10 p-3 text-xs leading-relaxed text-green-ink">
               That failed because this wallet does not hold enough sUSD. Get 10 free below, then
               try again.
             </p>
@@ -1415,12 +1499,11 @@ function DeliveryPanel({
           )}
           {offer === 'refund' && (
             <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
-              The job is still Funded, so there is nothing to complete yet. Your hires page
-              can reject it. The payment reached the agent when you signed and is not returned.
+              Nothing to complete yet: the job is still Funded. You can reject it from Ongoing. The payment reached the agent when you signed and is not returned.
             </p>
           )}
           {completeNote && (
-            <p className="mt-2 text-[11px] leading-relaxed text-highlighter-green">
+            <p className="mt-2 text-[11px] leading-relaxed text-green-ink">
               {completeNote}
             </p>
           )}
@@ -1636,7 +1719,7 @@ function BigMetric({ label, value, accent, note }: { label: string; value: strin
   return (
     <div>
       <div className="micro text-newsprint-gray">{label}</div>
-      <div className={`mt-2 truncate font-serif text-[28px] leading-none ${accent ? 'text-highlighter-green' : 'text-press-black'}`}>
+      <div className={`mt-2 truncate font-serif text-[28px] leading-none ${accent ? 'text-green-ink' : 'text-press-black'}`}>
         {value}
       </div>
       {note ? <div className="micro mt-2 text-newsprint-gray">{note}</div> : null}
