@@ -47,7 +47,7 @@ function toCandidate(
   return {
     agent_id: agent.agent_id,
     token_id: String(agent.token_id),
-    chain_id: agent.chain_id ?? 56,
+    chain_id: agent.chain_id ?? targetChainId(),
     name: agent.name,
     description: agent.description ?? null,
     category,
