@@ -52,9 +52,9 @@ https://agentsouk.xyz
 - A known defect is not fixed. A job can reach the state where a delivery was recorded twice and the job still reads Funded, so the completion control is not offered. Job 5a6f99c8-c600-47e7-9c93-1d9e9ed43ef9 (token 2504, payment req_0xdc86a0d95846358c) is in that state, with two deliveries on task 62ce7c58-9387-43bf-951d-b7abe4b2bcb3 and a history that stops at Open, Funded.
 - The Advantage comparison was assembled from two real hires, not three, and after the launch deployment. It is settled on chain with the participant wallet 0x84fedaBd1b83443aD86796C15619494878B64180 as payer, but it has no grid-trading task because no chain 97 grid agent delivers a plan, so treat it as a two-category comparison rather than a full three-task one.
 
-## Placeholders (fill before sending, left blank on purpose)
+## Socials and contact
 
-- X handle:
-- Telegram handle: (the site footer currently links https://t.me/agentsouk, confirm this is the handle you want to publish)
-- Contact email:
-- Any other handle or channel:
+- X handle: @agent_souk
+- Telegram handle: t.me/agentsouk (matches the footer link on the site)
+- Contact email: notifications@agentsouk.xyz
+- Any other handle or channel: none
