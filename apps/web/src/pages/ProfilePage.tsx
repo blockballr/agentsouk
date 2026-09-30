@@ -11,43 +11,18 @@ import {
 } from '../lib/api'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
+import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
 
 type HiresSource = 'postgres' | 'memory' | null
-
-const verificationTone: Record<string, string> = {
-  delivered: 'border-highlighter-green/50 text-highlighter-green',
-  gated: 'border-slate-verdant/40 text-slate-verdant',
-  dead: 'border-press-black/30 text-press-black',
-  unreachable: 'border-slate-verdant/45 text-newsprint-gray',
-}
 
 function categoryLabel(key: string): string {
   return CATEGORIES.find((c) => c.key === key)?.label ?? (key === 'general' ? 'General' : key)
 }
 
-function verificationLabel(agent: OwnedAgent): string {
-  const status = agent.verification?.status
-  if (!status) return 'Not checked'
-  if (status === 'delivered') return 'Endpoint answered'
-  if (status === 'gated') return 'Endpoint gated'
-  if (status === 'dead') return 'Endpoint did not answer'
-  return 'Endpoint unreachable'
-}
-
-function endpointLabel(agent: OwnedAgent): string {
-  const status = agent.verification?.status
-  if (!status) return 'Not checked yet'
-  if (status === 'delivered') return 'Answered'
-  if (status === 'gated') return 'Answered, gated'
-  if (status === 'dead') return 'Did not answer'
-  return 'Unreachable'
-}
-
-function modeLabel(mode: PayeeHire['mode']): string {
-  if (mode === 'prod') return 'on-chain settlement'
-  if (mode === 'b402') return 'B402 settlement'
-  return 'sandbox settlement'
+// a buyer's hire, as opposed to our own checks, the lister's test hires or a team wallet
+function isCustomer(h: PayeeHire): boolean {
+  return !h.payer || h.payer === 'buyer'
 }
 
 // a stored amount is raw base units; format it only when the asset's decimals are known
@@ -60,11 +35,33 @@ function formatHireAmount(hire: PayeeHire): string {
   }
 }
 
+// real settlements only, summed per chain and asset, so a sandbox receipt never counts as
+// money and U on one chain never adds into sUSD on another
+function earnedLabel(list: PayeeHire[]): string {
+  const totals = new Map<string, { symbol: string; raw: bigint; decimals: number | null; count: number }>()
+  for (const h of list) {
+    if (h.mode === 'sandbox') continue
+    const key = `${h.chainId}:${h.symbol}`
+    const entry = totals.get(key) ?? { symbol: h.symbol, raw: BigInt(0), decimals: h.decimals, count: 0 }
+    try {
+      entry.raw += BigInt(h.amount)
+    } catch {
+      // an unreadable amount is left out rather than guessed
+    }
+    entry.count += 1
+    totals.set(key, entry)
+  }
+  if (totals.size === 0) return 'nothing yet'
+  return [...totals.values()]
+    .map((e) => (e.decimals === null ? `${e.count} ${e.symbol} payments` : `${formatUnits(e.raw, e.decimals)} ${e.symbol}`))
+    .join(' + ')
+}
+
 // a memory-mode store only knows what this instance recorded, so a total from it is a
 // floor rather than the truth; a durable zero is a real zero
 function receivedLabel(received: number, source: HiresSource): string {
   if (source === 'postgres') return String(received)
-  if (source === 'memory') return received > 0 ? `${received} seen here` : 'Unavailable on this instance'
+  if (source === 'memory') return received > 0 ? `${received} seen here` : 'Unavailable here'
   return 'Unavailable'
 }
 
@@ -130,10 +127,12 @@ export function ProfilePage() {
   }
 
   const agents = owned?.agents ?? []
-  const receivedByToken = new Map<string, number>()
-  for (const h of hires ?? []) {
+  // only buyers count as hires received; our checks and self-tests would inflate it
+  const customerHires = (hires ?? []).filter(isCustomer)
+  const byToken = new Map<string, PayeeHire[]>()
+  for (const h of customerHires) {
     const key = `${h.chainId}:${h.tokenId}`
-    receivedByToken.set(key, (receivedByToken.get(key) ?? 0) + 1)
+    byToken.set(key, [...(byToken.get(key) ?? []), h])
   }
   const settledChain = hires?.[0]?.chainId ?? owned?.chainId ?? null
 
@@ -151,20 +150,22 @@ export function ProfilePage() {
               {owned.counts.agents === 1 ? 'listing' : 'listings'}
             </span>
             {hiresSource === 'postgres' && hires && (
-              <span>
-                <strong className="text-press-black">{hires.length}</strong>{' '}
-                {hires.length === 1 ? 'hire' : 'hires'} received
-              </span>
+              <>
+                <span>
+                  <strong className="text-press-black">{customerHires.length}</strong>{' '}
+                  {customerHires.length === 1 ? 'buyer hire' : 'buyer hires'}
+                </span>
+                <span>
+                  earned <strong className="text-press-black">{earnedLabel(customerHires)}</strong>
+                </span>
+              </>
             )}
           </div>
         )}
       </div>
 
       <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        What you listed, whether the verifier reached it, and who hired it. Read
-        from the registry and the verifier&apos;s own record for the wallet you
-        connect. Registration is your own transaction; this is where you watch it
-        land and get hired.
+        What you have listed, whether it answers our checks, and who has hired it.
       </p>
 
       {!account && (
@@ -173,8 +174,7 @@ export function ProfilePage() {
             Connect the wallet you listed with.
           </p>
           <p className="mt-2 text-[13px] text-newsprint-gray">
-            A listing belongs to the wallet the registry records as owner.
-            Without a connection we cannot tell which listings are yours.
+            A listing belongs to the wallet the registry records as its owner.
           </p>
           <button
             type="button"
@@ -217,9 +217,7 @@ export function ProfilePage() {
                   This wallet owns no listed agents on this chain yet.
                 </p>
                 <p className="mt-2 text-[13px] text-newsprint-gray/80">
-                  If you registered just now, the catalogue reads the chain again
-                  within a minute, and the listing appears here once it has a
-                  callable endpoint and a category the classifier assigns.
+                  Just registered? The catalogue reads the chain again within a minute, and a listing shows once it has an endpoint we can call.
                 </p>
                 <Link
                   to="/list"
@@ -234,7 +232,8 @@ export function ProfilePage() {
               <OwnedAgentCard
                 key={`${agent.chainId}:${agent.tokenId}`}
                 agent={agent}
-                received={receivedByToken.get(`${agent.chainId}:${agent.tokenId}`) ?? 0}
+                received={byToken.get(`${agent.chainId}:${agent.tokenId}`)?.length ?? 0}
+                earned={earnedLabel(byToken.get(`${agent.chainId}:${agent.tokenId}`) ?? [])}
                 source={hiresSource}
                 onRechecked={() => void load()}
               />
@@ -251,9 +250,7 @@ export function ProfilePage() {
           <div className="mt-16 rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-8">
             <h2 className="font-serif text-2xl font-medium">List another agent</h2>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-newsprint-gray">
-              The wizard registers straight from your wallet with one
-              transaction, and the registry records you as owner. A new listing
-              shows up here once the catalogue reads the chain again.
+              One transaction from your wallet registers it, with you as the owner.
             </p>
             <Link
               to="/list"
@@ -271,17 +268,20 @@ export function ProfilePage() {
 function OwnedAgentCard({
   agent,
   received,
+  earned,
   source,
   onRechecked,
 }: {
   agent: OwnedAgent
   received: number
+  earned: string
   source: HiresSource
   onRechecked: () => void
 }) {
   const explorer = explorerTxBase(agent.chainId)
   const registryUrl = `${explorer}/token/${agent.contractAddress}?a=${agent.tokenId}`
   const verification = agent.verification
+  const verdict = verdictFor(agent.chainId, verification)
   const [rechecking, setRechecking] = useState(false)
   const [recheckNote, setRecheckNote] = useState<string | null>(null)
   const [recheckError, setRecheckError] = useState<string | null>(null)
@@ -310,57 +310,36 @@ function OwnedAgentCard({
 
   return (
     <article className="rounded-[14px] border hairline border-slate-verdant/40 p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <Link
+        to={`/agents/${agent.chainId}/${agent.tokenId}`}
+        className="font-serif text-[22px] leading-tight text-press-black hover:underline"
+      >
+        {agent.name}
+      </Link>
+      <p className="mt-1 text-[12px] text-newsprint-gray">
+        {categoryLabel(agent.category)} · agent #{agent.tokenId}
+        {!agent.isActive ? ' · inactive' : ''}
+      </p>
+      <p className="mt-4 flex items-center gap-2 text-[14px]" title={verdict.explain}>
+        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[verdict.tone]}`} />
+        <span className="font-medium text-press-black">{verdict.label}</span>
+        {verification ? <span className="text-newsprint-gray">· checked {timeAgo(verification.checkedAt)}</span> : null}
+      </p>
+      <dl className="mt-4 grid grid-cols-2 gap-3 text-[13px]">
         <div>
-          <Link
-            to={`/agents/${agent.chainId}/${agent.tokenId}`}
-            className="font-serif text-[22px] leading-tight text-press-black transition hover:text-highlighter-green"
-          >
-            {agent.name}
-          </Link>
-          <p className="micro mt-2 text-newsprint-gray">
-            {categoryLabel(agent.category)} · token #{agent.tokenId}
-            {!agent.isActive ? ' · inactive' : ''}
-          </p>
+          <dt className="micro text-newsprint-gray">Buyer hires</dt>
+          <dd className="mt-0.5 text-press-black">{receivedLabel(received, source)}</dd>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={`micro rounded-full border hairline px-2.5 py-1 ${
-              verification ? verificationTone[verification.status] : 'border-slate-verdant/45 text-newsprint-gray'
-            }`}
-          >
-            {verificationLabel(agent)}
-          </span>
-          {agent.x402Supported ? (
-            <span className="micro rounded-full border hairline border-highlighter-green/40 px-2.5 py-1 text-highlighter-green">
-              x402
-            </span>
-          ) : null}
-        </div>
-      </div>
-
-      <dl className="mt-5 grid gap-3 text-[13px] text-newsprint-gray">
-        <div className="flex items-baseline justify-between gap-4">
-          <dt className="micro shrink-0">Last checked</dt>
-          <dd className="text-right text-press-black">
-            {verification ? timeAgo(verification.checkedAt) : 'Not checked yet'}
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-4">
-          <dt className="micro shrink-0">Endpoint</dt>
-          <dd className="text-right text-press-black">{endpointLabel(agent)}</dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-4">
-          <dt className="micro shrink-0">Hires received</dt>
-          <dd className="text-right text-press-black">{receivedLabel(received, source)}</dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-4">
-          <dt className="micro shrink-0">Grade</dt>
-          <dd className="text-right text-press-black">
-            {verification?.quality ? `${verification.quality.grade} · ${verification.quality.reason}` : 'n/a'}
-          </dd>
+        <div>
+          <dt className="micro text-newsprint-gray">Earned</dt>
+          <dd className="mt-0.5 text-press-black">{earned}</dd>
         </div>
       </dl>
+      {verification?.quality ? (
+        <p className="mt-3 text-[12px] leading-relaxed text-newsprint-gray">
+          Graded {verification.quality.grade}: {verification.quality.reason}
+        </p>
+      ) : null}
 
       {agent.failingSince ? (
         <p className="mt-5 rounded-[8px] border hairline border-press-black/20 bg-bone-white p-3 text-[12px] leading-relaxed text-press-black">
@@ -393,9 +372,6 @@ function OwnedAgentCard({
             {rechecking ? 'Probing...' : 'Re-check now'}
           </button>
         ) : null}
-        <span className="font-mono text-[11px] text-newsprint-gray">
-          {shortAddress(agent.contractAddress, 8)}
-        </span>
       </div>
 
       {recheckNote ? (
@@ -420,140 +396,129 @@ function HiresPanel({
   chainId: number | null
 }) {
   const network = chainId ? chainLabel(chainId) : null
-  // A live session is still spending; an ended one is history. They read
-  // differently, so the panel keeps them apart rather than interleaving them.
-  // our probes and the lister's own test hires are kept out of the customer lists
-  const customers = (hires ?? []).filter((h) => !h.payer || h.payer === 'buyer')
-  const others = (hires ?? []).filter((h) => h.payer && h.payer !== 'buyer')
-  const active = customers.filter((h) => h.active)
-  const ended = customers.filter((h) => !h.active)
+  const customers = (hires ?? []).filter(isCustomer)
+  const others = (hires ?? []).filter((h) => !isCustomer(h))
+  // one block per agent, busiest first, so a lister reads which agent earns
+  const byAgent = new Map<string, PayeeHire[]>()
+  for (const h of customers) {
+    const key = `${h.chainId}:${h.tokenId}`
+    byAgent.set(key, [...(byAgent.get(key) ?? []), h])
+  }
+  const agentGroups = [...byAgent.values()].sort((a, b) => b.length - a.length)
   return (
     <div className="mt-16">
-      <p className="micro text-newsprint-gray">Hires received</p>
-      <h2 className="mt-4 font-serif text-[32px] font-medium tracking-[-0.02em]">
-        Who hired your agents.
-      </h2>
-      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        Payments settled to the wallet you connect
-        {network ? ` on ${network}` : ''}, which is the receiving wallet a hire
-        pays unless the listing names a separate agent wallet. A hire records a
-        payer and a payee, and this reads the payee side, so it answers
-        &quot;did anyone hire me&quot; rather than &quot;what did I hire&quot;.
+      <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">Who hired your agents</h2>
+      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
+        Payments to this wallet{network ? ` on ${network}` : ''}. Our checks and your own test hires
+        are kept apart from buyers.
       </p>
 
       {error && (
-        <p className="mt-6 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-xs text-press-black">
+        <p role="alert" className="mt-6 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-[13px] text-press-black">
           {error}
         </p>
       )}
 
       {source === 'memory' && (
-        <p className="mt-6 rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 text-xs leading-relaxed text-newsprint-gray">
-          This server instance keeps receipts in memory only, so it cannot state
-          a reliable total. Only payments it recorded itself are listed below;
-          the true figure may be higher.
+        <p className="mt-6 rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 text-[13px] leading-relaxed text-newsprint-gray">
+          This server keeps receipts in memory only, so the list below may be incomplete.
         </p>
       )}
 
-      {source === 'postgres' && hires && customers.length === 0 && (
+      {hires && customers.length === 0 && (
         <p className="mt-6 text-[15px] text-newsprint-gray">
-          No buyer has hired your agents yet. Their payments appear here.
+          {source === 'memory'
+            ? 'Nothing recorded on this server, which is not proof that nobody hired you.'
+            : 'No buyer has hired your agents yet. Their payments appear here.'}
         </p>
       )}
 
-      {source === 'memory' && hires && customers.length === 0 && (
-        <p className="mt-6 text-[15px] text-newsprint-gray">
-          Nothing recorded on this instance, which is not proof that nobody
-          hired you.
-        </p>
-      )}
-
-      {active.length > 0 && (
-        <div className="mt-6">
-          <p className="micro text-newsprint-gray">Active sessions · {active.length}</p>
-          <HireGrid hires={active} />
-        </div>
-      )}
-
-      {ended.length > 0 && (
-        <div className="mt-12">
-          <p className="micro text-newsprint-gray">Ended · {ended.length}</p>
-          <HireGrid hires={ended} />
-        </div>
-      )}
+      <div className="mt-6 space-y-6">
+        {agentGroups.map((list) => {
+          const first = list[0]
+          return (
+            <section key={`${first.chainId}:${first.tokenId}`} className="rounded-[14px] border hairline border-slate-verdant/40">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b hairline border-slate-verdant/25 px-5 py-4">
+                <Link
+                  to={`/agents/${first.chainId}/${first.tokenId}`}
+                  className="font-serif text-[22px] leading-tight text-press-black hover:underline"
+                >
+                  {first.agentName}
+                </Link>
+                <p className="text-[13px] text-newsprint-gray">
+                  {list.length} {list.length === 1 ? 'hire' : 'hires'} · earned{' '}
+                  <span className="text-press-black">{earnedLabel(list)}</span>
+                </p>
+              </div>
+              <ul className="divide-y hairline divide-slate-verdant/20">
+                {list.map((h) => (
+                  <HireLine key={h.paymentId} hire={h} />
+                ))}
+              </ul>
+            </section>
+          )
+        })}
+      </div>
 
       {others.length > 0 && (
-        <div className="mt-12">
-          <p className="micro text-newsprint-gray">Checks and test hires · {others.length}</p>
-          <HireGrid hires={others} />
-        </div>
+        <details className="group mt-8 rounded-[14px] border hairline border-slate-verdant/30">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+            <span className="text-[14px] text-press-black">
+              Checks and test hires <span className="text-newsprint-gray">· {others.length}</span>
+            </span>
+            <span aria-hidden="true" className="text-newsprint-gray transition group-open:rotate-180">
+              ▾
+            </span>
+          </summary>
+          <ul className="divide-y hairline divide-slate-verdant/20 border-t hairline border-slate-verdant/25">
+            {others.map((h) => (
+              <HireLine key={h.paymentId} hire={h} showAgent />
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   )
 }
 
-function HireGrid({ hires }: { hires: PayeeHire[] }) {
-  return (
-    <div className="mt-4 grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {hires.map((hire) => (
-        <HireRow key={hire.paymentId} hire={hire} />
-      ))}
-    </div>
-  )
-}
-
-function HireRow({ hire }: { hire: PayeeHire }) {
-  const explorer = explorerTxBase(hire.chainId)
+function HireLine({ hire, showAgent }: { hire: PayeeHire; showAgent?: boolean }) {
   // a sandbox hash is derived from the payment id, so only a real relayed
   // settlement links to a block explorer
   const canLinkTx = hire.mode === 'prod' && Boolean(hire.txHash)
+  const who =
+    hire.payer === 'check'
+      ? 'Agent Souk check'
+      : hire.payer === 'self'
+        ? 'Your own test'
+        : hire.payer === 'team'
+          ? 'Agent Souk team'
+          : null
   return (
-    <article className="rounded-[10px] border hairline border-slate-verdant/30 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Link
-            to={`/agents/${hire.chainId}/${hire.tokenId}`}
-            className="font-serif text-[20px] leading-none text-press-black transition hover:text-highlighter-green"
-          >
-            {hire.agentName}
-          </Link>
-          <p className="mt-2 text-[13px] text-newsprint-gray">
-            {hire.payer === 'check' ? (
-              <span className="text-press-black">Agent Souk check</span>
-            ) : hire.payer === 'self' ? (
-              <span className="text-press-black">Your own test</span>
-            ) : hire.payer === 'team' ? (
-              <span className="text-press-black">Agent Souk team</span>
-            ) : (
-              <>
-                paid by <span className="font-mono text-press-black">{shortAddress(hire.client)}</span>
-              </>
-            )}{' '}
-            · {formatHireAmount(hire)}{' '}
-            <span className="text-press-black">{hire.symbol}</span>{' '}
-            · {modeLabel(hire.mode)} · {timeAgo(hire.createdAt)}
-          </p>
-        </div>
-        <span
-          className={`micro rounded-full border hairline px-2.5 py-1 ${
-            hire.active
-              ? 'border-highlighter-green/50 text-highlighter-green'
-              : 'border-slate-verdant/45 text-newsprint-gray'
-          }`}
-        >
-          {hire.payer === 'check' ? 'check' : hire.active ? 'active session' : 'ended'}
+    <li className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-5 py-3 text-[13px]">
+      <span className="text-newsprint-gray">
+        {showAgent ? <span className="text-press-black">{hire.agentName} · </span> : null}
+        {who ? <span className="text-press-black">{who}</span> : <span className="font-mono text-press-black">{shortAddress(hire.client)}</span>}
+        {' paid '}
+        <span className="text-press-black">
+          {formatHireAmount(hire)} {hire.symbol}
         </span>
-      </div>
-      {canLinkTx && hire.txHash && (
-        <a
-          href={`${explorer}/tx/${hire.txHash}`}
-          target="_blank"
-          rel="noreferrer"
-          className="micro mt-3 inline-block text-newsprint-gray underline transition hover:text-press-black"
-        >
-          Settlement transaction
-        </a>
-      )}
-    </article>
+        {' · '}
+        {timeAgo(hire.createdAt)}
+        {hire.mode === 'sandbox' ? ' · test settlement' : ''}
+      </span>
+      <span className="flex items-center gap-4">
+        {hire.active && hire.payer !== 'check' ? <span className="text-press-black">Session live</span> : null}
+        {canLinkTx && hire.txHash ? (
+          <a
+            href={`${explorerTxBase(hire.chainId)}/tx/${hire.txHash}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-newsprint-gray underline decoration-newsprint-gray/40 underline-offset-4 hover:text-press-black"
+          >
+            Transaction ↗
+          </a>
+        ) : null}
+      </span>
+    </li>
   )
 }
