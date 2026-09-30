@@ -56,6 +56,12 @@ export function Footer() {
                 : `${chainLabel(target.chainId)} · chain ${target.chainId}`
               : 'Checking the network'}
           </p>
+          {target?.chainId === 97 && (
+            <p className="micro mt-3 text-muted-sage">
+              Mainnet cutover to chain 56 is planned; settlement stays on testnet
+              for this phase.
+            </p>
+          )}
           <p className="micro mt-3 text-muted-sage">
             <a
               href="https://t.me/agentsouk"
