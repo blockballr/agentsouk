@@ -1,17 +1,15 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   actOnJob,
   getHiresByWallet,
   getOngoing,
   retryTask,
-  type ActiveHireSession,
-  type Erc8183Job,
-  type HireTask,
   type OngoingBundle,
 } from '../lib/api'
 import { explorerTxBase } from '../lib/contracts'
 import { mergeSessions, stabiliseSessions } from '../lib/ongoing-merge'
+import { hireItems, hireState, readableResult, type HireGroup, type HireItem, type HireState } from '../lib/hire-state'
 import { hireErrorText } from '../lib/hire'
 import { connectWallet, getActiveAccount, getProvider } from '../lib/wallet'
 import { revokeRequestMessage } from '@agora/core'
@@ -55,23 +53,6 @@ async function revokeSessionWithCancel(
   return (body.onchain as RevokeOutcome | undefined) ?? null
 }
 
-const taskChip: Record<HireTask['status'], string> = {
-  ready: 'border-slate-verdant/50 text-newsprint-gray',
-  running: 'border-highlighter-green/50 text-highlighter-green',
-  delivered: 'border-highlighter-green/50 text-highlighter-green',
-  failed: 'border-press-black/30 text-press-black',
-  gated: 'border-press-black/30 text-newsprint-gray',
-}
-
-const jobChip: Record<Erc8183Job['status'], string> = {
-  Open: 'border-slate-verdant/50 text-newsprint-gray',
-  Funded: 'border-highlighter-green/50 text-highlighter-green',
-  Submitted: 'border-highlighter-green/50 text-highlighter-green',
-  Completed: 'border-highlighter-green/40 text-highlighter-green',
-  Rejected: 'border-press-black/30 text-press-black',
-  Expired: 'border-press-black/20 text-newsprint-gray',
-}
-
 function formatExpiry(iso: string): string {
   const ms = new Date(iso).getTime() - Date.now()
   if (ms <= 0) return 'expired'
@@ -80,12 +61,6 @@ function formatExpiry(iso: string): string {
   const hours = Math.floor(mins / 60)
   if (hours < 48) return `${hours}h ${mins % 60}m left`
   return new Date(iso).toLocaleString()
-}
-
-function sessionModeLabel(mode: ActiveHireSession['mode']): string {
-  if (mode === 'b402') return 'BNB Chain (x402)'
-  if (mode === 'prod') return 'Production'
-  return 'Sandbox facilitator'
 }
 
 function shortAddr(a: string): string {
@@ -211,58 +186,39 @@ export function OngoingPage() {
     }
   }
 
-  const sessions = data?.sessions ?? []
-  // Completed hires are history, not work in flight: they get their own section
-  // so a finished job is never mistaken for something still needing action.
-  const inflight = sessions.filter(({ job }) => job?.status !== 'Completed')
-  const completed = sessions.filter(({ job }) => job?.status === 'Completed')
-  const recent = data?.recentTasks ?? []
-  const counts = data?.counts
-  const recentPaymentIds = new Set(recent.map(({ task }) => task.paymentId))
-  const standaloneRevocations = Object.entries(revokeResults).filter(
-    ([paymentId]) => !recentPaymentIds.has(paymentId),
-  )
+  const items = hireItems(data)
+  const groups: { key: HireGroup; title: string; empty?: string }[] = [
+    { key: 'needs', title: 'Needs you' },
+    { key: 'progress', title: 'In progress' },
+    { key: 'finished', title: 'Finished' },
+  ]
+  // within a group the most pressing action leads: an OK to give, then a retry, then a first run
+  const ACTION_ORDER = { complete: 0, retry: 1, run: 2 } as const
+  const byGroup = (g: HireGroup) =>
+    items
+      .filter((i) => hireState(i).group === g)
+      .sort((a, b) => {
+        const x = hireState(a).action
+        const y = hireState(b).action
+        return (x ? ACTION_ORDER[x] : 3) - (y ? ACTION_ORDER[y] : 3)
+      })
+  const shownKeys = new Set(items.map((i) => i.key))
+  const standaloneRevocations = Object.entries(revokeResults).filter(([paymentId]) => !shownKeys.has(paymentId))
 
   return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
-      <p className="micro text-newsprint-gray">Your hires in flight</p>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
-        <h1 className="font-serif text-[clamp(40px,6vw,88px)] font-medium leading-[0.9] tracking-[-0.04em]">
-          Ongoing.
-        </h1>
-        {account && counts && (
-          <div className="flex flex-wrap gap-6 text-[13px] text-newsprint-gray">
-            <span>
-              <strong className="text-press-black">{counts.activeHires}</strong> active
-            </span>
-            <span>
-              <strong className="text-press-black">{counts.jobsFunded ?? 0}</strong> funded
-            </span>
-            <span>
-              <strong className="text-press-black">{counts.jobsSubmitted ?? 0}</strong> submitted
-            </span>
-            <span>
-              <strong className="text-press-black">{counts.jobsCompleted ?? 0}</strong> completed
-            </span>
-          </div>
-        )}
-      </div>
-
+    <section className="mx-auto max-w-[1100px] px-6 pb-24 pt-10">
+      <p className="micro text-newsprint-gray">Ongoing</p>
+      <h1 className="mt-4 font-serif text-[clamp(40px,6vw,88px)] font-medium leading-[0.9] tracking-[-0.04em]">
+        Your hires.
+      </h1>
       <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        Sessions and ERC-8183 jobs for the wallet you connect. Hire opens a job
-        (Funded), delivery submits it, you attest complete or reject. Settlement
-        still runs over x402 to the agent&apos;s own wallet.
+        Everything this wallet has hired. Anything waiting on you comes first.
       </p>
 
       {!account && (
-        <div className="mt-10 rounded-[14px] border hairline border-slate-verdant/40 p-10">
-          <p className="text-[15px] text-typesetter-ink">
-            Connect the wallet you hired with.
-          </p>
-          <p className="mt-2 text-[13px] text-newsprint-gray">
-            Ongoing is per-wallet. Without a connection we cannot tell which
-            hires are yours.
-          </p>
+        <div className="mt-10 rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:p-10">
+          <p className="text-[15px] text-press-black">Connect the wallet you hired with.</p>
+          <p className="mt-2 text-[13px] text-newsprint-gray">Hires are kept per wallet, so this is how we find yours.</p>
           <button
             type="button"
             onClick={onConnect}
@@ -275,325 +231,72 @@ export function OngoingPage() {
       )}
 
       {account && (
-        <p className="micro mt-6 text-newsprint-gray">
-          Showing hires for <span className="font-mono text-press-black">{shortAddr(account)}</span>
+        <p className="mt-6 text-[13px] text-newsprint-gray">
+          <span className="font-mono text-press-black">{shortAddr(account)}</span>
+          {groups.map((g) => {
+            const n = byGroup(g.key).length
+            if (n === 0) return ''
+            return g.key === 'needs' ? ` · ${n} ${n === 1 ? 'needs' : 'need'} you` : ` · ${n} ${g.title.toLowerCase()}`
+          })}
         </p>
       )}
 
       {error && (
-        <p className="mt-6 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-xs text-press-black">
+        <p role="alert" className="mt-6 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-[13px] text-press-black">
           {error}
         </p>
       )}
 
-      {account && (
-        <div className="mt-10 grid gap-4 xl:grid-cols-2">
-          {sessions.length === 0 && !error && (
-            <div className="rounded-[14px] border hairline border-slate-verdant/40 p-10 xl:col-span-2">
-              <p className="text-[15px] text-newsprint-gray">
-                No hires for this wallet.
-              </p>
-              <p className="mt-2 text-[13px] text-newsprint-gray/80">
-                Hire from the marketplace with this wallet. Sandbox and live
-                settlements both show up here while the session is open.
-              </p>
-              <Link
-                to="/agents"
-                className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95"
-              >
-                Browse agents
-              </Link>
-            </div>
-          )}
-
-          {inflight.map(({ session, task, job }) => (
-            <HireCard key={session.paymentId}>
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <Link
-                    to={`/agents/${session.chainId}/${session.tokenId}`}
-                    className="font-serif text-[28px] leading-none text-press-black hover:text-highlighter-green"
-                  >
-                    {session.agentName}
-                  </Link>
-                  <p className="micro mt-2 text-newsprint-gray">
-                    hire session · {formatExpiry(session.expiresAt)} ·{' '}
-                    {sessionModeLabel(session.mode)}
-                  </p>
-                  {job && (
-                    <p className="micro mt-2 flex flex-wrap items-center gap-2 text-newsprint-gray">
-                      <span>ERC-8183</span>
-                      <span
-                        className={`rounded-full border hairline px-2.5 py-1 ${jobChip[job.status]}`}
-                      >
-                        {job.status}
-                      </span>
-                      <span>budget ${job.budgetUsd}</span>
-                      {job.deliverable ? <span>deliverable on file</span> : null}
-                    </p>
-                  )}
-                  {/* the way through to the work: every card needs one, because a
-                      session with attempts left is meant to be used, not re-bought */}
-                  <Link
-                    to={`/agents/${session.chainId}/${session.tokenId}`}
-                    className="micro mt-3 inline-block rounded-[5px] bg-highlighter-green px-3 py-2 text-on-highlighter shadow transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
-                  >
-                    Open agent and run
-                  </Link>
-                </div>
-                <div className="text-right text-[13px] text-newsprint-gray">
-                  <div>
-                    spend cap{' '}
-                    <span className="text-press-black">${session.spendCapUsd}</span>
-                  </div>
-                  <div className="mt-1 font-mono text-[11px]">
-                    {session.paymentId.slice(0, 18)}…
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onRevoke(session.paymentId)}
-                    disabled={revokingId === session.paymentId}
-                    className="micro mt-3 rounded-[5px] border hairline border-press-black/30 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
-                  >
-                    {revokingId === session.paymentId ? 'Revoking…' : 'Revoke session'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-6 border-t hairline border-slate-verdant/30 pt-5">
-                {task ? (
-                  <TaskRow task={task} onRetry={onRetry} retrying={retryingId === task.id} />
-                ) : job ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-[14px] text-newsprint-gray">
-                      Job Funded. No delivery yet.
-                    </p>
-                    <Link
-                      to={`/agents/${session.chainId}/${session.tokenId}`}
-                      className="micro rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black"
-                    >
-                      Run a task
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="max-w-md text-[14px] text-newsprint-gray">
-                      No recorded run for this hire on this instance. Open the agent
-                      page to see the run panel and start a task.
-                    </p>
-                    <Link
-                      to={`/agents/${session.chainId}/${session.tokenId}`}
-                      className="micro rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black"
-                    >
-                      Open agent and run
-                    </Link>
-                  </div>
-                )}
-
-                {job && job.status === 'Submitted' && (
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => onJob(job.id, 'complete')}
-                      disabled={jobBusy === job.id}
-                      className="micro rounded-[5px] bg-highlighter-green px-3 py-2 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60"
-                    >
-                      Complete job
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onJob(job.id, 'reject')}
-                      disabled={jobBusy === job.id}
-                      className="micro rounded-[5px] border hairline border-press-black/30 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
-                {job && job.status === 'Funded' && (
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      onClick={() => onJob(job.id, 'reject')}
-                      disabled={jobBusy === job.id}
-                      className="micro rounded-[5px] border hairline border-press-black/30 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
-                    >
-                      Reject before work
-                    </button>
-                  </div>
-                )}
-                {job && (job.status === 'Completed' || job.status === 'Rejected') && (
-                  <p className="mt-3 text-[12px] text-newsprint-gray">
-                    Terminal · {job.status}
-                    {job.attestation ? ` · ${job.attestation}` : ''}
-                  </p>
-                )}
-              </div>
-            </HireCard>
-          ))}
+      {account && data && items.length === 0 && !error && (
+        <div className="mt-10 rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:p-10">
+          <p className="text-[15px] text-press-black">Nothing hired with this wallet yet.</p>
+          <p className="mt-2 text-[13px] text-newsprint-gray">Hire an agent and it shows up here while you use it.</p>
+          <Link
+            to="/agents"
+            className="micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95"
+          >
+            Browse agents
+          </Link>
         </div>
       )}
 
-      {account && (
-        <div className="mt-10">
-          <p className="micro text-newsprint-gray">
-            Completed{completed.length > 0 ? ` · ${completed.length}` : ''}
-          </p>
-          {completed.length === 0 ? (
-            <p className="mt-4 text-[13px] text-newsprint-gray">
-              No completed hires for this wallet yet. Attest a submitted job and it lands here,
-              with its deliverable and attestation on file.
-            </p>
-          ) : (
-            <div className="mt-4 grid gap-4 xl:grid-cols-2">
-              {completed.map(({ session, task, job }) => (
-                <HireCard key={session.paymentId}>
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <Link
-                        to={`/agents/${session.chainId}/${session.tokenId}`}
-                        className="font-serif text-[28px] leading-none text-press-black hover:text-highlighter-green"
-                      >
-                        {session.agentName}
-                      </Link>
-                      <p className="micro mt-2 text-newsprint-gray">
-                        hire session · {formatExpiry(session.expiresAt)} ·{' '}
-                        {sessionModeLabel(session.mode)}
-                      </p>
-                      {job && (
-                        <p className="micro mt-2 flex flex-wrap items-center gap-2 text-newsprint-gray">
-                          <span>ERC-8183</span>
-                          <span
-                            className={`rounded-full border hairline px-2.5 py-1 ${jobChip[job.status]}`}
-                          >
-                            {job.status}
-                          </span>
-                          <span>budget ${job.budgetUsd}</span>
-                          {job.deliverable ? <span>deliverable on file</span> : null}
-                        </p>
-                      )}
-                      <p className="micro mt-3 text-newsprint-gray">
-                        Terminal · Completed
-                        {job?.attestation ? ` · ${job.attestation}` : ''}
-                      </p>
-                    </div>
-                    <div className="text-right text-[13px] text-newsprint-gray">
-                      <div>
-                        spend cap{' '}
-                        <span className="text-press-black">${session.spendCapUsd}</span>
-                      </div>
-                      <div className="mt-1 font-mono text-[11px]">
-                        {session.paymentId.slice(0, 18)}…
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onRevoke(session.paymentId)}
-                        disabled={revokingId === session.paymentId}
-                        className="micro mt-3 rounded-[5px] border hairline border-press-black/30 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
-                      >
-                        {revokingId === session.paymentId ? 'Revoking…' : 'Revoke session'}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 border-t hairline border-slate-verdant/30 pt-5">
-                    {task ? (
-                      <TaskRow task={task} onRetry={onRetry} retrying={retryingId === task.id} />
-                    ) : (
-                      <p className="text-[14px] text-newsprint-gray">
-                        No recorded run for this hire on this instance.
-                      </p>
-                    )}
-                  </div>
-                </HireCard>
-              ))}
+      {account &&
+        groups.map((g) => {
+          const list = byGroup(g.key)
+          if (list.length === 0) return null
+          return (
+            <div key={g.key} className="mt-12">
+              <h2 className="micro text-newsprint-gray">
+                {g.title} · {list.length}
+              </h2>
+              <div className="mt-4 space-y-4">
+                {list.map((it) => (
+                  <HireRow
+                    key={it.key}
+                    item={it}
+                    state={hireState(it)}
+                    busy={jobBusy === it.job?.id || retryingId === it.task?.id || revokingId === it.key}
+                    revoking={revokingId === it.key}
+                    revoke={revokeResults[it.key]}
+                    onComplete={() => it.job && onJob(it.job.id, 'complete')}
+                    onReject={() => it.job && onJob(it.job.id, 'reject')}
+                    onRetry={() => it.task && onRetry(it.task.id)}
+                    onRevoke={() => onRevoke(it.key)}
+                  />
+                ))}
+              </div>
             </div>
-          )}
-        </div>
-      )}
+          )
+        })}
 
       {account && standaloneRevocations.length > 0 && (
-        <div className="mt-10">
-          <p className="micro text-newsprint-gray">Revocations</p>
+        <div className="mt-12">
+          <h2 className="micro text-newsprint-gray">Revoked</h2>
           <div className="mt-3 space-y-2">
             {standaloneRevocations.map(([paymentId, outcome]) => (
-              <div
-                key={paymentId}
-                className="rounded-[10px] border hairline border-slate-verdant/30 p-4"
-              >
-                <p className="micro font-mono text-press-black">{paymentId.slice(0, 18)}…</p>
+              <div key={paymentId} className="rounded-[10px] border hairline border-slate-verdant/30 p-4">
                 <RevokeNote outcome={outcome} chainId={outcome.chainId ?? 0} />
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {account && recent.length > 0 && (
-        <div className="mt-16">
-          <p className="micro text-newsprint-gray">Recent tasks (session ended)</p>
-          <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">
-            Ended sessions keep their agent, job and deliverable here. Revoke
-            closes the session in the ledger and cancels the buyer&apos;s
-            authorization on the settlement token when the stored payload and
-            relay key allow it; the cancellation transaction is linked below.
-          </p>
-          <div className="mt-6 grid gap-4 xl:grid-cols-2">
-            {recent.map(({ task, job }) => (
-              <article
-                key={task.id}
-                className="rounded-[10px] border hairline border-slate-verdant/30 p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <Link
-                      to={`/agents/${task.chainId}/${task.tokenId}`}
-                      className="font-serif text-[22px] leading-none text-press-black hover:text-highlighter-green"
-                    >
-                      {task.agentName}
-                    </Link>
-                    <p className="micro mt-2 text-newsprint-gray">
-                      chain {task.chainId} · token {task.tokenId} ·{' '}
-                      <span className="font-mono">{task.paymentId.slice(0, 18)}…</span>
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onRevoke(task.paymentId)}
-                    disabled={revokingId === task.paymentId}
-                    className="micro rounded-[5px] border hairline border-press-black/30 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
-                  >
-                    {revokingId === task.paymentId ? 'Revoking…' : 'Revoke session'}
-                  </button>
-                </div>
-
-                {revokeResults[task.paymentId] && (
-                  <RevokeNote
-                    outcome={revokeResults[task.paymentId]}
-                    chainId={task.chainId}
-                  />
-                )}
-
-                <div className="mt-4">
-                  <TaskRow task={task} onRetry={onRetry} retrying={retryingId === task.id} />
-                </div>
-
-                {job && (
-                  <p className="micro mt-3 text-newsprint-gray">
-                    job <span className="text-press-black">{job.status}</span>
-                    {job.budgetUsd ? ` · budget $${job.budgetUsd}` : ''}
-                    {job.deliverable ? ' · deliverable recorded' : ''}
-                    {job.attestation ? ` · ${job.attestation}` : ''}
-                  </p>
-                )}
-
-                <Link
-                  to={`/agents/${task.chainId}/${task.tokenId}`}
-                  className="micro mt-3 inline-block rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black"
-                >
-                  Open agent and session
-                </Link>
-              </article>
             ))}
           </div>
         </div>
@@ -602,72 +305,148 @@ export function OngoingPage() {
   )
 }
 
-// One hire card, shared by the in-flight grid and the completed section, so the
-// two lists cannot drift apart in what they show for the same hire.
-function HireCard({ children }: { children: ReactNode }) {
+const STATE_DOT: Record<HireGroup, string> = {
+  needs: 'bg-highlighter-green',
+  progress: 'bg-highlighter-green motion-safe:animate-pulse',
+  finished: 'border hairline border-newsprint-gray bg-transparent',
+}
+
+function HireRow({
+  item,
+  state,
+  busy,
+  revoking,
+  revoke,
+  onComplete,
+  onReject,
+  onRetry,
+  onRevoke,
+}: {
+  item: HireItem
+  state: HireState
+  busy: boolean
+  revoking: boolean
+  revoke?: RevokeOutcome
+  onComplete: () => void
+  onReject: () => void
+  onRetry: () => void
+  onRevoke: () => void
+}) {
+  const { session, task, job } = item
+  const agentHref = `/agents/${item.chainId}/${item.tokenId}`
+  const asked = task?.taskText ?? task?.tool
+  const primary =
+    'micro rounded-[5px] bg-highlighter-green px-4 py-2.5 text-on-highlighter shadow-sm transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black disabled:opacity-60'
+  const secondary =
+    'micro rounded-[5px] border hairline border-slate-verdant/50 px-4 py-2.5 text-press-black transition hover:border-press-black focus-visible:outline-2 focus-visible:outline-press-black disabled:opacity-60'
   return (
-    <article className="rounded-[14px] border hairline border-slate-verdant/40 p-6">
-      {children}
+    <article
+      className={`rounded-[14px] border hairline p-5 sm:p-6 ${
+        state.group === 'needs' ? 'border-press-black/35' : 'border-slate-verdant/35'
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+        <div className="min-w-0">
+          <Link to={agentHref} className="font-serif text-[24px] leading-tight text-press-black hover:underline">
+            {item.agentName}
+          </Link>
+          <p className="mt-1 flex items-center gap-2 text-[14px] font-medium text-press-black">
+            <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${STATE_DOT[state.group]}`} />
+            {state.label}
+          </p>
+          {state.note ? <p className="mt-1 text-[13px] text-newsprint-gray">{state.note}</p> : null}
+        </div>
+        <p className="text-[13px] text-newsprint-gray sm:text-right">
+          {item.live && session ? `${formatExpiry(session.expiresAt)} · $${session.spendCapUsd} cap` : 'Session ended'}
+          {session?.mode === 'sandbox' ? ' · test settlement' : ''}
+          {job ? <span className="block">Job budget ${job.budgetUsd}</span> : null}
+        </p>
+      </div>
+
+      {asked ? (
+        <p className="mt-4 text-[13px] text-newsprint-gray">
+          You asked: <span className="text-press-black">{asked.length > 160 ? `${asked.slice(0, 160)}…` : asked}</span>
+        </p>
+      ) : null}
+      {task?.error ? (
+        <p className="mt-2 text-[13px] leading-relaxed text-press-black">{task.error}</p>
+      ) : null}
+      {task?.result || job?.deliverable ? <ResultView text={task?.result ?? job?.deliverable ?? ''} /> : null}
+
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        {state.action === 'complete' && (
+          <>
+            <button type="button" onClick={onComplete} disabled={busy} className={primary}>
+              Complete job
+            </button>
+            <button type="button" onClick={onReject} disabled={busy} className={secondary}>
+              Reject
+            </button>
+          </>
+        )}
+        {state.action === 'retry' && (
+          <button type="button" onClick={onRetry} disabled={busy} className={primary}>
+            Retry delivery
+          </button>
+        )}
+        {state.action === 'run' ? (
+          <Link to={agentHref} className={primary}>
+            Run a task
+          </Link>
+        ) : item.live ? (
+          <Link to={agentHref} className={secondary}>
+            Open agent
+          </Link>
+        ) : null}
+        {job?.status === 'Funded' && task?.status !== 'running' && !task?.result && (
+          <button type="button" onClick={onReject} disabled={busy} className={secondary}>
+            Reject before work
+          </button>
+        )}
+        {/* only a live session can be revoked; an ended one has nothing left to spend */}
+        {item.live && (
+          <button
+            type="button"
+            onClick={onRevoke}
+            disabled={busy}
+            className="micro ml-auto px-1 py-2.5 text-newsprint-gray underline decoration-newsprint-gray/40 underline-offset-4 transition hover:text-press-black disabled:opacity-60"
+          >
+            {revoking ? 'Revoking…' : 'Revoke session'}
+          </button>
+        )}
+      </div>
+      {revoke ? <RevokeNote outcome={revoke} chainId={item.chainId} /> : null}
     </article>
   )
 }
 
-function TaskRow({
-  task,
-  onRetry,
-  retrying,
-  compact,
-}: {
-  task: HireTask
-  onRetry: (id: string) => void
-  retrying: boolean
-  compact?: boolean
-}) {
-  const canRetry = task.status === 'failed' && task.attempts < task.maxAttempts
+function ResultView({ text }: { text: string }) {
+  const r = readableResult(text)
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <span
-            className={`micro rounded-full border hairline px-2.5 py-1 ${taskChip[task.status]}`}
-          >
-            {task.status === 'running' ? 'task running' : task.status}
-          </span>
-          <span className="text-[13px] text-typesetter-ink">
-            {task.tool ?? task.taskText ?? 'awaiting first run'}
-          </span>
-        </div>
-        <span className="micro text-newsprint-gray">
-          attempt {task.attempts}/{task.maxAttempts}
-          {task.protocol ? ` · ${task.protocol}` : ''}
-        </span>
-      </div>
-
-      {task.quality && (
-        <p className="text-[12px] text-newsprint-gray">
-          quality <span className="text-press-black">{task.quality.grade}</span> (
-          {task.quality.score})
-          {task.quality.reason ? ` · ${task.quality.reason}` : ''}
+    <div className="mt-4 rounded-[10px] bg-echo-green/30 p-4">
+      <p className="micro text-newsprint-gray">Result</p>
+      {r.kind === 'fields' ? (
+        <dl className="mt-2 grid gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-[max-content_1fr]">
+          {r.fields.map(([k, v]) => (
+            <div key={k} className="contents">
+              <dt className="text-newsprint-gray">{k}</dt>
+              <dd className="break-words text-press-black">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <p className="mt-2 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-press-black">
+          {r.text.length > 600 ? `${r.text.slice(0, 600)}…` : r.text}
         </p>
       )}
-      {task.error && (
-        <p className="text-[12px] leading-relaxed text-press-black/80">{task.error}</p>
-      )}
-      {task.result && !compact && (
-        <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-[8px] border hairline border-slate-verdant/30 bg-bone-white p-3 font-mono text-[11px] leading-relaxed text-press-black">
-          {task.result.length > 500 ? `${task.result.slice(0, 500)}…` : task.result}
-        </pre>
-      )}
-      {canRetry && (
-        <button
-          type="button"
-          onClick={() => onRetry(task.id)}
-          disabled={retrying}
-          className="micro rounded-[5px] border hairline border-slate-verdant/50 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
-        >
-          {retrying ? 'Retrying…' : 'Retry delivery'}
-        </button>
-      )}
+      {r.kind === 'fields' || text.length > 600 ? (
+        <details className="mt-2">
+          <summary className="micro cursor-pointer text-newsprint-gray hover:text-press-black">Full result</summary>
+          <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-[8px] border hairline border-slate-verdant/30 bg-bone-white p-3 font-mono text-[11px] leading-relaxed text-press-black">
+            {text}
+          </pre>
+        </details>
+      ) : null}
     </div>
   )
 }
