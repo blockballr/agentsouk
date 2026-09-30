@@ -629,7 +629,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             value={draft.name}
             onChange={(e) => set('name', e.target.value)}
             disabled={busy || step !== 'form'}
-            className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-sm text-press-black disabled:opacity-60"
+            className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black disabled:opacity-60"
             placeholder="Venus Yield Router"
           />
         </label>
@@ -641,7 +641,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
             onChange={(e) => set('description', e.target.value)}
             disabled={busy || step !== 'form'}
             rows={4}
-            className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-sm text-press-black disabled:opacity-60"
+            className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black disabled:opacity-60"
             placeholder="What it does, and how a buyer invokes it."
           />
         </label>
@@ -683,7 +683,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
               value={draft.category}
               onChange={(e) => set('category', e.target.value as RegistrationDraft['category'])}
               disabled={busy || step !== 'form'}
-              className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-sm text-press-black disabled:opacity-60"
+              className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black disabled:opacity-60"
             >
               {CATEGORY_OPTIONS.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -702,7 +702,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
                 setProbe(null)
               }}
               disabled={busy || step !== 'form'}
-              className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-sm text-press-black disabled:opacity-60"
+              className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black disabled:opacity-60"
             >
               <option value="A2A">A2A</option>
               <option value="MCP">MCP</option>
@@ -720,7 +720,7 @@ export function RegisterWizard({ chainId }: { chainId: number }) {
               setProbe(null)
             }}
             disabled={busy || step !== 'form'}
-            className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-xs text-press-black disabled:opacity-60"
+            className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-base sm:text-xs text-press-black disabled:opacity-60"
             placeholder="https://your-agent.example/.well-known/agent-card.json"
           />
           <span className="mt-1 block text-xs text-newsprint-gray">

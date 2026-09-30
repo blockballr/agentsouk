@@ -67,7 +67,7 @@ export function Footer() {
               href="https://t.me/agentsouk"
               target="_blank"
               rel="noreferrer"
-              className="underline decoration-highlighter-green text-highlighter-green underline-offset-4 transition hover:decoration-bone-white"
+              className="inline-block py-3 underline decoration-highlighter-green text-highlighter-green underline-offset-4 transition hover:decoration-bone-white sm:py-0"
             >
               Agent Souk support on Telegram
             </a>

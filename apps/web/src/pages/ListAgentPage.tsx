@@ -93,12 +93,29 @@ export function ListAgentPage() {
         Agent Souk is the storefront and the verification layer. Three steps:
         build it, meet the checklist, check that you are on the market.
       </p>
+      {/* on a phone the wizard sits several screens down, so the page opens with a way to it */}
+      <div className="mt-8 flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={() => document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="micro min-h-11 rounded-[5px] bg-highlighter-green px-5 text-typesetter-ink transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        >
+          Register an agent
+        </button>
+        <button
+          type="button"
+          onClick={() => document.getElementById('token-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          className="micro min-h-11 rounded-[5px] border hairline border-slate-verdant/50 px-5 text-press-black transition hover:border-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        >
+          Already registered? Look it up
+        </button>
+      </div>
 
       <CreateSection chainId={chain} />
       {/* register straight from here, for a participant who would rather not
           install the CLI. Sits after the Studio path because both are valid and
           the Studio route is the one the brief describes. */}
-      <div className="mt-16">
+      <div id="register-here" className="mt-16 scroll-mt-4">
         <div className="border-t hairline border-slate-verdant/40 pt-8">
           <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
             Or register from here
@@ -616,7 +633,7 @@ function PromptGenerator({ chainId }: { chainId: number | null }) {
   }
 
   const inputClass =
-    'border hairline input-hairline w-full bg-bone-white px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
+    'border hairline input-hairline w-full bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
 
   return (
     <div className="mt-12 rounded-[14px] border hairline border-slate-verdant/40 p-8">
@@ -768,7 +785,7 @@ function LookupSection({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="45381, 56:45381, or https://8004scan.io/..."
-          className="border hairline input-hairline w-full max-w-md bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          className="border hairline input-hairline w-full max-w-md bg-transparent px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
         />
         <button
           type="submit"
@@ -819,7 +836,7 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
   const [error, setError] = useState<string | null>(null)
 
   const inputClass =
-    'border hairline input-hairline w-full bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
+    'border hairline input-hairline w-full bg-transparent px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()

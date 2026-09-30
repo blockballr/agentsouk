@@ -296,9 +296,9 @@ export function MarketplacePage() {
             value={q}
             onChange={(e) => setParam('q', e.target.value)}
             placeholder="Name, endpoint, tag"
-            className="border hairline input-hairline w-56 bg-transparent px-3 py-2 text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+            className="border hairline input-hairline w-56 bg-transparent px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
           />
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-1">
             {sorts.map((s) => (
               <button
                 key={s.key}
@@ -577,7 +577,7 @@ function AgentCard({
               <span className="micro text-muted-sage">
                 {agent.category === 'general' ? 'General' : (agent.category ?? '')}
               </span>
-              <h2 className="mt-1 truncate font-serif text-[22px] font-medium leading-tight tracking-[-0.02em]">
+              <h2 className="mt-1 line-clamp-2 break-words font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] sm:truncate">
                 {agent.name}
               </h2>
               <p className="mt-1 font-mono text-[11px] text-newsprint-gray">
@@ -661,7 +661,7 @@ function AgentCard({
         onClick={() => onToggleCart(key)}
         aria-label={inCart ? `Remove ${agent.name} from cart` : `Add ${agent.name} to cart`}
         title={inCart ? 'In cart' : 'Add to cart'}
-        className={`absolute right-[38px] top-3 z-10 flex h-[18px] w-[18px] items-center justify-center rounded-full border hairline transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-highlighter-green ${
+        className={`absolute right-[56px] top-3 z-10 flex h-[18px] w-[18px] items-center justify-center rounded-full border hairline before:absolute before:-inset-3 before:content-[''] sm:right-[38px] sm:before:-inset-1 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-highlighter-green ${
           inCart
             ? 'border-highlighter-green bg-highlighter-green text-typesetter-ink'
             : 'border-slate-verdant/50 bg-bone-white/90 text-newsprint-gray hover:border-highlighter-green'
@@ -679,7 +679,7 @@ function AgentCard({
       </button>
 
       <label
-        className={`absolute right-3 top-3 z-10 flex h-[18px] w-[18px] cursor-pointer items-center justify-center rounded-full border hairline transition-colors duration-150 focus-within:outline-2 focus-within:outline-highlighter-green ${
+        className={`absolute right-3 top-3 z-10 flex h-[18px] w-[18px] cursor-pointer items-center justify-center rounded-full border hairline before:absolute before:-inset-3 before:content-[''] sm:before:-inset-1 transition-colors duration-150 focus-within:outline-2 focus-within:outline-highlighter-green ${
           checked
             ? 'border-highlighter-green bg-highlighter-green'
             : 'border-slate-verdant/50 bg-bone-white/90 hover:border-highlighter-green'

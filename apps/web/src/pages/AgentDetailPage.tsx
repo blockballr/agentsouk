@@ -202,10 +202,21 @@ export function AgentDetailPage() {
     job: { id: string; status: JobStatus } | null
     task: HireTask | null
   } | null>(null)
+  // phones stack the hire panel under the details, so a bottom bar carries its
+  // action until the panel itself is on screen
+  const [hirePanel, setHirePanel] = useState<HTMLElement | null>(null)
+  const [hireInView, setHireInView] = useState(false)
 
   useEffect(() => {
     void getActiveAccount().then(setViewer)
   }, [])
+
+  useEffect(() => {
+    if (!hirePanel) return
+    const seen = new IntersectionObserver(([entry]) => setHireInView(entry.isIntersecting), { threshold: 0.1 })
+    seen.observe(hirePanel)
+    return () => seen.disconnect()
+  }, [hirePanel])
 
   // The agent's active session can only be seen by the instance that settled it,
   // because that ledger lives in memory. The wallet's own hires come from the
@@ -320,7 +331,18 @@ export function AgentDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 py-10">
+    <div className="mx-auto max-w-[1400px] px-6 pb-28 pt-10 lg:pb-10">
+      {!hireInView && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t hairline border-slate-verdant/40 bg-press-black px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
+          <button
+            type="button"
+            onClick={() => hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="micro flex min-h-11 w-full items-center justify-center rounded-[5px] bg-highlighter-green px-4 text-typesetter-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white"
+          >
+            {mySession ? 'Run a task in your session' : `Hire ${detail.name}`}
+          </button>
+        </div>
+      )}
       <Link
         to="/agents"
         className="micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
@@ -537,7 +559,10 @@ export function AgentDetailPage() {
           )}
         </div>
 
-        <aside className="h-fit rounded-[14px] border hairline border-slate-verdant/40 p-8 lg:sticky lg:top-8">
+        <aside
+          ref={setHirePanel}
+          className="h-fit scroll-mt-4 rounded-[14px] border hairline border-slate-verdant/40 p-8 lg:sticky lg:top-8"
+        >
           {activeSession && (
             <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
               <p className="micro text-press-black">Session active</p>
@@ -1287,7 +1312,7 @@ function DeliveryPanel({
       const updated = await actOnJob(job.id, 'complete', { reason: 'complete' })
       // only what the server confirmed: the returned job is the new state
       setJob({ id: updated.id, status: updated.status })
-      setCompleteNote('Completed. The deliverable is attested and the hire is settled.')
+      setCompleteNote('Completed. The deliverable is attested and the hire is closed.')
     } catch (e) {
       // the server's own reason, rather than a generic failure
       setCompleteError((e as Error).message)
@@ -1334,7 +1359,7 @@ function DeliveryPanel({
       )}
 
       {/* the buyer's task ends where the delivery happened: attest the Submitted
-          job here, with the full list and refund path one link away */}
+          job here, with the full list and its reject action one link away */}
       {job && (
         <div className="mt-3 rounded-[8px] border hairline border-slate-verdant/30 p-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1344,7 +1369,7 @@ function DeliveryPanel({
                 to="/ongoing"
                 className="micro text-newsprint-gray transition hover:text-press-black"
               >
-                Full list and refund path
+                All your hires
               </Link>
             )}
           </div>
@@ -1352,7 +1377,7 @@ function DeliveryPanel({
             <>
               <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
                 Your deliverable is recorded and the job is Submitted. Attest it complete
-                to settle this hire.
+                to close this hire.
               </p>
               <button
                 type="button"
@@ -1366,8 +1391,8 @@ function DeliveryPanel({
           )}
           {offer === 'refund' && (
             <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
-              The job is still Funded, so there is nothing to complete yet. The full list
-              has the reject and refund path.
+              The job is still Funded, so there is nothing to complete yet. Your hires page
+              can reject it. The payment reached the agent when you signed and is not returned.
             </p>
           )}
           {completeNote && (
@@ -1410,7 +1435,7 @@ function DeliveryPanel({
                   const t = tools.find((x) => x.name === e.target.value)
                   if (t) setArgsText(skeletonArgs(t.schema))
                 }}
-                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-[11px] text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-base sm:text-[11px] text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               >
                 {tools.map((t) => (
                   <option key={t.name} value={t.name}>
@@ -1427,7 +1452,7 @@ function DeliveryPanel({
                 rows={5}
                 spellCheck={false}
                 aria-label="Tool arguments as JSON"
-                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-[11px] leading-relaxed text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               />
               <button
                 type="button"
@@ -1446,7 +1471,7 @@ function DeliveryPanel({
                 rows={3}
                 placeholder="Describe the task for this agent…"
                 aria-label="Task description"
-                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-xs leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-xs leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
               />
               {/* some agents read a structured data part instead of prose; this stays
                   collapsed and empty by default so the text-only flow is unchanged */}
@@ -1465,7 +1490,7 @@ function DeliveryPanel({
                   spellCheck={false}
                   placeholder={'{"walletAddress":"0x..."}'}
                   aria-label="Structured input as JSON"
-                  className="mt-2 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-[11px] leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                  className="mt-2 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
                 />
                 {!structured.ok && (
                   <p className="mt-2 text-[11px] leading-relaxed text-press-black">
