@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import type { AgentDetail, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import {
   formatDate,
@@ -14,6 +14,7 @@ import {
 } from '@agora/core'
 import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
+import { questStepFor } from '../lib/quest'
 import { chainLabel } from '../lib/contracts'
 import {
   changeWallet,
@@ -204,6 +205,12 @@ function isOnchainSettlement(mode: ActiveSession['mode'] | undefined): boolean {
 
 export function AgentDetailPage() {
   const { chainId = '56', tokenId = '' } = useParams()
+  const [searchParams] = useSearchParams()
+  // a passport link opens the page ready for its step: a way back, and the run panel filled in
+  const quest = questStepFor(searchParams.get('quest'), Number(chainId), tokenId)
+  const questPrefill = quest
+    ? { task: quest.agent.task, input: quest.agent.input ? JSON.stringify(quest.agent.input) : undefined }
+    : undefined
   const [detail, setDetail] = useState<DetailWithSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -368,6 +375,17 @@ export function AgentDetailPage() {
       >
         ← Marketplace
       </Link>
+      {quest && (
+        <div role="note" className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-press-black px-4 py-3 text-sm">
+          <span>
+            Souk passport · <span className="font-medium">{quest.step.title} stamp</span> · +{quest.step.points}. Hire this agent,
+            then run the task already filled in below.
+          </span>
+          <Link to="/quest" className="micro underline underline-offset-4 transition hover:text-press-black">
+            Back to your passport
+          </Link>
+        </div>
+      )}
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[1fr_340px]">
         <div>
@@ -619,7 +637,7 @@ export function AgentDetailPage() {
               bought, so offering the hire again invites paying twice for it. */}
           {mySession ? (
             <div className="mt-6">
-              <DeliveryPanel paymentId={mySession.paymentId} onResult={setRunResult} />
+              <DeliveryPanel paymentId={mySession.paymentId} onResult={setRunResult} prefill={questPrefill} />
             </div>
           ) : jobSeller ? (
             <p role="note" className="mt-6 rounded-[8px] border hairline border-slate-verdant/45 p-3 text-xs leading-relaxed text-press-black">
@@ -632,7 +650,7 @@ export function AgentDetailPage() {
                   {hireWarning}
                 </p>
               )}
-              <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} />
+              <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} prefill={questPrefill} />
             </>
           )}
           {!jobSeller && (
@@ -905,11 +923,13 @@ function HirePanel({
   tokenId,
   name,
   onHired,
+  prefill,
 }: {
   chainId: string
   tokenId: string
   name: string
   onHired: () => void
+  prefill?: { task?: string; input?: string }
 }) {
   const [step, setStep] = useState<HireStep>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -1119,7 +1139,7 @@ function HirePanel({
               wallet.
             </p>
           )}
-          <DeliveryPanel paymentId={result.paymentId} />
+          <DeliveryPanel paymentId={result.paymentId} prefill={prefill} />
         </div>
       )}
 
@@ -1207,17 +1227,19 @@ interface JobAdvance {
 function DeliveryPanel({
   paymentId,
   onResult,
+  prefill,
 }: {
   paymentId: string
   onResult?: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
+  prefill?: { task?: string; input?: string }
 }) {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'blocked'>('idle')
   const [data, setData] = useState<DeliverData | null>(null)
   const [blocked, setBlocked] = useState<string | null>(null)
   const [tool, setTool] = useState('')
   const [argsText, setArgsText] = useState('{}')
-  const [taskText, setTaskText] = useState('')
-  const [inputText, setInputText] = useState('')
+  const [taskText, setTaskText] = useState(prefill?.task ?? '')
+  const [inputText, setInputText] = useState(prefill?.input ?? '')
   const [output, setOutput] = useState<string | null>(null)
   const [runError, setRunError] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
@@ -1499,7 +1521,7 @@ function DeliveryPanel({
               />
               {/* some agents read a structured data part instead of prose; this stays
                   collapsed and empty by default so the text-only flow is unchanged */}
-              <details className="rounded-[5px] border hairline border-slate-verdant/40 p-3">
+              <details open={prefill?.input ? true : undefined} className="rounded-[5px] border hairline border-slate-verdant/40 p-3">
                 <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
                   Add structured input (JSON)
                 </summary>

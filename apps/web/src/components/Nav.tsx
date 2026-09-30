@@ -3,6 +3,8 @@ import { Link, NavLink } from 'react-router-dom'
 import { Wordmark } from './Wordmark'
 import { ThemeToggle } from './ThemeToggle'
 import { cartCount, subscribe } from '../lib/cart'
+import { getQuestProgress, latestQuestProgress, readQuestMode, rememberQuestProgress, stampsFrom, subscribeQuest } from '../lib/quest'
+import { getActiveAccount } from '../lib/wallet'
 
 const links = [
   { to: '/', label: 'Marketplace' },
@@ -42,6 +44,7 @@ export function Nav() {
             </li>
           </ul>
           <div className="hidden lg:flex lg:items-center lg:gap-8">
+            <QuestLink />
             <ThemeToggle />
             <CartLink />
             <ProfileLink />
@@ -76,7 +79,8 @@ export function Nav() {
                 {l.label}
               </NavLink>
             ))}
-            <div className="mt-2 flex items-center gap-6 py-3">
+            <div className="mt-2 flex flex-wrap items-center gap-6 py-3">
+              <QuestLink onClick={() => setMenuOpen(false)} />
               <AboutLink onClick={() => setMenuOpen(false)} />
               <ThemeToggle />
               <CartLink />
@@ -136,6 +140,42 @@ function ProfileLink({ onClick }: { onClick?: () => void }) {
     >
       <ProfileGlyph />
       Profile
+    </NavLink>
+  )
+}
+
+// a quester's way back in: progress once started, the finish once done, and a plain entry otherwise
+function QuestLink({ onClick }: { onClick?: () => void }) {
+  const [, redraw] = useState(0)
+  useEffect(() => subscribeQuest(() => redraw((n) => n + 1)), [])
+  useEffect(() => {
+    let live = true
+    getActiveAccount()
+      .then(async (wallet) => {
+        const mode = readQuestMode(wallet)
+        if (!live || !wallet || (mode !== 'active' && mode !== 'quit') || latestQuestProgress()) return
+        rememberQuestProgress(await getQuestProgress(wallet))
+      })
+      .catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [])
+  const progress = latestQuestProgress()
+  const stamps = stampsFrom(progress)
+  const done = (['health', 'yield', 'stall', 'grid', 'rebalancing'] as const).filter((k) => stamps[k]).length
+  const label = progress?.completed ? 'Quest complete' : progress && done > 0 ? `Resume quest ${done}/5` : 'Quest'
+  return (
+    <NavLink
+      to="/quest"
+      onClick={onClick}
+      className={({ isActive }) =>
+        `micro flex h-9 items-center gap-2 rounded-[4px] border hairline px-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
+          isActive || progress ? 'border-highlighter-green text-press-black' : 'border-slate-verdant/40 text-newsprint-gray hover:text-press-black'
+        }`
+      }
+    >
+      {label}
     </NavLink>
   )
 }

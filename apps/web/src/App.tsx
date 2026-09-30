@@ -11,6 +11,7 @@ import { ListAgentPage } from './pages/ListAgentPage'
 import { CartPage } from './pages/CartPage'
 import { OngoingPage } from './pages/OngoingPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { QuestPage } from './pages/QuestPage'
 
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
 
@@ -28,6 +29,7 @@ function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/ongoing" element={<OngoingPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/quest" element={<QuestPage />} />
           {import.meta.env.DEV && (
             <Route
               path="/scout"
