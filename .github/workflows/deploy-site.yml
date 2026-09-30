@@ -31,6 +31,11 @@ jobs:
       - name: Install
         run: npm ci --no-audit --no-fund
       - name: Build the site
+        # the browser calls the API directly, so no request rides the Pages
+        # function and its daily quota; the WalletConnect id is a public client id
+        env:
+          VITE_API_URL: https://api.agentsouk.xyz/api
+          VITE_WC_PROJECT_ID: ${{ vars.VITE_WC_PROJECT_ID }}
         run: npm run build --workspace @agora/web
       - name: Publish to Cloudflare Pages
         # run from apps/web so the Pages Function under apps/web/functions is
