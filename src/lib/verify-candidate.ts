@@ -5,6 +5,7 @@ import { getAddress } from "viem";
 import { randomBytes } from "node:crypto";
 import { unreachableEndpointVerdict } from "@/lib/verifications";
 import { upsertVerification } from "@/lib/verifications-store";
+import { GATED_RE } from "@/lib/delivery";
 
 export interface VerifyCandidate {
   chainId: number;
@@ -24,7 +25,6 @@ export interface VerifyVerdict {
 
 const AMOUNT_USD = 2;
 const A2A_TASK = "report your status in one sentence";
-const GATED_RE = /gates direct calls behind its own x402/i;
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
 // The verifier signs its own EIP-3009 authorizations, so it needs a funded buyer key.

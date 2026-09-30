@@ -59,6 +59,12 @@ async function ensureTable(): Promise<boolean> {
   return tableReady;
 }
 
+// a gated agent answered behind its own login or payment, so it is alive and must
+// not run the delist clock; only no answer at all counts as failing
+export function countsAsFailing(status: Verification["status"]): boolean {
+  return status !== "delivered" && status !== "gated";
+}
+
 export async function upsertVerification(
   tokenId: string,
   name: string,
@@ -73,7 +79,7 @@ export async function upsertVerification(
   try {
     await sql`
       insert into verifications (token_id, name, category, status, response_ms, checked_at, quality, concurrency, detail, failing_since)
-      values (${tokenId}, ${name}, ${category}, ${status}, ${responseMs}, now(), ${quality ? JSON.stringify(quality) : null}::jsonb, ${concurrency ?? null}, ${detail ?? null}, ${status === "delivered" ? null : new Date()})
+      values (${tokenId}, ${name}, ${category}, ${status}, ${responseMs}, now(), ${quality ? JSON.stringify(quality) : null}::jsonb, ${concurrency ?? null}, ${detail ?? null}, ${countsAsFailing(status) ? new Date() : null})
       on conflict (token_id) do update set
         name = excluded.name,
         category = excluded.category,
@@ -84,7 +90,7 @@ export async function upsertVerification(
         concurrency = excluded.concurrency,
         detail = excluded.detail,
         failing_since = case
-          when excluded.status = 'delivered' then null
+          when excluded.failing_since is null then null
           when verifications.failing_since is null then now()
           else verifications.failing_since
         end

@@ -109,6 +109,22 @@ async function mcpCall(
   return postRpc(endpoint, req, headers);
 }
 
+// the verifier reads these sentences to record gated instead of dead, so the
+// wording and the pattern live together
+export const GATED_RE = /gates direct calls behind its own (x402|login)/i;
+
+// an endpoint behind its own login answered, so the agent is alive but cannot be
+// called anonymously, which is how the marketplace calls; gated, not dead
+export function loginGatedOutcome(protocol: "mcp" | "a2a", status: number): DeliverOutcome | null {
+  if (status !== 401 && status !== 403) return null;
+  return {
+    protocol,
+    ok: false,
+    gated: true,
+    error: `This agent gates direct calls behind its own login (HTTP ${status}), and the marketplace calls anonymously, so it cannot run tasks here.`,
+  };
+}
+
 async function deliverMcp(
   endpoint: string,
   tool?: string,
@@ -127,6 +143,8 @@ async function deliverMcp(
     capabilities: {},
     clientInfo: { name: "agora-marketplace", version: "0.1.0" },
   }, null);
+  const initGated = loginGatedOutcome("mcp", init.status);
+  if (initGated) return initGated;
   if (init.body.error) {
     return { protocol: "mcp", ok: false, error: `initialize failed: ${init.body.error.message}` };
   }
@@ -382,6 +400,8 @@ async function deliverA2a(
         "This agent gates direct calls behind its own x402 payment; the session receipt covers the marketplace hire but not the agent's per-call fee.",
     };
   }
+  const sendGated = loginGatedOutcome("a2a", send.status);
+  if (sendGated) return sendGated;
   if (send.body.error) {
     return { protocol: "a2a", ok: false, error: `message/send failed: ${send.body.error.message}` };
   }
