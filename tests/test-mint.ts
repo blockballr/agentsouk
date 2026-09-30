@@ -16,7 +16,7 @@ import {
   MINT_PER_CLICK,
   SUSD_ADDRESS,
 } from "../apps/web/src/lib/mint";
-import { GAS_FLOOR_WEI, gasDripFor } from "../src/app/api/tokens/mint/route";
+import { GAS_FLOOR_WEI, RELAY_GAS_RESERVE_WEI, gasDripFor } from "../src/app/api/tokens/mint/route";
 
 const BUYER = "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713" as const;
 
@@ -96,6 +96,21 @@ describe("sponsored gas drip", () => {
       expect(drip.amountWei + balance).toBe(GAS_FLOOR_WEI);
     }
     expect(gasDripFor(GAS_FLOOR_WEI + 1n).amountWei).toBe(0n);
+  });
+
+  // the relay broadcasts every hire, so drips that drained it would stop hiring
+  // for everyone; about 250 new wallets would have emptied 0.26 tBNB
+  it("pauses the drip rather than take the relay under its reserve", () => {
+    const paused = gasDripFor(0n, RELAY_GAS_RESERVE_WEI + GAS_FLOOR_WEI - 1n);
+    expect(paused.outcome).toBe("relay_reserve");
+    expect(paused.amountWei).toBe(0n);
+    expect(paused.message).toMatch(/faucet/i);
+  });
+
+  it("still drips while the relay stays at or above the reserve", () => {
+    const drip = gasDripFor(0n, RELAY_GAS_RESERVE_WEI + GAS_FLOOR_WEI);
+    expect(drip.outcome).toBe("topped_up");
+    expect(drip.amountWei).toBe(GAS_FLOOR_WEI);
   });
 
   it("names the floor as one registration's gas, not an arbitrary zero", () => {

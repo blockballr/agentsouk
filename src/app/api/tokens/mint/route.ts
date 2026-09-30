@@ -39,7 +39,7 @@ export const GAS_FLOOR_WEI = parseUnits("0.001", 18);
 const SIGNATURE_TTL_SECONDS = 15 * 60;
 
 export interface GasDrip {
-  outcome: "topped_up" | "already_funded";
+  outcome: "topped_up" | "already_funded" | "relay_reserve";
   amountWei: bigint;
   balanceWei: bigint;
   message: string;
@@ -47,7 +47,11 @@ export interface GasDrip {
 
 // The drip is the shortfall to the floor, never the whole floor, so a repeated
 // click cannot drain the relay or over-fund a wallet that already holds gas.
-export function gasDripFor(balanceWei: bigint): GasDrip {
+// every hire is broadcast by the same relay, so the drip stops before it would take
+// the relay under this reserve; at 0.1 gwei it still covers thousands of settlements
+export const RELAY_GAS_RESERVE_WEI = parseUnits("0.1", 18);
+
+export function gasDripFor(balanceWei: bigint, relayBalanceWei?: bigint): GasDrip {
   if (balanceWei >= GAS_FLOOR_WEI) {
     return {
       outcome: "already_funded",
@@ -57,6 +61,14 @@ export function gasDripFor(balanceWei: bigint): GasDrip {
     };
   }
   const amountWei = GAS_FLOOR_WEI - balanceWei;
+  if (relayBalanceWei !== undefined && relayBalanceWei - amountWei < RELAY_GAS_RESERVE_WEI) {
+    return {
+      outcome: "relay_reserve",
+      amountWei: 0n,
+      balanceWei,
+      message: "Sponsored gas is paused so hires keep settling. Get tBNB for registration from the BSC testnet faucet.",
+    };
+  }
   return {
     outcome: "topped_up",
     amountWei,
@@ -177,7 +189,7 @@ export async function POST(req: NextRequest) {
       const balance = await publicClient.getBalance({
         address: fields.address as `0x${string}`,
       });
-      const drip = gasDripFor(balance);
+      const drip = gasDripFor(balance, await publicClient.getBalance({ address: account.address }));
       if (drip.amountWei > 0n) {
         gasTxHash = await wallet.sendTransaction({
           to: fields.address as `0x${string}`,
