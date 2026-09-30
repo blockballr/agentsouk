@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { Wordmark } from './Wordmark'
 import { ThemeToggle } from './ThemeToggle'
+import { QuickSearch } from './QuickSearch'
 import { cartCount, subscribe } from '../lib/cart'
 
 const links = [
@@ -42,16 +43,20 @@ export function Nav() {
             </li>
           </ul>
           <div className="hidden lg:flex lg:items-center lg:gap-8">
+            <QuickSearch />
             <ThemeToggle />
             <CartLink />
             <ProfileLink />
+          </div>
+          <div className="lg:hidden">
+            <QuickSearch large />
           </div>
           <button
             type="button"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-11 w-11 items-center justify-center text-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black lg:hidden"
+            className="flex h-11 w-11 items-center justify-center text-press-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black lg:hidden"
           >
             <MenuIcon />
           </button>
