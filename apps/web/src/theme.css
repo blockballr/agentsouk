@@ -10,6 +10,12 @@
   --color-highlighter-green: #2bee4b;
   /* text on the green stays near black in both themes: the flipping ink read 1.4:1 on it in dark mode */
   --color-on-highlighter: #0b0f0c;
+  /* green as text on the page: the bright green reads 1.5:1 on white, so light mode darkens it */
+  --color-green-ink: #0f7a28;
+  /* a floating bar keeps one dark palette in both themes, so its labels never flip onto a light bar */
+  --color-night: #121613;
+  --color-night-ink: #f2f6f1;
+  --color-night-muted: #c8d2c8;
   --color-shadow-moss: #93b799;
   --color-echo-green: #c4e4c9;
   --color-switch-knob: #fafffa;
@@ -35,10 +41,12 @@
     --color-muted-sage: #8f9c92;
     --color-shadow-moss: #3f5c46;
     --color-switch-knob: #f2f6f1;
+    --color-green-ink: #2bee4b;
   }
 }
 
 :root[data-theme="dark"] {
+  --color-green-ink: #2bee4b;
   --color-bone-white: #0e1311;
   --color-press-black: #f2f6f1;
   --color-typesetter-ink: #f2f6f1;
@@ -59,6 +67,7 @@
   --color-echo-green: #c4e4c9;
   --color-muted-sage: #c8d2c8;
   --color-shadow-moss: #93b799;
+  --color-green-ink: #0f7a28;
 }
 
 @layer base {

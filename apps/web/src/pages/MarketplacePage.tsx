@@ -1,20 +1,21 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { AgentSummary } from '@agora/core'
-import { CATEGORIES, formatNumber, formatScore, shortAddress } from '@agora/core'
+import { CATEGORIES, formatNumber, formatScore, shortAddress, timeAgo } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
+import { Tag } from '../components/Tag'
 import { getAgents } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
-import { bestByCategory } from '../lib/compare'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
+import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 
 const sorts = [
-  { key: 'reachability', label: 'Reachability' },
+  { key: 'reachability', label: 'Working first' },
   { key: 'score', label: 'Score' },
   { key: 'newest', label: 'Newest' },
-  { key: 'feedback', label: 'Feedback' },
+  { key: 'feedback', label: 'Most reviewed' },
   { key: 'health', label: 'Health' },
 ] as const
 
@@ -77,39 +78,6 @@ export function MarketplacePage() {
     setShortlist([])
     persistShortlist([])
   }
-
-  function handleHired(keys: string[]) {
-    const drop = new Set(keys)
-    const next = shortlist.filter((id) => !drop.has(id))
-    setShortlist(next)
-    persistShortlist(next)
-  }
-
-  // bests of the shortlist from the summaries currently loaded, driving the bar's add-to-cart
-  // and hire actions; when some agents are off-page, fall back to the whole shortlist
-  const shortlistTargets = useMemo(() => {
-    const fallback = shortlist.map((id) => {
-      const [chainId = '56', tokenId = ''] = id.split('/')
-      return { chainId: Number(chainId), tokenId: Number(tokenId), name: `Agent #${tokenId}` }
-    })
-    if (!result || shortlist.length === 0) return { targets: fallback, bestsKnown: false }
-    const onPage = result.items.filter((a) => shortlist.includes(`${a.chain_id}/${a.token_id}`))
-    if (onPage.length === shortlist.length && onPage.length >= 2) {
-      const winnerIds = Object.values(bestByCategory(onPage)).filter(
-        (id): id is string => id !== null,
-      )
-      if (winnerIds.length > 0) {
-        return {
-          targets: winnerIds.map((id) => {
-            const a = onPage.find((x) => x.agent_id === id)!
-            return { chainId: a.chain_id, tokenId: Number(a.token_id), name: a.name }
-          }),
-          bestsKnown: true,
-        }
-      }
-    }
-    return { targets: fallback, bestsKnown: false }
-  }, [result, shortlist])
 
   useEffect(() => {
     let cancelled = false
@@ -188,48 +156,36 @@ export function MarketplacePage() {
           see the chain and asset the market actually settles in */}
       <section
         aria-label="Settlement proof"
-        className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-y hairline border-slate-verdant/40 py-3"
+        className="micro mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-y hairline border-slate-verdant/40 py-3 text-newsprint-gray"
       >
-        <p className="micro text-newsprint-gray">
-          {chainId === null ? (
-            'Checking the network'
-          ) : (
-            <>
-              {chainLabel(chainId)} · chain {chainId} · hires settle on-chain in{' '}
-              {/* normal-case: the micro class uppercases, and the symbol is sUSD not SUSD */}
-              <span className="normal-case">
-                {settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}
-              </span>
-            </>
-          )}
-        </p>
+        {chainId === null ? (
+          <span>Checking the network</span>
+        ) : (
+          <span>
+            {chainLabel(chainId)} (chain {chainId}) · hires settle in{' '}
+            {/* normal-case: the micro class uppercases, and the symbol is sUSD not SUSD */}
+            <span className="normal-case">{settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}</span>
+            {result ? ` · ${result.total.toLocaleString('en-US')} shown` : ''}
+            {freshness ? ` · ${freshness}` : ''}
+          </span>
+        )}
+        {chainId !== null && registry ? (
+          <a
+            href={explorerAddressUrl(chainId, registry)}
+            target="_blank"
+            rel="noreferrer"
+            title={`ERC-8004 identity registry ${registry} on ${chainLabel(chainId)}`}
+            className="inline-block py-2 text-press-black underline decoration-newsprint-gray underline-offset-4 transition hover:decoration-highlighter-green"
+          >
+            ERC-8004 registry ↗
+          </a>
+        ) : null}
         <Link
           to="/about"
-          className="micro inline-block py-2 text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
+          className="inline-block py-2 text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
         >
           Settlement proof →
         </Link>
-        {chainId !== null && registry ? (
-          <p className="micro basis-full text-newsprint-gray">
-            Read from the ERC-8004 registry at{' '}
-            <a
-              href={explorerAddressUrl(chainId, registry)}
-              target="_blank"
-              rel="noreferrer"
-              title={`ERC-8004 identity registry on ${chainLabel(chainId)}`}
-              className="underline decoration-newsprint-gray underline-offset-4 transition hover:decoration-highlighter-green"
-            >
-              {registry}
-            </a>{' '}
-            on {chainLabel(chainId)}
-            {result
-              ? result.registryTotal
-                ? ` · ${result.total.toLocaleString('en-US')} shown of ${result.registryTotal.toLocaleString('en-US')} registered`
-                : ` · ${result.total.toLocaleString('en-US')} shown`
-              : ''}
-            {freshness ? ` · ${freshness}` : ''}
-          </p>
-        ) : null}
       </section>
 
       <div className="mt-12 flex flex-wrap items-center gap-x-10 gap-y-6">
@@ -255,7 +211,7 @@ export function MarketplacePage() {
               type="button"
               role="switch"
               aria-checked={pcs}
-              aria-label="Filter PancakeSwap-native agents"
+              aria-label="Show only agents that say they work with PancakeSwap"
               onClick={() => setParam('pcs', pcs ? '' : '1')}
               className={`relative h-[18px] w-[34px] rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green ${pcs ? 'bg-highlighter-green' : 'bg-slate-verdant/50'}`}
             >
@@ -266,7 +222,7 @@ export function MarketplacePage() {
           </label>
           {pcs && result ? (
             <span className="micro text-newsprint-gray">
-              {result.total} PancakeSwap-native
+              {result.total} PancakeSwap
             </span>
           ) : null}
           <label className="inline-flex cursor-pointer items-center gap-2">
@@ -286,17 +242,17 @@ export function MarketplacePage() {
           </label>
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-6">
-          <label className="micro text-newsprint-gray" htmlFor="search">
-            Search
+        <div className="flex w-full flex-wrap items-center gap-6 sm:ml-auto sm:w-auto">
+          <label className="sr-only" htmlFor="search">
+            Search agents
           </label>
           <input
             id="search"
             type="search"
             value={q}
             onChange={(e) => setParam('q', e.target.value)}
-            placeholder="Name, endpoint, tag"
-            className="border hairline input-hairline w-56 bg-transparent px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+            placeholder="Search name, endpoint or tag"
+            className="border hairline input-hairline w-full rounded-[6px] bg-transparent sm:w-64 px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
           />
           <div className="flex flex-wrap gap-1">
             {sorts.map((s) => (
@@ -381,9 +337,6 @@ export function MarketplacePage() {
         count={shortlist.length}
         onClear={clearShortlist}
         onCompare={() => navigate(`/compare?ids=${shortlist.join(',')}`)}
-        onHired={handleHired}
-        hire={shortlistTargets.targets.length > 0 ? { winners: shortlistTargets.targets } : undefined}
-        cartNoun={shortlistTargets.bestsKnown ? 'best' : 'agents'}
       />
     </section>
   )
@@ -420,75 +373,6 @@ function relativeAgeLabel(iso: string, now: number): string | null {
 
 function labelFor(key: string): string {
   return CATEGORIES.find((c) => c.key === key)?.label ?? 'All agents'
-}
-
-const verificationTone: Record<string, string> = {
-  delivered: 'border-highlighter-green/40 text-highlighter-green',
-  gated: 'border-slate-verdant/40 text-slate-verdant',
-  dead: 'border-slate-verdant/45 text-newsprint-gray',
-  unreachable: 'border-slate-verdant/45 text-newsprint-gray',
-}
-
-// chain 97 has no paid-hire verifier: its delivered verdicts come from the scout
-// liveness probe in probeToVerification, so they are reachability rather than delivery
-const BSC_TESTNET_CHAIN_ID = 97
-
-function isProbeCheck(chainId: number, quality?: { model: string }): boolean {
-  if (quality?.model === 'deterministic') return true
-  return chainId === BSC_TESTNET_CHAIN_ID && !quality
-}
-
-function verificationLabel(status: string, probe: boolean): string {
-  if (status === 'dead') return 'stale'
-  if (status !== 'delivered') return status
-  return probe ? 'endpoint reachable' : 'verified delivered'
-}
-
-function VerificationBadge({
-  status,
-  checkedAt,
-  chainId,
-  quality,
-}: {
-  status: string
-  checkedAt: string
-  chainId: number
-  quality?: { grade: 'good' | 'partial' | 'poor'; reason: string; model: string }
-}) {
-  const probe = isProbeCheck(chainId, quality)
-  const title = quality
-    ? probe
-      ? `Deterministic probe: ${quality.grade} - ${quality.reason} (checked ${checkedAt.slice(0, 10)})`
-      : `AI review: ${quality.grade} - ${quality.reason} (checked ${checkedAt.slice(0, 10)})`
-    : probe && status === 'delivered'
-      ? `Endpoint answered a liveness probe (checked ${checkedAt})`
-      : `Shopper checked ${checkedAt}`
-  return (
-    <BadgeCell tone={verificationTone[status] ?? verificationTone.dead} title={title}>
-      {verificationLabel(status, probe)}
-    </BadgeCell>
-  )
-}
-
-function BadgeCell({
-  tone,
-  title,
-  children,
-}: {
-  tone?: string
-  title?: string
-  children?: ReactNode
-}) {
-  return (
-    <span
-      title={title}
-      className={`micro flex h-[26px] min-w-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-full px-2 ${
-        tone !== undefined ? `border hairline ${tone}` : ''
-      }`}
-    >
-      {children}
-    </span>
-  )
 }
 
 function FilterChip({
@@ -529,7 +413,7 @@ function AgentGrid({
   onToggleCart: (key: string) => void
 }) {
   return (
-    <div className="grid grid-cols-1 bg-bone-white pl-px pt-px sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((a) => (
         <AgentCard
           key={a.agent_id}
@@ -559,170 +443,127 @@ function AgentCard({
 }) {
   const img = agent.image_url ?? '/inserts/arc.svg'
   const key = `${agent.chain_id}/${agent.token_id}`
+  const verdict = verdictFor(agent.chain_id, agent.verification)
+  const firstParty = isOperatedByAgentSouk(agent.owner_address)
+  const boosted = (agent as { boosted?: boolean }).boosted
+  // indexer figures are mostly zero on a young chain, so they show only when they say something
+  const score = agent.total_score > 0 ? formatScore(agent.total_score) : null
+  const reviews = agent.total_feedbacks
   return (
-    <div className="relative -ml-px -mt-px border hairline border-slate-verdant/40 bg-bone-white">
+    <article
+      className={`relative flex flex-col rounded-[12px] border hairline bg-bone-white transition duration-150 hover:border-press-black/40 hover:shadow-[0_16px_32px_-20px_rgba(0,0,0,0.4)] motion-safe:hover:-translate-y-0.5 ${
+        checked ? 'border-highlighter-green ring-1 ring-highlighter-green' : 'border-slate-verdant/35'
+      }`}
+    >
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
-        className="group flex h-full flex-col p-6 transition-colors duration-150 hover:bg-echo-green/40 focus-visible:outline-2 focus-visible:outline-press-black"
+        className="flex flex-1 flex-col rounded-t-[12px] p-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
       >
-        <div className="flex items-center justify-between gap-3 pr-7">
-          <div className="flex min-w-0 items-center gap-4">
-            <img
-              src={img}
-              alt={agent.name}
-              loading="lazy"
-              className="duotone h-16 w-16 shrink-0 rounded-[14px] object-cover"
-            />
-            <div className="min-w-0">
-              <span className="micro text-muted-sage">
-                {agent.category === 'general' ? 'General' : (agent.category ?? '')}
-              </span>
-              <h2 className="mt-1 line-clamp-2 break-words font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] sm:truncate">
-                {agent.name}
-              </h2>
-              <p className="mt-1 font-mono text-[11px] text-newsprint-gray">
-                {shortAddress(agent.owner_address)}
-              </p>
-            </div>
-          </div>
-          <div className="flex h-[26px] shrink-0 items-center">
-            {agent.x402_supported && (
-              <span className="micro inline-flex items-center gap-2 rounded-full border hairline border-highlighter-green/40 px-2 py-1 text-highlighter-green">
-                <span className="relative flex h-2 w-2">
-                  <span className="motion-safe:absolute motion-safe:inline-flex motion-safe:h-full motion-safe:w-full motion-safe:animate-ping motion-safe:rounded-full motion-safe:bg-highlighter-green opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-highlighter-green" />
+        <div className="flex items-start gap-4">
+          <img
+            src={img}
+            alt=""
+            loading="lazy"
+            className="duotone h-14 w-14 shrink-0 rounded-[12px] object-cover"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="micro truncate text-newsprint-gray">{categoryName(agent.category)}</p>
+            <h2 className="mt-1 truncate font-serif text-[21px] font-medium leading-tight tracking-[-0.02em] text-press-black">
+              {agent.name}
+            </h2>
+            <p className="mt-0.5 truncate text-[12px] text-newsprint-gray">
+              {firstParty ? (
+                <span className="text-press-black" title={OPERATED_BY_TITLE}>
+                  {OPERATED_BY_LABEL}
                 </span>
-                x402
-              </span>
-            )}
+              ) : (
+                <>
+                  by <span className="font-mono">{shortAddress(agent.owner_address)}</span>
+                </>
+              )}
+            </p>
           </div>
         </div>
 
-        <p className="mt-5 line-clamp-2 text-sm leading-relaxed text-newsprint-gray">
-          {agent.description || 'No description registered on-chain.'}
+        <p className="mt-4 line-clamp-2 text-[14px] leading-relaxed text-newsprint-gray">
+          {agent.description || 'No description on-chain.'}
         </p>
 
-        <dl className="score-strip mt-8 w-full rounded-lg px-4 py-3.5">
-          <div className="flex items-start justify-center gap-x-10">
-            <Stat label="Score" value={formatScore(agent.total_score)} />
-            <Stat label="Health" value={agent.health_score !== null ? formatScore(agent.health_score) : '·'} />
-            <Stat label="Feedback" value={formatNumber(agent.total_feedbacks)} />
-          </div>
-        </dl>
-
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          {agent.verification ? (
-            <VerificationBadge
-              status={agent.verification.status}
-              checkedAt={agent.verification.checkedAt}
-              chainId={agent.chain_id}
-              quality={agent.verification.quality}
-            />
-          ) : (
-            <BadgeCell />
-          )}
-          {(agent as { boosted?: boolean }).boosted ? (
-            <BadgeCell tone="border-highlighter-green/50 text-highlighter-green" title="Paid boost">
-              Boosted
-            </BadgeCell>
-          ) : null}
-          {agent.pcs ? (
-            <BadgeCell
-              tone="border-slate-verdant/45 text-newsprint-gray"
-              title="PancakeSwap-native agent"
-            >
-              PCS
-            </BadgeCell>
-          ) : (
-            <BadgeCell />
-          )}
-          {isOperatedByAgentSouk(agent.owner_address) ? (
-            <BadgeCell tone="border-press-black/40 text-press-black" title={OPERATED_BY_TITLE}>
-              {OPERATED_BY_LABEL}
-            </BadgeCell>
-          ) : (
-            <BadgeCell />
-          )}
-          <BadgeCell />
-        </div>
-        {agent.verification ? (
-          <p className="micro mt-3 text-newsprint-gray">
-            Checked {agent.verification.checkedAt.slice(0, 10)}
+        <div className="mt-auto pt-5">
+          <p className="flex items-center gap-2 text-[13px]" title={verdict.explain}>
+            <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[verdict.tone]}`} />
+            <span className="font-medium text-press-black">{verdict.label}</span>
+            {agent.verification ? (
+              <span className="truncate text-newsprint-gray">· checked {timeAgo(agent.verification.checkedAt)}</span>
+            ) : null}
           </p>
-        ) : null}
-
-        <span className="micro mt-auto pt-6 text-newsprint-gray transition group-hover:text-press-black">
-          View agent →
-        </span>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {agent.x402_supported ? <Tag title="Takes payment per call over x402">x402</Tag> : null}
+            {agent.pcs ? <Tag title="Says it works with PancakeSwap">PancakeSwap</Tag> : null}
+            {boosted ? <Tag title="Paid boost">Boosted</Tag> : null}
+            {score ? <Tag title="8004scan total score">Score {score}</Tag> : null}
+            {reviews > 0 ? (
+              <Tag title="On-chain feedback entries">
+                {formatNumber(reviews)} review{reviews === 1 ? '' : 's'}
+              </Tag>
+            ) : null}
+          </div>
+        </div>
       </Link>
 
-      <button
-        type="button"
-        onClick={() => onToggleCart(key)}
-        aria-label={inCart ? `Remove ${agent.name} from cart` : `Add ${agent.name} to cart`}
-        title={inCart ? 'In cart' : 'Add to cart'}
-        className={`absolute right-[56px] top-3 z-10 flex h-[18px] w-[18px] items-center justify-center rounded-full border hairline before:absolute before:-inset-3 before:content-[''] sm:right-[38px] sm:before:-inset-1 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-highlighter-green ${
-          inCart
-            ? 'border-highlighter-green bg-highlighter-green text-on-highlighter'
-            : 'border-slate-verdant/50 bg-bone-white/90 text-newsprint-gray hover:border-highlighter-green'
-        }`}
-      >
-        <svg width="10" height="9" viewBox="0 0 16 14" fill="none" aria-hidden="true">
-          <path
-            d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-
-      <label
-        className={`absolute right-3 top-3 z-10 flex h-[18px] w-[18px] cursor-pointer items-center justify-center rounded-full border hairline before:absolute before:-inset-3 before:content-[''] sm:before:-inset-1 transition-colors duration-150 focus-within:outline-2 focus-within:outline-highlighter-green ${
-          checked
-            ? 'border-highlighter-green bg-highlighter-green'
-            : 'border-slate-verdant/50 bg-bone-white/90 hover:border-highlighter-green'
-        }`}
-      >
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={() => onToggle(key)}
-          aria-label={`Compare ${agent.name}`}
-          title="Shortlist for comparison"
-          className="h-3 w-3 accent-highlighter-green opacity-0"
-        />
-        {checked && (
-          <svg
-            width="10"
-            height="8"
-            viewBox="0 0 14 10"
-            fill="none"
+      <div className="flex items-center gap-2 border-t hairline border-slate-verdant/25 p-2">
+        <button
+          type="button"
+          onClick={() => onToggle(key)}
+          aria-pressed={checked}
+          className={`micro inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[8px] px-3 transition-colors focus-visible:outline-2 focus-visible:outline-press-black sm:min-h-9 ${
+            checked ? 'bg-highlighter-green/20 text-press-black' : 'text-newsprint-gray hover:bg-echo-green/50 hover:text-press-black'
+          }`}
+        >
+          <span
             aria-hidden="true"
-            className="pointer-events-none absolute text-typesetter-ink"
+            className={`flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border ${
+              checked ? 'border-press-black bg-press-black text-bone-white' : 'border-current'
+            }`}
           >
+            {checked ? (
+              <svg width="9" height="7" viewBox="0 0 14 10" fill="none">
+                <path d="M1 5l4 4 8-8" stroke="currentColor" strokeWidth="2.5" />
+              </svg>
+            ) : null}
+          </span>
+          Compare
+          {/* the name follows the visible words, so a voice command still matches them */}
+          <span className="sr-only">: {agent.name}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onToggleCart(key)}
+          aria-pressed={inCart}
+          className={`micro inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[8px] px-3 transition-colors focus-visible:outline-2 focus-visible:outline-press-black sm:min-h-9 ${
+            inCart ? 'bg-highlighter-green/20 text-press-black' : 'text-newsprint-gray hover:bg-echo-green/50 hover:text-press-black'
+          }`}
+        >
+          <svg width="13" height="12" viewBox="0 0 16 14" fill="none" aria-hidden="true">
             <path
-              d="M1 5l4 4 8-8"
+              d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
               stroke="currentColor"
-              strokeWidth="2.5"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
           </svg>
-        )}
-      </label>
-    </div>
+          {inCart ? 'In cart' : 'Add to cart'}
+          <span className="sr-only">: {agent.name}</span>
+        </button>
+      </div>
+    </article>
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col items-center text-center">
-      <dt className="micro text-newsprint-gray">{label}</dt>
-      <dd className="mt-0.5 text-sm font-medium tabular-nums text-press-black">
-        {value}
-      </dd>
-    </div>
-  )
+function categoryName(key: AgentSummary['category']): string {
+  if (!key || key === 'general') return 'General'
+  return CATEGORIES.find((c) => c.key === key)?.label ?? key
 }
 
 function GridSkeleton() {
@@ -730,28 +571,29 @@ function GridSkeleton() {
     <div
       role="status"
       aria-label="Loading agents"
-      className="grid grid-cols-1 bg-bone-white pl-px pt-px sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
     >
       {Array.from({ length: 12 }, (_, i) => (
         <div
           key={i}
-          className="-ml-px -mt-px animate-pulse border hairline border-slate-verdant/40 bg-bone-white p-6"
+          className="animate-pulse rounded-[12px] border hairline border-slate-verdant/35 bg-bone-white"
         >
-          <div className="flex items-center justify-between gap-3 pr-7">
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-[14px] bg-slate-verdant/10" />
-              <div className="space-y-2">
+          <div className="p-5">
+            <div className="flex items-start gap-4">
+              <div className="h-14 w-14 rounded-[12px] bg-slate-verdant/10" />
+              <div className="flex-1 space-y-2">
                 <div className="h-3 w-20 bg-slate-verdant/10" />
-                <div className="h-4 w-28 bg-slate-verdant/10" />
-                <div className="h-3 w-20 bg-slate-verdant/10" />
+                <div className="h-4 w-32 bg-slate-verdant/10" />
+                <div className="h-3 w-24 bg-slate-verdant/10" />
               </div>
             </div>
-            <div className="h-[26px]" />
+            <div className="mt-5 space-y-2">
+              <div className="h-3 w-full bg-slate-verdant/10" />
+              <div className="h-3 w-3/4 bg-slate-verdant/10" />
+            </div>
+            <div className="mt-6 h-3 w-40 bg-slate-verdant/10" />
           </div>
-          <div className="mt-6 space-y-2">
-            <div className="h-3 w-full bg-slate-verdant/10" />
-            <div className="h-3 w-3/4 bg-slate-verdant/10" />
-          </div>
+          <div className="h-[53px] border-t hairline border-slate-verdant/25" />
         </div>
       ))}
     </div>
