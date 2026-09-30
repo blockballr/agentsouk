@@ -23,6 +23,30 @@
     {
       "path": "/api/cron/maintenance",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/pancake",
+      "schedule": "30 0 * * *"
+    },
+    {
+      "path": "/api/cron/pancake",
+      "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/pancake",
+      "schedule": "30 8 * * *"
+    },
+    {
+      "path": "/api/cron/pancake",
+      "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/pancake",
+      "schedule": "30 16 * * *"
+    },
+    {
+      "path": "/api/cron/pancake",
+      "schedule": "30 20 * * *"
     }
   ]
 }
