@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  ContractFunctionExecutionError,
-  TransactionNotFoundError,
-  TransactionReceiptNotFoundError,
-  createPublicClient,
-  type Address,
-} from "viem";
+import { ContractFunctionExecutionError, createPublicClient, type Address } from "viem";
 import { targetChainId } from "@/lib/types";
 import { registryAddress } from "@/lib/registry-write";
-import { rpcTransport } from "@/lib/rpc";
+import { readMinedTransaction, rpcTransport } from "@/lib/rpc";
 import {
   checkRegistrationProof,
   confirmClaim,
@@ -68,26 +62,17 @@ async function readChain(args: {
     transport: rpcTransport(args.chainId, process.env.REGISTRY_RPC_URL),
   });
 
-  let receipt;
-  try {
-    receipt = await client.getTransactionReceipt({ hash: args.txHash });
-  } catch (e) {
-    if (e instanceof TransactionReceiptNotFoundError) {
-      return { outcome: "refuted", detail: "No transaction with that hash exists on this chain." };
-    }
-    return { outcome: "unavailable", detail: `RPC read failed: ${brief(e)}` };
-  }
-
   // the receipt does not carry its calldata, so the signed-over uri comes from the transaction
-  let calldata: `0x${string}`;
-  try {
-    calldata = (await client.getTransaction({ hash: args.txHash })).input;
-  } catch (e) {
-    if (e instanceof TransactionNotFoundError) {
-      return { outcome: "refuted", detail: "That transaction is not on this chain." };
-    }
-    return { outcome: "unavailable", detail: `RPC read failed: ${brief(e)}` };
+  const mined = await readMinedTransaction(args.chainId, args.txHash, process.env.REGISTRY_RPC_URL);
+  if (!mined.found) {
+    return mined.unanswered
+      ? {
+          outcome: "unavailable",
+          detail: `No endpoint found the transaction, and ${mined.unanswered} of ${mined.asked} did not answer.`,
+        }
+      : { outcome: "refuted", detail: "No transaction with that hash exists on this chain." };
   }
+  const { receipt, input: calldata } = mined;
 
   let onchainUri: string;
   let holder: string;
