@@ -436,7 +436,7 @@ export function AgentDetailPage() {
 
         <aside
           ref={setHirePanel}
-          className="h-fit scroll-mt-4 self-start rounded-[14px] border hairline border-slate-verdant/40 p-6 sm:p-8 lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto"
+          className="h-fit scroll-mt-4 self-start rounded-[14px] border hairline border-slate-verdant/40 p-6 sm:p-8 lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1"
         >
           {ownSession && mySession && (
             <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
@@ -505,32 +505,6 @@ export function AgentDetailPage() {
               onBoosted={refreshDetail}
             />
           )}
-          {/* permissions sit with the hire: they are part of the buying decision,
-              and a job seller is not bought this way, so it shows none */}
-          {!jobSeller && (
-            <div className="mt-6 border-t hairline border-slate-verdant/30 pt-5">
-              <h3 className="micro text-newsprint-gray">What you are authorising</h3>
-              <ul className="mt-3 space-y-2.5 text-[13px] leading-relaxed text-newsprint-gray">
-                <li>
-                  One gas-free transfer of the hire amount to this agent&apos;s wallet. No standing
-                  token approval.
-                </li>
-                <li>
-                  A session capped at ${SESSION_SPEND_CAP_USD} that ends in {SESSION_HOURS} hours. Later
-                  calls draw on it until you revoke it, or until its job is completed or rejected.
-                </li>
-                <li>
-                  {detail.mcp_server
-                    ? 'The agent is called over MCP, so it can run the tools it publishes.'
-                    : detail.a2a_endpoint
-                      ? 'The agent is called over A2A, so it receives the messages you send.'
-                      : detail.web_endpoint
-                        ? 'This agent runs in a browser page, so the marketplace cannot call it for you.'
-                        : 'No callable endpoint is published for this agent.'}
-                </li>
-              </ul>
-            </div>
-          )}
         </aside>
 
         <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
@@ -550,6 +524,33 @@ export function AgentDetailPage() {
           )}
 
           {perfProbe && <PerformanceSection probe={perfProbe} />}
+
+          {/* permissions are part of the buying decision, read after what the agent does and
+              what it answered; a job seller is not bought this way, so it shows none */}
+          {!jobSeller && (
+            <section className="rounded-[14px] border hairline border-slate-verdant/40 p-6 sm:p-8">
+              <h2 className="font-serif text-[22px] font-medium text-press-black">What you are authorising</h2>
+              <ul className="mt-4 space-y-2.5 text-[14px] leading-relaxed text-newsprint-gray">
+                <li>
+                  One gas-free transfer of the hire amount to this agent&apos;s wallet. No standing
+                  token approval.
+                </li>
+                <li>
+                  A session capped at ${SESSION_SPEND_CAP_USD} that ends in {SESSION_HOURS} hours. Later
+                  calls draw on it until you revoke it, or until its job is completed or rejected.
+                </li>
+                <li>
+                  {detail.mcp_server
+                    ? 'The agent is called over MCP, so it can run the tools it publishes.'
+                    : detail.a2a_endpoint
+                      ? 'The agent is called over A2A, so it receives the messages you send.'
+                      : detail.web_endpoint
+                        ? 'This agent runs in a browser page, so the marketplace cannot call it for you.'
+                        : 'No callable endpoint is published for this agent.'}
+                </li>
+              </ul>
+            </section>
+          )}
 
           <details className="group rounded-[14px] border hairline border-slate-verdant/40">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 sm:px-8 [&::-webkit-details-marker]:hidden">
