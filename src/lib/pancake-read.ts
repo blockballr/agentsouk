@@ -12,6 +12,7 @@ import {
   sortsFirst,
   supportedPairs,
 } from "./pancake";
+import { DEFAULT_TICK_SPACING } from "./pancake-range";
 
 // read-only view calls against PancakeSwap v3, all pinned to one block so the price,
 // tick and pool in an answer describe the same moment. A read sits inside a paid
@@ -26,6 +27,14 @@ export interface PoolQuote {
   liquidity: string;
   price: number;
   blockNumber: number;
+  // what a range suggestion needs on top of the price
+  sqrtPriceX96: string;
+  tickSpacing: number;
+  baseIsToken0: boolean;
+  decimals0: number;
+  decimals1: number;
+  baseAddress: `0x${string}`;
+  quoteAddress: `0x${string}`;
 }
 
 export interface PoolReader {
@@ -33,6 +42,8 @@ export interface PoolReader {
   getPool(tokenA: `0x${string}`, tokenB: `0x${string}`, fee: number, block: bigint): Promise<`0x${string}`>;
   liquidity(pool: `0x${string}`, block: bigint): Promise<bigint>;
   slot0(pool: `0x${string}`, block: bigint): Promise<{ sqrtPriceX96: bigint; tick: number }>;
+  // optional, so a reader without it falls back to PancakeSwap's spacing for the tier
+  tickSpacing?(pool: `0x${string}`, block: bigint): Promise<number>;
 }
 
 // well inside the marketplace's 20 second delivery wait, with room for the planning after
@@ -61,6 +72,13 @@ const POOL_ABI = [
     stateMutability: "view",
     inputs: [],
     outputs: [{ name: "", type: "uint128" }],
+  },
+  {
+    type: "function",
+    name: "tickSpacing",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "int24" }],
   },
   {
     type: "function",
@@ -100,6 +118,8 @@ export function viemPoolReader(chainId: number): PoolReader {
       const s = await client.readContract({ address: pool, abi: POOL_ABI, functionName: "slot0", blockNumber: block });
       return { sqrtPriceX96: s[0], tick: s[1] };
     },
+    tickSpacing: (pool, block) =>
+      client.readContract({ address: pool, abi: POOL_ABI, functionName: "tickSpacing", blockNumber: block }),
   };
 }
 
@@ -159,8 +179,12 @@ export async function readPancakePrice(
           if (liquidity > BigInt(0) && (!chosen || liquidity > chosen.liquidity)) chosen = { ...live[i], liquidity };
         }
         if (!chosen) return null;
-        const { sqrtPriceX96, tick } = await reader.slot0(chosen.pool, block);
-        return { chosen, block, sqrtPriceX96, tick };
+        const pool = chosen.pool;
+        const [{ sqrtPriceX96, tick }, spacing] = await Promise.all([
+          reader.slot0(pool, block),
+          reader.tickSpacing ? reader.tickSpacing(pool, block) : Promise.resolve(DEFAULT_TICK_SPACING[chosen.fee]),
+        ]);
+        return { chosen, block, sqrtPriceX96, tick, spacing };
       })(),
       opts.deadlineMs ?? READ_DEADLINE_MS,
     );
@@ -176,6 +200,13 @@ export async function readPancakePrice(
       liquidity: result.chosen.liquidity.toString(),
       price: priceFromSqrt(result.sqrtPriceX96, d0, d1, baseIsToken0),
       blockNumber: Number(result.block),
+      sqrtPriceX96: result.sqrtPriceX96.toString(),
+      tickSpacing: Number(result.spacing),
+      baseIsToken0,
+      decimals0: d0,
+      decimals1: d1,
+      baseAddress: b.address,
+      quoteAddress: q.address,
     };
     cache.set(key, { at: now(), quote: answer });
     return answer;

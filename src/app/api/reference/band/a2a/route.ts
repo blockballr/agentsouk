@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { BAND_AGENT_CATEGORY, decideBandTask, type BandAgentReply } from "@/lib/reference-band";
+import { BAND_AGENT_CATEGORY, type BandAgentReply } from "@/lib/reference-band";
+import { decideBandTaskLive } from "@/lib/reference-band-live";
 
 export const dynamic = "force-dynamic";
 
@@ -108,7 +109,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return rpcError(id, -32602, "Invalid params: message/send requires params.message.parts");
   }
 
-  const reply = decideBandTask(message.task, message.input);
+  // a PancakeSwap pair asks for a range, which reads the pool; anything else is the band check
+  const reply = await decideBandTaskLive(message.task, message.input);
   return NextResponse.json(
     { jsonrpc: "2.0", id, result: { task: taskEnvelope(reply) } },
     { headers: JSON_HEADERS },

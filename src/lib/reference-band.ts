@@ -1,14 +1,15 @@
 // Souk Band Keeper: keeps a two-asset position inside a drift band the caller
 // sets. The grid earns inside a range; the band keeper keeps the allocation
-// inside the range that range is sized for.
+// inside the range that range is sized for. Named a PancakeSwap pair, it also
+// suggests a v3 liquidity range around that pool's price.
 
 import { privateEndpointReason } from "./endpoint";
 
 export const BAND_AGENT_NAME = "Souk Band Keeper";
-export const BAND_AGENT_VERSION = "1.0.0";
+export const BAND_AGENT_VERSION = "1.1.0";
 export const BAND_AGENT_CATEGORY = "rebalancing";
 export const BAND_AGENT_DESCRIPTION =
-  "Checks a two-asset position against a drift band around a target weight. From two holding values in USD, the target share of the first asset, and an optional band width, it returns the current weight, the drift, the band edges, whether the weight is inside or outside the band, the distance to the nearest edge, and the USD value to move back to target. The arithmetic is deterministic and uses no market data and no price input, so every figure is reproducible from the inputs.";
+  "Checks a two-asset position against a drift band around a target weight. From two holding values in USD, the target share of the first asset, and an optional band width, it returns the current weight, the drift, the band edges, whether the weight is inside or outside the band, the distance to the nearest edge, and the USD value to move back to target. That check is deterministic and uses no market data. Named a PancakeSwap pair and a width, it instead reads that pool on the chain this marketplace runs on and suggests a v3 liquidity range: the ticks, the prices at them, how a deposit splits between the two tokens, and a link that opens PancakeSwap with the range set. It never adds liquidity or trades.";
 export const BAND_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const BAND_AGENT_CARD_PATH = "/api/reference/band/.well-known/agent-card.json";
 export const BAND_AGENT_MESSAGING_PATH = "/api/reference/band/a2a";
@@ -120,6 +121,39 @@ export function bandAgentCard(origin: string): BandAgentCard {
             valueToMoveUsd: { type: "number", description: "USD value to move back to target" },
             fromSymbol: { type: "string", description: "asset to move value from" },
             toSymbol: { type: "string", description: "asset to move value to" },
+          },
+        },
+      },
+      {
+        id: "suggest_lp_range",
+        name: "PancakeSwap liquidity range",
+        description:
+          "Reads a PancakeSwap v3 pool for a pair such as WBNB/USDT and suggests a liquidity range of the width you ask for, centred on the pool's price: the ticks aligned to the pool's spacing, the prices at those ticks, how an optional deposit splits between the two tokens, and a link that opens PancakeSwap's add-liquidity page with the range set. It names the pool and the block it read. It never adds liquidity or trades.",
+        tags: ["rebalancing", "pancakeswap", "liquidity", "range", "v3"],
+        examples: ["Suggest a PancakeSwap range for WBNB/USDT 10% wide with a deposit of 100"],
+        inputModes: ["text/plain", "application/json"],
+        outputModes: ["text/plain", "application/json"],
+        inputSchema: {
+          type: "object",
+          properties: {
+            pair: { type: "string", description: "a PancakeSwap pair priced in dollars, WBNB/USDT" },
+            widthPct: { type: "number", description: "the range width in percent, centred on the pool price" },
+            depositUsd: { type: "number", description: "optional deposit in USD to split between the two tokens" },
+            feeTier: { type: "number", description: "optional pool fee tier, 100, 500, 2500 or 10000; the deepest pool otherwise" },
+          },
+          required: ["pair", "widthPct"],
+          examples: [{ pair: "WBNB/USDT", widthPct: 10, depositUsd: 100 }],
+        },
+        outputSchema: {
+          type: "object",
+          properties: {
+            tickLower: { type: "number", description: "lower tick, aligned to the pool's spacing" },
+            tickUpper: { type: "number", description: "upper tick, aligned to the pool's spacing" },
+            priceLower: { type: "number", description: "quote per base at the lower tick" },
+            priceUpper: { type: "number", description: "quote per base at the upper tick" },
+            baseAmount: { type: "number", description: "base tokens the deposit takes" },
+            quoteAmount: { type: "number", description: "quote tokens the deposit takes" },
+            link: { type: "string", description: "PancakeSwap add-liquidity page with the range set" },
           },
         },
       },
@@ -383,7 +417,7 @@ export function decideBandTask(task: string, input?: Record<string, unknown>): B
 }
 
 export function capabilityText(): string {
-  return `Souk Band Keeper checks a two-asset position against a drift band around a target weight. Send two holding values in USD, the target share of the first asset as a percentage from 0 to 100, and an optional band half width in percentage points. It returns the current weight, the drift, the band edges, whether the weight is inside or outside the band, the distance to the nearest edge, and the USD value to move back to target. The arithmetic is deterministic and uses no market data. Send the values as a data part, for example { kind: "data", data: { input: { valueAUsd: 700, valueBUsd: 300, targetAPercent: 50, bandPercent: 5, symbolA: "BNB", symbolB: "USDT" } } }.`;
+  return `Souk Band Keeper checks a two-asset position against a drift band around a target weight. Send two holding values in USD, the target share of the first asset as a percentage from 0 to 100, and an optional band half width in percentage points. It returns the current weight, the drift, the band edges, whether the weight is inside or outside the band, the distance to the nearest edge, and the USD value to move back to target. The arithmetic is deterministic and uses no market data. Send the values as a data part, for example { kind: "data", data: { input: { valueAUsd: 700, valueBUsd: 300, targetAPercent: 50, bandPercent: 5, symbolA: "BNB", symbolB: "USDT" } } }. Or name a PancakeSwap pair and a width, for example { pair: "WBNB/USDT", widthPct: 10, depositUsd: 100 }, for a suggested v3 liquidity range around that pool's price.`;
 }
 
 export function capabilityArtifact(): Record<string, unknown> {
