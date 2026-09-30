@@ -193,6 +193,8 @@ export interface AgentSummary {
   verification?: Verification;
   pcs?: boolean;
   skills?: AgentCardSkill[];
+  // set when a confirmed registration is shelved ahead of the index
+  admitted_at?: string;
 }
 
 export interface AgentDetail {

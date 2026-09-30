@@ -5,7 +5,7 @@
 import "server-only";
 import postgres from "postgres";
 import type { AgentSummary } from "./types";
-import { isShelfReady } from "./agent-index";
+import { FRESH_ADMISSION_MS, isShelfReady } from "./agent-index";
 
 export type ShelfStoreMode = "shared" | "per-process";
 
@@ -264,11 +264,40 @@ export async function deleteShelfAgent(
 ): Promise<void> {
   const c = client();
   if (!(await init()) || !c) return;
+  // a row admitted on confirm inside the window stays, whichever instance asks:
+  // one that never loaded it would otherwise delete what another just wrote
+  const windowSeconds = FRESH_ADMISSION_MS / 1000;
   try {
     await c`
-      delete from shelf_agents where chain_id = ${chainId} and token_id = ${tokenId}
+      delete from shelf_agents
+      where chain_id = ${chainId} and token_id = ${tokenId}
+        and not coalesce(
+          (payload->>'admitted_at')::timestamptz > now() - make_interval(secs => ${windowSeconds}),
+          false
+        )
     `;
   } catch {
+  }
+}
+
+// one stored row, for an instance that has not merged the fleet's shelf since
+// the row was written
+export async function readShelfAgent(
+  chainId: number,
+  tokenId: string,
+): Promise<AgentSummary | null> {
+  const c = client();
+  if (!(await init()) || !c) return null;
+  try {
+    const rows = await c`
+      select chain_id, token_id, payload from shelf_agents
+      where chain_id = ${chainId} and token_id = ${tokenId}
+      limit 1
+    `;
+    const row = rows[0] as { chain_id: number; token_id: string; payload: unknown } | undefined;
+    return row ? summaryFromRow(row) : null;
+  } catch {
+    return null;
   }
 }
 

@@ -7,7 +7,9 @@ import path from "node:path";
 import {
   AgentRemovedError,
   DEFAULT_FRESHNESS_WINDOW,
+  FRESH_ADMISSION_MS,
   classifyLiveReadFailure,
+  isFreshAdmission,
   shelfActionOnFailure,
   shelfFreshness,
   shouldAdmitSnapshotEntry,
@@ -36,6 +38,25 @@ describe("shelf action on a failed live read", () => {
   it("keeps an entry on any other fault", () => {
     expect(shelfActionOnFailure({ kind: "error" })).toBe("keep");
     expect(shelfActionOnFailure({ kind: "error", message: "8004scan agents 500" })).toBe("keep");
+  });
+});
+
+// A registration confirmed on chain is shelved before the index has it, so a
+// not-found inside the window must not evict it, and one after the window may.
+describe("fresh admission window", () => {
+  const now = Date.parse("2026-09-30T12:00:00.000Z");
+
+  it("holds a listing admitted moments ago", () => {
+    expect(isFreshAdmission(new Date(now - 30_000).toISOString(), now)).toBe(true);
+  });
+
+  it("lets go once the window has passed", () => {
+    expect(isFreshAdmission(new Date(now - FRESH_ADMISSION_MS).toISOString(), now)).toBe(false);
+  });
+
+  it("never holds an entry that was not admitted on confirm", () => {
+    expect(isFreshAdmission(undefined, now)).toBe(false);
+    expect(isFreshAdmission("not a date", now)).toBe(false);
   });
 });
 

@@ -20,6 +20,7 @@ import {
   classifyLiveReadFailure,
   dueForRefresh,
   indexKey,
+  isFreshAdmission,
   shelfActionOnFailure,
   shouldAdmitSnapshotEntry,
   shouldCacheShelfAgent,
@@ -32,6 +33,7 @@ import {
   loadCatalogueMeta,
   loadRegistryTotal,
   loadShelfAgents,
+  readShelfAgent,
   readShelfAgents,
   saveCatalogueMeta,
   saveRegistryTotal,
@@ -696,7 +698,7 @@ export async function admitConfirmedAgent(
     return { admitted: false, reason: shelfRefusalReason(summary) };
   }
   const skills = await captureAgentSkills(summary).catch(() => null);
-  const entry = skills ? { ...summary, skills } : summary;
+  const entry = { ...(skills ? { ...summary, skills } : summary), admitted_at: new Date().toISOString() };
   await loadSnapshot();
   index.agents.set(indexKey(entry.chain_id, entry.token_id), entry);
   await saveShelfAgents([entry]);
@@ -1158,8 +1160,15 @@ export async function getAgentByToken(
   } catch (e) {
     // A definitive not-found evicts, because the registry said the agent is gone.
     // A timeout or a registry fault keeps the snapshot, because neither is evidence.
+    // A registration admitted on confirm is kept too, until the index has had a day,
+    // and an instance that never loaded it asks the shared shelf before judging.
     const action = shelfActionOnFailure(classifyLiveReadFailure({ error: e }));
     if (action === "evict") {
+      const known = cached ?? (await readShelfAgent(chainId, tokenId));
+      if (known && isFreshAdmission(known.admitted_at)) {
+        if (!cached) index.agents.set(indexKey(chainId, tokenId), known);
+        return known;
+      }
       index.agents.delete(indexKey(chainId, tokenId));
       // remove it from the shared shelf too, or the next process start would
       // merge the delisted agent back in

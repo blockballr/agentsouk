@@ -84,6 +84,7 @@ import {
 } from "../src/lib/registry-write";
 import { isShelfReady } from "../src/lib/agent-index";
 import {
+  getAgentByToken,
   queryAgents,
   shelfRefusalReason,
   summaryFromRegistration,
@@ -168,6 +169,22 @@ describe("a proven registration is shelved at confirmation", () => {
     expect(written.chain_id).toBe(97);
     expect(written.category).toBe("health-factor");
     expect(written.a2a_endpoint).toBe(QUALIFYING.endpoint);
+  });
+
+  // the wizard probes the listing seconds after confirming it, and 8004scan
+  // answers not-found until it indexes the token; that read evicted the agent
+  it("keeps a fresh admission when the index answers not-found", async () => {
+    const draft = { ...QUALIFYING, name: "Venus Lag Sentinel" };
+    const claim = await prepareClaim(draft, "4250");
+    const { body } = await confirm(claim.claimId, "4250");
+    expect(body.listed).toBe(true);
+    const [written] = shelfWrites.calls[0] as AgentSummary[];
+    expect(written.admitted_at).toBeTruthy();
+
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })));
+    expect((await getAgentByToken(97, "4250"))?.token_id).toBe("4250");
+    const catalogue = await queryAgents({ q: "Venus Lag Sentinel", limit: 10 });
+    expect(catalogue.items.some((a) => a.token_id === "4250")).toBe(true);
   });
 
   it("refuses an unreachable endpoint with a reason and still confirms", async () => {

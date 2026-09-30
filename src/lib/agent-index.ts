@@ -93,6 +93,16 @@ export class AgentRemovedError extends Error {
   }
 }
 
+// a confirmed registration is shelved before 8004scan has indexed it, so a
+// not-found inside this window is the index lagging, not the agent being gone
+export const FRESH_ADMISSION_MS = 24 * 60 * 60 * 1000;
+
+export function isFreshAdmission(admittedAt: string | undefined, now = Date.now()): boolean {
+  if (!admittedAt) return false;
+  const at = Date.parse(admittedAt);
+  return Number.isFinite(at) && now - at < FRESH_ADMISSION_MS;
+}
+
 // What a live read told us about one cached entry when it did not confirm it.
 export type LiveReadFailure =
   | { kind: "not_found"; status: number | null }
