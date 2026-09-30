@@ -432,14 +432,16 @@ describe("MCP initialize and tools/list", () => {
     expect(tool.inputSchema.additionalProperties).toBe(false);
     expect(Object.keys(tool.inputSchema.properties).sort()).toEqual([
       "feeBps",
+      "feeTier",
       "levels",
       "lowerUsd",
       "orderSizeUsd",
+      "pair",
       "upperUsd",
+      "widthPct",
     ]);
-    expect(tool.inputSchema.required).toEqual(
-      expect.arrayContaining(["lowerUsd", "upperUsd", "levels", "orderSizeUsd"]),
-    );
+    // the range is two prices or a pair and a width, so only these two are always required
+    expect(tool.inputSchema.required).toEqual(["levels", "orderSizeUsd"]);
     expect(tool.inputSchema.properties.lowerUsd.exclusiveMinimum).toBe(0);
     expect(tool.inputSchema.properties.upperUsd.exclusiveMinimum).toBe(0);
     expect(tool.inputSchema.properties.orderSizeUsd.exclusiveMinimum).toBe(0);

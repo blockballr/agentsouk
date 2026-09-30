@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  GRID_AGENT_NAME,
-  GRID_TOOL_DESCRIPTION,
-  GRID_AGENT_VERSION,
-  decideGridAgentTask,
-} from "@/lib/reference-grid";
+import { GRID_AGENT_DESCRIPTION, GRID_AGENT_NAME, GRID_AGENT_VERSION } from "@/lib/reference-grid";
+import { decideGridAgentTaskLive } from "@/lib/reference-grid-live";
 import { MCP_PROTOCOL_VERSION, MCP_SUPPORTED_VERSIONS } from "@/lib/mcp-tools";
 
 export const dynamic = "force-dynamic";
@@ -13,9 +9,8 @@ export const dynamic = "force-dynamic";
 // the same capability either way. It is stateless like the marketplace server:
 // no session is issued, no server stream is opened, and every call is one JSON
 // request and one JSON reply. The tool is a thin adapter over the same
-// decideGridAgentTask the A2A route answers with, so the arithmetic lives in
-// one place. It is the plain planner only: the PancakeSwap pair mode, which reads
-// the chain, is offered over A2A.
+// decideGridAgentTaskLive the A2A route answers with, so the arithmetic and the
+// PancakeSwap pair mode live in one place for both surfaces.
 
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -27,10 +22,11 @@ const JSON_HEADERS = {
 const SERVER_INFO = { name: "souk-grid-planner", version: GRID_AGENT_VERSION };
 
 const INSTRUCTIONS = [
-  `${GRID_AGENT_NAME} is a read-only grid planner. It never reads market prices and never sends a transaction.`,
+  `${GRID_AGENT_NAME} is a read-only grid planner. It never sends a transaction.`,
   "Call plan_grid with lowerUsd, upperUsd, levels and orderSizeUsd to get the rung spacing, the committed value and the gross, fee and net capture of a round trip.",
-  "feeBps is optional: the round trip cost in basis points, an integer from 0 to 10000, defaulting to 0.",
-  "Every figure is deterministic arithmetic on the values you supply, so it is reproducible.",
+  "Or, instead of lowerUsd and upperUsd, send pair (WBNB/USDT) and widthPct: the range is centred on that PancakeSwap v3 pool's price on the marketplace's chain, and the answer names the pool and the block it read.",
+  "feeBps is optional: the round trip cost in basis points, an integer from 0 to 10000; 0 by default, or the pool's own round trip fee in pair mode.",
+  "The arithmetic is deterministic, so every figure is reproducible from the values sent or the block read.",
 ].join("\n");
 
 interface GridAgentMcpTool {
@@ -54,19 +50,35 @@ const TOOLS: GridAgentMcpTool[] = [
   {
     name: "plan_grid",
     title: "Plan a grid trading ladder",
-    description: GRID_TOOL_DESCRIPTION,
+    description: GRID_AGENT_DESCRIPTION,
     inputSchema: {
       type: "object",
       properties: {
         lowerUsd: {
           type: "number",
           exclusiveMinimum: 0,
-          description: "Lower price of the range in USD, greater than zero.",
+          description: "Lower price of the range in USD, greater than zero; leave out when sending a pair.",
         },
         upperUsd: {
           type: "number",
           exclusiveMinimum: 0,
-          description: "Upper price of the range in USD, strictly above lowerUsd.",
+          description: "Upper price of the range in USD, strictly above lowerUsd; leave out when sending a pair.",
+        },
+        pair: {
+          type: "string",
+          description:
+            "Instead of lowerUsd and upperUsd: a PancakeSwap pair priced in dollars, WBNB/USDT. Sent with them, the prices win and the pair is not read.",
+        },
+        widthPct: {
+          type: "number",
+          exclusiveMinimum: 0,
+          exclusiveMaximum: 200,
+          description: "With a pair: the range width in percent, centred on the pool price.",
+        },
+        feeTier: {
+          type: "integer",
+          enum: [100, 500, 2500, 10000],
+          description: "With a pair: optional pool fee tier; the deepest pool when left out.",
         },
         levels: {
           type: "integer",
@@ -84,13 +96,15 @@ const TOOLS: GridAgentMcpTool[] = [
           minimum: 0,
           maximum: 10000,
           description:
-            "Optional round trip fee in basis points, an integer from 0 to 10000. Defaults to 0.",
+            "Optional round trip fee in basis points, an integer from 0 to 10000. Defaults to 0, or with a pair to the pool's own round trip, two swaps at its fee tier.",
         },
       },
-      required: ["lowerUsd", "upperUsd", "levels", "orderSizeUsd"],
+      // the range is two prices or a pair and a width, so only these are always required
+      required: ["levels", "orderSizeUsd"],
       additionalProperties: false,
     },
-    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+    // open world: with a pair the answer depends on the pool's state at the block read
+    annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
   },
 ];
 
@@ -140,12 +154,12 @@ function initializeResult(params: unknown): Record<string, unknown> {
   };
 }
 
-// An empty argument object is a plain probe, which decideGridAgentTask answers
-// with the capability reply; a partial object is answered with input-required.
+// An empty argument object is a plain probe, which the planner answers with the
+// capability reply; a partial object is answered with input-required.
 // The artifact is carried both as a text content part and as structuredContent,
 // so a streamable HTTP client that only reads content still gets the payload.
-function callTool(args: Record<string, unknown>): ToolText {
-  const reply = decideGridAgentTask("", args);
+async function callTool(args: Record<string, unknown>): Promise<ToolText> {
+  const reply = await decideGridAgentTaskLive("", args);
   return {
     content: [
       { type: "text", text: reply.text },
@@ -158,7 +172,7 @@ function callTool(args: Record<string, unknown>): ToolText {
   };
 }
 
-function toolsCall(id: RpcId, params: unknown): NextResponse {
+async function toolsCall(id: RpcId, params: unknown): Promise<NextResponse> {
   if (!isRecord(params) || !asString(params.name)) {
     return rpcError(id, -32602, "Invalid params: a tool name is required");
   }
@@ -168,7 +182,7 @@ function toolsCall(id: RpcId, params: unknown): NextResponse {
   }
   const args = isRecord(params.arguments) ? params.arguments : {};
   try {
-    return rpcResult(id, callTool(args));
+    return rpcResult(id, await callTool(args));
   } catch (e) {
     return rpcError(id, -32603, `Tool ${name} failed: ${(e as Error).message}`);
   }

@@ -14,8 +14,6 @@ export const GRID_AGENT_CATEGORY = "grid-trading";
 export const GRID_AGENT_PROTOCOL_VERSION = "0.3.0";
 export const GRID_AGENT_DESCRIPTION =
   "Plans a grid trading ladder over a price range the caller supplies: a lower price, an upper price, the number of price rungs, the value placed at each rung, and an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic. By default it uses no market data; name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pair's current PancakeSwap price, stating the chain, the pool and the block it read, so every figure can still be reproduced.";
-export const GRID_TOOL_DESCRIPTION =
-  "Plans a grid trading ladder over a price range the caller supplies: a lower price, an upper price, the number of price rungs, the value placed at each rung, and an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic and uses no market data, so the caller supplies the range and the size and can reproduce every figure.";
 export const GRID_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const GRID_AGENT_CARD_PATH = "/api/reference/grid/.well-known/agent-card.json";
 export const GRID_AGENT_MESSAGING_PATH = "/api/reference/grid/a2a";

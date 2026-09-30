@@ -74,7 +74,14 @@ export async function decideGridAgentTaskLive(
     structured.pair !== undefined ||
     structured.invalid.includes("pair") ||
     (fields.pair !== undefined && (hasGridIntent(task) || fields.widthPct !== undefined));
-  if (!pairAsked || rangeGiven) return decideGridAgentTask(task, input);
+  if (!pairAsked) return decideGridAgentTask(task, input);
+  if (rangeGiven) {
+    const reply = decideGridAgentTask(task, input);
+    if (structured.pair === undefined && !structured.invalid.includes("pair")) return reply;
+    // the caller's own range wins, but a pair sent as data is answered rather than dropped
+    const note = "The pair was not read on PancakeSwap, because lowerUsd and upperUsd already set the range.";
+    return { ...reply, text: `${reply.text} ${note}`, artifact: { ...reply.artifact, pairNote: note } };
+  }
 
   // the pool on the chain this marketplace settles on, so a testnet market reads a testnet pool
   const chainId = opts.chainId ?? targetChainId();
