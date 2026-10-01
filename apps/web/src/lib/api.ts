@@ -3,6 +3,7 @@ import type { AgentDetail, AgentSummary, PaymentRequirements, PreviewResult, Rec
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 import { getActiveAccount, getProvider, setTargetChain } from './wallet'
 import { visitSeed } from './rotation'
+import { listingControlMessage, type ListingAction } from './listing-control'
 
 export interface AgentsQuery {
   category?: string
@@ -477,6 +478,8 @@ export interface OwnedAgent {
   createdAt: string
   verification: AgentVerification | null
   failingSince?: string | null
+  // off the market, by the owner ("owner delist") or by the daily sweep ("auto-stale")
+  delisted?: { reason: string | null; at: string | null } | null
 }
 
 export interface OwnedAgentsResult {
@@ -551,6 +554,26 @@ export async function recheckAgent(chainId: number, tokenId: string): Promise<Re
     forced: Boolean(payload?.forced),
     verification: (payload?.verification ?? null) as AgentVerification | null,
   }
+}
+
+// Take an owned listing off the market or put it back. The owner signs a message bound
+// to this token and action; the on-chain registration is untouched either way.
+export async function setListingState(chainId: number, tokenId: string, action: ListingAction): Promise<void> {
+  const owner = await getActiveAccount()
+  if (!owner) throw new Error('Connect the wallet that owns this listing.')
+  const message = listingControlMessage(chainId, tokenId, owner, action)
+  const provider = await getProvider()
+  const signature = (await provider.request({
+    method: 'personal_sign',
+    params: [message, owner],
+  })) as string
+  const res = await fetch(`${BASE}/agents/${chainId}/${tokenId}/delist`, {
+    method: action === 'delist' ? 'POST' : 'DELETE',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ owner, signature }),
+  })
+  const payload = await res.json().catch(() => null)
+  if (!res.ok || !payload?.success) throw new Error(payload?.error ?? `${action} ${res.status}`)
 }
 
 export interface PayeeHire {

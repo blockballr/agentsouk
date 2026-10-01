@@ -5,6 +5,7 @@ import {
   getAgentsByOwner,
   getHiresByPayee,
   recheckAgent,
+  setListingState,
   type OwnedAgent,
   type OwnedAgentsResult,
   type PayeeHire,
@@ -13,7 +14,7 @@ import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
-import { Action, LABEL, TextSlot, button, card, cx } from '../components/ui'
+import { Action, Dialog, LABEL, TextSlot, button, card, cx } from '../components/ui'
 
 type HiresSource = 'postgres' | 'memory' | null
 
@@ -128,6 +129,7 @@ export function ProfilePage() {
   }
 
   const agents = owned?.agents ?? []
+  const offMarket = agents.filter((a) => a.delisted).length
   // only buyers count as hires received; our checks and self-tests would inflate it
   const customerHires = (hires ?? []).filter(isCustomer)
   const byToken = new Map<string, PayeeHire[]>()
@@ -147,8 +149,9 @@ export function ProfilePage() {
         {account && owned && (
           <div className="flex flex-wrap gap-6 text-[13px] text-newsprint-gray">
             <span>
-              <strong className="text-press-black">{owned.counts.agents}</strong>{' '}
-              {owned.counts.agents === 1 ? 'listing' : 'listings'}
+              <strong className="text-press-black">{agents.length - offMarket}</strong>{' '}
+              {agents.length - offMarket === 1 ? 'listing' : 'listings'}
+              {offMarket > 0 ? ` · ${offMarket} off the market` : ''}
             </span>
             {hiresSource === 'postgres' && hires && (
               <>
@@ -265,6 +268,14 @@ export function ProfilePage() {
 
 // the one note a card has room for, most urgent first; every note fits the two-line slot
 function cardNote(agent: OwnedAgent): string {
+  const off = agent.delisted
+  if (off?.reason === 'owner delist') {
+    return `You took it off the market${off.at ? ` ${timeAgo(off.at)}` : ''}. Relist to put it back on the marketplace.`
+  }
+  if (off?.reason === 'auto-stale') {
+    return 'Removed after 7 days without answering. Re-check before relisting.'
+  }
+  if (off) return 'Off the market.'
   if (agent.failingSince) {
     // the sweep runs daily, so a listing can be past day 7 for a few hours before it is removed
     const days = Math.min(7, Math.max(0, Math.floor((Date.now() - Date.parse(agent.failingSince)) / 86400000)))
@@ -293,9 +304,13 @@ function OwnedAgentCard({
   const registryUrl = `${explorerTxBase(agent.chainId)}/token/${agent.contractAddress}?a=${agent.tokenId}`
   const verification = agent.verification
   const verdict = verdictFor(agent.chainId, verification)
+  const offMarket = agent.delisted ?? null
   const [rechecking, setRechecking] = useState(false)
-  // feedback takes the card's note slot for a few seconds
+  const [switching, setSwitching] = useState(false)
+  const [confirmDelist, setConfirmDelist] = useState(false)
+  // feedback takes the card's note slot for a few seconds; the dialog keeps its own error
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [dialogError, setDialogError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!feedback) return
@@ -311,6 +326,7 @@ function OwnedAgentCard({
     setFeedback(null)
     try {
       const result = await recheckAgent(agent.chainId, agent.tokenId)
+      // an off-market card keeps its status line, so the result is named here
       setFeedback(
         result.skipped
           ? 'Checked within the last twenty hours, so nothing new was probed.'
@@ -324,6 +340,27 @@ function OwnedAgentCard({
     }
   }
 
+  async function onSwitch(action: 'delist' | 'relist') {
+    setSwitching(true)
+    setFeedback(null)
+    setDialogError(null)
+    try {
+      await setListingState(agent.chainId, agent.tokenId, action)
+      setConfirmDelist(false)
+      onChanged()
+    } catch (e) {
+      if (action === 'delist') setDialogError(hireErrorText(e))
+      else setFeedback(hireErrorText(e))
+    } finally {
+      setSwitching(false)
+    }
+  }
+
+  function openDelist() {
+    setDialogError(null)
+    setConfirmDelist(true)
+  }
+
   const note = feedback ?? cardNote(agent)
 
   return (
@@ -335,10 +372,10 @@ function OwnedAgentCard({
         {categoryLabel(agent.category)} · agent #{agent.tokenId}
         {!agent.isActive ? ' · inactive' : ''}
       </TextSlot>
-      <p className="mt-3 flex items-center gap-2 text-[14px] font-medium text-press-black" title={verdict.explain}>
-        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[verdict.tone]}`} />
-        <span className="truncate">{verdict.label}</span>
-        {verification ? (
+      <p className="mt-3 flex items-center gap-2 text-[14px] font-medium text-press-black" title={offMarket ? undefined : verdict.explain}>
+        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[offMarket ? 'bad' : verdict.tone]}`} />
+        <span className="truncate">{offMarket ? 'Off the market' : verdict.label}</span>
+        {!offMarket && verification ? (
           <span className="shrink-0 font-normal text-newsprint-gray">· checked {timeAgo(verification.checkedAt)}</span>
         ) : null}
       </p>
@@ -370,7 +407,40 @@ function OwnedAgentCard({
             {rechecking ? 'Probing...' : 'Re-check now'}
           </Action>
         ) : null}
+        {offMarket ? (
+          <Action variant="primary" onClick={() => void onSwitch('relist')} disabled={switching} className="w-full">
+            {switching ? 'Relisting...' : 'Relist'}
+          </Action>
+        ) : (
+          <Action onClick={openDelist} disabled={switching} className="w-full">
+            Delist
+          </Action>
+        )}
       </div>
+
+      {confirmDelist ? (
+        <Dialog title={`Delist ${agent.name}`} onClose={() => setConfirmDelist(false)}>
+          <p className="text-[14px] leading-relaxed text-press-black">
+            It leaves the marketplace listing but stays registered on chain, and its page still works from a direct link. You can relist it here at any time.
+          </p>
+          <p className="mt-2 text-[13px] leading-relaxed text-newsprint-gray">
+            Your wallet signs a message to confirm. There is no transaction and no gas.
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <Action variant="primary" onClick={() => void onSwitch('delist')} disabled={switching} className="w-full">
+              {switching ? 'Delisting...' : 'Sign and delist'}
+            </Action>
+            <Action onClick={() => setConfirmDelist(false)} disabled={switching} className="w-full">
+              Cancel
+            </Action>
+          </div>
+          {dialogError ? (
+            <p role="alert" className="mt-3 text-[12px] leading-relaxed text-press-black">
+              {dialogError}
+            </p>
+          ) : null}
+        </Dialog>
+      ) : null}
     </article>
   )
 }
