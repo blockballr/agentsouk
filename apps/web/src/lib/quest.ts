@@ -30,6 +30,11 @@ export interface QuestProgress {
   wallet: string
   categories: Record<string, boolean>
   hiredAllFour: boolean
+  // how many different agents this wallet has hired here, and how many the passport asks for
+  agentsHired: number
+  requiredHires: number
+  // one of our own wallets, which never earns a stamp
+  team: boolean
   listedOne: boolean
   completed: boolean
   hires: QuestHire[]
@@ -49,6 +54,9 @@ export async function getQuestProgress(wallet: string): Promise<QuestProgress> {
     wallet: body.wallet ?? wallet,
     categories: body.categories ?? {},
     hiredAllFour: Boolean(body.hiredAllFour),
+    agentsHired: typeof body.agentsHired === 'number' ? body.agentsHired : 0,
+    requiredHires: typeof body.requiredHires === 'number' ? body.requiredHires : 2,
+    team: Boolean(body.team),
     listedOne: Boolean(body.listedOne),
     completed: Boolean(body.completed),
     hires: body.hires ?? [],
@@ -59,7 +67,8 @@ export async function getQuestProgress(wallet: string): Promise<QuestProgress> {
   }
 }
 
-export type StepKey = 'health' | 'yield' | 'stall' | 'grid' | 'rebalancing' | 'seal'
+// hire, list, hire again and the passport is finished; the third hire is an extra for its points
+export type StepKey = 'first' | 'stall' | 'second' | 'third' | 'seal'
 
 export interface QuestAgent {
   tokenId: string
@@ -98,16 +107,19 @@ export async function getQuestShelf(seed: string): Promise<Record<string, QuestS
 export interface QuestStep {
   key: StepKey
   title: string
+  // a hire step suggests agents from one category; an agent of any category counts for it
   category?: CategoryKey
   points: number
+  // not needed to finish the passport
+  optional?: boolean
   // the agents a step suggests are chain 97 listings; on any other chain the step points at the category
   agents?: Record<number, { primary: QuestAgent; alternate?: QuestAgent }>
 }
 
 export const QUEST_STEPS: QuestStep[] = [
   {
-    key: 'health',
-    title: 'Health factor',
+    key: 'first',
+    title: 'First hire',
     category: 'health-factor',
     points: 100,
     agents: {
@@ -122,11 +134,12 @@ export const QUEST_STEPS: QuestStep[] = [
       },
     },
   },
+  { key: 'stall', title: 'Your stall', points: 300 },
   {
-    key: 'yield',
-    title: 'Yield',
+    key: 'second',
+    title: 'Second hire',
     category: 'yield',
-    points: 150,
+    points: 200,
     agents: {
       97: {
         primary: {
@@ -143,12 +156,12 @@ export const QUEST_STEPS: QuestStep[] = [
       },
     },
   },
-  { key: 'stall', title: 'Your stall', points: 300 },
   {
-    key: 'grid',
-    title: 'Grid trading',
+    key: 'third',
+    title: 'Third hire',
     category: 'grid-trading',
-    points: 100,
+    points: 150,
+    optional: true,
     agents: {
       97: {
         primary: {
@@ -160,35 +173,25 @@ export const QUEST_STEPS: QuestStep[] = [
       },
     },
   },
-  {
-    key: 'rebalancing',
-    title: 'Rebalancing',
-    category: 'rebalancing',
-    points: 100,
-    agents: {
-      97: {
-        primary: {
-          tokenId: '2524',
-          name: 'Souk Drift Guard',
-          task: 'Check the drift of a two-asset portfolio: 6000 USD in asset A and 4000 USD in asset B against a 50 percent target for A.',
-          input: { valueAUsd: 6000, valueBUsd: 4000, targetAPercent: 50 },
-        },
-      },
-    },
-  },
   { key: 'seal', title: 'Grand seal', points: 250 },
 ]
 
+// hire stamps go by how many different agents were hired, not by which category they were in
 export function stampsFrom(progress: QuestProgress | null): Record<StepKey, boolean> {
-  const c = progress?.categories ?? {}
+  const hired = progress?.agentsHired ?? 0
   return {
-    health: Boolean(c['health-factor']),
-    yield: Boolean(c.yield),
+    first: hired >= 1,
     stall: Boolean(progress?.listedOne),
-    grid: Boolean(c['grid-trading']),
-    rebalancing: Boolean(c.rebalancing),
+    second: hired >= 2,
+    third: hired >= 3,
     seal: Boolean(progress?.completed),
   }
+}
+
+// how far along the three things that finish a passport are
+export function requiredDone(progress: QuestProgress | null): number {
+  const s = stampsFrom(progress)
+  return [s.first, s.stall, s.second].filter(Boolean).length
 }
 
 // the hire step a quest link names. Any agent can be the one hired for it; the task is

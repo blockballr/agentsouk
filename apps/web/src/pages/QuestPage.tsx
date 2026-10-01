@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { categoryDef, shortAddress } from '@agora/core'
+import { shortAddress } from '@agora/core'
 import { visitSeed } from '../lib/rotation'
 import { isOperatedByAgentSouk } from '../lib/first-party'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
@@ -15,6 +15,7 @@ import {
   readSeenPoints,
   readSeenStamps,
   rememberQuestProgress,
+  requiredDone,
   stampsFrom,
   writeQuestMode,
   writeSeenPoints,
@@ -31,6 +32,10 @@ import { ShareCard } from '../components/ShareCard'
 import { SPECIMEN_SERIAL } from '../lib/share-card'
 
 const TOTAL = 1000
+// where a quester enters the campaign; BNB counts only the wallet given on its form
+const BNB_CAMPAIGN = 'https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview'
+// which of the server's awards pays each step
+const AWARD_KEY: Record<StepKey, string> = { first: 'hire-1', stall: 'listing', second: 'hire-2', third: 'hire-3', seal: 'bonus' }
 // the specimen is drawn for the connected wallet, or for this address when there is none
 const SPECIMEN_HOLDER = '0x4bb30e3b3bc22082c1935fe3be7c07448e69c862'
 const REFRESH_MS = 30_000
@@ -145,20 +150,17 @@ export function QuestPage() {
   }
 
   const stamps = stampsFrom(progress)
-  const next = QUEST_STEPS.find((s) => s.key !== 'seal' && !stamps[s.key]) ?? null
+  const open = QUEST_STEPS.filter((s) => s.key !== 'seal' && !stamps[s.key])
+  // what the passport needs comes before the extra hire
+  const next = open.find((s) => !s.optional) ?? open[0] ?? null
   const points = progress?.points ?? 0
   const rank = rankFor(points)
-  const done = QUEST_STEPS.filter((s) => s.key !== 'seal' && stamps[s.key]).length
-  // points follow the order steps are finished in, so a stamped card shows what the server
-  // awarded and an open hire shows what the next hire earns
+  const done = requiredDone(progress)
+  // a stamped card shows what the server awarded, an open one what the step is worth
   const awarded = new Map((progress?.awards ?? []).map((a) => [a.key, a.points]))
-  const hireSteps = QUEST_STEPS.filter((s) => s.category)
-  const nextHirePoints = hireSteps[hireSteps.filter((s) => stamps[s.key]).length]?.points ?? 0
-  const pointsFor = (step: QuestStep): number => {
-    if (step.key === 'seal') return awarded.get('bonus') ?? step.points
-    if (step.key === 'stall') return awarded.get('listing') ?? step.points
-    return stamps[step.key] ? (awarded.get(step.category ?? '') ?? step.points) : nextHirePoints
-  }
+  const pointsFor = (step: QuestStep): number => awarded.get(AWARD_KEY[step.key]) ?? step.points
+  // an agent already hired cannot be the next hire, so it is never offered again
+  const hiredIds = new Set((progress?.hires ?? []).map((h) => h.tokenId))
 
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
@@ -170,7 +172,7 @@ export function QuestPage() {
             <strong className="tabular-nums text-press-black">{shownPoints.toLocaleString()}</strong> of {TOTAL.toLocaleString()} points
           </span>
           <span>
-            <strong className="text-press-black">{done}</strong> of 5 stamps
+            <strong className="text-press-black">{done}</strong> of 3 to finish
           </span>
           <span>
             titled <strong className="text-press-black">{rank.title}</strong>
@@ -178,9 +180,26 @@ export function QuestPage() {
         </div>
       </div>
 
-      <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        Hire in four categories and list one agent of your own. A stamp lands when the hire settles, which is when BNB
-        Chain&apos;s Set and Earn counts it.
+      {/* the reminder comes first: a hire from any other wallet is not counted by the campaign */}
+      <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-press-black">
+        Take part with the wallet you entered on{' '}
+        <a
+          href={BNB_CAMPAIGN}
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-newsprint-gray/40 underline-offset-4 hover:decoration-press-black"
+        >
+          BNB Chain&apos;s Set and Earn form
+        </a>
+        . BNB Chain counts no other wallet.
+      </p>
+      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
+        Hire an agent, list one of your own, then hire a second. That finishes your passport. A third hire is an extra,
+        for more points.
+      </p>
+      <p className="mt-3 max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">
+        The passport, its points and its titles are ours. The merch is BNB Chain&apos;s, and its rules ask for three hires
+        across at least two marketplaces, so one of yours has to be made somewhere else.
       </p>
 
       <div className="mt-6">
@@ -218,7 +237,11 @@ export function QuestPage() {
               stamped={stamps[step.key]}
               fresh={fresh.includes(step.key)}
               isNext={next?.key === step.key}
-              picks={chainId !== null && step.category && shelf !== undefined ? questPicks(step, chainId, shelf?.[step.category], wallet) : []}
+              picks={
+                chainId !== null && step.category && shelf !== undefined
+                  ? questPicks(step, chainId, shelf?.[step.category], wallet).filter((a) => !hiredIds.has(a.tokenId))
+                  : []
+              }
               reading={Boolean(step.category) && (shelf === undefined || chainId === null)}
               onlyOurs={Boolean(step.category && shelf?.[step.category]?.working.length && shelf[step.category].working.every((a) => isOperatedByAgentSouk(a.owner)))}
               chainId={chainId}
@@ -237,17 +260,18 @@ export function QuestPage() {
           wallet={wallet}
           serial={progress.passport?.serial}
           issuedAt={progress.passport?.issuedAt}
+          thirdHire={stamps.third}
         />
       ) : null}
       {/* the card for the announcement, numbered ahead of every holder's; local builds only */}
       {specimen ? (
-        <ShareCard rank={rankFor(TOTAL).title} points={TOTAL} wallet={wallet ?? SPECIMEN_HOLDER} serial={SPECIMEN_SERIAL} />
+        <ShareCard rank={rankFor(TOTAL).title} points={TOTAL} wallet={wallet ?? SPECIMEN_HOLDER} serial={SPECIMEN_SERIAL} thirdHire />
       ) : null}
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
         <p className="max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">
-          Any order works; the numbers are the shortest route. Points and titles track your progress here and are not a
-          token or a reward.
+          Any agent on the market counts for a hire, as long as it is not your own and not one you already hired. Points
+          and titles track your progress here and are not a token or a reward.
         </p>
         <Action variant="quiet" onClick={quit}>
           Quit the quest
@@ -295,19 +319,23 @@ function stepContent(
   if (stamped) {
     const what =
       step.key === 'seal'
-        ? 'All five are in, with the finishing bonus.'
+        ? 'Two hires and your stall are in, with the finishing bonus.'
         : step.key === 'stall'
           ? 'Your listed agent is counted.'
-          : 'Your settled hire in this category is counted.'
+          : 'Your settled hire is counted.'
     return { title, instruction: `Stamped. ${what}`, actions: [] }
   }
   if (step.key === 'seal') {
-    return { title, instruction: 'All five stamps land the grand seal, with the finishing bonus.', actions: [] }
+    return { title, instruction: 'Two hires and your stall land the grand seal, with the finishing bonus.', actions: [] }
   }
+  // BNB counts only the wallet a quester entered on its form, so the first card says so
+  const first = step.key === 'first'
   if (!wallet) {
     return {
       title,
-      instruction: 'Connect the wallet you will hire with to see its stamps.',
+      instruction: first
+        ? 'Connect the wallet you entered on BNB Chain\'s Set and Earn form.'
+        : 'Connect the wallet you will hire with to see its stamps.',
       actions: [{ label: connecting ? 'Waiting for your wallet' : 'Connect wallet', onClick: onConnect, disabled: connecting }],
     }
   }
@@ -322,20 +350,23 @@ function stepContent(
   if (picks.length > 0) {
     return {
       title,
-      instruction: onlyOurs
-        ? 'Only our own agents answer here today. One signature settles the hire.'
-        : 'One signature settles the hire. Then run a task on its page.',
+      instruction: first
+        ? 'Hire with the wallet on your Set and Earn form. One signature settles it.'
+        : onlyOurs
+          ? 'Only our own agents answer here today. One signature settles the hire.'
+          : 'One signature settles the hire. Then run a task on its page.',
       actions: picks.map((a, i) => ({
         label: `${i === 0 ? 'Hire' : 'Or'} ${a.name}`,
         to: `/agents/${chainId}/${a.tokenId}?quest=${step.key}`,
       })),
     }
   }
-  const label = step.category ? categoryDef(step.category).label.toLowerCase() : ''
   return {
     title,
-    instruction: `Hire any ${label} agent that is not your own.`,
-    actions: [{ label: 'Browse the shelf', to: `/agents?sort=reachability${step.category ? `&category=${step.category}` : ''}` }],
+    instruction: first
+      ? 'Hire with the wallet on your Set and Earn form. Any agent but your own counts.'
+      : 'Hire any agent that is not your own and that you have not hired yet.',
+    actions: [{ label: 'Browse the shelf', to: '/agents?sort=reachability' }],
   }
 }
 
@@ -388,7 +419,7 @@ function StepCard({
       />
       {/* the heading keeps clear of the stamp in the corner */}
       <p className={cx(LABEL, 'pr-[100px]')}>
-        {step.key === 'seal' ? 'Finish' : `Step ${number}`} · +{points} points
+        {step.key === 'seal' ? 'Finish' : step.optional ? 'Extra' : `Step ${number}`} · +{points} points
       </p>
       <h2 className="mt-2 truncate pr-[100px] font-serif text-[22px] leading-tight text-press-black">{title}</h2>
       <p className="mt-3 flex items-center gap-2 text-[14px] font-medium text-press-black">

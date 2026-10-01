@@ -9,7 +9,7 @@ const SCALE = 2
 
 export const SHARE_URL = 'https://agentsouk.xyz/quest'
 export const SHARE_CAPTION =
-  "I collected my Souk passport on Agent Souk: hired agents in four categories and listed one of my own, for BNB Chain's Set and Earn."
+  "I collected my Souk passport on Agent Souk: hired agents and listed one of my own, for BNB Chain's Set and Earn."
 
 export interface ShareCardData {
   rank: string
@@ -21,6 +21,8 @@ export interface ShareCardData {
   seed: string
   // the passport's number, issued once to the wallet; without one the foot shows the date
   serial: string | null
+  // the extra hire, which a finished passport may or may not carry
+  thirdHire: boolean
 }
 
 // the number on the card made for the announcement; holders' numbers count on from it
@@ -45,13 +47,20 @@ const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", mono
 const BNB_MARK =
   'M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z'
 
-const VISAS: { label: string; note: string }[] = [
-  { label: 'HEALTH FACTOR', note: 'HIRED' },
-  { label: 'YIELD', note: 'HIRED' },
-  { label: 'GRID TRADING', note: 'HIRED' },
-  { label: 'REBALANCING', note: 'HIRED' },
-  { label: 'OWN STALL', note: 'LISTED' },
-]
+const STALL = 'OWN STALL'
+// the most stamps a passport can carry: three hires and the stall
+const MOST_VISAS = 4
+const COUNT_WORD = ['NONE', 'ONE', 'TWO', 'THREE', 'FOUR']
+
+// the stamps a finished passport holds: its two hires and its stall, and the third hire if made
+function visasFor(thirdHire: boolean): { label: string; note: string }[] {
+  return [
+    { label: 'FIRST HIRE', note: 'HIRED' },
+    { label: 'SECOND HIRE', note: 'HIRED' },
+    ...(thirdHire ? [{ label: 'THIRD HIRE', note: 'HIRED' }] : []),
+    { label: STALL, note: 'LISTED' },
+  ]
+}
 
 type Ctx = CanvasRenderingContext2D & { letterSpacing?: string }
 
@@ -120,7 +129,7 @@ export function machineLines(data: ShareCardData): [string, string] {
   const holder = data.holder ? `${data.holder.slice(2, 6).toUpperCase()}XXXX` : 'HOLDER'
   const d = data.issued
   const date = `${String(d.getUTCFullYear()).slice(2)}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`
-  return [pad(`P<SOUK<${title}`), pad(`${holder}<<${data.points}PTS<<5OF5<<${data.serial ?? date}<<BNB`)]
+  return [pad(`P<SOUK<${title}`), pad(`${holder}<<${data.points}PTS<<${visasFor(data.thirdHire).length}OF${MOST_VISAS}<<${data.serial ?? date}<<BNB`)]
 }
 
 const PORTRAIT_COLS = 5
@@ -236,7 +245,7 @@ function ringText(ctx: Ctx, value: string, radius: number, font: string, ink: st
 }
 
 // the round seal on the set: two rings, the campaign round the edge, the date across the middle
-function seal(ctx: Ctx, cx: number, cy: number, tilt: number, issued: string): void {
+function seal(ctx: Ctx, cx: number, cy: number, tilt: number, issued: string, count: number): void {
   ctx.save()
   ctx.translate(cx, cy)
   ctx.rotate((tilt * Math.PI) / 180)
@@ -261,7 +270,7 @@ function seal(ctx: Ctx, cx: number, cy: number, tilt: number, issued: string): v
   ctx.fillStyle = INK
   ctx.fillRect(-36, 2, 72, 1.5)
   text(ctx, issued, 0, 22, `600 12px ${SANS}`, INK, { align: 'center', spacing: 1 })
-  text(ctx, '5 OF 5', 0, 38, `600 10px ${SANS}`, INK, { align: 'center', spacing: 1.6 })
+  text(ctx, `${count} OF ${MOST_VISAS}`, 0, 38, `600 10px ${SANS}`, INK, { align: 'center', spacing: 1.6 })
   ctx.restore()
 }
 
@@ -304,7 +313,11 @@ export function stampPlaces(seed: string): { visas: StampPlace[]; seal: StampPla
     const j = Math.floor(next() * (i + 1))
     ;[slots[i], slots[j]] = [slots[j], slots[i]]
   }
-  const taken = slots.slice(0, VISAS.length)
+  const taken = slots.slice(0, MOST_VISAS)
+  // one of the places with room is always among them, so every card has a stamp at a slant
+  if (!taken.some((slot) => ROOMY_SLOTS.includes(slot))) {
+    taken[taken.length - 1] = slots.slice(MOST_VISAS).find((slot) => ROOMY_SLOTS.includes(slot)) ?? taken[taken.length - 1]
+  }
   // one or two came down at a real slant, the rest only a little crooked
   const slanted = new Set(taken.filter((slot) => ROOMY_SLOTS.includes(slot)).slice(0, between(1, 2)))
   const visas = taken.map((slot) => ({
@@ -403,15 +416,16 @@ export async function drawShareCard(canvas: HTMLCanvasElement, data: ShareCardDa
   text(ctx, 'BNB CHAIN', 696, 74, `700 14px ${SANS}`, BLACK, { spacing: 1.6 })
   text(ctx, 'SET AND EARN', 696, 92, `600 11px ${SANS}`, GRAY, { spacing: 1.6 })
   text(ctx, 'VISAS', 1136, 78, `700 13px ${SANS}`, BLACK, { align: 'right', spacing: 3 })
-  text(ctx, 'FIVE OF FIVE', 1136, 96, `600 10px ${SANS}`, GRAY, { align: 'right', spacing: 1.6 })
+  const visas = visasFor(data.thirdHire)
+  text(ctx, `${COUNT_WORD[visas.length]} OF ${COUNT_WORD[MOST_VISAS]}`, 1136, 96, `600 10px ${SANS}`, GRAY, { align: 'right', spacing: 1.6 })
 
   const places = stampPlaces(data.seed)
-  VISAS.forEach((v, i) => {
+  visas.forEach((v, i) => {
     const { x, y, tilt } = places.visas[i]
-    visa(ctx, x, y, tilt, v.label, v.note, i === 4 ? INK : BLACK)
+    visa(ctx, x, y, tilt, v.label, v.note, v.label === STALL ? INK : BLACK)
   })
 
-  seal(ctx, places.seal.x, places.seal.y, places.seal.tilt, issued)
+  seal(ctx, places.seal.x, places.seal.y, places.seal.tilt, issued, visas.length)
   // a quiet line under the seal; joined script breaks apart when spaced, so it is set with none
   const arabic = TITLE_ARABIC[data.rank]
   if (arabic) text(ctx, arabic, places.seal.x, places.seal.y + 122, `400 15px ${ARABIC}`, 'rgba(81, 98, 84, 0.6)', { align: 'center' })

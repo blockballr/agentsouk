@@ -22,6 +22,9 @@ function progress(over: Partial<QuestProgress> = {}): QuestProgress {
     wallet: "0xabc",
     categories: {},
     hiredAllFour: false,
+    agentsHired: 0,
+    requiredHires: 2,
+    team: false,
     listedOne: false,
     completed: false,
     hires: [],
@@ -37,11 +40,12 @@ afterEach(() => {
 });
 
 describe("stamps", () => {
-  it("reads each category, the listing and the full set", () => {
-    const s = stampsFrom(progress({ categories: { "health-factor": true, "grid-trading": true }, listedOne: true }));
-    expect(s).toEqual({ health: true, yield: false, stall: true, grid: true, rebalancing: false, seal: false });
+  it("reads the hires by how many agents were hired, the listing and the seal", () => {
+    const s = stampsFrom(progress({ agentsHired: 1, listedOne: true }));
+    expect(s).toEqual({ first: true, stall: true, second: false, third: false, seal: false });
+    expect(stampsFrom(progress({ agentsHired: 3 }))).toMatchObject({ first: true, second: true, third: true });
     expect(stampsFrom(progress({ completed: true })).seal).toBe(true);
-    expect(stampsFrom(null)).toEqual({ health: false, yield: false, stall: false, grid: false, rebalancing: false, seal: false });
+    expect(stampsFrom(null)).toEqual({ first: false, stall: false, second: false, third: false, seal: false });
   });
 
   it("adds up to the thousand points the passport shows", () => {
@@ -61,21 +65,21 @@ describe("titles", () => {
 
 describe("quest links", () => {
   it("open a hire step for any agent, with the task only where it is known", () => {
-    expect(questStepFor("health", 97, "2504")?.agent.task).toBeTruthy();
-    expect(questStepFor("health", 97, "2238")?.agent.name).toBe("Keel");
+    expect(questStepFor("first", 97, "2504")?.agent.task).toBeTruthy();
+    expect(questStepFor("first", 97, "2238")?.agent.name).toBe("Keel");
     // an agent the step does not know still opens the step, with nothing filled in
-    expect(questStepFor("health", 97, "9999")).toEqual({
-      step: QUEST_STEPS.find((s) => s.key === "health"),
+    expect(questStepFor("first", 97, "9999")).toEqual({
+      step: QUEST_STEPS.find((s) => s.key === "first"),
       agent: { tokenId: "9999", name: "" },
     });
-    expect(questStepFor("health", 56, "2504")?.agent.task).toBeUndefined();
+    expect(questStepFor("first", 56, "2504")?.agent.task).toBeUndefined();
     expect(questStepFor("stall", 97, "2504")).toBeNull();
     expect(questStepFor("seal", 97, "2504")).toBeNull();
     expect(questStepFor(null, 97, "2504")).toBeNull();
   });
 
   it("fill in the structured input for the agents that need it", () => {
-    for (const key of ["health", "grid", "rebalancing"] as const) {
+    for (const key of ["first", "third"] as const) {
       const step = QUEST_STEPS.find((s) => s.key === key)!;
       expect(step.agents?.[97]?.primary.input).toBeTruthy();
     }
@@ -83,7 +87,7 @@ describe("quest links", () => {
 });
 
 describe("quest picks", () => {
-  const health = QUEST_STEPS.find((s) => s.key === "health")!;
+  const health = QUEST_STEPS.find((s) => s.key === "first")!;
   const agent = (tokenId: string, name: string, owner = "0xowner") => ({ tokenId, name, owner });
   const guard = agent("2504", "Souk Health Guard");
   const keel = agent("2238", "Keel");
@@ -198,11 +202,11 @@ describe("state in the browser", () => {
     writeQuestMode("0xAbC", "quit");
     expect(readQuestMode("0xabc")).toBe("quit");
     expect(readQuestMode(null)).toBeNull();
-    writeSeenStamps("0xabc", ["health", "yield"]);
-    expect(readSeenStamps("0xabc")).toEqual(["health", "yield"]);
+    writeSeenStamps("0xabc", ["first", "second"]);
+    expect(readSeenStamps("0xabc")).toEqual(["first", "second"]);
     writeSeenPoints("0xabc", 250);
     expect(readSeenPoints("0xabc")).toBe(250);
-    data.set("souk.quest.v1.seen.0xabc", '["health","nonsense"]');
-    expect(readSeenStamps("0xabc")).toEqual(["health"]);
+    data.set("souk.quest.v1.seen.0xabc", '["first","nonsense"]');
+    expect(readSeenStamps("0xabc")).toEqual(["first"]);
   });
 });

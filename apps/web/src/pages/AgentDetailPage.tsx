@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { questStepFor, type QuestStep } from '../lib/quest'
 import { QuestStrip } from '../components/QuestStrip'
-import { categoryOf } from '../lib/compare'
 import type { AgentDetail, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import {
   formatDate,
@@ -344,9 +343,8 @@ export function AgentDetailPage() {
   const hireWarning = preHireWarning(detail.verification)
   const jobSeller = sellsByJob(detail.skills)
   // a passport link opens the page ready for its step: the guide strip, and the run panel filled in
-  const questLink = questStepFor(searchParams.get('quest'), Number(chainId), tokenId)
-  const shelfCategory = (detail as { category?: string }).category ?? categoryOf(detail)
-  const quest = questLink && questLink.step.category === shelfCategory ? questLink : null
+  // any agent counts for a hire step, so the guide shows whatever its category
+  const quest = questStepFor(searchParams.get('quest'), Number(chainId), tokenId)
   const questPrefill = quest
     ? { task: quest.agent.task, input: quest.agent.input ? JSON.stringify(quest.agent.input) : undefined }
     : undefined

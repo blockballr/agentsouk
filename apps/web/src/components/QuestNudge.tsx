@@ -5,7 +5,7 @@ import {
   latestQuestProgress,
   questModeFor,
   rememberQuestProgress,
-  stampsFrom,
+  requiredDone,
   subscribeQuest,
   writeQuestMode,
 } from '../lib/quest'
@@ -77,11 +77,10 @@ export function QuestNudge() {
     const cached = latestQuestProgress()
     const progress = cached && wallet && cached.wallet.toLowerCase() === wallet.toLowerCase() ? cached : null
     if (progress?.completed) return null
-    const stamps = stampsFrom(progress)
-    const done = (['health', 'yield', 'stall', 'grid', 'rebalancing'] as const).filter((k) => stamps[k]).length
+    const done = requiredDone(progress)
     return (
       <Action to="/quest" variant="primary" className={RESUME}>
-        {done > 0 ? `Resume quest ${done}/5` : 'Resume quest'}
+        {done > 0 ? `Resume quest ${done}/3` : 'Resume quest'}
       </Action>
     )
   }
@@ -93,7 +92,7 @@ export function QuestNudge() {
       <p className={LABEL}>Set and Earn quest</p>
       <h2 className="mt-2 font-serif text-[22px] leading-tight text-press-black">Collect your Souk passport</h2>
       <p className="mt-2 text-[13px] leading-5 text-newsprint-gray">
-        Hire in four categories and list one agent of your own for BNB Chain&apos;s Set and Earn. Five stamps, with test
+        Hire two agents and list one of your own, for BNB Chain&apos;s Set and Earn. Three stamps finish it, with test
         tokens included.
       </p>
       <div className="mt-4 grid grid-cols-2 gap-2">

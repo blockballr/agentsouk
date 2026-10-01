@@ -6,13 +6,13 @@ import { SHARE_CAPTION, SHARE_URL, SPECIMEN_SERIAL, issuedLabel, machineLines, p
 
 const HOLDER = "0x4bb30e3b3bc22082c1935fe3be7c07448e69c862";
 const ISSUED = new Date("2026-10-01T15:30:00Z");
-const CARD = { rank: "Master of the Souk", points: 1000, holder: HOLDER as string | null, issued: ISSUED, seed: HOLDER, serial: null as string | null };
+const CARD = { rank: "Master of the Souk", points: 1000, holder: HOLDER as string | null, issued: ISSUED, seed: HOLDER, serial: null as string | null, thirdHire: true };
 
 describe("the machine-readable lines", () => {
   it("are two lines of forty characters, padded with chevrons as a passport's are", () => {
     const [first, second] = machineLines(CARD);
     expect(first).toBe("P<SOUK<MASTER<OF<THE<SOUK<<<<<<<<<<<<<<<");
-    expect(second).toBe("4BB3XXXX<<1000PTS<<5OF5<<261001<<BNB<<<<");
+    expect(second).toBe("4BB3XXXX<<1000PTS<<4OF4<<261001<<BNB<<<<");
     expect(first).toHaveLength(40);
     expect(second).toHaveLength(40);
   });
@@ -23,9 +23,13 @@ describe("the machine-readable lines", () => {
   });
 
   it("carry the passport's number in place of the date once one is issued", () => {
-    expect(machineLines({ ...CARD, serial: "0110001" })[1]).toBe("4BB3XXXX<<1000PTS<<5OF5<<0110001<<BNB<<<");
-    expect(machineLines({ ...CARD, serial: SPECIMEN_SERIAL })[1]).toBe("4BB3XXXX<<1000PTS<<5OF5<<0110000<<BNB<<<");
+    expect(machineLines({ ...CARD, serial: "0110001" })[1]).toBe("4BB3XXXX<<1000PTS<<4OF4<<0110001<<BNB<<<");
+    expect(machineLines({ ...CARD, serial: SPECIMEN_SERIAL })[1]).toBe("4BB3XXXX<<1000PTS<<4OF4<<0110000<<BNB<<<");
     expect(machineLines({ ...CARD, serial: "13111000" })[1]).toHaveLength(40);
+  });
+
+  it("count the third hire only when it was made", () => {
+    expect(machineLines({ ...CARD, points: 800, thirdHire: false })[1]).toContain("<<800PTS<<3OF4<<");
   });
 
   it("carry no part of the address when the holder is left off the card", () => {
@@ -80,11 +84,11 @@ describe("where the stamps land", () => {
     expect(stampPlaces(HOLDER)).not.toEqual(stampPlaces(OTHER));
   });
 
-  it("keeps all five visas and the seal on the visa page, whatever the wallet", () => {
+  it("keeps room for all four visas and the seal on the visa page, whatever the wallet", () => {
     for (let i = 0; i < 200; i++) {
       const { visas, seal } = stampPlaces(`0x${i.toString(16).padStart(40, "0")}`);
-      expect(visas).toHaveLength(5);
-      expect(new Set(visas.map((v) => `${v.x}:${v.y}`)).size).toBe(5);
+      expect(visas).toHaveLength(4);
+      expect(new Set(visas.map((v) => `${v.x}:${v.y}`)).size).toBe(4);
       for (const v of visas) {
         // a visa is 156 by 68, so its middle stays this far inside the page's edges
         expect(v.x).toBeGreaterThanOrEqual(710);

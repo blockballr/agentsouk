@@ -19,6 +19,7 @@ export function ShareCard({
   wallet,
   serial,
   issuedAt,
+  thirdHire = false,
 }: {
   rank: string
   points: number
@@ -26,6 +27,8 @@ export function ShareCard({
   // the passport's number and the day it was issued, once the server has issued one
   serial?: string | null
   issuedAt?: string | null
+  // whether the holder made the extra hire, which adds its stamp to the card
+  thirdHire?: boolean
 }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   // a card that leaves the holder off is laid out from nothing of the wallet
@@ -49,13 +52,14 @@ export function ShareCard({
       seed: showHolder ? wallet.toLowerCase() : anonymous.current,
       // a number can be traced to its wallet, so it goes with the holder or not at all
       serial: showHolder ? (serial ?? null) : null,
+      thirdHire,
     })
       .then(() => live && setReady(true))
       .catch((e) => live && setNote(e instanceof Error ? e.message : 'The card could not be drawn.'))
     return () => {
       live = false
     }
-  }, [rank, points, wallet, showHolder, serial, issuedAt])
+  }, [rank, points, wallet, showHolder, serial, issuedAt, thirdHire])
 
   async function file(): Promise<File> {
     if (!canvas.current) throw new Error('The card is not ready yet.')
@@ -122,7 +126,7 @@ export function ShareCard({
           width={CARD_WIDTH}
           height={CARD_HEIGHT}
           role="img"
-          aria-label={`Your Souk passport, open: ${rank}, ${points.toLocaleString('en-US')} points, five stamps and the Set and Earn seal`}
+          aria-label={`Your Souk passport, open: ${rank}, ${points.toLocaleString('en-US')} points, its stamps and the Set and Earn seal`}
           className="h-auto w-full rounded-[10px] border hairline border-slate-verdant/40"
         />
 

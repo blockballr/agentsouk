@@ -4,11 +4,10 @@ import { cx } from './ui'
 
 // the same stamps the share card carries, so a quester sees on each step the mark it leaves
 const VISA: Record<Exclude<StepKey, 'seal'>, { label: string; note: string; tilt: number }> = {
-  health: { label: 'HEALTH FACTOR', note: 'HIRED', tilt: -5 },
-  yield: { label: 'YIELD', note: 'HIRED', tilt: 4 },
+  first: { label: 'FIRST HIRE', note: 'HIRED', tilt: -5 },
   stall: { label: 'OWN STALL', note: 'LISTED', tilt: -4 },
-  grid: { label: 'GRID TRADING', note: 'HIRED', tilt: -3 },
-  rebalancing: { label: 'REBALANCING', note: 'HIRED', tilt: 6 },
+  second: { label: 'SECOND HIRE', note: 'HIRED', tilt: 4 },
+  third: { label: 'THIRD HIRE', note: 'HIRED', tilt: -3 },
 }
 
 // a faint outline of where the stamp goes until the step is finished, then the stamp in ink.
@@ -45,7 +44,7 @@ export function QuestStamp({
           </text>
           <path d="M40 63h40" strokeWidth="1" />
           <text x="60" y="75" textAnchor="middle" fill="currentColor" stroke="none" fontSize="7.5" fontWeight="600" letterSpacing="1">
-            5 OF 5
+            PASSPORT
           </text>
         </g>
       </svg>
