@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { categoryDef, classifyAgent } from '@agora/core'
 import type { RegistrationDraft } from '@agora/core'
@@ -32,7 +32,7 @@ import { button, card, cx } from './ui'
 
 // pending means the wallet already sent a transaction and we are waiting on its receipt, so the
 // only control from there is a check, never a second send
-type Step =
+export type WizardStep =
   | 'form'
   | 'prepared'
   | 'signing'
@@ -116,8 +116,12 @@ function withWalletTimeout<T>(work: Promise<T>): Promise<T> {
 }
 
 /** The listing wizard: fill the draft, review the document, register from the owner's wallet, then let the server check the chain. */
-export function RegisterWizard({ chainId }: { chainId: number }) {
-  const [step, setStep] = useState<Step>('form')
+export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: (step: WizardStep) => void }) {
+  const [step, setStep] = useState<WizardStep>('form')
+  // lets the page's quest guide follow where the wizard has got to
+  useEffect(() => {
+    onStep?.(step)
+  }, [step, onStep])
   const [draft, setDraft] = useState<RegistrationDraft>(EMPTY)
   const [errors, setErrors] = useState<string[]>([])
   const [prepared, setPrepared] = useState<PrepareResult | null>(null)

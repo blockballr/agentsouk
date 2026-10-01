@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Tag } from '../components/Tag'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 import type { AgentDetail, CategoryDef, CategoryKey } from '@agora/core'
@@ -23,7 +23,8 @@ import {
   settlementAssetFor,
 } from '../lib/contracts'
 import { getAgentDetail } from '../lib/api'
-import { RegisterWizard } from '../components/RegisterWizard'
+import { RegisterWizard, type WizardStep } from '../components/RegisterWizard'
+import { QuestStrip } from '../components/QuestStrip'
 import { button, card, cx } from '../components/ui'
 
 const checklist = [
@@ -81,6 +82,11 @@ export function ListAgentPage() {
   // compiled-in mainnet default and hand a testnet participant wrong advice.
   const target = useTargetChain()
   const chain = target?.chainId ?? null
+  // a passport link opens the page with the guide for its listing step
+  const [searchParams] = useSearchParams()
+  const questing = searchParams.get('quest') === 'stall'
+  const [wizardStep, setWizardStep] = useState<WizardStep>('form')
+  const guide = questing ? LISTING_GUIDE[wizardStep] : null
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
       <p className="micro text-newsprint-gray">List your agent</p>
@@ -109,6 +115,11 @@ export function ListAgentPage() {
           Already registered? Look it up
         </button>
       </div>
+      {/* while the form is untouched the guide sits where the visitor lands; once the wizard
+          moves, it follows the wizard */}
+      {guide && wizardStep === 'form' && (
+        <QuestStrip label={`Open your stall · ${guide.count}`} text={guide.text} className="mt-8 max-w-3xl" />
+      )}
 
       <CreateSection chainId={chain} />
       {/* register straight from here, for a participant who would rather not
@@ -130,8 +141,16 @@ export function ListAgentPage() {
           ) : (
             <>
               <GasRequirement chainId={chain} />
+              {guide && wizardStep !== 'form' && (
+                <QuestStrip
+                  label={`Open your stall · ${guide.count}`}
+                  text={guide.text}
+                  done={wizardStep === 'listed'}
+                  className="mt-8 max-w-3xl"
+                />
+              )}
               <div className="mt-8">
-                <RegisterWizard chainId={chain} />
+                <RegisterWizard chainId={chain} onStep={setWizardStep} />
               </div>
             </>
           )}
@@ -142,6 +161,29 @@ export function ListAgentPage() {
       <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
     </section>
   )
+}
+
+// what the quest guide says at each point of the listing wizard
+const LISTING_GUIDE: Record<WizardStep, { count: string; text: string }> = {
+  form: {
+    count: 'Step 1 of 3',
+    text: 'List one agent of your own. Build it with Agent Studio as shown below, or register an agent you already run with the form on this page.',
+  },
+  prepared: {
+    count: 'Step 2 of 3',
+    text: 'Your registration is ready. Sign the transaction in your wallet: it registers the agent with you as its owner.',
+  },
+  signing: { count: 'Step 2 of 3', text: 'Waiting for your wallet to sign the registration.' },
+  confirming: { count: 'Step 2 of 3', text: 'Waiting for the transaction to confirm on chain.' },
+  pending: {
+    count: 'Step 3 of 3',
+    text: 'The transaction is sent and still confirming. Check it again with the button in the wizard; it is not sent twice.',
+  },
+  listed: {
+    count: 'Done',
+    text: 'Your agent is registered. Your passport stamps this step once the agent is on the marketplace shelf.',
+  },
+  error: { count: 'Step 2 of 3', text: 'The wizard says below what happened and what to do next.' },
 }
 
 // Matches GAS_FLOOR_WEI in src/app/api/tokens/mint/route.ts: the sponsored mint
