@@ -127,6 +127,9 @@ export interface X402Requirements {
   }
 }
 
+// the marketplace's own sentence for why a hire was not offered, safe to show as it is
+export class HireRefusedError extends Error {}
+
 export async function getHireRequirements(
   chainId: string,
   tokenId: string,
@@ -137,7 +140,18 @@ export async function getHireRequirements(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ chainId: Number(chainId), tokenId, client }),
   })
-  if (!res.ok) throw new Error(`requirements ${res.status}`)
+  if (!res.ok) {
+    // a refusal carries its own sentence, which is what the buyer should read
+    const refusal =
+      res.status === 409
+        ? await res
+            .json()
+            .then((b: { error?: unknown }) => (typeof b?.error === 'string' ? b.error : null))
+            .catch(() => null)
+        : null
+    if (refusal) throw new HireRefusedError(refusal.slice(0, 400))
+    throw new Error(`requirements ${res.status}`)
+  }
   const body = await readJsonBody<X402Requirements>(res, 'requirements')
   if (!body.success) throw new Error('requirements unavailable')
   return body.data

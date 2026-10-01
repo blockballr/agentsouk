@@ -72,6 +72,8 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
       tokenId: cand.tokenId,
       amountUsd: AMOUNT_USD,
       client: wallet.address,
+      // a check may run on an agent that is off the market; a buyer's hire may not
+      purpose: "check",
     }),
   });
   const pr = reqRes.body?.data?.paymentRequirements as {

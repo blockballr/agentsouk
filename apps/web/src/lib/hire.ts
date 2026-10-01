@@ -2,7 +2,7 @@
 
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
-import { getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
+import { HireRefusedError, getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
 import { activeAccountMatches, chainIdToHex, ensureBscChain, getActiveAccount, getChainTimestamp, setTargetChain, WalletUnavailableError, WrongSignerError, signTransferAuthorization } from './wallet'
 import { setPaymentInFlight } from './stale-chunk'
 
@@ -85,6 +85,7 @@ const REVERT_PLAIN_ENGLISH: { test: RegExp; message: string }[] = [
 export function hireErrorText(e: unknown): string {
   if (e instanceof WalletUnavailableError) return e.message
   if (e instanceof WrongSignerError) return e.message
+  if (e instanceof HireRefusedError) return e.message
 
   const code = (e as { code?: number }).code
   if (code === 4001) return 'You cancelled this in your wallet, so nothing was charged.'
@@ -245,7 +246,11 @@ export async function signAndSettleHire(
       },
       agent: { ...data.agent },
     })
-    if (!settle.success) throw new Error(settle.error ?? 'Settlement failed.')
+    if (!settle.success) {
+      // a refusal is the marketplace's own sentence; anything else is read for what went wrong
+      const refused = (settle as { refused?: boolean }).refused === true && settle.error
+      throw refused ? new HireRefusedError(String(settle.error).slice(0, 400)) : new Error(settle.error ?? 'Settlement failed.')
+    }
     onPhase('hired')
     const receipt = await getReceipt(settle.paymentId)
     return {

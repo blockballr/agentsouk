@@ -11,6 +11,7 @@ import {
 import { parseUnits } from "@/lib/format";
 import { JOB_SELLER_NOTE, sellsByJob } from "@agora/core";
 import { fetchAgentCardSkills } from "@/lib/delivery";
+import { loadDelisted } from "@/lib/delist-store";
 
 export const dynamic = "force-dynamic";
 
@@ -24,18 +25,37 @@ export async function POST(req: NextRequest) {
     tokenId?: string;
     amountUsd?: number;
     client?: string;
+    purpose?: string;
   } | null;
 
-  if (!body?.tokenId) {
+  // a token id is a number in the registry. Anything else could steer the registry read to a
+  // different agent than the one asked for
+  const tokenId = typeof body?.tokenId === "string" || typeof body?.tokenId === "number" ? String(body.tokenId) : "";
+  if (!body || !/^\d{1,78}$/.test(tokenId)) {
     return NextResponse.json({ success: false, error: "tokenId required" }, { status: 400 });
   }
 
   // default to the configured chain, not mainnet: this deployment declares BSC testnet, and
   // defaulting to BSC_CHAIN_ID gave a caller that omitted chain a mainnet asset and a different agent's wallet
-  const chainId = body.chainId ?? targetChainId();
-  const detail = await fetchAgentDetail(chainId, body.tokenId);
+  const chainId = body.chainId === undefined || body.chainId === null ? targetChainId() : Number(body.chainId);
+  if (!Number.isSafeInteger(chainId) || chainId < 1) {
+    return NextResponse.json({ success: false, error: "chainId must be a chain id" }, { status: 400 });
+  }
+  const detail = await fetchAgentDetail(chainId, tokenId);
   if (!detail) {
     return NextResponse.json({ success: false, error: "agent not found" }, { status: 404 });
+  }
+  // an agent that is off the market takes no new hires. A check of it still runs, because a
+  // passing check is how it comes back. Anyone can claim to be a check here and gets nothing
+  // by it: the settlement applies the same refusals to every payment that is not a probe
+  if (body.purpose !== "check" && chainId === targetChainId()) {
+    const offMarket = await loadDelisted().catch(() => new Set<string>());
+    if (offMarket.has(String(detail.token_id))) {
+      return NextResponse.json(
+        { success: false, offMarket: true, error: `${detail.name} is off the market, so it is not taking new hires.` },
+        { status: 409 },
+      );
+    }
   }
   // a direct payment to a job seller settles and then delivers nothing, so it is refused here,
   // which every hire path (the site, MCP and the skill) passes through before anyone signs;
