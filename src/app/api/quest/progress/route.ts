@@ -4,6 +4,8 @@ import { queryAgents } from "@/lib/scanner";
 import { CATEGORY_KEYS, type CategoryKey } from "@agora/core";
 import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
 import { questAwards } from "@/lib/quest-points";
+import { issuePassport } from "@/lib/passport-store";
+import { serialLabel } from "@/lib/passport-serial";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +70,14 @@ export async function GET(req: NextRequest) {
   const hiredAllFour = CATEGORY_KEYS.every((k) => categories[k]);
   const listedOne = listings.length > 0;
   const { points, awards } = questAwards(hires, CATEGORY_KEYS, listedOne);
+  const completed = hiredAllFour && listedOne;
+  // the first read of a complete passport issues its number, kept with what it rested on
+  const issued = completed
+    ? await issuePassport(w, {
+        hires: hires.map((h) => ({ paymentId: h.paymentId, tokenId: h.tokenId, category: h.category, txHash: h.txHash, createdAt: h.createdAt })),
+        listings: listings.map((l) => l.tokenId),
+      })
+    : null;
 
   return NextResponse.json({
     success: true,
@@ -77,9 +87,10 @@ export async function GET(req: NextRequest) {
     hires,
     listings,
     listedOne,
-    completed: hiredAllFour && listedOne,
+    completed,
     points,
     awards,
+    passport: issued ? { serial: serialLabel(issued.number, issued.issuedAt), number: issued.number, issuedAt: issued.issuedAt } : null,
     // surfaced so a reader can tell a genuinely empty answer from an incomplete one
     source: receiptsMode(),
   });
