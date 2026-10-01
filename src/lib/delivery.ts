@@ -10,6 +10,7 @@ import {
   markTaskRunning,
 } from "./tasks";
 import { getJobByPaymentAsync, submitJobAsync, type JobStatus } from "./jobs";
+import { requestsWalletSecret } from "./quest-eligibility";
 
 // the delivery half of hire: a settled receipt unlocks invoking the agent's own endpoint.
 // Two JSON-RPC protocols exist: MCP (initialize, tools/list, tools/call) and A2A (agent card, message/send); agents that gate direct calls behind their own x402 payment are surfaced as gated, not faked.
@@ -476,6 +477,9 @@ export interface JobAdvance {
 export const BROWSER_INVOKED_DELIVERY_REFUSAL =
   "This agent is browser-invoked: its tools live in a browser page, so the marketplace cannot call it. The hire settled, but nothing could be delivered.";
 
+export const SECRET_REPLY_REFUSAL =
+  "The agent asked for a wallet secret instead of answering, so this is not counted as a delivery. Never share a private key, seed phrase or password with an agent.";
+
 export const NO_ENDPOINT_DELIVERY_REFUSAL =
   "This agent has no callable endpoint registered (no MCP server, no A2A endpoint), so settlement can be recorded but nothing can be delivered.";
 
@@ -587,6 +591,11 @@ export async function deliver(input: DeliverInput): Promise<
       markTaskFailed(trackedId, error);
     }
     return { ok: false, error, taskId: trackedId };
+  }
+
+  // an answer that asks the buyer for a wallet secret is not a result, whoever the buyer is
+  if (outcome.ok && outcome.kind === "deliverable" && requestsWalletSecret(outcome.text)) {
+    outcome = { protocol: outcome.protocol, ok: false, error: SECRET_REPLY_REFUSAL };
   }
 
   let jobAdvance: JobAdvance | undefined;
