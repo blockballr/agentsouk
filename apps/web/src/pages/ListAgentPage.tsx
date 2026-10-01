@@ -115,6 +115,19 @@ export function ListAgentPage() {
           Already registered? Look it up
         </button>
       </div>
+      {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB */}
+      <p className="mt-6 max-w-3xl text-[15px] leading-relaxed text-newsprint-gray">
+        Listing for Set and Earn? Enter your wallet and your agent with BNB Chain first, on{' '}
+        <a
+          href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
+          target="_blank"
+          rel="noreferrer"
+          className="text-press-black underline decoration-newsprint-gray/40 underline-offset-4 hover:decoration-press-black"
+        >
+          its Set and Earn page
+        </a>
+        . BNB Chain counts only what is registered there.
+      </p>
       {/* while the form is untouched the guide sits where the visitor lands; once the wizard
           moves, it follows the wizard */}
       {guide && wizardStep === 'form' && (
