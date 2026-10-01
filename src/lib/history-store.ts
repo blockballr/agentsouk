@@ -79,6 +79,7 @@ function remember<T>(list: T[], entry: T): void {
 // a history line is never worth holding a check or a job for, so a write that has not landed
 // by this is given up and reported as lost
 const WRITE_CAP_MS = 3000;
+const RECENT_WINDOW_MS = 30 * 86_400_000;
 
 function within(work: Promise<boolean>, what: string): Promise<boolean> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -121,27 +122,27 @@ export function recordCheck(tokenId: string, status: string, responseMs: number 
 }
 
 // the most recent checks of each token, newest first, for the strip under a listing
+// a month is as far back as it reads, so the work stays bounded as the history grows
+// with a database it throws when the read fails, so an outage is never shown as an empty record
 export async function recentChecks(tokenIds: readonly string[], perToken = 30): Promise<Map<string, CheckRecord[]>> {
   const out = new Map<string, CheckRecord[]>();
   if (tokenIds.length === 0) return out;
-  if ((await ensureTables()) && sql) {
-    try {
-      const rows = (await sql`
-        select token_id, status, response_ms, checked_at from (
-          select token_id, status, response_ms, checked_at,
-                 row_number() over (partition by token_id order by checked_at desc) as n
-          from check_history where token_id in ${sql([...tokenIds])}
-        ) ranked where n <= ${perToken} order by checked_at desc
-      `) as { token_id: string; status: string; response_ms: number | null; checked_at: Date | string }[];
-      for (const r of rows) {
-        const list = out.get(r.token_id) ?? [];
-        list.push({ tokenId: r.token_id, status: r.status, responseMs: r.response_ms, checkedAt: new Date(r.checked_at).toISOString() });
-        out.set(r.token_id, list);
-      }
-      return out;
-    } catch {
-      return out;
+  if (sql) {
+    if (!(await ensureTables())) throw new Error("history tables unavailable");
+    const since = new Date(Date.now() - RECENT_WINDOW_MS).toISOString();
+    const rows = (await sql`
+      select token_id, status, response_ms, checked_at from (
+        select token_id, status, response_ms, checked_at,
+               row_number() over (partition by token_id order by checked_at desc) as n
+        from check_history where token_id in ${sql([...tokenIds])} and checked_at >= ${since}
+      ) ranked where n <= ${perToken} order by checked_at desc
+    `) as { token_id: string; status: string; response_ms: number | null; checked_at: Date | string }[];
+    for (const r of rows) {
+      const list = out.get(r.token_id) ?? [];
+      list.push({ tokenId: r.token_id, status: r.status, responseMs: r.response_ms, checkedAt: new Date(r.checked_at).toISOString() });
+      out.set(r.token_id, list);
     }
+    return out;
   }
   const wanted = new Set(tokenIds);
   for (let i = checks.length - 1; i >= 0; i--) {
