@@ -425,7 +425,10 @@ function CompareTable({
         </p>
       ) : (
         <>
-          <div className={cx(card('plain', 'none'), 'overflow-x-auto')}>
+          {/* the scroll sits inside the card: the card's edge is drawn a pixel outside it,
+              which a scrolling box counts as overflow and answers with scrollbars */}
+          <div className={card('plain', 'none')}>
+            <div className="overflow-x-auto rounded-[inherit]">
             <table className="w-full min-w-[560px] border-collapse text-left text-[14px]">
               <thead>
                 <tr>
@@ -492,6 +495,7 @@ function CompareTable({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
           <p className="mt-4 max-w-3xl text-[13px] leading-relaxed text-newsprint-gray">
             Best in each category goes to the agent whose last check went best, then the higher
