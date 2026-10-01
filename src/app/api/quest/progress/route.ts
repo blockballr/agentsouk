@@ -3,15 +3,15 @@ import { listPaymentsByClient, receiptsMode } from "@/lib/receipts-store";
 import { queryAgents } from "@/lib/scanner";
 import { CATEGORY_KEYS, type CategoryKey } from "@agora/core";
 import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
-import { questAwards } from "@/lib/quest-points";
+import { REQUIRED_HIRES, questAwards } from "@/lib/quest-points";
 import { issuePassport } from "@/lib/passport-store";
 import { serialLabel } from "@/lib/passport-serial";
 
 export const dynamic = "force-dynamic";
 
-// The Set and Earn verdict for one wallet: which of the four categories it has
-// hired in, what it has listed, and whether that completes the quest. A hire is
-// counted only when it is the wallet's own, settled, non-excluded activity, so
+// One wallet's passport: the agents it has hired here, what it has listed, and whether
+// that finishes it. Two different agents hired and one listed is a finished passport.
+// A hire is counted only when it is the wallet's own, settled, non-excluded activity, so
 // wash and team activity can never complete a wallet.
 
 export async function GET(req: NextRequest) {
@@ -49,6 +49,8 @@ export async function GET(req: NextRequest) {
     const category = (agent?.category as string | undefined) ?? null;
     hires.push({
       paymentId: p.paymentId,
+      // chain and token together name one agent, which is what a hire is counted by
+      agent: key,
       tokenId: p.agent.tokenId,
       agentName: p.agent.name,
       category,
@@ -69,8 +71,7 @@ export async function GET(req: NextRequest) {
 
   const hiredAllFour = CATEGORY_KEYS.every((k) => categories[k]);
   const listedOne = listings.length > 0;
-  const { points, awards } = questAwards(hires, CATEGORY_KEYS, listedOne);
-  const completed = hiredAllFour && listedOne;
+  const { points, awards, agentsHired, finished: completed } = questAwards(hires, listedOne);
   // the first read of a complete passport issues its number, kept with what it rested on
   const issued = completed
     ? await issuePassport(w, {
@@ -84,6 +85,10 @@ export async function GET(req: NextRequest) {
     wallet,
     categories,
     hiredAllFour,
+    agentsHired,
+    requiredHires: REQUIRED_HIRES,
+    // our own wallets never earn a stamp, so a page must not read their empty list as "has not hired"
+    team: isTeam,
     hires,
     listings,
     listedOne,
