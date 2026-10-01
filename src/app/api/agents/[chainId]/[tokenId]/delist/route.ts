@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAgentByToken } from "@/lib/scanner";
 import { isAgentOwner, verifyBoostOwnership } from "@/lib/boost-auth";
 import { setDelisted } from "@/lib/delist-store";
+import { listingControlMessage, type ListingAction } from "@/lib/listing-control";
+import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -10,30 +12,20 @@ export const dynamic = "force-dynamic";
 // captured signature cannot relist or delist a different token. Delisting never
 // touches the on-chain registration, which is a chain fact we do not control.
 
-export function delistMessage(
-  chainId: number,
-  tokenId: string,
-  owner: string,
-  action: "delist" | "relist",
-): string {
-  return [
-    "Agent Souk listing control",
-    `chainId: ${chainId}`,
-    `tokenId: ${tokenId}`,
-    `owner: ${owner.toLowerCase()}`,
-    `action: ${action}`,
-  ].join("\n");
-}
-
 async function handle(
   req: NextRequest,
   chainRaw: string,
   tokenId: string,
-  action: "delist" | "relist",
+  action: ListingAction,
 ): Promise<NextResponse> {
   const chainId = Number(chainRaw);
-  if (!Number.isFinite(chainId)) {
+  // the delist store is keyed by token id alone, so only this deployment's chain may be
+  // controlled here; the owner of the same token number on another chain must not reach it
+  if (!Number.isFinite(chainId) || chainId !== targetChainId()) {
     return NextResponse.json({ success: false, error: "bad chain id" }, { status: 400 });
+  }
+  if (!/^\d+$/.test(tokenId)) {
+    return NextResponse.json({ success: false, error: "bad token id" }, { status: 400 });
   }
   const body = (await req.json().catch(() => null)) as {
     owner?: unknown;
@@ -59,7 +51,7 @@ async function handle(
     );
   }
 
-  const expected = delistMessage(chainId, tokenId, owner, action);
+  const expected = listingControlMessage(chainId, tokenId, owner, action);
   const verdict = await verifyBoostOwnership({
     message: expected,
     signature,
