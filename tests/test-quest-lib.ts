@@ -163,12 +163,30 @@ describe("state in the browser", () => {
       getItem: (k: string) => data.get(k) ?? null,
       setItem: (k: string, v: string) => void data.set(k, v),
     });
-    writeQuestMode(null, "dismissed");
-    expect(questModeFor(null)).toBe("dismissed");
-    expect(questModeFor("0xabc")).toBe("dismissed");
+    const noon = Date.parse("2026-10-01T12:00:00Z");
+    writeQuestMode(null, "dismissed", noon);
+    expect(questModeFor(null, noon + 1000)).toBe("dismissed");
+    expect(questModeFor("0xabc", noon + 1000)).toBe("dismissed");
     writeQuestMode("0xabc", "active");
-    expect(questModeFor("0xabc")).toBe("active");
-    expect(questModeFor(null)).toBe("dismissed");
+    expect(questModeFor("0xabc", noon + 1000)).toBe("active");
+    expect(questModeFor(null, noon + 1000)).toBe("dismissed");
+  });
+
+  it("brings the invitation back the day after it was turned down", () => {
+    const data = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => data.get(k) ?? null,
+      setItem: (k: string, v: string) => void data.set(k, v),
+    });
+    const noon = Date.parse("2026-10-01T12:00:00Z");
+    const day = 24 * 60 * 60 * 1000;
+    writeQuestMode("0xabc", "dismissed", noon);
+    expect(questModeFor("0xabc", noon + day - 1)).toBe("dismissed");
+    expect(questModeFor("0xabc", noon + day)).toBeNull();
+    // one a visitor turned down before the time was kept has no date, so it is asked again
+    data.clear();
+    data.set("souk.quest.v1.mode.anon", "dismissed");
+    expect(questModeFor(null, noon)).toBeNull();
   });
 
   it("keeps the mode per wallet, and remembers what was shown", () => {

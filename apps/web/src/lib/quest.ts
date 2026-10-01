@@ -276,21 +276,35 @@ export function readQuestMode(wallet: string | null): QuestMode | null {
 
 // a quest is started by a wallet, never by a browser: with no wallet connected only a
 // turned-down invitation is kept, so the next visitor on this browser is still invited
-export function writeQuestMode(wallet: string | null, mode: QuestMode): void {
+export function writeQuestMode(wallet: string | null, mode: QuestMode, now = Date.now()): void {
   try {
     if (wallet || mode === 'dismissed') store()?.setItem(keyFor('mode', wallet), mode)
+    if (mode === 'dismissed') store()?.setItem(keyFor('dismissedAt', wallet), String(now))
   } catch {
     // a browser without storage simply asks again next visit
   }
   notifyQuest()
 }
 
+// "Not now" means not today: the invitation is back the next day
+export const DISMISSAL_MS = 24 * 60 * 60 * 1000
+
+function turnedDownToday(wallet: string | null, now: number): boolean {
+  if (readQuestMode(wallet) !== 'dismissed') return false
+  try {
+    const at = Number(store()?.getItem(keyFor('dismissedAt', wallet)) ?? 0)
+    return at > 0 && now - at < DISMISSAL_MS
+  } catch {
+    return false
+  }
+}
+
 // what to show this visitor: the connected wallet's own standing, or else only whether the
-// invitation was turned down here
-export function questModeFor(wallet: string | null): QuestMode | null {
+// invitation was turned down here within the last day
+export function questModeFor(wallet: string | null, now = Date.now()): QuestMode | null {
   const own = wallet ? readQuestMode(wallet) : null
-  if (own) return own
-  return readQuestMode(null) === 'dismissed' ? 'dismissed' : null
+  if (own === 'active' || own === 'quit') return own
+  return (wallet && turnedDownToday(wallet, now)) || turnedDownToday(null, now) ? 'dismissed' : null
 }
 
 // the stamps this browser has already shown, so only a newly earned one presses in
