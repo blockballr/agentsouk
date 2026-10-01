@@ -314,24 +314,6 @@ const STATE_DOT: Record<HireGroup, string> = {
   finished: 'border hairline border-newsprint-gray bg-transparent',
 }
 
-// every hire fills the same card: fixed slots in a fixed order at a fixed height, so a row
-// of them reads evenly, and anything longer than its slot opens in a dialog instead
-// every hire fills the same card: fixed slots in a fixed order at a fixed height, so a row
-// of them reads evenly, and anything longer than its slot opens in a dialog instead
-// every hire fills the same card: fixed slots in a fixed order at a fixed height, so a row
-// of them reads evenly, and anything longer than its slot opens in a dialog instead
-// every hire is built from the same parts in the same order at a fixed height, so a row of
-// cards reads evenly, and anything longer than its slot opens in a dialog instead
-// every hire is built from the same parts in the same order at a fixed height, so a row of
-// cards reads evenly, and anything longer than its slot opens in a dialog instead
-// every hire is built from the same parts in the same order at a fixed height, so a row of
-// cards reads evenly, and anything longer than its slot opens in a dialog instead
-// every hire is built from the same parts in the same order at a fixed height, so a row of
-// cards reads evenly, and anything longer than its slot opens in a dialog instead
-// every hire is built from the same parts in the same order at a fixed height, so a row of
-// cards reads evenly, and anything longer than its slot opens in a dialog instead
-// every hire is built from the same parts in the same order at a fixed height, so a row of
-// cards reads evenly, and anything longer than its slot opens in a dialog instead
 // every hire is built from the same parts in the same order at a fixed height, so a row of
 // cards reads evenly, and anything longer than its slot opens in a dialog instead
 function HireRow({
