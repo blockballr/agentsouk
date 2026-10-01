@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const store = vi.hoisted(() => {
   delete process.env.DATABASE_URL;
   process.env.TARGET_CHAIN = "97";
-  return { payments: [] as unknown[], agents: [] as unknown[] };
+  return { payments: [] as unknown[], agents: [] as { offShelf?: boolean }[] };
 });
 
 vi.mock("server-only", () => ({}));
@@ -13,8 +13,12 @@ vi.mock("../src/lib/receipts-store", () => ({
   listPaymentsByClient: async () => store.payments,
   receiptsMode: () => "memory",
 }));
+// like the real catalogue, an agent that is off the shelf is only returned when asked for
 vi.mock("../src/lib/scanner", () => ({
-  queryAgents: async () => ({ items: store.agents, total: store.agents.length }),
+  queryAgents: async (opts: { includeDelisted?: boolean; includeHouse?: boolean } = {}) => {
+    const items = store.agents.filter((a) => !a.offShelf || (opts.includeDelisted && opts.includeHouse));
+    return { items, total: items.length };
+  },
 }));
 
 import { NextRequest } from "next/server";
@@ -113,10 +117,46 @@ describe("the quest progress route", () => {
     expect(body.awards.map((a: { key: string }) => a.key)).toEqual(["health-factor", "yield"]);
   });
 
-  it("gives a revoked hire no points", async () => {
+  it("keeps the stamp and the points of a hire that was later revoked", async () => {
     store.payments = [payment("2504", "2026-09-30T09:00:00Z", { activated: false })];
     const body = await progress();
-    expect(body.points).toBe(0);
-    expect(body.awards).toEqual([]);
+    expect(body.points).toBe(100);
+    expect(body.categories["health-factor"]).toBe(true);
+    expect(body.awards.map((a: { key: string }) => a.key)).toEqual(["health-factor"]);
+  });
+
+  it("keeps the stamp of a hire whose agent has since left the shelf", async () => {
+    store.agents = [
+      { chain_id: 97, token_id: "2504", name: "Souk Health Guard", category: "health-factor", owner_address: SELLER, offShelf: true },
+    ];
+    store.payments = [payment("2504", "2026-09-30T09:00:00Z")];
+    const body = await progress();
+    expect(body.categories["health-factor"]).toBe(true);
+    expect(body.points).toBe(100);
+  });
+
+  it("keeps the listing stamp once the wallet's own agent has left the shelf", async () => {
+    store.agents = [
+      { chain_id: 97, token_id: "3001", name: "My Agent", category: "yield", owner_address: WALLET, offShelf: true },
+    ];
+    const body = await progress();
+    expect(body.listedOne).toBe(true);
+    expect(body.listings).toEqual([{ tokenId: "3001", name: "My Agent", category: "yield" }]);
+    expect(body.points).toBe(LISTING_POINTS);
+  });
+
+  it("still leaves out a sandbox receipt, the verifier's checks and a hire of one's own agent", async () => {
+    store.agents = [
+      { chain_id: 97, token_id: "2504", name: "Souk Health Guard", category: "health-factor", owner_address: SELLER },
+      { chain_id: 97, token_id: "3001", name: "My Agent", category: "yield", owner_address: WALLET },
+    ];
+    store.payments = [
+      payment("2504", "2026-09-30T09:00:00Z", { mode: "sandbox" }),
+      payment("2504", "2026-09-30T09:05:00Z", { paymentId: "verify_abc123def456" }),
+      payment("3001", "2026-09-30T09:10:00Z"),
+    ];
+    const body = await progress();
+    expect(body.hires).toEqual([]);
+    expect(body.points).toBe(LISTING_POINTS);
   });
 });

@@ -19,9 +19,11 @@ export async function GET(req: NextRequest) {
   }
   const w = wallet.toLowerCase();
 
+  // a stamp once earned stays: an agent that has since left the shelf still counts, both
+  // as a hire and as a listing, so the whole catalogue is read and not only what is on show
   const [payments, catalogue] = await Promise.all([
     listPaymentsByClient(wallet),
-    queryAgents({ limit: 5000 }),
+    queryAgents({ limit: 5000, includeDelisted: true, includeHouse: true }),
   ]);
   const byToken = new Map(catalogue.items.map((a) => [`${a.chain_id}:${a.token_id}`, a]));
   const isTeam = isTeamWallet(w);
@@ -31,7 +33,7 @@ export async function GET(req: NextRequest) {
 
   const hires = [];
   for (const p of payments) {
-    if (!p.activated) continue;
+    // a revoked hire still counts: the payment settled, and revoking is part of the quest
     // the team's own activity and the verifier sweep are never a wallet's quest progress
     if (isTeam) continue;
     if (isVerifierPayment(p.paymentId)) continue;
