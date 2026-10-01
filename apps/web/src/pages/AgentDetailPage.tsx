@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { questStepFor, type QuestStep } from '../lib/quest'
 import type { AgentDetail, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import {
   formatDate,
@@ -37,7 +38,7 @@ import {
   signAndSettleHire,
   type HireRequirementsData,
 } from '../lib/hire'
-import { button, card, cx } from '../components/ui'
+import { Action, LABEL, button, card, cx } from '../components/ui'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -189,12 +190,16 @@ function isOnchainSettlement(mode: ActiveSession['mode'] | undefined): boolean {
 
 export function AgentDetailPage() {
   const { chainId = '56', tokenId = '' } = useParams()
+  const [searchParams] = useSearchParams()
   const [detail, setDetail] = useState<DetailWithSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [perfProbe, setPerfProbe] = useState<PerformanceProbe | null>(null)
   // the connected viewer, so owner-only affordances can be hidden from everyone else
   const [viewer, setViewer] = useState<string | null>(null)
+  // whether the wallet read and the hire lookup have answered, so nothing is claimed before they do
+  const [viewerKnown, setViewerKnown] = useState(false)
+  const [hireLookedUp, setHireLookedUp] = useState(false)
   // the viewer's live hire for this agent, found through the receipts store rather
   // than the instance's own ledger
   const [durableHire, setDurableHire] = useState<{ paymentId: string } | null>(null)
@@ -213,7 +218,10 @@ export function AgentDetailPage() {
   const [hireInView, setHireInView] = useState(false)
 
   useEffect(() => {
-    void getActiveAccount().then(setViewer)
+    void getActiveAccount().then((a) => {
+      setViewer(a)
+      setViewerKnown(true)
+    })
   }, [])
 
   useEffect(() => {
@@ -233,9 +241,11 @@ export function AgentDetailPage() {
       return
     }
     let cancelled = false
+    setHireLookedUp(false)
     getHiresByWallet(viewer)
       .then((hires) => {
         if (cancelled) return
+        setHireLookedUp(true)
         const now = Date.now()
         const mine = hires
           .filter((h) => String(h.chainId) === String(chainId) && String(h.tokenId) === String(tokenId))
@@ -245,7 +255,10 @@ export function AgentDetailPage() {
       })
       .catch(() => {
         // a failed lookup must not turn into a claim: fall back to the ledger only
-        if (!cancelled) setDurableHire(null)
+        if (!cancelled) {
+          setDurableHire(null)
+          setHireLookedUp(true)
+        }
       })
     return () => {
       cancelled = true
@@ -328,6 +341,27 @@ export function AgentDetailPage() {
   const mySession = heldSession && heldSession.paymentId !== closedPaymentId ? heldSession : null
   const hireWarning = preHireWarning(detail.verification)
   const jobSeller = sellsByJob(detail.skills)
+  // a passport link opens the page ready for its step: the guide strip, and the run panel filled in
+  const quest = questStepFor(searchParams.get('quest'), Number(chainId), tokenId)
+  const questPrefill = quest
+    ? { task: quest.agent.task, input: quest.agent.input ? JSON.stringify(quest.agent.input) : undefined }
+    : undefined
+  // the strip follows the page's own state, so it can never get ahead of the visitor. It waits
+  // until the page knows whether a session is already held, since "hire" would otherwise ask a
+  // visitor to pay twice, and a job-only seller has no hire button to point at
+  const sessionKnown = viewerKnown && (!viewer || hireLookedUp)
+  const questStage: QuestStage | null =
+    !quest || jobSeller || !sessionKnown
+      ? null
+      : closedPaymentId || jobClosed(runResult?.job?.status)
+        ? 'done'
+        : completionOffer(runResult?.job?.status) === 'complete'
+          ? 'complete'
+          : runResult?.output && !runResult.job
+            ? 'done'
+            : mySession || runResult
+              ? 'run'
+              : 'hire'
 
   function refreshDetail() {
     getAgentDetail(chainId, tokenId)
@@ -346,6 +380,11 @@ export function AgentDetailPage() {
     <div className="mx-auto max-w-[1400px] px-6 pb-28 pt-10 lg:pb-10">
       {!hireInView && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t hairline border-slate-verdant/40 bg-press-black px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
+          {quest && questStage && (
+            <p className="micro mb-2 text-bone-white">
+              Souk passport · {QUEST_STAGE_COUNT[questStage]}
+            </p>
+          )}
           <button
             type="button"
             onClick={() => hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
@@ -439,6 +478,9 @@ export function AgentDetailPage() {
           ref={setHirePanel}
           className={cx(card('plain', 'md'), 'h-fit scroll-mt-4 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1')}
         >
+          {quest && questStage && (
+            <QuestGuide stage={questStage} step={quest.step} agentName={detail.name} hasTask={Boolean(quest.agent.task)} />
+          )}
           {ownSession && mySession && (
             <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
               <p className="micro text-press-black">Session active</p>
@@ -478,7 +520,13 @@ export function AgentDetailPage() {
               bought, so offering the hire again invites paying twice for it. */}
           {mySession ? (
             <div className="mt-6">
-              <DeliveryPanel paymentId={mySession.paymentId} onResult={setRunResult} onClosed={() => setClosedPaymentId(mySession.paymentId)} />
+              <DeliveryPanel
+                paymentId={mySession.paymentId}
+                onResult={setRunResult}
+                onClosed={() => setClosedPaymentId(mySession.paymentId)}
+                prefill={questPrefill}
+                guide={questStage === 'run' || questStage === 'complete' ? questStage : undefined}
+              />
             </div>
           ) : jobSeller ? (
             <p role="note" className="mt-4 text-sm leading-relaxed text-press-black">
@@ -491,7 +539,16 @@ export function AgentDetailPage() {
                   {hireWarning}
                 </p>
               )}
-              <HirePanel chainId={chainId} tokenId={detail.token_id} name={detail.name} onHired={refreshDetail} onResult={setRunResult} onClosed={setClosedPaymentId} />
+              <HirePanel
+                chainId={chainId}
+                tokenId={detail.token_id}
+                name={detail.name}
+                onHired={refreshDetail}
+                onResult={setRunResult}
+                onClosed={setClosedPaymentId}
+                prefill={questPrefill}
+                guide={questStage ?? undefined}
+              />
             </>
           )}
           {/* owner-only, so it renders only for an owner */}
@@ -1017,6 +1074,61 @@ function BoostPanel({
   )
 }
 
+type QuestStage = 'hire' | 'run' | 'complete' | 'done'
+
+// a green outline on the one control the guide strip is talking about; the focus ring stays
+// press black, so a keyboard user can still tell where focus is
+const GUIDED = 'outline-2 outline-offset-2 outline-highlighter-green focus-visible:outline-press-black'
+const GUIDE_ID = 'quest-guide'
+
+const QUEST_STAGE_COUNT: Record<QuestStage, string> = {
+  hire: 'Step 1 of 3',
+  run: 'Step 2 of 3',
+  complete: 'Step 3 of 3',
+  done: 'Done',
+}
+
+// the quest's guide on the real page: it names the one thing to do now and nothing is blocked
+function QuestGuide({
+  stage,
+  step,
+  agentName,
+  hasTask,
+}: {
+  stage: QuestStage
+  step: QuestStep
+  agentName: string
+  hasTask: boolean
+}) {
+  const text: Record<QuestStage, string> = {
+    hire: `Press Hire ${agentName} and sign the payment in your wallet. If your balance is short, the panel offers test tokens first.`,
+    run: hasTask
+      ? 'You hold a session with this agent. Press Load capabilities, then run the task that is already filled in.'
+      : 'You hold a session with this agent. Press Load capabilities, then describe a task and run it.',
+    complete: 'Read the result, then press Complete job to close the hire.',
+    done: 'This step is finished here. Your passport shows the stamp once the hire has settled.',
+  }
+  return (
+    <div role="note" className={cx(card('strong', 'sm'), 'mb-6')}>
+      <p className={LABEL}>
+        Souk passport · {step.title} · {QUEST_STAGE_COUNT[stage]}
+      </p>
+      <p id={GUIDE_ID} className="mt-2 text-[13px] leading-5 text-press-black">
+        {text[stage]}
+      </p>
+      {stage === 'done' ? (
+        <Action to="/quest" className="mt-3 w-full">
+          Back to your passport
+        </Action>
+      ) : (
+        <Action variant="quiet" to="/quest" className="mt-1">
+          Back to your passport
+        </Action>
+      )}
+    </div>
+  )
+}
+
 function HirePanel({
   chainId,
   tokenId,
@@ -1024,10 +1136,14 @@ function HirePanel({
   onHired,
   onResult,
   onClosed,
+  prefill,
+  guide,
 }: {
   chainId: string
   tokenId: string
   name: string
+  prefill?: { task?: string; input?: string }
+  guide?: QuestStage
   onHired: () => void
   onResult?: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
   onClosed?: (paymentId: string) => void
@@ -1103,7 +1219,8 @@ function HirePanel({
         <button
           type="button"
           onClick={startHire}
-          className={cx(button('primary', 'xl'), 'w-full')}
+          aria-describedby={guide === 'hire' ? GUIDE_ID : undefined}
+          className={cx(button('primary', 'xl'), 'w-full', guide === 'hire' && GUIDED)}
         >
           Hire {name}
         </button>
@@ -1240,7 +1357,13 @@ function HirePanel({
               wallet.
             </p>
           )}
-          <DeliveryPanel paymentId={result.paymentId} onResult={onResult} onClosed={() => { onClosed?.(result.paymentId); reset(); onHired() }} />
+          <DeliveryPanel
+            paymentId={result.paymentId}
+            onResult={onResult}
+            onClosed={() => { onClosed?.(result.paymentId); reset(); onHired() }}
+            prefill={prefill}
+            guide={guide === 'run' || guide === 'complete' ? guide : undefined}
+          />
         </div>
       )}
 
@@ -1334,8 +1457,13 @@ function DeliveryPanel({
   paymentId,
   onResult,
   onClosed,
+  prefill,
+  guide,
 }: {
   paymentId: string
+  // a quest step arrives with its task written, so the visitor only has to run it
+  prefill?: { task?: string; input?: string }
+  guide?: 'run' | 'complete'
   onResult?: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
   onClosed?: () => void
 }) {
@@ -1344,8 +1472,8 @@ function DeliveryPanel({
   const [blocked, setBlocked] = useState<string | null>(null)
   const [tool, setTool] = useState('')
   const [argsText, setArgsText] = useState('{}')
-  const [taskText, setTaskText] = useState('')
-  const [inputText, setInputText] = useState('')
+  const [taskText, setTaskText] = useState(prefill?.task ?? '')
+  const [inputText, setInputText] = useState(prefill?.input ?? '')
   const [output, setOutput] = useState<string | null>(null)
   const [runError, setRunError] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
@@ -1561,7 +1689,8 @@ function DeliveryPanel({
                 type="button"
                 onClick={completeJob}
                 disabled={completing}
-                className={cx(button('primary', 'md'), 'mt-3 w-full')}
+                aria-describedby={guide === 'complete' ? GUIDE_ID : undefined}
+                className={cx(button('primary', 'md'), 'mt-3 w-full', guide === 'complete' && GUIDED)}
               >
                 {completing ? 'Signing…' : 'Complete job'}
               </button>
@@ -1589,7 +1718,8 @@ function DeliveryPanel({
         <button
           type="button"
           onClick={loadCapabilities}
-          className={cx(button('primary', 'md'), 'mt-3 w-full')}
+          aria-describedby={guide === 'run' ? GUIDE_ID : undefined}
+          className={cx(button('primary', 'md'), 'mt-3 w-full', guide === 'run' && GUIDED)}
         >
           Load capabilities
         </button>
@@ -1652,7 +1782,7 @@ function DeliveryPanel({
               />
               {/* some agents read a structured data part instead of prose; this stays
                   collapsed and empty by default so the text-only flow is unchanged */}
-              <details className="rounded-[5px] border hairline border-slate-verdant/40 p-3">
+              <details open={prefill?.input ? true : undefined} className="rounded-[5px] border hairline border-slate-verdant/40 p-3">
                 <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
                   Add structured input (JSON)
                 </summary>
@@ -1679,7 +1809,7 @@ function DeliveryPanel({
                 type="button"
                 onClick={run}
                 disabled={running || !taskText.trim() || !structured.ok}
-                className={cx(button('primary', 'md'), 'w-full')}
+                className={cx(button('primary', 'md'), 'w-full', guide === 'run' && GUIDED)}
               >
                 {running ? 'Running…' : 'Run task'}
               </button>
