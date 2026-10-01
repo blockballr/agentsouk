@@ -2,11 +2,12 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { button, cx, LABEL, type ButtonSize, type ButtonVariant } from './recipes'
 
-// one button shape everywhere, rendered as a link when it goes somewhere
+// one button shape everywhere, rendered as a link when it goes somewhere; href leaves the site
 export function Action({
   variant = 'secondary',
   size = 'sm',
   to,
+  href,
   onClick,
   disabled,
   className,
@@ -15,12 +16,20 @@ export function Action({
   variant?: ButtonVariant
   size?: ButtonSize
   to?: string
+  href?: string
   onClick?: () => void
   disabled?: boolean
   className?: string
   children: ReactNode
 }) {
   const classes = cx(button(variant, size), className)
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={classes}>
+        {children}
+      </a>
+    )
+  }
   if (to) {
     return (
       <Link to={to} className={classes}>
