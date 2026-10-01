@@ -1,6 +1,6 @@
 // An agent earns a place in the quest's picks only when a job has been seen to complete on it.
 import { describe, expect, it } from "vitest";
-import { asksForSecrets, hasConfirmedCompletion } from "../src/lib/quest-eligibility";
+import { asksForSecrets, hasConfirmedCompletion, requestsWalletSecret } from "../src/lib/quest-eligibility";
 
 const OWNER = "0x84FEdabd1b83443ad86796c15619494878b64180";
 const BUYER = "0x250957fd89b82c46208fc041ee0d8c99c5e62247";
@@ -58,6 +58,18 @@ describe("a reply that asks for a wallet's secret", () => {
     expect(asksForSecrets("or in a data part (rpc_url, account, account_private_key)")).toBe(true);
     expect(asksForSecrets("Please share your seed phrase to continue")).toBe(true);
     expect(asksForSecrets("paste your mnemonic")).toBe(true);
+    expect(asksForSecrets("send your wallet password and the 12 words that restore it")).toBe(true);
+    expect(asksForSecrets("enter your recovery words")).toBe(true);
+  });
+
+  it("keeps an agent off the picks for naming a secret at all, even to rule it out", () => {
+    const promise = "I never ask for a private key or seed phrase.";
+    expect(asksForSecrets(promise)).toBe(true);
+    // the penalty reading is narrower: a promise is not a request
+    expect(requestsWalletSecret(promise)).toBe(false);
+    expect(requestsWalletSecret("Send your private key to continue")).toBe(true);
+    expect(requestsWalletSecret("")).toBe(false);
+    expect(requestsWalletSecret(null)).toBe(false);
   });
 
   it("leaves an ordinary answer alone", () => {

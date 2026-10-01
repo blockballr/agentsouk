@@ -6,6 +6,7 @@ import { randomBytes } from "node:crypto";
 import { unreachableEndpointVerdict } from "@/lib/verifications";
 import { upsertVerification } from "@/lib/verifications-store";
 import { GATED_RE } from "@/lib/delivery";
+import { requestsWalletSecret } from "@/lib/quest-eligibility";
 
 export interface VerifyCandidate {
   chainId: number;
@@ -171,6 +172,16 @@ async function deliverJson(paymentId: string, extra: Record<string, unknown> = {
   }, 60000);
 }
 
+export const SECRET_REQUEST_NOTE = "asked for a wallet secret instead of answering";
+
+// a reply is a delivery unless it asks the buyer for a private key or seed phrase
+// a prompt answer of that kind is still no result, and must never read as a working agent
+// a reply that only promises never to ask for one is left alone, since this verdict can delist
+export function gradeA2aReply(text: string): VerifyVerdict {
+  if (requestsWalletSecret(text)) return { status: "dead", detail: `${SECRET_REQUEST_NOTE}: ${text.slice(0, 240)}` };
+  return { status: "delivered", detail: text.slice(0, 300), deliverable: text };
+}
+
 // One paid probe: settle a hire as the relay buyer, run the agent, grade what
 // comes back. Every verdict costs one hire plus gas, so callers must bound who
 // they probe rather than sweeping freely.
@@ -216,9 +227,7 @@ export async function verifyCandidate(cand: VerifyCandidate): Promise<VerifyVerd
     return { status: "dead", detail: `message/send failed: ${err}` };
   }
   const sd = send.body?.data;
-  if (sd?.ok && sd.text) {
-    return { status: "delivered", detail: sd.text.slice(0, 300), deliverable: sd.text };
-  }
+  if (sd?.ok && sd.text) return gradeA2aReply(sd.text);
   return { status: "dead", detail: "a2a send not ok" };
 }
 

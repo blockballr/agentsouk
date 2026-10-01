@@ -28,10 +28,43 @@ export function hasConfirmedCompletion(
   });
 }
 
-// an agent whose reply asks for a wallet's secret is never sent visitors, however its check
-// was recorded
-const SECRET_REQUEST = /private[\s_-]?key|seed[\s_-]?phrase|recovery[\s_-]?phrase|mnemonic|secret[\s_-]?key|keystore/i;
+// one list of the words for a wallet's secret, read two ways below
+const SECRET_TERMS = [
+  "private[\\s_-]?key",
+  "seed[\\s_-]?(?:phrase|words)",
+  "recovery[\\s_-]?(?:phrase|words|key)",
+  "mnemonic",
+  "secret[\\s_-]?key",
+  "keystore",
+  "pass[\\s_-]?phrase",
+  "password",
+  "wallet[\\s_-]?(?:words|secret)",
+  "(?:12|24|twelve|twenty[\\s-]?four)[\\s-]words",
+].join("|");
+const SECRET_MENTION = new RegExp(SECRET_TERMS, "i");
 
+// an agent whose reply so much as names a wallet's secret is never sent visitors, however
+// its check was recorded
 export function asksForSecrets(reply: string | null | undefined): boolean {
-  return Boolean(reply && SECRET_REQUEST.test(reply));
+  return Boolean(reply && SECRET_MENTION.test(reply));
+}
+
+const RULED_OUT = /\b(?:never|not|no|none|without|cannot|can't|don't|doesn't|won't)\b/i;
+const SET_TO_NOTHING = /^["']?\s*[:=]\s*(?:false|null|0|"?(?:no|none|never)"?)(?![\w.])/i;
+const SENTENCE_END = /[.!?\n]/g;
+
+// the stricter reading, for anything that penalises an agent: the secret is named and not
+// ruled out in the same sentence. "I never ask for a private key" is a promise, not a request
+export function requestsWalletSecret(reply: string | null | undefined): boolean {
+  if (!reply) return false;
+  for (const match of reply.matchAll(new RegExp(SECRET_TERMS, "gi"))) {
+    const at = match.index ?? 0;
+    const before = reply.slice(Math.max(0, at - 160), at);
+    let sentenceStart = 0;
+    for (const end of before.matchAll(SENTENCE_END)) sentenceStart = (end.index ?? 0) + 1;
+    if (RULED_OUT.test(before.slice(sentenceStart))) continue;
+    if (SET_TO_NOTHING.test(reply.slice(at + match[0].length, at + match[0].length + 24))) continue;
+    return true;
+  }
+  return false;
 }
