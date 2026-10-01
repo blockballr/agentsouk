@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { Nav } from './Nav'
 import { Footer } from './Footer'
+import { QuestNudge } from './QuestNudge'
 
 export function Layout() {
   return (
@@ -10,6 +11,7 @@ export function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <QuestNudge />
     </div>
   )
 }

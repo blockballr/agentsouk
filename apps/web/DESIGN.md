@@ -26,4 +26,4 @@ A grid of cards shows three per row at most, two on a tablet and one on a phone.
 
 ## What stays bespoke
 
-A few elements keep their own classes because they belong to one place: the home page buttons in `src/components/buttons.tsx`, the dark compare bar, the navigation, quick search and the test token dialog. Anything new uses the recipes.
+A few elements keep their own classes because they belong to one place: the home page buttons in `src/components/buttons.tsx`, the dark compare bar, the navigation, quick search and the test token dialog. The quest corner is built from the recipes but floats over the page, so it adds its own background and shadow. Anything new uses the recipes.
