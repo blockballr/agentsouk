@@ -12,7 +12,7 @@ The marketplace is judged on functionality, data quality, and agent diversity ac
 
 - Live catalog of real agents from the ERC-8004 registry on BNB Smart Chain, fetched from 8004scan.
 - Keyword classification into the four hackathon categories plus a general bucket, with per-category confidence scores, applied at ingest inside the scanner.
-- Browse, filter, search, and sort across the catalog on the /agents page. The default sort, Working first, puts the agents that delivered on their last check ahead of the rest, in an order that changes with each visit, so hires spread across every working agent rather than the highest scores.
+- Browse, filter, search, and sort across the catalog on the /agents page. The catalogue opens in score order. Working first, one click away, puts the agents that delivered on their last check ahead of the rest, in an order that changes with each visit, so hires spread across every working agent rather than the highest scores.
 - Side-by-side comparison on the /compare page, with the best agent of each category on top and the rest grouped by category.
 - x402 hire flow: the buyer signs a gasless EIP-3009 authorization and our relay settles it on chain.
 - Active hires live on /ongoing: sessions, tasks and jobs in one place, with a retry for a failed delivery and a revoke that cancels the session's authorization on chain.
