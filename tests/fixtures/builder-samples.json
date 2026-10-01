@@ -1,0 +1,105 @@
+{
+  "healthWatcher": {
+    "version": 1,
+    "name": "Loan Safety Check",
+    "category": "health-factor",
+    "description": "Works out the health factor of a lending position from the collateral and debt you supply, and how far collateral can fall before liquidation.",
+    "skills": [
+      {
+        "id": "check-health",
+        "name": "Health factor check",
+        "description": "Computes the health factor and the collateral drop that would trigger liquidation.",
+        "inputs": [
+          { "id": "collateral", "label": "Collateral in USD", "type": "number", "required": true, "description": "current value of the collateral in USD" },
+          { "id": "debt", "label": "Debt in USD", "type": "number", "required": true, "description": "current value of the debt in USD" },
+          { "id": "threshold", "label": "Liquidation threshold", "type": "number", "required": false, "description": "fraction above 0 and at most 1, such as 0.8" }
+        ],
+        "reads": [],
+        "steps": [
+          {
+            "id": "hf",
+            "block": "health-factor",
+            "args": {
+              "collateralUsd": { "ref": "input.collateral" },
+              "debtUsd": { "ref": "input.debt" },
+              "liquidationThreshold": { "ref": "input.threshold" }
+            }
+          }
+        ],
+        "answer": "Health factor {hf.healthFactor} ({hf.state}) for collateral {input.collateral} USD and debt {input.debt} USD. Collateral can fall {hf.collateralDropPercent}% before liquidation, and the position can take {hf.additionalDebtUsd:2} USD more debt.",
+        "example": { "collateral": 10000, "debt": 6500, "threshold": 0.8 }
+      }
+    ]
+  },
+  "rangePlanner": {
+    "version": 1,
+    "name": "Pancake Range Planner",
+    "category": "rebalancing",
+    "description": "Suggests a PancakeSwap v3 liquidity range around the live WBNB/USDT price and shows how a deposit splits between the two tokens.",
+    "skills": [
+      {
+        "id": "plan-range",
+        "name": "Range plan",
+        "description": "Reads the pool price and sets a range of the width you choose around it.",
+        "inputs": [
+          { "id": "widthPercent", "label": "Range width in percent", "type": "number", "required": true, "description": "full width of the range around the price, such as 10" },
+          { "id": "deposit", "label": "Deposit in USDT", "type": "number", "required": false, "description": "amount to deposit, valued in USDT" }
+        ],
+        "reads": [{ "id": "pool", "source": "pancakeswap.v3.pool", "args": { "pair": "WBNB/USDT" } }],
+        "steps": [
+          {
+            "id": "range",
+            "block": "liquidity-range",
+            "args": {
+              "pool": { "ref": "pool" },
+              "widthPercent": { "ref": "input.widthPercent" },
+              "depositUsd": { "ref": "input.deposit" }
+            }
+          }
+        ],
+        "answer": "WBNB is at {pool.price:2} USDT at block {pool.blockNumber}. A {input.widthPercent}% range runs from {range.priceLower:2} to {range.priceUpper:2} USDT, ticks {range.tickLower} to {range.tickUpper}. The deposit splits into {range.baseAmount} WBNB and {range.quoteAmount} USDT.",
+        "example": { "widthPercent": 10, "deposit": 100 }
+      }
+    ]
+  },
+  "yieldComparer": {
+    "version": 1,
+    "name": "Yield Side by Side",
+    "category": "yield",
+    "description": "Compares two yield options after compounding and fees, and says which one nets more on your principal over a year.",
+    "skills": [
+      {
+        "id": "compare-yields",
+        "name": "Compare two yields",
+        "description": "Works out the net yearly rate of two options and names the better one.",
+        "inputs": [
+          { "id": "principal", "label": "Principal in USD", "type": "number", "required": true, "description": "amount you would deposit, in USD" },
+          { "id": "apyA", "label": "APY of option A", "type": "number", "required": true, "description": "gross APY of the first option, as a percentage" },
+          { "id": "apyB", "label": "APY of option B", "type": "number", "required": true, "description": "gross APY of the second option, as a percentage" },
+          { "id": "feeBpsA", "label": "Fee of option A", "type": "number", "required": false, "description": "yearly fee of the first option in basis points" },
+          { "id": "feeBpsB", "label": "Fee of option B", "type": "number", "required": false, "description": "yearly fee of the second option in basis points" }
+        ],
+        "reads": [],
+        "steps": [
+          {
+            "id": "a",
+            "block": "net-yield",
+            "args": { "principalUsd": { "ref": "input.principal" }, "grossApyPercent": { "ref": "input.apyA" }, "feeBps": { "ref": "input.feeBpsA" } }
+          },
+          {
+            "id": "b",
+            "block": "net-yield",
+            "args": { "principalUsd": { "ref": "input.principal" }, "grossApyPercent": { "ref": "input.apyB" }, "feeBps": { "ref": "input.feeBpsB" } }
+          },
+          {
+            "id": "pick",
+            "block": "compare-two",
+            "args": { "first": { "ref": "a.netRatePercent" }, "second": { "ref": "b.netRatePercent" }, "firstLabel": "option A", "secondLabel": "option B" }
+          }
+        ],
+        "answer": "Option A nets {a.netRatePercent}% a year, {a.projectedEarningsUsd:2} USD on {input.principal} USD. Option B nets {b.netRatePercent}%, {b.projectedEarningsUsd:2} USD. The better one is {pick.higher}, by {pick.difference} percentage points.",
+        "example": { "principal": 10000, "apyA": 8, "apyB": 9.5, "feeBpsA": 50, "feeBpsB": 200 }
+      }
+    ]
+  }
+}
