@@ -14,7 +14,7 @@ import {
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
-import { connectWallet, getActiveAccount } from '../lib/wallet'
+import { changeWallet, connectWallet, getActiveAccount } from '../lib/wallet'
 import { Action, Dialog, LABEL, TextSlot, button, card, cx } from '../components/ui'
 
 type HiresSource = 'postgres' | 'memory' | null
@@ -116,6 +116,19 @@ export function ProfilePage() {
   useEffect(() => {
     void load()
   }, [load])
+
+  async function onChangeWallet() {
+    setConnecting(true)
+    try {
+      const addr = await changeWallet()
+      // a dismissed picker has already dropped the old choice, so show what is connected now
+      setAccount(addr ?? (await getActiveAccount()))
+    } catch (e) {
+      setError(hireErrorText(e))
+    } finally {
+      setConnecting(false)
+    }
+  }
 
   async function onConnect() {
     setConnecting(true)
@@ -224,8 +237,8 @@ export function ProfilePage() {
                 <p className="mt-2 text-[13px] text-newsprint-gray/80">
                   Just registered? The catalogue reads the chain again within a minute, and a listing shows once it has an endpoint we can call.
                 </p>
-                <Action variant="primary" size="md" to="/list" className="mt-6">
-                  List an agent
+                <Action variant="primary" size="md" onClick={() => void onChangeWallet()} disabled={connecting} className="mt-6">
+                  {connecting ? 'Connecting...' : 'Connect wallet'}
                 </Action>
               </div>
             )}
