@@ -105,10 +105,18 @@ vi.mock("@/lib/endpoint", () => ({ privateEndpointReason: () => null }));
 const receipts = vi.hoisted(() => ({ getPaymentDurable: vi.fn() }));
 vi.mock("../src/lib/receipts-store", () => receipts);
 
-import { deliver } from "../src/lib/delivery";
+import { deliver, sessionEnded } from "../src/lib/delivery";
 import { submitJobAsync } from "../src/lib/jobs";
 
 const WALLET = "0x84fedaBd1b83443aD86796C15619494878B64180";
+
+function receipt(expiresAt: string | undefined) {
+  return {
+    activated: true,
+    agent: { chainId: 97, tokenId: "2504", name: "Souk Health Guard" },
+    session: { spendCapUsd: 5, expiresAt },
+  };
+}
 const DELIVERABLE =
   "Health factor 1.6 for collateral 1000 USD at a liquidation threshold of 0.8 and debt 500 USD. Liquidation capacity is 800 USD.";
 
@@ -191,11 +199,64 @@ beforeEach(() => {
     a2a_endpoint: "https://house.example/.well-known/agent-card.json",
   });
   receipts.getPaymentDurable.mockReset();
-  receipts.getPaymentDurable.mockResolvedValue({
-    activated: true,
-    agent: { chainId: 97, tokenId: "2504", name: "Souk Health Guard" },
-  });
+  receipts.getPaymentDurable.mockResolvedValue(receipt("2099-01-01T00:00:00.000Z"));
   vi.stubGlobal("fetch", stubHouseAgent());
+});
+
+describe("a delivery stops when the session has ended", () => {
+  it("refuses a receipt past its expiry without calling the agent", async () => {
+    const paymentId = "req_session_over";
+    seedJob(fundedSelfHire(paymentId));
+    receipts.getPaymentDurable.mockResolvedValue(receipt("2026-09-30T12:00:00.000Z"));
+    const calls = vi.fn(stubHouseAgent());
+    vi.stubGlobal("fetch", calls);
+
+    const out = await deliver({ paymentId, task: "Compute the health factor for collateral 1000 and debt 500." });
+
+    expect(out.ok).toBe(false);
+    if (out.ok) throw new Error("an ended session ran a task");
+    expect(out.error).toBe("This session ended on 2026-09-30 12:00 UTC. Hire the agent again to run more tasks.");
+    expect(calls).not.toHaveBeenCalled();
+    expect(scanner.fetchAgentDetail).not.toHaveBeenCalled();
+    expect(store.jobs.get(`job-${paymentId}`)?.status).toBe("Funded");
+    expect(store.tasks.size).toBe(0);
+  });
+
+  it("refuses a receipt whose expiry is missing or unreadable", async () => {
+    for (const expiresAt of [undefined, "", "soon"]) {
+      receipts.getPaymentDurable.mockResolvedValue(receipt(expiresAt));
+      const out = await deliver({ paymentId: "req_no_expiry", task: "anything" });
+      expect(out.ok).toBe(false);
+      if (out.ok) throw new Error("a receipt with no readable expiry ran a task");
+      expect(out.error).toBe("This session ended. Hire the agent again to run more tasks.");
+    }
+  });
+
+  it("still replays a failed call that was paid for, which is the one thing that outlives the session", async () => {
+    const paymentId = "req_retry_after_end";
+    seedJob(fundedSelfHire(paymentId));
+    receipts.getPaymentDurable.mockResolvedValue(receipt("2026-09-30T12:00:00.000Z"));
+
+    const out = await deliver({
+      paymentId,
+      taskId: "task-being-retried",
+      task: "Compute the health factor for collateral 1000 USD and debt 500 USD.",
+      input: { collateral: 1000, debt: 500 },
+    });
+
+    expect(out.ok).toBe(true);
+    if (!out.ok) throw new Error(out.error);
+    expect(out.text).toContain("Health factor 1.6");
+    expect(out.taskId).toBe("task-being-retried");
+  });
+
+  it("treats the expiry instant itself as ended", () => {
+    const at = "2026-10-01T10:00:00.000Z";
+    const t = new Date(at).getTime();
+    expect(sessionEnded(at, t - 1)).toBe(false);
+    expect(sessionEnded(at, t)).toBe(true);
+    expect(sessionEnded(at, t + 1)).toBe(true);
+  });
 });
 
 describe("a delivery advances a self hire opened by settle", () => {

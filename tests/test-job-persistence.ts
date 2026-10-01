@@ -250,6 +250,7 @@ describe("delivery awaits the Submitted write before reporting progress", () => 
     receipts.getPaymentDurable.mockResolvedValue({
       activated: true,
       agent: { chainId: 56, tokenId: "1", name: "YieldPilot" },
+      session: { spendCapUsd: 5, expiresAt: "2099-01-01T00:00:00.000Z" },
     });
     vi.stubGlobal("fetch", stubMcp(DELIVERABLE));
 

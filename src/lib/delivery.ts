@@ -489,6 +489,18 @@ export function noEndpointDeliveryMessage(detail: {
     : NO_ENDPOINT_DELIVERY_REFUSAL;
 }
 
+// a hire buys a time-boxed session, so a receipt past its end no longer runs tasks
+// an expiry that cannot be read counts as past
+export function sessionEnded(expiresAt: string | undefined, now = Date.now()): boolean {
+  return !(new Date(expiresAt ?? "").getTime() > now);
+}
+
+export function sessionEndedMessage(expiresAt: string | undefined): string {
+  const at = new Date(expiresAt ?? "");
+  const when = Number.isNaN(at.getTime()) ? "" : ` on ${at.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+  return `This session ended${when}. Hire the agent again to run more tasks.`;
+}
+
 export async function deliver(input: DeliverInput): Promise<
   | (DeliverOutcome & {
       agent: { chainId: number; tokenId: string; name: string };
@@ -501,6 +513,11 @@ export async function deliver(input: DeliverInput): Promise<
   const receipt = await getPaymentDurable(input.paymentId);
   if (!receipt || !receipt.activated) {
     return { ok: false, error: "No settled session for this payment id. Hire the agent first." };
+  }
+  // a retry replays a call that was paid for and failed, at most three times in all, so it
+  // outlives the session; a new task does not
+  if (!input.taskId && sessionEnded(receipt.session?.expiresAt)) {
+    return { ok: false, error: sessionEndedMessage(receipt.session?.expiresAt) };
   }
 
   const detail = await fetchAgentDetail(receipt.agent.chainId, receipt.agent.tokenId);
