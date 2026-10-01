@@ -3,6 +3,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+// the run log is server-only; with no database it keeps its lines in memory
+vi.mock("server-only", () => ({}));
+
 const snap = vi.hoisted(() => ({
   SNAPSHOT_CHAINS: [97, 56],
   snapshotStoreMode: vi.fn(() => "postgres"),

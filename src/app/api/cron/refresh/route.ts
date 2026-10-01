@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loggedCronRun } from "@/lib/history-store";
 import { refreshIndexFromLive } from "@/lib/scanner";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
+export function GET(req: NextRequest) {
+  return loggedCronRun("refresh", () => refresh(req));
+}
+
 // On-demand index refresh, mirroring the verifier cron's fail-closed auth.
-export async function GET(req: NextRequest) {
+async function refresh(req: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     return NextResponse.json({ error: "refresh is not configured" }, { status: 503 });

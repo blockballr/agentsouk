@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loggedCronRun } from "@/lib/history-store";
 import { targetChainId } from "@/lib/types";
 import {
   fetchJson,
@@ -61,7 +62,11 @@ export function mergeSweepCandidates(
   ];
 }
 
-export async function GET(req: NextRequest) {
+export function GET(req: NextRequest) {
+  return loggedCronRun("verify", () => sweep(req));
+}
+
+async function sweep(req: NextRequest): Promise<NextResponse> {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   // fails closed: an unset secret must refuse, because this route spends real money on every candidate

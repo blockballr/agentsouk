@@ -3,6 +3,7 @@
 
 import "server-only";
 import postgres from "postgres";
+import { recordCheck } from "./history-store";
 import type { Verification } from "@/lib/types";
 import type { RecordedVerification } from "./verifications";
 
@@ -66,6 +67,23 @@ export function countsAsFailing(status: Verification["status"]): boolean {
 }
 
 export async function upsertVerification(
+  tokenId: string,
+  name: string,
+  category: string,
+  status: Verification["status"],
+  responseMs: number,
+  quality?: Verification["quality"],
+  detail?: string,
+  concurrency?: Verification["concurrency"],
+): Promise<boolean> {
+  const written = await writeVerification(tokenId, name, category, status, responseMs, quality, detail, concurrency);
+  // the check happened whether or not its latest-result row could be written, so it gets its
+  // history line either way; after the verdict, which nothing here may hold up
+  await recordCheck(tokenId, status, Number.isFinite(responseMs) ? Math.round(responseMs) : null);
+  return written;
+}
+
+async function writeVerification(
   tokenId: string,
   name: string,
   category: string,

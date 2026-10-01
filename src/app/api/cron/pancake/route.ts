@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loggedCronRun } from "@/lib/history-store";
 import {
   SNAPSHOT_CHAINS,
   saveChainSnapshot,
@@ -51,10 +52,10 @@ function refusal(req: NextRequest): NextResponse | null {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  return refusal(req) ?? run();
+  return refusal(req) ?? loggedCronRun("pancake", run);
 }
 
 // the scheduler issues a GET; only a caller holding the bearer secret reaches the run
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  return refusal(req) ?? run();
+  return refusal(req) ?? loggedCronRun("pancake", run);
 }

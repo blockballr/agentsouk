@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loggedCronRun } from "@/lib/history-store";
 import { loadStaleTokens } from "@/lib/verifications-store";
 import { setDelisted } from "@/lib/delist-store";
 import { targetChainId } from "@/lib/types";
@@ -59,7 +60,7 @@ function refusal(req: NextRequest): NextResponse | null {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const denied = refusal(req);
   if (denied) return denied;
-  return run();
+  return loggedCronRun("maintenance", run);
 }
 
 // The scheduler issues a GET, so this verb runs the same pass. Only a caller
@@ -68,5 +69,5 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const denied = refusal(req);
   if (denied) return denied;
-  return run();
+  return loggedCronRun("maintenance", run);
 }
