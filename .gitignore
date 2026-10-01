@@ -67,7 +67,6 @@ next-env.d.ts
 /.superpowers/
 
 .vercel
-/apps/web/public/agent-souk-og.png
 /MILESTONE.md
 
 # foundry build output for the testnet settlement token; the source is tracked
