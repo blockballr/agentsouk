@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { categoryDef, shortAddress } from '@agora/core'
 import { visitSeed } from '../lib/rotation'
 import { isOperatedByAgentSouk } from '../lib/first-party'
@@ -27,12 +27,17 @@ import {
 } from '../lib/quest'
 import { Action, LABEL, TextSlot, card, cx } from '../components/ui'
 import { QuestStamp } from '../components/QuestStamp'
+import { ShareCard } from '../components/ShareCard'
+import { SPECIMEN_SERIAL } from '../lib/share-card'
 
 const TOTAL = 1000
+// the specimen is drawn for the connected wallet, or for this address when there is none
+const SPECIMEN_HOLDER = '0x4bb30e3b3bc22082c1935fe3be7c07448e69c862'
 const REFRESH_MS = 30_000
 
 export function QuestPage() {
   const navigate = useNavigate()
+  const specimen = import.meta.env.DEV && new URLSearchParams(useLocation().search).has('specimen')
   const target = useTargetChain()
   const chainId = target?.chainId ?? null
   const [wallet, setWallet] = useState<string | null>(null)
@@ -224,6 +229,20 @@ export function QuestPage() {
           </li>
         ))}
       </ol>
+
+      {wallet && progress?.completed ? (
+        <ShareCard
+          rank={rank.title}
+          points={points}
+          wallet={wallet}
+          serial={progress.passport?.serial}
+          issuedAt={progress.passport?.issuedAt}
+        />
+      ) : null}
+      {/* the card for the announcement, numbered ahead of every holder's; local builds only */}
+      {specimen ? (
+        <ShareCard rank={rankFor(TOTAL).title} points={TOTAL} wallet={wallet ?? SPECIMEN_HOLDER} serial={SPECIMEN_SERIAL} />
+      ) : null}
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
         <p className="max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">

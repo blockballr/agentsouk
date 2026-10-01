@@ -36,6 +36,8 @@ export interface QuestProgress {
   listings: QuestListing[]
   points: number
   awards: QuestAward[]
+  // the number issued to a wallet once its passport is complete
+  passport?: { serial: string; number: number; issuedAt: string } | null
 }
 
 export async function getQuestProgress(wallet: string): Promise<QuestProgress> {
@@ -53,6 +55,7 @@ export async function getQuestProgress(wallet: string): Promise<QuestProgress> {
     listings: body.listings ?? [],
     points: typeof body.points === 'number' ? body.points : 0,
     awards: body.awards ?? [],
+    passport: body.passport ?? null,
   }
 }
 
