@@ -12,6 +12,7 @@ import { parseUnits } from "@/lib/format";
 import { JOB_SELLER_NOTE, sellsByJob } from "@agora/core";
 import { fetchAgentCardSkills } from "@/lib/delivery";
 import { loadDelisted } from "@/lib/delist-store";
+import { isAgentOwner } from "@/lib/boost-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,18 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
+  }
+  // a wallet hiring the agent it owns, or the agent's own receiving wallet, pays itself.
+  // An owner tests their agent with a check, which is free and signed, not with a hire
+  if (body.purpose !== "check" && typeof body.client === "string" && body.client && isAgentOwner(body.client, detail)) {
+    return NextResponse.json(
+      {
+        success: false,
+        ownAgent: true,
+        error: `${detail.name} is your own agent, so this wallet cannot hire it. Use Re-check now on your profile to test it.`,
+      },
+      { status: 409 },
+    );
   }
   // a direct payment to a job seller settles and then delivers nothing, so it is refused here,
   // which every hire path (the site, MCP and the skill) passes through before anyone signs;

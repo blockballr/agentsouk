@@ -41,8 +41,9 @@ export async function GET(req: NextRequest) {
     if (p.mode !== "prod" && p.mode !== "b402") continue;
     const key = `${p.agent.chainId}:${p.agent.tokenId}`;
     const agent = byToken.get(key);
-    // a wallet hiring an agent it owns is a self hire, excluded
+    // a wallet hiring an agent it owns, or one that pays it, is a self hire, excluded
     if (agent?.owner_address?.toLowerCase() === w) continue;
+    if ((p.payTo ?? "").toLowerCase() === w) continue;
     const category = (agent?.category as string | undefined) ?? null;
     hires.push({
       paymentId: p.paymentId,

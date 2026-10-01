@@ -6,7 +6,7 @@ import { createHireTask } from "@/lib/tasks";
 import { fundJob, persistJob } from "@/lib/jobs";
 import { fetchAgentDetail } from "@/lib/scanner";
 import { loadDelisted } from "@/lib/delist-store";
-import { normalizeAddr } from "@/lib/boost-auth";
+import { isAgentOwner, normalizeAddr } from "@/lib/boost-auth";
 import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
 import { targetChainId } from "@/lib/types";
 
@@ -54,6 +54,7 @@ async function afterSettlement(
 
 interface Refusal {
   error: string;
+  ownAgent?: true;
   offMarket?: true;
 }
 
@@ -65,7 +66,7 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 // caller, so without this any transfer could be recorded as a hire of someone else's agent, and
 // the refusals at the terms step could be skipped by never asking for terms.
 // A check is the marketplace's own probe, never counted as a hire, so it may reach an agent
-// that is off the market
+// that is off the market or run by its owner
 async function hireRefusal(
   agent: { chainId: number; tokenId: string; name: string },
   payer: string,
@@ -83,6 +84,9 @@ async function hireRefusal(
     return { error: `This payment does not go to ${detail.name}, so it is not a hire of it.` };
   }
   if (isCheck) return null;
+  if (isAgentOwner(payer, detail)) {
+    return { ownAgent: true, error: `${detail.name} is your own agent, so this wallet cannot hire it. Use Re-check now on your profile to test it.` };
+  }
   if (agent.chainId === targetChainId()) {
     const offMarket = await loadDelisted().catch(() => new Set<string>());
     if (offMarket.has(String(detail.token_id))) {
@@ -126,12 +130,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: "agent must name a chain id and a token id" }, { status: 400 });
   }
 
+  // the terms step refuses an owner's hire of their own agent, but only for a caller that
+  // named itself; here the payer is the signature's own, so a payment back to it stops
   const from = body.paymentPayload.payload?.authorization?.from;
   const payer = typeof from === "string" ? from : "";
   const payee = typeof body.paymentRequirements.payTo === "string" ? body.paymentRequirements.payTo : "";
   // a probe is the marketplace's own: its id alone is the caller's to choose, so it also has
   // to be paid from one of our wallets
   const isCheck = isVerifierPayment(body.paymentId) && isTeamWallet(payer);
+  if (!isCheck && payer && payee && payer.toLowerCase() === payee.toLowerCase()) {
+    return NextResponse.json(
+      { success: false, refused: true, ownAgent: true, error: "This payment would go back to the wallet that signed it, so it is not a hire." },
+      { status: 409 },
+    );
+  }
 
   const budgetUsd = typeof body.amountUsd === "number" && body.amountUsd > 0
     ? body.amountUsd
