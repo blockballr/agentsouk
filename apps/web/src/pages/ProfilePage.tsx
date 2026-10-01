@@ -13,7 +13,7 @@ import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
-import { button, card, cx } from '../components/ui'
+import { Action, LABEL, TextSlot, button, card, cx } from '../components/ui'
 
 type HiresSource = 'postgres' | 'memory' | null
 
@@ -211,21 +211,18 @@ export function ProfilePage() {
             </p>
           )}
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {owned && agents.length === 0 && (
-              <div className="metal rounded-[14px] border hairline border-slate-verdant/40 p-10 sm:col-span-2 xl:col-span-3">
+              <div className={cx(card('plain', 'xl'), 'md:col-span-2 lg:col-span-3')}>
                 <p className="text-[15px] text-newsprint-gray">
                   This wallet owns no listed agents on this chain yet.
                 </p>
                 <p className="mt-2 text-[13px] text-newsprint-gray/80">
                   Just registered? The catalogue reads the chain again within a minute, and a listing shows once it has an endpoint we can call.
                 </p>
-                <Link
-                  to="/list"
-                  className={cx(button('primary', 'md'), 'mt-6')}
-                >
+                <Action variant="primary" size="md" to="/list" className="mt-6">
                   List an agent
-                </Link>
+                </Action>
               </div>
             )}
 
@@ -236,7 +233,7 @@ export function ProfilePage() {
                 received={byToken.get(`${agent.chainId}:${agent.tokenId}`)?.length ?? 0}
                 earned={earnedLabel(byToken.get(`${agent.chainId}:${agent.tokenId}`) ?? [])}
                 source={hiresSource}
-                onRechecked={() => void load()}
+                onChanged={() => void load()}
               />
             ))}
           </div>
@@ -266,121 +263,114 @@ export function ProfilePage() {
   )
 }
 
+// the one note a card has room for, most urgent first; every note fits the two-line slot
+function cardNote(agent: OwnedAgent): string {
+  if (agent.failingSince) {
+    // the sweep runs daily, so a listing can be past day 7 for a few hours before it is removed
+    const days = Math.min(7, Math.max(0, Math.floor((Date.now() - Date.parse(agent.failingSince)) / 86400000)))
+    return `Not answering for ${days} of 7 days. One delivered check resets the clock.`
+  }
+  const quality = agent.verification?.quality
+  return quality ? `Graded ${quality.grade}: ${quality.reason}` : ''
+}
+
+// every listing is built from the same parts in the same order at a fixed height, so a row
+// of cards reads evenly and the actions line up along the bottom
 function OwnedAgentCard({
   agent,
   received,
   earned,
   source,
-  onRechecked,
+  onChanged,
 }: {
   agent: OwnedAgent
   received: number
   earned: string
   source: HiresSource
-  onRechecked: () => void
+  onChanged: () => void
 }) {
-  const explorer = explorerTxBase(agent.chainId)
-  const registryUrl = `${explorer}/token/${agent.contractAddress}?a=${agent.tokenId}`
+  const agentHref = `/agents/${agent.chainId}/${agent.tokenId}`
+  const registryUrl = `${explorerTxBase(agent.chainId)}/token/${agent.contractAddress}?a=${agent.tokenId}`
   const verification = agent.verification
   const verdict = verdictFor(agent.chainId, verification)
   const [rechecking, setRechecking] = useState(false)
-  const [recheckNote, setRecheckNote] = useState<string | null>(null)
-  const [recheckError, setRecheckError] = useState<string | null>(null)
+  // feedback takes the card's note slot for a few seconds
+  const [feedback, setFeedback] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!feedback) return
+    const id = window.setTimeout(() => setFeedback(null), 8000)
+    return () => window.clearTimeout(id)
+  }, [feedback])
 
   // A single fresh probe, signed by the owner. It bypasses the twenty hour
   // reprobe window for this token, so a lister does not have to wait for the
   // next sweep to learn whether their endpoint answers.
   async function onRecheck() {
     setRechecking(true)
-    setRecheckNote(null)
-    setRecheckError(null)
+    setFeedback(null)
     try {
       const result = await recheckAgent(agent.chainId, agent.tokenId)
-      setRecheckNote(
+      setFeedback(
         result.skipped
           ? 'Checked within the last twenty hours, so nothing new was probed.'
-          : 'Fresh probe recorded. The badge above updates in a moment.',
+          : `Fresh check recorded: ${verdictFor(agent.chainId, result.verification).label}.`,
       )
-      onRechecked()
+      onChanged()
     } catch (e) {
-      setRecheckError(hireErrorText(e))
+      setFeedback(hireErrorText(e))
     } finally {
       setRechecking(false)
     }
   }
 
+  const note = feedback ?? cardNote(agent)
+
   return (
-    <article className="metal rounded-[14px] border hairline border-slate-verdant/40 p-6">
-      <Link
-        to={`/agents/${agent.chainId}/${agent.tokenId}`}
-        className="font-serif text-[22px] leading-tight text-press-black hover:underline"
-      >
+    <article className={cx(card('plain', 'sm'), 'flex h-[392px] min-w-0 flex-col [overflow-wrap:anywhere]')}>
+      <Link to={agentHref} className="min-w-0 truncate font-serif text-[22px] leading-tight text-press-black hover:underline">
         {agent.name}
       </Link>
-      <p className="mt-1 text-[12px] text-newsprint-gray">
+      <TextSlot lines={1} className="mt-1 text-[12px]">
         {categoryLabel(agent.category)} · agent #{agent.tokenId}
         {!agent.isActive ? ' · inactive' : ''}
-      </p>
-      <p className="mt-4 flex items-center gap-2 text-[14px]" title={verdict.explain}>
+      </TextSlot>
+      <p className="mt-3 flex items-center gap-2 text-[14px] font-medium text-press-black" title={verdict.explain}>
         <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[verdict.tone]}`} />
-        <span className="font-medium text-press-black">{verdict.label}</span>
-        {verification ? <span className="text-newsprint-gray">· checked {timeAgo(verification.checkedAt)}</span> : null}
+        <span className="truncate">{verdict.label}</span>
+        {verification ? (
+          <span className="shrink-0 font-normal text-newsprint-gray">· checked {timeAgo(verification.checkedAt)}</span>
+        ) : null}
       </p>
-      <dl className="mt-4 grid grid-cols-2 gap-3 text-[13px]">
-        <div>
-          <dt className="micro text-newsprint-gray">Buyer hires</dt>
-          <dd className="mt-0.5 text-press-black">{receivedLabel(received, source)}</dd>
+      <TextSlot lines={2} className="mt-1">
+        <span title={note}>{note}</span>
+      </TextSlot>
+
+      <dl className="mt-3 grid grid-cols-2 gap-3 text-[13px]">
+        <div className="min-w-0">
+          <dt className={LABEL}>Buyer hires</dt>
+          <dd className="mt-0.5 truncate text-press-black">{receivedLabel(received, source)}</dd>
         </div>
-        <div>
-          <dt className="micro text-newsprint-gray">Earned</dt>
-          <dd className="mt-0.5 text-press-black">{earned}</dd>
+        <div className="min-w-0">
+          <dt className={LABEL}>Earned</dt>
+          <dd className="mt-0.5 truncate text-press-black">{earned}</dd>
         </div>
       </dl>
-      {verification?.quality ? (
-        <p className="mt-3 text-[12px] leading-relaxed text-newsprint-gray">
-          Graded {verification.quality.grade}: {verification.quality.reason}
-        </p>
-      ) : null}
 
-      {agent.failingSince ? (
-        <p className="mt-5 rounded-[8px] border hairline border-press-black/20 bg-bone-white p-3 text-[12px] leading-relaxed text-press-black">
-          Not answering for {Math.max(0, Math.floor((Date.now() - Date.parse(agent.failingSince)) / 86400000))} of 7 days. It leaves the market on day 8 unless it answers; one delivered check resets the clock.
-        </p>
-      ) : null}
-
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <Link
-          to={`/agents/${agent.chainId}/${agent.tokenId}`}
-          className={button('secondary', 'sm')}
-        >
-          Open agent page
-        </Link>
-        <a
-          href={registryUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={button('secondary', 'sm')}
-        >
-          Registry record
-        </a>
+      {/* the actions in an even two-column grid pinned to the bottom, so they line up across a row */}
+      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
+        <Action to={agentHref} className="w-full">
+          Open agent
+        </Action>
+        <Action href={registryUrl} className="w-full">
+          Registry
+        </Action>
         {verification?.status !== 'delivered' ? (
-          <button
-            type="button"
-            onClick={() => void onRecheck()}
-            disabled={rechecking}
-            className="micro rounded-[5px] border hairline border-highlighter-green/50 px-3 py-2 text-press-black transition hover:border-press-black disabled:opacity-60"
-          >
+          <Action onClick={() => void onRecheck()} disabled={rechecking} className="w-full">
             {rechecking ? 'Probing...' : 'Re-check now'}
-          </button>
+          </Action>
         ) : null}
       </div>
-
-      {recheckNote ? (
-        <p className="mt-3 text-[12px] leading-relaxed text-newsprint-gray">{recheckNote}</p>
-      ) : null}
-      {recheckError ? (
-        <p className="mt-3 text-[12px] leading-relaxed text-press-black">{recheckError}</p>
-      ) : null}
     </article>
   )
 }
