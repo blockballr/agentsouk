@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   QUEST_STEPS,
+  questPicks,
   questStepFor,
   rankFor,
   readQuestMode,
@@ -58,12 +59,17 @@ describe("titles", () => {
 });
 
 describe("quest links", () => {
-  it("open the step only for the agent the step suggests, on its chain", () => {
-    expect(questStepFor("health", 97, "2504")?.agent.name).toBe("Souk Health Guard");
+  it("open a hire step for any agent, with the task only where it is known", () => {
+    expect(questStepFor("health", 97, "2504")?.agent.task).toBeTruthy();
     expect(questStepFor("health", 97, "2238")?.agent.name).toBe("Keel");
-    expect(questStepFor("health", 97, "2237")).toBeNull();
-    expect(questStepFor("health", 56, "2504")).toBeNull();
+    // an agent the step does not know still opens the step, with nothing filled in
+    expect(questStepFor("health", 97, "9999")).toEqual({
+      step: QUEST_STEPS.find((s) => s.key === "health"),
+      agent: { tokenId: "9999", name: "" },
+    });
+    expect(questStepFor("health", 56, "2504")?.agent.task).toBeUndefined();
     expect(questStepFor("stall", 97, "2504")).toBeNull();
+    expect(questStepFor("seal", 97, "2504")).toBeNull();
     expect(questStepFor(null, 97, "2504")).toBeNull();
   });
 
@@ -72,6 +78,49 @@ describe("quest links", () => {
       const step = QUEST_STEPS.find((s) => s.key === key)!;
       expect(step.agents?.[97]?.primary.input).toBeTruthy();
     }
+  });
+});
+
+describe("quest picks", () => {
+  const health = QUEST_STEPS.find((s) => s.key === "health")!;
+  const agent = (tokenId: string, name: string, owner = "0xowner") => ({ tokenId, name, owner });
+  const guard = agent("2504", "Souk Health Guard");
+  const keel = agent("2238", "Keel");
+
+  it("offers agents a job has completed on first, in the shelf's order", () => {
+    const picks = questPicks(health, 97, { confirmed: [agent("7001", "Newcomer"), guard], working: [guard, keel] }, null);
+    expect(picks.map((p) => p.tokenId)).toEqual(["7001", "2504"]);
+    // the featured pick is the confirmed one the shelf rotated to the front
+    expect(questPicks(health, 97, { confirmed: [keel, agent("7001", "Newcomer")], working: [] }, null)[0].tokenId).toBe("2238");
+  });
+
+  it("keeps a place for a working agent whose task is filled in", () => {
+    const picks = questPicks(
+      health,
+      97,
+      { confirmed: [agent("7001", "A"), agent("7002", "B")], working: [agent("7001", "A"), agent("7002", "B"), guard] },
+      null,
+    );
+    expect(picks.map((p) => p.tokenId)).toEqual(["7001", "2504"]);
+    expect(picks[1].task).toBeTruthy();
+  });
+
+  it("offers the working agents it has a task for while none is confirmed", () => {
+    const picks = questPicks(health, 97, { confirmed: [], working: [agent("7001", "Unproven"), keel, guard] }, null);
+    expect(picks.map((p) => p.tokenId)).toEqual(["2238", "2504"]);
+  });
+
+  it("never offers the visitor's own agent", () => {
+    const picks = questPicks(health, 97, { confirmed: [agent("7001", "Mine", "0xME"), keel], working: [] }, "0xme");
+    expect(picks.map((p) => p.tokenId)).toEqual(["2238"]);
+  });
+
+  it("falls back to the written picks only when the shelf cannot be read", () => {
+    expect(questPicks(health, 97, undefined, null).map((p) => p.tokenId)).toEqual(["2504", "2238"]);
+    expect(questPicks(health, 56, undefined, null)).toEqual([]);
+    // a shelf that was read and offers nothing is believed, so no dead agent is suggested
+    expect(questPicks(health, 97, { confirmed: [], working: [] }, null)).toEqual([]);
+    expect(questPicks(health, 97, { confirmed: [], working: [agent("7001", "Unproven")] }, null)).toEqual([]);
   });
 });
 

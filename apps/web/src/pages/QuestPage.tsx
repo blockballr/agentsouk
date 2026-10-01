@@ -1,19 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { categoryDef, shortAddress } from '@agora/core'
+import { visitSeed } from '../lib/rotation'
+import { isOperatedByAgentSouk } from '../lib/first-party'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
 import { hireErrorText } from '../lib/hire'
 import { useTargetChain } from '../lib/target-chain'
 import {
   QUEST_STEPS,
   getQuestProgress,
+  getQuestShelf,
+  questPicks,
   rankFor,
   readSeenPoints,
   rememberQuestProgress,
   stampsFrom,
   writeQuestMode,
   writeSeenPoints,
+  type QuestAgent,
   type QuestProgress,
+  type QuestShelf,
   type QuestStep,
 } from '../lib/quest'
 import { Action, LABEL, TextSlot, card, cx } from '../components/ui'
@@ -31,6 +37,23 @@ export function QuestPage() {
   const [connecting, setConnecting] = useState(false)
   const [shownPoints, setShownPoints] = useState(0)
   const counted = useRef(false)
+  // who each hire step may offer, in the order the shelf rotated them for this visit: undefined
+  // while it is being read, null when it could not be, so a button never changes its target
+  const [shelf, setShelf] = useState<Record<string, QuestShelf> | null | undefined>(undefined)
+
+  useEffect(() => {
+    let live = true
+    getQuestShelf(visitSeed())
+      .then((s) => {
+        if (live) setShelf(s)
+      })
+      .catch(() => {
+        if (live) setShelf(null)
+      })
+    return () => {
+      live = false
+    }
+  }, [])
 
   useEffect(() => {
     let live = true
@@ -171,6 +194,9 @@ export function QuestPage() {
               points={pointsFor(step)}
               stamped={stamps[step.key]}
               isNext={next?.key === step.key}
+              picks={chainId !== null && step.category && shelf !== undefined ? questPicks(step, chainId, shelf?.[step.category], wallet) : []}
+              reading={Boolean(step.category) && (shelf === undefined || chainId === null)}
+              onlyOurs={Boolean(step.category && shelf?.[step.category]?.working.length && shelf[step.category].working.every((a) => isOperatedByAgentSouk(a.owner)))}
               chainId={chainId}
               wallet={wallet}
               onConnect={connect}
@@ -219,6 +245,9 @@ interface StepAction {
 function stepContent(
   step: QuestStep,
   stamped: boolean,
+  picks: QuestAgent[],
+  reading: boolean,
+  onlyOurs: boolean,
   chainId: number | null,
   wallet: string | null,
   onConnect: () => void,
@@ -248,24 +277,27 @@ function stepContent(
     return {
       title,
       instruction: 'List one agent of your own. Its hires pay your wallet directly.',
-      actions: [{ label: 'List an agent', to: '/list' }],
+      actions: [{ label: 'List an agent', to: '/list?quest=stall' }],
     }
   }
-  const pair = chainId !== null ? step.agents?.[chainId] : undefined
-  if (pair) {
-    const actions: StepAction[] = [{ label: `Hire ${pair.primary.name}`, to: `/agents/${chainId}/${pair.primary.tokenId}?quest=${step.key}` }]
-    if (pair.alternate) actions.push({ label: `Or ${pair.alternate.name}`, to: `/agents/${chainId}/${pair.alternate.tokenId}?quest=${step.key}` })
+  if (reading) return { title, instruction: 'Reading which agents are answering right now.', actions: [] }
+  if (picks.length > 0) {
     return {
       title,
-      instruction: 'One signature settles the hire. Then run a task on its page.',
-      actions,
+      instruction: onlyOurs
+        ? 'Only our own agents answer here today. One signature settles the hire.'
+        : 'One signature settles the hire. Then run a task on its page.',
+      actions: picks.map((a, i) => ({
+        label: `${i === 0 ? 'Hire' : 'Or'} ${a.name}`,
+        to: `/agents/${chainId}/${a.tokenId}?quest=${step.key}`,
+      })),
     }
   }
   const label = step.category ? categoryDef(step.category).label.toLowerCase() : ''
   return {
     title,
     instruction: `Hire any ${label} agent that is not your own.`,
-    actions: [{ label: 'Browse the shelf', to: `/agents${step.category ? `?category=${step.category}` : ''}` }],
+    actions: [{ label: 'Browse the shelf', to: `/agents?sort=reachability${step.category ? `&category=${step.category}` : ''}` }],
   }
 }
 
@@ -277,6 +309,9 @@ function StepCard({
   points,
   stamped,
   isNext,
+  picks,
+  reading,
+  onlyOurs,
   chainId,
   wallet,
   onConnect,
@@ -287,12 +322,17 @@ function StepCard({
   points: number
   stamped: boolean
   isNext: boolean
+  picks: QuestAgent[]
+  // the picks for this step are still being read
+  reading: boolean
+  // every agent answering in this step's category is one we run
+  onlyOurs: boolean
   chainId: number | null
   wallet: string | null
   onConnect: () => void
   connecting: boolean
 }) {
-  const { title, instruction, actions } = stepContent(step, stamped, chainId, wallet, onConnect, connecting)
+  const { title, instruction, actions } = stepContent(step, stamped, picks, reading, onlyOurs, chainId, wallet, onConnect, connecting)
   const state = stamped ? 'Stamped' : isNext ? 'Next up' : 'Not stamped yet'
   return (
     <article
@@ -322,9 +362,12 @@ function StepCard({
             to={a.to}
             onClick={a.onClick}
             disabled={a.disabled}
-            className={cx('w-full', actions.length === 1 && 'col-span-2')}
+            className={cx('w-full min-w-0', actions.length === 1 && 'col-span-2')}
           >
-            {a.label}
+            {/* an agent's name can be any length, so the label stays on one line */}
+            <span className="truncate" title={a.label}>
+              {a.label}
+            </span>
           </Action>
         ))}
       </div>

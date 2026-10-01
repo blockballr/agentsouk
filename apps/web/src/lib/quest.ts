@@ -63,6 +63,33 @@ export interface QuestAgent {
   name: string
   task?: string
   input?: Record<string, unknown>
+  // the registry owner, when the pick came from the live shelf
+  owner?: string | null
+}
+
+// an agent the server offers for a step
+export interface QuestCandidate {
+  tokenId: string
+  name: string
+  owner?: string | null
+}
+
+// what a step may offer in one category, in the order the shelf rotated them for this visit:
+// agents a job has completed on, and every agent that answered its last check
+export interface QuestShelf {
+  confirmed: QuestCandidate[]
+  working: QuestCandidate[]
+}
+
+export async function getQuestShelf(seed: string): Promise<Record<string, QuestShelf>> {
+  const res = await fetch(`${BASE}/quest/picks?seed=${encodeURIComponent(seed)}`)
+  if (!res.ok) throw new Error(`quest picks ${res.status}`)
+  const body = await readJsonBody<{ picks?: Record<string, Partial<QuestShelf>> }>(res, 'quest picks')
+  const out: Record<string, QuestShelf> = {}
+  for (const [category, shelf] of Object.entries(body.picks ?? {})) {
+    out[category] = { confirmed: shelf.confirmed ?? [], working: shelf.working ?? [] }
+  }
+  return out
 }
 
 export interface QuestStep {
@@ -161,17 +188,47 @@ export function stampsFrom(progress: QuestProgress | null): Record<StepKey, bool
   }
 }
 
-// the step a quest link names, when it matches the agent the page is showing
+// the hire step a quest link names. Any agent can be the one hired for it; the task is
+// filled in only for the agents whose input we know
 export function questStepFor(
   key: string | null,
   chainId: number,
   tokenId: string,
 ): { step: QuestStep; agent: QuestAgent } | null {
   const step = QUEST_STEPS.find((s) => s.key === key)
-  const pair = step?.agents?.[chainId]
-  if (!step || !pair) return null
-  const agent = [pair.primary, pair.alternate].find((a) => a?.tokenId === tokenId)
-  return agent ? { step, agent } : null
+  if (!step?.category) return null
+  const pair = step.agents?.[chainId]
+  const known = [pair?.primary, pair?.alternate].find((a) => a?.tokenId === tokenId)
+  return { step, agent: known ?? { tokenId, name: '' } }
+}
+
+// who a hire step offers: up to two agents, never the visitor's own. Agents a job has completed
+// on come first, in the shelf's rotated order, so any listing can be featured once it is proven.
+// Until a category has one, the step offers the working agents whose task we can fill in, and
+// when one of those is working it always keeps a place, so a step can be done in one tap
+export function questPicks(
+  step: QuestStep,
+  chainId: number,
+  shelf: QuestShelf | undefined,
+  wallet: string | null,
+): QuestAgent[] {
+  const pair = step.agents?.[chainId]
+  const written = [pair?.primary, pair?.alternate].filter((a): a is QuestAgent => Boolean(a))
+  const writtenById = new Map(written.map((a) => [a.tokenId, a]))
+  const me = wallet?.toLowerCase() ?? null
+  const offer = (list: QuestCandidate[]): QuestAgent[] =>
+    list
+      .filter((a) => !me || a.owner?.toLowerCase() !== me)
+      .map((a) => ({ ...writtenById.get(a.tokenId), tokenId: a.tokenId, name: a.name, owner: a.owner ?? null }))
+  const confirmed = offer(shelf?.confirmed ?? [])
+  const workingWritten = offer(shelf?.working ?? []).filter((a) => writtenById.has(a.tokenId))
+  // an unread shelf falls back to the written picks; a read one that offers nothing is believed
+  if (!shelf) return written.slice(0, 2)
+  const picks = (confirmed.length > 0 ? confirmed : workingWritten).slice(0, 2)
+  if (picks.length === 0) return []
+  const filled = [...confirmed, ...workingWritten].find((a) => a.task)
+  if (filled && !picks.some((a) => a.task)) picks[picks.length < 2 ? picks.length : 1] = filled
+  return picks
 }
 
 // titles are cosmetic: they read the same points the server works out, and carry no value
