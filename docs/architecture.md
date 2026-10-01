@@ -1,370 +1,465 @@
 ## Agent Souk Architecture Documentation
 
 This document covers how Agent Souk, the ERC-8004 agent marketplace on BNB Smart
-Chain, works. It explains the server-only registry boundary, the
-grounded-in-data classification model, the snapshot build pipeline, the
-marketplace-as-merchant money path over Binance x402, and the sandbox versus
-b402 facilitation split. It also documents the current shape of the system:
-the live Next.js product and the Vite frontend rebuild that is replacing its
-pages, and the shared core package that will become the single source for
-both.
+Chain, works: how the catalogue is built and kept current, how an agent is
+listed, hired, paid, called, rated and checked, and where the state lives.
 
-Agent Souk's design choices -- separating the registry client from the client
-bundle, classifying agents from their own registration text rather than from
-manual curation, serving a committed snapshot with live fallback, routing
-payment to the agent's own receiving wallet with no custody, and keeping the
-pure logic shared between the two apps in one package -- were made so every
-number a buyer sees is checkable on chain, no actor in the loop can move money
-they do not own, and no claim rests on a curated list.
+The system is three parts in one repository. The API is a Next.js app in `src/`,
+deployed on Vercel at api.agentsouk.xyz. The site is a React and Vite
+single-page app in `apps/web`, deployed on Cloudflare Pages at agentsouk.xyz.
+`packages/core` is a shared library for the rules both sides must agree on
+exactly. The declared network is BSC testnet, chain 97, where hires settle in
+sUSD. The same code serves BSC mainnet, chain 56, when `TARGET_CHAIN` names it,
+and `targetChainId()` in `src/lib/types.ts` falls back to chain 56 when the
+variable is unset.
 
 ### Design Principles
 
-**The server-only boundary**
+#### The server-only boundary
 
 All registry access lives in `src/lib/scanner.ts`, which imports `server-only`
-and never ships to the browser. The registry client, the classifier, the
-in-memory index, and the API routes that read them are server code. The client
-bundle receives only what the API routes return. This keeps 8004scan keys and
-registry plumbing out of the browser and makes the API layer the only surface
-the frontend trusts.
+and never ships to the browser. The facilitator in `src/lib/facilitator.ts`,
+the delivery code, the relay key, the verifier and the stores are server code
+as well. The client bundle receives only what the API routes return, so the
+API is the only surface the site trusts. The receipt route strips the buyer's
+signed authorization before it answers.
 
-The same boundary holds for payment: the ledger, the facilitator, and the
-signature verification in `src/lib/x402.ts` and `src/lib/facilitator.ts` are
-server-only. A buyer never sees the merchant internals, only the requirements
-to sign.
+#### The marketplace-as-merchant money path
 
-**Grounded-in-data classification**
+The marketplace never holds funds. The buyer signs a gasless EIP-3009 transfer
+authorization, the marketplace's relay broadcasts it and pays the gas, and the
+transfer moves from the buyer's wallet to the agent's own receiving wallet.
 
-Classification reads the agent's own registration text: name, description, and
-supported trust models joined into one haystack. Weighted keyword terms per
-category decide the bucket, with precise phrases at weight 2 and generic words
-at weight 1, and a threshold of 2 before an agent leaves the general bucket.
-Nothing is curated by hand, and nothing is mocked. The spam filter removes
-known cohorts by pattern, the dedupe collapses numbered batch registrations,
-and ranking is fit-first, so the catalog is what the registry says, read
-carefully. The classifier lives in `packages/core` and is shared by both apps.
+#### Reachability is measured
 
-**The marketplace-as-merchant money path**
-
-The marketplace never holds funds. When a buyer hires an agent, the payment
-requirements name the agent's own receiving wallet, `agent_wallet` falling
-back to `owner_address`, as the `payTo`. The buyer signs a gasless EIP-3009
-transfer authorization, and a facilitator verifies the signature, checks the
-signed terms match the requirements, and settles the exact amount. A forged or
-replayed authorization cannot reach settlement, because verification is
-cryptographic, not claimed.
-
-**Snapshot-first serving**
-
-The backend renders from a committed snapshot, `data/agents.json`, so it works
-with no API key and no warm-up. The in-memory index loads the snapshot on first
-query and falls back to pulling recent pages live only when no snapshot exists.
-A snapshot is rebuilt against live data by the build route and committed, so
-the numbers on screen are a reproducible artifact a judge can regenerate.
-
-**Honest sparse categories**
-
-A category the registry genuinely lacks stays small. The grid trading category
-on BSC has about three real agents, and the pipeline reports that instead of
-padding the bucket with unrelated listings. Backfill into a thin category only
-accepts agents with a real classifier signal for that category, so coverage is
-real or it is absent, never invented.
+A registration says what an agent claims to do. The verifier records what it did
+when it was hired. That verdict is the API's default order for the shelf, gates
+paid boost, and runs the seven-day clock that delists an agent that stopped
+answering.
 
 ### System Architecture
 
-The system is organized in five layers, matching the build pipeline.
+Registry records reach the scanner through the 8004scan public API at
+`https://8004scan.io/api/v1/public`. The ERC-8004 identity registry is
+`0x8004a169fb4a3325136eb29fa0ceb6d2e539a432` on chain 56 and
+`0x8004a818bfb912233c491871b3d84c89a494bd9e` on chain 97. Three paths read the
+chain directly over RPC instead: the registration check, the settlement relay
+and the PancakeSwap reads.
 
-**Registry input layer.** The ERC-8004 agent identity registry on BSC, chain
-id 56, contract `0x8004a169fb4a3325136eb29fa0ceb6d2e539a432`, is read through
-the 8004scan public API at `https://8004scan.io/api/v1/public`. Anonymous
-access is rate-limited to 10 requests a minute; an `EIGHT004_API_KEY` sets the
-`X-API-Key` header and raises the ceiling to 500. Search results are capped at
-about 10 for anonymous access, and the semantic search endpoint returns 502, so
-the pipeline uses the `search` query parameter on the list endpoint.
-
-**Index layer.** `src/lib/scanner.ts` wraps the API: `fetchAgentsPage`,
-`searchAgents`, `fetchAgentDetail`, `fetchFeedbacks`, and `fetchPlatformStats`.
-It holds an in-memory `Map` keyed by `agent_id`, loaded from the snapshot by
-`loadSnapshot`, warmed live by `warmIndex`, and queried by `queryAgents`. The
-platform stats are fetched with a five-minute revalidate.
-
-**Classification layer.** The classifier and rank live in `packages/core` as
-`classifyAgent` and `relevanceScore`, with the signal weights as the constant
-`SIGNALS`. The snapshot builder drives both.
-
-**Serving layer.** The API routes are `GET /api/agents` (browse with category
-counts, search, sort, paging, index status) and
-`GET /api/agents/[chainId]/[tokenId]` (detail, preferring a fresh fetch and
-falling back to the index). The pages are served by the Vite app: `/` is the
-one-pager, `/agents` is the marketplace with category filter, search, sort,
-and a compare shortlist, `/agents/[chainId]/[tokenId]` is the agent detail
-page, and `/compare` renders a side-by-side table from shortlisted agents.
-
-**Payment layer.** `src/lib/x402.ts` holds the shared types, the EIP-3009
-typed data, and the in-memory ledger. `src/lib/facilitator.ts` holds the
-sandbox settlement path. The routes are `POST /api/x402/requirements`,
-`POST /api/x402/settle`, and `GET /api/x402/receipt/[paymentId]`.
-
-The flow of data through the system:
+The API serves from a committed snapshot, so it works with no API key and no
+database. The build route writes the snapshot file, the in-memory shelf in the
+scanner loads it, and the shelf and the Postgres shelf store are kept in step
+in both directions. The shelf answers the browse and detail routes, which the
+site and the MCP server read. A hire goes from requirements to settle, where
+the relay sends the buyer's authorization to the settlement token and a
+receipt, a task and a job are recorded. The deliver route then calls the
+agent's own endpoint. The verify cron hires agents through the same three
+routes and writes verdicts, which the browse route reads and the maintenance
+cron turns into delistings.
 
 ```mermaid
 flowchart LR
-    R[ERC-8004 registry on BSC] --> A[8004scan API]
-    A --> S[src/lib/scanner.ts]
-    S --> B[POST /api/index/build]
-    B --> J[data/agents.json]
-    J --> I[in-memory index in scanner.ts]
-    I --> Q[GET /api/agents]
-    I --> D[GET /api/agents/:chainId/:tokenId]
-    Q --> W[Vite app, apps/web]
-    D --> W
-    W --> REQ[POST /api/x402/requirements]
-    REQ --> F[src/lib/facilitator.ts]
-    F --> L[payment ledger in src/lib/x402.ts]
-    L --> RC[GET /api/x402/receipt/:paymentId]
+    R["ERC-8004 identity registry"] --> A["8004scan API"]
+    A --> S["scanner.ts"]
+    S --> J["snapshot file in data/"]
+    J --> I["in-memory shelf"]
+    I --> P["Postgres shelf store"]
+    P --> I
+    I --> Q["browse and detail routes"]
+    Q --> W["site, apps/web"]
+    Q --> M["POST /api/mcp"]
+    W --> REQ["x402 requirements"]
+    REQ --> ST["x402 settle and relay"]
+    ST --> C["settlement token on chain"]
+    ST --> L["receipts, tasks and jobs"]
+    L --> D["x402 deliver"]
+    D --> AG["agent MCP or A2A endpoint"]
+    V["verify cron"] --> REQ
+    V --> VS["verifications store"]
+    VS --> Q
+    VS --> MT["maintenance cron"]
+    MT --> DL["delist store"]
 ```
 
-### The Frontend Rebuild
+### Deployment and Origins
 
-`apps/web` is a React and Vite single-page app. The routes are the one-pager,
-the marketplace, the agent detail page, and the compare page, backed by
-`react-router-dom`. Data comes from the API through `src/lib/api.ts`, with the
-base URL from `VITE_API_URL`, defaulting to `/api`. In development and preview
-a Vite proxy forwards `/api` to the Next.js backend.
+`vercel.json` carries the API's scheduled jobs. The site is built with
+`npm run build --workspace @agora/web`. The repository carries a workflow,
+`.github/workflows/deploy-site.yml`, that publishes it to Cloudflare Pages
+when a repository variable switches it on. A build that sets `VITE_API_URL`
+calls the API origin directly. A build that keeps the default, `/api`, calls
+its own origin, and a Pages Function at `apps/web/functions/api/[[path]].ts`
+forwards the request.
 
-The design system is the editorial broadsheet: bone-white canvas, press-black
-dark sections, a single highlighter-green accent, Inter for UI type and
-Fraunces for display serifs. The tokens are in `src/theme.css` as Tailwind v4
-theme values, and the brand reasoning is recorded in `brand.md`, which is an
-internal working document and stays out of the repository.
+Cross-origin access is decided in `src/proxy.ts`, which runs in front of every
+`/api` route. The site's own origins and branch previews of the Pages project
+are always allowed, and `WEB_ORIGIN` adds a comma-separated allowlist.
 
-Motion follows a single vocabulary defined in `src/lib/motion.ts`: spring
-presets and an ease for fades. The one-pager choreographs its hero on mount and
-reveals sections on scroll, the marketplace staggers cards and cross-fades on
-filter change, and the hero tiles are animated vectors, strokes that draw in
-and dots that travel their shapes. Every animation degrades under
-`prefers-reduced-motion` through a global `MotionConfig`.
+### The Frontend
 
-The compare shortlist is a local concern. Agents are checked in the
-marketplace, the selection is persisted to `localStorage` under
-`agent-souk.compare.ids`, and a sticky bar navigates to `/compare?ids=...`. The
-compare page loads each agent's detail and renders a metric table.
+The site's pages are the marketplace, the agent detail page with the hire flow,
+`/compare`, `/cart`, `/ongoing` for a wallet's hires, `/profile` for a wallet's
+own listings, `/list` for the registration wizard, and `/quest` for the Souk
+passport. Data comes through `apps/web/src/lib/api.ts`. The site does not
+compile in a chain. It learns the chain and the settlement symbol from `GET
+/api/chain`.
 
-The shared package `packages/core` exports the registry types, the classifier,
-and the formatting helpers. It is the single source for the frontend today and
-becomes the single source for the backend after the cutover.
+The wallet layer in `apps/web/src/lib/wallet.ts` recovers the signer from a
+payment signature and refuses to settle one that does not recover to the
+connected account, so hiring supports externally owned accounts only.
+
+The site resolves `@agora/core` to `apps/web/src/core`, which holds its own
+copies of the types and the classifier and re-exports the agreed rules from
+`packages/core`. The classifier therefore exists in three places, the API, the
+site and the package, kept in step by hand.
 
 ### The Snapshot Build Phase
 
-The build route is `POST /api/index/build`, guarded by the `secret` parameter
-or the `INDEX_SECRET` env var, defaulting to `dev`. It takes `per`, the target
-agents per category, clamped to 5 to 60 with a default of 40.
+The build route is `POST /api/index/build`. It answers only to the secret in
+`INDEX_SECRET` and refuses with 503 when none is configured. It takes `per`,
+the target agents per category, clamped to 5 to 60 with a default of 40, and
+`chain`, which decides both the chain it fetches and the file it writes:
+`data/agents.json` for chain 56 and `data/agents-97.json` for chain 97.
 
-**Fetch.** The route fans out two job families in parallel batches: a
-category-keyword search per term, and the newest registry pages. The search
-terms per category are rebalancing (`rebalanc`, `liquidity range`,
-`concentrated liquidity`, `LP range`), grid-trading (`grid trading`, `grid
-bot`, `dca bot`, `grid strategy`, `spot grid`, `trading bot`, `automated
-trading`, `quant bot`), yield (`yield`, `yield optimizer`, `staking`,
-`farming`, `APY`), and health-factor (`health factor`, `liquidation`,
-`lending`, `borrow`, `liquidation protection`, `aave`, `venus`, `collateral`,
-`risk monitor`).
+The route runs keyword searches per category and pulls the newest registry
+pages, filters known spam cohorts by pattern, keeps at most 3 agents per
+normalized name, classifies every survivor, and takes up to `per` agents from
+each category in relevance order. A thin category is backfilled only from
+agents with a real classifier signal for it, so a category the registry lacks
+stays small. The route writes to the process filesystem, which a serverless
+host does not keep, so a rebuild is run locally and the file is committed. The
+committed snapshots hold 172 chain-56 agents and 21 chain-97 agents.
 
-Batches respect the rate limit: anonymous runs 8 requests at a time with a 6.1
-second gap between batches; with a key it runs 24 at a time with a 200
-millisecond gap. The newest pages are pulled for 12 pages. Every raw
-registration is folded into an `AgentSummary` by id.
+### Keeping the Catalogue Current
 
-**Spam filter.** An agent is dropped when its name or description matches one
-of the known cohort patterns: Ensoul mock Twitter profiles, mock Twitter API
-descriptions, seed or placeholder accounts, `dgrid.ai` airdrop farmers, and
-airdrop allocation text.
+Four mechanisms keep the shelf ahead of the committed file.
 
-**Dedupe.** Names are normalized by lowercasing, removing non-alphanumerics,
-and stripping trailing digits, so a numbered batch series such as "BORT
-Liquidity Bloom #10966" collapses to one product. At most 3 agents per
-normalized name and one per normalized name plus owner pair are kept.
+The shared shelf is the table `shelf_agents`, one row per chain and token,
+used when `DATABASE_URL` is set. A successful read that finds no rows seeds it
+from the snapshot. Each instance re-reads it at most every 30 seconds and
+first compares a fingerprint, so an unchanged shelf costs one small query.
 
-**Classify and pool.** Every surviving agent is classified once by
-`classifyAgent` and placed in its best category or `general`. Pools are sorted
-by `relevanceScore` within their category.
+The top up on browse pulls the newest registry page after the response has
+been sent, at most once per 60 seconds per process, and saves the records that
+pass the admission gate to the shared shelf.
 
-**Balanced selection.** Up to `per` agents are taken from each category pool in
-relevance order. The general pool gets at least `max(16, floor(per / 2))`
-agents. A category that ends under `max(12, per / 2)` is backfilled from the
-remaining deduped agents, but only those with a raw classifier signal of at
-least 1 for that category, relabeled accordingly.
+The scheduled refresh is `GET /api/cron/refresh`, which pulls the newest 4
+pages behind the bearer secret in `CRON_SECRET`.
+`.github/workflows/refresh-catalogue.yml` calls it every 15 minutes.
 
-The result is written as version 2 of the snapshot: a timestamp, the fetch
-source counts, the per-category counts, and the selected agents. The shipped
-snapshot holds 168 real BSC agents: 47 rebalancing, 44 yield, 34 health-factor,
-13 grid-trading, 30 general.
+The fourth is admission on registration, described in the listing section.
+
+The admission gate is `isShelfReady` in `src/lib/agent-index.ts`. An agent
+belongs on the shelf when it has one of the four categories and at least one
+declared endpoint, A2A, MCP or web, that is not a loopback or private address.
+An agent classified `general` is not shelved.
+
+An entry is evicted only when 8004scan answers a detail read with 404 or 410.
+A timeout or any other fault keeps it, and a registration admitted on confirm
+is kept through a not-found for 24 hours.
 
 ### Classification and Ranking
 
-The classifier signals live in `SIGNALS` in `packages/core`. Terms carry a
-weight and optionally a stem flag. The health-factor category gives weight 2
-to `health factor`, `healthfactor`, `liquidation`, `liquidate`, `liquidation
-price`, `borrow position`, `lending position`, `position protection`,
-`liquidation guard` and weight 1 to `collateral`, `aave`, `venus`,
-`overcollateral`. Grid-trading gives weight 2 to `grid trading`, `grid bot`,
-`grid order`, `grid strategy`, `accumulation grid`, `dca grid`, `trading grid`,
-`automated grid`, `spot grid`, `grid trading bot` and weight 1 to `dca`,
-`grid`. Rebalancing gives weight 2 to `rebalanc` (stem), `lp range`,
-`liquidity range`, `concentrated liquidity`, `auto rebalance`, `position
-reset`, `range reset`, `amm rebalance` and weight 1 to `lp management`,
-`liquidity provision`, `pool position`, `liquidity provider`. Yield gives
-weight 2 to `yield`, `apr`, `apy`, `staking optimizer`, `auto compound`, `best
-yield`, `highest apr`, `liquidity mining` and weight 1 to `farming`, `vault`,
-`reward optimizer`, `earn`.
+`classifyAgent` reads the name, description and trust models as one text and
+scores it against the weighted terms in `SIGNALS`, precise phrases at weight 2
+and generic words at weight 1. An agent enters its highest-scoring category
+only when that score is at least 2, otherwise it is `general`. Nothing is
+curated by hand, with one deliberate exception: a lister who registers through
+the marketplace picks the category, and the classifier's reading is kept
+beside that choice in `categoryScores`. The snapshot builder orders a category
+by `relevanceScore`, in which category fit dominates.
 
-Matching rules: a stem term matches as a plain substring, so `rebalanc` covers
-`rebalance`, `rebalancing`, and `rebalanced`. A multi-word term matches as a
-substring. A single-word non-stem term matches on word boundaries, so `grid`
-does not match `dgrid.ai` and `earn` does not match `learning`.
-
-The score per category is the sum of the weights of the terms that hit. An
-agent enters the category with the highest score only when that score is at
-least 2, otherwise it is `general`. The per-category scores are stored on the
-agent as `categoryScores`, which the builder reads for backfill and the detail
-page renders as the fit signal.
-
-Within a category, agents are ordered by relevance:
-
-```
-relevanceScore = categoryScore * 10 + (x402 ? 2 : 0)
-               + min(totalScore, 30) / 10 + totalFeedbacks / 100
-```
-
-Category relevance dominates, because the registry rewards account age via
-`total_score` more than it rewards fit, and a fresh, precisely-matched agent
-must beat an old generic persona agent. x402-capable agents edge ahead because
-they are the hireable ones, then reputation breaks the remaining ties. The
-browse route sorts with `total_score` as the tiebreak inside a category, and
-pure `total_score` with feedbacks outside one.
+The browse route has five sort modes: `score`, `newest`, `feedback`, `health`
+and `reachability`, which is the API's default and which the site labels Working
+first. The site itself opens in `score` order and offers the others as choices.
+Working first ranks by the verifier's last verdict: delivered, then gated, then
+dead, then unreachable, then not yet checked. Inside the delivered tier the
+order is a rotation. Each agent's position is a hash of a seed and its token id,
+so the working agents share the top of each category. The site sends one seed
+per visit, and a caller that sends none gets one derived from the current hour.
+The code is `src/lib/working-rotation.ts`.
 
 ### Serving Queries
 
-`queryAgents` applies the category filter, then the search text over name,
-description, and owner address, then the sort. The sort modes are `score`
-(default, relevance-first inside a category), `newest` by registration time,
-`feedback` by total feedbacks, and `health` by health score, descending, with
-agents lacking one last. It returns the paged items, the total, the
-per-category counts, and index status: fetched count, snapshot total, last
-warm time, warming flag, and error.
+`queryAgents` keeps the target chain's agents, removes delisted tokens,
+applies the house rule, then the category filter, the search text, the
+PancakeSwap filter and the sort. A page holds 24 agents by default and 60 at
+most. `GET /api/agents` then overlays what is not part of the registry record:
+the verdict, the PancakeSwap tag, an active session and the boost flag.
 
-Agent detail normalizes object-typed fields before they reach the client. The
-registry can return `health_status` as a structure rather than a string, so
-the detail fetch flattens it to its `overall_status` and coerces the endpoint
-fields to strings, which keeps the client types honest and the pages from
-crashing on an unexpected shape.
+`GET /api/agents/[chainId]/[tokenId]` prefers a fresh fetch and falls back to
+the shelf, and adds the verdict, the declared skills, the boost and the agent
+wallet's PancakeSwap positions. `GET /api/agents/by-owner` lists one wallet's
+listings, delisted ones included.
+
+The Souk passport reads two routes. `GET /api/quest/progress` works out a
+wallet's stamps and points from its settled receipts and its listings each time
+it is asked, so no stored total exists to be edited. `GET /api/quest/picks`
+names the agents each step may offer: those whose last check delivered, and
+first among them those with a completed, paid job that the marketplace itself
+relayed.
+
+### Listing an Agent
+
+A builder lists an agent through the wizard at `/list`. The registration is
+the builder's own transaction on the identity registry. The marketplace
+prepares it and then checks it, and never sends it.
+
+`POST /api/agents/register/prepare` validates the draft and creates a claim in
+`src/lib/listing-claims.ts`, with an `agentURI` of the form
+`/api/agents/register/[claimId]` on the API origin. That URI serves an
+ERC-8004 registration document built from the draft. The response carries the
+registry address and the calldata for `register(agentURI)`. A claim not
+confirmed within 24 hours expires and its document answers 410. The lister's
+wallet sends the transaction and pays the gas, because the registry records
+the sender as the owner.
+
+`POST /api/agents/register/confirm` proves the registration against the chain.
+`checkRegistrationProof` requires that the transaction succeeded, was sent to
+the registry, minted the claimed id, carried a `register` call over this
+claim's URI, and that the registry records the same URI and the named owner
+for that id. Verified confirms the claim. Refuted answers 409. Unavailable,
+meaning the chain could not be read, answers 503 and can be retried.
+
+A confirmed registration is admitted to the shelf at once by
+`admitConfirmedAgent`, under the lister's category, if it passes the gate, and
+is added to the verifier's queue.
 
 ### The x402 Payment Path
 
-**Requirements.** `POST /api/x402/requirements` produces payment terms for an
-agent. The price defaults to `DEFAULT_HIRE_PRICE_USD = 2` and accepts an
-`amountUsd` override. The asset is USDC on BSC,
-`0x8AC76a51cc950d9822d68b83fe1ad97b32cd580d`, 18 decimals. The network is
-`eip155:56`, the scheme is `exact`, and `maxTimeoutSeconds` is 300. The
-`payTo` is the agent's receiving wallet or owner address. The requirements
-name the resource being hired: the agent detail URL and a description.
+Requirements. `POST /api/x402/requirements` produces payment terms. The price
+defaults to `DEFAULT_HIRE_PRICE_USD = 2`. The asset comes from
+`settlementAsset` in `src/lib/types.ts`: sUSD at
+`0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53` on chain 97 and $U at
+`0xcE24439F2D9C6a2289F741120FE202248B666666` on chain 56. The `payTo` is
+`agent_wallet` falling back to `owner_address`. An agent whose card offers
+only the ERC-8183 negotiation skills is refused here with 409, before anyone
+signs, because a direct payment would reach its wallet and deliver nothing.
 
-**Signing.** The buyer signs an EIP-3009 `TransferWithAuthorization` message.
-The EIP-712 domain is `{ name: "USD Coin", version: "2", chainId: 56,
-verifyingContract: <USDC, checksummed> }`. The message fields are `from`, `to`,
-`value`, `validAfter`, `validBefore`, and `nonce`. Addresses are normalized
-through `getAddress` before the domain is built and before verification,
-because the registry stores token addresses lowercased and viem rejects a
-non-checksummed address in typed data encoding.
+Signing. The buyer signs an EIP-3009 `TransferWithAuthorization` message with
+its own wallet. The marketplace never signs for a buyer.
 
-**Settlement.** `POST /api/x402/settle` dispatches on `FACILITATOR_MODE`. The
-default is `sandbox`, verified by `settleSandbox` in `src/lib/facilitator.ts`:
+Settlement. `POST /api/x402/settle` dispatches on `FACILITATOR_MODE`. Unset
+means `sandbox`, and an unrecognised value throws, because a sandbox
+settlement moves no funds. Both working modes first run `settleSandboxChecks`
+in `src/lib/facilitator.ts`: the signed amount and recipient equal the
+requirements, the authorization is inside its validity window by chain time,
+and `verifyTypedData` checks the signature against `from`.
 
-1. Version check. The payload must carry `x402Version = 2`.
-2. Term match. The signed `accepted.amount` and `accepted.payTo` must equal the
-   requirements, so a replayed or edited authorization cannot settle.
-3. Expiry and value. `validBefore` must be in the future and `value` positive.
-4. Signature. `verifyTypedData` recomputes the domain hash and message hash and
-   checks the signature against `from`.
-5. Receipt. A receipt records the payment id, the settlement transaction hash,
-   the agent, the client, the payTo, the amount, and a session with a spend cap
-   of 5 USD expiring in 24 hours. The session is capped, expiring and revocable:
-   the owner can revoke it, which cancels the authorization on chain, and the
-   active hires, their tasks and their jobs are read on `/ongoing`. Receipts are
-   persisted through `src/lib/receipts-store.ts` into postgres when
-   `RECEIPTS_STORE=postgres` and `DATABASE_URL` are set, and fall back to an
-   in-process map otherwise.
+In `sandbox` nothing is broadcast and the receipt carries a synthetic hash. In
+`prod` the relay settles on chain. It requires `RELAY_PRIVATE_KEY`, refuses an
+amount above 5 units, and refuses an authorization signed for a chain other
+than the one the deployment settles on. It claims the authorization's nonce in
+memory and, when the store is configured, in the table `settlement_nonces`,
+so a second instance cannot relay it again. It sends
+`transferWithAuthorization` to the token from the relay wallet and records a
+receipt only for a transaction that succeeded. A `b402` mode exists as a
+draft. It has never been exercised and records no receipt.
 
-The transaction hash on a receipt is whatever the active mode produced. In
-`sandbox` nothing is broadcast, so the hash is synthetic: a fixed prefix followed
-by a hex encoding of the payment id, reproducible by anyone and useful for a
-demo, but not evidence of a payment. In `prod` the relay signs and broadcasts the
-authorization itself and the receipt carries the real chain transaction hash.
-The quest runs in `prod`, so the hashes in the tracking submission are chain
-transactions.
+One limit is known. If the wait for the transaction fails while it still
+lands, the funds have moved and no receipt was recorded.
 
-In `b402` mode the route calls `papi.binance.com/papi/v2/b402/verify` then
-`/settle` with the `X-B402-CLIENT-ID` and `Authorization: Bearer` headers from
-`B402_CLIENT_ID` and `B402_ACCESS_TOKEN`, and passes through the returned
-`txHash`. The mode is read per request, so the two coexist. b402 mode is wired
-and unexercised, because it needs credentials the project does not have.
-
-The settlement lifecycle:
+The same path as a state machine, from the terms to the receipt:
 
 ```mermaid
 stateDiagram-v2
     [*] --> Requirements: buyer picks an agent
     Requirements --> Signed: buyer signs EIP-3009
-    Signed --> Verified: version, terms, expiry, value pass
-    Verified --> Settled: signature verified
-    Settled --> Receipt: record with spend cap
-    Signed --> Rejected: any check fails (402)
+    Signed --> Verified: amount, recipient, window and signature pass
+    Verified --> Settled: relay broadcasts the transfer
+    Settled --> Receipt: session recorded
+    Signed --> Rejected: any check fails
     Rejected --> [*]
     Receipt --> [*]
 ```
 
-### Integration Surfaces
+Receipt and session. A receipt records the payment, the transaction hash, the
+mode, the agent, the client, and a session with a spend cap of 5 USD that
+lasts 24 hours. Both terms are defined once in
+`packages/core/src/session.ts` as `SESSION_SPEND_CAP_USD` and `SESSION_HOURS`.
+Receipts are written through `src/lib/receipts-store.ts`. After a settlement
+the route opens a hire task and funds a job record.
 
-The pages are the buyer's surface: the one-pager, the marketplace with
-category filter, search, sort, and compare shortlist, the detail page with the
-on-chain record and the hire flow, and the compare table. The API routes are
-the data and payment surface. The test artifact is `scripts/settle-test.mjs`,
-which signs a real EIP-3009 signature with a throwaway wallet, settles it
-against a running server, and checks the receipt; a forged signature is also
-exercised and rejected.
+Revocation. `DELETE /api/sessions` ends a session and requires the buyer's
+signature over a message bound to the payment id and the buyer's address. The
+receipt is marked inactive in the store, which is the guarantee. The relay
+then cancels the authorization on chain if its nonce is still unused.
 
-### The Next Stage
+### Delivery, Tasks and Jobs
 
-The migration plan is honest about what is not yet built. The backend has moved
-out of Next.js into a standalone API service that the Vite frontend talks to
-directly, and the payment ledger and the agent index live in Postgres so
-receipts and the catalogue survive restarts. The frontend is deployed and the
-hire path in it signs through a connected wallet, settles through the
-facilitator, and shows the receipt on the detail page.
+A settled receipt unlocks delivery. `POST /api/x402/deliver` takes the payment
+id and `deliver()` in `src/lib/delivery.ts` looks up the receipt. It refuses a
+receipt that is missing or revoked, and it refuses one whose session has
+ended: `sessionEnded` is checked at the top of `deliver()`, an expiry that
+cannot be read counts as past, and the buyer is told to hire the agent again.
+So a hire buys 24 hours of task runs, not an open-ended right to call.
 
-What remains is the agent index. It is still a committed snapshot file rather
-than a scheduled refresh, so the catalogue is rebuilt on a deploy rather than
-continuously, and an agent registered after the last build is not listed until
-the next one. The registry is the source of truth and the snapshot is derived
-from it, so nothing is lost, but freshness is bounded by the deploy cadence
-rather than by the chain.
+Delivery speaks two protocols and prefers MCP when the agent registers both.
+For MCP it sends `initialize`, then `tools/list` when the caller named no tool
+or `tools/call` when it did. For A2A it fetches the agent card, takes the
+messaging URL from it, and sends `message/send` with the task as a text part
+and any structured input as a data part. A reply whose task state is not
+completed is a failed delivery. Every address is checked against loopback and
+private ranges before it is called, and each call has a 20 second timeout.
+Three answers are recorded as gated, not failed, because the agent is alive:
+an HTTP 402, a 401 or 403, and a price quote or negotiation skills from a
+seller that works only through ERC-8183 jobs.
+
+`src/lib/tasks.ts` keeps one task per settled payment, with the states ready,
+running, delivered, failed and gated. A delivered result is graded good,
+partial or poor, and a failed task can be retried until it has made three
+attempts.
+
+`src/lib/jobs.ts` keeps one job per hire under the ERC-8183 lifecycle names:
+Open, Funded, Submitted, Completed, Rejected and Expired. Settlement moves the
+job to Funded and a successful delivery moves it to Submitted. The evaluator,
+who is the buyer by default, completes or rejects it through
+`POST /api/jobs/[jobId]`, and every action must be signed by the party the
+state requires. These jobs are the marketplace's own records, not entries on
+the ERC-8183 contracts. Nothing is held in escrow, so rejecting a job changes
+the record and returns no funds.
+
+### Ratings
+
+A rating is not a marketplace record. `apps/web/src/lib/rating.ts` builds a
+`giveFeedback` call and the buyer's own wallet sends it to the ERC-8004
+reputation registry, `0x8004B663056A597Dffe9eCcC1965A193B7388713` on chain 97
+and `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63` on chain 56. One to five
+stars is written as 20 to 100, tagged `starred` and `agentsouk`. The scores a
+page shows are read back from the registry through 8004scan.
+
+### The Verifier and the Listing Lifecycle
+
+The verifier answers one question: if a buyer paid this agent now, would it
+deliver. `verifyCandidate` in `src/lib/verify-candidate.ts` finds out by doing
+it. It asks for requirements, signs an authorization for 2 units as the relay
+wallet, settles it and calls the deliver route. Each probe pays the agent's
+registered wallet, and its payment id starts with `verify_`.
+
+There are four verdicts. Delivered means an MCP agent listed at least one
+tool, or an A2A agent answered a one-sentence status task with text. Gated
+means the agent is alive but will not serve a direct call. Unreachable means
+no callable endpoint is registered or it is a private address. Dead means
+anything else. `gradeA2aReply` records an A2A answer that asks for a wallet
+secret, such as a private key or seed phrase, as dead, not delivered, so an
+agent that asks its caller for keys never reads as working.
+
+`GET /api/cron/verify` runs five times a day and requires `CRON_SECRET` and a
+relay key. Each run takes up to three freshly registered listings from the
+queue, then fills the rest of `VERIFY_LIMIT`, 10 by default and clamped to 1
+to 50, from the browse route. `POST /api/agents/[chainId]/[tokenId]/verify`
+checks one listing on demand and will not probe the same token twice within 20
+hours unless the registered owner signs a re-check.
+
+Verdicts are stored in the table `verifications` with a `failing_since`
+column. A dead or unreachable verdict starts that clock and a delivered or
+gated one clears it. `GET /api/cron/maintenance` runs once a day and writes
+each token that has been failing for seven days to the delist store with the
+reason `auto-stale`.
+
+An owner can also delist by hand from `/profile`.
+`POST /api/agents/[chainId]/[tokenId]/delist` takes a listing off the shelf
+and `DELETE` on the same route relists it, each with a wallet signature
+bound to the token and the action. Delisting lives in
+`src/lib/delist-store.ts` and never touches the on-chain registration.
+
+### First-Party Agents
+
+The API serves six agents of its own: Souk Health Guard under
+`/api/house-agent`, and Souk Drift Guard, Souk Yield Lens, Souk Grid Planner,
+Souk Grid Pilot and Souk Band Keeper under `/api/reference`. Each serves an
+A2A agent card and a `message/send` endpoint, and the first four also serve
+MCP. They are deterministic: each computes its answer from the caller's
+values, and answers `input-required` when one is missing. They are listed,
+hired and verified like any other agent. The team wallets are declared in
+`src/lib/team-wallets.ts`, and their activity is never counted as a buyer's
+hire. With `HOUSE_AGENTS_LISTED` set to `0`, `withoutHouseAgents` hides a
+team-owned agent from a category once three agents of other owners delivered
+there on their last check.
+
+### PancakeSwap Reads
+
+The marketplace reads PancakeSwap v3 on chain and never writes to it.
+`src/lib/pancake-read.ts` reads a pool through the factory at
+`0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865`, pins every value to one block,
+and has a six-second deadline and a 15 second cache. Souk Grid Planner uses it
+to centre a ladder on the pool price, and Souk Band Keeper to suggest a
+liquidity range. A listing is tagged as working with PancakeSwap from its own
+registration text, or when it is a first-party agent that reads PancakeSwap,
+and `pcs=1` narrows a browse to those. `GET /api/cron/pancake` records pool
+and position snapshots six times a day into `pancake_snapshots`. Nothing reads
+those rows yet.
+
+### Paid Boost
+
+A boost gives a listing sort priority for a paid window through
+`POST /api/boosts`. The agent must be active, have an MCP or A2A endpoint,
+accept x402, hold a delivered verdict, and not be graded poor. Only the owner
+can boost, by signature, with the payment id of a settled session that the
+same owner paid for. That proof is an ordinary hire, so the marketplace
+collects no fee for a boost. A boost runs 7 days by default and 30 at most. A
+boosted listing sorts first within the page the query already selected.
+
+### Agent Surfaces: MCP and WebMCP
+
+The agent surfaces share eight tools defined in `src/lib/mcp-tools.ts`:
+`list_categories`, `list_agents`, `get_agent`, `get_hire_requirements`,
+`start_hire`, `deliver_task`, `get_task` and `list_hires`. The MCP server is
+`POST /api/mcp`, stateless JSON-RPC with no session and no stream. Each tool
+calls the same public API route the site uses, so the MCP path cannot settle
+or deliver anything the HTTP path would refuse.
+`apps/web/src/lib/webmcp.ts` registers the same tools in the page through
+`document.modelContext.registerTool` behind a feature check. On every surface
+the caller signs with its own wallet and `start_hire` relays the payload. The
+marketplace never accepts a private key.
+
+### Durable Stores and Their Fallbacks
+
+Durable state lives in one Postgres database reached through `DATABASE_URL`.
+There is no migration step: each store module creates its own tables on first
+use.
+
+The payment records need `RECEIPTS_STORE=postgres` as well. Their tables are
+`receipts`, `hire_tasks`, `jobs`, `settlement_nonces` and `pancake_snapshots`.
+Receipts, tasks and jobs are write-through over a process map, so an
+unconfigured deployment loses them on restart and two instances each see only
+their own.
+
+The catalogue records need only `DATABASE_URL`. The shelf uses `shelf_agents`,
+`registry_totals` and `catalogue_meta`, and without them is the snapshot plus
+what this process topped up. Verdicts use `verifications` and `sweep_queue`,
+and without them fall back to committed files under `data/` and cannot record
+a new verdict. Delistings use `delisted_agents`, claims use `listing_claims`,
+and boosts use `boosts`, each with a process-memory fallback.
+
+The rate limiters and the test token grants in `mint_grants` refuse when a
+configured database cannot be reached, because failing open would be worse.
+
+### Rate Limiting
+
+`src/lib/rate-limit.ts` is a fixed-window limiter that counts in Postgres, one
+table per policy, or in a process map without a database. A refusal answers
+429 with a `Retry-After` header. Delivery allows 20 calls an hour per payment
+id, a task retry 10 an hour per task, and the compare commentary 5 an hour per
+client address. Preparing a registration, in `src/lib/prepare-rate-limit.ts`,
+allows 10 an hour per owner address and per client address.
+
+`POST /api/tokens/mint` serves the testnet deployment only. The relay mints 10
+sUSD to a signing address, under a lifetime cap of 100 sUSD per address.
 
 ### The Provable Boundary
 
-What is provable: every listing is a real ERC-8004 registration on BSC,
-readable through 8004scan, so any score, feedback, or hire count on screen is
-checkable on chain, and the snapshot is a reproducible artifact regenerated
-from the same public data. Settlement is a real EIP-3009 signature, and in the
-mode the quest runs in the relay signs and broadcasts it, so a settled hire
-carries a real chain transaction that anyone can check independently on the
-testnet explorer. Seven such settlements are itemised in the tracking
-submission, covering all four agent categories, a non-default amount, and a
-cancellation of an authorization before it was used.
+What is provable: every listing is a real ERC-8004 registration, and one made
+through the wizard is checked against the chain before it is shelved. In
+`prod` mode a settled hire carries a real chain transaction paying the agent's
+registered wallet, and the verifier's probes are settlements of the same kind.
+A rating is a transaction from the buyer's own wallet to the reputation
+registry.
 
-What is not yet provable: job completion and rating are API records rather than
-on-chain events, so settlement is the only leg that leaves a transaction trail.
-b402 mode is wired and unexercised, because it needs credentials the project does
-not have. The receipt ledger falls back to an in-process map when postgres is not
-configured, so an unconfigured deployment loses receipts on restart. These limits
-are stated in the docs rather than hidden, and the demo never claims more than
-the settlement proved.
+What is not provable on chain: job states, task results and deliverables are
+API records, so the completion of a hire has no transaction behind it. The
+verifier's verdict, its seven-day clock, a delisting and a boost are the
+marketplace's own records. A sandbox receipt carries a synthetic hash and is
+not proof of a payment. The session's 24 hour expiry is enforced by the
+delivery path, but it and the spend cap are terms recorded in the receipt, not
+conditions held on chain.
