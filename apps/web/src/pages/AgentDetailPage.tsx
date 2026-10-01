@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { questStepFor, type QuestStep } from '../lib/quest'
+import { QuestStrip } from '../components/QuestStrip'
+import { categoryOf } from '../lib/compare'
 import type { AgentDetail, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
 import {
   formatDate,
@@ -38,7 +40,7 @@ import {
   signAndSettleHire,
   type HireRequirementsData,
 } from '../lib/hire'
-import { Action, LABEL, button, card, cx } from '../components/ui'
+import { button, card, cx } from '../components/ui'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -342,7 +344,9 @@ export function AgentDetailPage() {
   const hireWarning = preHireWarning(detail.verification)
   const jobSeller = sellsByJob(detail.skills)
   // a passport link opens the page ready for its step: the guide strip, and the run panel filled in
-  const quest = questStepFor(searchParams.get('quest'), Number(chainId), tokenId)
+  const questLink = questStepFor(searchParams.get('quest'), Number(chainId), tokenId)
+  const shelfCategory = (detail as { category?: string }).category ?? categoryOf(detail)
+  const quest = questLink && questLink.step.category === shelfCategory ? questLink : null
   const questPrefill = quest
     ? { task: quest.agent.task, input: quest.agent.input ? JSON.stringify(quest.agent.input) : undefined }
     : undefined
@@ -1109,23 +1113,13 @@ function QuestGuide({
     done: 'This step is finished here. Your passport shows the stamp once the hire has settled.',
   }
   return (
-    <div role="note" className={cx(card('strong', 'sm'), 'mb-6')}>
-      <p className={LABEL}>
-        Souk passport · {step.title} · {QUEST_STAGE_COUNT[stage]}
-      </p>
-      <p id={GUIDE_ID} className="mt-2 text-[13px] leading-5 text-press-black">
-        {text[stage]}
-      </p>
-      {stage === 'done' ? (
-        <Action to="/quest" className="mt-3 w-full">
-          Back to your passport
-        </Action>
-      ) : (
-        <Action variant="quiet" to="/quest" className="mt-1">
-          Back to your passport
-        </Action>
-      )}
-    </div>
+    <QuestStrip
+      label={`${step.title} · ${QUEST_STAGE_COUNT[stage]}`}
+      text={text[stage]}
+      done={stage === 'done'}
+      textId={GUIDE_ID}
+      className="mb-6"
+    />
   )
 }
 

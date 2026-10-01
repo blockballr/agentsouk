@@ -8,10 +8,14 @@ const OWNER = "0x1111111111111111111111111111111111111111";
 
 const m = vi.hoisted(() => ({
   agent: {} as Record<string, unknown>,
+  shelf: [] as Record<string, unknown>[],
   readPancakePositions: vi.fn(),
 }));
 
-vi.mock("@/lib/scanner", () => ({ getAgentByToken: async () => m.agent }));
+vi.mock("@/lib/scanner", () => ({
+  getAgentByToken: async () => m.agent,
+  queryAgents: async () => ({ items: m.shelf }),
+}));
 vi.mock("@/lib/verifications", () => ({ loadVerifications: async () => new Map() }));
 vi.mock("@/lib/pancakeswap", () => ({ isPancakeSwapAgent: () => false, readsPancakeSwap: () => false }));
 vi.mock("@/lib/x402", () => ({ findActiveSession: () => undefined }));
@@ -20,7 +24,10 @@ vi.mock("@/lib/boosts", () => ({ getBoost: () => undefined, hydrateBoostsFromDb:
 vi.mock("@/lib/delivery", () => ({ fetchAgentCardSkills: async () => null }));
 vi.mock("@/lib/pancake-positions", () => ({ readPancakePositions: m.readPancakePositions }));
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  m.shelf = [];
+});
 
 async function detail(agent: Record<string, unknown>) {
   m.agent = { token_id: "2491", name: "Agent", description: "", skills: [], owner_address: OWNER, ...agent };
@@ -59,5 +66,20 @@ describe("agent page PancakeSwap positions", () => {
       m.readPancakePositions.mockResolvedValue(answer);
       expect(await detail({ agent_wallet: AGENT_WALLET })).not.toHaveProperty("pancakeswapPositions");
     }
+  });
+});
+
+// the shelf's category is the tab a listing sits under, which the quest counts by
+describe("agent page category", () => {
+  it("carries the shelf's category for a listed agent", async () => {
+    m.readPancakePositions.mockResolvedValue(null);
+    m.shelf = [{ token_id: "2491", category: "yield" }];
+    expect((await detail({})).category).toBe("yield");
+  });
+
+  it("says nothing for an agent the shelf does not hold", async () => {
+    m.readPancakePositions.mockResolvedValue(null);
+    m.shelf = [{ token_id: "9999", category: "yield" }];
+    expect(await detail({})).not.toHaveProperty("category");
   });
 });

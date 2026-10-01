@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAgentByToken } from "@/lib/scanner";
+import { getAgentByToken, queryAgents } from "@/lib/scanner";
 import { loadVerifications } from "@/lib/verifications";
 import { isPancakeSwapAgent, readsPancakeSwap } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
@@ -34,7 +34,12 @@ export async function GET(
     (agent.a2a_endpoint
       ? ((await fetchAgentCardSkills(agent.a2a_endpoint, 4000)) ?? undefined)
       : undefined);
-  const data = verification ? { ...agent, verification } : agent;
+  // the shelf's category is the tab the listing sits under, which a re-read of its text can miss
+  const shelved = (await queryAgents({ limit: 5000, includeHouse: true, includeDelisted: true })).items.find(
+    (a) => a.token_id === agent.token_id,
+  );
+  const categorised = shelved?.category ? { ...agent, category: shelved.category } : agent;
+  const data = verification ? { ...categorised, verification } : categorised;
   const withSkills = skills ? { ...data, skills } : data;
   const withPcs =
     readsPancakeSwap(Number(chainId), tokenId) || isPancakeSwapAgent(agent.name, agent.description ?? "")
