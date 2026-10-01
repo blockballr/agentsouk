@@ -247,7 +247,8 @@ export function rankFor(points: number): { title: string; next: { at: number; ti
   return { title: current.title, next: RANKS.find((r) => r.at > points) ?? null }
 }
 
-// the quest's standing in this browser, per wallet: started, set aside, or turned down
+// the quest's standing in this browser: a wallet starts it or sets it aside, and anyone,
+// connected or not, can turn the invitation down
 export type QuestMode = 'active' | 'quit' | 'dismissed'
 
 const PREFIX = 'souk.quest.v1'
@@ -273,14 +274,23 @@ export function readQuestMode(wallet: string | null): QuestMode | null {
   }
 }
 
+// a quest is started by a wallet, never by a browser: with no wallet connected only a
+// turned-down invitation is kept, so the next visitor on this browser is still invited
 export function writeQuestMode(wallet: string | null, mode: QuestMode): void {
   try {
-    store()?.setItem(keyFor('mode', wallet), mode)
-    if (wallet) store()?.setItem(keyFor('mode', null), mode)
+    if (wallet || mode === 'dismissed') store()?.setItem(keyFor('mode', wallet), mode)
   } catch {
     // a browser without storage simply asks again next visit
   }
   notifyQuest()
+}
+
+// what to show this visitor: the connected wallet's own standing, or else only whether the
+// invitation was turned down here
+export function questModeFor(wallet: string | null): QuestMode | null {
+  const own = wallet ? readQuestMode(wallet) : null
+  if (own) return own
+  return readQuestMode(null) === 'dismissed' ? 'dismissed' : null
 }
 
 // the stamps this browser has already shown, so only a newly earned one presses in

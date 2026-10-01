@@ -6,6 +6,7 @@ import {
   questPicks,
   questStepFor,
   rankFor,
+  questModeFor,
   readQuestMode,
   readSeenPoints,
   readSeenStamps,
@@ -133,7 +134,44 @@ describe("state in the browser", () => {
     expect(readSeenPoints("0xabc")).toBe(0);
   });
 
-  it("keeps the mode per wallet and for the browser, and remembers what was shown", () => {
+  it("ties a started quest to the wallet that started it, never to the browser", () => {
+    const data = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => data.get(k) ?? null,
+      setItem: (k: string, v: string) => void data.set(k, v),
+    });
+    // with no wallet connected there is nothing to start, so the invitation stays
+    writeQuestMode(null, "active");
+    expect(questModeFor(null)).toBeNull();
+    expect(data.size).toBe(0);
+
+    writeQuestMode("0xAbC", "active");
+    expect(questModeFor("0xabc")).toBe("active");
+    // the same browser with no wallet, or with another wallet, is still invited
+    expect(questModeFor(null)).toBeNull();
+    expect(questModeFor("0xdef")).toBeNull();
+
+    // a value an older build left for the browser as a whole no longer counts as started
+    data.set("souk.quest.v1.mode.anon", "active");
+    expect(questModeFor(null)).toBeNull();
+    expect(questModeFor("0xdef")).toBeNull();
+  });
+
+  it("remembers a turned-down invitation for the browser, until a wallet starts", () => {
+    const data = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => data.get(k) ?? null,
+      setItem: (k: string, v: string) => void data.set(k, v),
+    });
+    writeQuestMode(null, "dismissed");
+    expect(questModeFor(null)).toBe("dismissed");
+    expect(questModeFor("0xabc")).toBe("dismissed");
+    writeQuestMode("0xabc", "active");
+    expect(questModeFor("0xabc")).toBe("active");
+    expect(questModeFor(null)).toBe("dismissed");
+  });
+
+  it("keeps the mode per wallet, and remembers what was shown", () => {
     const data = new Map<string, string>();
     vi.stubGlobal("localStorage", {
       getItem: (k: string) => data.get(k) ?? null,
@@ -141,7 +179,7 @@ describe("state in the browser", () => {
     });
     writeQuestMode("0xAbC", "quit");
     expect(readQuestMode("0xabc")).toBe("quit");
-    expect(readQuestMode(null)).toBe("quit");
+    expect(readQuestMode(null)).toBeNull();
     writeSeenStamps("0xabc", ["health", "yield"]);
     expect(readSeenStamps("0xabc")).toEqual(["health", "yield"]);
     writeSeenPoints("0xabc", 250);

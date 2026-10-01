@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import {
   getQuestProgress,
   latestQuestProgress,
-  readQuestMode,
+  questModeFor,
   rememberQuestProgress,
   stampsFrom,
   subscribeQuest,
@@ -29,32 +29,34 @@ export function QuestNudge() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [wallet, setWallet] = useState<string | null>(null)
-  const [mode, setMode] = useState(() => readQuestMode(null))
+  // nothing shows until the wallet has been looked up, or a returning quester would see the
+  // invitation flash before their resume button
+  const [walletKnown, setWalletKnown] = useState(false)
   const [, redraw] = useState(0)
   const lastRead = useRef(0)
 
+  // looked up again on each page, since a wallet can be connected anywhere on the site
   useEffect(() => {
     let live = true
     getActiveAccount()
       .then((a) => {
-        if (live && a) setWallet(a)
+        if (live) setWallet(a)
       })
       .catch(() => {})
+      .finally(() => {
+        if (live) setWalletKnown(true)
+      })
     return () => {
       live = false
     }
-  }, [])
+  }, [pathname])
 
-  useEffect(() => {
-    const sync = () => {
-      setMode(readQuestMode(wallet) ?? readQuestMode(null))
-      redraw((n) => n + 1)
-    }
-    sync()
-    return subscribeQuest(sync)
-  }, [wallet])
+  useEffect(() => subscribeQuest(() => redraw((n) => n + 1)), [])
 
-  const started = mode === 'active' || mode === 'quit'
+  // read as it is drawn, so a wallet and its standing never disagree for a frame
+  const mode = questModeFor(wallet)
+  // the way back in belongs to the wallet that started; anyone else is still invited
+  const started = wallet !== null && (mode === 'active' || mode === 'quit')
   const hidden = pathname.startsWith('/quest') || pathname.startsWith('/agents/')
 
   // a started quest shows how far it has got, read again as the visitor moves between pages,
@@ -68,7 +70,7 @@ export function QuestNudge() {
       .catch(() => {})
   }, [wallet, started, hidden, pathname])
 
-  if (hidden) return null
+  if (hidden || !walletKnown) return null
 
   if (started) {
     // progress read for another wallet says nothing about this one
