@@ -3,6 +3,7 @@ import { listPaymentsByClient, receiptsMode } from "@/lib/receipts-store";
 import { queryAgents } from "@/lib/scanner";
 import { CATEGORY_KEYS, type CategoryKey } from "@agora/core";
 import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
+import { questAwards } from "@/lib/quest-points";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,7 @@ export async function GET(req: NextRequest) {
 
   const hiredAllFour = CATEGORY_KEYS.every((k) => categories[k]);
   const listedOne = listings.length > 0;
+  const { points, awards } = questAwards(hires, CATEGORY_KEYS, listedOne);
 
   return NextResponse.json({
     success: true,
@@ -73,6 +75,8 @@ export async function GET(req: NextRequest) {
     listings,
     listedOne,
     completed: hiredAllFour && listedOne,
+    points,
+    awards,
     // surfaced so a reader can tell a genuinely empty answer from an incomplete one
     source: receiptsMode(),
   });
