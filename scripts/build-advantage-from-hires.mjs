@@ -73,9 +73,9 @@ async function fetchHires(wallet) {
 
 // A hire against an agent the buyer owns pays the buyer's own wallet, so it is a
 // self-dealing round trip rather than marketplace evidence. The marketplace grades
-// itself on this report, so such hires are left out, the same line
-// docs/hire-requests.md draws for the house agent. An unreadable list excludes
-// nothing, so a slow read degrades to the previous behaviour rather than guessing.
+// itself on this report, so such hires are left out, as they are for the house
+// agent. An unreadable list excludes nothing, so a slow read degrades to the
+// previous behaviour rather than guessing.
 async function fetchOwnedTokenIds(wallet) {
   try {
     const { status, body } = await fetchJson(
