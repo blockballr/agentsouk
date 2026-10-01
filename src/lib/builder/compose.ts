@@ -211,24 +211,51 @@ export async function composeBlueprint(
   return { ok: false, reason: answered ? "invalid" : "unavailable", errors: lastErrors, attempts };
 }
 
-// any OpenAI-compatible endpoint; the wizard's models are named in the environment and
-// nothing here assumes which provider stands behind the address
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+const BUSY_RETRY_MS = 1500;
+
+// the builder's own settings when it has them, and otherwise the provider the compare
+// commentary already runs on, so one working key is enough to build
+function modelSettings(env: Record<string, string | undefined>): { base: string; key: string; models: string[] } {
+  if (env.BUILDER_LLM_BASE_URL && env.BUILDER_LLM_API_KEY) {
+    return { base: env.BUILDER_LLM_BASE_URL, key: env.BUILDER_LLM_API_KEY, models: [env.BUILDER_LLM_MODEL ?? "", env.BUILDER_LLM_FALLBACK_MODEL ?? ""] };
+  }
+  const base = env.LLM_EVAL_BASE_URL ?? GEMINI_BASE_URL;
+  const gemini = base === GEMINI_BASE_URL;
+  // the lite model is the last resort when the others are busy, as it is for the commentary
+  return {
+    base,
+    key: env.LLM_EVAL_API_KEY ?? "",
+    models: [env.LLM_EVAL_MODEL ?? "", env.LLM_EVAL_FALLBACK_MODEL ?? "", gemini ? "gemini-3.5-flash-lite" : ""],
+  };
+}
+
+// any OpenAI-compatible endpoint; nothing here assumes which provider stands behind the address
 export function builderChatFromEnv(
   env: Record<string, string | undefined> = process.env,
 ): { chat: ChatFn; models: string[] } | null {
-  const base = (env.BUILDER_LLM_BASE_URL ?? "").replace(/\/+$/, "");
-  const key = env.BUILDER_LLM_API_KEY ?? "";
-  const models = [env.BUILDER_LLM_MODEL ?? "", env.BUILDER_LLM_FALLBACK_MODEL ?? ""].filter((m, i, all) => m && all.indexOf(m) === i);
+  const settings = modelSettings(env);
+  const base = settings.base.replace(/\/+$/, "");
+  const key = settings.key;
+  const models = settings.models.filter((m, i, all) => m && all.indexOf(m) === i);
   if (!base || !key || models.length === 0) return null;
-  const chat: ChatFn = async (model, messages) => {
-    const res = await fetch(`${base}/chat/completions`, {
+  const ask = (model: string, messages: ChatMessage[]) =>
+    fetch(`${base}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model, messages, temperature: 0, max_tokens: 2500 }),
+      // the ceiling leaves room for a model that spends tokens reasoning before it writes
+      body: JSON.stringify({ model, messages, temperature: 0, max_tokens: 8000, response_format: { type: "json_object" } }),
       signal: AbortSignal.timeout(45000),
     });
+  const chat: ChatFn = async (model, messages) => {
+    let res = await ask(model, messages);
+    // a busy model usually answers on the second ask; a refusal for any other reason is final
+    if (res.status === 503 || res.status === 500) {
+      await new Promise((r) => setTimeout(r, BUSY_RETRY_MS));
+      res = await ask(model, messages);
+    }
     const raw = await res.text();
-    if (!res.ok) throw new Error(`http ${res.status}: ${raw.slice(0, 160)}`);
+    if (!res.ok) throw new Error(`http ${res.status}: ${raw.replace(/\s+/g, " ").slice(0, 160)}`);
     let content: unknown;
     try {
       content = (JSON.parse(raw) as { choices?: { message?: { content?: unknown } }[] }).choices?.[0]?.message?.content;

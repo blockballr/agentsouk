@@ -12,13 +12,13 @@ import { liveReader } from "../src/lib/builder/sources";
 
 const LIVE = process.env.BUILDER_LIVE === "1";
 
-// the model settings live in .env.local beside the API's other keys; only the four
-// BUILDER_LLM names are read, and no value is ever printed
+// the model settings live in .env.local beside the API's other keys; only the builder's
+// names and the commentary's are read, and no value is ever printed
 function modelSettings(): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = { ...process.env };
   try {
     for (const line of readFileSync(new URL("../.env.local", import.meta.url), "utf8").split(/\r?\n/)) {
-      const m = /^(BUILDER_LLM_[A-Z_]+)=(.*)$/.exec(line.trim());
+      const m = /^((?:BUILDER_LLM|LLM_EVAL)_[A-Z_]+)=(.*)$/.exec(line.trim());
       if (m && !env[m[1]]) env[m[1]] = m[2].replace(/^["']|["']$/g, "");
     }
   } catch {
@@ -44,7 +44,8 @@ describe.skipIf(!LIVE)("three prompts become agents that answer over A2A", () =>
 
   it.each(PROMPTS)("$name", async ({ prompt, category }) => {
     if (!settings) throw new Error("model settings missing");
-    const out = await composeBlueprint(prompt, { ...settings, read });
+    // a model that fails says why here, which the visitor is never shown
+    const out = await composeBlueprint(prompt, { ...settings, read, log: (line) => console.log(`  model: ${line.slice(0, 300)}`) });
     if (!out.ok) throw new Error(`not built (${out.reason}): ${"errors" in out ? out.errors.join("; ") : out.message}`);
     if (category) expect(out.blueprint.category).toBe(category);
 
