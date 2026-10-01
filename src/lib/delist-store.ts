@@ -5,6 +5,7 @@
 
 import "server-only";
 import postgres from "postgres";
+import { pickDelisted, type DelistedRow } from "./listing-control";
 
 let sql: ReturnType<typeof postgres> | null = null;
 if (process.env.DATABASE_URL) {
@@ -39,16 +40,31 @@ async function ensureTable(): Promise<boolean> {
   return tableReady;
 }
 
-export async function loadDelisted(): Promise<Set<string>> {
-  const set = new Set(memory);
+export async function loadDelistedRows(): Promise<Map<string, DelistedRow>> {
+  let dbRows: DelistedRow[] | null = null;
   if ((await ensureTable()) && sql) {
     try {
-      const rows = (await sql`select token_id from delisted_agents`) as { token_id: string }[];
-      for (const r of rows) set.add(String(r.token_id));
+      const rows = (await sql`select token_id, reason, delisted_at from delisted_agents`) as {
+        token_id: string;
+        reason: string | null;
+        delisted_at: Date | string | null;
+      }[];
+      dbRows = rows.map((r) => ({
+        tokenId: String(r.token_id),
+        reason: r.reason ?? null,
+        delistedAt: r.delisted_at ? new Date(r.delisted_at).toISOString() : null,
+      }));
+      // keep the fallback in step, so a later failed read serves what the database last said
+      memory.clear();
+      for (const r of dbRows) memory.add(r.tokenId);
     } catch {
     }
   }
-  return set;
+  return pickDelisted(dbRows, memory);
+}
+
+export async function loadDelisted(): Promise<Set<string>> {
+  return new Set((await loadDelistedRows()).keys());
 }
 
 export async function setDelisted(
@@ -56,15 +72,15 @@ export async function setDelisted(
   delisted: boolean,
   reason?: string,
 ): Promise<boolean> {
-  if (delisted) memory.add(tokenId);
-  else memory.delete(tokenId);
   if ((await ensureTable()) && sql) {
     try {
       if (delisted) {
+        // the first delist stands: the daily sweep re-runs for every stale token and must not
+        // rewrite an owner's delist as its own or move its date
         await sql`
           insert into delisted_agents (token_id, reason)
           values (${tokenId}, ${reason ?? null})
-          on conflict (token_id) do update set reason = excluded.reason, delisted_at = now()
+          on conflict (token_id) do nothing
         `;
       } else {
         await sql`delete from delisted_agents where token_id = ${tokenId}`;
@@ -73,5 +89,8 @@ export async function setDelisted(
       return false;
     }
   }
+  // after the write, so a failed write does not leave memory saying otherwise
+  if (delisted) memory.add(tokenId);
+  else memory.delete(tokenId);
   return true;
 }
