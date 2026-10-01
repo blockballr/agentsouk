@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { CATEGORIES, formatUnits, shortAddress, timeAgo } from '@agora/core'
 import {
   getAgentsByOwner,
+  getBoostStatus,
   getHiresByPayee,
   recheckAgent,
   setListingState,
@@ -266,6 +267,19 @@ export function ProfilePage() {
   )
 }
 
+type BoostState = Awaited<ReturnType<typeof getBoostStatus>> | 'loading' | null
+
+function boostLabel(state: BoostState): string {
+  if (state === 'loading') return 'Reading...'
+  if (!state) return 'Unavailable'
+  if (state.boost) {
+    const until = new Date(state.boost.expiresAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+    return `Active until ${until}`
+  }
+  if (state.eligible) return 'Not boosted, eligible'
+  return `Locked until it passes: ${state.missing.join(', ')}`
+}
+
 // the one note a card has room for, most urgent first; every note fits the two-line slot
 function cardNote(agent: OwnedAgent): string {
   const off = agent.delisted
@@ -311,12 +325,24 @@ function OwnedAgentCard({
   // feedback takes the card's note slot for a few seconds; the dialog keeps its own error
   const [feedback, setFeedback] = useState<string | null>(null)
   const [dialogError, setDialogError] = useState<string | null>(null)
+  const [boost, setBoost] = useState<BoostState>('loading')
 
   useEffect(() => {
     if (!feedback) return
     const id = window.setTimeout(() => setFeedback(null), 8000)
     return () => window.clearTimeout(id)
   }, [feedback])
+
+  useEffect(() => {
+    if (offMarket) return
+    let live = true
+    getBoostStatus(agent.chainId, agent.tokenId)
+      .then((s) => live && setBoost(s))
+      .catch(() => live && setBoost(null))
+    return () => {
+      live = false
+    }
+  }, [agent.chainId, agent.tokenId, offMarket])
 
   // A single fresh probe, signed by the owner. It bypasses the twenty hour
   // reprobe window for this token, so a lister does not have to wait for the
@@ -362,6 +388,7 @@ function OwnedAgentCard({
   }
 
   const note = feedback ?? cardNote(agent)
+  const boostText = offMarket ? 'Not shown while off the market' : boostLabel(boost)
 
   return (
     <article className={cx(card('plain', 'sm'), 'flex h-[392px] min-w-0 flex-col [overflow-wrap:anywhere]')}>
@@ -391,6 +418,12 @@ function OwnedAgentCard({
         <div className="min-w-0">
           <dt className={LABEL}>Earned</dt>
           <dd className="mt-0.5 truncate text-press-black">{earned}</dd>
+        </div>
+        <div className="col-span-2 min-w-0">
+          <dt className={LABEL}>Boost</dt>
+          <dd className="mt-0.5 truncate text-press-black" title={boostText}>
+            {boostText}
+          </dd>
         </div>
       </dl>
 
