@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { loadDelistedRows } from "@/lib/delist-store";
 import { queryAgents } from "@/lib/scanner";
 import { targetChainId } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
@@ -19,7 +20,8 @@ export async function GET(req: NextRequest) {
     );
   }
   const chainId = targetChainId();
-  const catalogue = await queryAgents({ limit: 5000 });
+  const catalogue = await queryAgents({ limit: 5000, includeDelisted: true });
+  const delisted = await loadDelistedRows();
   // the verifier's badge is keyed by token id, overlaid the same way the browse
   // route does; without it a lister cannot see whether the endpoint answered or
   // when it was last checked
@@ -47,6 +49,12 @@ export async function GET(req: NextRequest) {
       createdAt: a.created_at,
       verification: verifications.get(a.token_id) ?? null,
       failingSince: staleByToken.get(a.token_id) ?? null,
+      delisted: delisted.has(a.token_id)
+        ? {
+            reason: delisted.get(a.token_id)?.reason ?? null,
+            at: delisted.get(a.token_id)?.delistedAt ?? null,
+          }
+        : null,
     }));
   const categories: Record<string, number> = {};
   for (const a of agents) {

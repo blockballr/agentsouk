@@ -918,6 +918,8 @@ export interface QueryOptions {
   seed?: string | null;
   // the verifier's sweep sees the team's agents even while the shelf hides them
   includeHouse?: boolean;
+  // an owner's own view keeps a delisted agent, so it can be relisted from there
+  includeDelisted?: boolean;
 }
 
 export interface QueryResult {
@@ -972,7 +974,7 @@ export async function queryAgents(
   // a delisted token leaves the shelf even though its on-chain registration stands
   const delisted = await loadDelisted().catch(() => new Set<string>());
   const onChain = Array.from(index.agents.values()).filter(
-    (a) => a.chain_id === chainId && !delisted.has(a.token_id),
+    (a) => a.chain_id === chainId && (opts.includeDelisted || !delisted.has(a.token_id)),
   );
   const shelf = opts.includeHouse ? onChain : withoutHouseAgents(onChain, verifications);
   let items = shelf;
