@@ -118,7 +118,7 @@ export function ListAgentPage() {
       {/* while the form is untouched the guide sits where the visitor lands; once the wizard
           moves, it follows the wizard */}
       {guide && wizardStep === 'form' && (
-        <QuestStrip label={`Open your stall · ${guide.count}`} text={guide.text} className="mt-8 max-w-3xl" />
+        <QuestStrip label={`Open your stall · ${guide.count}`} text={guide.text} stamp="stall" className="mt-8 max-w-3xl" />
       )}
 
       <CreateSection chainId={chain} />
@@ -146,6 +146,7 @@ export function ListAgentPage() {
                   label={`Open your stall · ${guide.count}`}
                   text={guide.text}
                   done={wizardStep === 'listed'}
+                  stamp="stall"
                   className="mt-8 max-w-3xl"
                 />
               )}

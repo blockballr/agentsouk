@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { categoryDef, shortAddress } from '@agora/core'
 import { visitSeed } from '../lib/rotation'
@@ -13,16 +13,20 @@ import {
   questPicks,
   rankFor,
   readSeenPoints,
+  readSeenStamps,
   rememberQuestProgress,
   stampsFrom,
   writeQuestMode,
   writeSeenPoints,
+  writeSeenStamps,
   type QuestAgent,
   type QuestProgress,
   type QuestShelf,
   type QuestStep,
+  type StepKey,
 } from '../lib/quest'
 import { Action, LABEL, TextSlot, card, cx } from '../components/ui'
+import { QuestStamp } from '../components/QuestStamp'
 
 const TOTAL = 1000
 const REFRESH_MS = 30_000
@@ -37,6 +41,7 @@ export function QuestPage() {
   const [connecting, setConnecting] = useState(false)
   const [shownPoints, setShownPoints] = useState(0)
   const counted = useRef(false)
+  const [fresh, setFresh] = useState<StepKey[]>([])
   // who each hire step may offer, in the order the shelf rotated them for this visit: undefined
   // while it is being read, null when it could not be, so a button never changes its target
   const [shelf, setShelf] = useState<Record<string, QuestShelf> | null | undefined>(undefined)
@@ -103,6 +108,19 @@ export function QuestPage() {
       counted.current = true
     }
     writeSeenPoints(wallet, progress.points)
+  }, [wallet, progress])
+
+  // a stamp this browser has not shown yet comes down on the page; the rest are simply there.
+  // Worked out before the page is painted, so a new stamp is never shown at rest first
+  useLayoutEffect(() => {
+    if (!wallet || !progress) return
+    const earned = stampsFrom(progress)
+    const keys = QUEST_STEPS.map((s) => s.key).filter((k) => earned[k])
+    const seen = readSeenStamps(wallet)
+    const unseen = keys.filter((k) => !seen.includes(k))
+    if (unseen.length === 0) return
+    setFresh((f) => [...new Set([...f, ...unseen])])
+    writeSeenStamps(wallet, keys)
   }, [wallet, progress])
 
   async function connect() {
@@ -193,6 +211,7 @@ export function QuestPage() {
               number={i + 1}
               points={pointsFor(step)}
               stamped={stamps[step.key]}
+              fresh={fresh.includes(step.key)}
               isNext={next?.key === step.key}
               picks={chainId !== null && step.category && shelf !== undefined ? questPicks(step, chainId, shelf?.[step.category], wallet) : []}
               reading={Boolean(step.category) && (shelf === undefined || chainId === null)}
@@ -308,6 +327,7 @@ function StepCard({
   number,
   points,
   stamped,
+  fresh,
   isNext,
   picks,
   reading,
@@ -321,6 +341,8 @@ function StepCard({
   number: number
   points: number
   stamped: boolean
+  // stamped since this browser last showed the passport
+  fresh: boolean
   isNext: boolean
   picks: QuestAgent[]
   // the picks for this step are still being read
@@ -339,10 +361,17 @@ function StepCard({
       aria-label={`${title}, ${points} points, ${state.toLowerCase()}`}
       className={cx(card(isNext ? 'strong' : 'plain', 'sm'), 'flex h-[264px] min-w-0 flex-col [overflow-wrap:anywhere]')}
     >
-      <p className={LABEL}>
+      <QuestStamp
+        step={step.key}
+        stamped={stamped}
+        press={fresh}
+        className={cx('pointer-events-none absolute right-3 top-3', step.key === 'seal' ? 'w-[80px]' : 'w-[104px]')}
+      />
+      {/* the heading keeps clear of the stamp in the corner */}
+      <p className={cx(LABEL, 'pr-[100px]')}>
         {step.key === 'seal' ? 'Finish' : `Step ${number}`} · +{points} points
       </p>
-      <h2 className="mt-2 truncate font-serif text-[22px] leading-tight text-press-black">{title}</h2>
+      <h2 className="mt-2 truncate pr-[100px] font-serif text-[22px] leading-tight text-press-black">{title}</h2>
       <p className="mt-3 flex items-center gap-2 text-[14px] font-medium text-press-black">
         <span
           aria-hidden="true"

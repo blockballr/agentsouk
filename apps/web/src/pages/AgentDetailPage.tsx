@@ -1117,6 +1117,7 @@ function QuestGuide({
       label={`${step.title} · ${QUEST_STAGE_COUNT[stage]}`}
       text={text[stage]}
       done={stage === 'done'}
+      stamp={step.key}
       textId={GUIDE_ID}
       className="mb-6"
     />
