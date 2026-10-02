@@ -17,7 +17,8 @@ export interface ShareCardData {
   // the holder's address, or nothing when they chose to leave it off the card
   holder: string | null
   issued: Date
-  // what the stamps are laid out from, so one wallet's card is always arranged the same way
+  // what the stamps and the portrait are laid out from, so one wallet's card is always
+  // the same picture
   seed: string
   // the passport's number, issued once to the wallet; without one the foot shows the date
   serial: string | null
@@ -111,8 +112,9 @@ export function issuedLabel(date: Date): string {
   return `${String(date.getUTCDate()).padStart(2, '0')} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`
 }
 
-// the last four are never printed. The portrait and the stamp layout are still drawn from the
-// whole address, so a card that shows its holder can be matched by someone who knows the wallet
+// the last four are never printed. The portrait and the stamp layout are drawn from the
+// whole address whether the holder is printed on the card or not, so someone who knows the
+// wallet can match the card
 export function shortHolder(address: string): string {
   return `${address.slice(0, 6)}...xxxx`
 }
@@ -164,35 +166,23 @@ export function portraitTiles(holder: string): Tile[][] {
   return tiles
 }
 
-// a pattern of squares that is the same for the same address, standing where a photo would
-function portrait(ctx: Ctx, x: number, y: number, w: number, h: number, holder: string | null): void {
+// a pattern of squares that is the same for the same seed, standing where a photo would
+function portrait(ctx: Ctx, x: number, y: number, w: number, h: number, source: string): void {
   ctx.fillStyle = PAPER
   box(ctx, x, y, w, h, 10)
   ctx.fill()
   ctx.save()
   box(ctx, x, y, w, h, 10)
   ctx.clip()
-  if (holder) {
-    const cell = w / PORTRAIT_COLS
-    const tall = h / PORTRAIT_ROWS
-    portraitTiles(holder).forEach((row, r) =>
-      row.forEach((tile, c) => {
-        if (!tile) return
-        ctx.fillStyle = tile === 'green' ? GREEN : tile === 'black' ? BLACK : SAGE
-        ctx.fillRect(x + c * cell, y + r * tall, cell, tall)
-      }),
-    )
-  } else {
-    // no holder shown: the house mark stands in
-    const s = 34
-    const ox = x + w / 2 - s - 3
-    const oy = y + h / 2 - s - 3
-    for (const [dx, dy, fill] of [[0, 0, BLACK], [s + 6, 0, BLACK], [0, s + 6, BLACK], [s + 6, s + 6, GREEN]] as const) {
-      ctx.fillStyle = fill
-      box(ctx, ox + dx, oy + dy, s, s, 7)
-      ctx.fill()
-    }
-  }
+  const cell = w / PORTRAIT_COLS
+  const tall = h / PORTRAIT_ROWS
+  portraitTiles(source).forEach((row, r) =>
+    row.forEach((tile, c) => {
+      if (!tile) return
+      ctx.fillStyle = tile === 'green' ? GREEN : tile === 'black' ? BLACK : SAGE
+      ctx.fillRect(x + c * cell, y + r * tall, cell, tall)
+    }),
+  )
   ctx.restore()
   ctx.strokeStyle = 'rgba(18, 22, 19, 0.35)'
   ctx.lineWidth = 1
@@ -386,7 +376,7 @@ export async function drawShareCard(canvas: HTMLCanvasElement, data: ShareCardDa
   text(ctx, 'PASSPORT', 552, 78, `700 13px ${SANS}`, BLACK, { align: 'right', spacing: 3 })
   text(ctx, 'SOUK OF AGENTS', 552, 96, `600 10px ${SANS}`, GRAY, { align: 'right', spacing: 1.6 })
 
-  portrait(ctx, 64, 138, 150, 180, data.holder)
+  portrait(ctx, 64, 138, 150, 180, data.seed)
 
   const fx = 240
   text(ctx, 'TITLE', fx, 150, `600 11px ${SANS}`, GRAY, { spacing: 1.1 })

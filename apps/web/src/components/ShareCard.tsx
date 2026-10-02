@@ -31,8 +31,6 @@ export function ShareCard({
   thirdHire?: boolean
 }) {
   const canvas = useRef<HTMLCanvasElement>(null)
-  // a card that leaves the holder off is laid out from nothing of the wallet
-  const anonymous = useRef(`anonymous-${Math.random()}`)
   const toggleId = useId()
   const [showHolder, setShowHolder] = useState(true)
   const [ready, setReady] = useState(false)
@@ -49,7 +47,9 @@ export function ShareCard({
       points,
       holder: showHolder ? wallet : null,
       issued: issuedAt ? new Date(issuedAt) : new Date(),
-      seed: showHolder ? wallet.toLowerCase() : anonymous.current,
+      // the figure and the stamp layout come off the wallet either way, so the
+      // picture on the card is the same one whatever the holder chose
+      seed: wallet.toLowerCase(),
       // a number can be traced to its wallet, so it goes with the holder or not at all
       serial: showHolder ? (serial ?? null) : null,
       thirdHire,
