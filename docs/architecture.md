@@ -327,11 +327,29 @@ stateDiagram-v2
 
 The pages are the buyer's surface: the one-pager, the marketplace with
 category filter, search, sort, and compare shortlist, the detail page with the
-on-chain record and the hire flow, and the compare table. The API routes are
-the data and payment surface. The test artifact is `scripts/settle-test.mjs`,
-which signs a real EIP-3009 signature with a throwaway wallet, settles it
-against a running server, and checks the receipt; a forged signature is also
-exercised and rejected.
+on-chain record and the hire flow, the compare table, the profile showing a
+wallet's own listings and hires, and the quest passport. An owner changes a
+listing through a signed overlay rather than a registry update: the ERC-8004
+record stays the identity, and the edit is a separate row keyed to chain and
+token, written only after the caller is the registered owner and has signed a
+message binding the chain, the token, the owner, the sha256 of the content and
+an issued time, with a stored time that rejects a replay.
+
+The station is the team's own surface, seven routes under api/station: five of
+them (agents, hires, operations, overview, members) read the live stores behind
+a session guard, and two (nonce, session) are the login. A login takes a
+single-use five minute nonce bound to the address, verifies the wallet
+signature over it, and returns a bearer session stored only as a hash;
+membership is re-read on every request, so removing someone takes effect on
+their next call, and changing membership takes a second signature over its own
+nonce. Roles are owner for membership changes and viewer for the reads, and no
+secret is ever returned, only the relay address and its balance.
+
+The API routes are the data and payment surface, and the tools an agent reads
+are served over MCP and A2A as well. The test artifact is
+`scripts/settle-test.mjs`, which signs a real EIP-3009 signature with a
+throwaway wallet, settles it against a running server, and checks the receipt;
+a forged signature is also exercised and rejected.
 
 ### The Next Stage
 
@@ -342,12 +360,17 @@ receipts and the catalogue survive restarts. The frontend is deployed and the
 hire path in it signs through a connected wallet, settles through the
 facilitator, and shows the receipt on the detail page.
 
-What remains is the agent index. It is still a committed snapshot file rather
-than a scheduled refresh, so the catalogue is rebuilt on a deploy rather than
-continuously, and an agent registered after the last build is not listed until
-the next one. The registry is the source of truth and the snapshot is derived
-from it, so nothing is lost, but freshness is bounded by the deploy cadence
-rather than by the chain.
+What remains is the agent index. The catalogue still opens from the committed
+snapshot for the configured chain, but freshness is no longer bounded by the
+deploy alone: a scheduled workflow calls the refresh route every fifteen
+minutes, inert until its repository variable is set, a browse tops up the
+newest 8004scan page on a sixty second cooldown after the response, and
+admitted agents are written to the durable shelf so one instance serves what
+another has already learned. The snapshot file itself is still rebuilt by
+hand, because the build route writes to a filesystem the serverless host does
+not keep, and an agent registered since the last read waits for the next top
+up. The registry is the source of truth and the snapshot is derived from it,
+so nothing is lost.
 
 ### The Provable Boundary
 
@@ -361,8 +384,14 @@ testnet explorer. Seven such settlements are itemised in the tracking
 submission, covering all four agent categories, a non-default amount, and a
 cancellation of an authorization before it was used.
 
-What is not yet provable: job completion and rating are API records rather than
-on-chain events, so settlement is the only leg that leaves a transaction trail.
+What is not yet provable: job completion is an API record rather than an
+on-chain event, because the marketplace does not place a job contract, so the
+job row lives in our store. Settlement and a rating both leave a transaction
+trail: a rating is signed by the buyer's own wallet and written to the
+ERC-8004 reputation registry for the chain, tagged so 8004scan can score it,
+and the registry refuses feedback from the agent's own owner. An owner's
+listing edit is a signed row rather than a registry update, so it verifies
+against the owner's key but is not what the registry serves.
 b402 mode is wired and unexercised, because it needs credentials the project does
 not have. The receipt ledger falls back to an in-process map when postgres is not
 configured, so an unconfigured deployment loses receipts on restart. These limits
