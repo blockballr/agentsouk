@@ -328,12 +328,21 @@ stateDiagram-v2
 The pages are the buyer's surface: the one-pager, the marketplace with
 category filter, search, sort, and compare shortlist, the detail page with the
 on-chain record and the hire flow, the compare table, the profile showing a
-wallet's own listings and hires, and the quest passport. An owner changes a
+wallet's own listings and hires, and the quest passport. The passport's share
+card draws its figure and its stamp layout from the holder's address on every
+card, so the control that shows the wallet hides the printed address and the
+passport number and nothing else. An owner changes a
 listing through a signed overlay rather than a registry update: the ERC-8004
 record stays the identity, and the edit is a separate row keyed to chain and
 token, written only after the caller is the registered owner and has signed a
 message binding the chain, the token, the owner, the sha256 of the content and
-an issued time, with a stored time that rejects a replay.
+an issued time, with a stored time that rejects a replay. The route counts a
+caller that has proved nothing on a key of its own before it looks anything up,
+and it spends the listing's own edit budget only once the signature has proved
+that caller is the owner, so nobody can lock an owner out of a listing they
+cannot edit. Every one of these public bodies is capped before it is parsed, and
+a configured database that cannot take a write answers a refusal rather than a
+save that only the process believes happened.
 
 The station is the team's own surface, seven routes under api/station: five of
 them (agents, hires, operations, overview, members) read the live stores behind
