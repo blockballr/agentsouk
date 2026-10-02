@@ -1,6 +1,6 @@
-// server-only store for what owners changed about their listings. The database is the truth
-// whenever it answers; with no database the edits live in process memory, so a missing store
-// degrades instead of throwing
+// server-only store for what owners changed about their listings. With no database the edits
+// live in process memory; a configured database is the truth, and a write it cannot take is
+// refused rather than answered as saved
 
 import "server-only";
 import postgres from "postgres";
@@ -112,7 +112,10 @@ export async function saveListingEdit(
   updatedBy: string,
   updatedAt: string,
 ): Promise<boolean> {
-  if ((await ensureTable()) && sql) {
+  // a store that is configured but cannot take the write refuses here, so the route
+  // reports a failure instead of an edit only this process believes happened
+  if (sql) {
+    if (!(await ensureTable())) return false;
     try {
       await sql`
         insert into listing_edits (chain_id, token_id, description, examples, image_url, updated_by, updated_at)

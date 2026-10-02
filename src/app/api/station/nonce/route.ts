@@ -8,11 +8,21 @@ export const dynamic = "force-dynamic";
 
 // counted by caller only: an address is public, so a count kept on it would let anyone lock a member out
 const LIMIT = { table: "rl_station_nonce", limit: 120, windowMs: 60 * 60 * 1000 };
+// a wallet address fits in a fraction of this, so anything larger is not a sign-in
+const MAX_BODY = 4_000;
 
 // POST /api/station/nonce
 // issued to any address, so the answer never says who is a member
 export const POST = stationRoute(async (req: NextRequest) => {
-  const body = (await req.json().catch(() => null)) as { address?: unknown } | null;
+  const raw = await req.text().catch(() => "");
+  if (raw.length > MAX_BODY) return stationJson({ success: false, error: "the request body is too large" }, 413);
+  let parsed: unknown = null;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    parsed = null;
+  }
+  const body = parsed as { address?: unknown } | null;
   if (!isAddress(body?.address)) return stationJson({ success: false, error: "address must be a wallet address" }, 400);
   const address = body.address.toLowerCase();
   try {
