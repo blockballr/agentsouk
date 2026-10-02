@@ -9,12 +9,23 @@ export function isFacilitatorMode(value: string): value is FacilitatorMode {
   return (MODES as readonly string[]).includes(value);
 }
 
-// Resolve FACILITATOR_MODE to a known mode: unset or empty means sandbox, and a
-// value that is set but unrecognised throws rather than silently moving no funds.
+// Resolve FACILITATOR_MODE to a known mode. Unset or empty means sandbox outside
+// production, and a value that is set but unrecognised throws rather than silently
+// moving no funds. Unset in production throws too: a sandbox settlement records a
+// transaction hash that does not exist and skips the hire-binding checks, so a lost
+// variable would report hires that never settled.
 export function resolveFacilitatorMode(raw: string | undefined | null): FacilitatorMode {
   const value = (raw ?? "").trim().toLowerCase();
 
-  if (value === "") return "sandbox";
+  if (value === "") {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "FACILITATOR_MODE is unset. Refusing to fall back to sandbox in production, because sandbox " +
+          "settlements do not move funds on chain and record a transaction hash that does not exist.",
+      );
+    }
+    return "sandbox";
+  }
   if (isFacilitatorMode(value)) return value;
 
   throw new Error(
