@@ -1,7 +1,5 @@
-// server-only: the passports issued, one per wallet, numbered in the order they were issued.
-// The number ties a shared card back to the wallet that earned it, and the evidence kept
-// beside it is what the passport rested on at that moment. With no database they live in
-// process memory
+// server-only: one passport per wallet, numbered in the order issued, with the evidence it
+// rested on. With no database they live in process memory
 
 import "server-only";
 import postgres from "postgres";
@@ -46,11 +44,9 @@ async function ensureTable(): Promise<boolean> {
   return tableReady;
 }
 
-// reading a passport is never worth holding the page for
 const CAP_MS = 4000;
 
-// the passport of a wallet that has completed the quest: issued on the first call, and the same
-// one on every call after. Null when it cannot be read or written, and the caller carries on
+// issued on the first call and the same one after; null when it cannot be read or written
 export function issuePassport(wallet: string, evidence: unknown): Promise<Passport | null> {
   const w = wallet.toLowerCase();
   if (!sql) {
@@ -61,8 +57,7 @@ export function issuePassport(wallet: string, evidence: unknown): Promise<Passpo
   const db = sql;
   const work = (async (): Promise<Passport | null> => {
     if (!(await ensureTable())) return null;
-    // the next number is one past the highest. Two wallets finishing together collide on the
-    // unique number, and the one that lost tries again
+    // two wallets finishing together collide on the unique number, and the loser tries again
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
         await db`
@@ -90,6 +85,17 @@ export function issuePassport(wallet: string, evidence: unknown): Promise<Passpo
     timer = setTimeout(() => resolve(null), CAP_MS);
   });
   return Promise.race([work, cap]).finally(() => clearTimeout(timer));
+}
+
+export async function countPassports(): Promise<number | null> {
+  if (!sql) return memory.size;
+  try {
+    if (!(await ensureTable())) return null;
+    const rows = (await sql`select count(*)::int as n from passports`) as { n: number }[];
+    return Number(rows[0]?.n ?? 0);
+  } catch {
+    return null;
+  }
 }
 
 export function resetPassportsForTests(): void {

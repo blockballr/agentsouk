@@ -160,6 +160,59 @@ export async function listProdClients(): Promise<{
   };
 }
 
+const isCheck = (paymentId: string) => paymentId.startsWith("verify_");
+
+// the three reads below are for the team panel
+// with a durable store they throw when it cannot be read, so a figure is never quietly short
+
+// the newest receipts of every payer
+export async function listRecentPayments(limit = 500): Promise<StoredPayment[]> {
+  if (!postgresEnabled() || !sql) return listPayments().slice(0, limit);
+  if (!(await init())) throw new Error("receipts store unavailable");
+  const rows = await sql`select payload from receipts order by created_at desc limit ${limit}`;
+  return rows.map((r) => r.payload as StoredPayment);
+}
+
+// receipts that are not our own checks and not paid by the wallets named, newest first
+// the filter is in the query, so the volume of checks cannot push a buyer out of the window
+export async function listOutsidePayments(exclude: readonly string[], limit = 5000): Promise<StoredPayment[]> {
+  const skip = exclude.map((a) => a.toLowerCase());
+  if (!postgresEnabled() || !sql) {
+    return listPayments()
+      .filter((p) => !isCheck(p.paymentId) && !skip.includes((p.client ?? "").toLowerCase()))
+      .slice(0, limit);
+  }
+  if (!(await init())) throw new Error("receipts store unavailable");
+  const rows = await sql`
+    select payload from receipts
+    where left(payment_id, 7) <> 'verify_'
+      and lower(coalesce(payload->>'client', '')) not in ${sql(skip.length > 0 ? skip : [""])}
+    order by created_at desc
+    limit ${limit}
+  `;
+  return rows.map((r) => r.payload as StoredPayment);
+}
+
+// how many of our own checks have settled since each moment, in the order asked
+export async function countCheckPayments(since: readonly number[]): Promise<number[]> {
+  if (!postgresEnabled() || !sql) {
+    const checks = listPayments().filter((p) => isCheck(p.paymentId) && (p.mode === "prod" || p.mode === "b402"));
+    return since.map((t) => checks.filter((p) => Date.parse(p.createdAt) >= t).length);
+  }
+  if (!(await init())) throw new Error("receipts store unavailable");
+  const out: number[] = [];
+  for (const t of since) {
+    const rows = await sql`
+      select count(*)::int as n from receipts
+      where left(payment_id, 7) = 'verify_'
+        and payload->>'mode' in ('prod', 'b402')
+        and created_at >= ${new Date(t).toISOString()}
+    `;
+    out.push(Number(rows[0]?.n ?? 0));
+  }
+  return out;
+}
+
 // Lists every receipt paid to a wallet, newest first, from the durable store: the
 // income side of the same rows listPaymentsByClient reads for a payer. The payTo is
 // the agent's receiving wallet, so a lister asking "did anyone hire me" reads here.

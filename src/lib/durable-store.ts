@@ -242,6 +242,43 @@ export async function loadJobs(limit = 100): Promise<Job[]> {
   }
 }
 
+// buyers' jobs and tasks in one state, chosen in the query so newer rows cannot crowd them out
+// our own checks are left out; with no durable store both answer nothing
+export async function loadJobsByStatus(status: Job["status"], limit = 200): Promise<Job[]> {
+  if (!sql) return [];
+  if (!(await init())) throw new Error("jobs store unavailable");
+  const rows = await sql`
+    select payload from jobs
+    where payload->>'status' = ${status} and left(coalesce(payment_id, ''), 7) <> 'verify_'
+    order by updated_at asc
+    limit ${limit}
+  `;
+  return rows.map((r) => r.payload as Job);
+}
+
+export async function loadHireTasksByStatus(status: HireTask["status"], limit = 200): Promise<HireTask[]> {
+  if (!sql) return [];
+  if (!(await init())) throw new Error("tasks store unavailable");
+  const rows = await sql`
+    select payload from hire_tasks
+    where payload->>'status' = ${status} and left(payment_id, 7) <> 'verify_'
+    order by updated_at desc
+    limit ${limit}
+  `;
+  return rows.map((r) => r.payload as HireTask);
+}
+
+export async function loadJobsByPayments(paymentIds: readonly string[]): Promise<Job[]> {
+  if (paymentIds.length === 0 || !sql) return [];
+  if (!(await init())) throw new Error("jobs store unavailable");
+  const rows = await sql`
+    select payload from jobs
+    where payment_id in ${sql([...paymentIds])}
+    order by updated_at asc
+  `;
+  return rows.map((r) => r.payload as Job);
+}
+
 // one agent's jobs and tasks, the rows its track record is computed from
 export async function loadJobsByToken(
   chainId: number,
