@@ -7,6 +7,8 @@ import { sessionRevoked } from "@/lib/receipts-store";
 import { getBoost, hydrateBoostsFromDb } from "@/lib/boosts";
 import { fetchAgentCardSkills } from "@/lib/delivery";
 import { readPancakePositions } from "@/lib/pancake-positions";
+import { withListingEdit } from "@/lib/listing-edit";
+import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +57,10 @@ export async function GET(
     : withPcs;
   const held = await positions;
   // only positions that exist are shown; a failed read and an empty wallet both say nothing
-  const withPositions = held && held.held + held.staked > 0 ? { ...withBoost, pancakeswapPositions: held } : withBoost;
+  const positioned = held && held.held + held.staked > 0 ? { ...withBoost, pancakeswapPositions: held } : withBoost;
+  // the owner's wording, examples and image go on last, with the registry's own kept beside them
+  const edits = await loadListingEdits();
+  const withPositions = withListingEdit(positioned, edits.get(editKey(Number(chainId), agent.token_id)));
   return NextResponse.json({
     data: activeSession ? { ...withPositions, activeSession } : withPositions,
   });

@@ -3,6 +3,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+// the listing edits store is server-only; with no database it answers from memory
+vi.mock("server-only", () => ({}));
+
 const scanner = vi.hoisted(() => ({
   queryAgents: vi.fn(async () => ({
     items: [],

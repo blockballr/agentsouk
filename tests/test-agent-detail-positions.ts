@@ -3,6 +3,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+// the listing edits store is server-only; with no database it answers from memory
+vi.mock("server-only", () => ({}));
+
 const AGENT_WALLET = "0x84fedabd1b83443ad86796c15619494878b64180";
 const OWNER = "0x1111111111111111111111111111111111111111";
 

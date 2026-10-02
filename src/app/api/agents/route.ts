@@ -6,6 +6,8 @@ import { isPancakeSwapAgent, readsPancakeSwap } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
 import { revokedAmong } from "@/lib/receipts-store";
 import { hydrateBoostsFromDb, isBoosted } from "@/lib/boosts";
+import { withListingEdit } from "@/lib/listing-edit";
+import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
 
 export const dynamic = "force-dynamic";
 
@@ -50,12 +52,17 @@ export async function GET(req: NextRequest) {
   const sessions = ranked.map((a) => findActiveSession(a.chain_id, a.token_id));
   const revoked = await revokedAmong(sessions.flatMap((s) => (s ? [s.paymentId] : [])));
 
+  // search, category and rank above all read the registry record; an owner's edit only
+  // changes what is shown, so it is laid on last
+  const edits = await loadListingEdits();
+
   const items = ranked.map((a, i) => {
     const verification = verifications.get(a.token_id);
+    const shown = withListingEdit(a, edits.get(editKey(a.chain_id, a.token_id)));
     const withPcs =
       readsPancakeSwap(a.chain_id, a.token_id) || isPancakeSwapAgent(a.name, a.description ?? "")
-        ? { ...a, pcs: true }
-        : a;
+        ? { ...shown, pcs: true }
+        : shown;
     const withVerification = verification ? { ...withPcs, verification } : withPcs;
     const found = sessions[i];
     const activeSession = found && !revoked.has(found.paymentId) ? found : undefined;

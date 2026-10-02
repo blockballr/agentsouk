@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadDelistedRows } from "@/lib/delist-store";
+import { isEmptyEdit } from "@/lib/listing-edit";
+import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
 import { queryAgents } from "@/lib/scanner";
 import { targetChainId } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
@@ -31,6 +33,8 @@ export async function GET(req: NextRequest) {
   const staleByToken = new Map(
     (await loadStaleTokens(0)).map((t) => [t.tokenId, t.failingSince]),
   );
+  // what the owner has changed about each listing, so the edit form opens with it
+  const edits = await loadListingEdits();
   const agents = catalogue.items
     .filter((a) => sameAddr(a.owner_address, owner))
     .map((a) => ({
@@ -42,6 +46,8 @@ export async function GET(req: NextRequest) {
       contractAddress: a.contract_address,
       ownerAddress: a.owner_address,
       description: a.description ?? null,
+      imageUrl: a.image_url ?? null,
+      listing: ((e) => (e && !isEmptyEdit(e) ? e : null))(edits.get(editKey(a.chain_id, a.token_id))),
       isVerified: a.is_verified,
       isActive: a.is_active,
       x402Supported: a.x402_supported,
