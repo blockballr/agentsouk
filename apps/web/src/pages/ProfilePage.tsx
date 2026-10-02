@@ -13,9 +13,10 @@ import {
 } from '../lib/api'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
+import { checkMarks, checkSummary, countByDay, getCheckHistory, type CheckRecord } from '../lib/history'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
 import { changeWallet, connectWallet, getActiveAccount } from '../lib/wallet'
-import { Action, Dialog, LABEL, TextSlot, button, card, cx } from '../components/ui'
+import { Action, BarStrip, CheckStrip, FigureTile, LABEL, TextSlot, button, card, cx } from '../components/ui'
 
 type HiresSource = 'postgres' | 'memory' | null
 
@@ -77,6 +78,8 @@ export function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hiresError, setHiresError] = useState<string | null>(null)
+  // each listing's recent checks, for its strip; null until read, and left null if it cannot be
+  const [checks, setChecks] = useState<Record<string, CheckRecord[]> | null>(null)
 
   useEffect(() => {
     void getActiveAccount().then(setAccount)
@@ -87,18 +90,23 @@ export function ProfilePage() {
       setOwned(null)
       setHires(null)
       setHiresSource(null)
+      setChecks(null)
       return
     }
     setLoading(true)
     setError(null)
     setHiresError(null)
-    // the two reads are independent, so a receipts outage must not hide the listings
+    // the reads are independent, so a receipts outage must not hide the listings
     const [ownedResult, hiresResult] = await Promise.allSettled([
       getAgentsByOwner(account),
       getHiresByPayee(account),
     ])
     if (ownedResult.status === 'fulfilled') {
       setOwned(ownedResult.value)
+      // the history is an extra: the page stands without it, so a failed read only leaves it out
+      getCheckHistory(ownedResult.value.agents.map((a) => a.tokenId))
+        .then(setChecks)
+        .catch(() => setChecks(null))
     } else {
       setError(hireErrorText(ownedResult.reason))
     }
@@ -144,6 +152,7 @@ export function ProfilePage() {
 
   const agents = owned?.agents ?? []
   const offMarket = agents.filter((a) => a.delisted).length
+  const answering = agents.filter((a) => !a.delisted && a.verification?.status === 'delivered').length
   // only buyers count as hires received; our checks and self-tests would inflate it
   const customerHires = (hires ?? []).filter(isCustomer)
   const byToken = new Map<string, PayeeHire[]>()
@@ -167,17 +176,6 @@ export function ProfilePage() {
               {agents.length - offMarket === 1 ? 'listing' : 'listings'}
               {offMarket > 0 ? ` · ${offMarket} off the market` : ''}
             </span>
-            {hiresSource === 'postgres' && hires && (
-              <>
-                <span>
-                  <strong className="text-press-black">{customerHires.length}</strong>{' '}
-                  {customerHires.length === 1 ? 'buyer hire' : 'buyer hires'}
-                </span>
-                <span>
-                  earned <strong className="text-press-black">{earnedLabel(customerHires)}</strong>
-                </span>
-              </>
-            )}
           </div>
         )}
       </div>
@@ -228,6 +226,22 @@ export function ProfilePage() {
             </p>
           )}
 
+          {owned && agents.length > 0 && (
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <FigureTile
+                label="Buyer hires"
+                value={hires ? receivedLabel(customerHires.length, hiresSource) : 'Unavailable'}
+                note="Buyers only, not our checks"
+              />
+              <FigureTile label="Earned" value={hires ? earnedLabel(customerHires) : 'Unavailable'} note="Settled payments from buyers" />
+              <FigureTile
+                label="Agents answering"
+                value={`${answering} of ${agents.length - offMarket}`}
+                note="On their last check"
+              />
+            </div>
+          )}
+
           <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {owned && agents.length === 0 && (
               <div className={cx(card('plain', 'xl'), 'md:col-span-2 lg:col-span-3')}>
@@ -255,6 +269,10 @@ export function ProfilePage() {
             ))}
           </div>
 
+          {agents.length > 0 && (
+            <AgentHistory agents={agents} hires={customerHires} checks={checks} />
+          )}
+
           <HiresPanel
             hires={hires}
             source={hiresSource}
@@ -262,7 +280,9 @@ export function ProfilePage() {
             chainId={settledChain}
           />
 
-          <div className="mt-16 metal rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-8">
+          <div
+            className="mt-16 metal rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-8"
+          >
             <h2 className="font-serif text-2xl font-medium">List another agent</h2>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-newsprint-gray">
               One transaction from your wallet registers it, with you as the owner.
@@ -334,10 +354,8 @@ function OwnedAgentCard({
   const offMarket = agent.delisted ?? null
   const [rechecking, setRechecking] = useState(false)
   const [switching, setSwitching] = useState(false)
-  const [confirmDelist, setConfirmDelist] = useState(false)
-  // feedback takes the card's note slot for a few seconds; the dialog keeps its own error
+  // feedback takes the card's note slot for a few seconds
   const [feedback, setFeedback] = useState<string | null>(null)
-  const [dialogError, setDialogError] = useState<string | null>(null)
   const [boost, setBoost] = useState<BoostState>('loading')
 
   useEffect(() => {
@@ -379,25 +397,18 @@ function OwnedAgentCard({
     }
   }
 
-  async function onSwitch(action: 'delist' | 'relist') {
+  // a card that is off the market can be put back; taking one off is not offered here
+  async function onRelist() {
     setSwitching(true)
     setFeedback(null)
-    setDialogError(null)
     try {
-      await setListingState(agent.chainId, agent.tokenId, action)
-      setConfirmDelist(false)
+      await setListingState(agent.chainId, agent.tokenId, 'relist')
       onChanged()
     } catch (e) {
-      if (action === 'delist') setDialogError(hireErrorText(e))
-      else setFeedback(hireErrorText(e))
+      setFeedback(hireErrorText(e))
     } finally {
       setSwitching(false)
     }
-  }
-
-  function openDelist() {
-    setDialogError(null)
-    setConfirmDelist(true)
   }
 
   const note = feedback ?? cardNote(agent)
@@ -454,40 +465,64 @@ function OwnedAgentCard({
           </Action>
         ) : null}
         {offMarket ? (
-          <Action variant="primary" onClick={() => void onSwitch('relist')} disabled={switching} className="w-full">
+          <Action variant="primary" onClick={() => void onRelist()} disabled={switching} className="w-full">
             {switching ? 'Relisting...' : 'Relist'}
           </Action>
-        ) : (
-          <Action onClick={openDelist} disabled={switching} className="w-full">
-            Delist
-          </Action>
-        )}
+        ) : null}
       </div>
-
-      {confirmDelist ? (
-        <Dialog title={`Delist ${agent.name}`} onClose={() => setConfirmDelist(false)}>
-          <p className="text-[14px] leading-relaxed text-press-black">
-            It leaves the marketplace listing but stays registered on chain, and its page still works from a direct link. You can relist it here at any time.
-          </p>
-          <p className="mt-2 text-[13px] leading-relaxed text-newsprint-gray">
-            Your wallet signs a message to confirm. There is no transaction and no gas.
-          </p>
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            <Action variant="primary" onClick={() => void onSwitch('delist')} disabled={switching} className="w-full">
-              {switching ? 'Delisting...' : 'Sign and delist'}
-            </Action>
-            <Action onClick={() => setConfirmDelist(false)} disabled={switching} className="w-full">
-              Cancel
-            </Action>
-          </div>
-          {dialogError ? (
-            <p role="alert" className="mt-3 text-[12px] leading-relaxed text-press-black">
-              {dialogError}
-            </p>
-          ) : null}
-        </Dialog>
-      ) : null}
     </article>
+  )
+}
+
+// how each listing has done lately: buyer hires by day and its run of checks. Both start
+// from the day the record began, so a new listing shows an honest empty strip
+function AgentHistory({
+  agents,
+  hires,
+  checks,
+}: {
+  agents: OwnedAgent[]
+  hires: PayeeHire[]
+  checks: Record<string, CheckRecord[]> | null
+}) {
+  return (
+    <div className="mt-16">
+      <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">How each agent is doing</h2>
+      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
+        Buyer hires by day over the last two weeks, and each agent's latest checks. The oldest is on the left.
+      </p>
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        {agents.map((agent) => {
+          const own = hires.filter((h) => h.chainId === agent.chainId && h.tokenId === agent.tokenId)
+          const days = countByDay(own.map((h) => h.createdAt))
+          const total = days.reduce((sum, d) => sum + d.count, 0)
+          const record = checks?.[agent.tokenId] ?? []
+          return (
+            <article key={`${agent.chainId}:${agent.tokenId}`} className={cx(card('plain', 'sm'), 'min-w-0')}>
+              <h3 className="truncate font-serif text-[20px] leading-tight text-press-black">{agent.name}</h3>
+              <p className={cx(LABEL, 'mt-4')}>Buyer hires, last 14 days</p>
+              <div className="mt-2">
+                <BarStrip days={days} label={`${total} buyer ${total === 1 ? 'hire' : 'hires'} in the last 14 days`} />
+              </div>
+              <TextSlot lines={1} className="mt-1">
+                {total === 0 ? 'None in the last two weeks' : `${total} in the last two weeks`}
+              </TextSlot>
+              <p className={cx(LABEL, 'mt-4')}>Checks</p>
+              <div className="mt-2 min-h-3">
+                {record.length > 0 ? <CheckStrip marks={checkMarks(record)} label={checkSummary(record)} /> : null}
+              </div>
+              <TextSlot lines={1} className="mt-1">
+                {checks === null
+                  ? 'The record could not be read just now'
+                  : record.length === 0
+                    ? 'No checks recorded yet'
+                    : checkSummary(record)}
+              </TextSlot>
+            </article>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 

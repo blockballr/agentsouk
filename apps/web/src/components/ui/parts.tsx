@@ -155,3 +155,71 @@ export function Dialog({ title, onClose, children }: { title: string; onClose: (
     </dialog>
   )
 }
+
+export function FigureTile({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="metal min-w-0 rounded-[14px] border hairline border-slate-verdant/40 p-5">
+      <p className={LABEL}>{label}</p>
+      <p className="mt-2 truncate font-serif text-[28px] leading-tight tabular-nums text-press-black" title={value}>
+        {value}
+      </p>
+      <TextSlot lines={1} className="mt-1">
+        {note ?? ''}
+      </TextSlot>
+    </div>
+  )
+}
+
+// a day with nothing keeps a faint tick, so the days can still be counted
+export function BarStrip({ days, label }: { days: { day: string; count: number }[]; label: string }) {
+  const top = Math.max(1, ...days.map((d) => d.count))
+  const step = 10
+  const height = 32
+  return (
+    <svg
+      viewBox={`0 0 ${days.length * step} ${height}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label={label}
+      className="h-8 w-full"
+    >
+      {days.map((d, i) => {
+        const h = d.count === 0 ? 1 : Math.max(3, Math.round((d.count / top) * (height - 2)))
+        return (
+          <rect
+            key={d.day}
+            x={i * step + 1.5}
+            y={height - h}
+            width={step - 3}
+            height={h}
+            className={d.count === 0 ? 'fill-newsprint-gray/40' : 'fill-press-black'}
+          >
+            <title>{`${d.day}: ${d.count}`}</title>
+          </rect>
+        )
+      })}
+    </svg>
+  )
+}
+
+export type CheckMark = { state: 'answered' | 'gated' | 'missed'; title: string }
+
+// filled, toned or outlined, so the record reads without relying on colour alone
+export function CheckStrip({ marks, label }: { marks: CheckMark[]; label: string }) {
+  return (
+    <div role="img" aria-label={label} className="flex flex-wrap gap-[3px]">
+      {marks.map((m, i) => (
+        <span
+          key={i}
+          title={m.title}
+          className={cx(
+            'h-3 w-3 rounded-[3px]',
+            m.state === 'answered' && 'bg-highlighter-green',
+            m.state === 'gated' && 'bg-newsprint-gray/50',
+            m.state === 'missed' && 'border hairline border-newsprint-gray',
+          )}
+        />
+      ))}
+    </div>
+  )
+}
