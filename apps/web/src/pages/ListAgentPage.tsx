@@ -823,7 +823,7 @@ function LookupSection({
           3. Instant lookup
         </h2>
         <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-          Paste your token id, or your whole 8004scan agent URL. We check the live registry.
+          Paste your token id, or your whole registry agent URL. We check the live registry.
         </p>
       </div>
 
@@ -835,14 +835,14 @@ function LookupSection({
         }}
       >
         <label className="micro text-newsprint-gray" htmlFor="token-lookup">
-          Token id or 8004scan URL
+          Token id or agent URL
         </label>
         <input
           id="token-lookup"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="45381, 56:45381, or https://8004scan.io/..."
+          placeholder="45381, 56:45381, or your agent URL"
           className="border hairline input-hairline w-full max-w-md bg-transparent px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
         />
         <button
@@ -858,7 +858,7 @@ function LookupSection({
         {state.phase === 'invalid' && (
           <p className="border hairline border-slate-verdant/40 px-8 py-6 text-sm text-newsprint-gray">
             No token id found in that. Paste a bare number like 45381, a pair
-            like 56:45381, or your 8004scan agent URL.
+            like 56:45381, or your agent URL.
           </p>
         )}
         {state.phase === 'error' && (
@@ -872,7 +872,7 @@ function LookupSection({
               Not in the registry yet.
             </p>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-              No live listing for that token id. Finish the Agent Studio registration in step 1, or check the number: it is the token your registration minted, also shown on 8004scan.
+              No live listing for that token id. Finish the Agent Studio registration in step 1, or check the number: it is the token your registration minted, also shown by the registry index.
             </p>
           </div>
         )}

@@ -51,7 +51,7 @@ export function RateAgent({
           {result.confirmed === false
             ? 'The rating transaction was mined but reverted, so nothing was recorded.'
             : result.confirmed
-              ? `Rated ${stars} of 5. 8004scan shows it once it indexes the block.`
+              ? `Rated ${stars} of 5. It appears once the registry index has it.`
               : 'The rating was sent and is waiting to be mined.'}{' '}
           <a
             href={`${explorerTxBase(chainId)}/tx/${result.txHash}`}

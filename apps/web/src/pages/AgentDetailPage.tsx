@@ -67,8 +67,8 @@ export function freshnessLine(
 ): string {
   const record = `Registry record last updated ${updatedAt ? ago(updatedAt) : 'unknown'}.`
   const ours = ourCheckedAt ? `the marketplace on ${ourCheckedAt.slice(0, 10)}` : null
-  if (scanCheckedAt && ours) return `${record} Endpoint probed by 8004scan ${ago(scanCheckedAt)}, and by ${ours}.`
-  if (scanCheckedAt) return `${record} Endpoint probed by 8004scan ${ago(scanCheckedAt)}.`
+  if (scanCheckedAt && ours) return `${record} Endpoint probed by the registry index ${ago(scanCheckedAt)}, and by ${ours}.`
+  if (scanCheckedAt) return `${record} Endpoint probed by the registry index ${ago(scanCheckedAt)}.`
   if (ours) return `${record} Endpoint checked by ${ours}.`
   return record
 }

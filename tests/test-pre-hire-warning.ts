@@ -42,7 +42,7 @@ describe("freshness line names whose check each date is", () => {
 
   it("names 8004scan's probe and the marketplace's check separately", () => {
     expect(freshnessLine("2026-09-29T00:31:03Z", "2026-09-29T23:35:05Z", "2026-09-28T06:58:01Z", ago)).toBe(
-      "Registry record last updated ago(2026-09-29). Endpoint probed by 8004scan ago(2026-09-29), and by the marketplace on 2026-09-28.",
+      "Registry record last updated ago(2026-09-29). Endpoint probed by the registry index ago(2026-09-29), and by the marketplace on 2026-09-28.",
     );
   });
 
@@ -51,7 +51,7 @@ describe("freshness line names whose check each date is", () => {
       "Registry record last updated ago(2026-09-29). Endpoint checked by the marketplace on 2026-09-28.",
     );
     expect(freshnessLine(null, "2026-09-29T23:35:05Z", undefined, ago)).toBe(
-      "Registry record last updated unknown. Endpoint probed by 8004scan ago(2026-09-29).",
+      "Registry record last updated unknown. Endpoint probed by the registry index ago(2026-09-29).",
     );
     expect(freshnessLine(undefined, null, null, ago)).toBe("Registry record last updated unknown.");
   });
