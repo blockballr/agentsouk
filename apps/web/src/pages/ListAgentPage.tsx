@@ -25,7 +25,7 @@ import {
 import { getAgentDetail } from '../lib/api'
 import { RegisterWizard, type WizardStep } from '../components/RegisterWizard'
 import { QuestStrip } from '../components/QuestStrip'
-import { button, card, cx } from '../components/ui'
+import { Action, button, card, cx, Dialog } from '../components/ui'
 
 const checklist = [
   {
@@ -86,6 +86,9 @@ export function ListAgentPage() {
   const [searchParams] = useSearchParams()
   const questing = searchParams.get('quest') === 'stall'
   const [wizardStep, setWizardStep] = useState<WizardStep>('form')
+  // the listing flow is several screens long, so the page opens on the pitch and
+  // one action rather than on the wizard
+  const [started, setStarted] = useState(false)
   const guide = questing ? LISTING_GUIDE[wizardStep] : null
   return (
     <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
@@ -96,8 +99,23 @@ export function ListAgentPage() {
         Now get hired.
       </h1>
       <p className="mt-8 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-        Anyone can list, and our checks decide what buyers see. You build the agent in your own tools, BNB Agent Studio registers it, and Agent Souk is where it gets checked and sold. Three steps: build it, meet the checklist, confirm it is on the market.
+        Anyone can list, and our checks decide what buyers see. You build the agent in your own tools, BNB Agent Studio registers it, and Agent Souk is where it gets checked and sold. Three steps: build it, meet the checklist, get listed.
       </p>
+      <p className="mt-6 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
+        You keep your agent, your keys and your money. A buyer signs once, the payment goes
+        straight to the agent&apos;s own wallet on chain, and the cap they set can be revoked.
+        Agent Souk holds no funds and cannot move them.
+      </p>
+      {!started ? (
+        <button
+          type="button"
+          onClick={() => setStarted(true)}
+          className={`${button('primary', 'lg')} mt-10`}
+        >
+          Get listed
+        </button>
+      ) : (
+        <>
       {/* on a phone the wizard sits several screens down, so the page opens with a way to it */}
       <div className="mt-8 flex flex-wrap gap-3">
         <button
@@ -116,17 +134,17 @@ export function ListAgentPage() {
         </button>
       </div>
       {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB */}
-      <p className="mt-6 max-w-3xl text-[15px] leading-relaxed text-newsprint-gray">
-        Listing for Set and Earn? Enter your wallet and your agent with BNB Chain first, on{' '}
+      <p className="metal mt-6 max-w-3xl rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-6 text-[15px] leading-relaxed text-newsprint-gray">
+        Listing for Set and Earn? Register your wallet with{' '}
         <a
           href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
           target="_blank"
           rel="noreferrer"
           className="text-press-black underline decoration-newsprint-gray/40 underline-offset-4 hover:decoration-press-black"
         >
-          its Set and Earn page
+          BNB Smart Chain Set and Earn Campaign
         </a>
-        . BNB Chain counts only what is registered there.
+        .
       </p>
       {/* while the form is untouched the guide sits where the visitor lands; once the wizard
           moves, it follows the wizard */}
@@ -135,17 +153,17 @@ export function ListAgentPage() {
       )}
 
       <CreateSection chainId={chain} />
-      {/* register straight from here, for a participant who would rather not
-          install the CLI. Sits after the Studio path because both are valid and
-          the Studio route is the one the brief describes. */}
+      {/* the same registration the Studio path makes, sent from the browser. Both
+          routes end at the same registry record and the same checks. */}
       <div id="register-here" className="mt-16 scroll-mt-4">
         <div className="border-t hairline border-slate-verdant/40 pt-8">
           <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
-            Or register from here
+            2. List your agent
           </h2>
           <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-            The same registration without Studio&apos;s CLI. You send one transaction from your own wallet,
-            and the registry records you as the owner.
+            The same registration, without installing anything. You send one transaction from your
+            own wallet, and the registry records you as the owner. We then probe the endpoint and
+            decide whether the shelf carries it, the same as for a Studio registration.
           </p>
           {chain === null ? (
             <p className="mt-8 text-sm leading-relaxed text-newsprint-gray">
@@ -173,6 +191,8 @@ export function ListAgentPage() {
       <ChecklistSection chainId={chain} />
       <LookupSection chainId={chain} onFound={setFoundTokenId} />
       <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
+        </>
+      )}
     </section>
   )
 }
@@ -322,7 +342,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
   return (
     <div className="mt-8 metal rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h3 className="font-serif text-xl font-medium">Gas to register</h3>
+        <h3 className="font-serif text-xl font-medium">Gas to list</h3>
         <span className="micro text-newsprint-gray">{chainLabel(chainId)}</span>
       </div>
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
@@ -464,7 +484,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
         </a>
       </div>
 
-      <ol className="mt-8 grid gap-6 md:grid-cols-3">
+      <ol className="mt-8 grid gap-6 md:grid-cols-2">
         <li className={card('plain', 'lg')}>
           <p className="micro text-newsprint-gray">Step 1</p>
           <p className="mt-4 font-serif text-xl font-medium">Install the CLI</p>
@@ -479,11 +499,11 @@ function CreateSection({ chainId }: { chainId: number | null }) {
         <li className={card('plain', 'lg')}>
           <p className="micro text-newsprint-gray">Step 2</p>
           <p className="mt-4 font-serif text-xl font-medium">
-            Describe it in your editor
+            Describe your agent
           </p>
           <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-            Describe the agent in Cursor or Claude Code and ask Studio to
-            deploy. Studio scaffolds the agent, deploys it, registers the
+            In Cursor or Claude Code, say what the agent does and ask Studio to
+            deploy it. Studio scaffolds the agent, deploys it, registers the
             ERC-8004 identity on{' '}
             {chainName ?? 'the target network'} (registry{' '}
             {chainId !== null && registryAddress ? (
@@ -501,40 +521,12 @@ function CreateSection({ chainId }: { chainId: number | null }) {
             ), binds the agent wallet, and registers the ERC-8183 task
             interface. x402 payment comes configured by default.
           </p>
-          <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-            For deployment, Studio v4 offers{' '}
-            <a
-              href="https://nodeops.network/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-press-black underline decoration-press-black/30 underline-offset-2 hover:text-highlighter-green"
-            >
-              NodeOps
-            </a>{' '}
-            alongside AWS and Azure. NodeOps is the zero-config route: no cloud account, nothing to
-            configure, and the agent runs on a NodeOps hardware provider. Choose AWS or Azure only
-            if you want to bring your own cloud and configure it yourself.
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-            Hires on this deployment settle in {settlementAsset?.symbol ?? 'the settlement asset'} (EIP-3009,
-            one signature per hire, relayed){' '}
-            {chainId !== null && settlementAsset ? (
-              <a
-                href={explorerAddressUrl(chainId, settlementAsset.address)}
-                target="_blank"
-                rel="noreferrer"
-                className="font-mono text-[13px] break-all text-press-black hover:text-highlighter-green"
-              >
-                {settlementAsset.address}
-              </a>
-            ) : (
-              'pending'
-            )}
-            .
-          </p>
         </li>
-        <li className={card('plain', 'lg')}>
-          <p className="micro text-newsprint-gray">Step 3</p>
+        <li className="flex h-full">
+            <PromptGenerator chainId={chainId} />
+          </li>
+          <li className={cx(card('plain', 'lg'), 'flex h-full flex-col')}>
+          <p className="micro text-newsprint-gray">Step 4</p>
           <p className="mt-4 font-serif text-xl font-medium">
             Note your task interface
           </p>
@@ -552,6 +544,16 @@ function CreateSection({ chainId }: { chainId: number | null }) {
             </a>
             .
           </p>
+          <Action
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+            className="mt-auto self-start"
+          >
+            Continue to listing
+          </Action>
         </li>
       </ol>
 
@@ -563,17 +565,29 @@ function CreateSection({ chainId }: { chainId: number | null }) {
 }
 
 function ChecklistSection({ chainId }: { chainId: number | null }) {
+  const [open, setOpen] = useState(false)
   return (
     <div className="mt-16">
       <div className="border-t hairline border-slate-verdant/40 pt-8">
-        <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
-          2. What the verifier looks for
-        </h2>
-        <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-          Every badge on this site comes from a real check against the real endpoint.
-        </p>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex w-full items-baseline justify-between gap-4 text-left font-serif text-[32px] font-medium tracking-[-0.02em] hover:text-highlighter-green"
+        >
+          <span>What the verifier looks for</span>
+          <span aria-hidden="true" className="text-[20px] leading-none text-newsprint-gray">
+            {open ? '−' : '+'}
+          </span>
+        </button>
+        {open && (
+          <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
+            Every badge on this site comes from a real check against the real endpoint.
+          </p>
+        )}
       </div>
 
+      {open && (
       <div className="mt-8 grid gap-px bg-slate-verdant/40 md:grid-cols-2">
         {checklist.map((item, i) => (
           <div key={item.title} className="bg-bone-white p-8">
@@ -585,12 +599,11 @@ function ChecklistSection({ chainId }: { chainId: number | null }) {
           </div>
         ))}
       </div>
+      )}
 
       <p className="mt-6 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
         Meet the checklist and the badge speaks for you: delivered, graded, public. It does not promise placement or traffic.
       </p>
-
-      <PromptGenerator chainId={chainId} />
     </div>
   )
 }
@@ -658,6 +671,7 @@ function PromptGenerator({ chainId }: { chainId: number | null }) {
   const [goal, setGoal] = useState('')
   const [prompt, setPrompt] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [open, setOpen] = useState(false)
 
   function generate() {
     setPrompt(buildPrompt(category, name, goal, chainId))
@@ -679,15 +693,27 @@ function PromptGenerator({ chainId }: { chainId: number | null }) {
     'border hairline input-hairline w-full bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
 
   return (
-    <div className={cx(card('plain', 'lg'), 'mt-12')}>
-      <h3 className="font-serif text-2xl font-medium tracking-[-0.02em]">
+    <div className={cx(card('plain', 'lg'), 'flex h-full w-full flex-col')}>
+      <p className="micro text-newsprint-gray">Step 3</p>
+      <h3 className="mt-4 font-serif text-2xl font-medium tracking-[-0.02em]">
         Generate your Agent Studio prompt
       </h3>
-      <p className="mt-3 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+      <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
         Answer three questions and we write a prompt for your coding agent, with the checklist above as its acceptance criteria.
       </p>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <Action
+        variant="secondary"
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="mt-auto self-start"
+      >
+        Generate prompt
+      </Action>
+
+      {open && (
+        <Dialog title="Generate your Agent Studio prompt" onClose={() => setOpen(false)}>
+          <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="micro text-newsprint-gray" htmlFor="wizard-category">
             Category
@@ -734,30 +760,24 @@ function PromptGenerator({ chainId }: { chainId: number | null }) {
         />
       </div>
 
-      <button
-        type="button"
-        onClick={generate}
-        className={cx(button('primary', 'lg'), 'mt-6')}
-      >
-        Generate prompt
-      </button>
+      <Action variant="primary" size="md" onClick={generate} className="mt-6 self-start">
+            Generate prompt
+          </Action>
 
-      {prompt && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between gap-4">
-            <p className="micro text-newsprint-gray">Your prompt</p>
-            <button
-              type="button"
-              onClick={copy}
-              className="micro rounded-[5px] border hairline border-slate-verdant/50 px-4 py-2 text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
-            >
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-          </div>
-          <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-[11px] leading-relaxed text-press-black">
-            {prompt}
-          </pre>
-        </div>
+          {prompt && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between gap-4">
+                <p className="micro text-newsprint-gray">Your prompt</p>
+                <Action variant="secondary" size="sm" onClick={copy}>
+                  {copied ? 'Copied' : 'Copy'}
+                </Action>
+              </div>
+              <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-[11px] leading-relaxed text-press-black">
+                {prompt}
+              </pre>
+            </div>
+          )}
+        </Dialog>
       )}
     </div>
   )
