@@ -20,7 +20,9 @@ function App() {
     <MotionConfig reducedMotion="user">
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<MarketplacePage />} />
+          {/* The homepage is the about page, and the marketplace lives at /agents.
+              /about stays as an alias so the nav link and any shared URL keep working. */}
+          <Route index element={<HomePage />} />
           <Route path="/about" element={<HomePage />} />
           <Route path="/agents" element={<MarketplacePage />} />
           <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
