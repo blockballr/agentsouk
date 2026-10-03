@@ -9,7 +9,8 @@ import {
   subscribeQuest,
   writeQuestMode,
 } from '../lib/quest'
-import { getActiveAccount } from '../lib/wallet'
+import { connectWallet, getActiveAccount } from '../lib/wallet'
+import { hireErrorText } from '../lib/hire'
 import { Action, LABEL, card, cx } from './ui'
 
 const REFRESH_MS = 30_000
@@ -34,6 +35,25 @@ export function QuestNudge() {
   const [walletKnown, setWalletKnown] = useState(false)
   const [, redraw] = useState(0)
   const lastRead = useRef(0)
+  // a quest belongs to a wallet, so starting one asks for that wallet first
+  const [starting, setStarting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // the whole quest is gated on this: without a wallet every step card would offer the same
+  // connect prompt, so the wallet is taken once here rather than four times over there
+  async function start() {
+    setStarting(true)
+    setError(null)
+    try {
+      const who = wallet ?? (await connectWallet())
+      writeQuestMode(who, 'active')
+      navigate('/quest')
+    } catch (e) {
+      setError(hireErrorText(e))
+    } finally {
+      setStarting(false)
+    }
+  }
 
   // looked up again on each page, since a wallet can be connected anywhere on the site
   useEffect(() => {
@@ -98,18 +118,17 @@ export function QuestNudge() {
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Action
           variant="primary"
-          onClick={() => {
-            writeQuestMode(wallet, 'active')
-            navigate('/quest')
-          }}
+          onClick={start}
+          disabled={starting}
           className="w-full"
         >
-          Start quest
+          {starting ? 'Waiting for your wallet' : 'Start quest'}
         </Action>
         <Action onClick={() => writeQuestMode(wallet, 'dismissed')} className="w-full">
           Not now
         </Action>
       </div>
+      {error && <p className="mt-3 text-[13px] leading-5 text-press-black">{error}</p>}
     </aside>
   )
 }
