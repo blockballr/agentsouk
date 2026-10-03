@@ -58,8 +58,18 @@ const FEE = 500
 //                        registered period is over, so the exhausted row stays fatal
 // Revoke does clear it, which is why a run revokes before granting and again after.
 //
-// OVER must sit inside the account's balance: the relay refuses it at prepare time with
-// -32602 "please assign", so the balance bounds OVER. The account holds about 0.03 WBNB.
+// OVER is deliberately just over the cap, and that sizing is load bearing. It used to be
+// 0.02 against a 0.01 cap, twice the cap, and two different layers will refuse an over-cap
+// spend: the relay rejects it during prepare with -32602 "please assign", before the account
+// sees it, while the account's own _incrementSpent reverts ExceededSpendLimit. Which one
+// fired was not deterministic, so the same code produced ExceededSpendLimit on some runs and
+// a relay refusal on others, and a swap could surface the refusal as STF from the token one
+// call deeper than the account. An amount a hair over the cap is refused by the account, which
+// is the claim this file exists to make. A relay refusal is a different claim and a weaker one.
+//
+// OVER must also sit inside the account's balance, or the transfer runs out of WBNB before the
+// cap is ever consulted. Measured from the account, which held 0.0839 WBNB, so 0.011 is 13
+// percent of it. Re-measure if the account is ever drained or topped up a long way.
 //
 // Each swap also charges the approve alongside the transfer, so a swap costs twice UNDER
 // against the cap, and the relay fee comes out of the native cap.
@@ -68,7 +78,8 @@ const CAP_WBNB = parseEther('0.01')
 // Native cap exists to pay relay fees. It is not the trading cap.
 const NATIVE_CAP = parseEther('0.05')
 const UNDER = parseEther('0.0002')
-const OVER = parseEther('0.02')
+// 10% over CAP_WBNB: over the cap, but nowhere near enough to trip the relay's own budget.
+const OVER = parseEther('0.011')
 
 const walletKey = process.env.ALTANA_SANDBOX_PRIVATE_KEY
 const sessionKey = process.env.ALTANA_SANDBOX_SESSION_KEY
@@ -335,6 +346,12 @@ describe.skipIf(!configured)('what an Altana spend permission actually bounds', 
     // These are the assertions this file existed to earn. It ran as a measurement first and
     // the four outcomes were SUCCEEDED, ExceededSpendLimit, SUCCEEDED, ExceededSpendLimit,
     // so they are recorded here rather than assumed.
+    //
+    // They stay pinned to ExceededSpendLimit, and that is deliberate. The weaker claim, that
+    // the spend was refused by something, would also be satisfied by the relay rejecting the
+    // bundle at prepare time, which proves nothing about whether the account enforces the cap.
+    // Only the account's own revert is evidence of the mandate. OVER is sized a hair above the
+    // cap so this is the path that fires, see the note on it.
     //
     // ExceededSpendLimit and NoSpendPermissions are different failures and the difference is
     // the whole finding: ExceededSpendLimit means a spend permission matched and the limit
