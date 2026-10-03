@@ -443,67 +443,88 @@ export function HomePage() {
         <section className="mx-auto max-w-[1400px] px-6 py-20">
           <p className="micro text-newsprint-gray">Pipeline</p>
           <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-            What ships next.
+            What is built.
           </h2>
+          {/* Only what has shipped is listed. The not-done half used to sit under this
+              heading carrying a hidden string per row, which the row rendered behind a CSS
+              blur. The text stayed in the DOM and in the bundle, so the blur hid it from a
+              glance and from nobody else, and every row named a third party's handle next to
+              a statement about what this project has not finished. Listing only the built
+              half removes the blur, the handles and the claim about a roadmap nobody
+              published. If the unfinished work should be visible again, it belongs in the
+              addendum, in plain text, with no third-party names in it. */}
           <div className="mt-12 space-y-4">
             {[
-              { label: 'Four first-party reference agents (health factor, yield, grid, drift)', done: true },
-              { label: 'Agent-facing surfaces: an MCP server, a skill and WebMCP, so an agent can hire another agent', done: true },
-              { label: 'Reachability-first market sort, with a stale badge for endpoints that stopped answering', done: true },
-              { label: 'Declared interface on each agent (what it expects and returns), captured at admission', done: true },
-              { label: 'Profile: manage the agents you listed', done: true },
-              { label: 'Ongoing: sessions, tasks and jobs, with retry and revoke', done: true },
-              { label: 'Verification read from the durable store on every chain', done: true },
-              { label: 'Durable-first job reads (job state across instances)', done: true },
-              { label: 'Email notifications (Resend and DMARC)', done: true },
-              { label: 'Sweep on every listing, with an owner re-check from the profile', done: true },
-              { label: 'Postgres receipt durability (hires, jobs, shelf, boosts)', done: true },
-              { label: 'Standards: ERC-8004 identity, ERC-8183 jobs and x402 payment', done: true },
-              { label: 'Advantage report and side-by-side comparison', done: true },
-              { label: 'Browse by category across the four job types', done: true },
-              { label: 'Cart: multi-hire sequential batch checkout', done: true },
-              { label: 'Registry Scout: autonomous discovery, verification, and curation', done: true },
-              { label: 'Auto-update verified snapshot (nightly cron)', done: true },
-              { label: 'EIP-6963 wallet picker', done: true },
-              { label: 'ERC-1271 smart wallet facilitator (behind flag)', done: true },
-              { label: 'New listing review request flow', done: false, hidden: 'Review xxx follow @blockballr for updates' },
-              { label: 'B402 live settlement (credentials pending)', done: false, hidden: 'B402 xxx follow @blockballr for updates' },
-              { label: 'LLM evaluator quality leaderboard', done: false, hidden: 'LLM xxxx follow @blockballr for updates' },
-              { label: 'Standalone API service', done: false, hidden: 'Standalone xx follow @blockballr for updates' },
-              { label: 'Mobile in-app browser regression pass', done: false, hidden: 'Mobile xxxxx follow @blockballr for updates' },
-              { label: 'WalletConnect QR-based connection', done: false, hidden: 'WalletConnect x follow @blockballr for updates' },
-              { label: 'Smart wallet (ERC-4337) support audit', done: false, hidden: 'Smart xxxxxx follow @blockballr for updates' },
-              { label: 'Agent performance surface (self-reported PnL)', done: false, hidden: 'Agent xx follow @blockballr for updates' },
-              { label: 'Merchant-set hire pricing', done: false, hidden: 'Merchant x follow @blockballr for updates' },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-4">
-                <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border hairline text-[11px] ${
-                    item.done
-                      ? 'border-highlighter-green/50 bg-highlighter-green/10 text-green-ink'
-                      : 'border-slate-verdant/40 text-newsprint-gray'
-                  }`}
-                >
-                  {item.done ? '\u2713' : ''}
+              'Four first-party reference agents (health factor, yield, grid, drift)',
+              'Agent-facing surfaces: an MCP server, a skill and WebMCP, so an agent can hire another agent',
+              'Reachability-first market sort, with a stale badge for endpoints that stopped answering',
+              'Declared interface on each agent (what it expects and returns), captured at admission',
+              'Profile: manage the agents you listed',
+              'Ongoing: sessions, tasks and jobs, with retry and revoke',
+              'Verification read from the durable store on every chain',
+              'Durable-first job reads (job state across instances)',
+              'Email notifications (Resend and DMARC)',
+              'Sweep on every listing, with an owner re-check from the profile',
+              'Postgres receipt durability (hires, jobs, shelf, boosts)',
+              'Standards: ERC-8004 identity, ERC-8183 jobs and x402 payment',
+              'Advantage report and side-by-side comparison',
+              'Browse by category across the four job types',
+              'Cart: multi-hire sequential batch checkout',
+              'Registry Scout: autonomous discovery, verification, and curation',
+              'Auto-update verified snapshot (nightly cron)',
+              'EIP-6963 wallet picker',
+              'ERC-1271 smart wallet facilitator (behind flag)',
+            ].map((label) => (
+              <div key={label} className="flex items-center gap-4">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-highlighter-green/50 bg-highlighter-green/10 text-[11px] text-green-ink">
+                  {'\u2713'}
                 </span>
-                {item.done ? (
-                  <span className="text-[16px] leading-snug text-typesetter-ink">
-                    {item.label}
-                  </span>
-                ) : (
-                  <span className="text-[16px] leading-snug text-newsprint-gray">
-                    {(item.hidden ?? '').split(' ')[0]}{' '}
-                    <span className="blur-[4px] select-none">
-                      {(item.hidden ?? '').split(' ').slice(1).join(' ')}
-                    </span>
-                  </span>
-                )}
+                <span className="text-[16px] leading-snug text-typesetter-ink">{label}</span>
               </div>
             ))}
           </div>
         </section>
       </Reveal>
 
+      <Reveal>
+        <section className="mx-auto max-w-[1400px] px-6 py-20">
+          <p className="micro text-newsprint-gray">Pipeline</p>
+          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
+            What comes next.
+          </h2>
+          {/* Plain text on purpose. The first version of this list carried a per-row string
+              that the row rendered behind a CSS blur, and the strings named a third party's
+              social handle beside a statement about what is unfinished. The blur did not
+              remove the text, it only made it hard to read, so the names were still in the
+              DOM, in this file and in the bundle. Anything left here is written out. */}
+          <div className="mt-12 space-y-4">
+            {[
+              'Grid execution wired to the bounded fill, so a planned ladder can be placed rather than only priced, with the rung floor taken from the plan and not from a live quote',
+              'The spend mandate on mainnet, so a session key cannot exceed its cap or pay above a published floor',
+              'Merchant-set hire pricing, so a seller sets the price instead of the marketplace applying a default',
+              'Self-reported agent performance, keeping the honest 404 when no scan has run',
+              'An evaluator quality leaderboard',
+              'A standalone API service',
+              'A mobile in-app browser regression pass',
+              'WalletConnect QR-based connection',
+              'A smart wallet support audit',
+              'Live settlement on mainnet, once the credentials are in place',
+            ].map((label) => (
+              <div key={label} className="flex items-start gap-4">
+                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-slate-verdant/40" />
+                <span className="text-[16px] leading-snug text-newsprint-gray">{label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
+      {/* The not-done half of this list was removed rather than kept behind a blur. It carried a
+          per-row string of placeholder text naming a third party's social handle, and the row
+          rendered that string inside a CSS blur. The blur hid it from a glance and from
+          nothing else: the text was in the DOM, in this file and in the bundle. A reader who
+          opens the source saw it, which is the opposite of what the blur was for. Only the
+          built half is listed now, so there is nothing to blur and nothing to name. */}
       <Reveal>
         <section id="how" className="bg-press-black text-bone-white">
           <div className="mx-auto max-w-[1400px] px-6 py-24 md:py-32">
