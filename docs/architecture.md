@@ -3,11 +3,10 @@
 This document covers how Agent Souk, the ERC-8004 agent marketplace on BNB Smart
 Chain, works. It explains the server-only registry boundary, the
 grounded-in-data classification model, the snapshot build pipeline, the
-marketplace-as-merchant money path over Binance x402, and the sandbox versus
-b402 facilitation split. It also documents the current shape of the system:
-the live Next.js product and the Vite frontend rebuild that is replacing its
-pages, and the shared core package that will become the single source for
-both.
+marketplace-as-merchant money path over Binance x402, and the sandbox, prod
+and b402 facilitation modes. It also documents the current shape of the system:
+a Next.js backend and a separate Vite frontend, and a shared core package whose
+rules are duplicated rather than consumed from one place.
 
 Agent Souk's design choices -- separating the registry client from the client
 bundle, classifying agents from their own registration text rather than from
@@ -65,7 +64,7 @@ the numbers on screen are a reproducible artifact a judge can regenerate.
 **Honest sparse categories**
 
 A category the registry genuinely lacks stays small. The grid trading category
-on BSC has about three real agents, and the pipeline reports that instead of
+on BSC chain 56 holds 13 agents, and the pipeline reports that instead of
 padding the bucket with unrelated listings. Backfill into a thin category only
 accepts agents with a real classifier signal for that category, so coverage is
 real or it is absent, never invented.
@@ -103,7 +102,7 @@ page, and `/compare` renders a side-by-side table from shortlisted agents.
 **Payment layer.** `src/lib/x402.ts` holds the shared types, the EIP-3009
 typed data, and the in-memory ledger. `src/lib/facilitator.ts` holds the
 sandbox settlement path. The routes are `POST /api/x402/requirements`,
-`POST /api/x402/settle`, and `GET /api/x402/receipt/[paymentId]`.
+`POST /api/x402/settle`, and `GET /api/receipts/[paymentId]`.
 
 The flow of data through the system:
 
@@ -121,7 +120,7 @@ flowchart LR
     W --> REQ[POST /api/x402/requirements]
     REQ --> F[src/lib/facilitator.ts]
     F --> L[payment ledger in src/lib/x402.ts]
-    L --> RC[GET /api/x402/receipt/:paymentId]
+    L --> RC[GET /api/receipts/:paymentId]
 ```
 
 ### The Frontend Rebuild
@@ -151,13 +150,16 @@ marketplace, the selection is persisted to `localStorage` under
 compare page loads each agent's detail and renders a metric table.
 
 The shared package `packages/core` exports the registry types, the classifier,
-and the formatting helpers. It is the single source for the frontend today and
-becomes the single source for the backend after the cutover.
+and the formatting helpers. The site does not consume it directly: the alias in
+`apps/web/vite.config.ts` points `@agora/core` at `apps/web/src/core`, which holds
+its own copies of the types and the classifier, so the rules exist in three
+places, the API, the site and the package, and are kept in step by hand.
 
 ### The Snapshot Build Phase
 
-The build route is `POST /api/index/build`, guarded by the `secret` parameter
-or the `INDEX_SECRET` env var, defaulting to `dev`. It takes `per`, the target
+The build route is `POST /api/index/build`, guarded by a bearer token or the
+`secret` parameter matching `INDEX_SECRET`, and answering 503 when that variable
+is unset rather than falling back to a default. It takes `per`, the target
 agents per category, clamped to 5 to 60 with a default of 40.
 
 **Fetch.** The route fans out two job families in parallel batches: a
@@ -190,15 +192,16 @@ normalized name and one per normalized name plus owner pair are kept.
 by `relevanceScore` within their category.
 
 **Balanced selection.** Up to `per` agents are taken from each category pool in
-relevance order. The general pool gets at least `max(16, floor(per / 2))`
-agents. A category that ends under `max(12, per / 2)` is backfilled from the
+relevance order, and the general pool takes at most `max(16, floor(per / 2))`.
+A category that ends under `max(12, per / 2)` is backfilled from the
 remaining deduped agents, but only those with a raw classifier signal of at
 least 1 for that category, relabeled accordingly.
 
 The result is written as version 2 of the snapshot: a timestamp, the fetch
 source counts, the per-category counts, and the selected agents. The shipped
-snapshot holds 168 real BSC agents: 47 rebalancing, 44 yield, 34 health-factor,
-13 grid-trading, 30 general.
+snapshot holds 172 chain-56 agents: 51 rebalancing, 44 yield, 34 health-factor,
+13 grid-trading, 30 general. A `general` agent is never served: the shelf gate
+refuses that category, so those rows wait in the snapshot for a better reading.
 
 ### Classification and Ranking
 
@@ -239,16 +242,20 @@ relevanceScore = categoryScore * 10 + (x402 ? 2 : 0)
 Category relevance dominates, because the registry rewards account age via
 `total_score` more than it rewards fit, and a fresh, precisely-matched agent
 must beat an old generic persona agent. x402-capable agents edge ahead because
-they are the hireable ones, then reputation breaks the remaining ties. The
-browse route sorts with `total_score` as the tiebreak inside a category, and
-pure `total_score` with feedbacks outside one.
+they are the hireable ones, then reputation breaks the remaining ties. That
+ordering ranks the snapshot the builder selects from. The browse route ranks
+differently, leading with `total_score` so the list agrees with the score on each
+card, then feedbacks, and using relevance only to break a tie.
 
 ### Serving Queries
 
 `queryAgents` applies the category filter, then the search text over name,
-description, and owner address, then the sort. The sort modes are `score`
-(default, relevance-first inside a category), `newest` by registration time,
-`feedback` by total feedbacks, and `health` by health score, descending, with
+description, and owner address, then the sort. The sort modes are
+`reachability`, which is the default and ranks by the verifier's last verdict,
+delivered then gated then dead then unreachable then unchecked, rotating inside
+the delivered tier; `score`, which leads with `total_score` then feedbacks and
+uses relevance only to break ties; `newest` by registration time; `feedback` by
+total feedbacks; and `health` by health score, descending, with
 agents lacking one last. It returns the paged items, the total, the
 per-category counts, and index status: fetched count, snapshot total, last
 warm time, warming flag, and error.
@@ -263,22 +270,29 @@ crashing on an unexpected shape.
 
 **Requirements.** `POST /api/x402/requirements` produces payment terms for an
 agent. The price defaults to `DEFAULT_HIRE_PRICE_USD = 2` and accepts an
-`amountUsd` override. The asset is USDC on BSC,
-`0x8AC76a51cc950d9822d68b83fe1ad97b32cd580d`, 18 decimals. The network is
-`eip155:56`, the scheme is `exact`, and `maxTimeoutSeconds` is 300. The
+`amountUsd` override. The asset is chosen per chain by
+`settlementAsset(chainId)` in `src/lib/types.ts`, so it follows the chain being
+hired on rather than being fixed: sUSD `0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53`
+on chain 97, and U `0xcE24439F2D9C6a2289F741120FE202248B666666` on chain 56, both
+18 decimals. The network is `eip155:` with the chain being hired on, the scheme is
+`exact`, and `maxTimeoutSeconds` is 300. The
 `payTo` is the agent's receiving wallet or owner address. The requirements
 name the resource being hired: the agent detail URL and a description.
 
 **Signing.** The buyer signs an EIP-3009 `TransferWithAuthorization` message.
-The EIP-712 domain is `{ name: "USD Coin", version: "2", chainId: 56,
-verifyingContract: <USDC, checksummed> }`. The message fields are `from`, `to`,
+The EIP-712 domain takes its name and version from the same settlement asset:
+`{ name: "Agent Souk Test USD", version: "1", chainId: 97,
+verifyingContract: <sUSD, checksummed> }` on chain 97, and
+`{ name: "United Stables", version: "1" }` on chain 56. The message fields are `from`, `to`,
 `value`, `validAfter`, `validBefore`, and `nonce`. Addresses are normalized
 through `getAddress` before the domain is built and before verification,
 because the registry stores token addresses lowercased and viem rejects a
 non-checksummed address in typed data encoding.
 
-**Settlement.** `POST /api/x402/settle` dispatches on `FACILITATOR_MODE`. The
-default is `sandbox`, verified by `settleSandbox` in `src/lib/facilitator.ts`:
+**Settlement.** `POST /api/x402/settle` dispatches on `FACILITATOR_MODE`, which
+is `sandbox` outside production and refused when unset in production. Sandbox is
+verified by `settleSandbox` in `src/lib/facilitator.ts`, which is also where the
+production relay, the nonce table and the per-payment cap live:
 
 1. Version check. The payload must carry `x402Version = 2`.
 2. Term match. The signed `accepted.amount` and `accepted.payTo` must equal the
@@ -288,8 +302,13 @@ default is `sandbox`, verified by `settleSandbox` in `src/lib/facilitator.ts`:
    checks the signature against `from`.
 5. Receipt. A receipt records the payment id, the settlement transaction hash,
    the agent, the client, the payTo, the amount, and a session with a spend cap
-   of 5 USD expiring in 24 hours. The session is capped, expiring and revocable:
-   the owner can revoke it, which cancels the authorization on chain, and the
+   of 5 USD expiring in 24 hours. The expiry is enforced by the delivery path.
+   The cap is a recorded limit and nothing accumulates against it, so it bounds
+   one payment rather than a session total. A revoke is recorded in the API store
+   and also sends `cancelAuthorization` for the authorization on chain, which is
+   best-effort and reported separately, because it needs the relay key. Each hire
+   is one EIP-3009 authorization for a fixed amount, broadcast once, and its
+   nonce cannot be replayed, so no standing permission to draw again exists. The
    active hires, their tasks and their jobs are read on `/ongoing`. Receipts are
    persisted through `src/lib/receipts-store.ts` into postgres when
    `RECEIPTS_STORE=postgres` and `DATABASE_URL` are set, and fall back to an
@@ -297,9 +316,10 @@ default is `sandbox`, verified by `settleSandbox` in `src/lib/facilitator.ts`:
 
 The transaction hash on a receipt is whatever the active mode produced. In
 `sandbox` nothing is broadcast, so the hash is synthetic: a fixed prefix followed
-by a hex encoding of the payment id, reproducible by anyone and useful for a
-demo, but not evidence of a payment. In `prod` the relay signs and broadcasts the
-authorization itself and the receipt carries the real chain transaction hash.
+by a hex encoding of the payment id, reproducible by anyone, but not evidence of
+a payment. In `prod` the relay broadcasts the buyer's signed
+authorization itself and pays the gas, and the receipt carries the real chain
+transaction hash.
 The quest runs in `prod`, so the hashes in the tracking submission are chain
 transactions.
 
@@ -355,10 +375,11 @@ nonce. Roles are owner for membership changes and viewer for the reads, and no
 secret is ever returned, only the relay address and its balance.
 
 The API routes are the data and payment surface, and the tools an agent reads
-are served over MCP and A2A as well. The test artifact is
+are served over MCP at `POST /api/mcp` and over WebMCP in the browser. The A2A
+routes under `/api/house-agent` and `/api/reference` are the first-party agents
+the marketplace serves, not a tool surface it offers. The test artifact is
 `scripts/settle-test.mjs`, which signs a real EIP-3009 signature with a
-throwaway wallet, settles it against a running server, and checks the receipt;
-a forged signature is also exercised and rejected.
+throwaway wallet, settles it against a running server, and checks the receipt.
 
 ### The Next Stage
 
@@ -387,7 +408,7 @@ What is provable: every listing is a real ERC-8004 registration on BSC,
 readable through 8004scan, so any score, feedback, or hire count on screen is
 checkable on chain, and the snapshot is a reproducible artifact regenerated
 from the same public data. Settlement is a real EIP-3009 signature, and in the
-mode the quest runs in the relay signs and broadcasts it, so a settled hire
+mode the quest runs in the relay broadcasts it and pays the gas, so a settled hire
 carries a real chain transaction that anyone can check independently on the
 testnet explorer. Seven such settlements are itemised in the tracking
 submission, covering all four agent categories, a non-default amount, and a
@@ -401,8 +422,8 @@ ERC-8004 reputation registry for the chain, tagged so 8004scan can score it,
 and the registry refuses feedback from the agent's own owner. An owner's
 listing edit is a signed row rather than a registry update, so it verifies
 against the owner's key but is not what the registry serves.
-b402 mode is wired and unexercised, because it needs credentials the project does
-not have. The receipt ledger falls back to an in-process map when postgres is not
-configured, so an unconfigured deployment loses receipts on restart. These limits
-are stated in the docs rather than hidden, and the demo never claims more than
-the settlement proved.
+The b402 mode is wired and unexercised, because it needs credentials the project
+does not have. The receipt ledger falls back to an in-process map when postgres is
+not configured, so an unconfigured deployment loses receipts on restart. These
+limits are stated in the docs rather than hidden, and nothing the site claims
+outruns what the settlement proved.
