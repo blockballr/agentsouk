@@ -47,24 +47,61 @@ describe("a rung fill", () => {
     // divide the order by the rung again, which is the unit error itself: it produced a
     // floor 600x too small, one no market move could breach, and it passed anyway.
     const f = fill();
-    const netUsd = 100 * (1 - FEE / 10_000);
     const slippageFactor = 1 - 50 / 10_000;
 
-    // strictly under the net value of the order, in quote
-    expect(f.amountOutMinimum).toBeLessThan(netUsd);
-    // the exact figure the arithmetic implies, so a regression is visible rather than vague
-    expect(f.amountOutMinimum).toBeCloseTo(netUsd * slippageFactor, 4);
-    // and demonstrably not the base-unit equivalent the old code returned
-    expect(f.amountOutMinimum).toBeGreaterThan(netUsd / 600);
+    // The fee is charged once, in amountIn. So the quote received is the full order, and the
+    // floor is the order less the slippage the caller allows. NOT netUsd: applying the fee a
+    // second time here is what the previous revision did, and its expectation was derived
+    // from the same wrong model, so the two agreed with each other and both were wrong.
+    expect(f.amountOutMinimum).toBeCloseTo(100 * slippageFactor, 6);
+
+    // strictly under the full order, since slippage is always positive here
+    expect(f.amountOutMinimum).toBeLessThan(100);
+    // and demonstrably not the base-unit figure the original code returned
+    expect(f.amountOutMinimum).toBeGreaterThan(100 / 600);
+  });
+
+  it("charges the pool fee exactly once, and in amountIn", () => {
+    // Both directions must agree that the fee is charged once. A sell grosses amountIn up by
+    // the fee and so receives the full order back; a buy spends quote and receives base. If
+    // either side charged the fee twice the two floors would disagree by feeFactor.
+    const feeFactor = 1 - FEE / 10_000;
+    const slippageFactor = 1 - 50 / 10_000;
+    const sell = fill();
+    const buy = fill({ side: "buy" });
+
+    // sell: amountIn is grossed up, and the quote received is exactly the order
+    expect(sell.amountIn).toBeCloseTo((100 / 600) / feeFactor, 6);
+    expect(sell.amountOutMinimum).toBeCloseTo(100 * slippageFactor, 6);
+
+    // buy: quote in is grossed up, base out is the order at the rung
+    expect(buy.amountIn).toBeCloseTo(100 / feeFactor, 6);
+    expect(buy.amountOutMinimum).toBeCloseTo((100 / 600) * slippageFactor, 6);
+
+    // A SYMMETRIC error would satisfy this cross-check at any single fee, because the
+    // feeFactor cancels from both sides identically. Two different fees is what makes it bite:
+    // it holds identically, so it fails if either side stops charging the fee exactly once.
+    for (const fee of [25, 500, 3000]) {
+      const f = 1 - fee / 10_000
+      const s = 1 - 50 / 10_000
+      const sellFee = fill({ feeBps: fee })
+      const buyFee = fill({ side: 'buy', feeBps: fee })
+      expect(sellFee.amountOutMinimum / 600).toBeCloseTo(buyFee.amountOutMinimum, 6)
+      // and each is the order, converted, less the slippage
+      expect(sellFee.amountOutMinimum).toBeCloseTo(100 * s, 4)
+      expect(buyFee.amountOutMinimum).toBeCloseTo((100 / 600) * s, 4)
+      // the gross-up is the only place feeFactor appears on the input side
+      expect(sellFee.amountIn).toBeCloseTo((100 / 600) / f, 6)
+      expect(buyFee.amountIn).toBeCloseTo(100 / f, 4)
+    }
   });
 
   it("states the floor in base units when buying, because a buy receives base", () => {
     // The mirror of the sell case, which is the half the original code also got wrong:
     // amountIn for a buy is quote and must not be divided by the rung.
     const b = fill({ side: "buy" });
-    const netUsd = 100 * (1 - FEE / 10_000);
     expect(b.amountIn).toBeGreaterThan(99);
-    expect(b.amountOutMinimum).toBeLessThan(netUsd / 600);
+    expect(b.amountOutMinimum).toBeLessThan(100 / 600);
     expect(b.amountOutMinimum).toBeCloseTo((100 / 600) * (1 - 50 / 10_000), 6);
   });
 

@@ -88,19 +88,21 @@ export function buildRungFill(input: RungFillInput): RungFill {
   //
   //   sell  spend base, receive quote. amountIn is base, amountOutMinimum is quote.
   //         base worth orderSizeUsd is orderSizeUsd / rungUsd, grossed up for the fee
-  //         because the fee comes out of the input. Received quote is that base back at
-  //         the rung, so roughly orderSizeUsd, less the fee and the slippage allowed.
+  //         because the fee comes out of the input. A V3 exact input swap deducts that fee
+  //         from amountIn, so what comes back out is amountIn * feeFactor at the rung, which
+  //         cancels the gross up exactly. The fee is therefore charged ONCE, in amountIn, and
+  //         the received quote is orderSizeUsd, not orderSizeUsd * feeFactor. Charging it a
+  //         second time here understated the floor by feeFactor, which is the same direction
+  //         as the unit error this function was corrected for.
   //   buy   spend quote, receive base. amountIn is quote, amountOutMinimum is base.
   //         quote spent is orderSizeUsd. Base received is that quote at the rung, less
-  //         the fee and the slippage allowed.
+  //         the slippage allowed.
   let amountIn: number;
   let amountOutMinimum: number;
   if (input.side === "sell") {
     const baseSpent = orderSizeUsd / input.rungUsd;
     amountIn = baseSpent / feeFactor;
-    // base units become quote units at the rung price, so the multiplication is what the
-    // first version of this function was missing
-    const quoteReceived = baseSpent * input.rungUsd * feeFactor;
+    const quoteReceived = baseSpent * input.rungUsd;
     amountOutMinimum = quoteReceived * slippageFactor;
   } else {
     amountIn = orderSizeUsd / feeFactor;

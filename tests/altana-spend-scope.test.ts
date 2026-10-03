@@ -1,23 +1,36 @@
-// Does an Altana spend permission bound a direct token transfer, a contract-mediated swap,
-// or neither? This is the question the mandate test could not answer, because both its
-// permitted and its over-cap swap reverted with the same error and the revert could not be
-// attributed to the cap.
+// The Altana mandate, proved on chain 97 rather than described in a comment.
 //
-// Two calls, same live session, same cap. The only difference is who moves the token:
+// A session key is only worth having if it can be shown to stop an over-spend AND a bad
+// fill. Those are different failures and both are asserted here against the live account:
 //
-//   transfer(to, amount)          the account moves WBNB itself
-//   router.exactInputSingle(...)  the account calls a contract that moves WBNB
+//   transfer under cap   SUCCEEDED, and the sink balance demonstrably rose
+//   transfer over cap    ExceededSpendLimit
+//   swap under cap       SUCCEEDED
+//   swap over cap        ExceededSpendLimit
+//   floor from the rung  SUCCEEDED
+//   floor x100           reverted "Too little received"
 //
-// Reading the outcomes together is what settles it:
-//   transfer under cap succeeds, transfer over cap reverts ExceedsCapacity
-//     -> the cap is real, and it does not reach a contract-mediated swap
-//   both transfers revert NoSpendPermissions
-//     -> the granted permission is not being persisted in the form the account expects
+// The cap bounds how much leaves the account. The floor bounds what it pays for what leaves,
+// and it comes from the rung the plan published rather than from a live quote. A cap alone
+// would stop a drain and still leave a sandwich open.
+//
+// ExceededSpendLimit and NoSpendPermissions are different failures and the difference is the
+// whole point: the first means a spend permission matched and the limit was blown, the second
+// means none matched at all. ExceedsCapacity is neither, it is solady's EnumerableSet capacity
+// error and has nothing to do with spend limits.
 //
 // Nothing here touches mainnet. Every address and pool is chain 97.
 
-import { describe, expect, it, beforeAll } from 'vitest'
-import { createPublicClient, http, parseEther, parseUnits, encodeFunctionData, toFunctionSelector } from 'viem'
+import { describe, expect, it, afterAll, beforeAll } from 'vitest'
+import {
+  createPublicClient,
+  encodeFunctionData,
+  formatEther,
+  http,
+  parseEther,
+  parseUnits,
+  toFunctionSelector,
+} from 'viem'
 import { bscTestnet } from 'viem/chains'
 import { BNB_TESTNET, createClient, signerFromPrivateKey, type Call } from '@altananetwork/sdk'
 import { buildRungFill } from '@/lib/grid-fill'
@@ -35,20 +48,21 @@ const SINK = '0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4' as const
 const CHAIN_ID = 97
 const FEE = 500
 
-// The cap is a ROLLING daily window: it accumulates across every run in the day rather than
-// resetting per transaction, so a run spends UNDER twice, once for the transfer and once for
-// the swap. A cap of 0.01 exhausted after five runs, which made the under-cap case report
-// ExceededSpendLimit for having spent an earlier run's budget. 0.1 leaves room for many runs.
+// The window is keyed per account, session key, token and period, and it accumulates across
+// every run rather than resetting per transaction, so a long lived key burns its budget once
+// and stays spent for the whole period.
 //
-// OVER must sit inside the account's balance. I assumed the cap was validated before
-// execution so it need not be, and the relay refused it at prepare time with -32602
-// "please assign". So the account holds ~0.03 WBNB, which bounds OVER.
+// Two things that look like fixes are not, and both were tried here before this was measured:
+//   raising the cap       setSpendLimit overwrites limit and PRESERVES spent
+//   shortening the period setSpendLimit only ADDS a period, and the account reverts if ANY
+//                        registered period is over, so the exhausted row stays fatal
+// Revoke does clear it, which is why a run revokes before granting and again after.
 //
-// The period is an hour, not a day, and that is deliberate. A day window accumulates across
-// every run in the day rather than resetting per transaction, so repeated runs exhaust it and
-// the under-cap case then reports ExceededSpendLimit for having spent an earlier run's
-// budget. An hourly window rolls often enough that the test is repeatable, and it exercises
-// exactly the same enforcement.
+// OVER must sit inside the account's balance: the relay refuses it at prepare time with
+// -32602 "please assign", so the balance bounds OVER. The account holds about 0.03 WBNB.
+//
+// Each swap also charges the approve alongside the transfer, so a swap costs twice UNDER
+// against the cap, and the relay fee comes out of the native cap.
 const CAP_PERIOD = 'hour' as const
 const CAP_WBNB = parseEther('0.01')
 // Native cap exists to pay relay fees. It is not the trading cap.
@@ -138,13 +152,18 @@ const swapCall = (recipient: `0x${string}`, amountIn: bigint, minOut: bigint, de
  *  is how a wrong floor and a right one both read as merely "reverted". */
 function decodeErrorString(hex: string): string | null {
   const body = hex.replace(/^0x/, '')
+  // Error(string) is selector, offset, length, data. With the 0x stripped that is
+  // selector 0-8, offset 8-72, length 72-136, data from 136. Reading the length two bytes
+  // late put a fragment of the offset word at the front of the message, which the exact
+  // assertion caught as a stray control character.
   if (!body.startsWith('08c379a0')) return null
   try {
-    const len = parseInt(body.slice(10, 74), 16) * 2
-    const bytes = body.slice(74, 74 + len)
+    const len = parseInt(body.slice(72, 136), 16)
+    if (!Number.isFinite(len) || len <= 0) return null
+    const dataHex = body.slice(136, 136 + len * 2)
     let out = ''
-    for (let i = 0; i < bytes.length; i += 2) {
-      out += String.fromCharCode(parseInt(bytes.slice(i, i + 2), 16))
+    for (let i = 0; i < dataHex.length; i += 2) {
+      out += String.fromCharCode(parseInt(dataHex.slice(i, i + 2), 16))
     }
     return out.replace(/\0/g, '').trim()
   } catch {
@@ -191,6 +210,7 @@ describe.skipIf(!configured)('what an Altana spend permission actually bounds', 
   let wallet: Awaited<ReturnType<typeof client.createWallet>>
   let session: Awaited<ReturnType<typeof client.grantSession>>
   const outcomes: string[] = []
+  let cleanupFailed: string | null = null
 
   async function balanceOf(token: `0x${string}`, who: string) {
     return publicClient.readContract({
@@ -270,15 +290,14 @@ describe.skipIf(!configured)('what an Altana spend permission actually bounds', 
     // Record the starting position so a transfer can be shown to have moved the balance
     // rather than merely not throwing.
     const start = await balanceOf(WBNB, SINK)
-    let sinkStart = start
-    try {
+        try {
       await client.execute({ session, calls: [transferCall(SINK, UNDER)], chainId: CHAIN_ID })
       outcomes.push('transfer under cap: SUCCEEDED')
     } catch (e) {
       outcomes.push(`transfer under cap: ${classify(e)}`)
     }
-    sinkStart = await balanceOf(WBNB, SINK)
-    if (sinkStart > start) outcomes.push(`  sink balance rose by ${UNDER} wei units`)
+    const sinkAfter = await balanceOf(WBNB, SINK)
+    if (sinkAfter > start) outcomes.push(`  sink balance rose by ${UNDER} wei units`)
 
     try {
       await client.execute({ session, calls: [transferCall(SINK, OVER)], chainId: CHAIN_ID })
@@ -292,7 +311,7 @@ describe.skipIf(!configured)('what an Altana spend permission actually bounds', 
     try {
       await client.execute({
         session,
-        calls: [approveRouter(UNDER), swapCall(wallet.address, UNDER, 1n, deadline)],
+        calls: [approveRouter(UNDER), swapCall(wallet.address, UNDER, 1n, deadline), approveRouter(0n)],
         chainId: CHAIN_ID,
       })
       outcomes.push('swap under cap: SUCCEEDED')
@@ -303,7 +322,7 @@ describe.skipIf(!configured)('what an Altana spend permission actually bounds', 
     try {
       await client.execute({
         session,
-        calls: [approveRouter(OVER), swapCall(wallet.address, OVER, 1n, deadline)],
+        calls: [approveRouter(OVER), swapCall(wallet.address, OVER, 1n, deadline), approveRouter(0n)],
         chainId: CHAIN_ID,
       })
       outcomes.push('swap over cap: SUCCEEDED')
@@ -335,7 +354,7 @@ describe.skipIf(!configured)('what an Altana spend permission actually bounds', 
   it('moved the balance on the permitted transfer, rather than merely not throwing', () => {
     // Without this, a swap that reverts for an unrelated reason and a transfer that no-ops
     // would both read as SUCCEEDED.
-    expect(outcomes).toContain('  sink balance rose by 200000000000000 wei units')
+    expect(outcomes).toContain(`  sink balance rose by ${UNDER} wei units`)
   })
 
   it('granted exactly the permissions asked for', () => {
@@ -401,7 +420,7 @@ describe.skipIf(!configured)('what an Altana spend permission actually bounds', 
 
     await client.execute({
       session,
-      calls: [approveRouter(UNDER), swapCall(wallet.address, UNDER, rungFloor, deadline)],
+      calls: [approveRouter(UNDER), swapCall(wallet.address, UNDER, rungFloor, deadline), approveRouter(0n)],
       chainId: CHAIN_ID,
     })
     outcomes.push(`floor from the rung (${fill.amountOutMinimum.toFixed(6)} USDT): SUCCEEDED`)
@@ -410,7 +429,7 @@ describe.skipIf(!configured)('what an Altana spend permission actually bounds', 
     try {
       await client.execute({
         session,
-        calls: [approveRouter(UNDER), swapCall(wallet.address, UNDER, unreachable, deadline)],
+        calls: [approveRouter(UNDER), swapCall(wallet.address, UNDER, unreachable, deadline), approveRouter(0n)],
         chainId: CHAIN_ID,
       })
     } catch (e) {
@@ -425,13 +444,36 @@ describe.skipIf(!configured)('what an Altana spend permission actually bounds', 
     // account spend error. If it ever reads ExceededSpendLimit the floor was never reached.
     expect(refused).not.toMatch(/ExceededSpendLimit|NoSpendPermissions/)
     // and it should say why
-    expect(refused).toMatch(/reverted|Too little|TooLittle/i)
+    expect(refused).toBe('reverted Too little received')
   }, 600_000)
+
+  // Leaves nothing live behind. Without this the run finishes with a session key that still
+  // holds a native cap and call scope to the router, valid for up to an hour, on a funded
+  // account. The revoke at the start of the next run is a reset, not a cleanup, so the last
+  // run of the day would otherwise leave the mandate standing.
+  afterAll(async () => {
+    const sessionAddress = privateKeyToAccount(sessionKey as `0x${string}`).address
+    // Not swallowed. A revoke that fails means a session key is still live on a funded
+    // account, which is the exact thing this hook exists to prevent, so hiding it behind an
+    // empty catch would make the test green while the mandate stands.
+    try {
+      await client.revokeSession({ wallet, signer: adminSigner, session: sessionAddress, chainId: CHAIN_ID })
+      outcomes.push('revoked the session at the end of the run')
+    } catch (e) {
+      cleanupFailed = classify(e)
+    }
+  })
+  it('leaves no live mandate behind', () => {
+    // Asserted, not hoped for. A revoke that fails leaves a session key holding a native cap
+    // and call scope to the router on a funded account, so a cleanup failure has to fail the
+    // run rather than be logged and forgotten.
+    expect(cleanupFailed).toBeNull()
+  })
 
   it('prints the outcomes, so a failure on chain says what actually happened', () => {
     console.log('\n--- the Altana mandate on chain 97 ---')
     for (const line of outcomes) console.log(`  ${line}`)
-    console.log(`  cap ${CAP_WBNB} WBNB per day, native cap ${NATIVE_CAP} for relay fees`)
+    console.log(`  cap ${formatEther(CAP_WBNB)} WBNB per ${CAP_PERIOD}, native cap ${formatEther(NATIVE_CAP)} for relay fees`)
     console.log('--- end ---\n')
     expect(outcomes.length).toBeGreaterThanOrEqual(5)
   })
