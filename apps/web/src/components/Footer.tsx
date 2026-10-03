@@ -3,7 +3,10 @@ import { Wordmark } from './Wordmark'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 
-type FooterLink = { to: string; label: string; external?: boolean }
+// No external flag. The columns that used to carry one were re-pointed at internal routes
+// when the about link was dropped, which left the anchor branch unreachable, so it was
+// removed rather than left as a second way to render a link nobody uses.
+type FooterLink = { to: string; label: string }
 
 const columns: { heading: string; links: FooterLink[] }[] = [
   {
@@ -80,23 +83,12 @@ export function Footer() {
             <ul className="mt-4 space-y-1">
               {col.links.map((l) => (
                 <li key={l.label}>
-                  {l.external ? (
-                    <a
-                      href={l.to}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block py-2 text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
-                    >
-                      {l.label}
-                    </a>
-                  ) : (
-                    <Link
-                      to={l.to}
-                      className="inline-block py-2 text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
-                    >
-                      {l.label}
-                    </Link>
-                  )}
+                  <Link
+                    to={l.to}
+                    className="inline-block py-2 text-[18px] font-extralight leading-tight text-bone-white underline decoration-bone-white underline-offset-4 transition hover:decoration-highlighter-green focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bone-white"
+                  >
+                    {l.label}
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -19,8 +19,6 @@ import {
   explorerTxBase,
   REGISTRY_BY_CHAIN,
   registryFor,
-  SETTLEMENT_ASSET_BY_CHAIN,
-  settlementAssetFor,
 } from '../lib/contracts'
 import { getAgentDetail } from '../lib/api'
 import { RegisterWizard, type WizardStep } from '../components/RegisterWizard'
@@ -99,7 +97,7 @@ export function ListAgentPage() {
         Now get hired.
       </h1>
       <p className="mt-8 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-        Anyone can list, and our checks decide what buyers see. You build the agent in your own tools, BNB Agent Studio registers it, and Agent Souk is where it gets checked and sold. Three steps: build it, meet the checklist, get listed.
+        Anyone can list, and our checks decide what buyers see. You build the agent in your own tools, BNB Agent Studio registers it, and Agent Souk is where it gets checked and sold. Four steps: register it, meet the checklist, look up a registration, then request a review.
       </p>
       <p className="mt-6 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
         You keep your agent, your keys and your money. A buyer signs once, the payment goes
@@ -188,7 +186,7 @@ export function ListAgentPage() {
           )}
         </div>
       </div>
-      <ChecklistSection chainId={chain} />
+      <ChecklistSection />
       <LookupSection chainId={chain} onFound={setFoundTokenId} />
       <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
         </>
@@ -200,24 +198,24 @@ export function ListAgentPage() {
 // what the quest guide says at each point of the listing wizard
 const LISTING_GUIDE: Record<WizardStep, { count: string; text: string }> = {
   form: {
-    count: 'Step 1 of 3',
+    count: 'Registration 1 of 3',
     text: 'List one agent of your own. Build it with Agent Studio as shown below, or register an agent you already run with the form on this page.',
   },
   prepared: {
-    count: 'Step 2 of 3',
+    count: 'Registration 2 of 3',
     text: 'Your registration is ready. Sign the transaction in your wallet: it registers the agent with you as its owner.',
   },
-  signing: { count: 'Step 2 of 3', text: 'Waiting for your wallet to sign the registration.' },
-  confirming: { count: 'Step 2 of 3', text: 'Waiting for the transaction to confirm on chain.' },
+  signing: { count: 'Registration 2 of 3', text: 'Waiting for your wallet to sign the registration.' },
+  confirming: { count: 'Registration 2 of 3', text: 'Waiting for the transaction to confirm on chain.' },
   pending: {
-    count: 'Step 3 of 3',
+    count: 'Registration 3 of 3',
     text: 'The transaction is sent and still confirming. Check it again with the button in the wizard; it is not sent twice.',
   },
   listed: {
     count: 'Done',
     text: 'Your agent is registered. Your passport stamps this step once the agent is on the marketplace shelf.',
   },
-  error: { count: 'Step 2 of 3', text: 'The wizard says below what happened and what to do next.' },
+  error: { count: 'Registration 2 of 3', text: 'The wizard says below what happened and what to do next.' },
 }
 
 // Matches GAS_FLOOR_WEI in src/app/api/tokens/mint/route.ts: the sponsored mint
@@ -467,7 +465,6 @@ function CreateSection({ chainId }: { chainId: number | null }) {
   // the addresses we publish are the ones for the chain this deployment serves
   const chainName = chainId === null ? null : chainId === 97 ? 'BSC testnet' : 'BSC'
   const registryAddress = chainId === null ? null : registryFor(chainId) ?? REGISTRY_BY_CHAIN[56]
-  const settlementAsset = chainId === null ? null : settlementAssetFor(chainId) ?? SETTLEMENT_ASSET_BY_CHAIN[56]
   return (
     <div className="mt-16">
       <div className="flex flex-wrap items-baseline justify-between gap-4 border-t hairline border-slate-verdant/40 pt-8">
@@ -564,7 +561,9 @@ function CreateSection({ chainId }: { chainId: number | null }) {
   )
 }
 
-function ChecklistSection({ chainId }: { chainId: number | null }) {
+// Takes no chainId. It never used one, and the prop was threaded through from a parent
+// that had it only to hand it down.
+function ChecklistSection() {
   const [open, setOpen] = useState(false)
   return (
     <div className="mt-16">
