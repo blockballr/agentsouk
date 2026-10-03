@@ -260,14 +260,6 @@ export function HomePage() {
                 Read the Advantage Report
               </PrimaryButton>
             </Link>
-            <a
-              href="https://github.com/blockballr/agentsouk"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[18px] text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
-            >
-              Source on GitHub
-            </a>
           </div>
           <div className="mt-8 grid gap-px overflow-hidden rounded-[10px] border hairline border-slate-verdant/40 bg-slate-verdant/40 sm:grid-cols-2">
             {settlementEvidence.map((e) => {
