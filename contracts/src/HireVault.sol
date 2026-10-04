@@ -282,9 +282,13 @@ contract HireVault {
     //
     // observe answers with the cumulative tick at each timestamp asked for, so the
     // difference between now and TWAP_WINDOW ago is that many seconds of ticks. Dividing by
-    // the window gives the average tick, and 1.0001^tick is the price. On a pool with no
-    // liquidity across the window the cumulative does not advance, which is a refusal
-    // rather than a price of zero.
+    // the window gives the average tick, and 1.0001^tick is the price.
+    //
+    // The average tick is negative on any pool priced below one, which is most of them: a
+    // USDT/WBNB pool has token0 as USDT, so one WBNB is a fraction of a USDT and the tick
+    // sits around -22800. Only a cumulative that has not advanced at all means a pool with
+    // no liquidity across the window, and that is the one refusal here. A negative tick is
+    // a price below one, which _priceX96 inverts rather than wrapping.
     function _twapPriceX96(address pool) internal view returns (uint160) {
         uint32[] memory ago = new uint32[](2);
         ago[0] = TWAP_WINDOW;
@@ -292,7 +296,7 @@ contract HireVault {
         (int56[] memory ticks,) = IV3Pool(pool).observe(ago);
         // ticks[0] is the older cumulative, so the difference runs forwards
         int256 delta = int256(ticks[1]) - int256(ticks[0]);
-        if (delta <= 0) revert NoPool();
+        if (delta == 0) revert NoPool();
         int256 averageTick = delta / int256(uint256(TWAP_WINDOW));
         return uint160(_priceX96(averageTick));
     }
