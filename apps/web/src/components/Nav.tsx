@@ -6,7 +6,7 @@ import { QuickSearch } from './QuickSearch'
 import { cartCount, subscribe } from '../lib/cart'
 
 const links = [
-  { to: '/', label: 'Marketplace' },
+  { to: '/agents', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
   { to: '/ongoing', label: 'Ongoing' },
   { to: '/list', label: 'List agent' },
