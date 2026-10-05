@@ -424,7 +424,36 @@ describe("MCP initialize and tools/list", () => {
       annotations?: { readOnlyHint?: boolean };
     }[];
 
-    expect(tools).toHaveLength(1);
+    // two tools now: the planner, and the bounded fill for one rung. The fill is not
+    // read-only, so it is declared as such and takes a hire before it will answer.
+    expect(tools).toHaveLength(2);
+    expect(tools.map((t) => t.name).sort()).toEqual(["fill_rung", "plan_grid"]);
+
+    const plan = tools.find((t) => t.name === "plan_grid");
+    const fill = tools.find((t) => t.name === "fill_rung");
+    expect(fill).toBeDefined();
+    // the planner still reads nothing, and the fill declares that it does not
+    expect(plan?.annotations?.readOnlyHint).toBe(true);
+    expect(fill?.annotations?.readOnlyHint).toBe(false);
+    // and the fill says which authority it needs, in the schema rather than only in prose
+    expect(Object.keys(fill?.inputSchema.properties ?? {}).sort()).toEqual([
+      "baseToken",
+      "feeBps",
+      "maxSlippageBps",
+      "orderSizeUsd",
+      "paymentId",
+      "quoteToken",
+      "rangeLowerUsd",
+      "rangeUpperUsd",
+      "rungUsd",
+      "side",
+    ]);
+    // the range bounds where a rung may sit and is optional, so a plan in pair mode
+    // is not blocked by a range it never declared
+    expect(fill?.inputSchema.required).not.toContain("rangeLowerUsd");
+    expect(fill?.inputSchema.required).not.toContain("rangeUpperUsd");
+    expect(fill?.inputSchema.required).toContain("paymentId");
+
     const tool = tools[0];
     expect(tool.name).toBe("plan_grid");
     expect(tool.description.length).toBeGreaterThan(40);
