@@ -23,6 +23,8 @@ export interface RungRequest {
   maxSlippageBps: number;
   baseToken: string;
   quoteToken: string;
+  /** the range the plan declared, when it came from one */
+  rangeUsd?: { lowerUsd: number; upperUsd: number };
 }
 
 export interface RungAuthorisation {
@@ -35,6 +37,36 @@ export interface RungAuthorisation {
 
 function isPositive(value: number): boolean {
   return Number.isFinite(value) && value > 0;
+}
+
+/**
+ * A rung is checked against the range the plan declared, not against the market.
+ *
+ * This replaces a spot band, which refused exactly the rungs a dollar cost averaging
+ * ladder waits on: a wide ladder keeps most of its rungs away from the current price and
+ * expects price to drift to them over weeks. Comparing the rung against the plan catches the
+ * case the band was for, a rung from a stale plan or the wrong pair, because such a rung
+ * falls outside the range the caller published.
+ */
+function checkRange(
+  rungUsd: number,
+  range: { lowerUsd: number; upperUsd: number } | undefined,
+): { ok: boolean; reason?: string } {
+  if (!range) return { ok: true };
+  const { lowerUsd, upperUsd } = range;
+  if (!isPositive(lowerUsd) || !isPositive(upperUsd)) {
+    return { ok: false, reason: "the declared range is not two positive prices" };
+  }
+  if (upperUsd <= lowerUsd) {
+    return { ok: false, reason: "the declared range does not rise" };
+  }
+  if (rungUsd < lowerUsd || rungUsd > upperUsd) {
+    return {
+      ok: false,
+      reason: `rung at ${rungUsd} USD is outside the ${lowerUsd} to ${upperUsd} USD range the plan declared`,
+    };
+  }
+  return { ok: true };
 }
 
 export function authoriseRungFill(request: RungRequest): RungAuthorisation {
@@ -64,6 +96,9 @@ export function authoriseRungFill(request: RungRequest): RungAuthorisation {
   if (!isPositive(rungUsd)) {
     return { ok: false, reason: "rungUsd must be positive" };
   }
+
+  const inRange = checkRange(rungUsd, request.rangeUsd);
+  if (!inRange.ok) return { ok: false, reason: inRange.reason };
 
 
   try {

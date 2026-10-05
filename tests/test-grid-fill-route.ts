@@ -167,6 +167,39 @@ describe("fill_rung answers when the hire authorises it", () => {
     expect(body.result?.structuredContent).toMatchObject({ refused: true });
   });
 
+  it("refuses a rung outside the range the caller declared", async () => {
+    receipts.getPaymentDurable.mockResolvedValue(receipt());
+    const body = await fill({
+      ...RUNG,
+      paymentId: "pay_1",
+      rungUsd: 1600,
+      rangeLowerUsd: 500,
+      rangeUpperUsd: 1500,
+    });
+    expect(body.result?.structuredContent).toMatchObject({
+      refused: true,
+      reason: expect.stringContaining("outside"),
+    });
+  });
+
+  it("admits a rung inside the declared range", async () => {
+    receipts.getPaymentDurable.mockResolvedValue(receipt());
+    const body = await fill({
+      ...RUNG,
+      paymentId: "pay_1",
+      rungUsd: 770,
+      rangeLowerUsd: 500,
+      rangeUpperUsd: 1500,
+    });
+    expect(body.result?.structuredContent).toMatchObject({ authorised: true });
+  });
+
+  it("ignores a half sent range rather than refusing on one bound", async () => {
+    receipts.getPaymentDurable.mockResolvedValue(receipt());
+    const body = await fill({ ...RUNG, paymentId: "pay_1", rangeLowerUsd: 500 });
+    expect(body.result?.structuredContent).toMatchObject({ authorised: true });
+  });
+
   it("takes the cap from the session rather than from anything the caller sends", async () => {
     receipts.getPaymentDurable.mockResolvedValue(receipt({ session: { spendCapUsd: 10, expiresAt: "x" } }));
     // a caller claiming a bigger cap in the arguments changes nothing

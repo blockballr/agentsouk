@@ -443,9 +443,15 @@ describe("MCP initialize and tools/list", () => {
       "orderSizeUsd",
       "paymentId",
       "quoteToken",
+      "rangeLowerUsd",
+      "rangeUpperUsd",
       "rungUsd",
       "side",
     ]);
+    // the range bounds where a rung may sit and is optional, so a plan in pair mode
+    // is not blocked by a range it never declared
+    expect(fill?.inputSchema.required).not.toContain("rangeLowerUsd");
+    expect(fill?.inputSchema.required).not.toContain("rangeUpperUsd");
     expect(fill?.inputSchema.required).toContain("paymentId");
 
     const tool = tools[0];

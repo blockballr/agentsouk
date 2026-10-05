@@ -156,6 +156,75 @@ describe("the floor comes from the rung, not from spot", () => {
   });
 });
 
+describe("a rung is checked against the plan's range, not the market", () => {
+  const RANGE = { lowerUsd: 500, upperUsd: 1500 };
+
+  it("admits a rung inside the range the caller published", () => {
+    for (const rungUsd of [500, 770, 1500]) {
+      expect(req({ rungUsd, rangeUsd: RANGE }).ok).toBe(true);
+    }
+  });
+
+  it("admits a rung far from any plausible current price, which is the DCA case", () => {
+    // a wide ladder keeps most of its rungs away from spot and waits for price to reach
+    // them, so a check against the live price would refuse exactly these
+    expect(req({ rungUsd: 350, rangeUsd: { lowerUsd: 300, upperUsd: 2000 } }).ok).toBe(true);
+  });
+
+  it("refuses a rung above the declared range, which is a stale or wrong plan", () => {
+    const r = req({ rungUsd: 1600, rangeUsd: RANGE });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain("outside the 500 to 1500");
+  });
+
+  it("refuses a rung below the declared range", () => {
+    const r = req({ rungUsd: 400, rangeUsd: RANGE });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain("outside");
+  });
+
+  it("names both ends of the range in the refusal, so a caller can see the plan", () => {
+    const r = req({ rungUsd: 1600, rangeUsd: RANGE });
+    expect(r.reason).toContain("500");
+    expect(r.reason).toContain("1500");
+    expect(r.reason).toContain("1600");
+  });
+
+  it("leaves the rung alone when no range was declared", () => {
+    // a caller that plans in pair mode has no fixed range, and must not be blocked by one
+    expect(req({ rungUsd: 9999 }).ok).toBe(true);
+    expect(req({ rungUsd: 0.01 }).ok).toBe(true);
+  });
+
+  it("refuses a range that is not two positive rising prices", () => {
+    expect(req({ rangeUsd: { lowerUsd: 0, upperUsd: 100 } }).ok).toBe(false);
+    expect(req({ rangeUsd: { lowerUsd: 100, upperUsd: 100 } }).ok).toBe(false);
+    expect(req({ rangeUsd: { lowerUsd: 200, upperUsd: 100 } }).ok).toBe(false);
+    expect(req({ rangeUsd: { lowerUsd: NaN, upperUsd: 100 } }).ok).toBe(false);
+  });
+
+  it("takes the floor from the rung and not from the range ends", () => {
+    // a range bounds where a rung may sit, it does not become the price the floor uses
+    const r = req({ rungUsd: 770, rangeUsd: RANGE });
+    expect(r.fill?.referenceUsd).toBe(770);
+    expect(r.fill?.amountOutMinimum).toBeCloseTo(100 * (1 - 50 / 10_000), 4);
+  });
+
+  it("still refuses an out of range rung when the hire can cover it", () => {
+    // the size stays inside the cap so the two rules do not compete for the same refusal
+    const r = req({ rungUsd: 1600, rangeUsd: RANGE, orderSizeUsd: 100 });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain("outside");
+  });
+
+  it("checks the cap before the range, so an oversized rung reports the cap", () => {
+    // both rules can refuse; the cap is the one the caller must fix first
+    const r = req({ rungUsd: 1600, rangeUsd: RANGE, orderSizeUsd: 500 });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain("caps the session");
+  });
+});
+
 describe("the cap bounds the whole ladder, not each rung", () => {
   it("sums the rungs", () => {
     expect(ladderBudgetUsd([10, 20, 30], 1000)).toBe(60);

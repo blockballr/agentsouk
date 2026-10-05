@@ -163,6 +163,18 @@ const TOOLS: GridAgentMcpTool[] = [
           type: "string",
           description: "Quote token address for the pair.",
         },
+        rangeLowerUsd: {
+          type: "number",
+          exclusiveMinimum: 0,
+          description:
+            "Optional lower price of the range this rung came from. With rangeUpperUsd it bounds where the rung may sit, which catches a rung from a stale plan or the wrong pair. Omit both when planning in pair mode, since the range is then derived from the pool.",
+        },
+        rangeUpperUsd: {
+          type: "number",
+          exclusiveMinimum: 0,
+          description:
+            "Optional upper price of the range this rung came from. Must be above rangeLowerUsd.",
+        },
       },
       required: ["paymentId", "side", "rungUsd", "orderSizeUsd", "feeBps", "maxSlippageBps", "baseToken", "quoteToken"],
       additionalProperties: false,
@@ -284,6 +296,9 @@ async function callFillRung(args: Record<string, unknown>): Promise<ToolText> {
     maxSlippageBps: asNumber(args.maxSlippageBps),
     baseToken: asString(args.baseToken) ?? "",
     quoteToken: asString(args.quoteToken) ?? "",
+    // passed only when the caller gave both ends, so a range of one number cannot half
+    // apply and refuse every rung on its own
+    rangeUsd: rangeBounds(args),
   });
 
   if (!result.ok || !result.fill) {
@@ -326,6 +341,15 @@ async function callFillRung(args: Record<string, unknown>): Promise<ToolText> {
     structuredContent: artifact,
     isError: false,
   };
+}
+
+// The plan's own range, when the caller sent both ends. One end alone is ignored, so a
+// half sent range cannot refuse a rung the caller believes is fine.
+function rangeBounds(args: Record<string, unknown>): { lowerUsd: number; upperUsd: number } | undefined {
+  const lower = asNumber(args.rangeLowerUsd);
+  const upper = asNumber(args.rangeUpperUsd);
+  if (!Number.isFinite(lower) || !Number.isFinite(upper)) return undefined;
+  return { lowerUsd: lower, upperUsd: upper };
 }
 
 function textAnswer(artifact: Record<string, unknown>, text: string): ToolText {
