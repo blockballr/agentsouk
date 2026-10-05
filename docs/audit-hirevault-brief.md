@@ -135,12 +135,32 @@ needs no privileged role:
   behind _call are the toll of refusing both non-standard returns and
   fake-positive booleans.
 
-Two engines did not run, stated rather than hidden: aderyn has no Windows
-prebuilt and its crate build fails in svm-rs on this toolchain, and mythril
-pins the ethereum package, which has no distribution for Python 3.14 here.
-The gap they would have covered, symbolic execution for ether-theft paths,
-does not bite a contract that holds no payable ether and sends only to the
-depositor.
+Two more engines ran the same file inside a WSL Ubuntu environment after the
+Windows passes, which is why the record below is four engines and not two.
+
+Aderyn 0.6.8 returned two highs and five lows. Its H-1 is the same mulDiv XOR
+that slither's incorrect-exp flagged, the second engine to want that caret to
+be an exponent, and the second to be answered by the algorithm's own docs. Its
+H-2 marks four state-after-external-call sites: the hire written after
+transferFrom in open, and the books updated after the router swap in trade.
+All four sit behind the nonReentrant lock, and trade's ordering is not a
+convenience: the books must follow what actually moved, so writing them first
+would be the real defect. The guard is the single line of defense on those
+paths, and attacking it is a review question, not a settled matter. The lows
+name TestUSD's ecrecover (out of this scope, nonce-guarded), literals in the
+bps arithmetic and the 1e18 scale factors, and the bare requires inside the
+mulDiv assembly, where there is nothing to say the assembly does not.
+
+Mythril 0.24.8, symbolic execution over the same file with the compiler pinned
+to 0.8.24 and a 240 second budget per path, completed with no issues detected.
+That silence means its detector families, ether theft, unchecked delegatecall,
+state-reachable integer underflow, delegatecall to caller input, found no
+reachable path in the budget; it is one more engine agreeing, not a proof of
+absence.
+
+The first record of this section, written before the Linux run, said these two
+engines "did not run". That was true on the Windows side only, and the
+correction is part of the record rather than a quiet edit.
 
 A second engine did run: the static analysis built into this toolchain's own
 build (the portable parser behind forge) over the same file returned two
