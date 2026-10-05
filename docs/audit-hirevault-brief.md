@@ -113,7 +113,7 @@ Forge 0.8.24, no via-ir, no settings beyond the default. The tree is the
 gate's tree: the same locked set of checks (lint, typecheck, vitest, forge,
 conventions) ran before every commit on the altana branch.
 
-## Phase 1 static pass, recorded 2026-10-05
+## Static analysis record, 2026-10-05
 
 Slither 0.11.6 ran the full detector set on HireVault.sol and returned 20
 results across 9 categories, all informational-class against a contract that
