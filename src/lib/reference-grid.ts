@@ -13,7 +13,7 @@ export const GRID_AGENT_VERSION = "1.1.0";
 export const GRID_AGENT_CATEGORY = "grid-trading";
 export const GRID_AGENT_PROTOCOL_VERSION = "0.3.0";
 export const GRID_AGENT_DESCRIPTION =
-  "Plans a grid trading ladder over a price range the caller supplies: a lower price, an upper price, the number of price rungs, the value placed at each rung, and an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic. By default it uses no market data; name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pair's current PancakeSwap price, stating the chain, the pool and the block it read, so every figure can still be reproduced.";
+  "Plans a grid trading ladder over a price range the caller supplies: a lower price, an upper price, the number of price rungs, the value placed at each rung, and an optional round trip fee in basis points. It returns the rung spacing, the first and last rung prices, the value committed across the ladder, the gross, fee and net capture of one completed round trip, and the total net capture if price traverses the whole range once and every rung fills. The arithmetic is deterministic. By default it uses no market data; name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pair's current PancakeSwap price, stating the chain, the pool and the block it read, so every figure can still be reproduced. It also returns a bounded fill for a single rung against a settled hire: the amount in, and the smallest amount out that will still clear, with the floor taken from the rung price the plan published rather than from a live quote. It sends no transaction and holds no key.";
 export const GRID_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const GRID_AGENT_CARD_PATH = "/api/reference/grid/.well-known/agent-card.json";
 export const GRID_AGENT_MESSAGING_PATH = "/api/reference/grid/a2a";
@@ -455,7 +455,7 @@ export function capabilityArtifact(): Record<string, unknown> {
     },
     limitations: [
       "The caller supplies the range and the size, or names a PancakeSwap pair whose live price centres the range.",
-      "The result is a read-only plan and never a transaction.",
+      "Planning sends no transaction, and neither does the bounded fill: it returns figures for the caller to execute, and refuses a rung no settled hire authorises.",
     ],
   };
 }
