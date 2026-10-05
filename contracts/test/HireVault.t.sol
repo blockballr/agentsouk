@@ -143,7 +143,7 @@ contract HireVaultTest {
         factory = new MockFactory();
         factory.setPool(address(pool));
         router = new MockRouter();
-        vault = new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP);
+        vault = new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000);
         // the router pays out of its own stock, as a pool would
         wbnb.mint(address(router), 1000e18);
         usdt.mint(address(router), 1000e18);
@@ -344,6 +344,67 @@ contract HireVaultTest {
         require(vault.hire(second).balanceB == 40e18 && vault.hire(second).balanceA == 0, "second untouched");
     }
 
+    // The one bound slippage cannot give on its own: a swap clears at the floor, so no
+    // single trade loses more than the buyer's basis points, but a round-tripping agent
+    // loses that much again on the way back. This proves the bleed stops at half.
+    function testRoundTrippingStopsAtTheDrawdownBudget() public {
+        uint256 id = _open(40e18, 1000); // the buyer's widest allowance, 1000 bps
+        // both directions pay 4 percent under the reference price, so every leg clears the
+        // 1000 bps floor while taking 4 percent of the hire's value
+
+        // eight full cycles: 0.9216 of the value each, 40 to 20.49, still inside
+        for (uint256 cycle; cycle < 8; ++cycle) {
+            router.setRate(0.24e18); // buying WBNB at 0.24 against a reference of 0.25
+            uint256 b = vault.hire(id).balanceB;
+            vm.prank(AGENT);
+            vault.trade(id, address(usdt), b, 0);
+            router.setRate(3.84e18); // selling WBNB at 3.84 against a reference of 4
+            uint256 a = vault.hire(id).balanceA;
+            vm.prank(AGENT);
+            vault.trade(id, address(wbnb), a, 0);
+            require(vault.hire(id).balanceA == 0, "everything converted back");
+        }
+
+        // the ninth cycle's first leg would take the value to about 19.67, under the 20
+        // the budget now sets, and there is no leg this loop has not proven compliant
+        router.setRate(0.24e18);
+        uint256 leftover = vault.hire(id).balanceB;
+        vm.prank(AGENT);
+        try vault.trade(id, address(usdt), leftover, 0) {
+            revert("the bleeding trade should have been refused");
+        } catch (bytes memory r) {
+            require(
+                keccak256(r) == keccak256(abi.encodeWithSelector(HireVault.DrawdownBreached.selector)),
+                "not the drawdown budget"
+            );
+            // the refused swap settled nothing: the hire holds what the eighth cycle left,
+            // within the wei of dust floor division leaves across sixteen legs
+            uint256 closedNumerator = 40e18 * 9216 ** 8;
+            uint256 closed = closedNumerator / 10_000 ** 8;
+            uint256 b2 = vault.hire(id).balanceB;
+            require(b2 + 1e9 >= closed && b2 <= closed + 1e9, "state after the refused trade");
+        }
+    }
+
+    function testAnHonestLadderNeverKnocksTheBudget() public {
+        uint256 id = _open(40e18, 300);
+        // both directions at exactly the reference price: every leg preserves value
+        router.setRate(0.25e18);
+
+        for (uint256 cycle; cycle < 4; ++cycle) {
+            uint256 b = vault.hire(id).balanceB;
+            vm.prank(AGENT);
+            vault.trade(id, address(usdt), b, 0);
+            router.setRate(4e18);
+            uint256 a = vault.hire(id).balanceA;
+            vm.prank(AGENT);
+            vault.trade(id, address(wbnb), a, 0);
+            router.setRate(0.25e18);
+            HireVault.Hire memory h = vault.hire(id);
+            require(h.balanceB == 40e18 && h.balanceA == 0, "a round trip is a full circle");
+        }
+    }
+
     function testNothingTradesAfterTheExpiry() public {
         uint256 id = _open(40e18, 300);
         router.setRate(0.25e18);
@@ -388,8 +449,15 @@ contract HireVaultTest {
 
     function testItWillNotBeBuiltOnAnythingThatIsNotAContract() public {
         vm.expectRevert(HireVault.NotAContract.selector);
-        new HireVault(address(0x1234), address(factory), address(wbnb), address(usdt), CAP, CAP);
+        new HireVault(address(0x1234), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000);
         vm.expectRevert(HireVault.UnknownToken.selector);
-        new HireVault(address(router), address(factory), address(wbnb), address(wbnb), CAP, CAP);
+        new HireVault(address(router), address(factory), address(wbnb), address(wbnb), CAP, CAP, 5000);
+    }
+
+    function testItWillNotBuildWithADisabledOrRidiculousBudget() public {
+        vm.expectRevert(HireVault.BadRetained.selector);
+        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 0);
+        vm.expectRevert(HireVault.BadRetained.selector);
+        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 10001);
     }
 }

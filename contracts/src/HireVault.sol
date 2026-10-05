@@ -46,7 +46,8 @@ interface IV3Pool {
 // The price is stored per hire and the fee tier is bound at open, so the agent chooses
 // neither. It is a time weighted price rather than a spot read, because a spot read taken at
 // open can itself be pushed just before open lands.
-// deposits stay capped and mainnet still waits for an audit
+// deposits stay capped and a drawdown budget stops a compliant agent bleeding the hire
+// through a chain of individually-in-bounds swaps; mainnet still waits for an audit
 contract HireVault {
     struct Hire {
         address buyer;
@@ -59,6 +60,9 @@ contract HireVault {
         // token1 per token0 as a Q96 number, fixed at open
         uint160 refPriceX96;
         uint24 fee;
+        // the deposit converted to token0 units at the open price: what the drawdown
+        // budget is measured against, so drift in the market is not what the budget sees
+        uint256 depositInToken0;
     }
 
     address public immutable router;
@@ -72,6 +76,14 @@ contract HireVault {
     uint16 public constant MAX_SLIPPAGE_BPS = 1000;
     uint64 public constant MAX_TERM = 90 days;
     uint256 private constant Q96 = 1 << 96;
+
+    // the share of the deposit, in bps, below which no hire may fall. Slippage bounds one
+    // trade; this bounds the hire's whole life. A floor of 5000 is the default: an agent
+    // that round-trips a hire into the dirt stops at half the deposit, not at zero.
+    uint16 public immutable minRetainedBps;
+    // converts and quotes round down, so a pure round trip at the reference price can chip
+    // a few wei off the measured value; this tolerates that without becoming a loss budget
+    uint256 private constant VALUE_SLACK = 1_000_000;
 
     // how far back the reference price is averaged, in seconds. A window is what makes a
     // single manipulation move the floor by a fraction of it rather than all of it.
@@ -102,6 +114,7 @@ contract HireVault {
     error BadAmount();
     error BadExpiry();
     error BadSlippage();
+    error BadRetained();
     error NoAgent();
     error NotOpen();
     error NotTheAgent();
@@ -111,6 +124,7 @@ contract HireVault {
     error BelowFloor();
     error TokenCallFailed();
     error Reentered();
+    error DrawdownBreached();
 
     modifier nonReentrant() {
         if (_lock != 1) revert Reentered();
@@ -119,19 +133,30 @@ contract HireVault {
         _lock = 1;
     }
 
-    constructor(address router_, address factory_, address tokenA_, address tokenB_, uint256 capA_, uint256 capB_) {
+    constructor(
+        address router_,
+        address factory_,
+        address tokenA_,
+        address tokenB_,
+        uint256 capA_,
+        uint256 capB_,
+        uint16 minRetainedBps_
+    ) {
         if (
             router_.code.length == 0 || factory_.code.length == 0 || tokenA_.code.length == 0
                 || tokenB_.code.length == 0
         ) revert NotAContract();
         if (tokenA_ == tokenB_) revert UnknownToken();
         if (capA_ == 0 || capB_ == 0) revert BadAmount();
+        // zero would disable the budget and reopen the bleed this closes
+        if (minRetainedBps_ == 0 || minRetainedBps_ > MAX_SLIPPAGE_BPS * 10) revert BadRetained();
         router = router_;
         factory = factory_;
         tokenA = tokenA_;
         tokenB = tokenB_;
         capA = capA_;
         capB = capB_;
+        minRetainedBps = minRetainedBps_;
     }
 
     // the buyer approves exactly this amount beforehand, never more
@@ -170,7 +195,10 @@ contract HireVault {
             balanceA: isA ? amount : 0,
             balanceB: isA ? 0 : amount,
             refPriceX96: refPriceX96,
-            fee: fee
+            fee: fee,
+            // the deposit in token0 units at the open price: the anchor the drawdown
+            // budget is measured against
+            depositInToken0: _depositInToken0(IV3Pool(pool).token0() == token, amount, refPriceX96)
         });
         _byBuyer[msg.sender].push(id);
         _byAgent[agent].push(id);
@@ -199,7 +227,9 @@ contract HireVault {
         address tokenOut = aIn ? tokenB : tokenA;
         uint24 fee = h.fee;
 
-        uint256 floor = (quoteAtRef(address(IV3Factory(factory).getPool(tokenIn, tokenOut, fee)), tokenIn, amountIn, h.refPriceX96) * (10_000 - h.maxSlippageBps)) / 10_000;
+        address pool = IV3Factory(factory).getPool(tokenIn, tokenOut, fee);
+        if (pool == address(0)) revert NoPool();
+        uint256 floor = (quoteAtRef(address(pool), tokenIn, amountIn, h.refPriceX96) * (10_000 - h.maxSlippageBps)) / 10_000;
         if (minOut > floor) floor = minOut;
         if (floor == 0) revert BelowFloor();
 
@@ -232,7 +262,31 @@ contract HireVault {
             h.balanceB -= amountIn;
             h.balanceA += amountOut;
         }
+
+        _enforceBudget(h, pool);
         emit Traded(id, msg.sender, tokenIn, tokenOut, amountIn, amountOut);
+    }
+
+    // the drawdown budget, the bound slippage cannot give: a swap clears at the floor,
+    // so no single trade loses more than the buyer's bps, but a round-tripping agent
+    // loses that much again on the way back. This refuses the trade that takes the
+    // hire's value past the retained share, so the bleed stops at a number the buyer
+    // can read at open. The pool says which of the pair is token0, so the value
+    // conversion cannot disagree with the floor it is measured beside.
+    //
+    // Its own scope, because trade() sits a few variables under the compiler's limit and
+    // these three locals are what tips it over.
+    function _enforceBudget(Hire storage h, address pool) private view {
+        bool aIsToken0 = IV3Pool(pool).token0() == tokenA;
+        uint256 value0 = aIsToken0 ? h.balanceA : _mulDiv(h.balanceA, Q96, uint256(h.refPriceX96));
+        value0 += aIsToken0 ? _mulDiv(h.balanceB, Q96, uint256(h.refPriceX96)) : h.balanceB;
+        uint256 retained = _mulDiv(h.depositInToken0, minRetainedBps, 10_000);
+        if (value0 + VALUE_SLACK < retained) revert DrawdownBreached();
+    }
+
+    // a token1 deposit converts into token0 units by division; a token0 deposit is native
+    function _depositInToken0(bool isToken0, uint256 amount, uint160 ref) private pure returns (uint256) {
+        return isToken0 ? amount : _mulDiv(amount, Q96, uint256(ref));
     }
 
     // the revoke: everything held for this hire goes back to the buyer, expired or not

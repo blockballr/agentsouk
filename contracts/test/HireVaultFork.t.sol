@@ -70,7 +70,7 @@ contract HireVaultForkTest {
     }
     function testADepositIsTradedBothWaysAndWithdrawn() public {
         vm.skip(block.chainid != 97);
-        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 1e18, 100e18);
+        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 1e18, 100e18, 5000);
 
         vm.deal(BUYER, 1e18);
         vm.prank(BUYER);
@@ -107,7 +107,7 @@ contract HireVaultForkTest {
     /// protects nothing. A fix that stores a reference price at open makes this revert or hold.
     function testAnAgentSandwichingTheSpotCannotBeatTheStoredFloor() public {
         vm.skip(block.chainid != 97);
-        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 1e18, 100e18);
+        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 1e18, 100e18, 5000);
 
         vm.deal(BUYER, 1e18);
         vm.prank(BUYER);
