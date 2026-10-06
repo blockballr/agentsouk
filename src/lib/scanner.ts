@@ -58,8 +58,8 @@ const REFRESH_COOLDOWN_MS = 60_000;
 const SHELF_REFRESH_PAGES = 1;
 // the shelf gate reads endpoint fields the upstream list payload does not
 // carry, so admit a fresh record from its detail read; at most these per
-// top up, the same bound the skill capture uses
-const ENDPOINT_HYDRATE_PER_TOPUP = 6;
+// top up, sized so the eligible declarers of one sweep catch up in days
+const ENDPOINT_HYDRATE_PER_TOPUP = 12;
 // A store read is trusted this long, so a listing another instance admitted shows
 // up within half a minute without every browse re-reading the database.
 const SHELF_STORE_TTL_MS = 30_000;
