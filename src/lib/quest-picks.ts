@@ -1,5 +1,5 @@
 import "server-only";
-import { CATEGORY_KEYS } from "@agora/core";
+import { CATEGORY_KEYS, classifyExecution } from "@agora/core";
 import { durableMode, loadJobsByToken } from "./durable-store";
 import { asksForSecrets, hasConfirmedCompletion } from "./quest-eligibility";
 import { queryAgents } from "./scanner";
@@ -42,11 +42,21 @@ export async function loadQuestShelf(
   const observed = durableMode() === "postgres";
   const verifications = await loadVerifications();
   const shelf = await queryAgents({ limit: 5000, sort: "reachability", verifications, seed });
+  // the hire task serves agents whose own registration claims an action, because the
+  // campaign discounts agents that respond but never execute; the probe verdict alone
+  // cannot tell the two apart, since a delivered read looks the same from both
+  const executionText = (a: (typeof shelf.items)[number]): string =>
+    [a.name, a.description, ...(a.skills ?? []).map((s) => `${s.name} ${s.description ?? ""}`)].join(" ");
   const picks: Record<string, QuestShelf> = {};
   for (const category of CATEGORY_KEYS) {
     const working = shelf.items.filter((a) => {
       const check = verifications.get(a.token_id);
-      return a.category === category && check?.status === "delivered" && !asksForSecrets(check.detail);
+      return (
+        a.category === category &&
+        check?.status === "delivered" &&
+        !asksForSecrets(check.detail) &&
+        classifyExecution(executionText(a)).executes
+      );
     });
     const proven: typeof working = [];
     // without the durable store no job can be read back, so nothing is claimed as confirmed

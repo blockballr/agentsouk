@@ -78,6 +78,43 @@ const SIGNALS: Record<CategoryKey, { terms: { t: string; w: number; stem?: boole
   },
 };
 
+// execution signals: the quest's working bucket offers only agents whose own
+// words claim an action on chain, so a respond-only monitor is never shuffled
+// into a hire task. same word boundary rules classifyAgent applies, and the
+// threshold is one precise claim
+const EXECUTION_TERMS: { t: string; w: number }[] = [
+  { t: "swap", w: 2 }, { t: "swaps", w: 2 }, { t: "swapped", w: 2 }, { t: "swapping", w: 2 },
+  { t: "buy", w: 2 }, { t: "buys", w: 2 }, { t: "bought", w: 2 }, { t: "buying", w: 2 },
+  { t: "sell", w: 2 }, { t: "sells", w: 2 }, { t: "sold", w: 2 }, { t: "selling", w: 2 },
+  { t: "mint", w: 2 }, { t: "mints", w: 2 }, { t: "minted", w: 2 }, { t: "minting", w: 2 },
+  { t: "redeem", w: 2 }, { t: "redeems", w: 2 }, { t: "redeemed", w: 2 },
+  { t: "harvest", w: 2 }, { t: "harvests", w: 2 }, { t: "harvested", w: 2 }, { t: "harvesting", w: 2 },
+  { t: "rebalance", w: 2 }, { t: "rebalances", w: 2 }, { t: "rebalanced", w: 2 }, { t: "rebalancing", w: 2 },
+  { t: "reposition", w: 2 }, { t: "repositions", w: 2 },
+  { t: "compound", w: 2 }, { t: "compounds", w: 2 }, { t: "compounding", w: 2 },
+  { t: "withdraw", w: 2 }, { t: "withdraws", w: 2 }, { t: "withdrew", w: 2 },
+  { t: "supplies", w: 2 }, { t: "supplied", w: 2 }, { t: "supplying", w: 2 },
+  { t: "provides liquidity", w: 2 }, { t: "providing liquidity", w: 2 },
+  { t: "place order", w: 2 }, { t: "places order", w: 2 }, { t: "placing order", w: 2 },
+  { t: "routes", w: 2 }, { t: "routed", w: 2 }, { t: "routing", w: 2 },
+  { t: "execute", w: 2 }, { t: "executes", w: 2 }, { t: "executed", w: 2 }, { t: "executing", w: 2 },
+  { t: "trades", w: 2 }, { t: "traded", w: 2 }, { t: "trading", w: 1 },
+  { t: "moves capital", w: 2 }, { t: "allocates capital", w: 2 },
+  { t: "onchain action", w: 2 }, { t: "on-chain action", w: 2 },
+];
+
+export function classifyExecution(text: string): { executes: boolean; score: number } {
+  const hay = text.toLowerCase();
+  let score = 0;
+  for (const { t, w } of EXECUTION_TERMS) {
+    const hit = t.includes(" ")
+      ? hay.includes(t)
+      : new RegExp(`(^|[^a-z0-9])${t}([^a-z0-9]|$)`, "i").test(hay);
+    if (hit) score += w;
+  }
+  return { executes: score >= 2, score };
+}
+
 export interface Classification {
   category: CategoryKey | "general";
   scores: Partial<Record<CategoryKey, number>>;
