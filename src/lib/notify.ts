@@ -1,6 +1,5 @@
 // outbound email for listing review and boost receipts
 // provider: Resend HTTP API when RESEND_API_KEY is set; otherwise log only
-
 export interface NotifyResult {
   ok: boolean;
   provider: "resend" | "log";
@@ -150,4 +149,18 @@ export async function notifyBoostReceipt(input: {
   }
 
   return results;
+}
+
+// an operational alert to the team address. additive on purpose: it touches
+// nothing the listing receipts send, and when unconfigured it logs and answers,
+// so a caller cannot fail a route because the mail rail is missing
+export async function notifyTeamAlert(subject: string, body: string): Promise<NotifyResult> {
+  const team = teamAddress();
+  if (!team) {
+    console.log("[notify] alert (no NOTIFY_EMAIL)", subject);
+    return { ok: true, provider: "log", id: "team-log" };
+  }
+  const r = await sendViaResend([team], subject, body);
+  if (!r.ok) console.error("[notify] alert not sent", subject, r.error);
+  return r;
 }

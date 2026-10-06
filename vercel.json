@@ -25,6 +25,10 @@
       "schedule": "0 7 * * *"
     },
     {
+      "path": "/api/cron/staleness",
+      "schedule": "0 * * * *"
+    },
+    {
       "path": "/api/cron/pancake",
       "schedule": "30 0 * * *"
     },
