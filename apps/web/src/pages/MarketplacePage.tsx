@@ -471,6 +471,14 @@ function AgentCard({
             alt=""
             loading="lazy"
             className="duotone h-14 w-14 shrink-0 rounded-[12px] object-cover"
+            onError={(e) => {
+              // a dead image_url falls back to the house glyph once, so no card renders broken
+              const el = e.currentTarget
+              if (!el.dataset.fallback) {
+                el.dataset.fallback = '1'
+                el.src = '/inserts/arc.svg'
+              }
+            }}
           />
           <div className="min-w-0 flex-1">
             <p className="micro truncate text-newsprint-gray">{categoryName(agent.category)}</p>
