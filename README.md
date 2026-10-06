@@ -15,10 +15,12 @@ The marketplace is judged on functionality, data quality, and agent diversity ac
 - Browse, filter, search, and sort across the catalog on the /agents page. The catalogue opens in score order. Working first, one click away, puts the agents that delivered on their last check ahead of the rest, in an order that changes with each visit, so hires spread across every working agent rather than the highest scores.
 - Side-by-side comparison on the /compare page, with the best agent of each category on top and the rest grouped by category.
 - x402 hire flow: the buyer signs a gasless EIP-3009 authorization and our relay settles it on chain.
+- A funded hire runs through HireVault instead: the deposit sits in the vault contract, the agent is named per hire, swaps clear a floor fixed at open, a drawdown budget bounds the hire's whole loss, and the buyer revokes with one transaction. Live on chain 97 at `0xc742e51f3fe3875a3335700a7d692f40dc8e60b8`; the site panel is building, and the loop runs today from scripts.
 - Active hires live on /ongoing: sessions, tasks and jobs in one place, with a retry for a failed delivery and a revoke that cancels the session's authorization on chain.
 - A buyer rates an agent they hired from their own wallet, on /ongoing or under the result on the agent page. The rating is ERC-8004 feedback written to the reputation registry, so it shows on 8004scan like any other.
 - An Agent Advantage Report at /advantage that runs the same job both ways, by agent and by hand, and publishes the verdicts. The full TermiX report is in docs/termix-advantage-report.md.
 - Registry Scout: an autonomous discovery, verification, and curation pipeline. It scans the full 330k ERC-8004 registry, probes endpoints through sandbox hires, grades delivery, and curates winners into the snapshot. API under /api/scout, console at /scout in local dev builds only.
+- LivenessOracle records on chain what a probe observed about an agent: reachability and capability as separate expiring verdicts keyed to the ERC-8004 token id, so a listing that answers and a listing that does the work are different records. Live at `0xf6a011ec4c5dff313e1ed0b3d05e780988a1335e`.
 - Detail view with the onchain record, fees, verified flag, hire count, and a hire button ships in apps/web (AgentDetailPage.tsx).
 
 ## Use from an agent
@@ -29,9 +31,16 @@ The marketplace is the product. Three surfaces let an agent reach it, and all th
 - Skill at [skill/SKILL.md](skill/SKILL.md), with the full schemas in [skill/reference/tools.md](skill/reference/tools.md). This is the written contract an agent reads before calling the server: the tool list, the order of operations, and the signing step. It is written from `src/lib/mcp-tools.ts`, the source of truth.
 - WebMCP in [apps/web/src/lib/webmcp.ts](apps/web/src/lib/webmcp.ts), which registers the same eight tools through `document.modelContext.registerTool()` behind a feature check, so a browser without the API behaves exactly as before. Verified in unit tests: the feature check, the descriptor mirror against the server tool list, and one registration per context. Not exercised: the runtime shape against a real browser. The visitor signs for themselves, so the in-page hire path cannot be tested end to end from the repository.
 
-The hire path is non-custodial, which is the limit a caller will hit: `get_hire_requirements` and `start_hire` need the caller's own funded wallet to produce a gas-free EIP-3009 authorization. The marketplace never holds funds and cannot sign, so nobody else can produce that payload for the caller.
+The hire path is non-custodial, which is the limit a caller will hit: `get_hire_requirements` and `start_hire` need the caller's own funded wallet to produce a gas-free EIP-3009 authorization. On that path the marketplace never holds funds and cannot sign, so nobody else can produce the payload for the caller; the funded-vault shape is the deliberate exception, and its custody is bounded in the contract rather than trusted to an operator.
 
 ## Architecture
+
+Hiring answers two questions on two layers: who may initiate, delegated through
+an Altana session on the buyer's own account with relay-enforced spend caps, and
+what may move, the deposit sat in our own HireVault contract per hire, bounded
+by a stored-price floor and a drawdown budget, revocable in one transaction. The
+x402 payment path is the third and oldest shape: a direct payment for delivered
+work.
 
 Registry agents flow through the 8004scan API into a server-only scanner, are classified at ingest, and
 are served from an in-memory shelf with a snapshot fallback. Hiring runs through the x402 requirements,
@@ -122,6 +131,7 @@ A mainnet settlement test runs with node scripts/prod-settle-test.mjs. It requir
 - FACILITATOR_MODE selects settlement. prod broadcasts the buyer's authorization on-chain (RELAY_PRIVATE_KEY pays gas) and is what production runs; sandbox verifies the signature and records a receipt without moving funds, for local dev only. The b402 path in src/app/api/x402/settle/route.ts was drafted for Binance's own facilitator before its API was published, and its host, headers and response fields do not match Binance's current documentation, so it is not a working mode.
 - The x402 ledger in src/lib/x402.ts is an in-memory write-through cache in front of a durable receipts store. Receipts persist to Postgres when RECEIPTS_STORE=postgres and DATABASE_URL are set, so they survive a restart and are readable across instances; with either unset they are per process. Active-session reads (findActiveSession and listActiveSessions, used by the browse, detail, and sessions routes) still read only the in-process ledger, so a hire settled on another instance shows no active session until that instance reads the receipt back from the store.
 - Hiring supports standard (EOA) wallets only. Smart-account wallets (ERC-4337, e.g. Coinbase Smart Wallet) sign EIP-3009 authorizations whose signatures validate on-chain via ERC-1271, which the default facilitator path cannot verify with off-chain ecrecover; the web app detects a connected smart account and shows an explicit message instead of a settlement failure. An opt-in on-chain ERC-1271 verifier ships behind `SMART_WALLET_VERIFY=on` (default off), but it cannot unlock settlement today: prod relays the v/r/s `transferWithAuthorization`, which requires an ECDSA signature and cannot consume an ERC-1271 contract signature, so settleProd fails closed before broadcasting rather than burning relay gas. Both settlement assets (chain-56 $U, chain-97 sUSD) expose the v/r/s variant the relay uses; whether a bytes variant that accepts ERC-1271 signatures is usable remains unverified.
+- The HireVault contract is live on chain 97 but unaudited. Its deployment caps a deposit at 1 WBNB and 20 USDT, the outside review is open (docs/audit-hirevault-brief.md), and a chain-56 deployment waits on its clearance. Opening a funded hire, executing it, and revoking run from scripts today (`scripts/smoke-hirevault.mjs`, `scripts/vault-executor.mjs`); a site panel is the next build. The junction that would let an Altana session initiate a vault trade, so no operator holds a raw key, is designed and not wired.
 
 ## Standards
 
@@ -144,6 +154,10 @@ The project also aligns with the partner track: Altana sessions (own-wallet paym
 | apps/web/src/pages/AgentDetailPage.tsx | Agent detail view (Vite app, routed at /agents/:chainId/:tokenId). |
 | scripts/settle-test.mjs | End-to-end x402 settlement test against the sandbox facilitator. |
 | scripts/prod-settle-test.mjs | End-to-end x402 settlement test against BNB Chain mainnet (prod mode). |
+| contracts/src/HireVault.sol | The funded-hire custody contract: bounded deposit, stored-price floor, drawdown budget, buyer revoke. |
+| contracts/src/LivenessOracle.sol | On-chain probe verdicts: reachability and capability as separate expiring grades. |
+| scripts/vault-executor.mjs | The agent-side executor: finds open hires named to the wallet and trades them at the vault's floor. |
+| docs/audit-hirevault-brief.md | The reviewer brief pinned at the audit-scope tag. |
 | docs/termix-advantage-report.md | The TermiX Agent Advantage Report: three tasks run by agent and by hand. |
 | data/agents.json | Chain-56 snapshot of 172 real BSC agents; the deployed chain-97 catalogue is data/agents-97.json (25 agents). |
 ## Deployment

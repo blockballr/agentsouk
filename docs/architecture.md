@@ -343,6 +343,93 @@ stateDiagram-v2
     Receipt --> [*]
 ```
 
+### The Hire Vault
+
+A hire asks two questions, and the architecture answers them on two layers.
+Who may initiate: the Altana session layer, a delegation granted on the
+buyer's own account, where the relay enforces per-period spend caps and the
+funds never leave the buyer's wallet. What may move: the HireVault contract,
+a bounded escrow per hire, where the deposit sits in a contract that holds
+nothing else and bounds the agent's every move.
+
+Splitting them is this stage's load-bearing choice. An agent operating the
+buyer's own balance, small and frequent actions under caps, wants the session
+layer, because no custody ever transfers. A buyer hiring an agent to work a
+sized position wants the vault, because there the exposure is the deposit
+rather than the account: losses on one hire can never pay another's, the
+ceiling on loss is a drawdown budget rather than the clock, and the events,
+Opened, Traded and Closed, are records on the marketplace's own contract a
+quest verifier can count per wallet without trusting anyone's API. A
+third-party agent needs one key and one call either way, so the vault adds no
+adoption requirement on top.
+
+Altana alone would make a hire a permission against the buyer's whole
+account: caps bound each period, the lifetime exposure is cap times periods
+on the full balance, four simultaneous hires share one pocket, and the
+verification of a completed hire lives inside another platform's stack. The
+vault alone would leave initiation to raw key custody. Together they
+compose, and the junction where they meet is designed and not yet wired: the
+agent's address on the hire being an Altana account whose session key
+initiates trade through the relay, so no operator ever holds a raw key to a
+hire.
+
+The x402 path, for completeness, is the third shape: no delegation and no
+escrow, a direct payment for delivered work, and the daily driver of the
+content agents.
+
+What open binds, before the agent has any power over the hire: the pair and
+the caps are immutable to the deployment (1 WBNB, 20 USDT on chain 97); the
+reference price is read once from the pool's own accumulate over half an hour
+via observe and stored on the hire, so nothing the agent can move changes what
+its floor is measured against; the fee tier is bound the same way, so a trade
+cannot be repointed at a thin pool; expiry sits inside a 90 day horizon and
+the buyer's slippage allowance inside 1000 bps.
+
+What trade permits, to the named agent only, before expiry: one swap between
+the two bound tokens, straight into the contract, at a minimum output that is
+the greater of the buyer's floor (the stored-price quote minus the slippage
+basis points) and the agent's own minOut, which can raise the bound but never
+lower it. The books follow measured balances, not router reports, so a
+fee-on-transfer token refuses at open instead of silently shrinking a hire.
+
+The whole-life bound is the drawdown budget. The hire's value at the open
+price may never fall below a retained share of the deposit (5000 bps in this
+deployment), computed after every trade from measured balances; the trade that
+would cross it reverts with nothing settled. Slippage bounds one swap; the
+budget bounds ten.
+
+The revoke is the buyer's withdraw: unconditional, not gated on expiry,
+zeroing the hire before any external transfer, returning both tokens, after
+which trade refuses forever.
+
+Live on chain 97 at 0xc742e51f3fe3875a3335700a7d692f40dc8e60b8 (deploy
+0x6eafe9a8f8061339becc53847786a1a5b96d78751ebd1e6a2f97f39d06097634), and the
+loop has been executed on the live contract: a 0.10 USDT deposit opened by one
+wallet naming another as agent, traded inside the stored floor at 0.010446
+WBNB out through the real fee-500 pool, and revoked with everything returned.
+The same loop runs again from a fresh deposit with
+scripts/smoke-hirevault.mjs and scripts/smoke-hirevault-continue.mjs.
+
+### The Probe Record
+
+LivenessOracle at 0xf6a011ec4c5dff313e1ed0b3d05e780988a1335e (deploy
+0xb4cf09fb86ebd491337e5372ceb835897a2d2ef435751e7cbd201ceb0ea07628) holds, per
+ERC-8004 agent id, the latest verdict of each grade: that an endpoint answered
+(REACHABLE), that it did the work it was hired for (DELIVERED), that it
+answered an authenticated surface (GATED), or that it was dead or
+unreachable. Anyone may post a verdict for any agent; the poster pays the gas
+and a verdict cannot be dated forward. Every verdict expires at the window
+the reader asks for, so no agent coasts on a single good day. The read a
+buyer acts on is canExecute, and it is fresh DELIVERED only: proof of work,
+not proof of response.
+
+The poster loop is not wired to the deployed contract yet: the verifier's
+probes exist and their results stop at the API, so until the loop lands the
+oracle is schema and event history. The participant panel for opening and
+revoking a vault hire is likewise script-only today, and the Altana junction
+described in the vault section above is designed and not wired. All three
+are the next stage of this section.
+
 ### Integration Surfaces
 
 The pages are the buyer's surface: the one-pager, the marketplace with
