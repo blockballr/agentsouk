@@ -15,7 +15,7 @@ import {
   isJobStepSkill,
   sellsByJob,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, retryTask, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
@@ -535,6 +535,7 @@ export function AgentDetailPage() {
                 onResult={setRunResult}
                 onClosed={() => setClosedPaymentId(mySession.paymentId)}
                 prefill={questPrefill}
+                skills={detail.skills}
                 guide={questStage === 'run' || questStage === 'complete' ? questStage : undefined}
               />
             </div>
@@ -557,6 +558,7 @@ export function AgentDetailPage() {
                 onResult={setRunResult}
                 onClosed={setClosedPaymentId}
                 prefill={questPrefill}
+                skills={detail.skills}
                 guide={questStage ?? undefined}
               />
             </>
@@ -1138,12 +1140,14 @@ function HirePanel({
   onResult,
   onClosed,
   prefill,
+  skills,
   guide,
 }: {
   chainId: string
   tokenId: string
   name: string
   prefill?: { task?: string; input?: string }
+  skills?: AgentCardSkill[]
   guide?: QuestStage
   onHired: () => void
   onResult?: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
@@ -1363,6 +1367,7 @@ function HirePanel({
             onResult={onResult}
             onClosed={() => { onClosed?.(result.paymentId); reset(); onHired() }}
             prefill={prefill}
+            skills={skills}
             guide={guide === 'run' || guide === 'complete' ? guide : undefined}
           />
         </div>
@@ -1428,6 +1433,27 @@ function parseStructuredInput(
   return { ok: true, input: parsed as Record<string, unknown> }
 }
 
+// a skill's example is the starting input a buyer can run: a JSON example
+// prefills the structured field, a plain sentence prefills the task text, and
+// a skill without an example falls back to its own id
+function skillInput(skill: AgentCardSkill): { task?: string; input?: string } {
+  const label = skill.id ?? skill.name ?? ''
+  const example = (skill.examples ?? []).find((x) => (x ?? '').trim() !== '')
+  if (!example) return { task: label }
+  const trimmed = example.trim()
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed) as unknown
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return { task: label, input: JSON.stringify(parsed, null, 2) }
+      }
+    } catch {
+      // an example that is not an object drives the task text instead
+    }
+  }
+  return { task: trimmed }
+}
+
 // The buyer's next step depends on what the server has the job at: only a
 // Submitted job can be attested complete, a Funded one still needs delivery (or
 // a refund), and a terminal job is done. A completion is never offered for a
@@ -1459,11 +1485,13 @@ function DeliveryPanel({
   onResult,
   onClosed,
   prefill,
+  skills,
   guide,
 }: {
   paymentId: string
   // a quest step arrives with its task written, so the visitor only has to run it
   prefill?: { task?: string; input?: string }
+  skills?: AgentCardSkill[]
   guide?: 'run' | 'complete'
   onResult?: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
   onClosed?: () => void
@@ -1773,6 +1801,28 @@ function DeliveryPanel({
             </div>
           ) : data.protocol === 'a2a' ? (
             <div className="mt-3 space-y-2">
+              {(skills ?? []).length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="micro text-newsprint-gray">Skills</span>
+                  {(skills ?? [])
+                    .filter((s) => s.id ?? s.name)
+                    .map((s) => (
+                      <button
+                        type="button"
+                        key={s.id ?? s.name}
+                        title={s.description ?? s.name}
+                        onClick={() => {
+                          const p = skillInput(s)
+                          if (p.input) setInputText(p.input)
+                          setTaskText(p.task ?? '')
+                        }}
+                        className="micro inline-flex items-center rounded-full border hairline border-slate-verdant/35 px-2 py-0.5 font-[550] tracking-[0.01em] text-newsprint-gray transition hover:border-press-black/50 hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                      >
+                        {s.id ?? s.name}
+                      </button>
+                    ))}
+                </div>
+              )}
               <textarea
                 value={taskText}
                 onChange={(e) => setTaskText(e.target.value)}
