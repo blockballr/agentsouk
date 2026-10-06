@@ -21,7 +21,10 @@ import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
 import { Tag } from '../components/Tag'
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
+import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
+import { explorerTxBase } from '../lib/contracts'
 import { builtWithFrom, decodeMetaValue } from '../lib/onchain-meta'
+import { defaultAvatarFor } from '../lib/default-avatar'
 import { VERDICT_DOT, verdictFor, type Verdict } from '../lib/verdict'
 import {
   changeWallet,
@@ -206,6 +209,10 @@ export function AgentDetailPage() {
   const [durableHire, setDurableHire] = useState<{ paymentId: string } | null>(null)
   // a session whose job has closed stays live on the server until it expires, but it is spent
   const [closedPaymentId, setClosedPaymentId] = useState<string | null>(null)
+  // the session revoke the owner asked for on this page: busy flag, and the
+  // on-chain cancel outcome kept so the tx survives the session box closing
+  const [revoking, setRevoking] = useState(false)
+  const [revokeOutcome, setRevokeOutcome] = useState<RevokeOutcome | null>(null)
   // the last run's deliverable and job, lifted out of the sidebar so the result
   // renders full width in the main column instead of inside the narrow hire form
   const [runResult, setRunResult] = useState<{
@@ -373,6 +380,25 @@ export function AgentDetailPage() {
       .catch(() => {})
   }
 
+  // the page's own revoke, for the wallet holding a live session here: the same
+  // signed cancel the ongoing page runs, with the outcome kept so the tx link
+  // survives the session box closing
+  async function revokeThisSession() {
+    if (!ownSession || !viewer || revoking) return
+    setRevoking(true)
+    setRevokeOutcome(null)
+    try {
+      const outcome = await revokeSessionWithCancel(ownSession.paymentId, viewer)
+      setRevokeOutcome(outcome)
+      setClosedPaymentId(ownSession.paymentId)
+      refreshDetail()
+    } catch (e) {
+      setRevokeOutcome({ attempted: true, canceled: false, error: (e as Error).message })
+    } finally {
+      setRevoking(false)
+    }
+  }
+
   const verdict = verdictFor(detail.chain_id, detail.verification)
   const builtWith = builtWithFrom(onchain)
   const firstParty = isOperatedByAgentSouk(detail.owner_address)
@@ -408,15 +434,16 @@ export function AgentDetailPage() {
         <div className="min-w-0 lg:col-start-1 lg:row-start-1">
           <header className="flex flex-col gap-6 sm:flex-row sm:items-start">
             <img
-              src={detail.image_url ?? '/inserts/arc.svg'}
+              src={detail.image_url ?? defaultAvatarFor(Number(chainId), detail.token_id)}
               alt=""
               className="duotone h-20 w-20 shrink-0 rounded-[14px] object-cover sm:h-24 sm:w-24"
               onError={(e) => {
-                // same rule as the card: an image that answers nothing shows the house glyph
+                // same rule as the card: an image that answers nothing shows its
+                // own default glyph
                 const el = e.currentTarget
                 if (!el.dataset.fallback) {
                   el.dataset.fallback = '1'
-                  el.src = '/inserts/arc.svg'
+                  el.src = defaultAvatarFor(Number(chainId), detail.token_id)
                 }
               }}
             />
@@ -493,12 +520,53 @@ export function AgentDetailPage() {
           )}
           {ownSession && mySession && (
             <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
-              <p className="micro text-press-black">Session active</p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="micro text-press-black">Session active</p>
+                <button
+                  type="button"
+                  onClick={revokeThisSession}
+                  disabled={revoking}
+                  className="micro rounded-full border hairline border-slate-verdant/35 px-2 py-0.5 font-[550] tracking-[0.01em] text-newsprint-gray transition hover:border-press-black hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                >
+                  {revoking ? 'Revoking' : 'Revoke hire'}
+                </button>
+              </div>
               <div className="mt-3 space-y-2 text-xs">
                 <Row label="Spend cap" value={`$${ownSession.spendCapUsd}`} />
                 <Row label="Expires" value={formatExpiry(ownSession.expiresAt)} />
                 <Row label="Mode" value={sessionModeLabel(ownSession.mode)} />
               </div>
+            </div>
+          )}
+          {revokeOutcome && !mySession && (
+            <div className="mb-6 rounded-[10px] border hairline border-highlighter-green/50 p-4" role="status">
+              <p className="micro text-press-black">
+                {revokeOutcome.error
+                  ? `Revoke refused: ${revokeOutcome.error}`
+                  : revokeOutcome.alreadyRevoked
+                    ? 'This hire was already revoked.'
+                    : 'Hire revoked. Any remaining spend cap stands down.'}
+              </p>
+              {revokeOutcome.txLink && (
+                <a
+                  href={revokeOutcome.txLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="micro mt-2 inline-block text-newsprint-gray underline transition hover:text-press-black"
+                >
+                  Sponsor refund tx
+                </a>
+              )}
+              {!revokeOutcome.txLink && revokeOutcome.txHash && (
+                <a
+                  href={`${explorerTxBase(revokeOutcome.chainId ?? Number(chainId))}/${revokeOutcome.txHash}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="micro mt-2 inline-block text-newsprint-gray underline transition hover:text-press-black"
+                >
+                  on-chain cancel {shortAddress(revokeOutcome.txHash)}
+                </a>
+              )}
             </div>
           )}
           <h2 className="font-serif text-[24px] font-medium leading-tight text-press-black">
