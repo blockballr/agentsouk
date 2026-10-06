@@ -11,50 +11,15 @@ import { explorerTxBase } from '../lib/contracts'
 import { mergeSessions, stabiliseSessions } from '../lib/ongoing-merge'
 import { hireItems, hireState, readableResult, type HireGroup, type HireItem, type HireState } from '../lib/hire-state'
 import { hireErrorText } from '../lib/hire'
-import { connectWallet, getActiveAccount, getProvider } from '../lib/wallet'
+import { connectWallet, getActiveAccount } from '../lib/wallet'
 import { ratedHires } from '../lib/rating'
 import { RateAgent } from '../components/RateAgent'
 import { Action, Dialog, LABEL, RatingBoxes, ResultBox, TextSlot, button, card, cx } from '../components/ui'
-import { revokeRequestMessage } from '@agora/core'
-
-interface RevokeOutcome {
-  attempted: boolean
-  canceled: boolean
-  alreadyRevoked?: boolean
-  txHash?: string
-  chainId?: number
-  txLink?: string
-  error?: string
-}
-
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
+import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
 
 // the server holds each wallet's view for five seconds, so a faster poll only
 // re-reads the same answer
 const POLL_MS = 5000
-
-// The revoke response carries the on-chain cancellation result, which api.ts's
-// revokeSession discards, so call the endpoint directly to keep the transaction hash.
-async function revokeSessionWithCancel(
-  paymentId: string,
-  client: string,
-): Promise<RevokeOutcome | null> {
-  // the buyer signs a message, not a transaction, so nobody who only knows the
-  // paymentId can revoke the session
-  const provider = await getProvider()
-  const signature = (await provider.request({
-    method: 'personal_sign',
-    params: [revokeRequestMessage(paymentId, client), client],
-  })) as string
-  const res = await fetch(`${API_BASE}/sessions?paymentId=${encodeURIComponent(paymentId)}`, {
-    method: 'DELETE',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ client, signature }),
-  })
-  const body = await res.json().catch(() => null)
-  if (!res.ok || !body?.success) throw new Error(body?.error ?? `revoke ${res.status}`)
-  return (body.onchain as RevokeOutcome | undefined) ?? null
-}
 
 function formatExpiry(iso: string): string {
   const ms = new Date(iso).getTime() - Date.now()
