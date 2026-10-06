@@ -173,9 +173,24 @@ test suite.
 
 ## Deployment state
 
-Not deployed anywhere. scripts/deploy-hirevault.mjs targets chain 97 with
-caps of 1 WBNB and 20 USDT by env default, retained share of 5000 bps, and
-the shared chain 97 PancakeSwap addresses already in the file. The oracle
-addresses (ERC-8004 identity registry on chain 97 is
-0x8004a818bfb912233c491871b3d84c89a494bd9e, which this repo reads for
-identity already) go in the same package when the review clears.
+Live on chain 97 as of 2026-10-05, deployed from the relay wallet:
+
+- HireVault at 0xc742e51f3fe3875a3335700a7d692f40dc8e60b8, deploy tx
+  0x6eafe9a8f8061339becc53847786a1a5b96d78751ebd1e6a2f97f39d06097634.
+  Caps 1 WBNB and 20 USDT per deposit, retained share 5000 bps, zero hires.
+- LivenessOracle at 0xf6a011ec4c5dff313e1ed0b3d05e780988a1335e, deploy tx
+  0xb4cf09fb86ebd491337e5372ceb835897a2d2ef435751e7cbd201ceb0ea07628, with
+  registry() read back from chain as the ERC-8004 identity registry above.
+
+The hire loop has been executed on the live vault, not only on a fork: a
+0.10 USDT deposit opened by one wallet naming another as agent, the agent
+trading the full deposit through the real fee-500 pool inside the stored
+floor (0.010446 WBNB out), and the buyer withdrawing everything back. The
+three transactions are in scripts/smoke-hirevault.mjs and
+scripts/smoke-hirevault-continue.mjs, which run the whole loop from funded
+gas onward.
+
+scripts/deploy-hirevault.mjs and scripts/deploy-livenessoracle.mjs deploy
+both contracts; the mainnet deployment of the vault waits on the outside
+audit this brief requests, and its token pair, pool and caps would be
+re-sized for chain 56 at that deploy.
