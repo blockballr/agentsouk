@@ -411,6 +411,14 @@ export function AgentDetailPage() {
               src={detail.image_url ?? '/inserts/arc.svg'}
               alt=""
               className="duotone h-20 w-20 shrink-0 rounded-[14px] object-cover sm:h-24 sm:w-24"
+              onError={(e) => {
+                // same rule as the card: an image that answers nothing shows the house glyph
+                const el = e.currentTarget
+                if (!el.dataset.fallback) {
+                  el.dataset.fallback = '1'
+                  el.src = '/inserts/arc.svg'
+                }
+              }}
             />
             <div className="min-w-0 flex-1">
               <h1 className="font-serif text-[clamp(32px,5vw,56px)] font-medium leading-[0.95] tracking-[-0.03em]">
