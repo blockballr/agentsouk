@@ -7,7 +7,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { bscTestnet } from "viem/chains";
 
 const CHAIN = bscTestnet;
-const RPC = process.env.BSC_TESTNET_RPC ?? "https://data-seed-prebsc-1-s1.binance.org:8545";
+const RPC = process.env.BSC_TESTNET_RPC ?? "https://data-seed-prebsc-2-s2.binance.org:8545";
 const ARTIFACT = new URL("../contracts/out/TestUSD.sol/TestUSD.json", import.meta.url);
 
 // 1,000,000 tUSD with 18 decimals. Only a test balance for the deployer; anyone

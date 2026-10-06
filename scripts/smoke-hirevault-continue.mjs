@@ -7,7 +7,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "node:fs";
 
 const CHAIN = bscTestnet;
-const RPC = process.env.BSC_TESTNET_RPC ?? "https://bsc-testnet-rpc.publicnode.com";
+const RPC = process.env.BSC_TESTNET_RPC ?? "https://data-seed-prebsc-2-s2.binance.org:8545";
 const VAULT = "0xc742e51f3fe3875a3335700a7d692f40dc8e60b8";
 const USDT = "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd";
 const WBNB = "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd";
