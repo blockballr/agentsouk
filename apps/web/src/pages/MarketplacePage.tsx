@@ -29,7 +29,7 @@ export function MarketplacePage() {
   const navigate = useNavigate()
   const category = sp.get('category') ?? 'all'
   const q = sp.get('q') ?? ''
-  const sort = (sp.get('sort') ?? 'score') as (typeof sorts)[number]['key']
+  const sort = (sp.get('sort') ?? 'reachability') as (typeof sorts)[number]['key']
   const pcs = sp.get('pcs') === '1'
   const hide = sp.get('hide') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
