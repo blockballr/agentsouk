@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { AgentSummary } from '@agora/core'
+import { defaultAvatarFor } from '../lib/default-avatar'
 import { CATEGORIES, formatNumber, formatScore, shortAddress, timeAgo } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
 import { Tag } from '../components/Tag'
@@ -447,7 +448,7 @@ function AgentCard({
   inCart: boolean
   onToggleCart: (key: string) => void
 }) {
-  const img = agent.image_url ?? '/inserts/arc.svg'
+  const img = agent.image_url ?? defaultAvatarFor(agent.chain_id, String(agent.token_id))
   const key = `${agent.chain_id}/${agent.token_id}`
   const verdict = verdictFor(agent.chain_id, agent.verification)
   const firstParty = isOperatedByAgentSouk(agent.owner_address)
@@ -472,11 +473,11 @@ function AgentCard({
             loading="lazy"
             className="duotone h-14 w-14 shrink-0 rounded-[12px] object-cover"
             onError={(e) => {
-              // a dead image_url falls back to the house glyph once, so no card renders broken
+              // a dead image_url falls back to the listing's own default face
               const el = e.currentTarget
               if (!el.dataset.fallback) {
                 el.dataset.fallback = '1'
-                el.src = '/inserts/arc.svg'
+                el.src = defaultAvatarFor(agent.chain_id, String(agent.token_id))
               }
             }}
           />
