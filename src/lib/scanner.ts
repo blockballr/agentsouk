@@ -56,6 +56,10 @@ const REFRESH_FETCH_TIMEOUT_MS = 6000;
 // At most one live top-up per process per cooldown, so browse traffic cannot hammer the registry.
 const REFRESH_COOLDOWN_MS = 60_000;
 const SHELF_REFRESH_PAGES = 1;
+// the shelf gate reads endpoint fields the upstream list payload does not
+// carry, so admit a fresh record from its detail read; at most these per
+// top up, the same bound the skill capture uses
+const ENDPOINT_HYDRATE_PER_TOPUP = 6;
 // A store read is trusted this long, so a listing another instance admitted shows
 // up within half a minute without every browse re-reading the database.
 const SHELF_STORE_TTL_MS = 30_000;
@@ -95,6 +99,9 @@ interface RawAgent {
   total_feedbacks: number;
   health_score: number | null;
   supported_trust_models: string[];
+  // present on the upstream list payload, absent from the snapshot era shape.
+  // the shelf gate reads it as the signal a detail record is worth reading
+  supported_protocols?: string[];
   a2a_endpoint?: string | null;
   mcp_server?: string | null;
   web_endpoint?: string | null;
@@ -806,6 +813,7 @@ export async function refreshIndexFromLive(
   let error: string | null = null;
   let observedTotal: number | null = null;
   const admitted: AgentSummary[] = [];
+  let hydrated = 0;
   try {
     await loadSnapshot();
     for (let page = 1; page <= pages; page++) {
@@ -823,7 +831,26 @@ export async function refreshIndexFromLive(
       index.liveUpstreamTotal = body.meta.pagination.total;
       observedTotal = positiveCount(body.meta.pagination.total);
       for (const raw of body.data) {
-        const summary = keepDeclared(buildSummary(raw));
+        let summary = keepDeclared(buildSummary(raw));
+        // A fresh record always fails the shelf gate here: the list payload
+        // carries no endpoint fields to judge. When it declares a service,
+        // read its detail once and judge the shelf on that record instead.
+        if (
+          !isShelfReady(summary) &&
+          (raw.supported_protocols ?? []).includes("A2A") &&
+          !index.agents.has(indexKey(summary.chain_id, summary.token_id)) &&
+          hydrated < ENDPOINT_HYDRATE_PER_TOPUP
+        ) {
+          const detail = await fetchAgentDetail(
+            summary.chain_id,
+            summary.token_id,
+            REFRESH_FETCH_TIMEOUT_MS,
+          ).catch(() => null);
+          if (detail) {
+            summary = keepDeclared(summaryFromDetail(detail));
+            hydrated += 1;
+          }
+        }
         // Shelve only what the marketplace would stand behind: a new registration appears once it
         // has a callable endpoint and a category, never unclassified or unverifiable.
         if (!isShelfReady(summary)) continue;
