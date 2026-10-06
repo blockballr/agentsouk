@@ -39,7 +39,7 @@ import {
   signAndSettleHire,
   type HireRequirementsData,
 } from '../lib/hire'
-import { button, card, cx } from '../components/ui'
+import { button, card, cx, Action } from '../components/ui'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -402,6 +402,13 @@ export function AgentDetailPage() {
       >
         ← Marketplace
       </Link>
+      {firstParty && detail.chain_id === 97 && (
+        <div className="mt-2">
+          <Action to={`/vault/97/${detail.token_id}`} variant="quiet" size="sm">
+            Open a funded hire on this vault
+          </Action>
+        </div>
+      )}
 
       {/* phones read header, proof, hire, then the rest; wide screens keep hire in a sticky column */}
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_1fr] lg:gap-x-10">
