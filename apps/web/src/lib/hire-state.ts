@@ -1,4 +1,4 @@
-import type { ActiveHireSession, Erc8183Job, HireTask, OngoingBundle } from './api'
+import type { ActiveHireSession, Erc8183Job, EscrowStatus, HireTask, OngoingBundle } from './api'
 
 // one plain state per hire, so the page says what happened and what the buyer does
 // next instead of stacking the session, job and task statuses side by side
@@ -21,6 +21,9 @@ export interface HireItem {
   session: ActiveHireSession | null
   task: HireTask | null
   job: Erc8183Job | null
+  // the payment's on-chain escrow state when one exists, so the card never
+  // reads as paid out while the funder still holds the money
+  escrow?: EscrowStatus | null
   // the session has not expired, so it can still be drawn on and must stay revocable,
   // whatever its job says: delivery checks the receipt, not the job
   live: boolean
@@ -30,7 +33,11 @@ export interface HireItem {
 // read in the order a buyer has to act: an attestation waits on them first,
 // then a terminal job, then the run itself
 export function hireState(item: HireItem): HireState {
-  const { task, job, live } = item
+  const { task, job, live, escrow } = item
+  // the money's state belongs to the escrow, not the job: a finished job whose
+  // payment is still held says so instead of reading as paid out
+  const held = escrow?.status === 0
+  const refundable = Boolean(held && escrow?.verifiedAt === 0)
   if (job?.status === 'Submitted') {
     return {
       group: 'needs',
@@ -39,9 +46,22 @@ export function hireState(item: HireItem): HireState {
       action: 'complete',
     }
   }
-  if (job?.status === 'Completed') return { group: 'finished', label: 'Completed' }
-  if (job?.status === 'Rejected') return { group: 'finished', label: 'Rejected' }
-  if (job?.status === 'Expired') return { group: 'finished', label: 'Expired' }
+  if (job?.status === 'Completed') {
+    return held
+      ? { group: 'finished', label: 'Completed', note: 'Your payment releases from escrow once the dispute window passes.' }
+      : { group: 'finished', label: 'Completed' }
+  }
+  if (job?.status === 'Rejected') {
+    return held
+      ? { group: 'finished', label: 'Rejected', note: 'Your payment has not left the escrow.' }
+      : { group: 'finished', label: 'Rejected' }
+  }
+  if (job?.status === 'Expired') {
+    if (!held) return { group: 'finished', label: 'Expired' }
+    return refundable
+      ? { group: 'finished', label: 'Expired', note: 'Your payment is still held in escrow - take the refund.' }
+      : { group: 'finished', label: 'Expired', note: 'Your payment has not left the escrow.' }
+  }
   // a retry replays the paid call, which the server allows after the session ends
   if (task?.status === 'failed') {
     return task.attempts < task.maxAttempts
@@ -53,8 +73,37 @@ export function hireState(item: HireItem): HireState {
   if (task?.status === 'gated') {
     return { group: 'finished', label: 'Agent refused the call', note: 'It answers only through its own access gate.' }
   }
-  if (live) return { group: 'needs', label: 'Paid, ready to run', note: 'Open the agent and send it a task.', action: 'run' }
+  if (live) {
+    return held
+      ? {
+          group: 'needs',
+          label: 'Paid, held in escrow',
+          note: 'Open the agent and send it a task. Your payment is held until you OK the delivery.',
+          action: 'run',
+        }
+      : { group: 'needs', label: 'Paid, ready to run', note: 'Open the agent and send it a task.', action: 'run' }
+  }
+  if (refundable) return { group: 'finished', label: 'Ended unused', note: 'Your payment is still held in escrow - take the refund.' }
+  if (held) return { group: 'finished', label: 'Ended unused', note: 'Your payment has not left the escrow.' }
   return { group: 'finished', label: 'Ended unused' }
+}
+
+// what the escrow line on a hire card says, following the money: held until a
+// verified delivery and the dispute window, then released or refunded
+export interface EscrowChip {
+  text: string
+  tone: 'hold' | 'ready' | 'done'
+}
+
+export function escrowChip(escrow: EscrowStatus | null | undefined, now: number = Date.now()): EscrowChip | null {
+  if (!escrow) return null
+  if (escrow.status === 1) return { text: 'Released to the agent', tone: 'done' }
+  if (escrow.status === 2) return { text: 'Refunded to your wallet', tone: 'done' }
+  if (escrow.verifiedAt === 0) return { text: 'Held in escrow, waiting on delivery', tone: 'hold' }
+  if (escrow.windowEndsAt !== null && escrow.windowEndsAt * 1000 <= now) {
+    return { text: 'Ready to release from escrow', tone: 'ready' }
+  }
+  return { text: 'Held in escrow, dispute window open', tone: 'hold' }
 }
 
 // sessions and ended-session tasks as one list, one entry per payment, newest first

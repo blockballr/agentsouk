@@ -2,8 +2,8 @@
 // hire never offers a run, a finished job keeps an open session revocable, and a JSON
 // deliverable reads as fields
 import { describe, expect, it } from "vitest";
-import { hireItems, hireState, readableResult, type HireItem } from "../apps/web/src/lib/hire-state";
-import type { ActiveHireSession, Erc8183Job, HireTask } from "../apps/web/src/lib/api";
+import { escrowChip, hireItems, hireState, readableResult, type HireItem } from "../apps/web/src/lib/hire-state";
+import type { ActiveHireSession, Erc8183Job, EscrowStatus, HireTask } from "../apps/web/src/lib/api";
 
 const NOW = Date.parse("2026-09-30T12:00:00.000Z");
 
@@ -68,6 +68,20 @@ function item(over: Partial<HireItem> = {}): HireItem {
     job: null,
     live: true,
     at: "2026-09-30T10:00:00.000Z",
+    ...over,
+  };
+}
+
+function escrow(over: Partial<EscrowStatus> = {}): EscrowStatus {
+  return {
+    paymentId: "req_1",
+    buyer: "0x4bb30e3b3bc22082c1935fe3be7c07448e69c862",
+    payTo: "0x6d5767ca6e48b7103f3e660a2ff78148d2ec6ab4",
+    amount: "2000000000000000000",
+    status: 0,
+    fundedAt: 1791373327,
+    verifiedAt: 0,
+    windowEndsAt: null,
     ...over,
   };
 }
@@ -139,5 +153,69 @@ describe("readable result", () => {
 
   it("leaves plain text as text", () => {
     expect(readableResult("Health factor is 1.23")).toEqual({ kind: "text", text: "Health factor is 1.23" });
+  });
+});
+
+describe("escrow on a hire", () => {
+  it("reads a held payment as held rather than paid out", () => {
+    expect(hireState(item({ escrow: escrow() }))).toMatchObject({ label: "Paid, held in escrow", action: "run" });
+    expect(
+      hireState(item({ job: job("Completed"), escrow: escrow({ verifiedAt: 1791373545, windowEndsAt: 1791377145 }) })),
+    ).toMatchObject({ label: "Completed", note: expect.stringContaining("releases from escrow") });
+  });
+
+  it("offers the refund only while the escrow is still refundable", () => {
+    expect(hireState(item({ live: false, escrow: escrow() }))).toMatchObject({
+      label: "Ended unused",
+      note: expect.stringContaining("take the refund"),
+    });
+    expect(hireState(item({ job: job("Expired"), escrow: escrow() }))).toMatchObject({
+      note: expect.stringContaining("take the refund"),
+    });
+    expect(hireState(item({ live: false, escrow: escrow({ verifiedAt: 1791373545 }) }))).toMatchObject({
+      label: "Ended unused",
+      note: expect.stringContaining("not left the escrow"),
+    });
+  });
+
+  it("says where the money is on a rejected job", () => {
+    expect(hireState(item({ job: job("Rejected"), escrow: escrow() }))).toMatchObject({
+      label: "Rejected",
+      note: expect.stringContaining("not left the escrow"),
+    });
+    expect(hireState(item({ job: job("Rejected") }))).toEqual({ group: "finished", label: "Rejected" });
+  });
+
+  it("leaves a hire with no escrow exactly as it was", () => {
+    expect(hireState(item())).toMatchObject({ label: "Paid, ready to run" });
+    expect(hireState(item({ live: false }))).toEqual({ group: "finished", label: "Ended unused" });
+    expect(hireState(item({ job: job("Completed") }))).toEqual({ group: "finished", label: "Completed" });
+    expect(hireState(item({ job: job("Expired") }))).toEqual({ group: "finished", label: "Expired" });
+  });
+});
+
+describe("escrow chip", () => {
+  it("has no line for a hire with no escrow", () => {
+    expect(escrowChip(null)).toBeNull();
+    expect(escrowChip(undefined)).toBeNull();
+  });
+
+  it("follows the money through its states", () => {
+    expect(escrowChip(escrow())).toEqual({ text: "Held in escrow, waiting on delivery", tone: "hold" });
+    const verified = escrow({ verifiedAt: 1791373545, windowEndsAt: 1791377145 });
+    expect(escrowChip(verified, 1791375000 * 1000)).toEqual({ text: "Held in escrow, dispute window open", tone: "hold" });
+    expect(escrowChip(verified, 1791378000 * 1000)).toEqual({ text: "Ready to release from escrow", tone: "ready" });
+    expect(escrowChip(escrow({ status: 1, verifiedAt: 1791373545, windowEndsAt: 1791377145 }))).toEqual({
+      text: "Released to the agent",
+      tone: "done",
+    });
+    expect(escrowChip(escrow({ status: 2 }))).toEqual({ text: "Refunded to your wallet", tone: "done" });
+  });
+
+  it("treats an unknown window as still open", () => {
+    expect(escrowChip(escrow({ verifiedAt: 1791373545, windowEndsAt: null }), Date.now())).toEqual({
+      text: "Held in escrow, dispute window open",
+      tone: "hold",
+    });
   });
 });

@@ -460,6 +460,34 @@ export async function getOngoing(
   }
 }
 
+// the on-chain escrow state of one settled hire, as the status route reports
+// it: the funder holds the money at status 0 until release (1) or refund (2)
+export interface EscrowStatus {
+  paymentId: string
+  buyer: string
+  payTo: string
+  amount: string
+  status: number
+  fundedAt: number
+  verifiedAt: number
+  windowEndsAt: number | null
+}
+
+// one batched read for every payment on the page. An older deploy has no such
+// route, and a hire card must survive that: no answer reads as no escrow line
+// rather than as an error
+export async function getEscrowStatuses(
+  paymentIds: string[],
+): Promise<{ funder: string | null; byId: Record<string, EscrowStatus> }> {
+  if (paymentIds.length === 0) return { funder: null, byId: {} }
+  const res = await fetch(`${BASE}/escrow?paymentIds=${encodeURIComponent(paymentIds.join(','))}`)
+  if (!res.ok) return { funder: null, byId: {} }
+  const body = await readJsonBody<{ funder?: string | null; jobs?: EscrowStatus[] }>(res, 'escrow')
+  const byId: Record<string, EscrowStatus> = {}
+  for (const job of body.jobs ?? []) byId[job.paymentId] = job
+  return { funder: body.funder ?? null, byId }
+}
+
 export async function revokeSession(paymentId: string, client?: string | null): Promise<void> {
   const qs = `?paymentId=${encodeURIComponent(paymentId)}${client ? `&client=${encodeURIComponent(client)}` : ''}`
   const res = await fetch(`${BASE}/sessions${qs}`, { method: 'DELETE' })
