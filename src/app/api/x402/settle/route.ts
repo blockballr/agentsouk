@@ -9,6 +9,7 @@ import { loadDelisted } from "@/lib/delist-store";
 import { isAgentOwner, normalizeAddr } from "@/lib/boost-auth";
 import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
 import { targetChainId } from "@/lib/types";
+import { escrowFunder, escrowTermsFor } from "@/lib/escrow";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +73,9 @@ async function hireRefusal(
   payer: string,
   payee: string,
   isCheck: boolean,
+  // on an escrowed hire the payee is the funder contract and the agent's wallet
+  // arrives in extra.agentPayTo, so the binding is checked against that wallet
+  escrowAgentPayTo: string | null,
 ): Promise<Refusal | null> {
   const detail = await fetchAgentDetail(agent.chainId, agent.tokenId, REGISTRY_READ_MS).catch(() => null);
   // our own probe is not held up by a slow registry: an agent must not be recorded as failing
@@ -80,7 +84,8 @@ async function hireRefusal(
   // the receipt carries the registry's name for the agent, not whatever the caller called it
   agent.name = detail.name;
   const wallet = detail.agent_wallet ?? detail.owner_address;
-  if (!wallet || normalizeAddr(wallet) !== normalizeAddr(payee)) {
+  const bound = escrowAgentPayTo ?? payee;
+  if (!wallet || normalizeAddr(wallet) !== normalizeAddr(bound)) {
     return { error: `This payment does not go to ${detail.name}, so it is not a hire of it.` };
   }
   if (isCheck) return null;
@@ -135,6 +140,11 @@ export async function POST(req: NextRequest) {
   const from = body.paymentPayload.payload?.authorization?.from;
   const payer = typeof from === "string" ? from : "";
   const payee = typeof body.paymentRequirements.payTo === "string" ? body.paymentRequirements.payTo : "";
+  const rawAgentPayTo = body.paymentRequirements.extra?.agentPayTo;
+  const agentPayTo = typeof rawAgentPayTo === "string" ? rawAgentPayTo : "";
+  // the escrow terms only exist when the signed recipient is the configured funder and the
+  // agent's wallet rides beside it; anything else reads as the direct path
+  const terms = escrowTermsFor(payee, agentPayTo);
   // a probe is the marketplace's own: its id alone is the caller's to choose, so it also has
   // to be paid from one of our wallets
   const isCheck = isVerifierPayment(body.paymentId) && isTeamWallet(payer);
@@ -161,7 +171,20 @@ export async function POST(req: NextRequest) {
     if (!ADDRESS.test(payer) || !ADDRESS.test(payee)) {
       return NextResponse.json({ success: false, error: "the payer and the payee must be addresses" }, { status: 400 });
     }
-    const refusal = await hireRefusal(agent, payer, payee, isCheck);
+    // with the funder deployed, a real hire is escrowed or it is not a hire: a
+    // crafted requirements naming the agent wallet directly would pay around the
+    // escrow the marketplace now claims as the money path
+    if (!isCheck && escrowFunder() && !terms) {
+      return NextResponse.json(
+        {
+          success: false,
+          refused: true,
+          error: "This settlement does not name the escrow that holds a hire, so it cannot settle.",
+        },
+        { status: 409 },
+      );
+    }
+    const refusal = await hireRefusal(agent, payer, payee, isCheck, terms ? terms.agentPayTo : null);
     // refused marks the sentence as ours, so the site shows it as it is
     if (refusal) return NextResponse.json({ success: false, refused: true, ...refusal }, { status: 409 });
   }

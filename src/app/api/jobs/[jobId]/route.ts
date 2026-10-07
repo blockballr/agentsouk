@@ -10,6 +10,7 @@ import {
   submitJob,
   type Job,
 } from "@/lib/jobs";
+import { releaseEscrowIfDue } from "@/lib/escrow";
 
 export const dynamic = "force-dynamic";
 
@@ -119,7 +120,12 @@ export async function POST(
   if (jobAction === "complete") {
     const next = completeJob({ jobId, evaluator: by, reason: body?.reason });
     if (!next) return NextResponse.json({ error: "complete rejected" }, { status: 403 });
-    return NextResponse.json({ success: true, job: await persistJob(next) });
+    const stored = await persistJob(next);
+    // the evaluator's complete is the buyer's OK in the UI, so the escrowed
+    // release is attempted alongside it. Before the dispute window is up this
+    // reads as nothing to do and the on-chain window keeps running
+    if (stored.paymentId) await releaseEscrowIfDue(stored.paymentId);
+    return NextResponse.json({ success: true, job: stored });
   }
   if (jobAction === "reject") {
     const next = rejectJob({ jobId, by, reason: body?.reason });

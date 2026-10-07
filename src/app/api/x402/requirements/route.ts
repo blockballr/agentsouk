@@ -13,13 +13,18 @@ import { JOB_SELLER_NOTE, sellsByJob } from "@agora/core";
 import { fetchAgentCardSkills } from "@/lib/delivery";
 import { loadDelisted } from "@/lib/delist-store";
 import { isAgentOwner } from "@/lib/boost-auth";
+import { escrowFunder } from "@/lib/escrow";
 
 export const dynamic = "force-dynamic";
 
 export const DEFAULT_HIRE_PRICE_USD = 2;
 
+const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+
 // the marketplace is the x402 merchant and the agent's receiving wallet is the payTo,
-// matching how BNB Agent Studio routes payments; in production this comes from the agent's own merchant endpoint
+// matching how BNB Agent Studio routes payments; in production this comes from the agent's own merchant endpoint.
+// With the funder deployed the payTo is the funder instead, and the agent's wallet
+// travels in extra.agentPayTo for the settle step to re-bind to the registry
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as {
     chainId?: number;
@@ -98,6 +103,15 @@ export async function POST(req: NextRequest) {
   } catch {
     // keep the raw values; the settle step will reject them if truly invalid
   }
+  // A funded hire is escrowed when the funder is deployed: the signed recipient
+  // becomes the funder contract and the agent's real wallet rides beside it in
+  // extra, which the settle step re-binds to the registry before spending. Our
+  // own probe never escrows: a check pays the agent directly and is not a hire
+  let agentPayTo: string | undefined;
+  if (body.purpose !== "check" && escrowFunder() && ADDRESS.test(payTo)) {
+    agentPayTo = payTo;
+    payTo = escrowFunder() as string;
+  }
 
   const resource: ResourceInfo = {
     url: `/agents/${chainId}/${detail.token_id}`,
@@ -119,6 +133,9 @@ export async function POST(req: NextRequest) {
       signerAddress: body.client,
       resourceUrl: resource.url,
       resourceDescription: resource.description,
+      // present only on an escrowed hire: who the money is ultimately for,
+      // against the funder the signature above it is addressed to
+      ...(agentPayTo ? { agentPayTo } : {}),
     },
   };
 

@@ -11,6 +11,7 @@ import {
 } from "./tasks";
 import { getJobByPaymentAsync, submitJobAsync, type JobStatus } from "./jobs";
 import { requestsWalletSecret } from "./quest-eligibility";
+import { verifyEscrowDelivery } from "./escrow";
 
 // the delivery half of hire: a settled receipt unlocks invoking the agent's own endpoint.
 // Two JSON-RPC protocols exist: MCP (initialize, tools/list, tools/call) and A2A (agent card, message/send); agents that gate direct calls behind their own x402 payment are surfaced as gated, not faked.
@@ -633,6 +634,12 @@ export async function deliver(input: DeliverInput): Promise<
           jobId: job.id,
           status: submitted?.status ?? job.status,
         };
+        // the on-chain attestation follows the delivery: with the funder deployed
+        // the relay records the verified delivery against the escrowed hire,
+        // which opens the dispute window the release waits out. No funder
+        // configured reads as nothing to do; a failed verify logs and leaves the
+        // job refundable rather than blocking a delivery that already landed
+        await verifyEscrowDelivery(input.paymentId);
       } else {
         // Submitted or terminal: a second advance would overwrite the recorded
         // deliverable, so the job is left where it is and the state is reported
