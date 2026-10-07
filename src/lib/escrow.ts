@@ -133,6 +133,13 @@ const FUNDER_ABI = [
       },
     ],
   },
+  {
+    name: "disputeWindow",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint64" }],
+  },
 ] as const;
 
 const LEDGER_ABI = [
@@ -251,6 +258,7 @@ export async function verifyEscrowDelivery(paymentId: string): Promise<string | 
 }
 
 export interface EscrowJobRow {
+  buyer: string;
   fundedAt: bigint;
   verifiedAt: bigint;
   status: number;
@@ -260,6 +268,7 @@ export interface EscrowJobRow {
 
 const ESCROW_FUNDED = 0;
 const ESCROW_RELEASED = 1;
+const ESCROW_REFUNDED = 2;
 
 export async function escrowJobOf(paymentId: string): Promise<EscrowJobRow | null> {
   const funder = escrowFunder();
@@ -285,6 +294,7 @@ export async function escrowJobOf(paymentId: string): Promise<EscrowJobRow | nul
     };
     if (job.fundedAt === 0n) return null;
     return {
+      buyer: job.buyer,
       fundedAt: job.fundedAt,
       verifiedAt: job.verifiedAt,
       status: job.status,
@@ -322,4 +332,67 @@ export async function releaseEscrowIfDue(paymentId: string): Promise<string | nu
   }
 }
 
-export { ESCROW_FUNDED, ESCROW_RELEASED };
+// one JSON-safe status row per escrowed hire: the shape the status route and
+// the hire cards read, with chain bigints flattened for transport. A payment
+// that never entered escrow has no row at all
+export interface EscrowStatusRow {
+  paymentId: string;
+  buyer: string;
+  payTo: string;
+  amount: string;
+  status: number;
+  fundedAt: number;
+  verifiedAt: number;
+  windowEndsAt: number | null;
+}
+
+// the window is immutable per deployment, so one read per funder is enough for
+// every status row served after it
+const windowByFunder = new Map<string, number>();
+
+export async function escrowDisputeWindow(): Promise<number | null> {
+  const funder = escrowFunder();
+  if (!funder) return null;
+  const cached = windowByFunder.get(funder);
+  if (cached !== undefined) return cached;
+  try {
+    const { chain, transport } = chainConfig(targetChainId());
+    const publicClient = createPublicClient({ chain, transport });
+    const window = await publicClient.readContract({
+      address: funder,
+      abi: FUNDER_ABI,
+      functionName: "disputeWindow",
+    });
+    const seconds = Number(window);
+    if (Number.isFinite(seconds) && seconds > 0) windowByFunder.set(funder, seconds);
+    return seconds;
+  } catch (e) {
+    console.error("[escrow] dispute window read failed:", (e as Error).message);
+    return null;
+  }
+}
+
+export async function escrowStatuses(paymentIds: string[]): Promise<EscrowStatusRow[]> {
+  if (!escrowFunder() || paymentIds.length === 0) return [];
+  const window = await escrowDisputeWindow();
+  const rows = await Promise.all(
+    paymentIds.map(async (paymentId) => {
+      const job = await escrowJobOf(paymentId);
+      if (!job) return null;
+      return {
+        paymentId,
+        buyer: job.buyer,
+        payTo: job.payTo,
+        amount: job.amount.toString(),
+        status: job.status,
+        fundedAt: Number(job.fundedAt),
+        verifiedAt: Number(job.verifiedAt),
+        windowEndsAt:
+          job.verifiedAt > 0n && window !== null ? Number(job.verifiedAt) + window : null,
+      } satisfies EscrowStatusRow;
+    }),
+  );
+  return rows.filter((row): row is EscrowStatusRow => row !== null);
+}
+
+export { ESCROW_FUNDED, ESCROW_RELEASED, ESCROW_REFUNDED };
