@@ -3,6 +3,8 @@ import { loggedCronRun } from "@/lib/history-store";
 import { loadStaleTokens } from "@/lib/verifications-store";
 import { setDelisted } from "@/lib/delist-store";
 import { targetChainId } from "@/lib/types";
+import { escrowFunder, releaseEscrowIfDue } from "@/lib/escrow";
+import { listRecentPayments } from "@/lib/receipts-store";
 
 export const dynamic = "force-dynamic";
 
@@ -27,12 +29,31 @@ async function run(): Promise<NextResponse> {
     if (persisted) delisted.push(token.tokenId);
   }
 
+  // escrow release pass: recent settled hires whose delivery was verified and
+  // whose dispute window has passed are released to the agent. Rows that were
+  // never escrowed read as nothing to do, and one RPC failure leaves that row
+  // for the next pass rather than stopping the sweep
+  const released: string[] = [];
+  if (escrowFunder()) {
+    const recent = await listRecentPayments(200).catch(() => []);
+    for (const payment of recent) {
+      if (payment.mode !== "prod") continue;
+      try {
+        const tx = await releaseEscrowIfDue(payment.paymentId);
+        if (tx) released.push(payment.paymentId);
+      } catch (e) {
+        console.error("[escrow] release sweep row failed:", (e as Error).message);
+      }
+    }
+  }
+
   return NextResponse.json({
     success: true,
     chainId: targetChainId(),
     windowMs: STALE_MS,
     considered: stale.length,
     delisted,
+    released,
     stale: stale.map((t) => ({
       tokenId: t.tokenId,
       name: t.name,

@@ -19,6 +19,9 @@ export interface PaymentRequirements {
     signerAddress?: string;
     resourceUrl?: string;
     resourceDescription?: string;
+    // on an escrowed hire: the agent's real receiving wallet, against a payTo
+    // that is the funder contract holding the money until delivery
+    agentPayTo?: string;
   };
 }
 

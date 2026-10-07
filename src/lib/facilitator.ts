@@ -12,6 +12,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { bsc, bscTestnet } from "viem/chains";
 import { SESSION_HOURS, SESSION_SPEND_CAP_USD } from "@agora/core";
 import { verifySmartWalletSignature } from "./erc1271";
+import { escrowTermsFor, fundEscrow, issueSettlementReceipt } from "./escrow";
 import {
   BSC_TESTNET_CHAIN_ID,
   explorerBaseFor,
@@ -218,7 +219,7 @@ export async function settleSandbox(
       name: ctx.agent.name,
     },
     client: auth.from,
-    payTo: pr.payTo,
+    payTo: pr.extra?.agentPayTo ?? pr.payTo,
     amount: pr.amount,
     symbol: asset.symbol,
     activated: true,
@@ -227,7 +228,6 @@ export async function settleSandbox(
       expiresAt: new Date(now.getTime() + SESSION_HOURS * 60 * 60 * 1000).toISOString(),
     },
   };
-
   await recordPaymentDurable({ ...receipt, paymentPayload: req.paymentPayload });
 
   return {
@@ -238,7 +238,7 @@ export async function settleSandbox(
       agentId: ctx.agent.tokenId,
       agentName: ctx.agent.name,
       client: auth.from,
-      payTo: pr.payTo,
+      payTo: pr.extra?.agentPayTo ?? pr.payTo,
       amount: pr.amount,
       symbol: asset.symbol,
       verified: true,
@@ -446,41 +446,76 @@ export async function settleProd(
   });
 
   try {
+    // escrowed or direct: which path this settlement takes is decided by the signed
+    // recipient, re-checked here against the configured funder rather than trusted
+    // from the request. The payment id is needed before anything broadcasts, because
+    // it is the job id both contracts are keyed by
+    const terms = escrowTermsFor(pr.payTo, pr.extra?.agentPayTo);
+    const paymentId = req.paymentId ?? crypto.randomUUID();
+    let hash: `0x${string}`;
+
+    if (terms) {
+      // one transaction: the token validates the buyer's authorization inside the
+      // funder, funds land in escrow, and the agent's wallet is the payTo the
+      // release path pays. The relay cannot move the funds anywhere else
+      hash = await fundEscrow({
+        paymentId,
+        token: getAddress(asset.address),
+        buyer: getAddress(auth.from),
+        agentPayTo: terms.agentPayTo,
+        value: checks.message.value,
+        validAfter: checks.message.validAfter,
+        validBefore: checks.message.validBefore,
+        nonce: checks.message.nonce,
+        signature: auth.signature as `0x${string}`,
+      });
+      // the ledger record follows the escrow: same payment id, claimable once.
+      // Best effort, so a ledger outage leaves a warning rather than a paid hire
+      // with no receipt
+      await issueSettlementReceipt({
+        paymentId,
+        buyer: getAddress(auth.from),
+        agentPayTo: terms.agentPayTo,
+        token: getAddress(asset.address),
+        amount: checks.message.value,
+        nonce: checks.message.nonce,
+      });
+    } else {
     const { r, vs, vNum } = splitSig(auth.signature as `0x${string}`);
     const data = encodeFunctionData({
-    abi: [
-      {
-        name: "transferWithAuthorization",
-        type: "function",
-        stateMutability: "nonpayable",
-        inputs: [
-          { name: "from", type: "address" },
-          { name: "to", type: "address" },
-          { name: "value", type: "uint256" },
-          { name: "validAfter", type: "uint256" },
-          { name: "validBefore", type: "uint256" },
-          { name: "nonce", type: "bytes32" },
-          { name: "v", type: "uint8" },
-          { name: "r", type: "bytes32" },
-          { name: "s", type: "bytes32" },
-        ],
-        outputs: [],
-      },
-    ],
-    args: [
-      getAddress(auth.from),
-      getAddress(auth.to),
-      BigInt(auth.value),
-      BigInt(auth.validAfter),
-      BigInt(auth.validBefore),
-      auth.nonce as `0x${string}`,
-      vNum,
-      r,
-      vs,
-    ],
+      abi: [
+        {
+          name: "transferWithAuthorization",
+          type: "function",
+          stateMutability: "nonpayable",
+          inputs: [
+            { name: "from", type: "address" },
+            { name: "to", type: "address" },
+            { name: "value", type: "uint256" },
+            { name: "validAfter", type: "uint256" },
+            { name: "validBefore", type: "uint256" },
+            { name: "nonce", type: "bytes32" },
+            { name: "v", type: "uint8" },
+            { name: "r", type: "bytes32" },
+            { name: "s", type: "bytes32" },
+          ],
+          outputs: [],
+        },
+      ],
+      args: [
+        getAddress(auth.from),
+        getAddress(auth.to),
+        BigInt(auth.value),
+        BigInt(auth.validAfter),
+        BigInt(auth.validBefore),
+        auth.nonce as `0x${string}`,
+        vNum,
+        r,
+        vs,
+      ],
     });
 
-    const hash = await sendWithNonceRetry(() =>
+    hash = await sendWithNonceRetry(() =>
       walletClient.sendTransaction({
         to: asset.address,
         data,
@@ -490,8 +525,12 @@ export async function settleProd(
     // moved with no receipt recorded
     const onchain = await publicClient.waitForTransactionReceipt({ hash });
     if (onchain.status !== "success") return fail(`Relay tx reverted: ${hash}`);
+    }
 
-    const paymentId = req.paymentId ?? crypto.randomUUID();
+    // the receipt records who the money is for: on an escrowed hire that is the
+    // agent's wallet, so the by-payee read still answers for the agent even though
+    // the signed recipient was the funder holding it
+    const payee = terms ? terms.agentPayTo : pr.payTo;
     const now = new Date();
     const receipt: Receipt = {
       paymentId,
@@ -504,7 +543,7 @@ export async function settleProd(
         name: ctx.agent.name,
       },
       client: auth.from,
-      payTo: pr.payTo,
+      payTo: payee,
       amount: pr.amount,
       symbol: asset.symbol,
       activated: true,
@@ -523,7 +562,7 @@ export async function settleProd(
         agentId: ctx.agent.tokenId,
         agentName: ctx.agent.name,
         client: auth.from,
-        payTo: pr.payTo,
+        payTo: payee,
         amount: pr.amount,
         symbol: asset.symbol,
         verified: true,
