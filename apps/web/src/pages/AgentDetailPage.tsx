@@ -509,7 +509,7 @@ export function AgentDetailPage() {
             parallel={detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok'}
             payment={
               jobSeller
-                ? { value: 'By ERC-8183 job', note: 'Escrowed on-chain, released on delivery' }
+                ? { value: 'By ERC-8183 job', note: 'The settled hire funds the job on the record; delivery attested' }
                 : { value: 'Per call', note: `Paid over x402 in ${asset}, straight to its wallet` }
             }
             network={chainLabel(detail.chain_id)}
@@ -877,8 +877,8 @@ function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['
         </p>
       ) : jobSeller ? (
         <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-          It works through ERC-8183 jobs: it quotes a price, you fund escrow on-chain, and it delivers
-          against the job. Its description above says what the work is.
+          It works through ERC-8183 jobs: it quotes a price, your settled hire funds the job on the
+          record, and it delivers against that job. Its description above says what the work is.
         </p>
       ) : null}
       {!jobSeller && work.length > 0 && (
@@ -890,8 +890,9 @@ function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['
       )}
       {!jobSeller && alsoJobs && (
         <p className="border-t hairline border-slate-verdant/25 pt-4 text-[13px] leading-relaxed text-newsprint-gray">
-          It also sells the same work through ERC-8183 jobs, for buyers who want payment held in escrow
-          until delivery.
+          It also sells the same work through ERC-8183 jobs: a settled hire opens
+          and funds the job on the record, and the delivery is attested before
+          the job closes.
         </p>
       )}
     </section>
