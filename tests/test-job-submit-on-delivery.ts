@@ -160,6 +160,8 @@ beforeEach(() => {
 });
 
 describe("delivery advances a job it did not create", () => {
+  // the cold module re-import this test performs runs long against the 5s default
+  // when four workers share the CPU in a full run, though it is well under alone
   it("finds a Funded job in the durable store and submits it", async () => {
     const paymentId = "pay-elsewhere";
     const job = storedJob(paymentId, "Funded");
@@ -181,7 +183,7 @@ describe("delivery advances a job it did not create", () => {
     expect(stored?.status).toBe("Submitted");
     expect(stored?.deliverable).toContain("scan_opportunities");
     expect(stored?.history.map((h) => h.status)).toContain("Submitted");
-  });
+  }, 15000);
 });
 
 describe("an already advanced job is not advanced twice", () => {
