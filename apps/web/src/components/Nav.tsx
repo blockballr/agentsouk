@@ -44,9 +44,9 @@ export function Nav() {
           </ul>
           <div className="hidden lg:flex lg:items-center lg:gap-8">
             <QuickSearch />
-            <ThemeToggle />
             <CartLink />
             <ProfileLink />
+            <ThemeToggle />
           </div>
           <div className="lg:hidden">
             <QuickSearch large />
@@ -83,9 +83,9 @@ export function Nav() {
             ))}
             <div className="mt-2 flex items-center gap-6 py-3">
               <AboutLink onClick={() => setMenuOpen(false)} />
-              <ThemeToggle />
               <CartLink />
               <ProfileLink onClick={() => setMenuOpen(false)} />
+              <ThemeToggle />
             </div>
           </nav>
         </div>
