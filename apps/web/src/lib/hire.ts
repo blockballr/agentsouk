@@ -79,6 +79,24 @@ const REVERT_PLAIN_ENGLISH: { test: RegExp; message: string }[] = [
     test: /nonce|already been used/i,
     message: 'That authorisation has already been used. Start the hire again.',
   },
+  // the funder's own reverts, so a refused escrow action reads as the refusal
+  // it is rather than as a failed payment
+  {
+    test: /f321c1a3|DisputeOpen/i,
+    message: 'The dispute window for this escrow has closed, so the money can no longer be disputed.',
+  },
+  {
+    test: /d5ef09ba|NotFunded/i,
+    message: 'This escrow has no verified delivery yet. Take the refund instead of disputing it.',
+  },
+  {
+    test: /9acb7e52|AlreadyClosed/i,
+    message: 'This escrow has already closed; the money has already moved.',
+  },
+  {
+    test: /472e017e|NotBuyer/i,
+    message: 'Only the wallet that paid for this hire can move its escrow.',
+  },
 ]
 
 /** A short, plain-English sentence for a failed hire, with no library internals. */

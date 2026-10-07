@@ -14,6 +14,7 @@ import { explorerTxBase } from '../lib/contracts'
 import { mergeSessions, stabiliseSessions } from '../lib/ongoing-merge'
 import {
   escrowChip,
+  escrowRejectMove,
   hireItems,
   hireState,
   readableResult,
@@ -198,39 +199,79 @@ export function OngoingPage() {
     }
   }
 
-  // Release and refund are the buyer's own calls on the funder contract, sent
-  // from the wallet rather than through the marketplace: the contract decides
-  // by msg.sender, and the job id is the keccak of the payment id
+  // Release, refund and dispute are the buyer's own calls on the funder
+  // contract, sent from the wallet rather than through the marketplace: the
+  // contract decides by msg.sender, and the job id is the keccak of the
+  // payment id. Throwing here is the caller's error to show
+  async function sendEscrowTx(paymentId: string, chainId: number, kind: 'approve' | 'refund' | 'reject') {
+    if (!account) throw new Error('Connect the wallet that paid for this hire.')
+    if (!escrowFunder) throw new Error('This deployment has no escrow contract to call.')
+    const provider = await getProvider()
+    setTargetChain(chainId)
+    const chain = await ensureBscChain()
+    if (chain?.toLowerCase() !== chainIdToHex(chainId)) {
+      throw new Error(`Switch your wallet to ${chainId === 97 ? 'BSC testnet' : 'BSC'} to settle escrow on it.`)
+    }
+    const data = encodeFunctionData({
+      abi: FUNDER_ACTIONS,
+      functionName: kind,
+      args: [keccak256(toBytes(paymentId))],
+    })
+    const txHash = (await withSendTimeout(
+      provider.request({ method: 'eth_sendTransaction', params: [{ from: account, to: escrowFunder, data }] }),
+    )) as `0x${string}`
+    const receipt = await waitForTransactionReceipt(() =>
+      provider.request({ method: 'eth_getTransactionReceipt', params: [txHash] }) as Promise<TransactionReceipt | null>,
+    )
+    if (receipt && !(receipt.status === '0x1' || receipt.status === 'success')) {
+      throw new Error('The escrow transaction reverted. Nothing moved.')
+    }
+  }
+
   async function onEscrow(paymentId: string, chainId: number, kind: 'approve' | 'refund') {
     if (!account || !escrowFunder) return
     setEscrowBusyId(paymentId)
     try {
-      const provider = await getProvider()
-      setTargetChain(chainId)
-      const chain = await ensureBscChain()
-      if (chain?.toLowerCase() !== chainIdToHex(chainId)) {
-        throw new Error(`Switch your wallet to ${chainId === 97 ? 'BSC testnet' : 'BSC'} to settle escrow on it.`)
-      }
-      const data = encodeFunctionData({
-        abi: FUNDER_ACTIONS,
-        functionName: kind,
-        args: [keccak256(toBytes(paymentId))],
-      })
-      const txHash = (await withSendTimeout(
-        provider.request({ method: 'eth_sendTransaction', params: [{ from: account, to: escrowFunder, data }] }),
-      )) as `0x${string}`
-      const receipt = await waitForTransactionReceipt(() =>
-        provider.request({ method: 'eth_getTransactionReceipt', params: [txHash] }) as Promise<TransactionReceipt | null>,
-      )
-      if (receipt && !(receipt.status === '0x1' || receipt.status === 'success')) {
-        throw new Error('The escrow transaction reverted. Nothing moved.')
-      }
+      await sendEscrowTx(paymentId, chainId, kind)
       const refreshed = await getEscrowStatuses([paymentId])
       setEscrowById((prev) => ({ ...prev, ...refreshed.byId }))
     } catch (e) {
       setError(hireErrorText(e))
     } finally {
       setEscrowBusyId(null)
+    }
+  }
+
+  // Rejecting an escrowed hire moves the money back before the record changes:
+  // the refund before any verified delivery, the dispute inside the window
+  // after one, and a refusal with the reason once the chain says no. The
+  // on-chain call goes first, so a failed wallet call never leaves a job
+  // reading rejected while the escrow still holds the payment
+  async function onJobReject(item: HireItem) {
+    if (!account) return
+    const jobId = item.job?.id
+    if (!jobId) return
+    const move = escrowRejectMove(item.escrow)
+    if (move.kind === 'refuse') {
+      setError(move.reason ?? 'This escrow can no longer be rejected.')
+      return
+    }
+    setJobBusy(jobId)
+    try {
+      if (move.kind !== 'plain') {
+        if (account.toLowerCase() !== (item.escrow?.buyer ?? '').toLowerCase()) {
+          throw new Error('Only the wallet that paid can dispute this escrow.')
+        }
+        await sendEscrowTx(item.key, item.chainId, move.kind)
+        const refreshed = await getEscrowStatuses([item.key])
+        setEscrowById((prev) => ({ ...prev, ...refreshed.byId }))
+      }
+      await actOnJob(jobId, 'reject', { by: account, reason: 'reject' })
+      await load()
+    } catch (e) {
+      setError(hireErrorText(e))
+    } finally {
+      setJobBusy(null)
     }
   }
 
@@ -329,7 +370,7 @@ export function OngoingPage() {
                     account={account}
                     escrowBusy={escrowBusyId === it.key}
                     onComplete={() => it.job && onJob(it.job.id, 'complete')}
-                    onReject={() => it.job && onJob(it.job.id, 'reject')}
+                    onReject={() => onJobReject(it)}
                     onRetry={() => it.task && onRetry(it.task.id)}
                     onRevoke={() => onRevoke(it.key)}
                     onEscrow={(kind) => onEscrow(it.key, it.chainId, kind)}
@@ -369,10 +410,11 @@ const ESCROW_DOT: Record<EscrowChip['tone'], string> = {
   done: 'bg-emerald-500',
 }
 
-// the funder's two buyer-only verbs, sent from the wallet rather than relayed
+// the funder's three buyer verbs, sent from the wallet rather than relayed
 const FUNDER_ACTIONS = [
   { name: 'approve', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'jobId', type: 'bytes32' }], outputs: [] },
   { name: 'refund', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'jobId', type: 'bytes32' }], outputs: [] },
+  { name: 'reject', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'jobId', type: 'bytes32' }], outputs: [] },
 ] as const
 
 // every hire is built from the same parts in the same order at a fixed height, so a row of
