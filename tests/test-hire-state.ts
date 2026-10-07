@@ -2,7 +2,7 @@
 // hire never offers a run, a finished job keeps an open session revocable, and a JSON
 // deliverable reads as fields
 import { describe, expect, it } from "vitest";
-import { escrowChip, hireItems, hireState, readableResult, type HireItem } from "../apps/web/src/lib/hire-state";
+import { escrowChip, escrowRejectMove, hireItems, hireState, readableResult, type HireItem } from "../apps/web/src/lib/hire-state";
 import type { ActiveHireSession, Erc8183Job, EscrowStatus, HireTask } from "../apps/web/src/lib/api";
 
 const NOW = Date.parse("2026-09-30T12:00:00.000Z");
@@ -216,6 +216,39 @@ describe("escrow chip", () => {
     expect(escrowChip(escrow({ verifiedAt: 1791373545, windowEndsAt: null }), Date.now())).toEqual({
       text: "Held in escrow, dispute window open",
       tone: "hold",
+    });
+  });
+});
+
+describe("escrow reject move", () => {
+  it("needs no on-chain move without an escrow or once the money is with the buyer", () => {
+    expect(escrowRejectMove(null)).toEqual({ kind: "plain" });
+    expect(escrowRejectMove(undefined)).toEqual({ kind: "plain" });
+    expect(escrowRejectMove(escrow({ status: 2 }))).toEqual({ kind: "plain" });
+  });
+
+  it("takes the refund back before any verified delivery", () => {
+    expect(escrowRejectMove(escrow())).toEqual({ kind: "refund" });
+  });
+
+  it("disputes inside the window after a verified delivery", () => {
+    const verified = escrow({ verifiedAt: 1791373545, windowEndsAt: 1791377145 });
+    expect(escrowRejectMove(verified, 1791375000 * 1000)).toEqual({ kind: "reject" });
+    // an unknown window still goes to the contract, which enforces it anyway
+    expect(escrowRejectMove(escrow({ verifiedAt: 1791373545, windowEndsAt: null }), Date.now())).toEqual({
+      kind: "reject",
+    });
+  });
+
+  it("refuses with the reason once the chain will not take the money back", () => {
+    const verified = escrow({ verifiedAt: 1791373545, windowEndsAt: 1791377145 });
+    expect(escrowRejectMove(verified, 1791378000 * 1000)).toMatchObject({
+      kind: "refuse",
+      reason: expect.stringContaining("dispute window has passed"),
+    });
+    expect(escrowRejectMove(escrow({ status: 1, verifiedAt: 1791373545, windowEndsAt: 1791377145 }))).toMatchObject({
+      kind: "refuse",
+      reason: expect.stringContaining("already released"),
     });
   });
 });

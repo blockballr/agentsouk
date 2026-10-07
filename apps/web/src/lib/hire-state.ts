@@ -106,6 +106,27 @@ export function escrowChip(escrow: EscrowStatus | null | undefined, now: number 
   return { text: 'Held in escrow, dispute window open', tone: 'hold' }
 }
 
+// what a rejection has to do to the money before the record may read rejected:
+// nothing when there is no escrow or the money is already with the buyer, a
+// refund before any verified delivery, the dispute itself while the window is
+// open, and a refusal once the chain will no longer take the money back
+export interface EscrowRejectMove {
+  kind: 'plain' | 'refund' | 'reject' | 'refuse'
+  reason?: string
+}
+
+export function escrowRejectMove(escrow: EscrowStatus | null | undefined, now: number = Date.now()): EscrowRejectMove {
+  if (!escrow || escrow.status === 2) return { kind: 'plain' }
+  if (escrow.status === 1) {
+    return { kind: 'refuse', reason: 'This payment was already released to the agent; the hire can no longer be rejected.' }
+  }
+  if (escrow.verifiedAt === 0) return { kind: 'refund' }
+  if (escrow.windowEndsAt !== null && escrow.windowEndsAt * 1000 <= now) {
+    return { kind: 'refuse', reason: 'The dispute window has passed. The payment releases to the agent and the hire can no longer be rejected.' }
+  }
+  return { kind: 'reject' }
+}
+
 // sessions and ended-session tasks as one list, one entry per payment, newest first
 export function hireItems(bundle: OngoingBundle | null, now: number = Date.now()): HireItem[] {
   if (!bundle) return []
