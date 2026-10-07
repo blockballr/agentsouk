@@ -7,6 +7,7 @@ import {
   retryTask,
   type OngoingBundle,
 } from '../lib/api'
+import { timeAgo } from '@agora/core'
 import { explorerTxBase } from '../lib/contracts'
 import { mergeSessions, stabiliseSessions } from '../lib/ongoing-merge'
 import { hireItems, hireState, readableResult, type HireGroup, type HireItem, type HireState } from '../lib/hire-state'
@@ -312,7 +313,13 @@ function HireRow({
   const [dialog, setDialog] = useState<'full' | 'rate' | 'revoke' | null>(null)
   const shown = answerOf(task?.result ?? job?.deliverable ?? null, task?.error ?? null)
   const meta = [
-    item.live && session ? `${formatExpiry(session.expiresAt)} · $${session.spendCapUsd} cap` : 'Session ended',
+    item.live && session
+      ? `${formatExpiry(session.expiresAt)} · $${session.spendCapUsd} cap`
+      : session
+        ? // a track record needs its dates: the window the hire ran in, so a
+          // finished card reads as history rather than a place to park it
+          `${timeAgo(session.createdAt)} to ${timeAgo(session.expiresAt)}`
+        : 'Session ended',
     session?.mode === 'sandbox' ? 'test settlement' : null,
     job ? `$${job.budgetUsd} job` : null,
   ]
