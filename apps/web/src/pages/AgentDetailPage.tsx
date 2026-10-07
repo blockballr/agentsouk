@@ -428,14 +428,6 @@ export function AgentDetailPage() {
       >
         ← Marketplace
       </Link>
-      {firstParty && detail.chain_id === 97 && (
-        <div className="mt-2">
-          <Action to={`/vault/97/${detail.token_id}`} variant="quiet" size="sm">
-            Open a funded hire on this vault
-          </Action>
-        </div>
-      )}
-
       {/* phones read header, proof, hire, then the rest; wide screens keep hire in a sticky column */}
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_1fr] lg:gap-x-10">
         <div className="min-w-0 lg:col-start-1 lg:row-start-1">
@@ -636,6 +628,14 @@ export function AgentDetailPage() {
                 skills={detail.skills}
                 guide={questStage ?? undefined}
               />
+              {/* the deposit hire rides the standard panel for the vault's own
+                  chain: a custody-capable agent is hired by deposit, and this
+                  page is where a hire starts, so the option sits here too */}
+              {firstParty && detail.chain_id === 97 && (
+                <Action to={`/vault/97/${detail.token_id}`} variant="quiet" size="sm" className="mt-3 w-full">
+                  Open a funded hire on this vault
+                </Action>
+              )}
             </>
           )}
           {/* owner-only, so it renders only for an owner */}
