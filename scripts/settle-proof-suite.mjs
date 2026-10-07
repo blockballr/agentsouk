@@ -17,7 +17,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { bscTestnet } from "viem/chains";
 
 const SUSD = getAddress("0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53");
-const RPC = "https://data-seed-prebsc-1-s1.binance.org:8545";
+const RPC = "https://data-seed-prebsc-2-s2.binance.org:8545";
 const OUT = new URL("./settlement-proofs.json", import.meta.url);
 
 const raw = readFileSync(new URL("../.env.local", import.meta.url), "utf8").replace(/^\uFEFF/, "");
