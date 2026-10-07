@@ -23,7 +23,7 @@ const CHAIN_ID = 97;
 const AMOUNT_USD = 2;
 const EXPLORER = "https://testnet.bscscan.com";
 const SUSD = getAddress("0x9332b1aa9b3d5826f0b9b9e1659d962d2da13a53");
-const RPC = "https://data-seed-prebsc-1-s1.binance.org:8545";
+const RPC = "https://data-seed-prebsc-2-s2.binance.org:8545";
 const SANDBOX_TX_PREFIX = "0x53a66f";
 
 

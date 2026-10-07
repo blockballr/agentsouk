@@ -11,7 +11,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "node:fs";
 
 const CHAIN = bscTestnet;
-const RPC = process.env.BSC_TESTNET_RPC ?? "https://bsc-testnet-rpc.publicnode.com";
+const RPC = process.env.BSC_TESTNET_RPC ?? "https://data-seed-prebsc-2-s2.binance.org:8545";
 
 // the ERC-8004 identity registry on chain 97, the same one the marketplace reads
 const REGISTRY = "0x8004a818bfb912233c491871b3d84c89a494bd9e";

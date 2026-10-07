@@ -10,7 +10,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { bscTestnet } from "viem/chains";
 
 const CHAIN = bscTestnet;
-const RPC = process.env.BSC_TESTNET_RPC ?? "https://bsc-testnet-rpc.publicnode.com";
+const RPC = process.env.BSC_TESTNET_RPC ?? "https://data-seed-prebsc-2-s2.binance.org:8545";
 const ARTIFACT = new URL("../contracts/out/HireVault.sol/HireVault.json", import.meta.url);
 
 // PancakeSwap v3 on chain 97, and the two tokens its pools trade

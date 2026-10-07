@@ -39,9 +39,9 @@ const buyer = privateKeyToAccount(buyerKey);
 
 const client = createPublicClient({
   chain: bscTestnet,
-  transport: http("https://data-seed-prebsc-1-s1.binance.org:8545", { timeout: 30_000 }),
+  transport: http("https://data-seed-prebsc-2-s2.binance.org:8545", { timeout: 30_000 }),
 });
-const relayWallet = createWalletClient({ account: relay, chain: bscTestnet, transport: http("https://data-seed-prebsc-1-s1.binance.org:8545", { timeout: 30_000 }) });
+const relayWallet = createWalletClient({ account: relay, chain: bscTestnet, transport: http("https://data-seed-prebsc-2-s2.binance.org:8545", { timeout: 30_000 }) });
 
 // the shape facilitator.ts broadcasts
 const TWA_ABI = [
