@@ -67,6 +67,10 @@ export function HireFlow({
       ? formatUnits(BigInt(requirements.amount), 18)
       : "-";
 
+  // present only on an escrowed hire: the signed recipient is the funder
+  // holding the money, and the agent's real wallet rides beside it in extra
+  const escrowed = Boolean(requirements?.extra?.agentPayTo);
+
   useEffect(() => {
     if (!agent) return;
     fetchRequirements();
@@ -239,8 +243,9 @@ export function HireFlow({
                 : "Connect wallet to continue"}
             </button>
             <p className="mt-3 text-center text-[11px] leading-relaxed text-zinc-600">
-              You sign a gasless transfer authorization for the agent&apos;s
-              receiving wallet. No token custody, no approvals, funds move directly on-chain.
+              {escrowed
+                ? "You sign a gasless transfer authorization that funds the escrow holding this hire. The agent's wallet is paid from escrow once you OK the delivery."
+                : "You sign a gasless transfer authorization for the agent's receiving wallet. No token custody, no approvals, funds move directly on-chain."}
             </p>
           </>
         )}
@@ -273,11 +278,17 @@ export function HireFlow({
               </div>
             </div>
             <div className="mt-4 space-y-2 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm">
-              <Row label="Paid" value={`${formatUnits(BigInt(receipt.details.amount), 18)} ${receipt.details.symbol}`} />
+              <Row label={escrowed ? "Held in escrow" : "Paid"} value={`${formatUnits(BigInt(receipt.details.amount), 18)} ${receipt.details.symbol}`} />
               <Row label="To" value={shortAddress(receipt.details.payTo)} />
               <Row label="Mode" value={receipt.details.mode.toUpperCase()} />
               <Row label="Tx" value={shortAddress(receipt.txHash, 10)} mono />
             </div>
+            {escrowed && (
+              <p className="mt-3 text-center text-[11px] leading-relaxed text-zinc-500">
+                Your payment sits in escrow. It releases to the agent on your
+                OK, or automatically once the dispute window passes.
+              </p>
+            )}
             <button
               onClick={onClose}
               className="mt-5 w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 text-sm font-medium text-zinc-200 transition hover:border-white/20"

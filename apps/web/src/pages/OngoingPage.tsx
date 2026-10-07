@@ -2,17 +2,30 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   actOnJob,
+  getEscrowStatuses,
   getHiresByWallet,
   getOngoing,
   retryTask,
+  type EscrowStatus,
   type OngoingBundle,
 } from '../lib/api'
 import { timeAgo } from '@agora/core'
 import { explorerTxBase } from '../lib/contracts'
 import { mergeSessions, stabiliseSessions } from '../lib/ongoing-merge'
-import { hireItems, hireState, readableResult, type HireGroup, type HireItem, type HireState } from '../lib/hire-state'
+import {
+  escrowChip,
+  hireItems,
+  hireState,
+  readableResult,
+  type EscrowChip,
+  type HireGroup,
+  type HireItem,
+  type HireState,
+} from '../lib/hire-state'
 import { hireErrorText } from '../lib/hire'
-import { connectWallet, getActiveAccount } from '../lib/wallet'
+import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
+import { encodeFunctionData, keccak256, toBytes } from 'viem'
+import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { ratedHires } from '../lib/rating'
 import { RateAgent } from '../components/RateAgent'
 import { Action, Dialog, LABEL, RatingBoxes, ResultBox, TextSlot, button, card, cx } from '../components/ui'
@@ -46,6 +59,9 @@ export function OngoingPage() {
   const [jobBusy, setJobBusy] = useState<string | null>(null)
   const [revokingId, setRevokingId] = useState<string | null>(null)
   const [revokeResults, setRevokeResults] = useState<Record<string, RevokeOutcome>>({})
+  const [escrowById, setEscrowById] = useState<Record<string, EscrowStatus>>({})
+  const [escrowFunder, setEscrowFunder] = useState<string | null>(null)
+  const [escrowBusyId, setEscrowBusyId] = useState<string | null>(null)
   const inFlight = useRef(false)
 
   useEffect(() => {
@@ -104,6 +120,33 @@ export function OngoingPage() {
     }
   }, [load, account])
 
+  // the escrow line is a chain read, not part of the five second poll: it is
+  // asked when the set of hires changes, then once a minute, so a release
+  // landing from the cron still reaches the card without hammering the RPC
+  const escrowKey = data ? hireItems(data).map((i) => i.key).sort().join(',') : ''
+  useEffect(() => {
+    if (!escrowKey) {
+      setEscrowById({})
+      setEscrowFunder(null)
+      return
+    }
+    let alive = true
+    const ids = escrowKey.split(',')
+    const pull = () => {
+      void getEscrowStatuses(ids).then((r) => {
+        if (!alive) return
+        setEscrowById(r.byId)
+        setEscrowFunder(r.funder)
+      })
+    }
+    pull()
+    const id = window.setInterval(pull, 60_000)
+    return () => {
+      alive = false
+      window.clearInterval(id)
+    }
+  }, [escrowKey])
+
   async function onConnect() {
     setConnecting(true)
     try {
@@ -155,7 +198,43 @@ export function OngoingPage() {
     }
   }
 
-  const items = hireItems(data)
+  // Release and refund are the buyer's own calls on the funder contract, sent
+  // from the wallet rather than through the marketplace: the contract decides
+  // by msg.sender, and the job id is the keccak of the payment id
+  async function onEscrow(paymentId: string, chainId: number, kind: 'approve' | 'refund') {
+    if (!account || !escrowFunder) return
+    setEscrowBusyId(paymentId)
+    try {
+      const provider = await getProvider()
+      setTargetChain(chainId)
+      const chain = await ensureBscChain()
+      if (chain?.toLowerCase() !== chainIdToHex(chainId)) {
+        throw new Error(`Switch your wallet to ${chainId === 97 ? 'BSC testnet' : 'BSC'} to settle escrow on it.`)
+      }
+      const data = encodeFunctionData({
+        abi: FUNDER_ACTIONS,
+        functionName: kind,
+        args: [keccak256(toBytes(paymentId))],
+      })
+      const txHash = (await withSendTimeout(
+        provider.request({ method: 'eth_sendTransaction', params: [{ from: account, to: escrowFunder, data }] }),
+      )) as `0x${string}`
+      const receipt = await waitForTransactionReceipt(() =>
+        provider.request({ method: 'eth_getTransactionReceipt', params: [txHash] }) as Promise<TransactionReceipt | null>,
+      )
+      if (receipt && !(receipt.status === '0x1' || receipt.status === 'success')) {
+        throw new Error('The escrow transaction reverted. Nothing moved.')
+      }
+      const refreshed = await getEscrowStatuses([paymentId])
+      setEscrowById((prev) => ({ ...prev, ...refreshed.byId }))
+    } catch (e) {
+      setError(hireErrorText(e))
+    } finally {
+      setEscrowBusyId(null)
+    }
+  }
+
+  const items = hireItems(data).map((i) => ({ ...i, escrow: escrowById[i.key] ?? null }))
   const groups: { key: HireGroup; title: string; empty?: string }[] = [
     { key: 'needs', title: 'Needs you' },
     { key: 'progress', title: 'In progress' },
@@ -247,10 +326,13 @@ export function OngoingPage() {
                     busy={jobBusy === it.job?.id || retryingId === it.task?.id || revokingId === it.key}
                     revoking={revokingId === it.key}
                     revoke={revokeResults[it.key]}
+                    account={account}
+                    escrowBusy={escrowBusyId === it.key}
                     onComplete={() => it.job && onJob(it.job.id, 'complete')}
                     onReject={() => it.job && onJob(it.job.id, 'reject')}
                     onRetry={() => it.task && onRetry(it.task.id)}
                     onRevoke={() => onRevoke(it.key)}
+                    onEscrow={(kind) => onEscrow(it.key, it.chainId, kind)}
                   />
                 ))}
               </div>
@@ -280,6 +362,19 @@ const STATE_DOT: Record<HireGroup, string> = {
   finished: 'border hairline border-newsprint-gray bg-transparent',
 }
 
+// the escrow line's dot: money held, money ready to move, money moved
+const ESCROW_DOT: Record<EscrowChip['tone'], string> = {
+  hold: 'bg-amber-500',
+  ready: 'bg-sky-500',
+  done: 'bg-emerald-500',
+}
+
+// the funder's two buyer-only verbs, sent from the wallet rather than relayed
+const FUNDER_ACTIONS = [
+  { name: 'approve', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'jobId', type: 'bytes32' }], outputs: [] },
+  { name: 'refund', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'jobId', type: 'bytes32' }], outputs: [] },
+] as const
+
 // every hire is built from the same parts in the same order at a fixed height, so a row of
 // cards reads evenly, and anything longer than its slot opens in a dialog instead
 function HireRow({
@@ -288,22 +383,39 @@ function HireRow({
   busy,
   revoking,
   revoke,
+  account,
+  escrowBusy,
   onComplete,
   onReject,
   onRetry,
   onRevoke,
+  onEscrow,
 }: {
   item: HireItem
   state: HireState
   busy: boolean
   revoking: boolean
   revoke?: RevokeOutcome
+  account: string | null
+  escrowBusy: boolean
   onComplete: () => void
   onReject: () => void
   onRetry: () => void
   onRevoke: () => void
+  onEscrow: (kind: 'approve' | 'refund') => void
 }) {
   const { session, task, job } = item
+  const escrowRow = item.escrow ?? null
+  const chip = escrowChip(escrowRow)
+  const isBuyer = Boolean(account && escrowRow && account.toLowerCase() === escrowRow.buyer.toLowerCase())
+  const windowLeft =
+    escrowRow &&
+    escrowRow.status === 0 &&
+    escrowRow.verifiedAt > 0 &&
+    escrowRow.windowEndsAt !== null &&
+    escrowRow.windowEndsAt * 1000 > Date.now()
+      ? ` · ${formatExpiry(new Date(escrowRow.windowEndsAt * 1000).toISOString())}`
+      : ''
   const agentHref = `/agents/${item.chainId}/${item.tokenId}`
   const asked = task?.taskText ?? task?.tool
   // a hire with a job is rated once the buyer completes it; one without a job ends at delivery
@@ -348,6 +460,17 @@ function HireRow({
         <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${STATE_DOT[state.group]}`} />
         <span className="truncate">{state.label}</span>
       </p>
+      {/* the money's own line: held, ready or moved, so the card never reads as
+          paid out while the funder still holds the payment */}
+      {chip && (
+        <p className="mt-1 flex items-center gap-2 text-[13px] text-newsprint-gray">
+          <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${ESCROW_DOT[chip.tone]}`} />
+          <span className="truncate">
+            {chip.text}
+            {windowLeft}
+          </span>
+        </p>
+      )}
       <TextSlot lines={2} className="mt-1">{state.note ?? ''}</TextSlot>
       <TextSlot lines={1} className="mt-1 text-[12px]">{meta}</TextSlot>
       <TextSlot lines={2} className="mt-3">
@@ -412,6 +535,25 @@ function HireRow({
             </Action>
           )}
         </div>
+        {/* the buyer's own money moves: release pays the agent now, refund takes
+            the payment back while no verified delivery exists yet */}
+        {escrowRow?.status === 0 && isBuyer && (
+          <div className="flex gap-2">
+            <Action
+              variant="primary"
+              onClick={() => onEscrow('approve')}
+              disabled={busy || escrowBusy}
+              className="flex-1"
+            >
+              Release now
+            </Action>
+            {escrowRow.verifiedAt === 0 && (
+              <Action onClick={() => onEscrow('refund')} disabled={busy || escrowBusy} className="flex-1">
+                Refund
+              </Action>
+            )}
+          </div>
+        )}
         {rateable && rated !== undefined && (
           <div className="flex h-7 items-center gap-3">
             <span className={LABEL}>Rated</span>
