@@ -11,12 +11,12 @@ import {
   SESSION_SPEND_CAP_USD,
   shortAddress,
   timeAgo,
-  JOB_SELLER_NOTE,
   isJobStepSkill,
   sellsByJob,
 } from '@agora/core'
 import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
+import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
 import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
 import { Tag } from '../components/Tag'
@@ -630,9 +630,7 @@ export function AgentDetailPage() {
               />
             </div>
           ) : jobSeller ? (
-            <p role="note" className="mt-4 text-sm leading-relaxed text-press-black">
-              {JOB_SELLER_NOTE}
-            </p>
+            <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} name={detail.name} />
           ) : (
             <>
               {hireWarning && (
