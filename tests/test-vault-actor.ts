@@ -66,7 +66,9 @@ describe("the altana junction", () => {
     expect(execute).toHaveBeenCalledTimes(1);
     const arg = execute.mock.calls[0][0];
     expect(arg.chainId).toBe(97);
-    expect(arg.session).toEqual({ wallet: { address: WALLET } });
+    // the rehydrated signer rides the session at resolve time: the sdk's
+    // json-only session shape refused the execute path before this was added
+    expect(arg.session).toEqual({ wallet: { address: WALLET }, signer: {} });
     expect(arg.calls).toEqual([CALL]);
   });
 
