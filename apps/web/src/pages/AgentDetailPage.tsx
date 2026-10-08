@@ -1636,6 +1636,9 @@ function DeliveryPanel({
   const [retrying, setRetrying] = useState(false)
   // the job the server reported after a delivery; null until one is confirmed
   const [job, setJob] = useState<{ id: string; status: JobStatus } | null>(null)
+  // the last delivery's error, kept beside the job so the attestation copy can
+  // say what actually got recorded there
+  const [deliveryError, setDeliveryError] = useState<string | null>(null)
   const [completing, setCompleting] = useState(false)
   const [completeError, setCompleteError] = useState<string | null>(null)
   const [completeNote, setCompleteNote] = useState<string | null>(null)
@@ -1717,7 +1720,10 @@ function DeliveryPanel({
         : { paymentId, task: taskText, ...(structured.input ? { input: structured.input } : {}) }
       const d = (await deliverTask(body)) as DeliverData & { taskId?: string; jobAdvance?: JobAdvance }
       setOutput(d.text || '(the agent returned no text)')
-      if (d.error) setRunError(d.error)
+      if (d.error) {
+        setRunError(d.error)
+        setDeliveryError(d.error)
+      }
       if (d.taskId) await refreshTask(d.taskId)
       // the server persisted the ERC-8183 advance, so render what it reported
       if (d.jobAdvance?.jobId && d.jobAdvance.status) {
@@ -1836,10 +1842,18 @@ function DeliveryPanel({
           </div>
           {offer === 'complete' && (
             <>
-              <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
-                Your deliverable is recorded and the job is Submitted. Attest it complete
-                to close this hire.
-              </p>
+              {deliveryError ? (
+                <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+                  The seller attested a delivery and the job is Submitted, but the
+                  reply read as an error: {deliveryError} Check the deliverable
+                  looks real before you attest it complete.
+                </p>
+              ) : (
+                <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+                  Your deliverable is recorded and the job is Submitted. Attest it complete
+                  to close this hire.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={completeJob}
