@@ -664,6 +664,15 @@ export async function getHiresByWallet(wallet: string): Promise<WalletHire[]> {
   return body.hires ?? []
 }
 
+// The pairing a deposit-hire link checks: the wallet the executor trades
+// from. None when the deployment runs no executor lane.
+export async function getVaultExecutor(): Promise<{ kind: 'rawkey' | 'altana'; address: string } | null> {
+  const res = await fetch(`${BASE}/vault/executor`)
+  if (!res.ok) return null
+  const body = await readJsonBody<{ executor?: { kind: 'rawkey' | 'altana'; address: string } | null }>(res, 'vault executor')
+  return body.executor ?? null
+}
+
 // Hires paid to a wallet's agents. The payee is the agent's receiving wallet.
 export async function getHiresByPayee(payee: string): Promise<HiresByPayeeResult> {
   const res = await fetch(`${BASE}/hires/by-payee?payee=${encodeURIComponent(payee)}`)

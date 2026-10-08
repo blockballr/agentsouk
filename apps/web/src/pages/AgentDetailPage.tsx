@@ -15,7 +15,7 @@ import {
   isJobStepSkill,
   sellsByJob,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
@@ -224,12 +224,25 @@ export function AgentDetailPage() {
   // action until the panel itself is on screen
   const [hirePanel, setHirePanel] = useState<HTMLElement | null>(null)
   const [hireInView, setHireInView] = useState(false)
+  const [executor, setExecutor] = useState<{ kind: 'rawkey' | 'altana'; address: string } | null>(null)
 
   useEffect(() => {
     void getActiveAccount().then((a) => {
       setViewer(a)
       setViewerKnown(true)
     })
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    getVaultExecutor()
+      .then((v) => {
+        if (!cancelled) setExecutor(v)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
@@ -403,6 +416,16 @@ export function AgentDetailPage() {
   const builtWith = builtWithFrom(onchain)
   const firstParty = isOperatedByAgentSouk(detail.owner_address)
   const asset = settlementAssetFor(detail.chain_id)?.symbol ?? 'the settlement asset'
+  // the deposit hire rides only a pairing that can actually run: the named
+  // agent's wallet must be the wallet the executor trades from, so a card with
+  // nothing to hand the vault never offers the option
+  const vaultCapable =
+    firstParty &&
+    Number(detail.chain_id) === 97 &&
+    !!executor &&
+    !!detail.agent_wallet &&
+    detail.agent_wallet !== '0x0000000000000000000000000000000000000000' &&
+    detail.agent_wallet.toLowerCase() === executor.address.toLowerCase()
 
   return (
     <div className="mx-auto max-w-[1400px] px-6 pb-28 pt-10 lg:pb-10">
@@ -629,9 +652,10 @@ export function AgentDetailPage() {
                 guide={questStage ?? undefined}
               />
               {/* the deposit hire rides the standard panel for the vault's own
-                  chain: a custody-capable agent is hired by deposit, and this
-                  page is where a hire starts, so the option sits here too */}
-              {firstParty && detail.chain_id === 97 && (
+                  chain, only where the pair actually runs: the executor and the
+                  agent's wallet are one wallet, so the option exists only on
+                  the listing the executor lane serves */}
+              {vaultCapable && (
                 <Action to={`/vault/97/${detail.token_id}`} variant="quiet" size="sm" className="mt-3 w-full">
                   Open a funded hire on this vault
                 </Action>
