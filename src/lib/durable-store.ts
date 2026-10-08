@@ -5,6 +5,7 @@ import "server-only";
 import postgres from "postgres";
 import type { HireTask } from "./tasks";
 import type { Job } from "./jobs";
+import type { Notification } from "./notifications";
 
 const sql =
   process.env.DATABASE_URL && process.env.RECEIPTS_STORE === "postgres"
@@ -69,6 +70,17 @@ async function init(): Promise<boolean> {
         `;
         await sql!`
           create index if not exists jobs_client_idx on jobs (client)
+        `;
+        await sql!`
+          create table if not exists notifications (
+            id text primary key,
+            wallet text not null,
+            payload jsonb not null,
+            created_at timestamptz not null default now()
+          )
+        `;
+        await sql!`
+          create index if not exists notifications_wallet_idx on notifications (wallet, created_at desc)
         `;
         ready = true;
         return true;
@@ -335,3 +347,80 @@ export async function loadJobsByClient(
     return [];
   }
 }
+
+// The notification outbox: written by whatever pipeline causes the event, read
+// by the bell. Rows are keyed by the wallet they belong to; nothing here holds
+// money state itself, it only records what already happened.
+export async function saveNotification(
+  notification: Notification,
+): Promise<void> {
+  if (!(await init()) || !sql) return;
+  try {
+    await sql`
+      insert into notifications (id, wallet, payload, created_at)
+      values (${notification.id}, ${notification.wallet.toLowerCase()}, ${sql.json(notification as never)}, now())
+      on conflict (id) do nothing
+    `;
+  } catch {
+  }
+}
+
+export async function loadNotifications(
+  wallet: string,
+  limit = 30,
+): Promise<Notification[]> {
+  if (!(await init()) || !sql) return [];
+  try {
+    const rows = await sql`
+      select payload from notifications
+      where wallet = lower(${wallet})
+      order by created_at desc
+      limit ${limit}
+    `;
+    return rows.map((r) => r.payload as Notification);
+  } catch {
+    return [];
+  }
+}
+
+export async function markNotificationRead(
+  wallet: string,
+  id: string,
+): Promise<void> {
+  if (!(await init()) || !sql) return;
+  try {
+    const rows = await sql`
+      select payload from notifications
+      where wallet = lower(${wallet}) and id = ${id}
+      limit 1
+    `;
+    const current = rows[0]?.payload as Notification | undefined;
+    if (!current || current.read) return;
+    await sql`
+      update notifications set payload = ${sql.json({ ...current, read: true } as never)}
+      where id = ${id} and wallet = lower(${wallet})
+    `;
+  } catch {
+  }
+}
+
+export async function markAllNotificationsRead(wallet: string): Promise<void> {
+  if (!(await init()) || !sql) return;
+  try {
+    const rows = await sql`
+      select id, payload from notifications
+      where wallet = lower(${wallet}) and payload->>'read' is not true
+      limit 100
+    `;
+    for (const row of rows) {
+      const current = row.payload as Notification;
+      if (current.read) continue;
+      await sql`
+        update notifications set payload = ${sql.json({ ...current, read: true } as never)}
+        where id = ${String(row.id)} and wallet = lower(${wallet})
+      `;
+    }
+  } catch {
+  }
+}
+
