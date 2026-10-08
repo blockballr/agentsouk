@@ -15,16 +15,16 @@ import { timeAgo } from '@agora/core'
 import { explorerTxBase } from '../lib/contracts'
 import { mergeSessions, stabiliseSessions } from '../lib/ongoing-merge'
 import {
-  escrowChip,
+  escrowLifecycle,
   escrowRejectMove,
   hireItems,
   hireState,
   readableResult,
-  type EscrowChip,
   type HireGroup,
   type HireItem,
   type HireState,
 } from '../lib/hire-state'
+import { EscrowFlowCard } from '../components/EscrowFlowCard'
 import { hireErrorText } from '../lib/hire'
 import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
 import { encodeFunctionData, keccak256, toBytes } from 'viem'
@@ -469,13 +469,6 @@ const STATE_DOT: Record<HireGroup, string> = {
   finished: 'border hairline border-newsprint-gray bg-transparent',
 }
 
-// the escrow line's dot: money held, money ready to move, money moved
-const ESCROW_DOT: Record<EscrowChip['tone'], string> = {
-  hold: 'bg-amber-500',
-  ready: 'bg-sky-500',
-  done: 'bg-emerald-500',
-}
-
 // the funder's three buyer verbs, sent from the wallet rather than relayed
 const FUNDER_ACTIONS = [
   { name: 'approve', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'jobId', type: 'bytes32' }], outputs: [] },
@@ -514,16 +507,9 @@ function HireRow({
 }) {
   const { session, task, job } = item
   const escrowRow = item.escrow ?? null
-  const chip = escrowChip(escrowRow)
+  const spine = escrowLifecycle(escrowRow)
+  const escrowed = escrowRow?.status === 0
   const isBuyer = Boolean(account && escrowRow && account.toLowerCase() === escrowRow.buyer.toLowerCase())
-  const windowLeft =
-    escrowRow &&
-    escrowRow.status === 0 &&
-    escrowRow.verifiedAt > 0 &&
-    escrowRow.windowEndsAt !== null &&
-    escrowRow.windowEndsAt * 1000 > Date.now()
-      ? ` · ${formatExpiry(new Date(escrowRow.windowEndsAt * 1000).toISOString())}`
-      : ''
   const agentHref = `/agents/${item.chainId}/${item.tokenId}`
   const asked = task?.taskText ?? task?.tool
   // a hire with a job is rated once the buyer completes it; one without a job ends at delivery
@@ -568,17 +554,10 @@ function HireRow({
         <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${STATE_DOT[state.group]}`} />
         <span className="truncate">{state.label}</span>
       </p>
-      {/* the money's own line: held, ready or moved, so the card never reads as
-          paid out while the funder still holds the payment */}
-      {chip && (
-        <p className="mt-1 flex items-center gap-2 text-[13px] text-newsprint-gray">
-          <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${ESCROW_DOT[chip.tone]}`} />
-          <span className="truncate">
-            {chip.text}
-            {windowLeft}
-          </span>
-        </p>
-      )}
+      {/* the money's own progression, collapsed to a bar until the buyer clicks
+          it open; the stops that already passed are filled, and the money's
+          current stop pulses */}
+      {spine && <EscrowFlowCard spine={spine} agentName={item.agentName} />}
       <TextSlot lines={2} className="mt-1">{state.note ?? ''}</TextSlot>
       <TextSlot lines={1} className="mt-1 text-[12px]">{meta}</TextSlot>
       <TextSlot lines={2} className="mt-3">
@@ -606,10 +585,10 @@ function HireRow({
           {state.action === 'complete' && (
             <>
               <Action variant="primary" onClick={onComplete} disabled={busy} className="w-full">
-                Complete job
+                {escrowed ? 'Complete · releases the payment' : 'Complete job'}
               </Action>
               <Action onClick={onReject} disabled={busy} className="w-full">
-                Reject
+                {escrowed ? 'Reject · refunds you' : 'Reject'}
               </Action>
             </>
           )}
@@ -629,7 +608,7 @@ function HireRow({
           ) : null}
           {item.live && job?.status === 'Funded' && task?.status !== 'running' && !task?.result && (
             <Action onClick={onReject} disabled={busy} className="w-full">
-              Reject before work
+              {escrowed ? 'Reject · refunds you' : 'Reject before work'}
             </Action>
           )}
           {rateable && rated === undefined && (
