@@ -15,6 +15,10 @@ export const HOUSE_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const HOUSE_AGENT_CARD_PATH = "/api/house-agent/.well-known/agent-card.json";
 export const HOUSE_AGENT_MESSAGING_PATH = "/api/house-agent/a2a";
 
+// The house listing's ERC-8004 token id on chain 97, of the registration the
+// tracking submission records; the seller side quotes with it as agent_id.
+export const HOUSE_AGENT_TOKEN_ID = 2504;
+
 export const DEFAULT_LIQUIDATION_THRESHOLD = 0.8;
 export const HEALTHY_AT = 1.5;
 export const LIQUIDATABLE_AT = 1;
@@ -120,6 +124,31 @@ export function houseAgentCard(origin: string): HouseAgentCard {
             liquidationDistancePercent: { type: "number", description: "how far collateral can fall before liquidation" },
           },
         },
+      },
+      // The seller-side ERC-8183 steps the kernel's flow needs: the
+      // marketplace quotes this listing through negotiate, notifies it on
+      // fund, and the runtime submits the deliverable through notify's work
+      // step. Ids are the protocol's own tokens; the 8183 naming in the
+      // negotiate description is how a job-step skill is told from real work.
+      {
+        id: "negotiate",
+        name: "Quote an ERC-8183 job",
+        description:
+          "ERC-8183 job selling: answers a negotiate step with a wallet-signed quote priced in the kernel's payment token, naming this listing's registered wallet as provider. Work starts only once a job is funded on chain 97's AgenticCommerce kernel.",
+        tags: ["erc-8183", "job", "negotiate", "quote"],
+        examples: [],
+        inputModes: ["application/json"],
+        outputModes: ["application/json"],
+      },
+      {
+        id: "notify_funded",
+        name: "Start work on a funded ERC-8183 job",
+        description:
+          "ERC-8183 job selling: on notify_funded the kernel's own row is read back to confirm this listing is the funded job's provider, the work runs, and the deliverable is submitted on chain for the optimistic dispute window to release.",
+        tags: ["erc-8183", "job", "notify-f"],
+        examples: [],
+        inputModes: ["application/json"],
+        outputModes: ["application/json"],
       },
     ],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
