@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { HOUSE_AGENT_CATEGORY, decideHouseAgentTask, type HouseAgentReply } from "@/lib/house-agent";
+import { HOUSE_AGENT_CATEGORY, HOUSE_AGENT_NAME, HOUSE_AGENT_TOKEN_ID, decideHouseAgentTask, type HouseAgentReply } from "@/lib/house-agent";
+import { sellerConfigFromEnv, sellerHook } from "@/lib/seller8183";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,12 @@ const JSON_HEADERS = {
 };
 
 type RpcId = string | number | null;
+
+// The house seller's config: the listing is token 2504 on chain 97, registered
+// to SELLER8183_PROVIDER_TESTNET, priced per task through SELLER8183_PRICE_USD,
+// and signed by SELLER8183_PRIVATE_KEY — which must control that same wallet
+// for a quote to sign and a submit to stand.
+const SELLER8183 = sellerConfigFromEnv(97, HOUSE_AGENT_TOKEN_ID, HOUSE_AGENT_NAME);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -109,6 +116,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const message = readMessage(request.params);
   if (!message) {
     return rpcError(id, -32602, "Invalid params: message/send requires params.message.parts");
+  }
+
+  // The seller-side ERC-8183 steps ride the same endpoint: a negotiate or
+  // notify_funded data part answers at result level, never a task envelope, so
+  // the marketplace's quote and notify readers do not trip on a task wrapper.
+  const rawParts =
+    isRecord(request.params) && isRecord(request.params.message) && Array.isArray(request.params.message.parts)
+      ? request.params.message.parts
+      : [];
+  const seller = await sellerHook(SELLER8183, rawParts, (task) => {
+    const reply = decideHouseAgentTask(task, message.input);
+    return { text: reply.text };
+  });
+  if (seller.kind !== "none") {
+    return NextResponse.json(
+      { jsonrpc: "2.0", id, result: seller.envelope },
+      { headers: JSON_HEADERS },
+    );
   }
 
   const reply = decideHouseAgentTask(message.task, message.input);

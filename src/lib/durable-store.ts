@@ -82,6 +82,13 @@ async function init(): Promise<boolean> {
         await sql!`
           create index if not exists notifications_wallet_idx on notifications (wallet, created_at desc)
         `;
+        await sql!`
+          create table if not exists deliverables (
+            job_id text primary key,
+            manifest text not null,
+            updated_at timestamptz default now()
+          )
+        `;
         ready = true;
         return true;
       } catch {
@@ -251,6 +258,39 @@ export async function loadJobs(limit = 100): Promise<Job[]> {
     return rows.map((r) => r.payload as Job);
   } catch {
     return [];
+  }
+}
+
+// The seller side of the house runtime: the manifest bytes a submit committed
+// to, stashed under the job id and served verbatim at the deliverable url.
+export async function saveDeliverable(
+  jobId: string,
+  manifest: string,
+): Promise<void> {
+  if (!(await init()) || !sql) return;
+  try {
+    await sql`
+      insert into deliverables (job_id, manifest, updated_at)
+      values (${jobId}, ${manifest}, now())
+      on conflict (job_id) do update set
+        manifest = excluded.manifest,
+        updated_at = now()
+    `;
+  } catch {
+  }
+}
+
+export async function loadDeliverable(
+  jobId: string,
+): Promise<string | undefined> {
+  if (!(await init()) || !sql) return undefined;
+  try {
+    const rows = await sql`
+      select manifest from deliverables where job_id = ${jobId} limit 1
+    `;
+    return rows[0]?.manifest as string | undefined;
+  } catch {
+    return undefined;
   }
 }
 
