@@ -89,16 +89,22 @@ describe("parseNegotiationQuote", () => {
 describe("notifySeller", () => {
   const PAYLOAD = { job_id: 4242, commerce: "0xa206c0517B6371C6638CD9e4a42Cc9f02A33B0DE" };
 
-  it("hands the seller the notify payload and reads the ack", async () => {
+  it("hands the seller the canonical minimal payload and reads the ack", async () => {
+    const bodies: unknown[] = [];
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (_url: string) =>
-        new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: { status: "notified", job_id: 4242 } }), { status: 200 }),
-      ),
+      vi.fn(async (_url: string, init?: { body?: string }) => {
+        bodies.push(JSON.parse(init?.body ?? "{}"));
+        return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: { status: "notified", job_id: 4242 } }), { status: 200 });
+      }),
     );
     const result = await notifySeller(97, "https://agent.example/a2a", PAYLOAD);
     expect(result.ok).toBe(true);
     expect(result.reply).toContain("notified");
+    const sends = bodies.filter((b) => typeof (b as { method?: string }).method === "string");
+    const parts = (sends[0] as { params: { message: { parts: { kind: string; data?: Record<string, unknown> } }[] } }).params.message.parts;
+    const data = parts.find((p) => p.kind === "data")?.data;
+    expect(data).toEqual({ skill: "notify_funded", job_id: 4242 });
   });
 
   it("records the usual no-ack reply as evidence, ok false", async () => {
@@ -151,6 +157,23 @@ describe("kernelJob", () => {
 });
 
 describe("negotiateQuote", () => {
+  it("sends the task as text and the documented skill shape beside it", async () => {
+    const bodies: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: { body?: string }) => {
+        bodies.push(JSON.parse(init?.body ?? "{}"));
+        return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: envelope() }), { status: 200 });
+      }),
+    );
+    await negotiateQuote(97, `https://agent.example/a2a`, "buy a grid plan", PROVIDER);
+    const sends = bodies.filter((b) => typeof (b as { method?: string }).method === "string");
+    const parts = (sends[0] as { params: { message: { parts: { kind: string; data?: { skill?: string } } }[] } }).params.message.parts;
+    expect(parts.some((p) => p.kind === "text")).toBe(true);
+    const shaped = parts.find((p) => p.kind === "data" && (p.data as { skill?: string }).skill === "negotiate");
+    expect(shaped).toBeDefined();
+  });
+
   it("refuses a private endpoint before any byte leaves", async () => {
     const result = await negotiateQuote(97, "http://localhost:8080/", "buy a grid plan", null);
     expect(result.ok).toBe(false);
