@@ -159,7 +159,23 @@ export async function negotiateQuote(
         role: "user",
         kind: "message",
         messageId: `agora-${Date.now()}`,
-        parts: buildA2aParts(task),
+        // the shaped form the ERC-8183 sellers document on their cards rides
+        // beside the human-readable task, so a skill-routing seller quotes
+        // without guessing and a text-reading one still sees the words
+        parts: [
+          ...buildA2aParts(task),
+          {
+            kind: "data",
+            data: {
+              skill: "negotiate",
+              task_description: task,
+              terms: {
+                deliverables: "the task's answer as the job's deliverable",
+                quality_standards: "the deliverable matches the task's ask",
+              },
+            },
+          },
+        ],
       },
     },
   });
@@ -278,8 +294,11 @@ export async function notifySeller(
         role: "user",
         kind: "message",
         messageId: `agora-notify-${Date.now()}`,
+        // the canonical shape the seller cards document: skill and job id,
+        // nothing else, because the seller reads the funded job's own row on
+        // chain for everything more
         parts: [
-          { kind: "data", data: { skill: "notify_funded", chain_id: chainId, ...payload } },
+          { kind: "data", data: { skill: "notify_funded", job_id: payload.job_id } },
           { kind: "text", text: `notify_funded: job ${String(payload.job_id)} is funded on chain ${chainId}; the price sits in the kernel's escrow.` },
         ],
       },
