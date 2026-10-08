@@ -760,6 +760,34 @@ export interface Jobs8183Row {
   updatedAt: string
 }
 
+// The notification outbox as the bell reads it. Rows are newest-first from the
+// route; unread drives the badge.
+export interface NotificationRow {
+  id: string
+  kind: string
+  title: string
+  body: string
+  href?: string
+  txHash?: string
+  read?: boolean
+  createdAt: string
+}
+
+export async function getNotifications(wallet: string): Promise<{ rows: NotificationRow[]; unread: number }> {
+  const res = await fetch(`${BASE}/notifications?wallet=${encodeURIComponent(wallet)}`)
+  if (!res.ok) return { rows: [], unread: 0 }
+  const body = (await res.json().catch(() => null)) as { notifications?: NotificationRow[]; unread?: number } | null
+  return { rows: body?.notifications ?? [], unread: body?.unread ?? 0 }
+}
+
+export async function markNotificationsRead(wallet: string, id?: string): Promise<void> {
+  await fetch(`${BASE}/notifications`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ wallet, ...(id ? { id } : {}) }),
+  }).catch(() => {})
+}
+
 export async function getJobs8183Jobs(wallet: string): Promise<Jobs8183Row[]> {
   const res = await fetch(`${BASE}/jobs8183/jobs?wallet=${encodeURIComponent(wallet)}`)
   if (!res.ok) return []

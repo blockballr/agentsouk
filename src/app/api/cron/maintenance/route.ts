@@ -3,8 +3,9 @@ import { loggedCronRun } from "@/lib/history-store";
 import { loadStaleTokens } from "@/lib/verifications-store";
 import { setDelisted } from "@/lib/delist-store";
 import { targetChainId } from "@/lib/types";
-import { escrowFunder, releaseEscrowIfDue } from "@/lib/escrow";
+import { escrowFunder, escrowStatuses, releaseEscrowIfDue } from "@/lib/escrow";
 import { listRecentPayments } from "@/lib/receipts-store";
+import { emitNotification } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,24 @@ async function run(): Promise<NextResponse> {
       if (payment.mode !== "prod") continue;
       try {
         const tx = await releaseEscrowIfDue(payment.paymentId);
-        if (tx) released.push(payment.paymentId);
+        if (tx) {
+          released.push(payment.paymentId);
+          // the buyer learns their money moved from the bell, not by noticing
+          // a missing row; the chain read before the release carries the buyer
+          const rows = await escrowStatuses([payment.paymentId]).catch(() => []);
+          const buyer = rows[0]?.buyer;
+          if (buyer) {
+            await emitNotification({
+              wallet: buyer,
+              kind: "escrow_released",
+              eventKey: payment.paymentId,
+              title: "Escrow released",
+              body: `The dispute window passed with no dispute, so the held payment released to the agent. Transaction ${tx}.`,
+              href: "/ongoing",
+              txHash: tx,
+            });
+          }
+        }
       } catch (e) {
         console.error("[escrow] release sweep row failed:", (e as Error).message);
       }

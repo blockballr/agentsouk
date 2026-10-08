@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { Wordmark } from './Wordmark'
 import { ThemeToggle } from './ThemeToggle'
 import { QuickSearch } from './QuickSearch'
+import { NotificationBell } from './NotificationBell'
 import { cartCount, subscribe } from '../lib/cart'
 
 const links = [
@@ -44,6 +45,7 @@ export function Nav() {
           </ul>
           <div className="hidden lg:flex lg:items-center lg:gap-8">
             <QuickSearch />
+            <NotificationBell />
             <CartLink />
             <ProfileLink />
             <ThemeToggle />
@@ -85,6 +87,7 @@ export function Nav() {
               <AboutLink onClick={() => setMenuOpen(false)} />
               <CartLink />
               <ProfileLink onClick={() => setMenuOpen(false)} />
+              <NotificationBell />
               <ThemeToggle />
             </div>
           </nav>
