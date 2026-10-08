@@ -1,73 +1,55 @@
-import { describe, expect, it, afterEach } from "vitest";
-import { parseEther, decodeFunctionData } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { tradeIntent, tradeTokenIn, type HireView } from "@/lib/vault";
-import { resolveActor } from "@/lib/vault-actor";
+import { afterEach, describe, expect, it } from "vitest";
+import { executorWallet } from "../src/lib/vault-executor";
 
-const WBNB = "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd";
-const USDT = "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd";
+// executorWallet reads the environment the page's pairing then shows with:
+// none means no lane is configured, rawkey and altana name the custody halves
+// the split supports, and the address is the only thing it is allowed to say.
 
-function hireView(over: Partial<HireView>): HireView {
-  return {
-    id: 1n,
-    buyer: "0x0000000000000000000000000000000000000001",
-    agent: "0x0000000000000000000000000000000000000002",
-    expiry: Math.floor(Date.now() / 1000) + 3600,
-    maxSlippageBps: 500,
-    open: true,
-    balanceA: parseEther("0.01"),
-    balanceB: 0n,
-    refPriceX96: 1n,
-    fee: 500,
-    ...over,
-  };
-}
+const TOUCHED = ["AGENT_EXECUTOR_ACTOR", "AGENT_EXECUTOR_KEY", "AGENT_ALTANA_SESSION", "AGENT_ALTANA_SESSION_KEY"];
 
-describe("the trade policy", () => {
-  it("wants the side that holds a balance, and skips the rest", () => {
-    expect(tradeTokenIn(hireView({}))).toBe("A");
-    expect(tradeTokenIn(hireView({ balanceA: 0n, balanceB: parseEther("1") }))).toBe("B");
-    expect(tradeTokenIn(hireView({ balanceA: 0n, balanceB: 0n }))).toBe(null);
-    expect(tradeTokenIn(hireView({ open: false }))).toBe(null);
-    expect(tradeTokenIn(hireView({ expiry: Math.floor(Date.now() / 1000) - 1 }))).toBe(null);
-  });
-
-  it("swaps one side fully, floor owned by the contract", () => {
-    const intent = tradeIntent(hireView({}), WBNB, USDT);
-    expect(intent?.tokenIn).toBe(WBNB);
-    expect(intent?.amountIn).toBe(parseEther("0.01"));
-    expect(intent?.minOut).toBe(0n);
-    const decoded = decodeFunctionData({
-      abi: [
-        { name: "trade", type: "function", stateMutability: "nonpayable", inputs: [
-          { name: "id", type: "uint256" }, { name: "tokenIn", type: "address" },
-          { name: "amountIn", type: "uint256" }, { name: "minOut", type: "uint256" }], outputs: [{ type: "uint256" }] },
-      ] as const,
-      data: intent!.calldata,
-    });
-    expect(decoded.args[0]).toBe(1n);
-    expect(decoded.args[1]).toBe(WBNB);
-    expect(decoded.args[2]).toBe(parseEther("0.01"));
-    expect(decoded.args[3]).toBe(0n);
-  });
+afterEach(() => {
+  for (const name of TOUCHED) delete process.env[name];
 });
 
-describe("the custody fork", () => {
-  const saved = { ...process.env };
-  afterEach(() => { process.env = { ...saved }; });
-
-  it("raw key resolves from its own env and reports the matching kind", () => {
-    process.env.AGENT_EXECUTOR_KEY = generatePrivateKey();
-    const actor = resolveActor("rawkey");
-    expect(actor.kind).toBe("rawkey");
+describe("executorWallet", () => {
+  it("reads none when no executor lane is configured", () => {
+    expect(executorWallet()).toBeNull();
   });
 
-  it("fails closed when a half is chosen without its config", () => {
+  it("derives the raw key's address and nothing else", () => {
+    process.env.AGENT_EXECUTOR_ACTOR = "rawkey";
+    process.env.AGENT_EXECUTOR_KEY = `0x${"11".repeat(32)}`;
+    const wallet = executorWallet();
+    expect(wallet?.kind).toBe("rawkey");
+    expect(wallet?.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
+  });
+
+  it("reads none when the raw key is missing or malformed", () => {
+    process.env.AGENT_EXECUTOR_ACTOR = "rawkey";
     delete process.env.AGENT_EXECUTOR_KEY;
-    expect(() => resolveActor("rawkey")).toThrow(/AGENT_EXECUTOR_KEY/);
-    delete process.env.AGENT_ALTANA_SESSION;
-    delete process.env.AGENT_ALTANA_SESSION_KEY;
-    expect(() => resolveActor("altana")).toThrow(/AGENT_ALTANA_SESSION/);
-    expect(() => resolveActor("both")).toThrow(/rawkey or altana/);
+    expect(executorWallet()).toBeNull();
+    process.env.AGENT_EXECUTOR_KEY = "not-a-key";
+    expect(executorWallet()).toBeNull();
+  });
+
+  it("takes the session wallet's address from a granted session", () => {
+    process.env.AGENT_EXECUTOR_ACTOR = "altana";
+    process.env.AGENT_ALTANA_SESSION = JSON.stringify({ wallet: { address: "0xAbC0000000000000000000000000000000000001" } });
+    const wallet = executorWallet();
+    expect(wallet?.kind).toBe("altana");
+    expect(wallet?.address).toBe("0xAbC0000000000000000000000000000000000001");
+  });
+
+  it("reads none when the session blob is unparsable or carries no wallet", () => {
+    process.env.AGENT_EXECUTOR_ACTOR = "altana";
+    process.env.AGENT_ALTANA_SESSION = "not-json";
+    expect(executorWallet()).toBeNull();
+    process.env.AGENT_ALTANA_SESSION = "{}";
+    expect(executorWallet()).toBeNull();
+  });
+
+  it("ignores an executor kind it does not know", () => {
+    process.env.AGENT_EXECUTOR_ACTOR = "solana";
+    expect(executorWallet()).toBeNull();
   });
 });

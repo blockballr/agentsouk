@@ -5,9 +5,39 @@ import {
   encodeFunctionData,
   type PublicClient,
 } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { pancakeToken } from "./pancake";
 import { vaultFor, VAULT_READ_ABI, tradeIntent, type HireView } from "./vault";
 import type { VaultActor } from "./vault-actor";
+
+// which wallet the executor trades from, as the page pairing needs it: the raw
+// key's public address or the address a granted session carries. Unset or
+// unparsable env reads as none, so a page can say plainly that no lane runs.
+export function executorWallet(): { kind: "rawkey" | "altana"; address: string } | null {
+  const configured = process.env.AGENT_EXECUTOR_ACTOR;
+  if (configured === "rawkey") {
+    const key = process.env.AGENT_EXECUTOR_KEY as `0x${string}` | undefined;
+    if (!key) return null;
+    try {
+      return { kind: "rawkey", address: privateKeyToAccount(key).address };
+    } catch {
+      return null;
+    }
+  }
+  if (configured === "altana") {
+    let session: unknown;
+    try {
+      session = JSON.parse(process.env.AGENT_ALTANA_SESSION ?? "");
+    } catch {
+      return null;
+    }
+    const walletAddress = (session as { wallet?: { address?: string } })?.wallet?.address;
+    return typeof walletAddress === "string" && walletAddress
+      ? { kind: "altana", address: walletAddress }
+      : null;
+  }
+  return null;
+}
 
 // the executor half of the split. The actor (raw key today, a granted session
 // at cutover) owns the initiating side; the vault owns what moves and it never
