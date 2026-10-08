@@ -45,6 +45,12 @@ describe("the altana junction", () => {
     await expect(actor.address()).resolves.toBe(WALLET);
   });
 
+  it("takes the wallet address where a live grantSession puts it", async () => {
+    grantSession({ walletAddress: WALLET });
+    const actor = resolveActor("altana");
+    await expect(actor.address()).resolves.toBe(WALLET);
+  });
+
   it("refuses a session that carries no wallet address", async () => {
     grantSession({ wallet: {} });
     const actor = resolveActor("altana");

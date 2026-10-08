@@ -54,7 +54,10 @@ function altanaActor(): VaultActor | null {
   return {
     kind: "altana",
     async address() {
-      const walletAddress = (session as { wallet?: { address?: string } }).wallet?.address;
+      // the SDK's granted session carries the wallet as walletAddress on the
+      // top level; the hashed-down shape some older blobs use must keep working
+      const granted = session as { walletAddress?: string; wallet?: { address?: string } };
+      const walletAddress = granted.walletAddress ?? granted.wallet?.address;
       if (!walletAddress) throw new Error("the granted session does not carry the wallet address");
       return walletAddress;
     },
