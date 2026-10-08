@@ -13,7 +13,7 @@ import {
   type Jobs8183Stack,
   type NegotiationQuoteView,
 } from '../lib/jobs8183'
-import { getJobs8183Quote } from '../lib/api'
+import { getJobs8183Quote, recordJobs8183Job } from '../lib/api'
 import { chainIdToHex, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { explorerAddressUrl } from '../lib/contracts'
@@ -103,6 +103,17 @@ export default function Jobs8183HirePanel({ tokenId, chainId, name }: { tokenId:
       const job = decodeGetJob(jobWord)
       const state = job ? jobStatusName(job.status) : 'unknown'
       setLines((l) => [...l, `Job ${jobId.toString()} status: ${state}.`])
+      try {
+        const logged = await recordJobs8183Job({ tokenId, kernelJobId: jobId, client: account, chainId })
+        if (!logged.ok) {
+          setLines((l) => [...l, `The marketplace could not record the job: ${logged.error}`])
+        } else {
+          setLines((l) => [...l, logged.notify.ok ? `The seller acknowledged the funded job.` : `No ack back yet: ${logged.notify.reply.slice(0, 120)}`])
+          setLines((l) => [...l, `The job now lives in your ongoing view.`])
+        }
+      } catch {
+        setLines((l) => [...l, `The marketplace could not be reached to record the job; the chain still holds it.`])
+      }
       setLines((l) => [...l, `The job is funded. The seller starts work; the escrow holds the price.`])
       setPhase({ kind: 'funded' })
     } catch (e) {
