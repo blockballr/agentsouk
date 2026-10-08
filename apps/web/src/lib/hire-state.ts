@@ -13,6 +13,67 @@ export interface HireState {
   action?: HireAction
 }
 
+// The escrow's lifecycle as one spine the buyer reads the same way on every
+// surface: the money was paid, the kernel holds it, the delivery was verified,
+// and either the buyer or the calendar moves it next. The auto-release date is
+// a first-class field, because "do nothing and the agent is paid on <date>" is
+// the single fact an optimistic-release escrow must always say.
+export type EscrowLifecycleStage = 'held' | 'verifiedWindow' | 'released' | 'refunded'
+
+export interface EscrowLifecycle {
+  stage: EscrowLifecycleStage
+  /** human one-liner for a chip, ribbon or modal headline */
+  label: string
+  /** what the buyer's money is doing right now */
+  money: string
+  /** the date the agent is paid if the buyer does nothing, ms; null when the stage already moved */
+  autoReleaseAt: number | null
+  /** the buyer's own verbs that can still change the money, empty once closed */
+  actions: ('release' | 'refund' | 'dispute')[]
+}
+
+export function escrowLifecycle(escrow: EscrowStatus | null | undefined, now: number = Date.now()): EscrowLifecycle | null {
+  if (!escrow) return null
+  if (escrow.status === 1) {
+    return { stage: 'released', label: 'Released to the agent', money: 'paid to the agent', autoReleaseAt: null, actions: [] }
+  }
+  if (escrow.status === 2) {
+    return { stage: 'refunded', label: 'Refunded to your wallet', money: 'back with you', autoReleaseAt: null, actions: [] }
+  }
+  if (escrow.verifiedAt === 0) {
+    return {
+      stage: 'held',
+      label: 'Held in escrow, waiting on delivery',
+      money: 'held by the kernel',
+      autoReleaseAt: null,
+      // the refund is the buyer's free exit before any verified delivery
+      actions: ['refund'],
+    }
+  }
+  const autoReleaseAt = escrow.windowEndsAt !== null ? escrow.windowEndsAt * 1000 : null
+  const open = autoReleaseAt === null || autoReleaseAt > now
+  return {
+    stage: 'verifiedWindow',
+    label: open ? 'Delivered verified, dispute window open' : 'Ready to release',
+    money: 'held by the kernel',
+    autoReleaseAt,
+    actions: open ? ['release', 'dispute'] : ['release'],
+  }
+}
+
+// the card's horizontal flow: which of the five dots the money stands on. A
+// refund is its own exit from the flow, so the caller shows it without the
+// dots rather than pretending the five lines still tell the story
+export function escrowFlowIndex(
+  stage: EscrowLifecycleStage,
+  autoReleaseAt: number | null,
+  now: number = Date.now(),
+): 0 | 1 | 2 | 3 | 4 {
+  if (stage === 'held') return 1
+  if (stage === 'verifiedWindow') return autoReleaseAt !== null && autoReleaseAt > now ? 2 : 3
+  return 4
+}
+
 export interface HireItem {
   key: string
   chainId: number
