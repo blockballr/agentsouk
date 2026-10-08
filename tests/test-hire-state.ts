@@ -2,7 +2,7 @@
 // hire never offers a run, a finished job keeps an open session revocable, and a JSON
 // deliverable reads as fields
 import { describe, expect, it } from "vitest";
-import { escrowChip, escrowRejectMove, hireItems, hireState, readableResult, type HireItem } from "../apps/web/src/lib/hire-state";
+import { escrowChip, escrowFlowIndex, escrowLifecycle, escrowRejectMove, hireItems, hireState, readableResult, type HireItem } from "../apps/web/src/lib/hire-state";
 import type { ActiveHireSession, Erc8183Job, EscrowStatus, HireTask } from "../apps/web/src/lib/api";
 
 const NOW = Date.parse("2026-09-30T12:00:00.000Z");
@@ -250,5 +250,41 @@ describe("escrow reject move", () => {
       kind: "refuse",
       reason: expect.stringContaining("already released"),
     });
+  });
+});
+
+describe("escrow lifecycle spine", () => {
+  it("holds before any verified delivery, with the refund as the only verb", () => {
+    const spine = escrowLifecycle(escrow());
+    expect(spine?.stage).toBe("held");
+    expect(spine?.autoReleaseAt).toBeNull();
+    expect(spine?.actions).toEqual(["refund"]);
+    expect(spine?.label).toContain("waiting on delivery");
+  });
+
+  it("names the do-nothing date while the dispute window is open", () => {
+    const spine = escrowLifecycle(escrow({ verifiedAt: 1791373545, windowEndsAt: 1791377145 }), 1791375000 * 1000);
+    expect(spine?.stage).toBe("verifiedWindow");
+    expect(spine?.autoReleaseAt).toBe(1791377145 * 1000);
+    expect(spine?.actions).toEqual(["release", "dispute"]);
+    expect(spine?.label).toContain("dispute window open");
+  });
+
+  it("reads ready to release once the calendar moves, and closed after a move", () => {
+    const ready = escrowLifecycle(escrow({ verifiedAt: 1791373545, windowEndsAt: 1791377145 }), 1791378000 * 1000);
+    expect(ready?.label).toBe("Ready to release");
+    expect(ready?.actions).toEqual(["release"]);
+    expect(escrowLifecycle(escrow({ status: 1 }))?.stage).toBe("released");
+    expect(escrowLifecycle(escrow({ status: 2 }))?.stage).toBe("refunded");
+    expect(escrowLifecycle(null)).toBeNull();
+  });
+});
+
+describe("the card's flow index", () => {
+  it("walks the five stops as the escrow advances", () => {
+    expect(escrowFlowIndex("held", null)).toBe(1);
+    expect(escrowFlowIndex("verifiedWindow", 1791377145 * 1000, 1791375000 * 1000)).toBe(2);
+    expect(escrowFlowIndex("verifiedWindow", 1791377145 * 1000, 1791378000 * 1000)).toBe(3);
+    expect(escrowFlowIndex("released", null)).toBe(4);
   });
 });

@@ -14,9 +14,11 @@ import {
   isJobStepSkill,
   sellsByJob,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type HireTask, type JobStatus } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
+import { EscrowFlowCard } from '../components/EscrowFlowCard'
+import { escrowLifecycle } from '../lib/hire-state'
 import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
 import { Tag } from '../components/Tag'
@@ -1262,6 +1264,25 @@ function HirePanel({
   const [shortForHire, setShortForHire] = useState(false)
   const [nudge, setNudge] = useState(0)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
+  const [escrowRow, setEscrowRow] = useState<EscrowStatus | null>(null)
+
+  // the settlement's own escrow, fetched as soon as the receipt exists: with
+  // the funder live the money is held before it is paid, and the bar below the
+  // receipt carries that instead of a second sentence about it
+  useEffect(() => {
+    const paymentId = result?.paymentId
+    if (!paymentId) {
+      setEscrowRow(null)
+      return
+    }
+    let cancelled = false
+    getEscrowStatuses([paymentId]).then((r) => {
+      if (!cancelled) setEscrowRow(r.byId[paymentId] ?? null)
+    }).catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [result?.paymentId])
 
   async function startHire() {
     setError(null)
@@ -1422,7 +1443,14 @@ function HirePanel({
 
       {step === 'hired' && result && (
         <div className="rounded-[10px] border hairline border-highlighter-green/50 p-4">
-          <p className="micro text-green-ink">Agent activated</p>
+          {/* the money's own progression sits where the receipt lands: with the
+              funder live the bar carries the held/payment story, so the headline
+              only says activated when there is no escrow at all */}
+          {escrowRow ? (
+            <EscrowFlowCard spine={escrowLifecycle(escrowRow) ?? null} agentName={name} />
+          ) : (
+            <p className="micro text-green-ink">Agent activated</p>
+          )}
           <div className="mt-3 space-y-2 text-xs">
             <Row label="Payment" value={result.paymentId} mono />
             {receipt && (
@@ -1825,7 +1853,8 @@ function DeliveryPanel({
           )}
           {offer === 'refund' && (
             <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
-              Nothing to complete yet: the job is still Funded. You can reject it from Ongoing. The payment reached the agent when you signed and is not returned.
+              Nothing to complete yet: the job is still Funded. Reject it from
+              Ongoing and the held payment comes back to your wallet.
             </p>
           )}
           {completeNote && (

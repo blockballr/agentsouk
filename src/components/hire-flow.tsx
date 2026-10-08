@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount, useSignTypedData } from "wagmi";
+import { EscrowFlow } from "./escrow-flow";
 import {
   EIP3009_TYPES,
   PaymentPayload,
@@ -272,17 +273,28 @@ export function HireFlow({
                   <path d="m5 13 4 4L19 7" stroke="#34d399" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
-              <div className="text-sm font-semibold text-emerald-300">Agent activated</div>
+              <div className="text-sm font-semibold text-emerald-300">
+                {escrowed ? 'Payment held in escrow' : 'Agent activated'}
+              </div>
               <div className="text-xs text-emerald-200/70">
-                {receipt.details.agentName} is now working for you.
+                {escrowed
+                  ? "Payment held in escrow; the payment releases when you OK the delivery, or on the window's deadline."
+                  : `${receipt.details.agentName} is now working for you.`}
               </div>
             </div>
+            {escrowed && <EscrowFlow stage="held" agentName={receipt.details.agentName} />}
             <div className="mt-4 space-y-2 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-sm">
               <Row label={escrowed ? "Held in escrow" : "Paid"} value={`${formatUnits(BigInt(receipt.details.amount), 18)} ${receipt.details.symbol}`} />
               <Row label="To" value={shortAddress(receipt.details.payTo)} />
               <Row label="Mode" value={receipt.details.mode.toUpperCase()} />
               <Row label="Tx" value={shortAddress(receipt.txHash, 10)} mono />
             </div>
+            {escrowed && (
+              <p className="mt-3 text-center text-[11px] leading-relaxed text-zinc-500">
+                Your payment sits in escrow. It releases to the agent on your
+                OK, or automatically once the dispute window passes.
+              </p>
+            )}
             {escrowed && (
               <p className="mt-3 text-center text-[11px] leading-relaxed text-zinc-500">
                 Your payment sits in escrow. It releases to the agent on your
