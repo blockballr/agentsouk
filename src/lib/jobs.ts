@@ -37,6 +37,8 @@ export interface Job {
   tokenId: string;
   agentName: string;
   paymentId?: string;
+  /** set when the price sits on the shared ERC-8183 kernel rather than an x402 payment */
+  onchainJobId?: number;
   budgetUsd: number;
   expiredAt: string;
   status: JobStatus;
@@ -206,6 +208,67 @@ export async function listJobsForClient(client: string, limit = 50): Promise<Job
     .filter(onTargetChain)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, limit);
+}
+
+// Same creation as fundJob, keyed to a shared-kernel job id instead of an x402
+// payment: the row only exists after the kernel itself holds the price, so the
+// record has to mirror what the chain already says once one is created
+export async function recordOnchainJob(input: {
+  onchainJobId: number;
+  client: string;
+  provider: string;
+  evaluator?: string;
+  description: string;
+  chainId: number;
+  tokenId: string;
+  agentName: string;
+  budgetUsd: number;
+  expiredAt: string;
+}): Promise<Job> {
+  const recent = await loadJobs(200);
+  const existing = recent.find((j) => Number(j.onchainJobId) === Number(input.onchainJobId) && Number(j.chainId) === input.chainId);
+  if (existing) {
+    jobs.set(existing.id, existing);
+    return existing;
+  }
+  const created = await persistJob(
+    cache({
+      id: randomUUID(),
+      client: input.client,
+      provider: input.provider,
+      evaluator: input.evaluator ?? input.client,
+      description: input.description,
+      chainId: input.chainId,
+      tokenId: input.tokenId,
+      agentName: input.agentName,
+      onchainJobId: input.onchainJobId,
+      budgetUsd: input.budgetUsd,
+      expiredAt: input.expiredAt,
+      status: "Funded",
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+      history: [
+        { at: nowIso(), status: "Open", by: input.client },
+        { at: nowIso(), status: "Funded", by: input.client, reason: "ERC-8183 kernel escrow" },
+      ],
+    }),
+  );
+  return created;
+}
+
+export async function findOnchainJobForClient(client: string, limit = 50): Promise<Job[]> {
+  const rows = await listJobsForClient(client, limit);
+  return rows.filter((j) => j.onchainJobId !== undefined);
+}
+
+export async function findOnchainJob(onchainJobId: number, chainId: number): Promise<Job | undefined> {
+  const recent = await loadJobs(200);
+  return recent.find((j) => Number(j.onchainJobId) === Number(onchainJobId) && Number(j.chainId) === chainId);
+}
+
+export function addJobEvent(job: Job, status: JobStatus, by: string, reason?: string): Job {
+  push(job, status, by, reason);
+  return job;
 }
 
 export function fundJob(input: {

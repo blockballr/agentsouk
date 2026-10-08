@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { negotiateQuote, parseNegotiationQuote } from "@/lib/jobs8183";
+import { encodeAbiParameters } from "viem";
+import { negotiateQuote, notifySeller, kernelJob, parseNegotiationQuote } from "@/lib/jobs8183";
 
 // the ERC-8183 negotiate step, offline: the parser runs against the envelope
 // shape the chain-97 grid agents answered with, and the dial path is stubbed
@@ -82,6 +83,70 @@ describe("parseNegotiationQuote", () => {
   it("refuses a quote with no proof attached", () => {
     expect(parseNegotiationQuote(envelope({ negotiation_hash: undefined }), 97, null).ok).toBe(false);
     expect(parseNegotiationQuote(envelope({ provider_sig: undefined }), 97, null).ok).toBe(false);
+  });
+});
+
+describe("notifySeller", () => {
+  const PAYLOAD = { job_id: 4242, commerce: "0xa206c0517B6371C6638CD9e4a42Cc9f02A33B0DE" };
+
+  it("hands the seller the notify payload and reads the ack", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string) =>
+        new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: { status: "notified", job_id: 4242 } }), { status: 200 }),
+      ),
+    );
+    const result = await notifySeller(97, "https://agent.example/a2a", PAYLOAD);
+    expect(result.ok).toBe(true);
+    expect(result.reply).toContain("notified");
+  });
+
+  it("records the usual no-ack reply as evidence, ok false", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string) =>
+        new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: { status: "quoted" } }), { status: 200 }),
+      ),
+    );
+    const result = await notifySeller(97, "https://agent.example/a2a", PAYLOAD);
+    expect(result.ok).toBe(false);
+    expect(result.reply).toContain("quoted");
+  });
+
+  it("refuses a private endpoint before dialing", async () => {
+    const result = await notifySeller(97, "http://localhost:8080/", PAYLOAD);
+    expect(result.ok).toBe(false);
+    expect(result.reply).toMatch(/private/);
+  });
+});
+
+describe("kernelJob", () => {
+  it("decodes a live getJob answer from the chain", async () => {
+    const TUPLE = [
+      { type: "uint256" },
+      { type: "address" },
+      { type: "address" },
+      { type: "address" },
+      { type: "string" },
+      { type: "uint256" },
+      { type: "uint256" },
+      { type: "uint8" },
+      { type: "address" },
+    ] as const;
+    const fixture = encodeAbiParameters(
+      TUPLE,
+      [4242n, "0x0000000000000000000000000000000000000000", "0x26dFfA1C42ff523Ee70F208a22424A2aEa4Df928", "0x0000000000000000000000000000000000000001", "", 1000000000000000000n, 1791500000n, 1, "0x0000000000000000000000000000000000000002"],
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string) => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: fixture }), { status: 200 })),
+    );
+    const job = await kernelJob(97, 4242);
+    expect(job?.status).toBe(1);
+    expect(job?.client).toBe("0x0000000000000000000000000000000000000000");
+    expect(job?.provider.toLowerCase()).toBe("0x26dffa1c42ff523ee70f208a22424a2aea4df928");
+    expect(job?.budget).toBe(1000000000000000000n);
+    expect(Number(job?.expiredAt)).toBe(1791500000);
   });
 });
 

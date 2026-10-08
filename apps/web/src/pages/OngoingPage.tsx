@@ -4,9 +4,11 @@ import {
   actOnJob,
   getEscrowStatuses,
   getHiresByWallet,
+  getJobs8183Jobs,
   getOngoing,
   retryTask,
   type EscrowStatus,
+  type Jobs8183Row,
   type OngoingBundle,
 } from '../lib/api'
 import { timeAgo } from '@agora/core'
@@ -28,6 +30,7 @@ import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvi
 import { encodeFunctionData, keccak256, toBytes } from 'viem'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { ratedHires } from '../lib/rating'
+import { jobStatusName } from '../lib/jobs8183'
 import { RateAgent } from '../components/RateAgent'
 import { Action, Dialog, LABEL, RatingBoxes, ResultBox, TextSlot, button, card, cx } from '../components/ui'
 import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
@@ -63,11 +66,28 @@ export function OngoingPage() {
   const [escrowById, setEscrowById] = useState<Record<string, EscrowStatus>>({})
   const [escrowFunder, setEscrowFunder] = useState<string | null>(null)
   const [escrowBusyId, setEscrowBusyId] = useState<string | null>(null)
+  const [kernelJobs, setKernelJobs] = useState<Jobs8183Row[]>([])
   const inFlight = useRef(false)
 
   useEffect(() => {
     void getActiveAccount().then((a) => setAccount(a))
   }, [])
+
+  // kernel jobs are a slower loop: the escrow holds days, so one read per
+  // connect plus one after each load is plenty
+  useEffect(() => {
+    if (!account) {
+      setKernelJobs([])
+      return
+    }
+    let cancelled = false
+    getJobs8183Jobs(account).then((rows) => {
+      if (!cancelled) setKernelJobs(rows)
+    }).catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [account])
 
   const load = useCallback(async () => {
     if (!account) {
@@ -381,6 +401,43 @@ export function OngoingPage() {
           )
         })}
 
+      {account && kernelJobs.length > 0 && (
+        <div className="mt-12">
+          <h2 className="micro text-newsprint-gray">
+            {`ERC-8183 jobs ${kernelJobs.length}`}
+          </h2>
+          <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">
+            Funded on the shared kernel; the status below is read from the chain, not from a promise.
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {kernelJobs.map((row) => (
+              <div key={row.id} className="metal rounded-[14px] border hairline border-slate-verdant/40 p-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <Link
+                    to={`/agents/${row.chainId}/${row.tokenId}`}
+                    className="font-serif text-[19px] leading-snug text-press-black hover:underline"
+                  >
+                    {row.agentName}
+                  </Link>
+                  <span className="text-[12px] text-newsprint-gray">{row.budgetUsd} $U</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3 text-[13px]">
+                  <span className="font-mono text-newsprint-gray">
+                    {formatExpiry(row.expiredAt)}
+                  </span>
+                  <span className={cx('rounded-[4px] px-2 py-1 font-mono text-[12px]', JOBS8183_TONE[jobStatusName(row.status ?? -1)] ?? 'bg-press-black/5 text-newsprint-gray')}>
+                    {row.status === null ? 'unreached' : jobStatusName(row.status)}
+                  </span>
+                </div>
+                <div className="mt-1 text-[12px] text-newsprint-gray">
+                  kernel job <span className="font-mono">{row.onchainJobId}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {account && standaloneRevocations.length > 0 && (
         <div className="mt-12">
           <h2 className="micro text-newsprint-gray">Revoked</h2>
@@ -395,6 +452,15 @@ export function OngoingPage() {
       )}
     </section>
   )
+}
+
+const JOBS8183_TONE: Record<string, string> = {
+  Open: 'bg-press-black/5 text-newsprint-gray',
+  Funded: 'bg-highlighter-green/15 text-press-black',
+  Submitted: 'bg-amber-100 text-press-black',
+  Completed: 'bg-highlighter-green/30 text-press-black',
+  Rejected: 'bg-press-black/10 text-newsprint-gray',
+  Expired: 'bg-press-black/10 text-newsprint-gray',
 }
 
 const STATE_DOT: Record<HireGroup, string> = {

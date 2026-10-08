@@ -723,6 +723,50 @@ type Jobs8183QuotePayload = {
 
 type Jobs8183StackShape = { commerce: string; router: string; policy: string; paymentToken: string }
 
+// The post-fund step: the buyer reports the funded kernel job. The server
+// verifies the chain's own answer before recording, then notifies the seller
+// and returns what the seller actually said.
+export async function recordJobs8183Job(input: {
+  tokenId: string
+  kernelJobId: bigint | string
+  client: string
+  chainId?: number
+}): Promise<
+  | { ok: true; recorded: { id: string; onchainJobId: number; agent: string; status: string }; notify: { ok: boolean; reply: string } }
+  | { ok: false; error: string }
+> {
+  const res = await fetch(`${BASE}/jobs8183/jobs`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ ...input, kernelJobId: String(input.kernelJobId) }),
+  })
+  const body = (await res.json().catch(() => null)) as
+    | { success?: boolean; error?: string; recorded?: { id: string; onchainJobId: number; agent: string; status: string }; notify?: { ok: boolean; reply: string } }
+    | null
+  if (!res.ok || !body?.success) return { ok: false, error: body?.error ?? `the record route refused (${res.status})` } as const
+  return { ok: true, recorded: body.recorded as never, notify: body.notify as never } as const
+}
+
+// The wallet's recorded kernel jobs, status re-read from the kernel per row
+export interface Jobs8183Row {
+  id: string
+  onchainJobId: number
+  chainId: number
+  tokenId: string
+  agentName: string
+  budgetUsd: number
+  expiredAt: string
+  status: number | null
+  updatedAt: string
+}
+
+export async function getJobs8183Jobs(wallet: string): Promise<Jobs8183Row[]> {
+  const res = await fetch(`${BASE}/jobs8183/jobs?wallet=${encodeURIComponent(wallet)}`)
+  if (!res.ok) return []
+  const body = (await res.json().catch(() => null)) as { jobs?: Jobs8183Row[] } | null
+  return body?.jobs ?? []
+}
+
 // Hires paid to a wallet's agents. The payee is the agent's receiving wallet.
 export async function getHiresByPayee(payee: string): Promise<HiresByPayeeResult> {
   const res = await fetch(`${BASE}/hires/by-payee?payee=${encodeURIComponent(payee)}`)
