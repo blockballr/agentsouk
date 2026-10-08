@@ -51,6 +51,10 @@ function altanaActor(): VaultActor | null {
   } catch {
     throw new Error("AGENT_ALTANA_SESSION is set but does not parse as a granted session");
   }
+  // the granted session from the SDK carries a live signer object; a json
+  // roundtrip strips its methods and the execute path refuses the husk, so
+  // the session signer is rebuilt from the key the env held for the grant
+  session = { ...(session as Record<string, unknown>), signer: signerFromPrivateKey(sessionKey) };
   return {
     kind: "altana",
     async address() {
@@ -62,8 +66,12 @@ function altanaActor(): VaultActor | null {
       return walletAddress;
     },
     async trade(call: Call) {
+      // execute strips the relay's receipts (only executeWithReceipts keeps
+      // them and that is not exported), so the hash comes off the result's
+      // transactionHash, falling back to the bundle id the relay reported
       const result = await client.execute({ session, calls: [call], chainId: 97 } as unknown as Parameters<typeof client.execute>[0]);
-      const hash = (result as { receipts?: { hash?: string }[] }).receipts?.[0]?.hash;
+      const hash = (result as { transactionHash?: string }).transactionHash
+        ?? ((result as { receipts?: { hash?: string }[] }).receipts?.[0]?.hash ?? (result as { callsId?: string }).callsId);
       if (!hash) throw new Error("the relay returned no receipt hash for the trade");
       return hash;
     },
