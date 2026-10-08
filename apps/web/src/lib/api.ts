@@ -673,6 +673,56 @@ export async function getVaultExecutor(): Promise<{ kind: 'rawkey' | 'altana'; a
   return body.executor ?? null
 }
 
+// The buyer's on-ramp for an ERC-8183 job: the validated quote and the stack
+// the buyer's wallet will fund against, from the negotiate route. The refusal
+// keeps its reason; the route's guards explain most refusals themselves.
+export async function getJobs8183Quote(input: {
+  tokenId: string
+  task: string
+  client: string
+  chainId?: number
+}): Promise<
+  | {
+      ok: true
+      quote: {
+        price: string
+        currency: string
+        providerAddress: string
+        validUntil: number
+        negotiationHash: string
+        providerSig: string
+        agentId: string | null
+      }
+      stack: { commerce: string; router: string; policy: string; paymentToken: string }
+    }
+  | { ok: false; error: string }
+> {
+  const res = await fetch(`${BASE}/jobs8183/quote`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const body = (await res.json().catch(() => null)) as
+    | { success?: boolean; error?: string; quote?: Jobs8183QuotePayload; stack?: Jobs8183StackShape }
+    | null
+  if (!res.ok || !body?.success) {
+    return { ok: false, error: body?.error ?? `the quoting route refused (${res.status})` } as const
+  }
+  return { ok: true, quote: body.quote as Jobs8183QuotePayload, stack: body.stack as Jobs8183StackShape } as const
+}
+
+type Jobs8183QuotePayload = {
+  price: string
+  currency: string
+  providerAddress: string
+  validUntil: number
+  negotiationHash: string
+  providerSig: string
+  agentId: string | null
+}
+
+type Jobs8183StackShape = { commerce: string; router: string; policy: string; paymentToken: string }
+
 // Hires paid to a wallet's agents. The payee is the agent's receiving wallet.
 export async function getHiresByPayee(payee: string): Promise<HiresByPayeeResult> {
   const res = await fetch(`${BASE}/hires/by-payee?payee=${encodeURIComponent(payee)}`)
