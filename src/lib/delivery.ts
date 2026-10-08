@@ -32,7 +32,7 @@ interface RpcResponse {
   error?: { code: number; message: string };
 }
 
-async function postRpc(
+export async function postRpc(
   url: string,
   body: RpcRequest,
   headers: Record<string, string> = {},
