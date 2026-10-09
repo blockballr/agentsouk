@@ -13,12 +13,16 @@
 // needs testnet BNB too, or the first escrowed hire will fail to settle.
 
 import { createPublicClient, createWalletClient, http, formatUnits } from "viem";
-import { bscTestnet } from "viem/chains";
+import { bscTestnet, bsc } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "node:fs";
 
-const CHAIN = bscTestnet;
-const RPC = process.env.BSC_TESTNET_RPC ?? "https://data-seed-prebsc-2-s2.binance.org:8545";
+// the mainnet flip decides the chain and the settle token on one env: when
+// TARGET_CHAIN is 56 the deploy lands on BSC mainnet and the relay's settle
+// currency is the mainnet $U, read from escrow funder's own deploy env
+const TARGET = Number(process.env.TARGET_CHAIN ?? "97");
+const CHAIN = TARGET === 56 ? bsc : bscTestnet;
+const RPC = TARGET === 56 ? "https://bsc-dataseed.bnbchain.org" : (process.env.BSC_TESTNET_RPC ?? "https://data-seed-prebsc-2-s2.binance.org:8545");
 
 // one hour on testnet so the whole fund, verify, release lifecycle can be
 // exercised the same day; the mainnet funder is a fresh deploy with its own
