@@ -9,12 +9,13 @@
 // rather than typed, so the contract cannot be deployed bound to the wrong key.
 
 import { createPublicClient, createWalletClient, http, formatUnits } from "viem";
-import { bscTestnet } from "viem/chains";
+import { bscTestnet, bsc } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { readFileSync } from "node:fs";
 
-const CHAIN = bscTestnet;
-const RPC = process.env.BSC_TESTNET_RPC ?? "https://data-seed-prebsc-2-s2.binance.org:8545";
+const TARGET = Number(process.env.TARGET_CHAIN ?? "97");
+const CHAIN = TARGET === 56 ? bsc : bscTestnet;
+const RPC = TARGET === 56 ? "https://bsc-dataseed.bnbchain.org" : (process.env.BSC_TESTNET_RPC ?? "https://data-seed-prebsc-2-s2.binance.org:8545");
 
 const ARTIFACT = new URL("../contracts/out/ReceiptLedger.sol/ReceiptLedger.json", import.meta.url);
 
