@@ -97,10 +97,13 @@ export function sellerConfigFromEnv(
     chainId === BSC_TESTNET_CHAIN_ID
       ? process.env.SELLER8183_PROVIDER_TESTNET ?? process.env.SELLER8183_PROVIDER ?? ""
       : process.env.SELLER8183_PROVIDER ?? "";
-  const sellerKey =
+  const sellerKeyRaw =
     chainId === BSC_TESTNET_CHAIN_ID
       ? process.env.SELLER8183_PRIVATE_KEY_TESTNET ?? process.env.SELLER8183_PRIVATE_KEY
       : process.env.SELLER8183_PRIVATE_KEY;
+  // the paste sometimes drops the 0x lead, and every consumer between here and
+  // the chain expects the prefixed form: normalize once, at config read
+  const sellerKey = sellerKeyRaw && !sellerKeyRaw.startsWith("0x") ? `0x${sellerKeyRaw.trim()}` : sellerKeyRaw;
   const price = Number(process.env.SELLER8183_PRICE_USD ?? 2);
   return {
     chainId,
