@@ -104,7 +104,9 @@ export function sellerConfigFromEnv(
   // the paste sometimes drops the 0x lead, and every consumer between here and
   // the chain expects the prefixed form: normalize once, at config read
   const sellerKey = sellerKeyRaw && !sellerKeyRaw.startsWith("0x") ? `0x${sellerKeyRaw.trim()}` : sellerKeyRaw;
-  const price = Number(process.env.SELLER8183_PRICE_USD ?? 2);
+  // the price is RAW $U, not dollars: the token's own shape decides the
+  // rate, so 1 U reads as ~$1 only inside the buyer's wallet's own display
+  const price = Number(process.env.SELLER8183_PRICE_U ?? process.env.SELLER8183_PRICE_USD ?? 2);
   return {
     chainId,
     providerWallet,
