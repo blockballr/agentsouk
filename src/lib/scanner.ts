@@ -22,6 +22,7 @@ import {
   dueForRefresh,
   indexKey,
   isFreshAdmission,
+  canExecute,
   shelfActionOnFailure,
   shouldAdmitSnapshotEntry,
   shouldCacheShelfAgent,
@@ -370,7 +371,18 @@ export function shelfRefusalReason(a: {
   const reasons = endpoints
     .map((u) => privateEndpointReason(u))
     .filter((r): r is string => r !== null);
-  return `its endpoint is not publicly reachable: ${reasons[0] ?? "unknown endpoint fault"}`;
+  if (reasons.length > 0) {
+    return `its endpoint is not publicly reachable: ${reasons[0] ?? "unknown endpoint fault"}`;
+  }
+  // every endpoint it declares is public, and a browser page is not callable:
+  // the shelf lists work a hire can execute, so this one stays off it
+  const callable = [a.a2a_endpoint, a.mcp_server].filter(
+    (u): u is string => typeof u === "string" && u.length > 0,
+  );
+  if (callable.length === 0) {
+    return "it only publishes a browser page, which the marketplace cannot call, so the shelf does not list it: publish an MCP server or an A2A endpoint and it can be hired";
+  }
+  return "";
 }
 
 // A later re-read of the text must not undo the shelf the owner chose at
@@ -1003,7 +1015,10 @@ export async function queryAgents(
   const onChain = Array.from(index.agents.values()).filter(
     (a) => a.chain_id === chainId && (opts.includeDelisted || !delisted.has(a.token_id)),
   );
-  const shelf = opts.includeHouse ? onChain : withoutHouseAgents(onChain, verifications);
+  // the shelf sells work a hire can execute, so an entry the marketplace cannot
+  // call is not served even when an earlier pass admitted it
+  const executable = onChain.filter(canExecute);
+  const shelf = opts.includeHouse ? executable : withoutHouseAgents(executable, verifications);
   let items = shelf;
 
   if (category && category !== "all") {

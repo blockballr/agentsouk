@@ -35,19 +35,23 @@ function summaryFor(draft: RegistrationDraft, tokenId = "7001") {
 }
 
 describe("shelf admission for a web listing", () => {
-  it("admits a web-only agent with a real category and a public endpoint", () => {
+  it("refuses a web-only agent with a real category and a public endpoint", () => {
     expect(
       isShelfReady({ web_endpoint: "https://browser-agent.example/mcp", category: "yield" }),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      shelfRefusalReason({ web_endpoint: "https://browser-agent.example/mcp", category: "yield" }),
+    ).toMatch(/cannot call/);
 
-    // the wizard path: the summary built from the confirmed draft carries the
-    // web endpoint as its own kind, not mislabeled as A2A or MCP
+    // the wizard path: the registration still carries the web endpoint as its
+    // own kind, it simply never reaches the shelf
     const s = summaryFor(WEB_DRAFT);
     expect(s.web_endpoint).toBe(WEB_DRAFT.endpoint);
     expect(s.a2a_endpoint).toBeNull();
     expect(s.mcp_server).toBeNull();
     expect(s.category).toBe("rebalancing");
-    expect(isShelfReady(s)).toBe(true);
+    expect(isShelfReady(s)).toBe(false);
+    expect(shelfRefusalReason(s)).toMatch(/browser page/);
   });
 
   it("refuses a web-only agent whose endpoint is private or malformed", () => {
@@ -83,7 +87,7 @@ describe("shelf admission for a web listing", () => {
     expect(shelfRefusalReason(s)).toMatch(/general/);
   });
 
-  it("files a general reading under the category the lister chose", () => {
+  it("files a general reading under the category the lister chose, and still keeps it off the shelf", () => {
     const s = summaryFor({
       ...WEB_DRAFT,
       name: "Helper",
@@ -91,7 +95,7 @@ describe("shelf admission for a web listing", () => {
     });
     expect(s.category).toBe("rebalancing");
     expect(s.declared_category).toBe("rebalancing");
-    expect(isShelfReady(s)).toBe(true);
+    expect(isShelfReady(s)).toBe(false);
   });
 
   it("still refuses an agent that declares no endpoint at all", () => {

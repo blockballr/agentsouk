@@ -136,10 +136,29 @@ describe("dueForRefresh", () => {
 
 describe("shelf admission", () => {
   // The registry admits anything registered, so a wholesale index put 100 extra agents on the
-  // shelf, 30 unclassified and 39 uncallable; the brief grades against both
+  // shelf, 30 unclassified and 39 uncallable; both are graded against the shelf
   it("admits an agent with a callable endpoint and a real category", () => {
     expect(isShelfReady({ a2a_endpoint: "https://a.example/x", category: "yield" })).toBe(true);
     expect(isShelfReady({ mcp_server: "https://m.example/mcp", category: "rebalancing" })).toBe(true);
+  });
+
+  // the shelf sells work a hire can execute: a listing that only opens a browser
+  // page cannot be called by the marketplace, so it is not a listing any more
+  it("refuses an advisory listing that only opens a web page", () => {
+    expect(isShelfReady({ web_endpoint: "https://advice.example/agent", category: "yield" })).toBe(false);
+    expect(
+      isShelfReady({ web_endpoint: "https://advice.example/agent", category: "health-factor" }),
+    ).toBe(false);
+  });
+
+  it("admits the same listing once it publishes a callable endpoint", () => {
+    expect(
+      isShelfReady({
+        web_endpoint: "https://advice.example/agent",
+        a2a_endpoint: "https://advice.example/a2a",
+        category: "yield",
+      }),
+    ).toBe(true);
   });
 
   it("refuses an agent with no callable endpoint", () => {

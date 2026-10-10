@@ -268,7 +268,7 @@ describe("the summary built from a confirmed claim", () => {
     expect(s.x402_supported).toBe(true);
   });
 
-  it("shelves a web service, carried as browser-invoked rather than mislabelled", () => {
+  it("registers a web service as browser-invoked, and keeps it off the shelf", () => {
     const s = summaryFromRegistration({
       chainId: 97,
       tokenId: "1",
@@ -280,7 +280,7 @@ describe("the summary built from a confirmed claim", () => {
     expect(s.a2a_endpoint).toBeNull();
     expect(s.mcp_server).toBeNull();
     expect(s.web_endpoint).toBe(QUALIFYING.endpoint);
-    expect(isShelfReady(s)).toBe(true);
+    expect(isShelfReady(s)).toBe(false);
   });
 
   it("files an agent under the category its lister chose, whatever the text reads", () => {
