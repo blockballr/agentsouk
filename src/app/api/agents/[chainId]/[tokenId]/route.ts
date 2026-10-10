@@ -5,7 +5,7 @@ import { isPancakeSwapAgent, readsPancakeSwap } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
 import { sessionRevoked } from "@/lib/receipts-store";
 import { getBoost, hydrateBoostsFromDb } from "@/lib/boosts";
-import { fetchAgentCardSkills } from "@/lib/delivery";
+import { captureAgentSkills } from "@/lib/agent-interface";
 import { readPancakePositions } from "@/lib/pancake-positions";
 import { withListingEdit } from "@/lib/listing-edit";
 import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
@@ -31,11 +31,9 @@ export async function GET(
   const verifications = await loadVerifications(Number(chainId));
   await hydrateBoostsFromDb();
   const verification = verifications.get(agent.token_id);
-  const skills =
-    agent.skills ??
-    (agent.a2a_endpoint
-      ? ((await fetchAgentCardSkills(agent.a2a_endpoint, 4000)) ?? undefined)
-      : undefined);
+  // the shelf's stored list first, then what the agent publishes right now: an
+  // A2A card, or the tools its MCP server lists
+  const skills = agent.skills ?? (await captureAgentSkills(agent)) ?? undefined;
   // the shelf's category is the tab the listing sits under, which a re-read of its text can miss
   const shelved = (await queryAgents({ limit: 5000, includeHouse: true, includeDelisted: true })).items.find(
     (a) => a.token_id === agent.token_id,
