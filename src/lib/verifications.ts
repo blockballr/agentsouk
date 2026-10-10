@@ -52,6 +52,9 @@ export function unreachableEndpointVerdict(
 const CACHE_MS = 30_000;
 let cache: { at: number; chain: number; map: Map<string, RecordedVerification>; version?: string | null } | null = null;
 let inflight: Promise<Map<string, RecordedVerification>> | null = null;
+// which chain the in-flight read is for, so a testnet page never inherits a
+// mainnet read that happened to be running when it asked
+let inflightChain: number | null = null;
 
 interface VerificationRow {
   tokenId: string;
@@ -118,15 +121,14 @@ async function loadMainnetFile(): Promise<Map<string, RecordedVerification>> {
   return byToken;
 }
 
-async function loadOnce(): Promise<Map<string, RecordedVerification>> {
-  const chainId = targetChainId();
+async function loadOnce(chainId: number): Promise<Map<string, RecordedVerification>> {
   // read the durable store on every chain; the per-chain file is the fallback
   const byToken =
     chainId === BSC_CHAIN_ID ? await loadMainnetFile() : await loadScoutFile(chainId);
 
   try {
     const { loadVerificationsFromDb } = await import("./verifications-store");
-    const db = await loadVerificationsFromDb();
+    const db = await loadVerificationsFromDb(chainId);
     for (const [tokenId, v] of db) {
       byToken.set(tokenId, v);
     }
@@ -166,10 +168,13 @@ async function verificationsVersion(): Promise<string | null> {
   }
 }
 
-export async function loadVerifications(): Promise<Map<string, RecordedVerification>> {
-  const chain = targetChainId();
+export async function loadVerifications(
+  chainId: number = targetChainId(),
+): Promise<Map<string, RecordedVerification>> {
+  const chain = chainId;
   if (cache && cache.chain === chain && Date.now() - cache.at < CACHE_MS) return cache.map;
-  if (inflight) return inflight;
+  if (inflight && inflightChain === chain) return inflight;
+  inflightChain = chain;
   inflight = (async () => {
     const version = await verificationsVersion();
     // an unchanged table means the verdicts in hand are current, so only the fingerprint crossed the wire
@@ -177,11 +182,12 @@ export async function loadVerifications(): Promise<Map<string, RecordedVerificat
       cache = { ...cache, at: Date.now() };
       return cache.map;
     }
-    const map = await loadOnce();
+    const map = await loadOnce(chain);
     cache = { at: Date.now(), chain, map, version };
     return map;
   })().finally(() => {
     inflight = null;
+    inflightChain = null;
   });
   return inflight;
 }

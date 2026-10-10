@@ -76,7 +76,7 @@ export async function POST(
 
   const forced = await ownerMayForce(chainId, tokenId, detail, body);
 
-  const seen = (await loadVerifications().catch(() => new Map())).get(tokenId);
+  const seen = (await loadVerifications(chainId).catch(() => new Map())).get(tokenId);
   if (!forced && seen?.checkedAt && Date.now() - Date.parse(seen.checkedAt) < REPROBE_MS) {
     return NextResponse.json({ success: true, skipped: true, verification: seen });
   }

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { HOUSE_AGENT_CATEGORY, HOUSE_AGENT_NAME, HOUSE_AGENT_TOKEN_ID, decideHouseAgentTask, type HouseAgentReply } from "@/lib/house-agent";
+import { HOUSE_AGENT_CATEGORY, HOUSE_AGENT_NAME, houseAgentTokenId, decideHouseAgentTask, type HouseAgentReply } from "@/lib/house-agent";
 import { sellerConfigFromEnv, sellerHook } from "@/lib/seller8183";
 import { targetChainId } from "@/lib/types";
 
@@ -20,7 +20,7 @@ type RpcId = string | number | null;
 // SELLER8183_PRIVATE_KEY — which must control that same wallet for a quote to
 // sign and a submit to stand. The chain follows TARGET_CHAIN, so the same
 // card and routes serve the mainnet flip as one env change, not a fork.
-const SELLER8183 = sellerConfigFromEnv(targetChainId(), HOUSE_AGENT_TOKEN_ID, HOUSE_AGENT_NAME);
+const SELLER8183 = sellerConfigFromEnv(targetChainId(), houseAgentTokenId(targetChainId()), HOUSE_AGENT_NAME);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);

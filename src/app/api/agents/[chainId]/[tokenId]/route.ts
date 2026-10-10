@@ -28,7 +28,7 @@ export async function GET(
   // page loads; never the owner's, whose personal activity is not the agent's
   const wallet = "agent_wallet" in agent ? agent.agent_wallet : null;
   const positions = readPancakePositions(Number(chainId), wallet);
-  const verifications = await loadVerifications();
+  const verifications = await loadVerifications(Number(chainId));
   await hydrateBoostsFromDb();
   const verification = verifications.get(agent.token_id);
   const skills =
