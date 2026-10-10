@@ -15,11 +15,50 @@ export const maxDuration = 300;
 // the run stops just short of the platform's own ceiling, so a slow endpoint
 // cannot turn a sweep into a timeout
 const RUN_BUDGET_MS = 4 * 60 * 1000;
-// a listing checked inside this window is left alone, so repeated runs spend
-// their budget on the listings nobody has looked at lately
+// A probe costs nothing, so every listing is read on one flat cadence and no
+// listing is given a long window that could hide a death.
 const FRESH_FOR_MS = 6 * 3_600_000;
+// A listing that is failing is the exception, and the exception runs the other
+// way: it is re-probed on a short backoff, so a repaired agent is back on the
+// market within minutes rather than hours. The backoff grows while it stays
+// broken, and the first healthy row clears the clock and puts it back on the
+// flat cadence.
+export const RECOVERY_BACKOFF_MS = [15 * 60_000, 60 * 60_000, 6 * 3_600_000];
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 50;
+
+export function isFailing(entry?: { status?: string; failing_since?: string | null } | null): boolean {
+  if (!entry) return false;
+  if (entry.failing_since) return true;
+  return entry.status === "dead" || entry.status === "unreachable";
+}
+
+// How long before this listing is due again: the backoff while it is failing,
+// the flat cadence otherwise.
+export function livenessWindowMs(
+  entry: { status?: string; failing_since?: string | null } | undefined,
+  now: number,
+): number {
+  if (!isFailing(entry)) return FRESH_FOR_MS;
+  const at = Date.parse(entry?.failing_since ?? "");
+  if (!Number.isFinite(at)) return RECOVERY_BACKOFF_MS[0];
+  const downFor = Math.max(0, now - at);
+  for (const window of RECOVERY_BACKOFF_MS) {
+    if (downFor < window) return window;
+  }
+  return RECOVERY_BACKOFF_MS[RECOVERY_BACKOFF_MS.length - 1];
+}
+
+// Whether a stored reading has aged past the window its own state earns.
+export function dueForLivenessCheck(
+  entry: { checkedAt?: string; status?: string; failing_since?: string | null } | undefined,
+  now: number,
+): boolean {
+  if (!entry?.checkedAt) return true;
+  const at = Date.parse(entry.checkedAt);
+  if (!Number.isFinite(at)) return true;
+  return now - at >= livenessWindowMs(entry, now);
+}
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -52,17 +91,28 @@ async function run(req: NextRequest): Promise<NextResponse> {
 
   const shelf = await queryAgents({ limit: 5000, includeHouse: true });
   const seen = await loadVerifications(chainId);
-  const cutoff = startedAt - FRESH_FOR_MS;
-  const checkedAtOf = (tokenId: string): number => {
-    const at = Date.parse(seen.get(String(tokenId))?.checkedAt ?? "");
-    return Number.isFinite(at) ? at : 0;
+  const readingFor = (tokenId: string) => seen.get(String(tokenId));
+  // each listing ages out on the window its own state earns, so a run spends its
+  // slots on whatever is closest to needing a look rather than on the newest rows
+  const dueAt = (a: { token_id: string }): number => {
+    const entry = readingFor(String(a.token_id));
+    const at = Date.parse(entry?.checkedAt ?? "");
+    const read = Number.isFinite(at) ? at : 0;
+    return read + livenessWindowMs(entry, startedAt);
   };
+  const skipped = { healthy: 0, failing: 0 };
 
   const candidates = shelf.items
     .filter((a) => Number(a.chain_id) === chainId)
-    .filter((a) => all || checkedAtOf(String(a.token_id)) < cutoff)
-    // oldest reading first, so a repeated run walks the shelf instead of the head
-    .sort((x, y) => checkedAtOf(String(x.token_id)) - checkedAtOf(String(y.token_id)))
+    .filter((a) => {
+      if (all) return true;
+      const entry = readingFor(String(a.token_id));
+      if (dueForLivenessCheck(entry, startedAt)) return true;
+      if (isFailing(entry)) skipped.failing += 1;
+      else skipped.healthy += 1;
+      return false;
+    })
+    .sort((x, y) => dueAt(x) - dueAt(y))
     .slice(0, limit)
     .map((a) => {
       const candidate: ScoutCandidate = {
@@ -143,6 +193,9 @@ async function run(req: NextRequest): Promise<NextResponse> {
     chainId,
     considered: candidates.length,
     probed: probed.length,
+    // how many readings each tier held back this run, so the spend per tier is
+    // visible without reading the rows
+    skipped,
     counts,
     oracle,
     durationMs: Date.now() - startedAt,

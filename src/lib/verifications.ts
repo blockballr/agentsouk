@@ -1,4 +1,4 @@
-import type { Verification } from "./types";
+import type { Verification, VerificationStatus } from "./types";
 import { BSC_CHAIN_ID, scoutDirFor, targetChainId } from "./types";
 import { privateEndpointReason } from "./endpoint";
 
@@ -6,6 +6,17 @@ import { privateEndpointReason } from "./endpoint";
 // auditor sees why the endpoint could not be reached
 export interface RecordedVerification extends Verification {
   detail?: string;
+  // stamped on the first failing row and cleared by the next healthy one, so a
+  // sweep can shorten its own cadence while a listing is broken
+  failing_since?: string;
+}
+
+// A delivery attempt is the strongest evidence there is: a buyer paid and got
+// nothing back. It lands in the same rows a probe writes, so a failure seen in
+// the wild counts the same as one the sweep found, and the next healthy probe
+// clears it exactly the same way.
+export function statusForFailedDelivery(gated: boolean): VerificationStatus {
+  return gated ? "gated" : "dead";
 }
 
 interface VerificationsFile {

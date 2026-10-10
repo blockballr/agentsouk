@@ -28,6 +28,24 @@ export function verdictFor(
     return { label: 'Not checked yet', tone: 'none', explain: 'The marketplace has not checked this agent yet.' }
   }
   if (v.status === 'delivered') {
+    // a deterministic check costs nothing: the sweep asked a task with a knowable
+    // answer and scored what came back, so a correct answer is evidence the work
+    // happens without anyone paying a hire for it
+    if (v.quality?.model === 'deterministic') {
+      return v.quality.grade === 'good'
+        ? {
+            label: 'Proven',
+            tone: 'good',
+            explain:
+              'It did a task whose answer we can check, and the answer was right. No hire was paid to find that out.',
+          }
+        : {
+            label: 'Online',
+            tone: 'good',
+            explain:
+              'It answered a task we can check, but the answer did not hold up, so only its reachability is proven.',
+          }
+    }
     return isProbeCheck(chainId, v.quality)
       ? { label: 'Online', tone: 'good', explain: 'Answered the marketplace on its last check.' }
       : { label: 'Delivered', tone: 'good', explain: 'Delivered a result on the marketplace\'s last paid test hire.' }

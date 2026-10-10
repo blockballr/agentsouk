@@ -176,7 +176,7 @@ export async function loadVerificationsFromDb(
   try {
     const rows = await Promise.race([
       sql`
-        select token_id, status, response_ms, checked_at, quality, concurrency, detail
+        select token_id, status, response_ms, checked_at, quality, concurrency, detail, failing_since
         from verifications
         where chain_id = ${chainId} or chain_id = 0
         order by checked_at desc
@@ -202,6 +202,13 @@ export async function loadVerificationsFromDb(
       }
       if (typeof r.detail === "string") {
         v.detail = r.detail;
+      }
+      // the failure clock travels with the row: a listing that is failing has to
+      // be re-probed on a short backoff, and that is the only way a repaired
+      // agent comes back to the market quickly
+      if (r.failing_since) {
+        v.failing_since =
+          r.failing_since instanceof Date ? r.failing_since.toISOString() : String(r.failing_since);
       }
       byToken.set(String(r.token_id), v);
     }
