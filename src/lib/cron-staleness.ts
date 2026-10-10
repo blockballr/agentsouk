@@ -20,6 +20,7 @@ export interface RouteBudget {
 export const ROUTE_BUDGETS: readonly RouteBudget[] = [
   { name: "refresh", allowedGapMs: 12 * 3_600_000, label: "catalogue refresh" },
   { name: "verify", allowedGapMs: 26 * 3_600_000, label: "verifier sweep" },
+  { name: "liveness", allowedGapMs: 26 * 3_600_000, label: "liveness sweep" },
   { name: "pancake", allowedGapMs: 26 * 3_600_000, label: "pancake sweep" },
   { name: "maintenance", allowedGapMs: 30 * 3_600_000, label: "maintenance pass" },
 ];

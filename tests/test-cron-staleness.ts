@@ -17,21 +17,21 @@ function run(name: string, startedHoursAgo: number, ok = true): CronRun {
 
 describe("stalenessBreaches", () => {
   it("holds a name of a fresh run under every budget", () => {
-    const runs = [run("refresh", 1), run("verify", 5), run("maintenance", 4), run("pancake", 2)];
+    const runs = [run("refresh", 1), run("verify", 5), run("liveness", 3), run("maintenance", 4), run("pancake", 2)];
     expect(stalenessBreaches(runs, now)).toEqual([]);
   });
 
   it("reports a route whose runner has stopped", () => {
     const runs = [run("refresh", 1), run("verify", 40)];
     const breaches = stalenessBreaches(runs, now);
-    // a name with no run at all breaches too, so pancake and maintenance join
-    expect(breaches.map((b) => b.name)).toEqual(["verify", "pancake", "maintenance"]);
+    // a name with no run at all breaches too, so the rest join
+    expect(breaches.map((b) => b.name)).toEqual(["verify", "liveness", "pancake", "maintenance"]);
     expect(breaches[0].age).toBeGreaterThan(26 * HOUR);
   });
 
   it("treats no recorded run as the worst case", () => {
     const breaches = stalenessBreaches([], now);
-    expect(breaches).toHaveLength(4);
+    expect(breaches).toHaveLength(5);
     const refresh = breaches.find((b) => b.name === "refresh")!;
     expect(refresh.lastRunAt).toBeNull();
     expect(refresh.ok).toBe(false);
@@ -42,7 +42,7 @@ describe("stalenessBreaches", () => {
     // one route fresh at 1h, another grey with no runs at all
     const breaches = stalenessBreaches(runs, now);
     expect(breaches.find((b) => b.name === "refresh")).toBeUndefined();
-    expect(breaches.map((b) => b.name)).toEqual(["verify", "pancake", "maintenance"]);
+    expect(breaches.map((b) => b.name)).toEqual(["verify", "liveness", "pancake", "maintenance"]);
   });
 
   it("reports a failed run as failed, and names the stale recent details", () => {
