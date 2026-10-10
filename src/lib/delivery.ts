@@ -12,6 +12,36 @@ import {
 import { getJobByPaymentAsync, submitJobAsync, type JobStatus } from "./jobs";
 import { requestsWalletSecret } from "./quest-eligibility";
 import { verifyEscrowDelivery } from "./escrow";
+import { upsertVerification } from "./verifications-store";
+import { classifyAgent } from "./categories";
+import { statusForFailedDelivery } from "./verifications";
+
+// A delivery that fails is evidence no probe can produce: a buyer paid and got
+// nothing back. The row lands where a sweep row lands, so the failure clock
+// starts, the fast re-probes begin, and the next healthy probe clears both. A
+// write that misses must never fail the delivery path it is describing.
+async function recordDeliveryFailure(
+  agent: { chainId: number; tokenId: string; name: string; description?: string | null },
+  error: string,
+  gated: boolean,
+): Promise<void> {
+  try {
+    // the same classification the shelf files an agent under, so a failure row
+    // does not land the listing in a different tab than the listing itself
+    const { category } = classifyAgent([agent.name, agent.description ?? ""].join(" "));
+    await upsertVerification(
+      String(agent.tokenId),
+      agent.name,
+      category,
+      statusForFailedDelivery(gated),
+      0,
+      undefined,
+      error.slice(0, 300),
+    );
+  } catch (e) {
+    console.error("[delivery] failure row not written:", (e as Error).message);
+  }
+}
 
 // the delivery half of hire: a settled receipt unlocks invoking the agent's own endpoint.
 // Two JSON-RPC protocols exist: MCP (initialize, tools/list, tools/call) and A2A (agent card, message/send); agents that gate direct calls behind their own x402 payment are surfaced as gated, not faked.
@@ -590,6 +620,7 @@ export async function deliver(input: DeliverInput): Promise<
         ).id;
       markTaskRunning(trackedId, { tool: input.tool, args: input.args, taskText: input.task });
       markTaskFailed(trackedId, error);
+      await recordDeliveryFailure(receipt.agent, error, false);
     }
     return { ok: false, error, taskId: trackedId };
   }
@@ -650,6 +681,13 @@ export async function deliver(input: DeliverInput): Promise<
         protocol: outcome.protocol,
         gated: outcome.gated,
       });
+      // a buyer paid and got nothing: that is the strongest failure evidence there
+      // is, and it starts the same clock a probe would have started
+      await recordDeliveryFailure(
+        receipt.agent,
+        outcome.error ?? outcome.text ?? "delivery failed",
+        Boolean(outcome.gated),
+      );
     }
   }
 
