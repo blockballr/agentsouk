@@ -5,6 +5,7 @@ import "server-only";
 import postgres from "postgres";
 import { recordCheck } from "./history-store";
 import type { Verification } from "@/lib/types";
+import { targetChainId } from "@/lib/types";
 import type { RecordedVerification } from "./verifications";
 
 let sql: ReturnType<typeof postgres> | null = null;
@@ -30,7 +31,7 @@ async function ensureTable(): Promise<boolean> {
         (async () => {
           await sql!`
             create table if not exists verifications (
-              token_id text primary key,
+              token_id text not null,
               name text not null default '',
               category text not null default '',
               status text not null,
@@ -39,13 +40,41 @@ async function ensureTable(): Promise<boolean> {
               quality jsonb,
               concurrency text,
               detail text,
-              failing_since timestamptz
+              failing_since timestamptz,
+              chain_id integer not null default 0,
+              primary key (token_id, chain_id)
             )
           `;
           // create-if-not-exists leaves an existing table alone, so add the
           // refusal reason to deployments that predate it
           await sql!`alter table verifications add column if not exists detail text`;
           await sql!`alter table verifications add column if not exists failing_since timestamptz`;
+          // the chain a verdict was read on, so one token id registered on two
+          // chains cannot show the other chain's check on its page
+          await sql!`alter table verifications add column if not exists chain_id integer not null default 0`;
+          // every row written before the store recorded a chain came from the
+          // testnet sweeps, which ran for the whole life of the table: they are
+          // testnet rows, not mainnet ones. today's chainless rows are kept
+          // until the next sweep re-attributes them, so a check that just cost a
+          // hire is not thrown away mid-day.
+          await sql!`
+            update verifications set chain_id = ${BSC_TESTNET_CHAIN_ID}
+            where chain_id = 0 and checked_at < date '2026-10-09'
+          `;
+          // the single-column primary key predates the chain column; the
+          // composite one is what lets both chains hold the same token id. the
+          // real constraint name is read rather than assumed.
+          const [pk] = await sql!`
+            select conname from pg_constraint
+            where conrelid = 'verifications'::regclass and contype = 'p'
+          `;
+          if (pk?.conname && pk.conname !== "verifications_pkey_chain") {
+            await sql!.unsafe(`alter table verifications drop constraint "${pk.conname}"`);
+            await sql!`
+              alter table verifications add constraint verifications_pkey_chain
+              primary key (token_id, chain_id)
+            `;
+          }
         })(),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("verifications db connect timeout")), 4000),
@@ -59,6 +88,11 @@ async function ensureTable(): Promise<boolean> {
   })();
   return tableReady;
 }
+
+// the chain a check ran on: rows carry it so a token id registered on two
+// chains never reads the other chain's verdict. the testnet id is the legacy
+// value the backfill stamps onto rows written before the column existed.
+const BSC_TESTNET_CHAIN_ID = 97;
 
 // a gated agent answered behind its own login or payment, so it is alive and must
 // not run the delist clock; only no answer at all counts as failing
@@ -96,9 +130,9 @@ async function writeVerification(
   if (!(await ensureTable()) || !sql) return false;
   try {
     await sql`
-      insert into verifications (token_id, name, category, status, response_ms, checked_at, quality, concurrency, detail, failing_since)
-      values (${tokenId}, ${name}, ${category}, ${status}, ${responseMs}, now(), ${quality ? JSON.stringify(quality) : null}::jsonb, ${concurrency ?? null}, ${detail ?? null}, ${countsAsFailing(status) ? new Date() : null})
-      on conflict (token_id) do update set
+      insert into verifications (token_id, name, category, status, response_ms, checked_at, quality, concurrency, detail, failing_since, chain_id)
+      values (${tokenId}, ${name}, ${category}, ${status}, ${responseMs}, now(), ${quality ? JSON.stringify(quality) : null}::jsonb, ${concurrency ?? null}, ${detail ?? null}, ${countsAsFailing(status) ? new Date() : null}, ${targetChainId()})
+      on conflict (token_id, chain_id) do update set
         name = excluded.name,
         category = excluded.category,
         status = excluded.status,
@@ -134,7 +168,9 @@ export async function loadVerificationsVersion(): Promise<string | null> {
   }
 }
 
-export async function loadVerificationsFromDb(): Promise<Map<string, RecordedVerification>> {
+export async function loadVerificationsFromDb(
+  chainId: number = targetChainId(),
+): Promise<Map<string, RecordedVerification>> {
   const byToken = new Map<string, RecordedVerification>();
   if (!(await ensureTable()) || !sql) return byToken;
   try {
@@ -142,6 +178,7 @@ export async function loadVerificationsFromDb(): Promise<Map<string, RecordedVer
       sql`
         select token_id, status, response_ms, checked_at, quality, concurrency, detail
         from verifications
+        where chain_id = ${chainId} or chain_id = 0
         order by checked_at desc
       `,
       new Promise<never>((_, reject) =>
@@ -149,6 +186,9 @@ export async function loadVerificationsFromDb(): Promise<Map<string, RecordedVer
       ),
     ]);
     for (const r of rows) {
+      // newest first: the first row for a token wins, so a legacy chainless row
+      // cannot shadow the check that replaced it
+      if (byToken.has(String(r.token_id))) continue;
       const v: RecordedVerification = {
         status: r.status as Verification["status"],
         responseMs: r.response_ms,
@@ -227,7 +267,9 @@ export async function takeSweepQueue(limit: number): Promise<SweepQueueEntry[]> 
 export async function loadVerifiedTokenIds(): Promise<Set<string>> {
   if (!(await ensureTable()) || !sql) return new Set();
   try {
-    const rows = (await sql`select token_id from verifications`) as { token_id: string }[];
+    const rows = (await sql`
+      select token_id from verifications where chain_id = ${targetChainId()} or chain_id = 0
+    `) as { token_id: string }[];
     return new Set(rows.map((r) => String(r.token_id)));
   } catch (e) {
     console.error("[verifications] verified ids read failed", (e as Error).message);
@@ -254,6 +296,7 @@ export async function loadStaleTokens(olderThanMs: number): Promise<StaleToken[]
       from verifications
       where failing_since is not null
         and status <> 'delivered'
+        and (chain_id = ${targetChainId()} or chain_id = 0)
         and extract(epoch from (now() - failing_since)) * 1000 >= ${olderThanMs}
       order by failing_since asc
     `) as {

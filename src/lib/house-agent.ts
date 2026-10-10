@@ -17,7 +17,20 @@ export const HOUSE_AGENT_MESSAGING_PATH = "/api/house-agent/a2a";
 
 // The house listing's ERC-8004 token id on chain 97, of the registration the
 // tracking submission records; the seller side quotes with it as agent_id.
+// the team-owned house agent's own registry id, per chain: the testnet listing
+// minted 2504, and the mainnet listing minted 368655 when the marketplace
+// registered on chain 56. A quote carries this id, so a chain-blind value would
+// hand the buyer a stranger's agent id.
+export const HOUSE_AGENT_TOKEN_IDS: Record<number, number> = {
+  97: 2504,
+  56: 368655,
+};
+
 export const HOUSE_AGENT_TOKEN_ID = 2504;
+
+export function houseAgentTokenId(chainId: number): number {
+  return HOUSE_AGENT_TOKEN_IDS[chainId] ?? HOUSE_AGENT_TOKEN_ID;
+}
 
 export const DEFAULT_LIQUIDATION_THRESHOLD = 0.8;
 export const HEALTHY_AT = 1.5;

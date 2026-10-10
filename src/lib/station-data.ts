@@ -37,7 +37,7 @@ import { loadVerifications } from "./verifications";
 import { loadStaleTokens } from "./verifications-store";
 
 const DAY_MS = 86_400_000;
-const CRON_JOBS = ["verify", "refresh", "maintenance", "pancake"] as const;
+const CRON_JOBS = ["verify", "liveness", "refresh", "maintenance", "pancake"] as const;
 const BUYER_WINDOW = 5000;
 
 function paymentRows(payments: Awaited<ReturnType<typeof listRecentPayments>>): PaymentRow[] {
