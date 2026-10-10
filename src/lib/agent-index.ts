@@ -60,10 +60,25 @@ export function dueForRefresh(
 }
 
 /**
- * Whether an agent belongs on the shelf: one publicly reachable endpoint and a
- * real category. A web endpoint qualifies, because a browser-invoked agent is a
- * listing worth showing; the marketplace still cannot call it, which every view
- * of it says.
+ * Whether the marketplace can actually execute work against this agent: a
+ * public A2A or MCP endpoint it can call itself. A browser page is not callable,
+ * so a listing that only opens a website is reference material, not a hire.
+ */
+export function canExecute(a: {
+  a2a_endpoint?: string | null;
+  mcp_server?: string | null;
+  web_endpoint?: string | null;
+}): boolean {
+  const callable = [a.a2a_endpoint, a.mcp_server].filter(
+    (u): u is string => typeof u === "string" && u.length > 0,
+  );
+  return callable.some((u) => privateEndpointReason(u) === null);
+}
+
+/**
+ * Whether an agent belongs on the shelf: a real category and an endpoint the
+ * marketplace can call. The shelf sells work a hire can execute, so a listing
+ * that only answers in a browser, or only talks, is not admitted.
  */
 export function isShelfReady(a: {
   a2a_endpoint?: string | null;
@@ -73,10 +88,16 @@ export function isShelfReady(a: {
 }): boolean {
   const classified = Boolean(a.category) && a.category !== "general";
   if (!classified) return false;
-  const endpoints = [a.a2a_endpoint, a.mcp_server, a.web_endpoint].filter(
-    (u): u is string => typeof u === "string" && u.length > 0,
-  );
-  return endpoints.some((u) => privateEndpointReason(u) === null);
+  return canExecute(a);
+}
+
+// The shelf serves work, not reading: entries an older pass admitted without a
+// callable endpoint are dropped at read time, so the rule takes effect without
+// waiting for a re-scan or a fresh admission.
+export function executableOnly<T extends { a2a_endpoint?: string | null; mcp_server?: string | null; web_endpoint?: string | null }>(
+  entries: readonly T[],
+): T[] {
+  return entries.filter(canExecute);
 }
 
 // fetchAgentDetail returns null for every non-ok response, which folds a
