@@ -1,0 +1,34 @@
+name: Liveness sweep
+
+# The reachability sweep is asked for the same way the catalogue refresh is:
+# through the API's own route, which fails closed and answers only to the bearer
+# secret. Nothing is hired and nothing is paid for an answer, so the cadence can
+# be frequent without a budget attached to it.
+
+on:
+  schedule:
+    - cron: "20 */6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask the API to run the liveness sweep
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET is not set on this repository"
+            exit 1
+          fi
+          code=$(curl -sS -o report.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --max-time 280 \
+            "https://api.agentsouk.xyz/api/cron/liveness?limit=25")
+          echo "http $code"
+          cat report.json
+          if [ "$code" != "200" ]; then
+            echo "the liveness sweep did not succeed"
+            exit 1
+          fi
