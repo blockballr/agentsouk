@@ -3,6 +3,7 @@
 // the contract's own enum order, so a posting cannot drift from the record.
 
 import {
+  createPublicClient,
   createWalletClient,
   encodeFunctionData,
   keccak256,
@@ -78,6 +79,136 @@ export interface LivenessPost {
   skipped?: boolean;
   hash?: string;
   error?: string;
+}
+
+// the sweep's own cadence, so a reading the oracle still counts as fresh is the
+// same age the marketplace's own pages would trust
+export const LIVENESS_WINDOW_SECONDS = 6 * 60 * 60;
+
+const HEARTBEAT_ABI = [
+  {
+    name: "verdict",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "window", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "uint8" }],
+  },
+  {
+    name: "heartbeat",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "grade", type: "uint8" },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "tuple",
+        components: [
+          { name: "grade", type: "uint8" },
+          { name: "method", type: "uint8" },
+          { name: "checkedAt", type: "uint64" },
+          { name: "responseMs", type: "uint32" },
+          { name: "evidenceHash", type: "bytes32" },
+          { name: "reporter", type: "address" },
+          { name: "exists", type: "bool" },
+        ],
+      },
+    ],
+  },
+] as const;
+
+export interface LivenessReading {
+  tokenId: string;
+  verdict: string;
+  exists: boolean;
+  method: string | null;
+  checkedAt: string | null;
+  responseMs: number | null;
+  evidenceHash: string | null;
+  reporter: string | null;
+}
+
+const GRADE_NAMES: Record<number, string> = {
+  [LIVENESS_GRADE.unknown]: "unknown",
+  [LIVENESS_GRADE.reachable]: "reachable",
+  [LIVENESS_GRADE.delivered]: "delivered",
+  [LIVENESS_GRADE.gated]: "gated",
+  [LIVENESS_GRADE.dead]: "dead",
+  [LIVENESS_GRADE.unreachable]: "unreachable",
+};
+const gradeName = (n: number): string => GRADE_NAMES[n] ?? "unknown";
+
+const METHOD_NAMES: Record<number, string> = {
+  [LIVENESS_METHOD.none]: "none",
+  [LIVENESS_METHOD.card]: "card",
+  [LIVENESS_METHOD.a2a]: "a2a",
+  [LIVENESS_METHOD.mcp]: "mcp",
+  [LIVENESS_METHOD.execution]: "execution",
+};
+const methodName = (n: number): string => METHOD_NAMES[n] ?? "none";
+
+// the on-chain record of what a probe observed, read back from the oracle. a
+// listing with no reading reads as unknown, which is not the same as the oracle
+// being unconfigured: that reads as null, so a caller can tell the two apart
+export async function readLiveness(
+  chainId: number,
+  tokenId: string,
+  windowSeconds: number = LIVENESS_WINDOW_SECONDS,
+): Promise<LivenessReading | null> {
+  const address = process.env.LIVENESS_ORACLE_ADDRESS as Address | undefined;
+  if (!address) return null;
+  let id: bigint;
+  try {
+    id = BigInt(tokenId);
+  } catch {
+    return null;
+  }
+  try {
+    const client = createPublicClient({ transport: rpcTransport(chainId, process.env.REGISTRY_RPC_URL) });
+    const verdictRaw = Number(
+      await client.readContract({
+        address,
+        abi: HEARTBEAT_ABI,
+        functionName: "verdict",
+        args: [id, BigInt(windowSeconds)],
+      }),
+    );
+    const hb = (await client.readContract({
+      address,
+      abi: HEARTBEAT_ABI,
+      functionName: "heartbeat",
+      args: [id, verdictRaw],
+    })) as {
+      grade: number;
+      method: number;
+      checkedAt: bigint;
+      responseMs: number;
+      evidenceHash: string;
+      reporter: string;
+      exists: boolean;
+    };
+    return {
+      tokenId: String(tokenId),
+      verdict: gradeName(verdictRaw),
+      exists: Boolean(hb.exists),
+      method: hb.exists ? methodName(Number(hb.method)) : null,
+      checkedAt:
+        hb.exists && Number(hb.checkedAt) > 0
+          ? new Date(Number(hb.checkedAt) * 1000).toISOString()
+          : null,
+      responseMs: hb.exists ? Number(hb.responseMs) : null,
+      evidenceHash: hb.exists ? hb.evidenceHash : null,
+      reporter: hb.exists ? hb.reporter : null,
+    };
+  } catch {
+    // a read that fails leaves the caller with nothing rather than a guess
+    return null;
+  }
 }
 
 // One heartbeat from the marketplace's own wallet. Best effort by design: a
