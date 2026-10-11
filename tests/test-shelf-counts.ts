@@ -136,29 +136,42 @@ describe("what the committed snapshots record", () => {
   });
 
   it("leaves the denominator unknown where no build recorded one", () => {
+    // Both committed snapshots record a total now, because a page read is the
+    // only call scoped to the chain and a rebuild writes it down. The state a
+    // snapshot predates that field is built here rather than read off disk.
+    const unrecorded = { source: { registryTotal: undefined }, agents: [] as unknown[] };
+    expect(unrecorded.source.registryTotal).toBeUndefined();
+    expect(
+      resolveShelfCounts({
+        snapshotAgents: unrecorded.agents.length,
+        snapshotRegistryTotal: unrecorded.source.registryTotal ?? null,
+        liveUpstreamTotal: 2462,
+      }),
+    ).toEqual({ snapshotTotal: 0, registryTotal: null });
+  });
+
+  // The field the defect leaned on counts the build's own work, so it is not a
+  // registry total and never stands in for one: even a live reading equal to
+  // the build's own fetch count does not move the denominator.
+  it("keeps the build's own fetch count out of the registry denominator", () => {
     const snap = committed("agents-97.json");
-    expect(snap.source.registryTotal).toBeUndefined();
+    expect(snap.source.fetched).toBeGreaterThan(snap.agents.length);
     expect(
       resolveShelfCounts({
         snapshotAgents: snap.agents.length,
-        snapshotRegistryTotal: null,
-        liveUpstreamTotal: 2462,
+        snapshotRegistryTotal: snap.source.registryTotal ?? null,
+        liveUpstreamTotal: snap.source.fetched ?? null,
       }),
-    ).toEqual({ snapshotTotal: snap.agents.length, registryTotal: null });
-  });
-
-  // The field the defect leaned on counts the build's own selection, so it is not
-  // a registry total and never stands in for one.
-  it("shows upstreamTotal matching the curated shelf size on chain 97", () => {
-    const snap = committed("agents-97.json");
-    expect(snap.source.fetched).toBe(21);
-    expect(snap.source.upstreamTotal).toBe(21);
-    expect(snap.agents.length).toBe(21);
+    ).toEqual({
+      snapshotTotal: snap.agents.length,
+      registryTotal: snap.source.registryTotal,
+    });
   });
 });
 
 // The reader path: a fresh instance and a just-topped-up instance must report the
-// same denominator, which for the committed snapshot is unknown on both.
+// same denominator, which is the total the committed chain-97 snapshot recorded,
+// never the live reading either of them just saw.
 describe("the served chain-97 snapshot keeps one denominator", () => {
   async function freshScanner() {
     process.env.TARGET_CHAIN = "97";
@@ -177,27 +190,32 @@ describe("the served chain-97 snapshot keeps one denominator", () => {
     }));
   }
 
-  it("reports its own size and leaves the registry total unknown", async () => {
+  it("reports its own size and the total its snapshot recorded", async () => {
     vi.stubGlobal("fetch", page(2462));
     const { queryAgents } = await freshScanner();
+    const snap = committed("agents-97.json");
 
     const result = await queryAgents({ limit: 1 });
 
-    expect(result.indexStatus.snapshotTotal).toBe(21);
-    expect(result.indexStatus.registryTotal).toBeNull();
+    expect(result.indexStatus.snapshotTotal).toBe(snap.agents.length);
+    // 2462 is the live reading on this page; the snapshot's own total wins.
+    expect(result.indexStatus.registryTotal).toBe(snap.source.registryTotal);
+    expect(result.indexStatus.registryTotal).not.toBe(2462);
   });
 
   it("does not adopt the live total after a top up", async () => {
     vi.stubGlobal("fetch", page(2462));
     const { queryAgents, refreshIndexFromLive } = await freshScanner();
+    const snap = committed("agents-97.json");
 
     const before = await queryAgents({ limit: 1 });
-    expect(before.indexStatus.registryTotal).toBeNull();
+    expect(before.indexStatus.registryTotal).toBe(snap.source.registryTotal);
 
     await refreshIndexFromLive(1);
 
     const after = await queryAgents({ limit: 1 });
-    expect(after.indexStatus.snapshotTotal).toBe(21);
-    expect(after.indexStatus.registryTotal).toBeNull();
+    expect(after.indexStatus.snapshotTotal).toBe(snap.agents.length);
+    expect(after.indexStatus.registryTotal).toBe(before.indexStatus.registryTotal);
+    expect(after.indexStatus.registryTotal).not.toBe(2462);
   });
 });

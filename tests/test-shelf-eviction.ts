@@ -157,8 +157,10 @@ describe("shelf staleness", () => {
   });
 });
 
-// The chain-56 snapshot predates endpoint capture; gating it on an endpoint
-// would wipe it. The regime is decided once for the snapshot.
+// Both committed snapshots carry a strict majority of addresses now, so the full
+// gate applies on both chains. The regime exists because a snapshot that never
+// captured endpoints would be wiped by a field it lacks, which is what it was
+// written for.
 describe("snapshot endpoint regime", () => {
   const endpoint = "https://agent.example/x";
 
@@ -203,11 +205,14 @@ describe("snapshot endpoint regime", () => {
   });
 
   // Read the committed snapshots themselves: the distinction the brief names.
-  it("classifies the committed chain-56 snapshot as endpoint-less", () => {
+  // Chain 56 used to predate endpoint capture, which is the reason the regime
+  // exists. The build now recovers an address for every declarer, so the
+  // committed snapshot carries a strict majority and the full gate applies.
+  it("classifies the committed chain-56 snapshot as endpoint-bearing", () => {
     const snap = JSON.parse(
       readFileSync(path.join(process.cwd(), "data", "agents.json"), "utf8"),
     ) as { agents: { a2a_endpoint?: string | null; mcp_server?: string | null }[] };
-    expect(snapshotEndpointRegime(snap.agents)).toBe("no-endpoints");
+    expect(snapshotEndpointRegime(snap.agents)).toBe("endpoints-available");
   });
 
   it("classifies the committed chain-97 snapshot as endpoint-bearing", () => {
@@ -278,7 +283,9 @@ describe("snapshot admission", () => {
   });
 
   // The concrete regression: loading the chain-56 snapshot under its own regime
-  // must leave a populated shelf, not an empty one.
+  // must leave a populated shelf, not an empty one. The regime now gates on the
+  // endpoint the build recovered, so admission is the rows a hire can call
+  // rather than every classified row, and the guard is a substantial share.
   it("does not empty the committed chain-56 shelf", () => {
     const snap = JSON.parse(
       readFileSync(path.join(process.cwd(), "data", "agents.json"), "utf8"),
@@ -287,6 +294,6 @@ describe("snapshot admission", () => {
     };
     const regime = snapshotEndpointRegime(snap.agents);
     const admitted = snap.agents.filter((a) => shouldAdmitSnapshotEntry(a, regime));
-    expect(admitted.length).toBeGreaterThan(100);
+    expect(admitted.length).toBeGreaterThan(snap.agents.length / 3);
   });
 });
