@@ -57,6 +57,10 @@
       "schedule": "0 22 * * *"
     },
     {
+      "path": "/api/cron/liveness",
+      "schedule": "0 */6 * * *"
+    },
+    {
       "path": "/api/cron/pancake",
       "schedule": "30 0 * * *"
     },
