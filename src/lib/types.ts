@@ -178,6 +178,9 @@ export interface AgentSummary {
   total_feedbacks: number;
   health_score: number | null;
   supported_trust_models: string[];
+  // the list payload names which protocol an agent speaks but carries no address
+  // for it, so a build reads the detail record to recover one
+  supported_protocols?: string[];
   a2a_endpoint?: string | null;
   mcp_server?: string | null;
   // a web service the owner declared; it is browser-invoked, so the marketplace cannot call it
