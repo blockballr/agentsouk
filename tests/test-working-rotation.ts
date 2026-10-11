@@ -19,6 +19,7 @@ const house = agent("2522", 99, HOUSE);
 const working = [house, agent("3001", 10), agent("3002", 20), agent("3003", 30), agent("3004", 40)];
 const gated = agent("4001", 90);
 const dead = agent("4002", 95);
+const unchecked = agent("5001", 99);
 const verifications = new Map<string, { status?: string }>([
   ...working.map((a) => [a.token_id, { status: "delivered" }] as const),
   ["4001", { status: "gated" }],
@@ -30,6 +31,12 @@ describe("working first", () => {
     const order = workingFirst([dead, gated, ...working], verifications, "visit-a").map((a) => a.token_id);
     expect(order.slice(0, 5).sort()).toEqual(working.map((a) => a.token_id).sort());
     expect(order.slice(5)).toEqual(["4001", "4002"]);
+  });
+
+  it("puts an unchecked agent above a dead one and below a gated one", () => {
+    const order = workingFirst([dead, gated, unchecked, ...working], verifications, "visit-a").map((a) => a.token_id);
+    expect(order.indexOf("5001")).toBeGreaterThan(order.indexOf("4001"));
+    expect(order.indexOf("5001")).toBeLessThan(order.indexOf("4002"));
   });
 
   it("gives one visit a stable order and different visits different leaders", () => {
