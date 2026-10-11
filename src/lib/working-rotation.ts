@@ -6,7 +6,14 @@ import { isTeamWallet } from "./team-wallets";
 // keeping it for every visitor; the tiers below keep score order, so a broken agent never
 // moves ahead of a working one
 
-const RANK: Record<string, number> = { delivered: 4, gated: 3, dead: 2, unreachable: 1 };
+const RANK: Record<string, number> = {
+  delivered: 5,
+  gated: 4,
+  // unmeasured is not known bad: an agent we have not checked sits above the ones we have
+  unchecked: 3,
+  dead: 2,
+  unreachable: 1,
+};
 const DELIVERED = RANK.delivered;
 
 type Verifications = Map<string, { status?: string }> | undefined;
@@ -35,7 +42,7 @@ function rotationKey(seed: string, tokenId: string): number {
 }
 
 export function workingFirst(items: AgentSummary[], verifications: Verifications, seed: string): AgentSummary[] {
-  const rank = (a: AgentSummary) => RANK[verifications?.get(a.token_id)?.status ?? ""] ?? 0;
+  const rank = (a: AgentSummary) => RANK[verifications?.get(a.token_id)?.status ?? "unchecked"] ?? RANK.unchecked;
   return [...items].sort((a, b) => {
     const ra = rank(a);
     const rb = rank(b);
