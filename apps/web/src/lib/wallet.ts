@@ -2,7 +2,8 @@
 // resolves via the picker when several wallets announce, a single wallet connects directly
 
 import { hashTypedData, recoverAddress } from "viem";
-import { TRANSFER_TYPES, rpcUrlsFor } from '@agora/core'
+import { rpcUrlsFor } from '@agora/core'
+import { TRANSFER_TYPES } from '../core/x402'
 import { explorerTxBase } from './contracts'
 import { showWalletPicker } from '../components/WalletPicker'
 import { reloadOnceForStaleChunk } from './stale-chunk'

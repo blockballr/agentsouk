@@ -1,7 +1,7 @@
 // shared hire runner: requirements -> wallet sign -> settle -> receipt
 
-import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
-import { X402_VERSION, randomNonce, x402Domain } from '@agora/core'
+import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '../core/x402'
+import { X402_VERSION, randomNonce, x402Domain } from '../core/x402'
 import { HireRefusedError, getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
 import { activeAccountMatches, chainIdToHex, ensureBscChain, getActiveAccount, getChainTimestamp, setTargetChain, WalletUnavailableError, WrongSignerError, signTransferAuthorization } from './wallet'
 import { setPaymentInFlight } from './stale-chunk'

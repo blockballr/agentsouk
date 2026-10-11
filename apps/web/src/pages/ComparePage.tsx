@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import type { AgentDetail, AgentSummary } from '@agora/core'
+import type { AgentDetail, AgentSummary } from '../core/types'
 import {
   CATEGORIES,
   JOB_SELLER_NOTE,

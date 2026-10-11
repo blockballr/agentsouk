@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import type { AgentSummary } from '@agora/core'
+import type { AgentSummary } from '../core/types'
 import { CATEGORIES } from '@agora/core'
 import { getAgents } from '../lib/api'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'

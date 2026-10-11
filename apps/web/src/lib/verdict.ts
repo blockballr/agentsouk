@@ -1,4 +1,4 @@
-import type { Verification } from '@agora/core'
+import type { Verification } from '../core/types'
 
 // one plain word per check result, shared by every page that shows one, so a card,
 // the agent page and compare never describe the same verdict three ways

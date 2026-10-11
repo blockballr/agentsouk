@@ -1,4 +1,5 @@
-import type { AgentDetail, AgentSummary, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
+import type { AgentDetail, AgentSummary } from '../core/types'
+import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '../core/x402'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 import { getActiveAccount, getProvider, setTargetChain } from './wallet'
