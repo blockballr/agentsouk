@@ -4,6 +4,8 @@
 // what made the old single field flicker between instances. Also pins the
 // absent-database path, where nothing is stored and the total stays unknown.
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", () => ({ after: () => {} }));
@@ -18,6 +20,14 @@ import {
   shelfStoreMode,
 } from "../src/lib/shelf-store";
 import { resolveShelfCounts } from "../src/lib/scanner";
+
+// The chain-97 snapshot the reader tests below serve, read from the file rather
+// than pinned, so a rebuild that grows the shelf or records a total does not
+// break a test that is about two instances agreeing rather than a size.
+const chain97 = () =>
+  JSON.parse(
+    readFileSync(path.join(process.cwd(), "data", "agents-97.json"), "utf8"),
+  ) as { agents: unknown[]; source: { registryTotal?: number } };
 
 afterEach(() => {
   delete process.env.TARGET_CHAIN;
@@ -99,7 +109,9 @@ describe("no database configured", () => {
 });
 
 // The reader path with no store: a fresh instance and a just-topped-up instance
-// both report the registry total as unknown, so the page omits the denominator.
+// must report the same denominator. The chain-97 snapshot now records one from
+// its own page read, so that recorded value is what both see, and the live
+// reading a top up observes must not replace it.
 describe("the served snapshot with no shared store", () => {
   function page(total: number) {
     return vi.fn(async () => ({
@@ -112,7 +124,7 @@ describe("the served snapshot with no shared store", () => {
     }));
   }
 
-  it("keeps the denominator unknown through a live top up", async () => {
+  it("keeps the denominator the snapshot recorded through a live top up", async () => {
     process.env.TARGET_CHAIN = "97";
     vi.resetModules();
     vi.stubGlobal("fetch", page(2462));
@@ -120,14 +132,19 @@ describe("the served snapshot with no shared store", () => {
       "../src/lib/scanner"
     );
 
-    expect((await queryAgents({ limit: 1 })).indexStatus.snapshotTotal).toBe(21);
-    expect((await queryAgents({ limit: 1 })).indexStatus.registryTotal).toBeNull();
+    const snap = chain97();
+    const before = await queryAgents({ limit: 1 });
+    expect(before.indexStatus.snapshotTotal).toBe(snap.agents.length);
+    expect(before.indexStatus.registryTotal).toBe(snap.source.registryTotal);
 
     await refreshIndexFromLive(1);
 
     const after = await queryAgents({ limit: 1 });
-    expect(after.indexStatus.snapshotTotal).toBe(21);
-    expect(after.indexStatus.registryTotal).toBeNull();
+    expect(after.indexStatus.snapshotTotal).toBe(snap.agents.length);
+    // 2462 is the live reading the top up just saw. It must not replace what the
+    // snapshot recorded, or two instances would disagree and the line would flicker.
+    expect(after.indexStatus.registryTotal).toBe(snap.source.registryTotal);
+    expect(after.indexStatus.registryTotal).not.toBe(2462);
   });
 });
 
@@ -162,7 +179,7 @@ describe("the served snapshot with a shared store", () => {
     );
 
     const before = await queryAgents({ limit: 1 });
-    expect(before.indexStatus.snapshotTotal).toBe(21);
+    expect(before.indexStatus.snapshotTotal).toBe(chain97().agents.length);
     expect(before.indexStatus.registryTotal).toBe(2462);
 
     await refreshIndexFromLive(1);
