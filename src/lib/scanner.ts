@@ -64,6 +64,8 @@ const ENDPOINT_HYDRATE_PER_TOPUP = 12;
 // A store read is trusted this long, so a listing another instance admitted shows
 // up within half a minute without every browse re-reading the database.
 const SHELF_STORE_TTL_MS = 30_000;
+// a shelf smaller than one page is worth the registry pages warming costs
+const WARM_FLOOR = 24;
 
 function apiKey(): string | undefined {
   const k = process.env.EIGHT004_API_KEY;
@@ -996,16 +998,18 @@ export async function queryAgents(
 ): Promise<QueryResult> {
   const { category, q, sort = "score", page = 1, limit = 24, verifications } = opts;
   const chainId = targetChainId();
-  const hasSnapshot = await loadSnapshot();
+  await loadSnapshot();
   // no-op once the process has merged; covers the no-snapshot path too, where
   // loadSnapshot never ran the merge
   await mergeDurableShelf();
   await mergeRegistryTotal();
-  if (opts.ensureWarm && !hasSnapshot) {
+  // warming is gated on the shelf's size, never on whether a snapshot file
+  // exists: a store-filled shelf would otherwise fetch the registry per browse
+  const held = Array.from(index.agents.values()).filter((a) => a.chain_id === chainId).length;
+  if (opts.ensureWarm && held < WARM_FLOOR) {
     await warmIndex({ maxPages: opts.maxWarmPages ?? 6 });
-  } else if (hasSnapshot) {
-    // The snapshot is frozen at deploy time, so top up the newest page on a
-    // cooldown without blocking the browse response on the registry.
+  } else {
+    // keep the catalogue fresh on a cooldown, without blocking the browse response
     scheduleShelfTopUp();
   }
 
