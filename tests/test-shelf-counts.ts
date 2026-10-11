@@ -129,7 +129,7 @@ describe("what the committed snapshots record", () => {
     expect(
       resolveShelfCounts({
         snapshotAgents: snap.agents.length,
-        snapshotRegistryTotal: snap.source.registryTotal,
+        snapshotRegistryTotal: snap.source.registryTotal ?? null,
         liveUpstreamTotal: 2462,
       }),
     ).toEqual({ snapshotTotal: snap.agents.length, registryTotal: snap.source.registryTotal });
