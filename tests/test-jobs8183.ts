@@ -84,6 +84,55 @@ describe("parseNegotiationQuote", () => {
     expect(parseNegotiationQuote(envelope({ negotiation_hash: undefined }), 97, null).ok).toBe(false);
     expect(parseNegotiationQuote(envelope({ provider_sig: undefined }), 97, null).ok).toBe(false);
   });
+
+  // the a2a-native shape a live chain-56 seller answers with: the quote sits at
+  // parts[0].data, and the price and token nest under response.terms
+  function nestedQuote(overrides: Record<string, unknown> = {}) {
+    const data = {
+      request: { task_description: "rebalance", terms: {} },
+      request_hash: `0x${"ab".repeat(32)}`,
+      response: {
+        accepted: true,
+        terms: { price: "1000000000000000000", currency: PAYMENT_TOKEN },
+        quote_expires_at: Math.floor(Date.now() / 1000) + 3600,
+      },
+      negotiation_hash: `0x${"ab".repeat(32)}`,
+      provider_sig: `0x${"cd".repeat(65)}`,
+      ...overrides,
+    };
+    return { kind: "message", parts: [{ data }] };
+  }
+
+  it("accepts the nested reply a live seller answers with", () => {
+    const result = parseNegotiationQuote(nestedQuote(), 97, PROVIDER);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.quote.price).toBe(1000000000000000000n);
+      expect(result.quote.currency.toLowerCase()).toBe(PAYMENT_TOKEN.toLowerCase());
+      // the seller omits the provider, so escrow is aimed at the listing's own wallet
+      expect(result.quote.providerAddress).toBe(PROVIDER);
+    }
+  });
+
+  it("refuses a nested refusal with its reason", () => {
+    const result = parseNegotiationQuote(
+      nestedQuote({ response: { accepted: false, unsigned_reason: "task too small", terms: {} } }),
+      97,
+      null,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/task too small/);
+  });
+
+  it("still refuses a nested price or token the kernel would not escrow", () => {
+    expect(parseNegotiationQuote(nestedQuote({ response: { accepted: true, terms: { price: "0", currency: PAYMENT_TOKEN }, quote_expires_at: Math.floor(Date.now() / 1000) + 3600 } }), 97, null).ok).toBe(false);
+    expect(parseNegotiationQuote(nestedQuote({ response: { accepted: true, terms: { price: "1000000000000000000", currency: "0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53" }, quote_expires_at: Math.floor(Date.now() / 1000) + 3600 } }), 97, null).ok).toBe(false);
+  });
+
+  it("still refuses a nested quote with no proof or an expired one", () => {
+    expect(parseNegotiationQuote(nestedQuote({ provider_sig: undefined }), 97, null).ok).toBe(false);
+    expect(parseNegotiationQuote(nestedQuote({ response: { accepted: true, terms: { price: "1000000000000000000", currency: PAYMENT_TOKEN }, quote_expires_at: 1 } }), 97, null).ok).toBe(false);
+  });
 });
 
 describe("notifySeller", () => {

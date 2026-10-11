@@ -55,8 +55,34 @@ export function erc8183Stack(chainId: number): {
   }
 }
 
-// the a2a reply to negotiate: an envelope at result level (status quoted),
-// not an artifact, so the delivery path's chunk reader does not apply here
+// a seller answers the negotiate step in one of two shapes, and the nested one is
+// flattened to the flat envelope's keys so neither of them can skip a check
+function quoteEnvelope(result: unknown): Record<string, unknown> | null {
+  const r = result as Record<string, unknown> | null;
+  if (!r || typeof r !== "object") return null;
+  const parts = Array.isArray(r.parts) ? r.parts : [];
+  for (const part of parts) {
+    const data = (part as { data?: unknown } | null)?.data;
+    if (!data || typeof data !== "object") continue;
+    const d = data as Record<string, unknown>;
+    const response = (d.response ?? {}) as Record<string, unknown>;
+    const terms = (response.terms ?? {}) as Record<string, unknown>;
+    // an explicit accepted flag travels as quoted, so a refusal reaches its reason
+    const accepted = response.accepted;
+    return {
+      ...d,
+      status: accepted === undefined ? (d.status as string | undefined) : "quoted",
+      accepted,
+      price: terms.price ?? d.price,
+      currency: terms.currency ?? d.currency,
+      provider_address: d.provider_address ?? response.provider_address,
+      unsigned_reason: d.unsigned_reason ?? response.unsigned_reason,
+      valid_until: response.quote_expires_at ?? d.valid_until,
+    };
+  }
+  return r;
+}
+
 export function parseNegotiationQuote(
   result: unknown,
   chainId: number,
@@ -64,8 +90,8 @@ export function parseNegotiationQuote(
 ): NegotiationResult {
   const stack = erc8183Stack(chainId);
   if (!stack) return refuse(`the ERC-8183 stack is not deployed on chain ${chainId}`);
-  const envelope = result as Record<string, unknown> | null;
-  if (!envelope || typeof envelope !== "object") {
+  const envelope = quoteEnvelope(result);
+  if (!envelope) {
     return refuse("the negotiate reply is not an object");
   }
   const status = envelope.status;
@@ -98,7 +124,11 @@ export function parseNegotiationQuote(
     return refuse("the quote is priced in a token the kernel does not escrow");
   }
 
-  const providerAddress = typeof envelope.provider_address === "string" ? envelope.provider_address : "";
+  // a seller that omits the provider pays the listing's own registry wallet
+  const providerAddress =
+    typeof envelope.provider_address === "string" && envelope.provider_address
+      ? envelope.provider_address
+      : expectedProvider ?? "";
   if (!ADDRESS_RE.test(providerAddress)) return refuse("the quote names no provider wallet");
   if (expectedProvider && ADDRESS_RE.test(expectedProvider) && providerAddress.toLowerCase() !== expectedProvider.toLowerCase()) {
     return refuse("the quote names a provider that is not this listing's registry wallet");
