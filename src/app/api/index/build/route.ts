@@ -8,6 +8,8 @@ import {
 } from "@/lib/scanner";
 import { classifyAgent, relevanceScore } from "@/lib/categories";
 import { AgentSummary, CATEGORY_KEYS, CategoryKey } from "@/lib/types";
+import { applySeededEndpoints } from "@/lib/seeded-endpoints";
+import { loadSeededEndpoints } from "@/lib/endpoint-store";
 
 export const dynamic = "force-dynamic";
 
@@ -215,10 +217,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // The list payload carries no endpoint field, so a rebuild would otherwise write a
+  // snapshot in which every listing looks unreachable until a per-agent detail read
+  // lands. The seeds are the operator's own published cards, and never overwrite an
+  // endpoint the registry itself supplied, so a moved card still gets noticed.
+  const seededApplied = applySeededEndpoints(selected, await loadSeededEndpoints(), chainId);
+
   const snapshot = {
     version: 2,
     snapshotTime: new Date().toISOString(),
-    source: { fetched, upstreamTotal, deduped: deduped.length, registryTotal },
+    source: { fetched, upstreamTotal, deduped: deduped.length, registryTotal, seededApplied },
     counts,
     agents: selected,
   };
@@ -237,6 +245,7 @@ export async function POST(req: NextRequest) {
       fetched,
       deduped: deduped.length,
       registryTotal,
+      seededApplied,
       counts,
     },
   });

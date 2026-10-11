@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "note": "a2a endpoints an operator published on its own agent card, for shelf listings the registry's list payload carries no endpoint for. A rebuild reads this so the seeds survive it. source is the card each endpoint was read from.",
+  "entries": [
+    {
+      "chainId": 56,
+      "tokenId": "302257",
+      "a2aEndpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json",
+      "source": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+    },
+    {
+      "chainId": 56,
+      "tokenId": "302258",
+      "a2aEndpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json",
+      "source": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+    },
+    {
+      "chainId": 56,
+      "tokenId": "304493",
+      "a2aEndpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json",
+      "source": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+    },
+    {
+      "chainId": 56,
+      "tokenId": "310460",
+      "a2aEndpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json",
+      "source": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+    },
+    {
+      "chainId": 56,
+      "tokenId": "363709",
+      "a2aEndpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json",
+      "source": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+    }
+  ]
+}
