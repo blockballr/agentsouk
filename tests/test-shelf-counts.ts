@@ -119,18 +119,32 @@ describe("splitting the snapshot total from the registry total", () => {
 // The committed files are what a fresh instance actually reads, so the unknown
 // denominator is asserted against them rather than only against the pure helper.
 describe("what the committed snapshots record", () => {
-  it("records no registry total, so the denominator stays unknown", () => {
-    for (const file of ["agents.json", "agents-97.json"]) {
-      const snap = committed(file);
-      expect(snap.source.registryTotal).toBeUndefined();
-      expect(
-        resolveShelfCounts({
-          snapshotAgents: snap.agents.length,
-          snapshotRegistryTotal: snap.source.registryTotal ?? null,
-          liveUpstreamTotal: 2462,
-        }),
-      ).toEqual({ snapshotTotal: snap.agents.length, registryTotal: null });
-    }
+  // A page read is the only call scoped to the chain, so a rebuild records the
+  // registry's own total and the shelf gets a real denominator. A snapshot built
+  // before that field existed still leaves it unknown, and both states are worth
+  // pinning because a fresh instance reads whichever file is committed.
+  it("records a chain registry total in a rebuilt snapshot", () => {
+    const snap = committed("agents.json");
+    expect(snap.source.registryTotal).toBeGreaterThan(snap.agents.length);
+    expect(
+      resolveShelfCounts({
+        snapshotAgents: snap.agents.length,
+        snapshotRegistryTotal: snap.source.registryTotal,
+        liveUpstreamTotal: 2462,
+      }),
+    ).toEqual({ snapshotTotal: snap.agents.length, registryTotal: snap.source.registryTotal });
+  });
+
+  it("leaves the denominator unknown where no build recorded one", () => {
+    const snap = committed("agents-97.json");
+    expect(snap.source.registryTotal).toBeUndefined();
+    expect(
+      resolveShelfCounts({
+        snapshotAgents: snap.agents.length,
+        snapshotRegistryTotal: null,
+        liveUpstreamTotal: 2462,
+      }),
+    ).toEqual({ snapshotTotal: snap.agents.length, registryTotal: null });
   });
 
   // The field the defect leaned on counts the build's own selection, so it is not
