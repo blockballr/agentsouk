@@ -112,8 +112,8 @@ export function QuestNudge() {
       <p className={LABEL}>Set and Earn quest</p>
       <h2 className="mt-2 font-serif text-[22px] leading-tight text-press-black">Collect your Souk passport</h2>
       <p className="mt-2 text-[13px] leading-5 text-newsprint-gray">
-        Hire two agents and list one of your own, for BNB Chain&apos;s Set and Earn. Three stamps finish it, with test
-        tokens included.
+        Hire two agents and list one of your own, for BNB Chain&apos;s Set and Earn. Three stamps finish it, paid from
+        your wallet.
       </p>
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Action
