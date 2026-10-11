@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import {
+  fetchAgentDetail,
   fetchAgentsPage,
   resolveIndexBuildTarget,
   searchAgents,
 } from "@/lib/scanner";
 import { classifyAgent, relevanceScore } from "@/lib/categories";
-import { AgentSummary, CATEGORY_KEYS, CategoryKey } from "@/lib/types";
+import { AgentDetail, AgentSummary, CATEGORY_KEYS, CategoryKey } from "@/lib/types";
 import { applySeededEndpoints } from "@/lib/seeded-endpoints";
 import { loadSeededEndpoints } from "@/lib/endpoint-store";
 
@@ -51,6 +52,7 @@ const GENERAL_PAGES = 12;
 const IS_ANON = !process.env.EIGHT004_API_KEY;
 const BATCH = IS_ANON ? 8 : 24;
 const GAP_MS = IS_ANON ? 6100 : 200;
+const DETAIL_TIMEOUT_MS = 6000;
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -82,6 +84,23 @@ async function fetchInBatches(
       else out.push({ label: "?", data: [], total: null });
     }
     if (i + BATCH < jobs.length) await sleep(GAP_MS);
+  }
+  return out;
+}
+
+// Read detail records in the same paced batches the list reads use, so one key's
+// rate limit is never spent twice over. A read that fails is carried as a null
+// rather than dropping the rest: a hole in one listing is not a reason to lose
+// the whole sweep.
+async function fetchDetails(chainId: number, tokenIds: string[]): Promise<(AgentDetail | null)[]> {
+  const out: (AgentDetail | null)[] = [];
+  for (let i = 0; i < tokenIds.length; i += BATCH) {
+    const chunk = tokenIds.slice(i, i + BATCH);
+    const settled = await Promise.allSettled(
+      chunk.map((tokenId) => fetchAgentDetail(chainId, tokenId, DETAIL_TIMEOUT_MS)),
+    );
+    for (const s of settled) out.push(s.status === "fulfilled" ? s.value : null);
+    if (i + BATCH < tokenIds.length) await sleep(GAP_MS);
   }
   return out;
 }
@@ -217,16 +236,45 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // The list payload carries no endpoint field, so a rebuild would otherwise write a
-  // snapshot in which every listing looks unreachable until a per-agent detail read
-  // lands. The seeds are the operator's own published cards, and never overwrite an
+  // The list payload names which protocol an agent speaks but carries no address
+  // for it, so a rebuild would otherwise write a snapshot in which every declarer
+  // reads as unreachable and the shelf gate refuses the lot. Read the detail
+  // record once per declarer and carry the address back, so the snapshot holds
+  // what a hire can call rather than a card that only claims to be callable.
+  const speaks = (a: AgentSummary) =>
+    (a.supported_protocols ?? []).some((p) => p === "A2A" || p === "MCP");
+  const declarers = selected.filter((a) => speaks(a) && !a.a2a_endpoint && !a.mcp_server);
+  const details = await fetchDetails(chainId, declarers.map((a) => a.token_id));
+
+  let endpointsRecovered = 0;
+  for (let i = 0; i < declarers.length; i += 1) {
+    const row = declarers[i];
+    const detail = details[i];
+    if (!detail) continue;
+    // the registry's own address wins over whatever the card claims, and the
+    // seeds below never overwrite it either, so a moved card still gets noticed
+    if (!row.a2a_endpoint && detail.a2a_endpoint) row.a2a_endpoint = detail.a2a_endpoint;
+    if (!row.mcp_server && detail.mcp_server) row.mcp_server = detail.mcp_server;
+    if (!row.web_endpoint && detail.web_endpoint) row.web_endpoint = detail.web_endpoint;
+    if (row.a2a_endpoint || row.mcp_server) endpointsRecovered += 1;
+  }
+
+  // The seeds are the operator's own published cards, and never overwrite an
   // endpoint the registry itself supplied, so a moved card still gets noticed.
   const seededApplied = applySeededEndpoints(selected, await loadSeededEndpoints(), chainId);
 
   const snapshot = {
     version: 2,
     snapshotTime: new Date().toISOString(),
-    source: { fetched, upstreamTotal, deduped: deduped.length, registryTotal, seededApplied },
+    source: {
+      fetched,
+      upstreamTotal,
+      deduped: deduped.length,
+      registryTotal,
+      declarers: declarers.length,
+      endpointsRecovered,
+      seededApplied,
+    },
     counts,
     agents: selected,
   };
@@ -245,6 +293,8 @@ export async function POST(req: NextRequest) {
       fetched,
       deduped: deduped.length,
       registryTotal,
+      declarers: declarers.length,
+      endpointsRecovered,
       seededApplied,
       counts,
     },
@@ -268,6 +318,12 @@ interface RawLike {
   total_feedbacks: number;
   health_score: number | null;
   supported_trust_models: string[];
+  // the payload names the protocol an agent speaks; the address it points at is
+  // absent, which is the gap the detail read below exists to recover
+  supported_protocols?: string[];
+  a2a_endpoint?: string | null;
+  mcp_server?: string | null;
+  web_endpoint?: string | null;
   is_active: boolean;
   created_at: string;
 }
