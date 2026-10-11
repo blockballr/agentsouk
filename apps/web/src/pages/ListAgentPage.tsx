@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Tag } from '../components/Tag'
 import { VERDICT_DOT, verdictFor } from '../lib/verdict'
-import type { AgentDetail, CategoryDef, CategoryKey } from '@agora/core'
+import type { AgentDetail, CategoryDef, CategoryKey } from '../core/types'
 import {
   CATEGORIES,
   categoryDef,

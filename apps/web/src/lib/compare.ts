@@ -1,4 +1,4 @@
-import type { AgentDetail } from '@agora/core'
+import type { AgentDetail } from '../core/types'
 import { CATEGORIES, CATEGORY_KEYS, classifyAgent } from '@agora/core'
 
 // best-in-category selection: reachability leads (delivered > gated > dead/unreachable

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import type { AgentSummary } from '@agora/core'
+import type { AgentSummary } from '../core/types'
 import { defaultAvatarFor } from '../lib/default-avatar'
 import { CATEGORIES, formatNumber, formatScore, shortAddress, timeAgo } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'

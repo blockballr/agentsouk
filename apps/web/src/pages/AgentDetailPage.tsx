@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { questStepFor, type QuestStep } from '../lib/quest'
 import { QuestStrip } from '../components/QuestStrip'
-import type { AgentDetail, PaymentRequirements, PreviewResult, Receipt, SettleResult } from '@agora/core'
+import type { AgentDetail } from '../core/types'
+import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '../core/x402'
 import {
   formatDate,
   formatNumber,
@@ -962,12 +963,17 @@ function SkillBlock({ skill: s }: { skill: NonNullable<AgentDetail['skills']>[nu
         <div className="mt-4">
           <p className="micro text-newsprint-gray">Try asking</p>
           <ul className="mt-2 space-y-1.5">
-            {s.examples.map((e) => (
-              <li key={e} className="flex items-start justify-between gap-3 text-[14px] leading-relaxed text-press-black">
-                <span>&ldquo;{e}&rdquo;</span>
-                <CopyButton text={e} />
-              </li>
-            ))}
+            {s.examples.map((e, at) => {
+              // an example may be a JSON object rather than a sentence, and an
+              // object is not renderable or copyable as it stands
+              const text = typeof e === 'string' ? e : JSON.stringify(e, null, 2)
+              return (
+                <li key={at} className="flex items-start justify-between gap-3 text-[14px] leading-relaxed text-press-black">
+                  <span className="min-w-0 break-words">&ldquo;{text}&rdquo;</span>
+                  <CopyButton text={text} />
+                </li>
+              )
+            })}
           </ul>
         </div>
       )}
@@ -1564,9 +1570,11 @@ function parseStructuredInput(
 // a skill without an example falls back to its own id
 function skillInput(skill: AgentCardSkill): { task?: string; input?: string } {
   const label = skill.id ?? skill.name ?? ''
-  const example = (skill.examples ?? []).find((x) => (x ?? '').trim() !== '')
-  if (!example) return { task: label }
-  const trimmed = example.trim()
+  // an example may be a JSON object rather than a sentence; an object has no
+  // trim of its own, so it is stringified before it is judged or pre-filled
+  const raw = (skill.examples ?? []).find((x) => x !== null && x !== undefined && String(x).trim() !== '')
+  if (raw === undefined) return { task: label }
+  const trimmed = typeof raw === 'string' ? raw.trim() : JSON.stringify(raw, null, 2)
   if (trimmed.startsWith('{')) {
     try {
       const parsed = JSON.parse(trimmed) as unknown
