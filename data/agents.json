@@ -1,12 +1,14 @@
 {
   "version": 2,
-  "snapshotTime": "2026-10-11T04:09:42.608Z",
+  "snapshotTime": "2026-10-11T09:43:56.530Z",
   "source": {
     "fetched": 2373,
-    "upstreamTotal": 338993,
-    "deduped": 1561,
-    "registryTotal": 338993,
-    "seededApplied": 5
+    "upstreamTotal": 339005,
+    "deduped": 1554,
+    "registryTotal": 339005,
+    "declarers": 121,
+    "endpointsRecovered": 121,
+    "seededApplied": 0
   },
   "counts": {
     "rebalancing": 60,
@@ -52,7 +54,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
-      }
+      },
+      "a2a_endpoint": "https://bnb-lp.172-104-171-139.nip.io/.well-known/agent-card.json"
     },
     {
       "id": "7ce3c6dd-ca5e-48d0-b41c-6a5277f0bc54",
@@ -91,7 +94,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
-      }
+      },
+      "a2a_endpoint": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A562333538205%3Aruntime%2Fsslprebalancer_sslprebalancer-H04NynHcX4/invocations/.well-known/agent-card.json"
     },
     {
       "id": "259057cb-42a4-47fd-9d4e-ea33be4a2c84",
@@ -129,7 +133,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
-      }
+      },
+      "a2a_endpoint": "https://ivl-mainnet.onrender.com/.well-known/agent-card.json"
     },
     {
       "id": "ea77d5c6-1310-40ee-b5ed-2621335fd118",
@@ -169,7 +174,10 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
-      }
+      },
+      "a2a_endpoint": "https://rangereset-deliverables-899042279537.s3.us-east-1.amazonaws.com/.well-known/agent-card.json",
+      "mcp_server": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A899042279537%3Aruntime%2Frangereset-ozY66A9He2/invocations?qualifier=DEFAULT",
+      "web_endpoint": "https://rangereset-deliverables-899042279537.s3.us-east-1.amazonaws.com/status.json"
     },
     {
       "id": "634e4aac-ca19-408e-a77f-eddcc1e3d409",
@@ -208,7 +216,9 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
-      }
+      },
+      "a2a_endpoint": "https://assay-ten-iota.vercel.app/api/agents/range",
+      "web_endpoint": "https://assay-ten-iota.vercel.app/api/agents/range"
     },
     {
       "id": "a251d94a-bcb6-4bfc-ad77-9854f270509c",
@@ -249,7 +259,10 @@
       "categoryScores": {
         "rebalancing": 4,
         "grid-trading": 3
-      }
+      },
+      "a2a_endpoint": "https://latticelatch-deliverables-899042279537.s3.us-east-1.amazonaws.com/.well-known/agent-card.json",
+      "mcp_server": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A899042279537%3Aruntime%2Flatticelatch-H5LyouAY4q/invocations?qualifier=DEFAULT",
+      "web_endpoint": "https://latticelatch-deliverables-899042279537.s3.us-east-1.amazonaws.com/status.json"
     },
     {
       "id": "64a69310-c465-4108-9d97-f0a5f08603d3",
@@ -325,7 +338,9 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "mcp_server": "https://erc8004.heyanon.ai/mcp/v3pools",
+      "web_endpoint": "https://heyanon.ai"
     },
     {
       "id": "52e0e29f-6a48-4fce-bce6-824484357b12",
@@ -363,7 +378,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://gvwyso8occ.execute-api.us-east-1.amazonaws.com/.well-known/agent-card.json"
     },
     {
       "id": "184b0a52-8db5-403c-bac8-fd39e7396924",
@@ -401,7 +417,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://hevo-rebalance.fly.dev/.well-known/agent-card.json"
     },
     {
       "id": "40bd2c79-b675-4340-9224-97b932ffd620",
@@ -479,7 +496,8 @@
       "categoryScores": {
         "rebalancing": 2
       },
-      "a2a_endpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+      "a2a_endpoint": "https://agent.brainonbnb.com/defi-agent/a2a",
+      "web_endpoint": "https://brainonbnb.com/defi"
     },
     {
       "id": "32bc601a-99bf-4d02-84c0-a6d690e11bb3",
@@ -517,7 +535,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://bnb-agent-marketplace-ruby.vercel.app/rebalance/.well-known/agent-card.json"
     },
     {
       "id": "52bc887e-be8b-4430-9435-2c5d2ba51d3d",
@@ -555,7 +574,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://agents.chainhelix.io/rebalancer/.well-known/agent-card.json"
     },
     {
       "id": "60c024b4-e2b4-407a-bba6-e9deb448d780",
@@ -595,7 +615,10 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://hallmark-agents.vercel.app/a2a/rebalancer",
+      "mcp_server": "https://hallmark-agents.vercel.app/mcp/rebalancer",
+      "web_endpoint": "https://hallmark-market.vercel.app"
     },
     {
       "id": "57acc115-7c80-4feb-921c-7e6edf6bb593",
@@ -633,7 +656,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://holon.lingoai.io/agents/rebalancing/.well-known/agent-card.json"
     },
     {
       "id": "37ae24a0-3ce8-4f8b-81c1-a2f2454fdbf2",
@@ -671,7 +695,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://bench-bnb.vercel.app/.well-known/agent-card.json"
     },
     {
       "id": "ea5b89a6-450e-46d9-ab36-8c35232e92bc",
@@ -709,7 +734,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://plinth-relay.vercel.app/agent/.well-known/agent-card.json"
     },
     {
       "id": "f23bb036-d608-47a8-9e97-478de7fd1ef4",
@@ -896,7 +922,9 @@
       "categoryScores": {
         "rebalancing": 2,
         "yield": 2
-      }
+      },
+      "mcp_server": "https://4lpha.tech/mcp",
+      "web_endpoint": "https://4lpha.tech"
     },
     {
       "id": "e9ab9198-3a04-4564-ac86-1ec8fec2526a",
@@ -936,7 +964,9 @@
       "categoryScores": {
         "rebalancing": 2,
         "yield": 2
-      }
+      },
+      "mcp_server": "https://4lpha.tech/mcp",
+      "web_endpoint": "https://4lpha.tech"
     },
     {
       "id": "e7d0fd26-053e-4594-bf68-7fbae77fb6a6",
@@ -976,7 +1006,9 @@
       "categoryScores": {
         "rebalancing": 2,
         "yield": 2
-      }
+      },
+      "mcp_server": "https://4lpha.tech/mcp",
+      "web_endpoint": "https://4lpha.tech"
     },
     {
       "id": "64894941-b120-4c37-96e3-42605d96fd08",
@@ -1015,7 +1047,8 @@
       "categoryScores": {
         "rebalancing": 2,
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
     },
     {
       "id": "1ca2478a-3db1-4c91-832e-249c1a8bf8b3",
@@ -1206,7 +1239,8 @@
       "categoryScores": {
         "rebalancing": 2,
         "grid-trading": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "0691cc85-7af2-4bc2-a71e-a5c09d9036b7",
@@ -1245,7 +1279,8 @@
       "categoryScores": {
         "rebalancing": 2,
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "c8f7854e-1d48-4f01-b507-679897541905",
@@ -1284,7 +1319,8 @@
       "categoryScores": {
         "rebalancing": 2,
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "fb8873e1-1e21-4351-a1ec-469839908060",
@@ -1322,7 +1358,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend-bnb8183.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "1d1b3ce1-c717-48e8-be8f-22cea2dc307e",
@@ -1361,7 +1398,8 @@
       "categoryScores": {
         "rebalancing": 2,
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "b17d6c35-27db-4954-a6e5-2ef5e594936b",
@@ -1399,7 +1437,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "8ebb94a6-2708-44c8-ba5f-cc46ae9d9e4e",
@@ -1475,7 +1514,8 @@
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "8c2bf7df-8516-4658-b2bd-55aa4a95230e",
@@ -2306,7 +2346,8 @@
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 5
-      }
+      },
+      "a2a_endpoint": "https://holon.lingoai.io/agents/grid-trading/.well-known/agent-card.json"
     },
     {
       "id": "cbda4e83-ebd4-423f-a6d9-3168e7843d05",
@@ -2344,7 +2385,8 @@
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 5
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "56ae473f-7cf7-4533-b74b-7e7a966383cd",
@@ -2383,7 +2425,8 @@
       "categoryScores": {
         "grid-trading": 4,
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "7508a5d8-fd89-49a1-b24e-87065bf9f29c",
@@ -2421,7 +2464,8 @@
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 3
-      }
+      },
+      "a2a_endpoint": "https://hevo-grid.fly.dev/.well-known/agent-card.json"
     },
     {
       "id": "5f6fc19c-fd53-409d-9e9b-30413a4bdd2d",
@@ -2459,7 +2503,8 @@
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 3
-      }
+      },
+      "a2a_endpoint": "https://genesis-marketplace-one.vercel.app/api/apex/gridwright/.well-known/agent-card.json"
     },
     {
       "id": "2e9f3793-973c-4b34-afa8-37e3271e9f31",
@@ -2498,7 +2543,8 @@
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 3
-      }
+      },
+      "a2a_endpoint": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A562333538205%3Aruntime%2Fssgridtrader_ssgridtrader-3Xa9LeCsj5/invocations/.well-known/agent-card.json"
     },
     {
       "id": "bd133cdf-0475-4aa2-bad4-0ad8ce0456ff",
@@ -2650,7 +2696,8 @@
       "categoryScores": {
         "rebalancing": 2,
         "grid-trading": 3
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "67540f59-0689-4c5b-b0d3-f22f0c9b3471",
@@ -2688,7 +2735,8 @@
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 3
-      }
+      },
+      "a2a_endpoint": "https://platform-backend-bnb8183.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "79cee896-078e-457b-bdb8-042eeaf1262d",
@@ -2728,7 +2776,8 @@
         "rebalancing": 2,
         "grid-trading": 3,
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "2019284c-ff2f-41ae-84f1-cad4d21904e7",
@@ -2767,7 +2816,8 @@
       "categoryScores": {
         "yield": 6,
         "health-factor": 1
-      }
+      },
+      "a2a_endpoint": "https://tanned-retriever-swimsuit.ngrok-free.dev/.well-known/agent-card.json"
     },
     {
       "id": "9506156d-c347-486f-8944-5449e1118fff",
@@ -2806,7 +2856,9 @@
       "category": "yield",
       "categoryScores": {
         "yield": 5
-      }
+      },
+      "mcp_server": "https://byield-finder.vercel.app/api/mcp",
+      "web_endpoint": "https://github.com/wadezigh96/BYield-Finder"
     },
     {
       "id": "f09b7407-f31d-4824-9ca8-822d80171fc2",
@@ -2958,7 +3010,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 4
-      }
+      },
+      "a2a_endpoint": "https://marque.trade/agents/sluicegate/.well-known/agent-card.json"
     },
     {
       "id": "dec9f2b8-5a75-4a9b-a676-77d1d87505d6",
@@ -2998,7 +3051,7 @@
         "yield": 4,
         "health-factor": 1
       },
-      "a2a_endpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+      "a2a_endpoint": "https://agent.brainonbnb.com/yield-optimizer/a2a"
     },
     {
       "id": "1e5547dc-d0fc-4f7b-b34d-56651f11970c",
@@ -3037,7 +3090,8 @@
       "categoryScores": {
         "yield": 4,
         "health-factor": 1
-      }
+      },
+      "a2a_endpoint": "https://holon.lingoai.io/agents/yield/.well-known/agent-card.json"
     },
     {
       "id": "9a0b5f43-c6f0-4da5-8802-708fe4a031dc",
@@ -3077,7 +3131,8 @@
       "categoryScores": {
         "yield": 4,
         "health-factor": 1
-      }
+      },
+      "a2a_endpoint": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A562333538205%3Aruntime%2Fssyieldrouter_ssyieldrouter-zC4ZBpB9Z6/invocations/.well-known/agent-card.json"
     },
     {
       "id": "d6880959-1345-4ea2-aa58-33dd28750159",
@@ -3155,7 +3210,9 @@
       "category": "yield",
       "categoryScores": {
         "yield": 3
-      }
+      },
+      "a2a_endpoint": "https://hyperliquidvault.space/.well-known/agent-card.json",
+      "mcp_server": "https://hyperliquidvault.space/mcp"
     },
     {
       "id": "3d84a69e-6378-4c7e-a14e-76a97d756225",
@@ -3193,7 +3250,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 3
-      }
+      },
+      "a2a_endpoint": "https://croo-yieldshare-production.up.railway.app/.well-known/agent-card.json"
     },
     {
       "id": "858e2df6-7fce-4f8d-ae5d-f4497114a2b2",
@@ -3232,7 +3290,9 @@
       "category": "yield",
       "categoryScores": {
         "yield": 3
-      }
+      },
+      "a2a_endpoint": "https://modelcontextprotocol.name/.well-known/agent-card.json",
+      "web_endpoint": "https://sperax.io"
     },
     {
       "id": "d2ed13b0-3e8f-4a06-adf8-072d8861a817",
@@ -3271,7 +3331,9 @@
       "category": "yield",
       "categoryScores": {
         "yield": 3
-      }
+      },
+      "a2a_endpoint": "https://modelcontextprotocol.name/.well-known/agent-card.json",
+      "web_endpoint": "https://sperax.io"
     },
     {
       "id": "35ccd8d9-2dc4-4e9f-9714-02adb1722d84",
@@ -3346,7 +3408,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 3
-      }
+      },
+      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
     },
     {
       "id": "a9f2d518-d7a0-41a6-ba30-1dac568d6ce2",
@@ -3384,7 +3447,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 3
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "90f5e8a3-a292-4673-b0ec-08b3fac48e3e",
@@ -4002,7 +4066,9 @@
       "categoryScores": {
         "yield": 2,
         "health-factor": 2
-      }
+      },
+      "mcp_server": "https://erc8004.heyanon.ai/mcp/venus",
+      "web_endpoint": "https://heyanon.ai"
     },
     {
       "id": "285a260d-edd4-4970-908e-b11d196a9889",
@@ -4040,7 +4106,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://marque.trade/agents/tidemark/.well-known/agent-card.json"
     },
     {
       "id": "d1d40f3e-8637-4a66-a281-9cfcd75ba0f6",
@@ -4079,7 +4146,9 @@
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://bnb-yield.172-104-171-139.nip.io/a2a",
+      "mcp_server": "https://bnb-yield.172-104-171-139.nip.io/mcp/"
     },
     {
       "id": "be06ded7-52fc-415f-9653-a53ce842be3a",
@@ -4120,7 +4189,10 @@
       "categoryScores": {
         "yield": 2,
         "health-factor": 2
-      }
+      },
+      "a2a_endpoint": "https://www.mandatemarkets.com/a2a/yield-1/.well-known/agent-card.json",
+      "mcp_server": "https://www.mandatemarkets.com/api/mcp",
+      "web_endpoint": "https://www.mandatemarkets.com/agents/344122"
     },
     {
       "id": "285fcd0d-78a6-4290-b6a9-2d1f1ec819a4",
@@ -4158,7 +4230,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://hevo-yield.fly.dev/.well-known/agent-card.json"
     },
     {
       "id": "84ed9605-9835-4470-846e-c4ac20ce2d7b",
@@ -4196,7 +4269,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://bnb-agent-marketplace-ruby.vercel.app/yield/.well-known/agent-card.json"
     },
     {
       "id": "564e4699-3aa5-46e6-adf6-92452e1813b6",
@@ -4275,7 +4349,10 @@
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://hallmark-agents.vercel.app/a2a/yield",
+      "mcp_server": "https://hallmark-agents.vercel.app/mcp/yield",
+      "web_endpoint": "https://hallmark-market.vercel.app"
     },
     {
       "id": "eaf06248-b307-47e8-a5b0-5c9b083ed59f",
@@ -4313,7 +4390,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://genesis-marketplace-one.vercel.app/api/apex/yield-router/.well-known/agent-card.json"
     },
     {
       "id": "e39c7f93-2835-4a9c-a0ce-b183bd8723c1",
@@ -4391,7 +4469,9 @@
       "categoryScores": {
         "yield": 2,
         "health-factor": 1
-      }
+      },
+      "a2a_endpoint": "https://assay-ten-iota.vercel.app/api/agents/yield",
+      "web_endpoint": "https://assay-ten-iota.vercel.app/api/agents/yield"
     },
     {
       "id": "e1d97f47-f84b-46be-a990-35b508ff8563",
@@ -4468,7 +4548,9 @@
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "mcp_server": "https://syenite.ai/mcp",
+      "web_endpoint": "https://syenite.ai"
     },
     {
       "id": "a5e6a11a-ee71-466c-aee9-66db6d369278",
@@ -4544,7 +4626,8 @@
       "categoryScores": {
         "yield": 2,
         "health-factor": 1
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "accc4a6e-98e8-4965-8ec3-56be79bbb252",
@@ -4583,7 +4666,8 @@
       "categoryScores": {
         "yield": 2,
         "health-factor": 1
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "24d6b5c1-0e12-4a38-a629-775b62ac71fb",
@@ -4621,7 +4705,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "f348d0b5-b3ca-46c0-bf05-d250fca4986d",
@@ -4659,7 +4744,8 @@
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "a3e24250-285a-4140-bdf0-2b8b9717d5a0",
@@ -4731,11 +4817,12 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-28T14:52:04Z",
-      "updated_at": "2026-10-10T05:24:30.061172Z",
+      "updated_at": "2026-10-11T04:07:38.664675Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "71893a1b-7482-4876-8b4e-97b0e00f8c16",
@@ -4810,7 +4897,7 @@
       "categoryScores": {
         "health-factor": 8
       },
-      "a2a_endpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+      "a2a_endpoint": "https://agent.brainonbnb.com/health-factor/a2a"
     },
     {
       "id": "e826c922-11c4-4151-9552-94b2a854f167",
@@ -4851,7 +4938,10 @@
       "categoryScores": {
         "rebalancing": 1,
         "health-factor": 8
-      }
+      },
+      "a2a_endpoint": "https://vitals.43-165-190-110.sslip.io/.well-known/agent-card.json",
+      "mcp_server": "https://vitals.43-165-190-110.sslip.io/mcp",
+      "web_endpoint": "https://vitals.43-165-190-110.sslip.io/"
     },
     {
       "id": "1d71a8e9-86fb-4d27-9b0c-e826a2222b35",
@@ -4925,7 +5015,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 8
-      }
+      },
+      "a2a_endpoint": "https://platform-backend-bnb8183.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "46fe8449-1f34-419a-9741-e5c686e1a4d8",
@@ -4963,7 +5054,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 7
-      }
+      },
+      "a2a_endpoint": "https://marque.trade/agents/keel/.well-known/agent-card.json"
     },
     {
       "id": "9094d540-185a-43d1-ac15-74b28c1d6a96",
@@ -5001,7 +5093,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 7
-      }
+      },
+      "a2a_endpoint": "https://bnb-agent-marketplace-ruby.vercel.app/loan-health/.well-known/agent-card.json"
     },
     {
       "id": "bc26ff26-c5f9-46e9-a13a-4ffce7878ed2",
@@ -5112,7 +5205,9 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
-      }
+      },
+      "mcp_server": "https://erc8004.heyanon.ai/mcp/aave",
+      "web_endpoint": "https://heyanon.ai"
     },
     {
       "id": "b39e78bb-7910-4e59-afe4-06c78e4b5ec5",
@@ -5151,7 +5246,8 @@
       "categoryScores": {
         "rebalancing": 2,
         "health-factor": 6
-      }
+      },
+      "a2a_endpoint": "https://agents.chainhelix.io/healthmon/.well-known/agent-card.json"
     },
     {
       "id": "5e3b53a3-9acb-4bb9-b587-c6e15fcc39a9",
@@ -5189,7 +5285,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
-      }
+      },
+      "a2a_endpoint": "https://hevo-sentinel.fly.dev/.well-known/agent-card.json"
     },
     {
       "id": "17bb3269-1e2e-4fe8-a88c-f8e277306719",
@@ -5227,7 +5324,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
-      }
+      },
+      "a2a_endpoint": "https://holon.lingoai.io/agents/health-factor/.well-known/agent-card.json"
     },
     {
       "id": "220e3dc0-1759-4885-9366-6f652058185c",
@@ -5304,7 +5402,9 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
-      }
+      },
+      "a2a_endpoint": "https://bnb-guardian.172-104-171-139.nip.io/a2a",
+      "mcp_server": "https://bnb-guardian.172-104-171-139.nip.io/mcp/"
     },
     {
       "id": "4556b633-47d9-4fd0-a336-b02d048e86a2",
@@ -5344,7 +5444,10 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
-      }
+      },
+      "a2a_endpoint": "https://hallmark-agents.vercel.app/a2a/health",
+      "mcp_server": "https://hallmark-agents.vercel.app/mcp/health",
+      "web_endpoint": "https://hallmark-market.vercel.app"
     },
     {
       "id": "06edd948-2e72-4715-89f8-42965bb76fc3",
@@ -5457,7 +5560,9 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
-      }
+      },
+      "mcp_server": "https://4lpha.tech/mcp",
+      "web_endpoint": "https://4lpha.tech"
     },
     {
       "id": "40171ff4-64a9-4d4c-85bd-08b4e71c666e",
@@ -5496,7 +5601,9 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
-      }
+      },
+      "mcp_server": "https://4lpha.tech/mcp",
+      "web_endpoint": "https://4lpha.tech"
     },
     {
       "id": "9843c0f5-3f41-41d8-97eb-da86e92ddc7d",
@@ -5535,7 +5642,9 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
-      }
+      },
+      "mcp_server": "https://4lpha.tech/mcp",
+      "web_endpoint": "https://4lpha.tech"
     },
     {
       "id": "f238af19-2330-4c3c-a4e2-dcc1aeb131cd",
@@ -5574,7 +5683,9 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
-      }
+      },
+      "mcp_server": "https://4lpha.tech/mcp",
+      "web_endpoint": "https://4lpha.tech"
     },
     {
       "id": "c3cfb8ec-f5d7-48d4-89aa-e58f6c60ad07",
@@ -5613,7 +5724,9 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
-      }
+      },
+      "mcp_server": "https://www.dolphinamp.xyz/api/v1/built/ddcbc6a7069d6c90/mcp",
+      "web_endpoint": "https://www.dolphinamp.xyz/agent/ddcbc6a7069d6c90"
     },
     {
       "id": "ecf4c9df-d709-40c0-b3e1-d8eca5f21528",
@@ -5651,7 +5764,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "8cd3f8f1-0722-4af9-8e38-aab332384777",
@@ -5689,7 +5803,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 4
-      }
+      },
+      "a2a_endpoint": "https://smeai-dev.vercel.app/api/a2a"
     },
     {
       "id": "e2bc21af-526c-4b28-b853-79f282356b06",
@@ -5727,7 +5842,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 4
-      }
+      },
+      "mcp_server": "https://vigil-two-pink.vercel.app/api/agent-mcp"
     },
     {
       "id": "c3bab4ae-59d8-473e-b2ec-6f60ef6d0d06",
@@ -5839,7 +5955,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 4
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "11d18175-48b9-46db-b9e3-0a42df40bb65",
@@ -6186,11 +6303,14 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:53Z",
-      "updated_at": "2026-10-10T00:36:01.572813Z",
+      "updated_at": "2026-10-11T03:59:38.637089Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
-      }
+      },
+      "a2a_endpoint": "https://www.mandatemarkets.com/a2a/guard-1/.well-known/agent-card.json",
+      "mcp_server": "https://www.mandatemarkets.com/api/mcp",
+      "web_endpoint": "https://www.mandatemarkets.com/agents/344123"
     },
     {
       "id": "93bc2ee7-4146-4457-bdd3-cb4d96d6019e",
@@ -6229,7 +6349,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
-      }
+      },
+      "a2a_endpoint": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A562333538205%3Aruntime%2Fsshealthguard_sshealthguard-qfCow89o7w/invocations/.well-known/agent-card.json"
     },
     {
       "id": "72c4fa08-8c2d-4329-a52e-9baff8b98c9c",
@@ -6268,7 +6389,9 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
-      }
+      },
+      "a2a_endpoint": "https://assay-ten-iota.vercel.app/api/agents/health",
+      "web_endpoint": "https://assay-ten-iota.vercel.app/api/agents/health"
     },
     {
       "id": "56f7c814-a1cf-44c4-aaf6-c51142dfe9d2",
@@ -6306,7 +6429,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "366c1b52-0feb-48e6-b793-c422ed91aeb4",
@@ -6453,7 +6577,8 @@
       "categoryScores": {
         "grid-trading": 1,
         "health-factor": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "2a3836bd-02df-4349-a492-e794e4a5062f",
@@ -6491,7 +6616,8 @@
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 2
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "7ff99bcd-243c-466e-a0f4-0192728f3855",
@@ -6835,7 +6961,9 @@
       "category": "general",
       "categoryScores": {
         "yield": 1
-      }
+      },
+      "mcp_server": "https://erc8004.heyanon.ai/mcp/beefy",
+      "web_endpoint": "https://heyanon.ai"
     },
     {
       "id": "6009a496-da33-4a98-98c2-cc48daa948ab",
@@ -6872,7 +7000,8 @@
       "created_at": "2026-03-19T09:21:59Z",
       "updated_at": "2026-10-10T22:12:38.307543Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://aliasai.io/solana/.well-known/agent-card.json"
     },
     {
       "id": "bf69c332-8918-485e-a67a-8f405815ceaf",
@@ -6910,7 +7039,8 @@
       "category": "general",
       "categoryScores": {
         "grid-trading": 1
-      }
+      },
+      "a2a_endpoint": "https://bnb-grid.172-104-171-139.nip.io/.well-known/agent-card.json"
     },
     {
       "id": "19fb6e8e-93aa-45c9-a731-77c2103c9892",
@@ -6949,7 +7079,7 @@
       "categoryScores": {
         "grid-trading": 1
       },
-      "a2a_endpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+      "a2a_endpoint": "https://agent.brainonbnb.com/grid-trader/a2a"
     },
     {
       "id": "dd155857-529c-4f82-86b7-2061f7115574",
@@ -6983,11 +7113,12 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-25T22:08:59Z",
-      "updated_at": "2026-10-10T06:20:00.219798Z",
+      "updated_at": "2026-10-11T04:05:00.135783Z",
       "category": "general",
       "categoryScores": {
         "grid-trading": 1
-      }
+      },
+      "a2a_endpoint": "https://bnb-agent-marketplace-ruby.vercel.app/grid/.well-known/agent-card.json"
     },
     {
       "id": "dd9e1f84-4711-4a74-97c7-64a8198ceafa",
@@ -7024,7 +7155,7 @@
       "updated_at": "2026-10-10T18:59:02.877151Z",
       "category": "general",
       "categoryScores": {},
-      "a2a_endpoint": "https://agent.brainonbnb.com/.well-known/agent-card.json"
+      "a2a_endpoint": "https://agent.brainonbnb.com/lp-placement/a2a"
     },
     {
       "id": "93ca1d8f-df7d-4f44-a248-035151a02bf4",
@@ -7060,7 +7191,8 @@
       "created_at": "2026-10-10T16:11:08Z",
       "updated_at": "2026-10-10T17:45:00.144237Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
     },
     {
       "id": "a2f6d461-59d6-41f2-9a94-e6ab7ed08f29",
@@ -7097,7 +7229,9 @@
       "created_at": "2026-10-02T19:54:17Z",
       "updated_at": "2026-10-09T10:10:00.161230Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://www.dolphinamp.xyz/api/v1/built/d6a91641dc4ec70f/agent-card.json",
+      "web_endpoint": "https://www.dolphinamp.xyz/agent/d6a91641dc4ec70f"
     },
     {
       "id": "5a07b4e8-52a0-4ae5-8d9f-f023909d55c2",
@@ -7133,11 +7267,14 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:46Z",
-      "updated_at": "2026-10-10T09:46:19.350224Z",
+      "updated_at": "2026-10-11T03:52:38.634257Z",
       "category": "general",
       "categoryScores": {
         "grid-trading": 1
-      }
+      },
+      "a2a_endpoint": "https://www.mandatemarkets.com/a2a/grid-1/.well-known/agent-card.json",
+      "mcp_server": "https://www.mandatemarkets.com/api/mcp",
+      "web_endpoint": "https://www.mandatemarkets.com/agents/344121"
     },
     {
       "id": "f162a06f-e229-4105-bb96-3114c8a5f330",
@@ -7173,7 +7310,8 @@
       "created_at": "2026-09-15T15:11:59Z",
       "updated_at": "2026-10-10T16:51:18.799886Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
     },
     {
       "id": "c8a5f9d4-91a0-4adb-bf71-bd84ddd54eaa",
@@ -7209,44 +7347,8 @@
       "created_at": "2026-07-25T10:33:58Z",
       "updated_at": "2026-10-10T15:57:19.640525Z",
       "category": "general",
-      "categoryScores": {}
-    },
-    {
-      "id": "c90b3ad0-8cf1-46d1-a8c1-882bd1319deb",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:370049",
-      "token_id": "370049",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "e7ec8da9-7309-4f07-bd2f-f9fcef2b3528",
-      "owner_address": "0x440860e5dfb8e7d3e1903a0ec3d3589e2fc5cf73",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Tare keeper",
-      "description": "Keeper for Tare standing orders on tokenized stocks. It fills share-denominated orders from the wrapper that delivers the most shares; the TareBook contract refuses any fill below the signed floor. Sells signed decompositions per call.",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "MCP",
-        "A2A"
-      ],
-      "x402_supported": true,
-      "total_score": 12.09,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-10T03:23:35Z",
-      "updated_at": "2026-10-10T21:21:20.048117Z",
-      "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
     },
     {
       "id": "6e957418-d09e-47ba-b41a-b58a837788dc",
@@ -7282,7 +7384,8 @@
       "created_at": "2026-09-06T07:54:56Z",
       "updated_at": "2026-10-10T12:05:58.077289Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://genesis-marketplace-one.vercel.app/api/apex/health-sentinel/.well-known/agent-card.json"
     },
     {
       "id": "93a229cf-3dc5-4f71-b6c7-b2ca26f7ba4a",
@@ -7318,7 +7421,47 @@
       "created_at": "2026-10-10T19:26:38Z",
       "updated_at": "2026-10-10T19:37:00.873023Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
+    },
+    {
+      "id": "c90b3ad0-8cf1-46d1-a8c1-882bd1319deb",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:370049",
+      "token_id": "370049",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "e7ec8da9-7309-4f07-bd2f-f9fcef2b3528",
+      "owner_address": "0x440860e5dfb8e7d3e1903a0ec3d3589e2fc5cf73",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Tare keeper",
+      "description": "Keeper for Tare standing orders on tokenized stocks. It fills share-denominated orders from the wrapper that delivers the most shares; the TareBook contract refuses any fill below the signed floor. Sells signed decompositions per call.",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "MCP",
+        "A2A"
+      ],
+      "x402_supported": true,
+      "total_score": 12.08,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-10-10T03:23:35Z",
+      "updated_at": "2026-10-11T03:58:38.623351Z",
+      "category": "general",
+      "categoryScores": {},
+      "a2a_endpoint": "https://tare-keeper.onrender.com/.well-known/agent-card.json",
+      "mcp_server": "https://tare-olive.vercel.app/api/mcp"
     },
     {
       "id": "8fb5ecff-524c-4b94-a2fd-0fcc021cfdd7",
@@ -7356,7 +7499,8 @@
       "category": "general",
       "categoryScores": {
         "rebalancing": 1
-      }
+      },
+      "a2a_endpoint": "https://smeai-dev.vercel.app/api/a2a/lp"
     },
     {
       "id": "08d2e011-14d2-4d1c-800b-10c2c96edf85",
@@ -7393,7 +7537,9 @@
       "created_at": "2026-10-07T16:46:34Z",
       "updated_at": "2026-10-10T15:01:18.581938Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "mcp_server": "https://api.rivrwa.com/mcp",
+      "web_endpoint": "https://rivrwa.com"
     },
     {
       "id": "12916314-b4d5-4f69-a983-704cf7e6a474",
@@ -7429,7 +7575,8 @@
       "created_at": "2026-08-23T01:28:38Z",
       "updated_at": "2026-10-10T14:55:17.061259Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://api.bortagent.xyz/api/a2a/11160/card"
     },
     {
       "id": "d5a2c922-27c3-472c-80c4-13bf5c5a0786",
@@ -7465,7 +7612,8 @@
       "created_at": "2026-10-10T19:15:09Z",
       "updated_at": "2026-10-10T19:45:00.106778Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://sharepay-merchant.onrender.com/.well-known/agent-card.json"
     },
     {
       "id": "222d387c-36a9-4d95-8d22-d3dcae147bab",
@@ -7501,7 +7649,8 @@
       "created_at": "2026-10-10T17:49:03Z",
       "updated_at": "2026-10-10T18:45:01.366617Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://begin-tsunami-amy-wanted.trycloudflare.com/.well-known/agent-card.json"
     },
     {
       "id": "a3ecd18b-61ec-417d-9a15-77b0cff9163f",
@@ -7539,7 +7688,10 @@
       "created_at": "2026-06-12T07:23:46Z",
       "updated_at": "2026-10-10T21:05:06.023792Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://me.hyreagent.fun/agent/sober/.well-known/agent-card.json",
+      "mcp_server": "https://mpp.hyreagent.fun/agents/sober",
+      "web_endpoint": "https://me.hyreagent.fun/agent/sober"
     },
     {
       "id": "eb0943e5-7319-435a-8d7f-7fcc7c521754",
@@ -7576,7 +7728,9 @@
       "created_at": "2026-10-11T01:59:18Z",
       "updated_at": "2026-10-11T02:45:00.204934Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://nightshift-production-f4e3.up.railway.app/.well-known/agent-card.json",
+      "mcp_server": "https://nightshift-production-f4e3.up.railway.app/mcp"
     },
     {
       "id": "58a45cc3-ae7b-43c3-a794-66a96941f34d",
@@ -7613,7 +7767,9 @@
       "created_at": "2026-10-11T01:59:03Z",
       "updated_at": "2026-10-11T02:45:00.204934Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://nightshift-production-f4e3.up.railway.app/.well-known/agent-card.json",
+      "mcp_server": "https://nightshift-production-f4e3.up.railway.app/mcp"
     },
     {
       "id": "9fe2a383-3fb0-4f34-80aa-bbe4632c24ee",
@@ -7650,7 +7806,9 @@
       "created_at": "2026-10-05T10:27:39Z",
       "updated_at": "2026-10-11T01:40:00.151103Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://jensenai.vercel.app",
+      "web_endpoint": "https://jensenai.vercel.app"
     },
     {
       "id": "09caf9cd-fda4-4759-9e77-c39b2065422c",
@@ -7686,7 +7844,8 @@
       "created_at": "2026-08-09T08:05:57Z",
       "updated_at": "2026-10-11T03:03:38.814334Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://bnb-agent-market.vercel.app/agents/rangekeeper/.well-known/agent-card.json"
     },
     {
       "id": "1b287047-7b4d-497d-9516-0cad9daec7a4",
@@ -7721,9 +7880,11 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-04T13:41:04Z",
-      "updated_at": "2026-10-10T06:06:42.728012Z",
+      "updated_at": "2026-10-11T03:41:38.610962Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://jensenai.vercel.app",
+      "web_endpoint": "https://jensenai.vercel.app"
     },
     {
       "id": "0c6f8580-929e-4174-8e9c-1b37bd308844",
@@ -7759,7 +7920,8 @@
       "created_at": "2026-10-07T08:25:22Z",
       "updated_at": "2026-10-10T06:31:19.255344Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://raw.githubusercontent.com/Glayzz/stockyard/main/stockyardagent/.well-known/agent-card.json"
     },
     {
       "id": "12c49af4-c9b6-4664-b306-1d6ece0a3cb0",
@@ -7795,7 +7957,8 @@
       "created_at": "2026-10-10T13:28:43Z",
       "updated_at": "2026-10-10T13:29:32.464799Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
     },
     {
       "id": "a42d1dac-7e2a-4258-9a7c-756945497de4",
@@ -7834,7 +7997,9 @@
       "category": "general",
       "categoryScores": {
         "yield": 1
-      }
+      },
+      "mcp_server": "https://www.bothire.io/mcp",
+      "web_endpoint": "https://www.bothire.io"
     },
     {
       "id": "41ce168c-03de-4c61-8667-007e9ec6ef5c",
@@ -7873,7 +8038,10 @@
       "created_at": "2026-05-28T10:42:16Z",
       "updated_at": "2026-10-11T03:15:38.649828Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "a2a_endpoint": "https://app.singularry.org/agents/20/agent-card.json",
+      "mcp_server": "https://app.singularry.org/api/mcp",
+      "web_endpoint": "https://www.singularry.org"
     },
     {
       "id": "5f59ee1d-349e-45c7-b707-0095d32c899a",
@@ -7910,7 +8078,8 @@
       "created_at": "2026-03-15T13:37:22Z",
       "updated_at": "2026-10-10T08:56:19.311243Z",
       "category": "general",
-      "categoryScores": {}
+      "categoryScores": {},
+      "mcp_server": "https://api.omnichainoracle.ai/mcp"
     },
     {
       "id": "c33e1db3-5052-417d-be95-0c55542030e4",
@@ -8052,11 +8221,12 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-13T10:45:37Z",
-      "updated_at": "2026-10-09T18:54:18.505047Z",
+      "updated_at": "2026-10-11T03:57:36.017283Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 1
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
       "id": "52601f99-ac2a-4bd4-9272-b5a180ea6ee0",
@@ -8094,7 +8264,8 @@
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 1
-      }
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     }
   ]
 }
