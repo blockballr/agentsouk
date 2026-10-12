@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Tag } from '../components/Tag'
-import { VERDICT_DOT, verdictFor } from '../lib/verdict'
+import type { VerdictTone } from '../lib/verdict'
+import { verdictFor } from '../lib/verdict'
 import type { AgentDetail, CategoryDef, CategoryKey } from '../core/types'
 import {
   CATEGORIES,
@@ -23,7 +23,19 @@ import {
 import { getAgentDetail } from '../lib/api'
 import { RegisterWizard, type WizardStep } from '../components/RegisterWizard'
 import { QuestStrip } from '../components/QuestStrip'
-import { Action, button, card, cx, Dialog } from '../components/ui'
+import { Dialog } from '../components/ui'
+import {
+  Btn,
+  Dot,
+  Label,
+  NoteBox,
+  Pill,
+  SectionHead,
+  Row,
+  Stack,
+  Txt,
+  type DotTone,
+} from '../components/souk'
 
 const checklist = [
   {
@@ -51,6 +63,36 @@ const checklist = [
     why: 'Expose a performance endpoint. A tool like get_performance that returns your live numbers (PnL, fees, hit rate) lets a buyer check your record before hiring. The listing does not show reported numbers yet; that collection is being built.',
   },
 ]
+
+// the seven checks the wizard runs, in its own order; the sweep line is the same
+// note the wizard's loop reports once the registration is confirmed
+const LOOP_STEPS = [
+  'Endpoint address rule',
+  'The agent card answers',
+  'Shelf category and search words',
+  'Registration terms from the server',
+  'Transaction sent and mined',
+  'Registration confirmed on chain',
+  'The verification sweep, after this',
+]
+
+const LOOP_NOTE =
+  'Nothing in this wizard earns the badge. Once the registration is confirmed, the verifier probes the registered endpoint on its next sweep; the badge it awards follows whether that endpoint answers, not anything done here.'
+
+// the dot beside a verdict, mapped from the shared verdict tone
+const VERDICT_DOTTONE: Record<VerdictTone, DotTone> = {
+  good: 'good',
+  held: 'held',
+  bad: 'bad',
+  none: 'quiet',
+}
+
+// the design's squared input: surface two at radius 8 under the 16 percent rim
+const inputClass =
+  'h-[42px] w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 text-[13px] leading-[20px] text-souk-ink placeholder:text-souk-muted focus-visible:outline-2 focus-visible:outline-souk-sky'
+const areaClass =
+  'w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 py-3 text-[12px] leading-[18px] text-souk-ink placeholder:text-souk-muted focus-visible:outline-2 focus-visible:outline-souk-sky'
+const labelClass = 'block'
 
 // accepts a bare token id, a 56:id pair, or a full 8004scan URL
 function parseTokenId(raw: string): string | null {
@@ -89,109 +131,161 @@ export function ListAgentPage() {
   const [started, setStarted] = useState(false)
   const guide = questing ? LISTING_GUIDE[wizardStep] : null
   return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
-      <p className="micro text-newsprint-gray">List your agent</p>
-      <h1 className="mt-4 font-serif text-[clamp(44px,7vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-        Built and registered.
-        <br />
-        Now get hired.
-      </h1>
-      <p className="mt-8 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-        Anyone can list, and our checks decide what buyers see. You build the agent in your own tools, BNB Agent Studio registers it, and Agent Souk is where it gets checked and sold. Four steps: register it, meet the checklist, look up a registration, then request a review.
-      </p>
-      <p className="mt-6 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-        You keep your agent, your keys and your money. A buyer signs once, the payment goes
-        straight to the agent&apos;s own wallet on chain, and the cap they set can be revoked.
-        Agent Souk holds no funds and cannot move them.
-      </p>
-      {!started ? (
-        <button
-          type="button"
-          onClick={() => setStarted(true)}
-          className={`${button('primary', 'lg')} mt-10`}
-        >
-          Get listed
-        </button>
-      ) : (
-        <>
-      {/* on a phone the wizard sits several screens down, so the page opens with a way to it */}
-      <div className="mt-8 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          className={button('primary', 'lg')}
-        >
-          Register an agent
-        </button>
-        <button
-          type="button"
-          onClick={() => document.getElementById('token-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-          className={button('secondary', 'lg')}
-        >
-          Already registered? Look it up
-        </button>
-      </div>
-      {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB */}
-      <p className="metal mt-6 max-w-3xl rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-6 text-[15px] leading-relaxed text-newsprint-gray">
-        Listing for Set and Earn? Register your wallet with{' '}
-        <a
-          href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
-          target="_blank"
-          rel="noreferrer"
-          className="text-press-black underline decoration-newsprint-gray/40 underline-offset-4 hover:decoration-press-black"
-        >
-          BNB Smart Chain Set and Earn Campaign
-        </a>
-        .
-      </p>
-      {/* while the form is untouched the guide sits where the visitor lands; once the wizard
-          moves, it follows the wizard */}
-      {guide && wizardStep === 'form' && (
-        <QuestStrip label={`Open your stall · ${guide.count}`} text={guide.text} stamp="stall" className="mt-8 max-w-3xl" />
-      )}
-
-      <CreateSection chainId={chain} />
-      {/* the same registration the Studio path makes, sent from the browser. Both
-          routes end at the same registry record and the same checks. */}
-      <div id="register-here" className="mt-16 scroll-mt-4">
-        <div className="border-t hairline border-slate-verdant/40 pt-8">
-          <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
-            2. List your agent
-          </h2>
-          <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-            The same registration, without installing anything. You send one transaction from your
-            own wallet, and the registry records you as the owner. We then probe the endpoint and
-            decide whether the shelf carries it, the same as for a Studio registration.
-          </p>
-          {chain === null ? (
-            <p className="mt-8 text-sm leading-relaxed text-newsprint-gray">
-              Checking the network before the registration step.
-            </p>
+    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-11 text-souk-ink">
+      {/* hero - list your agent */}
+      <Stack gap={12}>
+        <Txt size={11} lead={16} mono upper tone="data">
+          List your agent
+        </Txt>
+        <Txt size={46} lead={56} weight="bold" tone="ink" className="block">
+          Built and registered.
+        </Txt>
+        <Txt size={46} lead={56} weight="bold" tone="ink" className="block">
+          Now get hired.
+        </Txt>
+        <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
+          Anyone can list, and our checks decide what buyers see. You build the agent in your own
+          tools, BNB Agent Studio registers it, and Agent Souk is where it gets checked and sold.
+          Four steps: register it, meet the checklist, look up a registration, then request a
+          review.
+        </Txt>
+        <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
+          You keep your agent, your keys and your money. A buyer signs once, the payment goes
+          straight to the agent&apos;s own wallet on chain, and the cap they set can be revoked.
+          Agent Souk holds no funds and cannot move them.
+        </Txt>
+        <Row gap={10} align="center">
+          {!started ? (
+            <Btn kind="primary" onClick={() => setStarted(true)}>
+              Get listed
+            </Btn>
           ) : (
+            // on a phone the wizard sits several screens down, so the page opens with a way to it
             <>
-              <GasRequirement chainId={chain} />
-              {guide && wizardStep !== 'form' && (
-                <QuestStrip
-                  label={`Open your stall · ${guide.count}`}
-                  text={guide.text}
-                  done={wizardStep === 'listed'}
-                  stamp="stall"
-                  className="mt-8 max-w-3xl"
-                />
-              )}
-              <div className="mt-8">
-                <RegisterWizard chainId={chain} onStep={setWizardStep} />
-              </div>
+              <Btn
+                kind="primary"
+                onClick={() =>
+                  document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              >
+                Register an agent
+              </Btn>
+              <Btn
+                kind="off"
+                onClick={() =>
+                  document.getElementById('token-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+              >
+                Already registered? Look it up
+              </Btn>
             </>
           )}
-        </div>
-      </div>
-      <ChecklistSection />
-      <LookupSection chainId={chain} onFound={setFoundTokenId} />
-      <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
+        </Row>
+      </Stack>
+      {!started ? null : (
+        <>
+          {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB */}
+          <NoteBox title="Listing for Set and Earn?" className="mt-6 max-w-[768px]">
+            <Txt size={12} lead={18} tone="steel">
+              Register your wallet with{' '}
+              <a
+                href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-white/[0.16] underline-offset-4 hover:text-souk-ink"
+              >
+                <Txt size={12} lead={18} tone="ink">BNB Smart Chain Set and Earn Campaign</Txt>
+              </a>
+              .
+            </Txt>
+          </NoteBox>
+          {/* while the form is untouched the guide sits where the visitor lands; once the wizard
+              moves, it follows the wizard */}
+          {guide && wizardStep === 'form' && (
+            <QuestStrip
+              label={`Open your stall · ${guide.count}`}
+              text={guide.text}
+              stamp="stall"
+              className="mt-8 max-w-[768px]"
+            />
+          )}
+
+          <CreateSection chainId={chain} />
+
+          {/* the same registration the Studio path makes, sent from the browser. Both
+              routes end at the same registry record and the same checks. */}
+          <div id="register-here" className="mt-[30px] scroll-mt-4">
+            <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_520px]">
+              <Stack gap={20}>
+                <SectionHead title="2. List your agent" note="ONE TRANSACTION" />
+                <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
+                  The same registration, without installing anything. You send one transaction from
+                  your own wallet, and the registry records you as the owner. We then probe the
+                  endpoint and decide whether the shelf carries it, the same as for a Studio
+                  registration.
+                </Txt>
+                {chain === null ? (
+                  <Txt size={13} lead={20} tone="steel" className="block">
+                    Checking the network before the registration step.
+                  </Txt>
+                ) : (
+                  <>
+                    {guide && wizardStep !== 'form' && (
+                      <QuestStrip
+                        label={`Open your stall · ${guide.count}`}
+                        text={guide.text}
+                        done={wizardStep === 'listed'}
+                        stamp="stall"
+                        className="max-w-[768px]"
+                      />
+                    )}
+                    <RegisterWizard chainId={chain} onStep={setWizardStep} />
+                  </>
+                )}
+              </Stack>
+              {chain !== null && (
+                <Stack gap={20}>
+                  <GasRequirement chainId={chain} />
+                  <LoopCard />
+                </Stack>
+              )}
+            </div>
+          </div>
+          <ChecklistSection />
+          <LookupSection chainId={chain} onFound={setFoundTokenId} />
+          <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
         </>
       )}
-    </section>
+    </div>
+  )
+}
+
+// the wizard's own loop, drawn at rest: each line waits its turn and claims no
+// outcome until the wizard running above fills the real ones in
+function LoopCard() {
+  return (
+    <Stack surface gap={12} pad={[20, 22, 20, 22]}>
+      <SectionHead title="The verification loop" note="7 CHECKS, IN ORDER" />
+      {LOOP_STEPS.map((title, i) => {
+        const last = i === LOOP_STEPS.length - 1
+        return (
+          <Row key={title} gap={10} align="start">
+            <Txt size={11} lead={18} mono tone="muted">{String(i + 1).padStart(2, '0')}</Txt>
+            <Stack gap={6}>
+              <Row gap={8} align="center">
+                <Txt size={13} lead={18} tone="ink">{title}</Txt>
+                <Pill variant="off">Waiting</Pill>
+              </Row>
+              {last && (
+                <Txt size={11} lead={16} tone="muted" className="block max-w-[440px]">
+                  {LOOP_NOTE}
+                </Txt>
+              )}
+            </Stack>
+          </Row>
+        )
+      })}
+    </Stack>
   )
 }
 
@@ -338,101 +432,97 @@ function GasRequirement({ chainId }: { chainId: number }) {
   }
 
   return (
-    <div className="mt-8 metal rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h3 className="font-serif text-xl font-medium">Gas to list</h3>
-        <span className="micro text-newsprint-gray">{chainLabel(chainId)}</span>
-      </div>
-      <p className="mt-3 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+    <Stack surface gap={14} pad={[20, 22, 20, 22]}>
+      <SectionHead title="Gas to list" note={chainLabel(chainId)} />
+      <Txt size={12} lead={18} tone="steel" className="block">
         Registration is one transaction sent from your own wallet, which is how the
         registry records you as the owner. Nobody can send it for you, so your wallet
         pays a little {symbol} in gas. A fresh testnet wallet starts with none.
-      </p>
+      </Txt>
 
-      <dl className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+      <dl className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <div className="flex items-center gap-2">
-          <dt className="micro text-newsprint-gray">
-            Your <span className="normal-case">{symbol}</span>
+          <dt>
+            <Label tone="labels">Your {symbol}</Label>
           </dt>
-          <dd className="font-mono text-press-black">
-            {!account
-              ? 'no wallet connected'
-              : reading
-                ? 'reading'
-                : balance === null
-                  ? 'unavailable'
-                  : `${formatNative(balance)} ${symbol}`}
+          <dd>
+            <Txt size={11} lead={16} mono tone="steel">
+              {!account
+                ? 'no wallet connected'
+                : reading
+                  ? 'reading'
+                  : balance === null
+                    ? 'unavailable'
+                    : `${formatNative(balance)} ${symbol}`}
+            </Txt>
           </dd>
         </div>
         {account && (
           <div className="flex items-center gap-2">
-            <dt className="micro text-newsprint-gray">Wallet</dt>
-            <dd className="font-mono text-[11px] text-newsprint-gray">{shortAddress(account)}</dd>
+            <dt>
+              <Label tone="labels">Wallet</Label>
+            </dt>
+            <dd>
+              <Txt size={11} lead={16} mono tone="steel">
+                {shortAddress(account)}
+              </Txt>
+            </dd>
           </div>
         )}
       </dl>
 
       {!account && (
-        <button
-          type="button"
-          disabled={connecting}
-          onClick={() => void connect()}
-          className={cx(button('secondary', 'lg'), 'mt-4')}
-        >
+        <Btn kind="off" disabled={connecting} onClick={() => void connect()} className="w-full">
           {connecting ? 'Connecting…' : 'Connect wallet to check'}
-        </button>
+        </Btn>
       )}
 
       {testnet ? (
         <>
-          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-            Two ways: BNB&apos;s testnet faucet works for any wallet, or sign one free message below and we pay for the mint.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Txt size={12} lead={18} tone="slate" className="block">
+            Two ways: BNB&apos;s testnet faucet works for any wallet, or sign one free message
+            below and we pay for the mint.
+          </Txt>
+          <Row gap={12} align="center" className="flex-wrap">
             <a
               href={FAUCET_URL}
               target="_blank"
               rel="noreferrer"
-              className={button('secondary', 'lg')}
+              className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-white/[0.16] bg-souk-surface1 px-5 hover:text-souk-ink"
             >
-              BSC testnet faucet →
+              <Txt size={14} lead={20} weight="semibold" tone="slate">BSC testnet faucet →</Txt>
             </a>
             {!holdsGas && (
-              <button
-                type="button"
-                disabled={phase === 'sending'}
-                onClick={() => void getGas()}
-                className={button('primary', 'lg')}
-              >
+              <Btn kind="primary" disabled={phase === 'sending'} onClick={() => void getGas()}>
                 {phase === 'sending' ? (
                   'Sign the message in your wallet'
                 ) : (
-                  <>
-                    Top up <span className="normal-case">{symbol}</span> for gas
-                  </>
+                  <>Top up {symbol} for gas</>
                 )}
-              </button>
+              </Btn>
             )}
-          </div>
-          <p className="mt-3 max-w-3xl text-xs leading-relaxed text-newsprint-gray">
+          </Row>
+          <Txt size={12} lead={18} tone="muted" className="block">
             The sponsored mint grants 10 test sUSD, and it tops your {symbol} up to
             0.001 {symbol} for gas when you hold less than that. It sends only the
             shortfall, so a wallet holding dust is still covered. The mint itself
             costs you no gas.
-          </p>
+          </Txt>
           {holdsGas && balance !== null && (
-            <p className="mt-2 max-w-3xl text-xs leading-relaxed text-press-black">
+            <Txt size={12} lead={18} tone="ink" className="block">
               This wallet already holds {formatNative(balance)} {symbol}, which
               covers the gas for registration, so no top-up will be sent.
-            </p>
+            </Txt>
           )}
           {phase === 'error' && error && (
-            <p role="alert" className="mt-3 text-sm leading-relaxed text-press-black">
-              {error}
+            <p role="alert">
+              <Txt size={12} lead={18} tone="peach" className="block">
+                {error}
+              </Txt>
             </p>
           )}
           {phase === 'sent' && (
-            <p className="mt-3 text-sm leading-relaxed text-press-black">
+            <Txt size={12} lead={18} tone="ink" className="block">
               {gasNote ?? 'Minted, but no gas top-up was reported.'}
               {gasTxHash && (
                 <>
@@ -441,23 +531,41 @@ function GasRequirement({ chainId }: { chainId: number }) {
                     href={`${explorerTxBase(chainId)}/tx/${gasTxHash}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="underline decoration-press-black/30 underline-offset-2 hover:text-highlighter-green"
+                    className="underline decoration-white/[0.16] underline-offset-2 hover:text-souk-data"
                   >
                     View the top-up
                   </a>
                   .
                 </>
               )}
-            </p>
+            </Txt>
           )}
         </>
       ) : (
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+        <Txt size={12} lead={18} tone="slate" className="block">
           Keep a little {symbol} in the wallet before you register. There is no
           sponsored top-up on mainnet.
-        </p>
+        </Txt>
       )}
-    </div>
+    </Stack>
+  )
+}
+
+// the code block under a step: surface two at radius 8, mono lines
+function CodeBlock({ lines }: { lines: string[] }) {
+  return (
+    <Stack
+      gap={4}
+      pad={[14, 16, 14, 16]}
+      radius={8}
+      className="border border-white/[0.16] bg-souk-surface2"
+    >
+      {lines.map((line) => (
+        <Txt key={line} size={12} lead={18} mono tone="ink">
+          {line}
+        </Txt>
+      ))}
+    </Stack>
   )
 }
 
@@ -466,98 +574,105 @@ function CreateSection({ chainId }: { chainId: number | null }) {
   const chainName = chainId === null ? null : chainId === 97 ? 'BSC testnet' : 'BSC'
   const registryAddress = chainId === null ? null : registryFor(chainId) ?? REGISTRY_BY_CHAIN[56]
   return (
-    <div className="mt-16">
-      <div className="flex flex-wrap items-baseline justify-between gap-4 border-t hairline border-slate-verdant/40 pt-8">
-        <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
+    <Stack gap={20} className="mt-[30px]">
+      {/* the design's head row with the studio link in the note slot */}
+      <Row
+        justify="between"
+        align="center"
+        gap={9}
+        pad={[0, 0, 9, 0]}
+        className="flex-wrap border-b border-b-white/[0.16]"
+      >
+        <Txt size={18} lead={27} weight="bold" tone="ink">
           1. Create and register with BNB Agent Studio
-        </h2>
+        </Txt>
         <a
           href="https://www.bnbchain.org/en/bnb-agent-studio"
           target="_blank"
           rel="noreferrer"
-          className="micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          className="font-mono text-[10px] uppercase leading-[14px] text-souk-labels hover:text-souk-ink"
         >
           BNB Agent Studio →
         </a>
-      </div>
+      </Row>
 
-      <ol className="mt-8 grid gap-6 md:grid-cols-2">
-        <li className={card('plain', 'lg')}>
-          <p className="micro text-newsprint-gray">Step 1</p>
-          <p className="mt-4 font-serif text-xl font-medium">Install the CLI</p>
-          <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-            One npm install brings the CLI and the runtime. One more command sets up your editor, Cursor or Claude Code. The new wallet is funded with test BNB and test stablecoin for you.
-          </p>
-          <pre className="mt-4 overflow-x-auto rounded-[10px] border hairline border-slate-verdant/40 p-4 font-mono text-xs text-press-black">
-            npm install -g @bnbagent/studio-cli
-            {'\n'}bag skills install
-          </pre>
-        </li>
-        <li className={card('plain', 'lg')}>
-          <p className="micro text-newsprint-gray">Step 2</p>
-          <p className="mt-4 font-serif text-xl font-medium">
-            Describe your agent
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-            In Cursor or Claude Code, say what the agent does and ask Studio to
-            deploy it. Studio scaffolds the agent, deploys it, registers the
-            ERC-8004 identity on{' '}
-            {chainName ?? 'the target network'} (registry{' '}
-            {chainId !== null && registryAddress ? (
-              <a
-                href={explorerAddressUrl(chainId, registryAddress)}
-                target="_blank"
-                rel="noreferrer"
-                className="font-mono text-[13px] break-all text-press-black hover:text-highlighter-green"
-              >
-                {registryAddress}
-              </a>
-            ) : (
-              'pending'
-            )}
-            ), binds the agent wallet, and registers the ERC-8183 task
-            interface. x402 payment comes configured by default.
-          </p>
+      <ol className="grid items-stretch gap-5 md:grid-cols-2">
+        <li className="flex h-full">
+          <Stack surface gap={10} pad={[20, 22, 18, 22]} className="w-full">
+            <Txt size={10} lead={14} weight="bold" upper tone="muted">Step 1</Txt>
+            <Txt size={18} lead={26} weight="bold" tone="ink" className="block">Install the CLI</Txt>
+            <Txt size={13} lead={20} tone="slate" className="block">
+              One npm install brings the CLI and the runtime. One more command sets up your editor,
+              Cursor or Claude Code. The new wallet is funded with test BNB and test stablecoin for
+              you.
+            </Txt>
+            <CodeBlock lines={['npm install -g @bnbagent/studio-cli', 'bag skills install']} />
+          </Stack>
         </li>
         <li className="flex h-full">
-            <PromptGenerator chainId={chainId} />
-          </li>
-          <li className={cx(card('plain', 'lg'), 'flex h-full flex-col')}>
-          <p className="micro text-newsprint-gray">Step 4</p>
-          <p className="mt-4 font-serif text-xl font-medium">
-            Note your task interface
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-            Your agent exposes an MCP server or an A2A endpoint, reachable over
-            HTTPS. That is what the verifier calls, so make sure it is up
-            before you list. For version-specific commands, follow{' '}
-            <a
-              href="https://docs.bnbchain.org/developer-kit/bnbchain-studio/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-press-black underline decoration-highlighter-green decoration-2 underline-offset-4 hover:text-highlighter-green"
-            >
-              BNB&apos;s studio docs
-            </a>
-            .
-          </p>
-          <Action
-            variant="secondary"
-            size="sm"
-            onClick={() =>
-              document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }
-            className="mt-auto self-start"
-          >
-            Continue to listing
-          </Action>
+          <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full">
+            <Txt size={10} lead={14} weight="bold" upper tone="muted">Step 2</Txt>
+            <Txt size={18} lead={26} weight="bold" tone="ink" className="block">Describe your agent</Txt>
+            <Txt size={13} lead={20} tone="slate" className="block">
+              In Cursor or Claude Code, say what the agent does and ask Studio to deploy it. Studio
+              scaffolds the agent, deploys it, registers the ERC-8004 identity on{' '}
+              {chainName ?? 'the target network'} (
+              {chainId !== null && registryAddress ? (
+                <a
+                  href={explorerAddressUrl(chainId, registryAddress)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all font-mono text-[11px] text-souk-ink hover:text-souk-data"
+                >
+                  registry {registryAddress}
+                </a>
+              ) : (
+                'registry pending'
+              )}
+              ), binds the agent wallet, and registers the ERC-8183 task interface. x402 payment
+              comes configured by default.
+            </Txt>
+          </Stack>
+        </li>
+        <li className="flex h-full">
+          <PromptGeneratorCard chainId={chainId} />
+        </li>
+        <li className="flex h-full">
+          <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full">
+            <Txt size={10} lead={14} weight="bold" upper tone="muted">Step 4</Txt>
+            <Txt size={18} lead={26} weight="bold" tone="ink" className="block">Note your task interface</Txt>
+            <Txt size={13} lead={20} tone="slate" className="block">
+              Your agent exposes an MCP server or an A2A endpoint, reachable over HTTPS. That is
+              what the verifier calls, so make sure it is up before you list. For version-specific
+              commands, follow{' '}
+              <a
+                href="https://docs.bnbchain.org/developer-kit/bnbchain-studio/"
+                target="_blank"
+                rel="noreferrer"
+                className="underline decoration-white/[0.16] underline-offset-4 hover:text-souk-ink"
+              >
+                <Txt size={13} lead={20} tone="ink">BNB&apos;s studio docs</Txt>
+              </a>
+              .
+            </Txt>
+            <Row>
+              <Btn
+                kind="off"
+                onClick={() =>
+                  document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              >
+                Continue to listing
+              </Btn>
+            </Row>
+          </Stack>
         </li>
       </ol>
 
-      <p className="mt-6 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+      <Txt size={13} lead={20} tone="steel" className="block max-w-[1180px]">
         Studio builds and deploys the agent. Agent Souk is where buyers find it and where we check it.
-      </p>
-    </div>
+      </Txt>
+    </Stack>
   )
 }
 
@@ -566,44 +681,45 @@ function CreateSection({ chainId }: { chainId: number | null }) {
 function ChecklistSection() {
   const [open, setOpen] = useState(false)
   return (
-    <div className="mt-16">
-      <div className="border-t hairline border-slate-verdant/40 pt-8">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="flex w-full items-baseline justify-between gap-4 text-left font-serif text-[32px] font-medium tracking-[-0.02em] hover:text-highlighter-green"
-        >
-          <span>What the verifier looks for</span>
-          <span aria-hidden="true" className="text-[20px] leading-none text-newsprint-gray">
-            {open ? '−' : '+'}
-          </span>
-        </button>
-        {open && (
-          <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-            Every badge on this site comes from a real check against the real endpoint.
-          </p>
-        )}
-      </div>
-
+    <Stack gap={20} className="mt-[30px]">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full flex-wrap items-center justify-between gap-4 border-b border-b-white/[0.16] pb-3 text-left hover:text-souk-slate"
+      >
+        <Txt size={22} lead={30} weight="bold" tone="ink">What the verifier looks for</Txt>
+        <Txt size={20} lead={24} weight="bold" tone="steel" aria-hidden="true">
+          {open ? '−' : '+'}
+        </Txt>
+      </button>
       {open && (
-      <div className="mt-8 grid gap-px bg-slate-verdant/40 md:grid-cols-2">
-        {checklist.map((item, i) => (
-          <div key={item.title} className="bg-bone-white p-8">
-            <p className="micro text-newsprint-gray">Check {i + 1} of 6</p>
-            <p className="mt-4 font-serif text-xl font-medium">{item.title}</p>
-            <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-              {item.why}
-            </p>
-          </div>
-        ))}
-      </div>
+        <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
+          Every badge on this site comes from a real check against the real endpoint.
+        </Txt>
       )}
-
-      <p className="mt-6 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-        Meet the checklist and the badge speaks for you: delivered, graded, public. It does not promise placement or traffic.
-      </p>
-    </div>
+      {open && (
+        <div className="grid gap-5 md:grid-cols-2">
+          {checklist.map((item, i) => (
+            <Stack key={item.title} surface gap={10} pad={[20, 22, 20, 22]}>
+              <Txt size={10} lead={14} weight="bold" upper tone="labels">
+                Check {i + 1} of 6
+              </Txt>
+              <Txt size={17} lead={24} weight="bold" tone="ink" className="block">
+                {item.title}
+              </Txt>
+              <Txt size={13} lead={20} tone="slate" className="block">
+                {item.why}
+              </Txt>
+            </Stack>
+          ))}
+        </div>
+      )}
+      <Txt size={13} lead={20} tone="steel" className="block max-w-[1180px]">
+        Meet the checklist and the badge speaks for you: delivered, graded, public. It does not
+        promise placement or traffic.
+      </Txt>
+    </Stack>
   )
 }
 
@@ -664,7 +780,9 @@ function buildPrompt(
   ].join('\n')
 }
 
-function PromptGenerator({ chainId }: { chainId: number | null }) {
+// step 3's own card: three questions asked in a dialog, the checklist above reused
+// as the prompt's acceptance criteria
+function PromptGeneratorCard({ chainId }: { chainId: number | null }) {
   const [category, setCategory] = useState<CategoryKey>('rebalancing')
   const [name, setName] = useState('')
   const [goal, setGoal] = useState('')
@@ -688,100 +806,95 @@ function PromptGenerator({ chainId }: { chainId: number | null }) {
     }
   }
 
-  const inputClass =
-    'border hairline input-hairline w-full bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
-
   return (
-    <div className={cx(card('plain', 'lg'), 'flex h-full w-full flex-col')}>
-      <p className="micro text-newsprint-gray">Step 3</p>
-      <h3 className="mt-4 font-serif text-2xl font-medium tracking-[-0.02em]">
+    <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full">
+      <Txt size={10} lead={14} weight="bold" upper tone="muted">Step 3</Txt>
+      <Txt size={18} lead={26} weight="bold" tone="ink" className="block">
         Generate your Agent Studio prompt
-      </h3>
-      <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
-        Answer three questions and we write a prompt for your coding agent, with the checklist above as its acceptance criteria.
-      </p>
-
-      <Action
-        variant="secondary"
-        size="sm"
-        onClick={() => setOpen(true)}
-        className="mt-auto self-start"
-      >
-        Generate prompt
-      </Action>
+      </Txt>
+      <Txt size={13} lead={20} tone="slate" className="block">
+        Answer three questions and we write a prompt for your coding agent, with the checklist
+        above as its acceptance criteria.
+      </Txt>
+      <Row>
+        <Btn kind="off" onClick={() => setOpen(true)}>Generate prompt</Btn>
+      </Row>
 
       {open && (
         <Dialog title="Generate your Agent Studio prompt" onClose={() => setOpen(false)}>
           <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="micro text-newsprint-gray" htmlFor="wizard-category">
-            Category
-          </label>
-          <select
-            id="wizard-category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value as CategoryKey)}
-            className={`${inputClass} mt-2`}
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="micro text-newsprint-gray" htmlFor="wizard-name">
-            Agent name (one line)
-          </label>
-          <input
-            id="wizard-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="BNB Lending Guardian"
-            className={`${inputClass} mt-2`}
-          />
-        </div>
-      </div>
+            <div>
+              <label className={labelClass} htmlFor="wizard-category">
+                <Label tone="labels">Category</Label>
+              </label>
+              <div className="mt-2">
+                <select
+                  id="wizard-category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as CategoryKey)}
+                  className={inputClass}
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="wizard-name">
+                <Label tone="labels">Agent name (one line)</Label>
+              </label>
+              <div className="mt-2">
+                <input
+                  id="wizard-name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="BNB Lending Guardian"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
 
-      <div className="mt-4">
-        <label className="micro text-newsprint-gray" htmlFor="wizard-goal">
-          What the agent should achieve
-        </label>
-        <textarea
-          id="wizard-goal"
-          value={goal}
-          onChange={(e) => setGoal(e.target.value)}
-          rows={3}
-          placeholder="Watch borrowing positions on Venus and protect them before liquidation hits."
-          className={`${inputClass} mt-2`}
-        />
-      </div>
+          <div className="mt-4">
+            <label className={labelClass} htmlFor="wizard-goal">
+              <Label tone="labels">What the agent should achieve</Label>
+            </label>
+            <div className="mt-2">
+              <textarea
+                id="wizard-goal"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                rows={3}
+                placeholder="Watch borrowing positions on Venus and protect them before liquidation hits."
+                className={areaClass}
+              />
+            </div>
+          </div>
 
-      <Action variant="primary" size="md" onClick={generate} className="mt-6 self-start">
-            Generate prompt
-          </Action>
+          <Row className="mt-6">
+            <Btn kind="primary" onClick={generate}>Generate prompt</Btn>
+          </Row>
 
           {prompt && (
             <div className="mt-6">
               <div className="flex items-center justify-between gap-4">
-                <p className="micro text-newsprint-gray">Your prompt</p>
-                <Action variant="secondary" size="sm" onClick={copy}>
-                  {copied ? 'Copied' : 'Copy'}
-                </Action>
+                <Label tone="labels">Your prompt</Label>
+                <Btn kind="off" onClick={copy}>{copied ? 'Copied' : 'Copy'}</Btn>
               </div>
-              <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-[11px] leading-relaxed text-press-black">
+              <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[8px] border border-white/[0.16] bg-souk-surface2 p-4 font-mono text-[11px] leading-[18px] text-souk-ink">
                 {prompt}
               </pre>
             </div>
           )}
         </Dialog>
       )}
-    </div>
+    </Stack>
   )
 }
-
 
 function LookupSection({
   chainId,
@@ -817,68 +930,70 @@ function LookupSection({
   }
 
   return (
-    <div className="mt-16">
-      <div className="border-t hairline border-slate-verdant/40 pt-8">
-        <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
-          3. Instant lookup
-        </h2>
-        <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-          Paste your token id, or your whole registry agent URL. We check the live registry.
-        </p>
-      </div>
+    <Stack gap={20} className="mt-[30px]">
+      <SectionHead title="3. Instant lookup" note="WE CHECK THE LIVE REGISTRY" />
+      <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
+        Paste your token id, or your whole registry agent URL. We check the live registry.
+      </Txt>
 
       <form
-        className="mt-8 flex flex-wrap items-center gap-4"
+        className="flex flex-wrap items-end gap-4"
         onSubmit={(e) => {
           e.preventDefault()
           void lookup()
         }}
       >
-        <label className="micro text-newsprint-gray" htmlFor="token-lookup">
-          Token id or agent URL
-        </label>
-        <input
-          id="token-lookup"
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="45381, 56:45381, or your agent URL"
-          className="border hairline input-hairline w-full max-w-md bg-transparent px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
-        />
-        <button
-          type="submit"
-          disabled={state.phase === 'loading' || chainId === null}
-          className={button('primary', 'lg')}
-        >
-          {state.phase === 'loading' ? 'Checking…' : chainId === null ? 'Checking the network…' : 'Look up'}
-        </button>
+        <div className="w-full max-w-[448px] min-w-[240px]">
+          <label className={labelClass} htmlFor="token-lookup">
+            <Label tone="labels">Token id or agent URL</Label>
+          </label>
+          <div className="mt-2">
+            <input
+              id="token-lookup"
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="45381, 56:45381, or your agent URL"
+              className={inputClass}
+            />
+          </div>
+        </div>
+        <Btn kind="primary" type="submit" disabled={state.phase === 'loading' || chainId === null}>
+          {state.phase === 'loading'
+            ? 'Checking…'
+            : chainId === null
+              ? 'Checking the network…'
+              : 'Look up'}
+        </Btn>
       </form>
 
-      <div className="mt-8">
+      <div>
         {state.phase === 'invalid' && (
-          <p className="border hairline border-slate-verdant/40 px-8 py-6 text-sm text-newsprint-gray">
-            No token id found in that. Paste a bare number like 45381, a pair
-            like 56:45381, or your agent URL.
-          </p>
+          <NoteBox title="No token id found in that." className="max-w-[768px]">
+            <Txt size={12} lead={18} tone="steel" className="block">
+              Paste a bare number like 45381, a pair like 56:45381, or your agent URL.
+            </Txt>
+          </NoteBox>
         )}
         {state.phase === 'error' && (
-          <p className="border hairline border-slate-verdant/40 px-8 py-6 text-sm text-newsprint-gray">
-            The registry check failed. Try again in a moment.
-          </p>
+          <NoteBox title="The registry check failed." className="max-w-[768px]">
+            <Txt size={12} lead={18} tone="steel" className="block">
+              Try again in a moment.
+            </Txt>
+          </NoteBox>
         )}
         {state.phase === 'missing' && (
-          <div className="border hairline border-slate-verdant/40 px-8 py-6">
-            <p className="font-serif text-xl font-medium">
-              Not in the registry yet.
-            </p>
-            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
-              No live listing for that token id. Finish the Agent Studio registration in step 1, or check the number: it is the token your registration minted, also shown by the registry index.
-            </p>
-          </div>
+          <NoteBox title="Not in the registry yet." className="max-w-[768px]">
+            <Txt size={12} lead={18} tone="steel" className="block">
+              No live listing for that token id. Finish the Agent Studio registration in step 1, or
+              check the number: it is the token your registration minted, also shown by the
+              registry index.
+            </Txt>
+          </NoteBox>
         )}
         {state.phase === 'found' && <FoundAgent agent={state.agent} />}
       </div>
-    </div>
+    </Stack>
   )
 }
 
@@ -888,9 +1003,6 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
   const [note, setNote] = useState('')
   const [phase, setPhase] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
-
-  const inputClass =
-    'border hairline input-hairline w-full bg-transparent px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green'
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -916,82 +1028,91 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
   }
 
   return (
-    <div className="mt-16">
-      <div className="border-t hairline border-slate-verdant/40 pt-8">
-        <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">
-          4. Request a listing review
-        </h2>
-        <p className="mt-4 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-          Met the checklist and still not listed? Send the token id and how to reach you. A person reads every request.
-        </p>
-      </div>
+    <Stack gap={20} className="mt-[30px]">
+      <SectionHead title="4. Request a listing review" note="A PERSON READS EVERY REQUEST" />
+      <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
+        Met the checklist and still not listed? Send the token id and how to reach you. A person
+        reads every request.
+      </Txt>
 
       {phase === 'sent' ? (
-        <p className="mt-8 border hairline border-highlighter-green/50 px-8 py-6 text-sm text-press-black">
-          Request received. We read every one and reply to the contact you left.
-        </p>
+        <NoteBox title="Request received." className="max-w-[768px]">
+          <Txt size={12} lead={18} tone="steel" className="block">
+            We read every one and reply to the contact you left.
+          </Txt>
+        </NoteBox>
       ) : (
-        <form onSubmit={(e) => void submit(e)} className="mt-8 max-w-xl space-y-4">
+        <form onSubmit={(e) => void submit(e)} className="flex w-full max-w-[626px] flex-col gap-4">
           <div>
-            <label className="micro text-newsprint-gray" htmlFor="review-token-id">
-              BSC token id
+            <label className={labelClass} htmlFor="review-token-id">
+              <Label tone="labels">BSC token id</Label>
             </label>
-            <input
-              id="review-token-id"
-              type="text"
-              inputMode="numeric"
-              value={tokenId}
-              onChange={(e) => setTokenId(e.target.value)}
-              placeholder="45381"
-              className={`${inputClass} mt-2`}
-            />
+            <div className="mt-2">
+              <input
+                id="review-token-id"
+                type="text"
+                inputMode="numeric"
+                value={tokenId}
+                onChange={(e) => setTokenId(e.target.value)}
+                placeholder="45381"
+                className={`${inputClass} font-mono`}
+              />
+            </div>
           </div>
           <div>
-            <label className="micro text-newsprint-gray" htmlFor="review-contact">
-              Contact (email or handle)
+            <label className={labelClass} htmlFor="review-contact">
+              <Label tone="labels">Contact (email or handle)</Label>
             </label>
-            <input
-              id="review-contact"
-              type="text"
-              value={contact}
-              onChange={(e) => setContact(e.target.value)}
-              placeholder="you@example.com or @handle"
-              autoComplete="email"
-              className={`${inputClass} mt-2`}
-            />
+            <div className="mt-2">
+              <input
+                id="review-contact"
+                type="text"
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
+                placeholder="you@example.com or @handle"
+                autoComplete="email"
+                className={inputClass}
+              />
+            </div>
           </div>
           <div>
-            <label className="micro text-newsprint-gray" htmlFor="review-note">
-              Note <span className="normal-case">(optional)</span>
+            <label className={labelClass} htmlFor="review-note">
+              <Label tone="labels">
+                Note <span className="normal-case">(optional)</span>
+              </Label>
             </label>
-            <textarea
-              id="review-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              maxLength={500}
-              placeholder="What you fixed since the last check."
-              className={`${inputClass} mt-2`}
-            />
+            <div className="mt-2">
+              <textarea
+                id="review-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder="What you fixed since the last check."
+                className={areaClass}
+              />
+            </div>
           </div>
           {error && (
-            <p role="alert" className="text-sm text-newsprint-gray">
-              {error}
+            <p role="alert">
+              <Txt size={12} lead={18} tone="peach" className="block">
+                {error}
+              </Txt>
             </p>
           )}
-          <button
-            type="submit"
-            disabled={phase === 'sending'}
-            className={button('primary', 'lg')}
-          >
-            {phase === 'sending' ? 'Sending…' : 'Request review'}
-          </button>
+          <Row>
+            <Btn kind="primary" type="submit" disabled={phase === 'sending'}>
+              {phase === 'sending' ? 'Sending…' : 'Request review'}
+            </Btn>
+          </Row>
         </form>
       )}
-    </div>
+    </Stack>
   )
 }
 
+// what a lookup hands back: the listing, its tags, and the one verdict the
+// check record actually carries for this token
 function FoundAgent({ agent }: { agent: AgentDetail }) {
   const classification = classifyAgent(
     `${agent.name} ${agent.description ?? ''}`,
@@ -1003,33 +1124,51 @@ function FoundAgent({ agent }: { agent: AgentDetail }) {
   const verdict = verdictFor(agent.chain_id, agent.verification)
 
   return (
-    <div className="metal rounded-[14px] border hairline border-highlighter-green/60 p-6 sm:p-8">
-      <p className="flex items-center gap-2 text-[14px] font-medium text-press-black">
-        <span aria-hidden="true" className="glow h-2 w-2 rounded-full bg-highlighter-green" />
-        Listed. Your agent is on the market now.
-      </p>
-      <p className="mt-4 font-serif text-2xl font-medium">{agent.name}</p>
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        {category ? <Tag>{category}</Tag> : null}
-        {agent.x402_supported ? <Tag title="Takes payment per call over x402">x402</Tag> : null}
-        {agent.pcs ? <Tag title="Says it works with PancakeSwap">PancakeSwap</Tag> : null}
+    <Stack
+      bg="indigo"
+      gap={12}
+      pad={[20, 22, 20, 22]}
+      radius={20}
+      className="border-souk-data/50 overflow-hidden"
+    >
+      <Row gap={9} align="center">
+        <Dot tone="good" size={9} />
+        <Txt size={14} lead={20} weight="semibold" tone="ink">
+          Listed. Your agent is on the market now.
+        </Txt>
+      </Row>
+      <Txt size={24} lead={32} weight="bold" tone="ink" className="block">
+        {agent.name}
+      </Txt>
+      <Row gap={8} align="center" className="flex-wrap">
+        {category && <Pill variant="off">{category}</Pill>}
+        {agent.x402_supported && (
+          <span title="Takes payment per call over x402">
+            <Pill variant="off">x402</Pill>
+          </span>
+        )}
+        {agent.pcs && (
+          <span title="Says it works with PancakeSwap">
+            <Pill variant="off">PancakeSwap</Pill>
+          </span>
+        )}
+        <Txt size={11} lead={16} mono tone="labels">
+          BNB {agent.chain_id} - #{agent.token_id}
+        </Txt>
+      </Row>
+      <div title={verdict.explain} className="flex flex-wrap items-center gap-2">
+        <Dot tone={VERDICT_DOTTONE[verdict.tone]} size={8} />
+        <Txt size={13} lead={20} weight="semibold" tone="ink">{verdict.label}</Txt>
+        <Txt size={13} lead={20} tone="steel"> - {verdict.explain}</Txt>
       </div>
-      <p className="mt-3 flex items-center gap-2 text-[13px]" title={verdict.explain}>
-        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[verdict.tone]}`} />
-        <span className="font-medium text-press-black">{verdict.label}</span>
-        <span className="text-newsprint-gray">· {verdict.explain}</span>
-      </p>
       {agent.description && (
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-newsprint-gray">
+        <Txt size={13} lead={20} tone="slate" className="block max-w-[1180px]">
           {agent.description}
-        </p>
+        </Txt>
       )}
-      <Link
-        to={`/agents/${agent.chain_id}/${agent.token_id}`}
-        className="micro mt-6 inline-block text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green"
-      >
-        View your listing →
+      <Link to={`/agents/${agent.chain_id}/${agent.token_id}`} className="w-fit hover:text-souk-ink">
+        <Txt size={10} lead={14} weight="bold" upper tone="data">View your listing -&gt;</Txt>
       </Link>
-    </div>
+    </Stack>
   )
 }
