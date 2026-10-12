@@ -61,7 +61,7 @@ async function signedChange(by: Account, target: string, role: string | null) {
   return { address: target, role, nonce, signature };
 }
 
-async function send(token: string, body: { role: string | null }) {
+async function send(token: string, body: { address: string; role: string | null; nonce: string; signature: string }) {
   const res = await (body.role ? grantRoute : removeRoute)(request("members", body.role ? "POST" : "DELETE", body, token));
   return { status: res.status, body: await res.json() };
 }

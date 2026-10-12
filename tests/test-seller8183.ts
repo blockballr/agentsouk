@@ -15,7 +15,7 @@ import {
 
 const KEY = "0x1111111111111111111111111111111111111111111111111111111111111111";
 const WALLET = privateKeyToAccount(KEY).address;
-const OTHER = privateKeyToAccount("0x" + "22".repeat(32)).address;
+const OTHER = privateKeyToAccount(`0x${"22".repeat(32)}`).address;
 
 const cfg = sellerConfigFromEnv(97, 2504, "Souk Health Guard");
 const liveCfg = { ...cfg, providerWallet: WALLET, sellerKey: KEY };
@@ -42,7 +42,7 @@ const fundedJob = (provider = WALLET, status = 1) => ({
   status,
 });
 
-const kernelReader = (provider: string, status = 1) => async () => fundedJob(provider, status);
+const kernelReader = (provider: `0x${string}`, status = 1) => async () => fundedJob(provider, status);
 
 describe("seller8183: skill recognition", () => {
   it("sees the two protocol steps and nothing else", () => {

@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const store = vi.hoisted(() => {
   delete process.env.DATABASE_URL;
   process.env.TARGET_CHAIN = "97";
-  return { payments: [] as unknown[], agents: [] as { offShelf?: boolean }[] };
+  return { payments: [] as unknown[], agents: [] as Record<string, unknown>[] };
 });
 
 vi.mock("server-only", () => ({}));
