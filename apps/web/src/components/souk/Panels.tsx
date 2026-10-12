@@ -14,7 +14,15 @@ import { METAL_BAND } from './tokens';
 // underneath. The note is why the row exists, so it takes the stretch.
 export function SectionHead({ title, note }: { title: string; note?: string }) {
   return (
-    <Row justify="between" align="center" gap={9} pad={[0, 0, 9, 0]} className="border-b border-white/[0.16]">
+    <Row
+      justify="between"
+      align="center"
+      gap={9}
+      pad={[0, 0, 9, 0]}
+      // only the bottom edge takes the colour: a border-{colour} utility would paint
+      // all four sides and box the heading in
+      className="border-b border-b-white/[0.16]"
+    >
       <Txt size={18} lead={27} weight="bold" tone="ink">
         {title}
       </Txt>
