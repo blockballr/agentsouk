@@ -32,10 +32,12 @@ interface Prefill {
 }
 
 // the named agent comes from the wallet the registry record declares, so the
-// hire names the same address the listing already pays
-async function loadPrefill(tokenId: string): Promise<Prefill> {
+// hire names the same address the listing already pays. The chain is the one the
+// url asked for, because a listing's identity is only true on its own chain.
+async function loadPrefill(chainId: string, tokenId: string): Promise<Prefill> {
   try {
-    const res = await fetch(`${API_BASE}/agents/97/${tokenId}`)
+    const chain = Number(chainId) > 0 ? Number(chainId) : CHAIN.id
+    const res = await fetch(`${API_BASE}/agents/${chain}/${tokenId}`)
     const body = await res.json().catch(() => null)
     const agent = body?.data ?? body
     return { name: agent?.name ?? null, wallet: agent?.agent_wallet ?? agent?.owner_address ?? null }
@@ -72,6 +74,9 @@ function uintWord(data: `0x${string}`): bigint {
 export default function VaultHirePage() {
   const params = useParams()
   const tokenId = params.tokenId ?? ''
+  // the chain the url asked for, so a listing's identity is read from its own chain
+  const requestedChain = Number(params.chainId) > 0 ? Number(params.chainId) : CHAIN.id
+  const requestedChainLabel = requestedChain === 97 ? 'BSC testnet' : 'BNB Smart Chain'
 
   const [account, setAccount] = useState<string | null>(null)
   const [prefill, setPrefill] = useState<Prefill | null>(null)
@@ -95,8 +100,8 @@ export default function VaultHirePage() {
   }, [])
 
   useEffect(() => {
-    if (tokenId) loadPrefill(tokenId).then(setPrefill)
-  }, [tokenId])
+    if (tokenId) loadPrefill(params.chainId ?? String(CHAIN.id), tokenId).then(setPrefill)
+  }, [params.chainId, tokenId])
 
   useEffect(() => {
     if (!account || !vault) return
@@ -327,6 +332,17 @@ export default function VaultHirePage() {
 
       {lines.length > 0 ? (
         <ResultBox label="What happened" preview={lines.join('\n')} className="whitespace-pre-wrap" />
+      ) : null}
+
+      {requestedChain !== CHAIN.id && tokenId ? (
+        <div className={cx(card('accent', 'md'))}>
+          <p className={LABEL}>Wrong chain for the vault</p>
+          <p className="mt-2 text-[13px] leading-5 text-press-black">
+            This listing lives on {requestedChainLabel}, but the vault is live on {CHAIN.label}
+            {' '}at {vault ? `${short(vault)}` : 'not configured'}. The listing is named above, and funding it
+            here would put the deposit on the vault's own chain, not the listing's.
+          </p>
+        </div>
       ) : null}
 
       <div className={cx(card('accent', 'md'))}>
