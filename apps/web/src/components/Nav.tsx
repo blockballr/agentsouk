@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Wordmark } from './Wordmark'
 import { ThemeToggle } from './ThemeToggle'
 import { QuickSearch } from './QuickSearch'
 import { NotificationBell } from './NotificationBell'
@@ -13,61 +12,74 @@ const links = [
   { to: '/list', label: 'List agent' },
 ]
 
+// the design's top bar item: upper case, and the active one is the only ink in the
+// row with a rule under it. Steel is the resting tone so the current page reads at a
+// glance rather than every item competing.
+const itemClass = (isActive: boolean): string =>
+  `border-b-2 text-[13px] uppercase leading-[18px] transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data ${
+    isActive
+      ? 'border-souk-data font-semibold text-souk-ink'
+      : 'border-transparent text-souk-steel hover:text-souk-ink'
+  }`
+
+// the 38 square control the design puts in the bar's right cluster
+const controlClass =
+  'flex h-[38px] items-center justify-center gap-2 rounded-[8px] border border-white/[0.16] px-2.5 text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data'
+
 export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false)
   return (
-    <header className="relative z-10">
-      <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-8">
-        <Wordmark />
-        <nav aria-label="Primary" className="flex items-center gap-8">
-          <ul className="hidden items-center gap-8 lg:flex">
-            {links.map((l) => (
-              <li key={l.to}>
-                <NavLink
-                  to={l.to}
-                  end={l.to === '/'}
-                  className={({ isActive }) =>
-                    `micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black ${
-                      isActive ? 'border-b border-highlighter-green' : 'border-b border-transparent'
-                    }`
-                  }
-                >
-                  {l.label}
-                </NavLink>
-              </li>
-            ))}
-            {/* the plain text links belong in this one row: a group that also holds
-                the boxed controls is taller, so its text centres against a different
-                box height and the row reads misaligned */}
-            <li>
-              <AboutLink />
-            </li>
-          </ul>
-          <div className="hidden lg:flex lg:items-center lg:gap-8">
-            <QuickSearch />
-            <NotificationBell />
-            <CartLink />
-            <ProfileLink />
-            <ThemeToggle />
-          </div>
-          <div className="lg:hidden">
-            <QuickSearch large />
-          </div>
-          <button
-            type="button"
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-11 w-11 items-center justify-center text-press-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black lg:hidden"
+    <header className="relative z-10 border-b border-white/[0.16] bg-souk-canvas">
+      <div className="mx-auto flex h-[62px] max-w-[1920px] items-center justify-between px-8">
+        <div className="flex items-center gap-[44px]">
+          <Link
+            to="/"
+            className="font-mono text-[13px] font-bold uppercase leading-[16px] text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
           >
-            <MenuIcon />
-          </button>
-        </nav>
+            Agent Souk
+          </Link>
+          <nav aria-label="Primary" className="flex items-center gap-7">
+            <ul className="hidden items-center gap-7 lg:flex">
+              {links.map((l) => (
+                <li key={l.to}>
+                  <NavLink to={l.to} end={l.to === '/'} className={({ isActive }) => itemClass(isActive)}>
+                    {l.label}
+                  </NavLink>
+                </li>
+              ))}
+              {/* the plain text links belong in this one row: a group that also holds
+                  the boxed controls is taller, so its text centres against a different
+                  box height and the row reads misaligned */}
+              <li>
+                <AboutLink />
+              </li>
+            </ul>
+            <div className="hidden lg:flex lg:items-center lg:gap-2.5">
+              <QuickSearch />
+              <NotificationBell />
+              <CartLink />
+              <ProfileLink />
+              <ThemeToggle />
+            </div>
+            <div className="lg:hidden">
+              <QuickSearch large />
+            </div>
+            <button
+              type="button"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex h-11 w-11 items-center justify-center text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data lg:hidden"
+            >
+              <MenuIcon />
+            </button>
+          </nav>
+        </div>
       </div>
 
       {menuOpen && (
-        <div className="border-b hairline border-slate-verdant/40 bg-background lg:hidden">
-          <nav aria-label="Mobile" className="mx-auto flex max-w-[1400px] flex-col gap-1 px-6 py-4">
+        <div className="border-b border-white/[0.16] bg-souk-canvas lg:hidden">
+          <nav aria-label="Mobile" className="mx-auto flex max-w-[1920px] flex-col gap-1 px-8 py-4">
             {links.map((l) => (
               <NavLink
                 key={l.to}
@@ -75,9 +87,9 @@ export function Nav() {
                 end={l.to === '/'}
                 onClick={() => setMenuOpen(false)}
                 className={({ isActive }) =>
-                  `py-3 text-lg font-serif ${
-                    isActive ? 'text-press-black' : 'text-newsprint-gray'
-                  } focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black`
+                  `py-3 text-[15px] uppercase ${
+                    isActive ? 'font-semibold text-souk-ink' : 'text-souk-steel'
+                  } focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data`
                 }
               >
                 {l.label}
@@ -101,28 +113,16 @@ function CartLink() {
   const [count, setCount] = useState(() => cartCount())
   useEffect(() => subscribe(() => setCount(cartCount())), [])
   return (
-    <Link
-      to="/cart"
-      aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
-      className="micro flex h-9 items-center gap-2 rounded-[4px] border hairline border-slate-verdant/40 px-2.5 text-newsprint-gray transition-colors hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
-    >
+    <Link to="/cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`} className={controlClass}>
       <CartGlyph />
-      {count > 0 ? <span className="tabular-nums text-press-black">{count}</span> : null}
+      {count > 0 ? <span className="font-mono tabular-nums text-souk-ink">{count}</span> : null}
     </Link>
   )
 }
 
 function AboutLink({ onClick }: { onClick?: () => void }) {
   return (
-    <NavLink
-      to="/about"
-      onClick={onClick}
-      className={({ isActive }) =>
-        `micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-press-black ${
-          isActive ? 'border-b border-highlighter-green' : 'border-b border-transparent'
-        }`
-      }
-    >
+    <NavLink to="/about" onClick={onClick} className={({ isActive }) => itemClass(isActive)}>
       About
     </NavLink>
   )
@@ -135,15 +135,13 @@ function ProfileLink({ onClick }: { onClick?: () => void }) {
       onClick={onClick}
       aria-label="Profile, your listings"
       className={({ isActive }) =>
-        `micro flex h-9 items-center gap-2 rounded-[4px] border hairline px-2.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
-          isActive
-            ? 'border-highlighter-green text-press-black'
-            : 'border-slate-verdant/40 text-newsprint-gray hover:text-press-black'
+        `${controlClass} ${
+          isActive ? 'border-souk-data/60 text-souk-ink' : ''
         }`
       }
     >
       <ProfileGlyph />
-      Profile
+      <span className="text-[13px] uppercase">Profile</span>
     </NavLink>
   )
 }
