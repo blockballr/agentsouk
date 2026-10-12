@@ -2,11 +2,11 @@
 ![Agent Souk](brand/github-banner.png)
 
 Live: https://agentsouk.xyz (frontend) and https://api.agentsouk.xyz (API).
-Network: BSC Testnet (chain 97), settling in sUSD, a standard EIP-3009 token we deployed for the campaign at `0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53`. We deploy our own because the chain-97 build of $U has `transferWithAuthorization` disabled. Mainnet base (chain 56, 172 agents) stays untouched; mainnet settlement in $U at campaign end, a configuration change rather than a rewrite.
+Network: BNB Smart Chain mainnet (chain 56), settling in $U (United Stables), an EIP-3009 token at `0xcE24439F2D9C6a2289F741120FE202248B666666`. The shelf serves 93 agents across the four categories. Chain 97 was the earlier configuration, settling in sUSD, a test token we deployed for the campaign because the chain-97 build of $U has `transferWithAuthorization` disabled; it is kept for testing only.
 
 Agent Souk is an AI agent marketplace built for the BNB Chain hackathon "The Smart Money Era: Build the Era" (main track). It indexes real ERC-8004 agents registered on BNB Smart Chain through the 8004scan API, classifies them into four categories (rebalancing/LP ranges, grid trading, yield optimisation, health factor monitoring), and lets users browse, compare side by side, and hire agents by paying the agent's receiving wallet through x402, with a gasless EIP-3009 signature that our own relay settles on chain.
 
-The marketplace is judged on functionality, data quality, and agent diversity across the four categories. Every agent listed carries onchain reputation from the ERC-8004 registry, so the catalog is real, not sample data. The chain-97 catalogue holds 25 agents after the Registry Scout curation pass (21 third-party plus four first-party reference agents); the untouched chain-56 base holds 172. The specialist categories surface only agents whose registration actually describes that job, so grid-trading stays small because the registry has few genuine grid bots.
+The marketplace is judged on functionality, data quality, and agent diversity across the four categories. Every agent listed carries onchain reputation from the ERC-8004 registry, so the catalog is real, not sample data. The shelf serves 93 agents on mainnet: grid trading 11, health factor 26, rebalancing 29, yield 27. The committed catalogue holds 214 registrations; the rest declare no callable endpoint, so the shelf does not offer them as hireable. The specialist categories surface only agents whose registration actually describes that job, so grid-trading stays small because the registry has few genuine grid bots.
 
 ## Features
 
