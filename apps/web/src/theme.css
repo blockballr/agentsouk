@@ -20,6 +20,27 @@
   --color-echo-green: #c4e4c9;
   --color-switch-knob: #fafffa;
 
+  /* the figma pass, namespaced so a ported screen can wear the new palette while
+     the pages not yet moved keep the newsprint one underneath */
+  --color-souk-canvas: #0b0e14;
+  --color-souk-surface1: #131722;
+  --color-souk-surface2: #181d2a;
+  --color-souk-indigo: #111a4a;
+  --color-souk-ink: #e8eaf2;
+  --color-souk-slate: #b8bcc8;
+  --color-souk-steel: #8d93a3;
+  --color-souk-muted: #6b7180;
+  --color-souk-data: #44b48b;
+  --color-souk-labels: #9498ae;
+  --color-souk-sky: #88deeb;
+  --color-souk-peach: #f2936b;
+  --color-souk-deepsea: #023247;
+  --color-souk-white: #ffffff;
+  --color-souk-metal0: #1d2a5e;
+  --color-souk-metal1: #111a4a;
+  --color-souk-metal2: #0a1030;
+
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-serif: "Fraunces Variable", ui-serif, Georgia, "Times New Roman",

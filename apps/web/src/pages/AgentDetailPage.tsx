@@ -47,6 +47,7 @@ import {
   type HireRequirementsData,
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
+import { Row as SoukRow, Txt, Dot } from '../components/souk'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -523,9 +524,31 @@ export function AgentDetailPage() {
               }}
             />
             <div className="min-w-0 flex-1">
-              <h1 className="font-serif text-[clamp(32px,5vw,56px)] font-medium leading-[0.95] tracking-[-0.03em]">
-                {detail.name}
-              </h1>
+              <Txt size={12} lead={18} mono upper tone="steel">
+                Shelf / BNB Smart Chain {chainId} / Token #{detail.token_id}
+              </Txt>
+              <SoukRow align="center" gap={12}>
+                <Txt size={30} lead={38} weight="bold" tone="ink">
+                  {detail.name}
+                </Txt>
+                {/* only a reading the chain earned is coloured: an unchecked listing
+                    reads as its own outline rather than borrowing a verdict */}
+                <Dot
+                  tone={
+                    detail.verification?.status === 'delivered'
+                      ? 'good'
+                      : detail.verification?.status === 'gated'
+                        ? 'held'
+                        : detail.verification?.status
+                          ? 'bad'
+                          : 'quiet'
+                  }
+                  size={11}
+                />
+                <Txt size={14} lead={20} tone="slate">
+                  {statusFor(detail).value}
+                </Txt>
+              </SoukRow>
               <p className="mt-2 text-[13px] text-newsprint-gray">
                 {firstParty ? (
                   <span className="text-press-black" title={OPERATED_BY_TITLE}>
