@@ -110,6 +110,41 @@ export interface PerformanceProbe {
   scannedAt?: string
 }
 
+interface OnchainLiveness {
+  tokenId: string
+  verdict: string
+  exists: boolean
+  method: string | null
+  checkedAt: string | null
+  responseMs: number | null
+  evidenceHash: string | null
+  reporter: string | null
+}
+
+const LIVENESS_LABEL: Record<string, string> = {
+  delivered: 'Delivered',
+  reachable: 'Reachable',
+  gated: 'Restricted',
+  dead: 'Dead',
+  unreachable: 'Unreachable',
+  unknown: 'Not checked yet',
+}
+
+// the oracle's own record of the last probe for this listing, read back on chain.
+// a listing the sweep has never posted for comes back with no reading, and a
+// failed fetch hides the section rather than inventing a verdict
+async function fetchOnchainLiveness(chainId: string, tokenId: string): Promise<OnchainLiveness | null> {
+  try {
+    const base = import.meta.env.VITE_API_URL ?? '/api'
+    const res = await fetch(`${base}/agents/${chainId}/${tokenId}/liveness`)
+    if (!res.ok) return null
+    const body: { reading?: OnchainLiveness | null } = await res.json()
+    return body.reading ?? null
+  } catch {
+    return null
+  }
+}
+
 // self-reported performance comes from the committed scan output; a failed fetch hides the section
 async function fetchPerformanceProbe(
   tokenId: string,
@@ -202,6 +237,7 @@ export function AgentDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [perfProbe, setPerfProbe] = useState<PerformanceProbe | null>(null)
+  const [liveness, setLiveness] = useState<OnchainLiveness | null>(null)
   // the connected viewer, so owner-only affordances can be hidden from everyone else
   const [viewer, setViewer] = useState<string | null>(null)
   // whether the wallet read and the hire lookup have answered, so nothing is claimed before they do
@@ -299,6 +335,16 @@ export function AgentDetailPage() {
       cancelled = true
     }
   }, [tokenId])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchOnchainLiveness(chainId, tokenId).then((l) => {
+      if (!cancelled) setLiveness(l)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [chainId, tokenId])
 
   useEffect(() => {
     let cancelled = false
@@ -774,6 +820,21 @@ export function AgentDetailPage() {
                       </dd>
                     </div>
                   )}
+                  {detail.created_block_number != null && (
+                    <div>
+                      <dt className="micro text-newsprint-gray">Creation block</dt>
+                      <dd className="mt-1 break-all font-mono text-xs">
+                        <a
+                          href={`${explorer}/block/${detail.created_block_number}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-press-black hover:underline"
+                        >
+                          {detail.created_block_number.toLocaleString('en-US')}
+                        </a>
+                      </dd>
+                    </div>
+                  )}
                   <div>
                     <dt className="micro text-newsprint-gray">Freshness</dt>
                     <dd className="mt-1 text-xs text-press-black">
@@ -782,6 +843,53 @@ export function AgentDetailPage() {
                   </div>
                 </dl>
               </section>
+
+              {liveness ? (
+                <section className="p-6 sm:px-8">
+                  <h3 className="micro text-newsprint-gray">Marketplace liveness record</h3>
+                  <p className="mt-2 text-[13px] leading-5 text-press-black">
+                    {liveness.exists
+                      ? `Posted on chain by the marketplace's sweep. Verdict ${LIVENESS_LABEL[liveness.verdict] ?? liveness.verdict}.`
+                      : 'No on-chain record for this listing yet. The sweep has not posted a probe for it.'}
+                  </p>
+                  {liveness.exists ? (
+                    <dl className="mt-4 space-y-3">
+                      {liveness.checkedAt ? (
+                        <div>
+                          <dt className="micro text-newsprint-gray">Checked at</dt>
+                          <dd className="mt-1 text-xs text-press-black">
+                            {new Date(liveness.checkedAt).toUTCString().replace('GMT', 'UTC')}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {liveness.method ? (
+                        <div>
+                          <dt className="micro text-newsprint-gray">Method</dt>
+                          <dd className="mt-1 text-xs text-press-black">{liveness.method}</dd>
+                        </div>
+                      ) : null}
+                      {liveness.responseMs != null ? (
+                        <div>
+                          <dt className="micro text-newsprint-gray">Response</dt>
+                          <dd className="mt-1 text-xs text-press-black">{liveness.responseMs} ms</dd>
+                        </div>
+                      ) : null}
+                      {liveness.evidenceHash ? (
+                        <div>
+                          <dt className="micro text-newsprint-gray">Evidence hash</dt>
+                          <dd className="mt-1 break-all font-mono text-xs text-press-black">{liveness.evidenceHash}</dd>
+                        </div>
+                      ) : null}
+                      {liveness.reporter ? (
+                        <div>
+                          <dt className="micro text-newsprint-gray">Reported by</dt>
+                          <dd className="mt-1 break-all font-mono text-xs text-press-black">{liveness.reporter}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  ) : null}
+                </section>
+              ) : null}
 
               <section className="p-6 sm:px-8">
                 <h3 className="micro text-newsprint-gray">Reputation on the registry index</h3>
