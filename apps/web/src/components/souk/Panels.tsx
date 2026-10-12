@@ -41,15 +41,17 @@ export function NoteBox({
   title,
   copy,
   rows,
+  className,
   children,
 }: {
   title: string;
   copy?: string;
   rows?: NoteRow[];
+  className?: string;
   children?: ReactNode;
 }) {
   return (
-    <Stack pad={[14, 16, 14, 16]} gap={10} radius={14} hair>
+    <Stack pad={[14, 16, 14, 16]} gap={10} radius={14} hair className={className}>
       <Txt size={13} lead={20} weight="bold" tone="ink">
         {title}
       </Txt>

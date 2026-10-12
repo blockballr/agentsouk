@@ -47,7 +47,7 @@ import {
   type HireRequirementsData,
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
-import { Row as SoukRow, Stack, Txt, Dot, Pill } from '../components/souk'
+import { Row as SoukRow, Stack, Txt, Dot, Pill, NoteBox, SectionHead } from '../components/souk'
 import type { ReactNode } from 'react'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
@@ -671,26 +671,26 @@ export function AgentDetailPage() {
                 buyer sees which one they are on before they spend */}
             <Pill variant={jobSeller ? 'keep' : 'off'}>{jobSeller ? 'erc-8183' : 'x402'}</Pill>
           </SoukRow>
+          {/* the design's quote spec: a margin note inside the hire card, so the
+              terms sit under the rail rather than as a separate list of their own */}
           {!jobSeller && (
-            <dl className="mt-4 space-y-2 text-[13px]">
-              <div className="flex justify-between gap-4">
-                <dt className="text-newsprint-gray">Pricing</dt>
-                <dd className="text-press-black">Per request</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-newsprint-gray">Session</dt>
-                {/* reflects what the facilitator actually sets on the session,
-                    rather than a second opinion in the markup: this said $10 while
-                    production issued $5, so a live session contradicted the page */}
-                <dd className="text-press-black">
-                  {SESSION_HOURS}h, ${SESSION_SPEND_CAP_USD} cap
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-newsprint-gray">Network</dt>
-                <dd className="text-press-black">{chainLabel(Number(chainId))}</dd>
-              </div>
-            </dl>
+            <NoteBox
+              className="mt-4"
+              title="Signed quote"
+              copy="No quote yet. Ask for the price and the seller signs one before a single token moves."
+              rows={[
+                { label: 'Pricing', value: 'Per request' },
+                {
+                  label: 'Session',
+                  // reflects what the facilitator actually sets on the session,
+                  // rather than a second opinion in the markup: this said $10 while
+                  // production issued $5, so a live session contradicted the page
+                  value: `${SESSION_HOURS}h, $${SESSION_SPEND_CAP_USD} cap`,
+                },
+                { label: 'Network', value: chainLabel(Number(chainId)) },
+                { label: 'Funds', value: 'one transaction on BSC mainnet 56' },
+              ]}
+            />
           )}
           {/* A wallet that already holds a live session should land on the run
               controls rather than on a second signature: the session is already
@@ -711,18 +711,18 @@ export function AgentDetailPage() {
           ) : (
             <>
               {takesJobsToo && (
-                <div className="mt-6 space-y-3">
-                  <p className="text-xs leading-relaxed text-newsprint-gray">
+                <Stack gap={12} className="mt-4">
+                  <Txt size={12} lead={18} tone="slate">
                     This agent also sells through ERC-8183 jobs. A direct hire below pays per call
                     over x402; a job funds escrow first and work starts once the job is funded.
-                  </p>
+                  </Txt>
                   <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} name={detail.name} />
-                </div>
+                </Stack>
               )}
               {hireWarning && (
-                <p role="note" className="mt-6 rounded-[8px] border hairline border-slate-verdant/45 p-3 text-xs leading-relaxed text-newsprint-gray">
+                <Txt size={12} lead={18} tone="muted" className="mt-4 block">
                   {hireWarning}
-                </p>
+                </Txt>
               )}
               <HirePanel
                 chainId={chainId}
@@ -1070,7 +1070,7 @@ function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['
   const alsoJobs = work.length > 0 && work.length < skills.length
   return (
     <section className={card('plain', 'md')}>
-      <h2 className="font-serif text-[26px] font-medium leading-tight text-press-black">What it does and how to use it</h2>
+      <SectionHead title="What it does and how to use it" />
       {skills.length === 0 ? (
         <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
           This agent publishes no skill list, so its description above is all it says about itself.
@@ -1106,7 +1106,7 @@ function SkillBlock({ skill: s }: { skill: NonNullable<AgentDetail['skills']>[nu
   const example = s.inputSchema?.examples?.[0]
   return (
     <div className="py-6">
-      <h3 className="text-[17px] font-medium text-press-black">{s.name ?? s.id ?? 'Skill'}</h3>
+      <Txt size={15} lead={22} weight="bold" tone="ink">{s.name ?? s.id ?? 'Skill'}</Txt>
       {s.description ? <p className="mt-1.5 text-sm leading-relaxed text-newsprint-gray">{s.description}</p> : null}
       {(inputs.length > 0 || outputs.length > 0) && (
       <div className="mt-4 grid gap-5 md:grid-cols-2">
