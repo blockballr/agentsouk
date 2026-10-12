@@ -34,8 +34,8 @@ export function QuickSearch({ large }: { large?: boolean }) {
         onClick={() => setOpen(true)}
         aria-label="Search agents"
         title="Search agents  /"
-        className={`flex items-center justify-center rounded-[4px] border hairline border-slate-verdant/40 text-newsprint-gray transition-colors hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
-          large ? 'h-11 w-11' : 'h-9 w-9'
+        className={`flex items-center justify-center rounded-[8px] border border-white/[0.16] text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+          large ? 'h-11 w-11' : 'h-[38px] w-[38px]'
         }`}
       >
         <SearchGlyph />
