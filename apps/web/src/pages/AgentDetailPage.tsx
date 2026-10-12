@@ -1046,34 +1046,34 @@ function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['
   const work = skills.filter((s) => !isJobStepSkill(s, skills))
   const alsoJobs = work.length > 0 && work.length < skills.length
   return (
-    <section className={card('plain', 'md')}>
-      <SectionHead title="What it does and how to use it" />
+    <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5">
+      <SectionHead title="What it does" note={jobSeller ? 'ERC-8183' : 'PER CALL'} />
       {skills.length === 0 ? (
-        <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
+        <Txt size={13} lead={20} tone="slate">
           This agent publishes no skill list, so its description above is all it says about itself.
           Its endpoints are under On-chain details.
-        </p>
+        </Txt>
       ) : jobSeller ? (
-        <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
+        <Txt size={13} lead={20} tone="slate">
           It works through ERC-8183 jobs: it quotes a price, your settled hire funds the job on the
           record, and it delivers against that job. Its description above says what the work is.
-        </p>
+        </Txt>
       ) : null}
       {!jobSeller && work.length > 0 && (
-        <div className="mt-2 divide-y hairline divide-slate-verdant/25">
+        <div className="divide-y divide-white/[0.08]">
           {work.map((s) => (
             <SkillBlock key={s.id ?? s.name ?? 'skill'} skill={s} />
           ))}
         </div>
       )}
       {!jobSeller && alsoJobs && (
-        <p className="border-t hairline border-slate-verdant/25 pt-4 text-[13px] leading-relaxed text-newsprint-gray">
+        <Txt size={13} lead={20} tone="slate">
           It also sells the same work through ERC-8183 jobs: a settled hire opens
           and funds the job on the record, and the delivery is attested before
           the job closes.
-        </p>
+        </Txt>
       )}
-    </section>
+    </Stack>
   )
 }
 
