@@ -47,8 +47,7 @@ import {
   type HireRequirementsData,
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
-import { Row as SoukRow, Stack, Txt, Dot, Pill, NoteBox, SectionHead } from '../components/souk'
-import type { ReactNode } from 'react'
+import { Row as SoukRow, Stack, Txt, Dot, Pill, NoteBox, SectionHead, DataTable } from '../components/souk'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -999,65 +998,43 @@ function ProofStrip({
   score: string | null
   reviews: number
 }) {
-  // one shape for all three figures, so the strip reads as a single block rather
-  // than three lists that happen to sit together. The label is the design's mono
-  // upper, the figure is ink at 18, and the note is the sentence behind it.
-  const cell = (label: string, figure: ReactNode, note: ReactNode, divider?: boolean) => (
-    <Stack
-      pad={[20, 22, 20, 22]}
-      gap={4}
-      className={`min-w-0 flex-1 ${
-        divider ? 'border-t border-white/[0.16] lg:border-t-0 lg:border-l' : ''
-      }`}
-    >
-      <Txt size={10} lead={14} weight="extrabold" upper mono tone="steel">
-        {label}
-      </Txt>
-      {figure}
-      <Txt size={12} lead={18} tone="slate">
-        {note}
-      </Txt>
-    </Stack>
-  )
-
+  // the design's check panel: one row keyed by chain, because the product holds a single
+  // reading for the chain being viewed. A second chain would be a reading nobody made, and
+  // Evidence and Expires are dropped rather than filled: there is no hash and no window on
+  // this record, only the verdict, the method, the score and when it was read.
   return (
-    <Stack surface className="mt-5 flex-col lg:flex-row">
-      {cell(
-        'Last check',
-        <SoukRow align="center" gap={8}>
-          <Dot tone={verdict.tone === 'none' ? 'quiet' : verdict.tone} size={10} />
-          <Txt size={18} lead={27} weight="bold" tone="ink">
-            {verdict.label}
-          </Txt>
-        </SoukRow>,
-        <>
+    <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5">
+      <SectionHead title="The check panel" note="KEYED BY CHAIN" />
+      <DataTable
+        cols={[150, 150, 150, 190]}
+        header={['Chain', 'Grade', 'Method', 'Checked']}
+        rows={[
+          {
+            height: 34,
+            cells: [
+              { text: network, mono: true, size: 12, tone: 'steel' },
+              { text: verdict.label, size: 12, weight: 'bold', tone: 'ink' },
+              { text: parallel ? 'Parallel calls' : 'Single call', size: 12, tone: 'slate' },
+              { text: checkedAt ? timeAgo(checkedAt) : 'not checked', mono: true, size: 12, tone: 'labels' },
+            ],
+          },
+        ]}
+      />
+      <SoukRow align="center" gap={8}>
+        <Dot tone={verdict.tone === 'none' ? 'quiet' : verdict.tone} size={8} />
+        <Txt size={12} lead={18} tone="slate">
           {verdict.explain}
-          {checkedAt ? ` Checked ${timeAgo(checkedAt)}.` : ''}
-          {parallel ? ' Handles parallel calls.' : ''}
-        </>,
-      )}
-      {cell(
-        'How you pay',
-        <Txt size={18} lead={27} weight="bold" tone="ink">
-          {payment.value}
-        </Txt>,
-        <>
-          {payment.note}, on {network}.
-        </>,
-        true,
-      )}
-      {cell(
-        'Registry reputation',
-        <Txt size={18} lead={27} weight="bold" tone="ink">
+        </Txt>
+      </SoukRow>
+      <SoukRow justify="between" align="center">
+        <Txt size={12} lead={18} tone="muted">
+          {payment.value} · {payment.note}
+        </Txt>
+        <Txt size={12} lead={18} mono tone={score ? 'data' : 'muted'}>
           {score ? `Score ${score}` : 'No score yet'}
-        </Txt>,
-        <>
-          {reviews > 0
-            ? `${formatNumber(reviews)} on-chain review${reviews === 1 ? '' : 's'}`
-            : 'No on-chain reviews yet'}
-        </>,
-        true,
-      )}
+          {reviews > 0 ? ` · ${formatNumber(reviews)} review${reviews === 1 ? '' : 's'}` : ''}
+        </Txt>
+      </SoukRow>
     </Stack>
   )
 }
