@@ -24,7 +24,7 @@ import { escrowLifecycle } from '../lib/hire-state'
 import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
 import { Tag } from '../components/Tag'
-import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
+import { OPERATED_BY_LABEL, isOperatedByAgentSouk } from '../lib/first-party'
 import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
 import { explorerTxBase } from '../lib/contracts'
 import { builtWithFrom, decodeMetaValue } from '../lib/onchain-meta'
@@ -47,7 +47,7 @@ import {
   type HireRequirementsData,
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
-import { Row as SoukRow, Txt, Dot } from '../components/souk'
+import { Row as SoukRow, Txt, Dot, Pill } from '../components/souk'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -482,7 +482,7 @@ export function AgentDetailPage() {
     detail.agent_wallet.toLowerCase() === executor.address.toLowerCase()
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 pb-28 pt-10 lg:pb-10">
+    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-10">
       {!hireInView && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t hairline border-slate-verdant/40 bg-press-black px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
           {quest && questStage && (
@@ -549,30 +549,25 @@ export function AgentDetailPage() {
                   {statusFor(detail).value}
                 </Txt>
               </SoukRow>
-              <p className="mt-2 text-[13px] text-newsprint-gray">
-                {firstParty ? (
-                  <span className="text-press-black" title={OPERATED_BY_TITLE}>
-                    {OPERATED_BY_LABEL}
-                  </span>
-                ) : (
-                  <>
-                    by{' '}
-                    <a href={ownerScan} target="_blank" rel="noreferrer" className="font-mono text-press-black hover:underline">
-                      {shortAddress(detail.owner_address)}
-                    </a>
-                  </>
-                )}
-                {' · '}
-                <a href={bscScan} target="_blank" rel="noreferrer" className="text-press-black hover:underline">
-                  agent #{detail.token_id}
+              <Txt size={12} lead={18} mono upper tone="steel">
+                <a href={ownerScan} target="_blank" rel="noreferrer" className="hover:text-souk-ink">
+                  {firstParty ? OPERATED_BY_LABEL : `Seller ${shortAddress(detail.owner_address)}`}
                 </a>
-                {' · listed '}
-                {formatDate(detail.created_at)}
-              </p>
+                {' · '}
+                <a href={bscScan} target="_blank" rel="noreferrer" className="hover:text-souk-ink">
+                  Agent #{detail.token_id}
+                </a>
+                {' · '}
+                Listed {formatDate(detail.created_at)}
+              </Txt>
               <p className="mt-4 max-w-3xl text-[17px] leading-snug text-newsprint-gray">
                 {detail.description || 'No description on-chain.'}
               </p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
+              <SoukRow align="center" gap={8} className="mt-4 flex-wrap">
+                <Pill>{`bsc mainnet ${chainId}`}</Pill>
+                {detail.a2a_endpoint ? <Pill>A2A</Pill> : null}
+                {detail.mcp_server ? <Pill>MCP</Pill> : null}
+                {jobSeller ? <Pill variant="keep">ERC-8183</Pill> : <Pill>x402</Pill>}
                 {detail.is_verified ? <Tag title="Verified on the ERC-8004 registry index">Registry verified</Tag> : null}
                 {detail.is_endpoint_verified ? <Tag title="The endpoint's domain is verified">Domain verified</Tag> : null}
                 {detail.pcs ? <Tag title="Its own registration says it works with PancakeSwap; not yet checked on-chain">PancakeSwap</Tag> : null}
@@ -590,7 +585,7 @@ export function AgentDetailPage() {
                     {positionsLabel(detail.pancakeswapPositions.held, detail.pancakeswapPositions.staked)}
                   </Tag>
                 ) : null}
-              </div>
+              </SoukRow>
             </div>
           </header>
 
