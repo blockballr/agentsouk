@@ -5,7 +5,8 @@ import { defaultAvatarFor } from '../lib/default-avatar'
 import { CATEGORIES, formatNumber, formatScore, shortAddress, timeAgo } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
 import { Tag } from '../components/Tag'
-import { getAgents } from '../lib/api'
+import { getAgents, getNotifications, markNotificationsRead, type NotificationRow } from '../lib/api'
+import { getActiveAccount } from '../lib/wallet'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
@@ -42,6 +43,101 @@ const LEGEND: { tone: DotTone; label: string }[] = [
   { tone: 'bad', label: 'Unresponsive' },
   { tone: 'quiet', label: 'Not checked yet' },
 ]
+
+// the design's alerts band: the panel between the bar and the strap is what holds the
+// shelf's start point on the drawing, so the shelf carries the same band with the real
+// outbox the bell already reads rather than a spacer or invented rows.
+function ShelfAlerts() {
+  const [wallet, setWallet] = useState<string | null>(null)
+  const [rows, setRows] = useState<NotificationRow[]>([])
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    void getActiveAccount().then((a) => {
+      if (!cancelled) setWallet(a)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!wallet) {
+      setRows([])
+      setUnread(0)
+      return
+    }
+    let cancelled = false
+    getNotifications(wallet)
+      .then((r) => {
+        if (!cancelled) {
+          setRows(r.rows)
+          setUnread(r.unread)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [wallet])
+
+  async function onMarkRead() {
+    if (!wallet) return
+    await markNotificationsRead(wallet)
+    const fresh = await getNotifications(wallet)
+    setRows(fresh.rows)
+    setUnread(fresh.unread)
+  }
+
+  // the drawing holds four rows in the panel; the shelf keeps that rhythm
+  const shown = rows.slice(0, 4)
+  return (
+    <Row justify="end" pad={[12, 0, 0, 0]}>
+      <Stack bg="indigo" radius={20} hair pad={[14, 16, 14, 16]} gap={10} className="w-[360px]">
+        <Row justify="between" align="center">
+          <Txt size={13} lead={20} weight="bold" tone="ink">
+            Alerts
+          </Txt>
+          <button
+            type="button"
+            onClick={onMarkRead}
+            disabled={!(unread > 0)}
+            className="text-[10px] font-bold uppercase tracking-[0.01em] text-souk-data transition-colors hover:text-souk-ink disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+          >
+            Mark all read
+          </button>
+        </Row>
+        <Rule />
+        {shown.length > 0 ? (
+          shown.map((r) => (
+            <Row key={r.id} align="center" gap={9}>
+              <Dot tone={r.read ? 'quiet' : 'good'} size={8} />
+              <Link to={r.href ?? '/ongoing'} className="min-w-0 flex-1">
+                <Stack gap={2}>
+                  <Txt size={12} lead={18} tone={r.read ? 'steel' : 'slate'} className="truncate">
+                    {r.title}
+                  </Txt>
+                  <Txt size={11} lead={15} mono tone="labels">
+                    {timeAgo(r.createdAt)}
+                  </Txt>
+                </Stack>
+              </Link>
+            </Row>
+          ))
+        ) : (
+          <Txt size={13} lead={20} tone="slate">
+            Nothing yet. Releases, funded jobs and seller replies land here.
+          </Txt>
+        )}
+        <Rule />
+        <Txt size={12} lead={18} tone="labels">
+          Verdicts, hires and runner alerts land here, and one reads them all as done.
+        </Txt>
+      </Stack>
+    </Row>
+  )
+}
 
 export function MarketplacePage() {
   const [sp, setSp] = useSearchParams()
@@ -185,6 +281,9 @@ export function MarketplacePage() {
         }}
       />
       <div className="relative mx-auto max-w-[1920px] px-8 pb-16">
+        {/* the design's alerts band: the panel between the bar and the strap is what holds
+            the shelf's start point, so the band is real data rather than a spacer */}
+        <ShelfAlerts />
         <Stack gap={10} pad={[44, 0, 0, 0]}>
           <Row justify="between" align="center" gap={16} className="flex-wrap">
             <Txt size={11} lead={16} mono upper tone="data">
