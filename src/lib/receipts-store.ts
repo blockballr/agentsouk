@@ -45,6 +45,20 @@ function init(): Promise<boolean> {
             created_at timestamptz default now()
           )
         `;
+        // a broadcast that never produced a receipt: the tx hash is written the
+        // moment it is known, before the wait for the receipt, because a wait that
+        // times out leaves funds moved with nothing recorded and no hash to look up
+        await sql!`
+          create table if not exists settlement_pending (
+            payment_id text primary key,
+            tx_hash text not null,
+            chain_id integer not null,
+            payload jsonb not null,
+            outcome text,
+            created_at timestamptz not null default now(),
+            resolved_at timestamptz
+          )
+        `;
         return true;
       } catch {
         initPromise = null;
@@ -483,4 +497,72 @@ export async function cancelAuthorizationDurable(
     return { attempted: false, canceled: false, error: "unknown paymentId" };
   }
   return cancelAuthorization(stored, broadcast);
+}
+
+// A broadcast whose receipt never landed. Written at broadcast time rather than after
+// the wait: a wait that times out leaves funds moved with nothing recorded, and without
+// the hash kept here there is nothing for a sweep to look the transfer up by.
+export interface PendingSettlement {
+  paymentId: string;
+  txHash: string;
+  chainId: number;
+  // the receipt as it would have been recorded, held whole so a late reconciliation
+  // writes the same record the settle step writes on the happy path
+  payload: StoredPayment;
+}
+
+// best-effort: losing a reconciliation costs the sweep another pass, never the hire
+export async function savePendingSettlement(p: PendingSettlement): Promise<boolean> {
+  if (!(await init()) || !sql) return false;
+  try {
+    await sql`
+      insert into settlement_pending (payment_id, tx_hash, chain_id, payload)
+      values (${p.paymentId}, ${p.txHash}, ${p.chainId}, ${sql.json(p.payload as never)})
+      on conflict (payment_id) do nothing
+    `;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// the outcome is the chain's own verdict, so a row is closed exactly once
+export type PendingOutcome = "recorded" | "reverted";
+
+export async function resolvePendingSettlement(
+  paymentId: string,
+  outcome: PendingOutcome,
+): Promise<void> {
+  if (!(await init()) || !sql) return;
+  try {
+    await sql`
+      update settlement_pending
+      set outcome = ${outcome}, resolved_at = now()
+      where payment_id = ${paymentId}
+    `;
+  } catch {
+    // the receipt is the record that matters, and a re-sweep closes the row then
+  }
+}
+
+// every broadcast still waiting on a verdict, oldest first
+export async function listUnresolvedSettlements(limit = 50): Promise<PendingSettlement[]> {
+  if (!(await init()) || !sql) return [];
+  try {
+    const rows = await sql`
+      select payment_id, tx_hash, chain_id, payload
+      from settlement_pending
+      where resolved_at is null
+      order by created_at asc
+      limit ${limit}
+    `;
+    return rows.map((r) => ({
+      paymentId: String(r.payment_id),
+      txHash: String(r.tx_hash),
+      chainId: Number(r.chain_id),
+      payload: r.payload as StoredPayment,
+    }));
+  } catch {
+    return [];
+  }
 }

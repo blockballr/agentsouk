@@ -30,7 +30,12 @@ import {
   SettleResult,
   eip3009Domain,
 } from "./x402";
-import { recordPaymentDurable, getPaymentDurable } from "./receipts-store";
+import {
+  recordPaymentDurable,
+  getPaymentDurable,
+  savePendingSettlement,
+  resolvePendingSettlement,
+} from "./receipts-store";
 import { rpcTransport } from "./rpc";
 
 const SANDBOX_TX_PREFIX = "0x53a66f60094f8e2b6f97a4c7b81b4d9e77f82c9d3e6b4a1d";
@@ -454,6 +459,35 @@ export async function settleProd(
     const paymentId = req.paymentId ?? crypto.randomUUID();
     let hash: `0x${string}`;
 
+    // the receipt records who the money is for: on an escrowed hire that is the
+    // agent's wallet, so the by-payee read still answers for the agent even though
+    // the signed recipient was the funder holding it
+    const payee = terms ? terms.agentPayTo : pr.payTo;
+    const now = new Date();
+    // built once and written twice: as a pending row the moment a hash exists, and
+    // as the record itself once the chain confirms. One builder is what keeps a late
+    // reconciliation byte-identical to the record the happy path writes
+    const buildReceipt = (h: `0x${string}`): Receipt => ({
+      paymentId,
+      createdAt: now.toISOString(),
+      txHash: h,
+      mode: "prod",
+      agent: {
+        chainId: ctx.agent.chainId,
+        tokenId: ctx.agent.tokenId,
+        name: ctx.agent.name,
+      },
+      client: auth.from,
+      payTo: payee,
+      amount: pr.amount,
+      symbol: asset.symbol,
+      activated: true,
+      session: {
+        spendCapUsd: SESSION_SPEND_CAP_USD,
+        expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      },
+    });
+
     if (terms) {
       // one transaction: the token validates the buyer's authorization inside the
       // funder, funds land in escrow, and the agent's wallet is the payTo the
@@ -521,38 +555,24 @@ export async function settleProd(
         data,
       }),
     );
-    // race: if this wait times out but the tx still lands on-chain, funds
-    // moved with no receipt recorded
+    // the hash is written before the wait that follows it: a wait which times out
+    // leaves the funds moved with nothing recorded, and this row is what the
+    // reconcile sweep reads to finish the record the timeout prevented
+    await savePendingSettlement({
+      paymentId,
+      txHash: hash,
+      chainId: signedChainId,
+      payload: { ...buildReceipt(hash), paymentPayload: req.paymentPayload },
+    });
     const onchain = await publicClient.waitForTransactionReceipt({ hash });
-    if (onchain.status !== "success") return fail(`Relay tx reverted: ${hash}`);
+    if (onchain.status !== "success") {
+      await resolvePendingSettlement(paymentId, "reverted");
+      return fail(`Relay tx reverted: ${hash}`);
+    }
     }
 
-    // the receipt records who the money is for: on an escrowed hire that is the
-    // agent's wallet, so the by-payee read still answers for the agent even though
-    // the signed recipient was the funder holding it
-    const payee = terms ? terms.agentPayTo : pr.payTo;
-    const now = new Date();
-    const receipt: Receipt = {
-      paymentId,
-      createdAt: now.toISOString(),
-      txHash: hash,
-      mode: "prod",
-      agent: {
-        chainId: ctx.agent.chainId,
-        tokenId: ctx.agent.tokenId,
-        name: ctx.agent.name,
-      },
-      client: auth.from,
-      payTo: payee,
-      amount: pr.amount,
-      symbol: asset.symbol,
-      activated: true,
-      session: {
-        spendCapUsd: SESSION_SPEND_CAP_USD,
-        expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-      },
-    };
-    await recordPaymentDurable({ ...receipt, paymentPayload: req.paymentPayload });
+    await recordPaymentDurable({ ...buildReceipt(hash), paymentPayload: req.paymentPayload });
+    await resolvePendingSettlement(paymentId, "recorded");
 
     return {
       success: true,
