@@ -29,7 +29,7 @@ import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
 import { explorerTxBase } from '../lib/contracts'
 import { builtWithFrom, decodeMetaValue } from '../lib/onchain-meta'
 import { defaultAvatarFor } from '../lib/default-avatar'
-import { VERDICT_DOT, verdictFor, type Verdict } from '../lib/verdict'
+import { verdictFor, type Verdict } from '../lib/verdict'
 import {
   changeWallet,
   connectWallet,
@@ -47,7 +47,8 @@ import {
   type HireRequirementsData,
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
-import { Row as SoukRow, Txt, Dot, Pill } from '../components/souk'
+import { Row as SoukRow, Stack, Txt, Dot, Pill } from '../components/souk'
+import type { ReactNode } from 'react'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -998,35 +999,66 @@ function ProofStrip({
   score: string | null
   reviews: number
 }) {
+  // one shape for all three figures, so the strip reads as a single block rather
+  // than three lists that happen to sit together. The label is the design's mono
+  // upper, the figure is ink at 18, and the note is the sentence behind it.
+  const cell = (label: string, figure: ReactNode, note: ReactNode, divider?: boolean) => (
+    <Stack
+      pad={[20, 22, 20, 22]}
+      gap={4}
+      className={`min-w-0 flex-1 ${
+        divider ? 'border-t border-white/[0.16] lg:border-t-0 lg:border-l' : ''
+      }`}
+    >
+      <Txt size={10} lead={14} weight="extrabold" upper mono tone="steel">
+        {label}
+      </Txt>
+      {figure}
+      <Txt size={12} lead={18} tone="slate">
+        {note}
+      </Txt>
+    </Stack>
+  )
+
   return (
-    <dl className={cx(card('plain', 'none'), 'mt-8 grid overflow-hidden sm:grid-cols-3')}>
-      <div className="p-5">
-        <dt className="micro text-newsprint-gray">Last check</dt>
-        <dd className="mt-2 flex items-center gap-2 text-[18px] font-medium text-press-black">
-          <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${VERDICT_DOT[verdict.tone]}`} />
-          {verdict.label}
-        </dd>
-        <dd className="mt-1 text-[13px] leading-snug text-newsprint-gray">
+    <Stack surface className="mt-5 flex-col lg:flex-row">
+      {cell(
+        'Last check',
+        <SoukRow align="center" gap={8}>
+          <Dot tone={verdict.tone === 'none' ? 'quiet' : verdict.tone} size={10} />
+          <Txt size={18} lead={27} weight="bold" tone="ink">
+            {verdict.label}
+          </Txt>
+        </SoukRow>,
+        <>
           {verdict.explain}
           {checkedAt ? ` Checked ${timeAgo(checkedAt)}.` : ''}
           {parallel ? ' Handles parallel calls.' : ''}
-        </dd>
-      </div>
-      <div className="border-t hairline border-slate-verdant/30 p-5 sm:border-l sm:border-t-0">
-        <dt className="micro text-newsprint-gray">How you pay</dt>
-        <dd className="mt-2 text-[18px] font-medium text-press-black">{payment.value}</dd>
-        <dd className="mt-1 text-[13px] leading-snug text-newsprint-gray">
+        </>,
+      )}
+      {cell(
+        'How you pay',
+        <Txt size={18} lead={27} weight="bold" tone="ink">
+          {payment.value}
+        </Txt>,
+        <>
           {payment.note}, on {network}.
-        </dd>
-      </div>
-      <div className="border-t hairline border-slate-verdant/30 p-5 sm:border-l sm:border-t-0">
-        <dt className="micro text-newsprint-gray">Registry reputation</dt>
-        <dd className="mt-2 text-[18px] font-medium text-press-black">{score ? `Score ${score}` : 'No score yet'}</dd>
-        <dd className="mt-1 text-[13px] leading-snug text-newsprint-gray">
-          {reviews > 0 ? `${formatNumber(reviews)} on-chain review${reviews === 1 ? '' : 's'}` : 'No on-chain reviews yet'}
-        </dd>
-      </div>
-    </dl>
+        </>,
+        true,
+      )}
+      {cell(
+        'Registry reputation',
+        <Txt size={18} lead={27} weight="bold" tone="ink">
+          {score ? `Score ${score}` : 'No score yet'}
+        </Txt>,
+        <>
+          {reviews > 0
+            ? `${formatNumber(reviews)} on-chain review${reviews === 1 ? '' : 's'}`
+            : 'No on-chain reviews yet'}
+        </>,
+        true,
+      )}
+    </Stack>
   )
 }
 
