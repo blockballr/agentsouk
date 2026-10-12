@@ -56,8 +56,8 @@ describe("waiting for a transaction receipt", () => {
       (e) => e as Error,
     );
     expect(err).not.toBeNull();
-    expect(err.message).toContain("did not answer");
-    expect(err.message).toContain("Nothing was sent");
+    expect(err!.message).toContain("did not answer");
+    expect(err!.message).toContain("Nothing was sent");
     expect(latched).toBe(false);
     expect(txHash).toBeNull();
     expect(Date.now() - started).toBeLessThan(2000);

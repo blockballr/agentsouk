@@ -18,7 +18,6 @@ describe("verdict vocabulary", () => {
   it("reads a correct deterministic check as proven work, not as a probe", () => {
     const verdict = verdictFor(MAINNET, {
       status: "delivered",
-      responseMs: 340,
       quality: deterministic("good"),
     });
     expect(verdict.label).toBe("Proven");
@@ -31,7 +30,6 @@ describe("verdict vocabulary", () => {
     for (const grade of ["partial", "poor"] as const) {
       const verdict = verdictFor(MAINNET, {
         status: "delivered",
-        responseMs: 400,
         quality: deterministic(grade),
       });
       expect(verdict.label).toBe("Online");
@@ -40,13 +38,13 @@ describe("verdict vocabulary", () => {
   });
 
   it("keeps Delivered for a paid test hire", () => {
-    const verdict = verdictFor(MAINNET, { status: "delivered", responseMs: 1200 });
+    const verdict = verdictFor(MAINNET, { status: "delivered" });
     expect(verdict.label).toBe("Delivered");
     expect(verdict.explain).toMatch(/paid test hire/);
   });
 
   it("reads a testnet probe with nothing scored as Online, never Delivered", () => {
-    const verdict = verdictFor(TESTNET, { status: "delivered", responseMs: 340 });
+    const verdict = verdictFor(TESTNET, { status: "delivered" });
     expect(verdict.label).toBe("Online");
     expect(verdict.explain).not.toMatch(/paid test hire/);
   });

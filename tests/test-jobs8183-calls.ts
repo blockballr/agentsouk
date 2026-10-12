@@ -50,7 +50,7 @@ describe("the five buyer calls, pinned to the SDK's encoding", () => {
       description: INPUT.description,
       budget: INPUT.budgetRaw,
       expiredAt: INPUT.expiredAt,
-    }).map((c: { to: string; data: string }) => `${c.to} ${c.data}`);
+    }).map((c) => `${c.to} ${c.data}`);
     expect(mine).toEqual(sdk);
   });
 

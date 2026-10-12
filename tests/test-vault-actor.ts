@@ -14,7 +14,7 @@ vi.mock("@altananetwork/sdk", () => ({
 }));
 
 const WALLET = "0x1111111111111111111111111111111111111111";
-const CALL = { to: "0xc742e51f3fe3875a3335700a7d692f40dc8e60b8", data: "0xdeadbeef", value: 0n };
+const CALL = { to: "0xc742e51f3fe3875a3335700a7d692f40dc8e60b8", data: "0xdeadbeef", value: 0n } as const;
 
 const savedEnv = { ...process.env };
 

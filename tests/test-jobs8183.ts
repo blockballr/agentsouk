@@ -151,7 +151,7 @@ describe("notifySeller", () => {
     expect(result.ok).toBe(true);
     expect(result.reply).toContain("notified");
     const sends = bodies.filter((b) => typeof (b as { method?: string }).method === "string");
-    const parts = (sends[0] as { params: { message: { parts: { kind: string; data?: Record<string, unknown> } }[] } }).params.message.parts;
+    const parts = (sends[0] as { params: { message: { parts: { kind: string; data?: Record<string, unknown> }[] } } }).params.message.parts;
     const data = parts.find((p) => p.kind === "data")?.data;
     expect(data).toEqual({ skill: "notify_funded", job_id: 4242 });
   });
@@ -217,7 +217,7 @@ describe("negotiateQuote", () => {
     );
     await negotiateQuote(97, `https://agent.example/a2a`, "buy a grid plan", PROVIDER);
     const sends = bodies.filter((b) => typeof (b as { method?: string }).method === "string");
-    const parts = (sends[0] as { params: { message: { parts: { kind: string; data?: { skill?: string } } }[] } }).params.message.parts;
+    const parts = (sends[0] as { params: { message: { parts: { kind: string; data?: { skill?: string } }[] } } }).params.message.parts;
     expect(parts.some((p) => p.kind === "text")).toBe(true);
     const shaped = parts.find((p) => p.kind === "data" && (p.data as { skill?: string }).skill === "negotiate");
     expect(shaped).toBeDefined();

@@ -223,7 +223,7 @@ describe.skipIf(!configured)('the vault junction rehearsal', () => {
     const count = await publicClient.readContract({ address: VAULT, abi: vaultAbi, functionName: 'hireCount' })
     open = await buyerWallet.writeContract({
       address: VAULT, abi: vaultAbi, functionName: 'open',
-      args: [walletAddress, USDT, parseUnits('0.02', 18), BigInt(Math.floor(Date.now() / 1000) + 7200), 1000, 500],
+      args: [walletAddress as `0x${string}`, USDT, parseUnits('0.02', 18), BigInt(Math.floor(Date.now() / 1000) + 7200), 1000, 500],
       gas: 1_500_000n,
     })
       console.log('open:', open, 'hire id', (count + 1n).toString())

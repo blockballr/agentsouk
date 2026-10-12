@@ -188,7 +188,7 @@ describe("the verifier", () => {
 });
 
 describe("the scout's liveness probe", () => {
-  const candidate = { token_id: "1", name: "Studio Seller", category: "yield" };
+  const candidate = { token_id: "1", name: "Studio Seller", category: "yield" as const };
 
   it("reads a card behind its own login as gated, not dead", () => {
     expect(probeToVerification(candidate, { tokenId: "1", ok: false, detail: "a2a 401", protocol: "a2a" }, 10).status).toBe("gated");
