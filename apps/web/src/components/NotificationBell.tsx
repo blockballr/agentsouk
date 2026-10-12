@@ -88,10 +88,12 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-2 w-[340px] metal rounded-[12px] border hairline border-slate-verdant/40 p-1 shadow-lg">
-          <p className="micro px-3 pb-1 pt-2 text-newsprint-gray">Activity</p>
+        <div className="absolute right-0 z-40 mt-2 w-[340px] rounded-[12px] border border-white/[0.16] bg-souk-surface2 p-1 shadow-lg">
+          {/* the outbox panel: one surface under the design's rim, the hairline
+              dividing the head from the rows without a box around the title */}
+          <p className="micro px-3 pb-1 pt-2 text-souk-steel">Activity</p>
           {rows.length === 0 ? (
-            <p className="px-3 pb-3 pt-1 text-[13px] text-newsprint-gray">
+            <p className="px-3 pb-3 pt-1 text-[13px] text-souk-slate">
               Nothing yet. Releases, funded jobs and seller replies land here.
             </p>
           ) : (
@@ -101,13 +103,13 @@ export function NotificationBell() {
                   <Link
                     to={r.href ?? '/ongoing'}
                     onClick={() => setOpen(false)}
-                    className="block rounded-[8px] px-3 py-2 hover:bg-press-black/[0.04]"
+                    className="block rounded-[8px] px-3 py-2 hover:bg-white/[0.04]"
                   >
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[13px] font-medium text-press-black">{r.title}</span>
-                      <span className="shrink-0 text-[11px] text-newsprint-gray">{timeAgo(r.createdAt)}</span>
+                      <span className={`text-[13px] font-medium ${r.read ? 'text-souk-steel' : 'text-souk-ink'}`}>{r.title}</span>
+                      <span className="shrink-0 font-mono text-[11px] text-souk-steel">{timeAgo(r.createdAt)}</span>
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-newsprint-gray">{r.body}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-souk-slate">{r.body}</p>
                   </Link>
                 </li>
               ))}

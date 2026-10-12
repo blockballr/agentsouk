@@ -148,10 +148,10 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Search agents"
-        className="relative w-full max-w-xl overflow-hidden rounded-[14px] border hairline border-press-black/20 bg-bone-white shadow-[0_24px_60px_-16px_rgba(0,0,0,0.45)]"
+        className="relative w-full max-w-xl overflow-hidden rounded-[14px] border border-white/[0.16] bg-souk-surface1 shadow-[0_24px_60px_-16px_rgba(0,0,0,0.6)]"
       >
-        <div className="flex items-center gap-3 border-b hairline border-slate-verdant/30 px-4">
-          <span className="text-newsprint-gray">
+        <div className="flex items-center gap-3 border-b border-b-white/[0.16] px-4">
+          <span className="text-souk-steel">
             <SearchGlyph />
           </span>
           <input
@@ -167,21 +167,21 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
             onKeyDown={onInputKey}
             placeholder="Search agents by name, skill or tag"
             aria-label="Search agents"
-            className="h-14 w-full bg-transparent text-base text-press-black placeholder:text-newsprint-gray focus:outline-none"
+            className="h-14 w-full bg-transparent text-base text-souk-ink placeholder:text-souk-muted focus:outline-none"
           />
-          <kbd className="micro hidden rounded-[4px] border hairline border-slate-verdant/40 px-1.5 py-0.5 text-newsprint-gray sm:inline">
+          <kbd className="micro hidden rounded-[6px] border border-white/[0.16] px-1.5 py-0.5 font-mono text-[11px] text-souk-steel sm:inline">
             Esc
           </kbd>
         </div>
 
         {q.trim() === '' ? (
-          <p className="px-4 py-5 text-[13px] text-newsprint-gray">Type a name, a skill such as health factor, or a tag.</p>
+          <p className="px-4 py-5 text-[13px] text-souk-slate">Type a name, a skill such as health factor, or a tag.</p>
         ) : loading && items.length === 0 ? (
-          <p className="px-4 py-5 text-[13px] text-newsprint-gray" role="status">
+          <p className="px-4 py-5 text-[13px] text-souk-slate" role="status">
             Searching…
           </p>
         ) : items.length === 0 ? (
-          <p className="px-4 py-5 text-[13px] text-newsprint-gray" role="status">
+          <p className="px-4 py-5 text-[13px] text-souk-slate" role="status">
             Nothing matches &ldquo;{q.trim()}&rdquo;.
           </p>
         ) : (
@@ -197,14 +197,14 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
                   onMouseEnter={() => setActive(i)}
                   onClick={() => go(`/agents/${a.chain_id}/${a.token_id}`)}
                   className={`flex cursor-pointer items-center justify-between gap-4 px-4 py-2.5 ${
-                    i === active ? 'bg-echo-green/50' : ''
+                    i === active ? 'bg-souk-surface2' : ''
                   }`}
                 >
                   <span className="min-w-0">
-                    <span className="block truncate text-[15px] font-medium text-press-black">{a.name}</span>
-                    <span className="block truncate text-[12px] text-newsprint-gray">{categoryName(a.category)}</span>
+                    <span className="block truncate text-[15px] font-medium text-souk-ink">{a.name}</span>
+                    <span className="block truncate text-[12px] text-souk-muted">{categoryName(a.category)}</span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-2 text-[12px] text-newsprint-gray">
+                  <span className="flex shrink-0 items-center gap-2 font-mono text-[12px] text-souk-muted">
                     <span aria-hidden="true" className={`h-2 w-2 rounded-full ${VERDICT_DOT[v.tone]}`} />
                     {v.label}
                   </span>
@@ -218,7 +218,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={() => go(`/?q=${encodeURIComponent(q.trim())}`)}
-            className="micro block w-full border-t hairline border-slate-verdant/30 px-4 py-3 text-left text-newsprint-gray transition hover:text-press-black"
+            className="micro block w-full border-t border-t-white/[0.16] px-4 py-3 text-left text-souk-muted transition hover:text-souk-ink"
           >
             See every match in the marketplace →
           </button>
