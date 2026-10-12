@@ -32,8 +32,9 @@ import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } f
 import { ratedHires } from '../lib/rating'
 import { jobStatusName } from '../lib/jobs8183'
 import { RateAgent } from '../components/RateAgent'
-import { Action, Dialog, LABEL, RatingBoxes, ResultBox, TextSlot, button, card, cx } from '../components/ui'
+import { Action, Dialog, LABEL, RatingBoxes, ResultBox, TextSlot } from '../components/ui'
 import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
+import { AgentAvatar, Btn, DataTable, Dot, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
 
 // the server holds each wallet's view for five seconds, so a faster poll only
 // re-reads the same answer
@@ -313,60 +314,69 @@ export function OngoingPage() {
       })
   const shownKeys = new Set(items.map((i) => i.key))
   const standaloneRevocations = Object.entries(revokeResults).filter(([paymentId]) => !shownKeys.has(paymentId))
+  // the live count is only claimed once the ledger has answered
+  const liveCount = items.filter((i) => i.live).length
+  const kicker = account
+    ? ['Ongoing', shortAddr(account), data ? `${liveCount} live` : null].filter(Boolean).join(' · ')
+    : 'Ongoing'
 
   return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
-      <p className="micro text-newsprint-gray">Ongoing</p>
-      <h1 className="mt-4 font-serif text-[clamp(40px,6vw,88px)] font-medium leading-[0.9] tracking-[-0.04em]">
-        Your hires.
-      </h1>
-      <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        Everything this wallet has hired. Anything waiting on you comes first.
-      </p>
+    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+      <header className="flex max-w-[1180px] flex-col gap-2.5">
+        <Txt size={11} lead={16} mono upper tone="data">
+          {kicker}
+        </Txt>
+        <h1 className="m-0">
+          <Txt size={34} lead={42} weight="bold" tone="ink">
+            Your hires.
+          </Txt>
+        </h1>
+        <Txt size={15} lead={23} tone="slate">
+          Everything this wallet has hired. Anything waiting on you comes first.
+        </Txt>
+      </header>
 
       {!account && (
-        <div className="mt-10 metal rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:p-10">
-          <p className="text-[15px] text-press-black">Connect the wallet you hired with.</p>
-          <p className="mt-2 text-[13px] text-newsprint-gray">Hires are kept per wallet, so this is how we find yours.</p>
-          <button
-            type="button"
-            onClick={onConnect}
-            disabled={connecting}
-            className="gloss micro mt-6 rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95 disabled:opacity-60"
-          >
+        <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
+          <Txt size={15} lead={22} tone="ink">
+            Connect the wallet you hired with.
+          </Txt>
+          <Txt size={13} lead={20} tone="muted">
+            Hires are kept per wallet, so this is how we find yours.
+          </Txt>
+          <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
             {connecting ? 'Connecting…' : 'Connect wallet'}
-          </button>
-        </div>
-      )}
-
-      {account && (
-        <p className="mt-6 text-[13px] text-newsprint-gray">
-          <span className="font-mono text-press-black">{shortAddr(account)}</span>
-          {groups.map((g) => {
-            const n = byGroup(g.key).length
-            if (n === 0) return ''
-            return g.key === 'needs' ? ` · ${n} ${n === 1 ? 'needs' : 'need'} you` : ` · ${n} ${g.title.toLowerCase()}`
-          })}
-        </p>
+          </Btn>
+        </Stack>
       )}
 
       {error && (
-        <p role="alert" className="mt-6 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-[13px] text-press-black">
-          {error}
-        </p>
+        <div role="alert" className="mt-6">
+          <Stack pad={[14, 16, 14, 16]} radius={14} hair>
+            <Txt size={13} lead={20} tone="peach">
+              {error}
+            </Txt>
+          </Stack>
+        </div>
       )}
 
       {account && data && items.length === 0 && !error && (
-        <div className="mt-10 metal rounded-[14px] border hairline border-slate-verdant/40 p-8 sm:p-10">
-          <p className="text-[15px] text-press-black">Nothing hired with this wallet yet.</p>
-          <p className="mt-2 text-[13px] text-newsprint-gray">Hire an agent and it shows up here while you use it.</p>
+        <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
+          <Txt size={15} lead={22} tone="ink">
+            Nothing hired with this wallet yet.
+          </Txt>
+          <Txt size={13} lead={20} tone="muted">
+            Hire an agent and it shows up here while you use it.
+          </Txt>
           <Link
             to="/agents"
-            className="gloss micro mt-6 inline-block rounded-[5px] bg-highlighter-green px-4 py-3 text-on-highlighter shadow transition hover:brightness-95"
+            className="mt-2 inline-flex h-11 w-fit items-center justify-center rounded-[8px] bg-souk-data px-5"
           >
-            Browse agents
+            <Txt size={14} lead={20} weight="semibold" tone="canvas">
+              Browse agents
+            </Txt>
           </Link>
-        </div>
+        </Stack>
       )}
 
       {account &&
@@ -374,11 +384,9 @@ export function OngoingPage() {
           const list = byGroup(g.key)
           if (list.length === 0) return null
           return (
-            <div key={g.key} className="mt-12">
-              <h2 className="micro text-newsprint-gray">
-                {g.title} · {list.length}
-              </h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div key={g.key} className="mt-10">
+              <SectionHead title={g.title} note={`${list.length}`} />
+              <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {list.map((it) => (
                   <HireRow
                     key={it.key}
@@ -402,71 +410,114 @@ export function OngoingPage() {
         })}
 
       {account && kernelJobs.length > 0 && (
-        <div className="mt-12">
-          <h2 className="micro text-newsprint-gray">
-            {`ERC-8183 jobs ${kernelJobs.length}`}
-          </h2>
-          <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">
+        <div className="mt-10">
+          <SectionHead title="ERC-8183 jobs" note={`${kernelJobs.length}`} />
+          <Txt size={13} lead={20} tone="muted" className="mt-3 block max-w-[760px]">
             Funded on the shared kernel; the status below is read from the chain, not from a promise.
-          </p>
-          <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          </Txt>
+          <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {kernelJobs.map((row) => (
-              <div key={row.id} className="metal rounded-[14px] border hairline border-slate-verdant/40 p-5">
-                <div className="flex items-baseline justify-between gap-3">
-                  <Link
-                    to={`/agents/${row.chainId}/${row.tokenId}`}
-                    className="font-serif text-[19px] leading-snug text-press-black hover:underline"
-                  >
-                    {row.agentName}
+              <Stack key={row.id} surface pad={[16, 16, 16, 16]} gap={10}>
+                <Row justify="between" align="baseline" gap={12}>
+                  <Link to={`/agents/${row.chainId}/${row.tokenId}`} className="min-w-0 truncate">
+                    <Txt size={15} lead={20} weight="bold" tone="ink">
+                      {row.agentName}
+                    </Txt>
                   </Link>
-                  <span className="text-[12px] text-newsprint-gray">{row.budgetUsd} $U</span>
-                </div>
-                <div className="mt-2 flex items-center justify-between gap-3 text-[13px]">
-                  <span className="font-mono text-newsprint-gray">
+                  <Txt size={13} lead={20} mono tone="data">
+                    {row.budgetUsd} $U
+                  </Txt>
+                </Row>
+                <Row justify="between" align="center" gap={12}>
+                  <Txt size={12} lead={18} mono tone="muted">
                     {formatExpiry(row.expiredAt)}
-                  </span>
-                  <span className={cx('rounded-[4px] px-2 py-1 font-mono text-[12px]', JOBS8183_TONE[jobStatusName(row.status ?? -1)] ?? 'bg-press-black/5 text-newsprint-gray')}>
+                  </Txt>
+                  <Pill variant={JOBS8183_PILL[row.status === null ? 'unreached' : jobStatusName(row.status)] ?? 'off'}>
                     {row.status === null ? 'unreached' : jobStatusName(row.status)}
-                  </span>
-                </div>
-                <div className="mt-1 text-[12px] text-newsprint-gray">
-                  kernel job <span className="font-mono">{row.onchainJobId}</span>
-                </div>
-              </div>
+                  </Pill>
+                </Row>
+                <Txt size={12} lead={18} tone="muted">
+                  kernel job{' '}
+                  <Txt size={12} lead={18} mono tone="slate">
+                    {row.onchainJobId}
+                  </Txt>
+                </Txt>
+              </Stack>
             ))}
+          </div>
+        </div>
+      )}
+
+      {account && items.length > 0 && (
+        <div className="mt-10">
+          <SectionHead title="Every task, one ledger" note="same order as the board" />
+          <div className="mt-5">
+            <DataTable
+              cols={[380, 320, 620, 180]}
+              header={['Task', 'Agent', 'State', 'Age']}
+              rows={items.map((i) => ({
+                cells: [
+                  { text: shortAddr(i.key), mono: true, tone: 'ink' },
+                  { text: i.agentName, weight: 'semibold', tone: 'slate' },
+                  { text: hireState(i).label, weight: 'semibold', tone: LEDGER_TONE[hireState(i).group] },
+                  { text: timeAgo(i.at), mono: true, tone: 'labels' },
+                ],
+              }))}
+            />
           </div>
         </div>
       )}
 
       {account && standaloneRevocations.length > 0 && (
-        <div className="mt-12">
-          <h2 className="micro text-newsprint-gray">Revoked</h2>
-          <div className="mt-3 space-y-2">
+        <div className="mt-10">
+          <SectionHead title="Revoked" note={`${standaloneRevocations.length}`} />
+          <Stack gap={8} className="mt-4">
             {standaloneRevocations.map(([paymentId, outcome]) => (
-              <div key={paymentId} className="rounded-[10px] border hairline border-slate-verdant/30 p-4">
+              <Stack key={paymentId} pad={[16, 16, 16, 16]} radius={14} hair>
                 <RevokeNote outcome={outcome} chainId={outcome.chainId ?? 0} />
-              </div>
+              </Stack>
             ))}
-          </div>
+          </Stack>
         </div>
       )}
-    </section>
+
+      {account && (
+        <div className="mt-10">
+          <Rule />
+          <Txt size={12} lead={18} tone="muted" className="mt-3 block max-w-[1180px]">
+            A retry keeps the task id and the escrow it was funded with. A revoke is unconditional and
+            returns the escrow in one transaction, and only a released job counts as earned.
+          </Txt>
+        </div>
+      )}
+    </div>
   )
 }
 
-const JOBS8183_TONE: Record<string, string> = {
-  Open: 'bg-press-black/5 text-newsprint-gray',
-  Funded: 'bg-highlighter-green/15 text-press-black',
-  Submitted: 'bg-amber-100 text-press-black',
-  Completed: 'bg-highlighter-green/30 text-press-black',
-  Rejected: 'bg-press-black/10 text-newsprint-gray',
-  Expired: 'bg-press-black/10 text-newsprint-gray',
+// kernel job statuses in the design's two marked chips: the ones the buyer still
+// holds earn the data rim, the closed ones rest on the hairline
+const JOBS8183_PILL: Record<string, 'keep' | 'warn' | 'off'> = {
+  Open: 'off',
+  Funded: 'keep',
+  Submitted: 'keep',
+  Completed: 'keep',
+  Rejected: 'off',
+  Expired: 'off',
+  unreached: 'off',
 }
 
-const STATE_DOT: Record<HireGroup, string> = {
-  needs: 'glow bg-highlighter-green',
-  progress: 'glow bg-highlighter-green motion-safe:animate-pulse',
-  finished: 'border hairline border-newsprint-gray bg-transparent',
+const STATE_DOT: Record<HireGroup, 'good' | 'sky' | 'quiet'> = {
+  needs: 'good',
+  progress: 'sky',
+  finished: 'quiet',
+}
+
+// the ledger's state column reads the group, so the three states sit at the
+// same three tones the dot uses beside a card
+const LEDGER_TONE: Record<HireGroup, 'data' | 'sky' | 'steel'> = {
+  needs: 'data',
+  progress: 'sky',
+  finished: 'steel',
 }
 
 // the funder's three buyer verbs, sent from the wallet rather than relayed
@@ -532,11 +583,20 @@ function HireRow({
     .filter(Boolean)
     .join(' · ')
   return (
-    <article className={cx(card(state.group === 'needs' ? 'strong' : 'plain', 'sm'), 'flex h-[520px] min-w-0 flex-col [overflow-wrap:anywhere]')}>
-      <div className="flex items-start justify-between gap-3">
-        <Link to={agentHref} className="min-w-0 truncate font-serif text-[22px] leading-tight text-press-black hover:underline">
-          {item.agentName}
-        </Link>
+    <article
+      className={`flex h-[520px] min-w-0 flex-col rounded-[20px] border bg-souk-surface1 p-5 [overflow-wrap:anywhere] ${
+        state.group === 'needs' ? 'border-souk-data/40' : 'border-white/[0.08]'
+      }`}
+    >
+      <Row justify="between" align="center" gap={12}>
+        <Row align="center" gap={11} className="min-w-0">
+          <AgentAvatar size={34} name={item.agentName} />
+          <Link to={agentHref} className="min-w-0 truncate">
+            <Txt size={16} lead={24} weight="bold" tone="ink">
+              {item.agentName}
+            </Txt>
+          </Link>
+        </Row>
         {/* the buyer's control over a live session, so it is the plainest button on the card; an
             ended session has nothing left to spend and shows none */}
         {item.live && (
@@ -544,16 +604,20 @@ function HireRow({
             type="button"
             onClick={onRevoke}
             disabled={busy}
-            className={cx(button('secondary', 'sm'), 'shrink-0 border-press-black/70 hover:bg-press-black hover:text-bone-white')}
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-[8px] border border-white/[0.16] bg-souk-surface1 px-3 transition hover:border-white/[0.32] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {revoking ? 'Revoking…' : 'Revoke session'}
+            <Txt size={12} lead={18} weight="semibold" tone="slate">
+              {revoking ? 'Revoking…' : 'Revoke session'}
+            </Txt>
           </button>
         )}
-      </div>
-      <p className="mt-1 flex items-center gap-2 text-[14px] font-medium text-press-black">
-        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${STATE_DOT[state.group]}`} />
-        <span className="truncate">{state.label}</span>
-      </p>
+      </Row>
+      <Row align="center" gap={8} className="mt-1 min-w-0">
+        <Dot tone={STATE_DOT[state.group]} size={9} />
+        <Txt size={14} lead={20} tone="slate" className="truncate">
+          {state.label}
+        </Txt>
+      </Row>
       {/* the money's own progression, collapsed to a bar until the buyer clicks
           it open; the stops that already passed are filled, and the money's
           current stop pulses */}
@@ -563,7 +627,7 @@ function HireRow({
       <TextSlot lines={2} className="mt-3">
         {asked ? (
           <>
-            You asked: <span className="text-press-black">{asked}</span>
+            You asked: <span className="text-souk-ink">{asked}</span>
           </>
         ) : (
           'No task sent yet.'

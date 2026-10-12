@@ -10,8 +10,8 @@ import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from 
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
-import { VERDICT_DOT, verdictFor } from '../lib/verdict'
-import { button, cx } from '../components/ui'
+import { verdictFor, type VerdictTone } from '../lib/verdict'
+import { Stack, Row, Txt, Pill, Dot, Rule, Label, Btn, type DotTone } from '../components/souk'
 
 const sorts = [
   {
@@ -24,6 +24,24 @@ const sorts = [
   { key: 'feedback', label: 'Most reviewed' },
   { key: 'health', label: 'Health' },
 ] as const
+
+// the verdict's four tones in the design's five-state dot grammar
+const VERDICT_TONE: Record<VerdictTone, DotTone> = {
+  good: 'good',
+  held: 'held',
+  bad: 'bad',
+  none: 'quiet',
+}
+
+// the states a listing can be in, in the order they cost a buyer
+const LEGEND: { tone: DotTone; label: string }[] = [
+  { tone: 'good', label: 'Online' },
+  { tone: 'good', label: 'Delivered' },
+  { tone: 'held', label: 'Restricted' },
+  { tone: 'bad', label: 'Unreachable' },
+  { tone: 'bad', label: 'Unresponsive' },
+  { tone: 'quiet', label: 'Not checked yet' },
+]
 
 export function MarketplacePage() {
   const [sp, setSp] = useSearchParams()
@@ -142,210 +160,223 @@ export function MarketplacePage() {
     [result],
   )
 
+  // the shelf's strap: the chain it reads, how many listings it holds and how fresh
+  // that reading is. A part the market has not answered for is dropped, not guessed.
+  const strap = [
+    'shelf',
+    chainId === null ? 'checking the network' : `${chainLabel(chainId)} ${chainId}`,
+    result?.registryTotal ? `${result.registryTotal.toLocaleString('en-US')} agents` : null,
+    freshness,
+  ]
+    .filter((part): part is string => Boolean(part))
+    .join(' · ')
+
   return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
-      <p className="micro text-newsprint-gray">Marketplace</p>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-8">
-        <h1 className="font-serif text-[clamp(44px,7vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-          {category === 'all' ? 'All agents' : labelFor(category)}
-        </h1>
-        {loading && !result ? (
-          <p className="micro text-newsprint-gray">Loading agents</p>
-        ) : result?.registryTotal ? (
-          <p className="micro text-newsprint-gray">
-            {result.registryTotal.toLocaleString('en-US')} agents registered
-          </p>
-        ) : null}
-      </div>
-
-      {/* the proof lives on /about, but a reviewer who lands here must still
-          see the chain and asset the market actually settles in */}
-      <section
-        aria-label="Settlement proof"
-        className="micro mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-y hairline border-slate-verdant/40 py-3 text-newsprint-gray"
-      >
-        {chainId === null ? (
-          <span>Checking the network</span>
-        ) : (
-          <span>
-            {chainLabel(chainId)} (chain {chainId}) · hires settle in{' '}
-            {/* normal-case: the micro class uppercases, and the symbol is sUSD not SUSD */}
-            <span className="normal-case">{settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}</span>
-            {result ? ` · ${result.total.toLocaleString('en-US')} shown` : ''}
-            {freshness ? ` · ${freshness}` : ''}
-          </span>
-        )}
-        {chainId !== null && registry ? (
-          <a
-            href={explorerAddressUrl(chainId, registry)}
-            target="_blank"
-            rel="noreferrer"
-            title={`ERC-8004 identity registry ${registry} on ${chainLabel(chainId)}`}
-            className="inline-block py-2 text-press-black underline decoration-newsprint-gray underline-offset-4 transition hover:decoration-highlighter-green"
-          >
-            ERC-8004 registry ↗
-          </a>
-        ) : null}
-        <Link
-          to="/about"
-          className="inline-block py-2 text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
-        >
-          Settlement proof →
-        </Link>
-      </section>
-
-      <div className="mt-12 flex flex-wrap items-center gap-x-10 gap-y-6">
-        <div className="flex flex-wrap gap-6">
-          <FilterChip
-            active={category === 'all'}
-            onClick={() => setParam('category', 'all')}
-          >
-            All
-          </FilterChip>
-          {CATEGORIES.map((c) => (
-            <FilterChip
-              key={c.key}
-              active={category === c.key}
-              onClick={() => setParam('category', c.key)}
-            >
-              {c.label}
-            </FilterChip>
-          ))}
-          <label className="inline-flex cursor-pointer items-center gap-2">
-            <span className="micro text-newsprint-gray">PancakeSwap</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pcs}
-              aria-label="Show only agents that say they work with PancakeSwap"
-              onClick={() => setParam('pcs', pcs ? '' : '1')}
-              className={`relative h-[18px] w-[34px] rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green ${pcs ? 'bg-highlighter-green' : 'bg-slate-verdant/50'}`}
-            >
-              <span
-                className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-switch-knob shadow-sm transition-all duration-150 ${pcs ? 'left-[18px]' : 'left-[2px]'}`}
-              />
-            </button>
-          </label>
-          {pcs && result ? (
-            <span className="micro text-newsprint-gray">
-              {result.total} PancakeSwap
-            </span>
-          ) : null}
-          <label className="inline-flex cursor-pointer items-center gap-2">
-            <span className="micro text-newsprint-gray">Hide unresponsive</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={hide}
-              aria-label="Hide unresponsive agents"
-              onClick={() => setParam('hide', hide ? '' : '1')}
-              className={`relative h-[18px] w-[34px] rounded-full transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-highlighter-green ${hide ? 'bg-highlighter-green' : 'bg-slate-verdant/50'}`}
-            >
-              <span
-                className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-switch-knob shadow-sm transition-all duration-150 ${hide ? 'left-[18px]' : 'left-[2px]'}`}
-              />
-            </button>
-          </label>
-        </div>
-
-        <div className="flex w-full flex-wrap items-center gap-6 sm:ml-auto sm:w-auto">
-          <label className="sr-only" htmlFor="search">
-            Search agents
-          </label>
-          <input
-            id="search"
-            type="search"
-            value={q}
-            onChange={(e) => setParam('q', e.target.value)}
-            placeholder="Search name, endpoint or tag"
-            className="border hairline input-hairline w-full rounded-[6px] bg-transparent sm:w-64 px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
-          />
-          <div className="flex flex-wrap gap-1">
-            {sorts.map((s) => (
-              <button
-                key={s.key}
-                type="button"
-                title={'title' in s ? s.title : undefined}
-                onClick={() => setParam('sort', s.key)}
-                className={`micro rounded-[5px] px-3 py-2 transition focus-visible:outline-2 focus-visible:outline-highlighter-green ${
-                  sort === s.key
-                    ? 'bg-highlighter-green/20 text-press-black'
-                    : 'text-newsprint-gray hover:text-press-black'
-                }`}
+    <div className="relative min-h-screen overflow-hidden bg-souk-canvas text-souk-ink">
+      {/* the screen's one corner glow: deep sea fading in at the top right, decoration only */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute right-0 top-0 h-[420px] w-[980px]"
+        style={{ backgroundImage: 'linear-gradient(90deg, rgba(2, 50, 71, 0) 0%, rgba(2, 50, 71, 0.55) 100%)' }}
+      />
+      <div className="relative mx-auto max-w-[1920px] px-8 pb-16">
+        <Stack gap={10} pad={[44, 0, 0, 0]}>
+          <Row justify="between" align="center" gap={16} className="flex-wrap">
+            <Txt size={11} lead={16} mono upper tone="data">
+              {strap}
+            </Txt>
+            {/* the proof lives on /about, but a reviewer who lands here must still
+                see the chain and asset the market actually settles in */}
+            <Row align="center" gap={16} className="flex-wrap">
+              {chainId !== null ? (
+                <Txt size={11} lead={16} mono tone="steel">
+                  hires settle in {settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}
+                  {result ? ` · ${result.total.toLocaleString('en-US')} shown` : ''}
+                </Txt>
+              ) : null}
+              {chainId !== null && registry ? (
+                <a
+                  href={explorerAddressUrl(chainId, registry)}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`ERC-8004 identity registry ${registry} on ${chainLabel(chainId)}`}
+                  className="font-mono text-[11px] leading-4 text-souk-sky transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                >
+                  ERC-8004 registry ↗
+                </a>
+              ) : null}
+              <Link
+                to="/about"
+                className="font-mono text-[11px] leading-4 text-souk-sky transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               >
-                {s.label}
-              </button>
+                Settlement proof →
+              </Link>
+            </Row>
+          </Row>
+
+          <Row align="baseline" gap={12} className="flex-wrap">
+            <Txt size={34} lead={42} weight="bold" tone="ink">
+              {category === 'all' ? 'Hire from the shelf.' : labelFor(category)}
+            </Txt>
+            {loading && !result ? (
+              <Txt size={11} lead={16} mono upper tone="muted">
+                loading agents
+              </Txt>
+            ) : null}
+          </Row>
+
+          <Row
+            align="center"
+            pad={[0, 6, 0, 18]}
+            radius={8}
+            bg="surface2"
+            hair
+            className="h-11 w-full max-w-[1180px]"
+          >
+            <label className="sr-only" htmlFor="search">
+              Search agents
+            </label>
+            <input
+              id="search"
+              type="search"
+              value={q}
+              onChange={(e) => setParam('q', e.target.value)}
+              placeholder="Search agents, skills, endpoints"
+              className="w-full bg-transparent text-[13px] leading-5 text-souk-ink placeholder:text-souk-muted focus-visible:outline-none"
+            />
+          </Row>
+        </Stack>
+
+        <Stack gap={8} pad={[20, 0, 0, 0]}>
+          <Row justify="between" align="center" gap={16} className="flex-wrap">
+            <Row align="center" gap={8} className="flex-wrap">
+              <Chip active={category === 'all'} onClick={() => setParam('category', 'all')}>
+                All
+              </Chip>
+              {CATEGORIES.map((c) => (
+                <Chip key={c.key} active={category === c.key} onClick={() => setParam('category', c.key)}>
+                  {c.label}
+                </Chip>
+              ))}
+              <Switch
+                checked={pcs}
+                label="Show only agents that say they work with PancakeSwap"
+                onChange={() => setParam('pcs', pcs ? '' : '1')}
+              >
+                PancakeSwap
+              </Switch>
+              {pcs && result ? (
+                <Txt size={11} lead={16} mono tone="muted">
+                  {`${result.total} pancakeswap`}
+                </Txt>
+              ) : null}
+              <Switch
+                checked={hide}
+                label="Hide unresponsive agents"
+                onChange={() => setParam('hide', hide ? '' : '1')}
+              >
+                Hide unresponsive
+              </Switch>
+              {hide && result ? (
+                <Txt size={11} lead={16} mono tone="muted">
+                  {`${visibleItems.length} shown`}
+                </Txt>
+              ) : null}
+            </Row>
+            <Row align="center" gap={8} className="flex-wrap">
+              <Label>Sort</Label>
+              {sorts.map((s) => (
+                <Chip
+                  key={s.key}
+                  active={sort === s.key}
+                  title={'title' in s ? s.title : undefined}
+                  onClick={() => setParam('sort', s.key)}
+                >
+                  {s.label}
+                </Chip>
+              ))}
+            </Row>
+          </Row>
+
+          {cartFull ? (
+            // the register's own alert grammar: one indigo band when something needs attention
+            <Row align="center" gap={9} pad={[0, 12, 0, 12]} radius={8} bg="indigo" hair className="h-[34px] w-fit">
+              <Dot tone="held" size={8} />
+              <Txt size={12} lead={18} tone="labels">
+                The cart holds 8 agents at most. Remove one to add another.
+              </Txt>
+            </Row>
+          ) : null}
+        </Stack>
+
+        <Stack gap={10} pad={[22, 0, 0, 0]}>
+          <Txt size={10} lead={14} weight="bold" upper tone="muted">
+            The five states, in the order they cost you
+          </Txt>
+          <Row align="center" gap={20} className="flex-wrap">
+            {LEGEND.map((k) => (
+              <Row key={k.label} align="center" gap={7}>
+                <Dot tone={k.tone} size={8} />
+                <Txt size={12} lead={16} tone="slate">
+                  {k.label}
+                </Txt>
+              </Row>
             ))}
-          </div>
-        </div>
-        {hide && result ? (
-          <span className="micro text-newsprint-gray">
-            {visibleItems.length} shown
-          </span>
+          </Row>
+        </Stack>
+
+        <Stack pad={[24, 0, 0, 0]}>
+          {error ? (
+            <ErrorState onRetry={() => setSp(new URLSearchParams(sp))} />
+          ) : loading ? (
+            <GridSkeleton />
+          ) : result && visibleItems.length > 0 ? (
+            <AgentGrid
+              items={visibleItems}
+              shortlist={shortlist}
+              onToggle={handleToggle}
+              cartKeys={cartKeys}
+              onToggleCart={handleToggleCart}
+            />
+          ) : (
+            <EmptyState
+              onReset={() => {
+                setSp(new URLSearchParams(), { replace: true })
+              }}
+            />
+          )}
+        </Stack>
+
+        {result && totalPages > 1 ? (
+          <nav aria-label="Pagination">
+            <Row justify="center" align="center" gap={20} className="mt-10 flex-wrap">
+              <Btn kind="off" disabled={page <= 1} onClick={() => setParam('page', String(page - 1))}>
+                ← Prev
+              </Btn>
+              <Txt size={11} lead={16} mono tone="muted">
+                page {page} of {totalPages}
+              </Txt>
+              <Btn kind="off" disabled={page >= totalPages} onClick={() => setParam('page', String(page + 1))}>
+                Next →
+              </Btn>
+            </Row>
+          </nav>
         ) : null}
+
+        <Stack gap={8} pad={[24, 0, 0, 0]}>
+          <Rule />
+          <Txt size={11} lead={17} mono tone="muted">
+            A probe proves reachability, a paid test hire proves delivery.
+          </Txt>
+        </Stack>
       </div>
-
-      {cartFull ? (
-        <p className="micro mt-6 text-newsprint-gray">
-          The cart holds 8 agents at most. Remove one to add another.
-        </p>
-      ) : null}
-
-      <div className="mt-14">
-        {error ? (
-          <ErrorState onRetry={() => setSp(new URLSearchParams(sp))} />
-        ) : loading ? (
-          <GridSkeleton />
-        ) : result && visibleItems.length > 0 ? (
-          <AgentGrid
-            items={visibleItems}
-            shortlist={shortlist}
-            onToggle={handleToggle}
-            cartKeys={cartKeys}
-            onToggleCart={handleToggleCart}
-          />
-        ) : (
-          <EmptyState
-            onReset={() => {
-              setSp(new URLSearchParams(), { replace: true })
-            }}
-          />
-        )}
-      </div>
-
-      {result && totalPages > 1 ? (
-        <nav
-          aria-label="Pagination"
-          className="mt-10 flex items-center justify-center gap-6"
-        >
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setParam('page', String(page - 1))}
-            className="micro rounded-[5px] border hairline border-slate-verdant/40 px-4 py-2 text-press-black transition enabled:hover:border-highlighter-green disabled:opacity-40"
-          >
-            ← Prev
-          </button>
-          <span className="micro text-newsprint-gray">
-            Page {page} of {totalPages}
-          </span>
-          <button
-            type="button"
-            disabled={page >= totalPages}
-            onClick={() => setParam('page', String(page + 1))}
-            className="micro rounded-[5px] border hairline border-slate-verdant/40 px-4 py-2 text-press-black transition enabled:hover:border-highlighter-green disabled:opacity-40"
-          >
-            Next →
-          </button>
-        </nav>
-      ) : null}
 
       <CompareBar
         count={shortlist.length}
         onClear={clearShortlist}
         onCompare={() => navigate(`/compare?ids=${shortlist.join(',')}`)}
       />
-    </section>
+    </div>
   )
 }
 
@@ -382,27 +413,65 @@ function labelFor(key: string): string {
   return CATEGORIES.find((c) => c.key === key)?.label ?? 'All agents'
 }
 
-function FilterChip({
+// the filter chip is the design's pill, made clickable: keep when it is the active filter
+function Chip({
   active,
   onClick,
+  title,
   children,
 }: {
   active: boolean
   onClick: () => void
+  title?: string
   children: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`micro py-2 transition focus-visible:outline-2 focus-visible:outline-highlighter-green lg:py-0 ${
-        active
-          ? 'text-press-black underline decoration-highlighter-green decoration-2 underline-offset-8'
-          : 'text-newsprint-gray hover:text-press-black'
-      }`}
+      title={title}
+      aria-pressed={active}
+      className="shrink-0 cursor-pointer rounded-[6px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
-      {children}
+      <Pill variant={active ? 'keep' : 'off'}>{children}</Pill>
     </button>
+  )
+}
+
+// the switch in the dark system: the track is the nested surface, the knob the data colour
+function Switch({
+  checked,
+  label,
+  onChange,
+  children,
+}: {
+  checked: boolean
+  label: string
+  onChange: () => void
+  children: string
+}) {
+  return (
+    <label className="inline-flex cursor-pointer items-center gap-2">
+      <Txt size={11} lead={16} mono tone="steel">
+        {children}
+      </Txt>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={onChange}
+        className={`relative h-[18px] w-[34px] shrink-0 cursor-pointer rounded-full border transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+          checked ? 'border-souk-data bg-souk-data' : 'border-white/[0.16] bg-souk-surface2'
+        }`}
+      >
+        <span
+          className={`absolute top-[1px] h-[14px] w-[14px] rounded-full transition-all duration-150 ${
+            checked ? 'left-[17px] bg-souk-canvas' : 'left-[1px] bg-souk-steel'
+          }`}
+        />
+      </button>
+    </label>
   )
 }
 
@@ -420,7 +489,7 @@ function AgentGrid({
   onToggleCart: (key: string) => void
 }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((a) => (
         <AgentCard
           key={a.agent_id}
@@ -456,22 +525,32 @@ function AgentCard({
   // indexer figures are mostly zero on a young chain, so they show only when they say something
   const score = agent.total_score > 0 ? formatScore(agent.total_score) : null
   const reviews = agent.total_feedbacks
+  // the design's meta line: how long the last check took and when it ran
+  const when = agent.verification
+    ? [
+        agent.verification.responseMs > 0 ? `${agent.verification.responseMs}ms` : null,
+        timeAgo(agent.verification.checkedAt),
+      ]
+        .filter((part): part is string => Boolean(part))
+        .join(' · ')
+    : null
   return (
-    <article
-      className={`metal relative flex flex-col rounded-[12px] border hairline bg-bone-white transition duration-150 hover:border-press-black/40 hover:shadow-[0_16px_32px_-20px_rgba(0,0,0,0.4)] motion-safe:hover:-translate-y-0.5 ${
-        checked ? 'border-highlighter-green ring-1 ring-highlighter-green' : 'border-slate-verdant/35'
-      }`}
+    <Stack
+      surface
+      gap={12}
+      pad={[20, 22, 20, 22]}
+      className={checked ? 'ring-1 ring-souk-data' : undefined}
     >
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
-        className="flex flex-1 flex-col rounded-t-[12px] p-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className="flex flex-col gap-3 rounded-[8px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
-        <div className="flex items-start gap-4">
+        <Row align="center" gap={11}>
           <img
             src={img}
             alt=""
             loading="lazy"
-            className="duotone h-14 w-14 shrink-0 rounded-[12px] object-cover"
+            className="h-[34px] w-[34px] shrink-0 rounded-[8px] border border-white/[0.16] bg-souk-indigo object-cover"
             onError={(e) => {
               // a dead image_url falls back to the listing's own default face
               const el = e.currentTarget
@@ -481,98 +560,113 @@ function AgentCard({
               }
             }}
           />
-          <div className="min-w-0 flex-1">
-            <p className="micro truncate text-newsprint-gray">{categoryName(agent.category)}</p>
-            <h2 className="mt-1 truncate font-serif text-[21px] font-medium leading-tight tracking-[-0.02em] text-press-black">
+          <Stack gap={2} className="min-w-0 flex-1">
+            <Txt size={10} lead={14} weight="bold" upper tone="muted">
+              {categoryName(agent.category)}
+            </Txt>
+            <Txt size={16} lead={24} weight="bold" tone="ink" className="truncate">
               {agent.name}
-            </h2>
-            <p className="mt-0.5 truncate text-[12px] text-newsprint-gray">
-              {firstParty ? (
-                <span className="text-press-black" title={OPERATED_BY_TITLE}>
+            </Txt>
+            {firstParty ? (
+              <span title={OPERATED_BY_TITLE} className="truncate">
+                <Txt size={11} lead={16} tone="slate">
                   {OPERATED_BY_LABEL}
-                </span>
-              ) : (
-                <>
-                  by <span className="font-mono">{shortAddress(agent.owner_address)}</span>
-                </>
-              )}
-            </p>
-          </div>
-        </div>
+                </Txt>
+              </span>
+            ) : (
+              <Txt size={11} lead={16} tone="steel" className="truncate">
+                by <span className="font-mono">{shortAddress(agent.owner_address)}</span>
+              </Txt>
+            )}
+          </Stack>
+        </Row>
 
-        <p className="mt-4 line-clamp-2 text-[14px] leading-relaxed text-newsprint-gray">
+        <span title={verdict.explain} className="inline-flex">
+          <Row align="center" gap={8}>
+            <Dot tone={VERDICT_TONE[verdict.tone]} size={9} />
+            <Txt size={14} lead={20} tone="slate">
+              {verdict.label}
+            </Txt>
+          </Row>
+        </span>
+
+        <Txt size={13} lead={20} tone="slate" className="line-clamp-2">
           {agent.description || 'No description on-chain.'}
-        </p>
+        </Txt>
 
-        <div className="mt-auto pt-5">
-          <p className="flex items-center gap-2 text-[13px]" title={verdict.explain}>
-            <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[verdict.tone]}`} />
-            <span className="font-medium text-press-black">{verdict.label}</span>
-            {agent.verification ? (
-              <span className="truncate text-newsprint-gray">· checked {timeAgo(agent.verification.checkedAt)}</span>
-            ) : null}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {agent.x402_supported ? <Tag title="Takes payment per call over x402">x402</Tag> : null}
-            {agent.pcs ? <Tag title="Says it works with PancakeSwap">PancakeSwap</Tag> : null}
-            {boosted ? <Tag title="Paid boost">Boosted</Tag> : null}
-            {score ? <Tag title="8004scan total score">Score {score}</Tag> : null}
-            {reviews > 0 ? (
-              <Tag title="On-chain feedback entries">
-                {formatNumber(reviews)} review{reviews === 1 ? '' : 's'}
-              </Tag>
-            ) : null}
-          </div>
-        </div>
+        <Row align="center" gap={6} className="flex-wrap">
+          {agent.x402_supported ? <Tag title="Takes payment per call over x402">x402</Tag> : null}
+          {agent.pcs ? <Tag title="Says it works with PancakeSwap">PancakeSwap</Tag> : null}
+          {boosted ? <Tag title="Paid boost">Boosted</Tag> : null}
+          {score ? <Tag title="8004scan total score">Score {score}</Tag> : null}
+          {reviews > 0 ? (
+            <Tag title="On-chain feedback entries">
+              {formatNumber(reviews)} review{reviews === 1 ? '' : 's'}
+            </Tag>
+          ) : null}
+        </Row>
+
+        <Rule />
+
+        <Row justify="between" align="center" gap={8}>
+          <Txt size={11} lead={16} mono tone="steel">
+            {`${chainLabel(agent.chain_id)} ${agent.chain_id} · #${agent.token_id}`}
+          </Txt>
+          {when ? (
+            <Txt size={11} lead={16} mono tone="muted">
+              {when}
+            </Txt>
+          ) : null}
+        </Row>
       </Link>
 
-      <div className="flex items-center gap-2 border-t hairline border-slate-verdant/25 p-2">
-        <button
-          type="button"
+      <Row gap={10}>
+        <Btn
+          kind={checked ? 'keep' : 'off'}
+          className="basis-0 grow"
           onClick={() => onToggle(key)}
           aria-pressed={checked}
-          className={`micro inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[8px] px-3 transition-colors focus-visible:outline-2 focus-visible:outline-press-black sm:min-h-9 ${
-            checked ? 'bg-highlighter-green/20 text-press-black' : 'text-newsprint-gray hover:bg-echo-green/50 hover:text-press-black'
-          }`}
         >
-          <span
-            aria-hidden="true"
-            className={`flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border ${
-              checked ? 'border-press-black bg-press-black text-bone-white' : 'border-current'
-            }`}
-          >
-            {checked ? (
-              <svg width="9" height="7" viewBox="0 0 14 10" fill="none">
-                <path d="M1 5l4 4 8-8" stroke="currentColor" strokeWidth="2.5" />
-              </svg>
-            ) : null}
+          <span className="inline-flex items-center gap-2">
+            <span
+              aria-hidden="true"
+              className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border ${
+                checked ? 'border-souk-data bg-souk-data/40' : 'border-souk-steel'
+              }`}
+            >
+              {checked ? (
+                <svg width="9" height="7" viewBox="0 0 14 10" fill="none">
+                  <path d="M1 5l4 4 8-8" stroke="currentColor" strokeWidth="2.5" />
+                </svg>
+              ) : null}
+            </span>
+            Compare
+            {/* the name follows the visible words, so a voice command still matches them */}
+            <span className="sr-only">: {agent.name}</span>
           </span>
-          Compare
-          {/* the name follows the visible words, so a voice command still matches them */}
-          <span className="sr-only">: {agent.name}</span>
-        </button>
-        <button
-          type="button"
+        </Btn>
+        <Btn
+          kind={inCart ? 'keep' : 'off'}
+          className="basis-0 grow"
           onClick={() => onToggleCart(key)}
           aria-pressed={inCart}
-          className={`micro inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[8px] px-3 transition-colors focus-visible:outline-2 focus-visible:outline-press-black sm:min-h-9 ${
-            inCart ? 'bg-highlighter-green/20 text-press-black' : 'text-newsprint-gray hover:bg-echo-green/50 hover:text-press-black'
-          }`}
         >
-          <svg width="13" height="12" viewBox="0 0 16 14" fill="none" aria-hidden="true">
-            <path
-              d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          {inCart ? 'In cart' : 'Add to cart'}
-          <span className="sr-only">: {agent.name}</span>
-        </button>
-      </div>
-    </article>
+          <span className="inline-flex items-center gap-2">
+            <svg width="13" height="12" viewBox="0 0 16 14" fill="none" aria-hidden="true">
+              <path
+                d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {inCart ? 'In cart' : 'Add to cart'}
+            <span className="sr-only">: {agent.name}</span>
+          </span>
+        </Btn>
+      </Row>
+    </Stack>
   )
 }
 
@@ -586,30 +680,22 @@ function GridSkeleton() {
     <div
       role="status"
       aria-label="Loading agents"
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
     >
       {Array.from({ length: 12 }, (_, i) => (
-        <div
-          key={i}
-          className="animate-pulse rounded-[12px] border hairline border-slate-verdant/35 bg-bone-white"
-        >
-          <div className="p-5">
-            <div className="flex items-start gap-4">
-              <div className="h-14 w-14 rounded-[12px] bg-slate-verdant/10" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 w-20 bg-slate-verdant/10" />
-                <div className="h-4 w-32 bg-slate-verdant/10" />
-                <div className="h-3 w-24 bg-slate-verdant/10" />
-              </div>
-            </div>
-            <div className="mt-5 space-y-2">
-              <div className="h-3 w-full bg-slate-verdant/10" />
-              <div className="h-3 w-3/4 bg-slate-verdant/10" />
-            </div>
-            <div className="mt-6 h-3 w-40 bg-slate-verdant/10" />
-          </div>
-          <div className="h-[53px] border-t hairline border-slate-verdant/25" />
-        </div>
+        <Stack key={i} surface gap={12} pad={[20, 22, 20, 22]} className="animate-pulse">
+          <Row align="center" gap={11}>
+            <span className="h-[34px] w-[34px] shrink-0 rounded-[8px] bg-white/[0.08]" />
+            <Stack gap={6} className="flex-1">
+              <span className="h-3 w-20 rounded-[3px] bg-white/[0.08]" />
+              <span className="h-4 w-32 rounded-[3px] bg-white/[0.08]" />
+            </Stack>
+          </Row>
+          <span className="h-3 w-full rounded-[3px] bg-white/[0.08]" />
+          <span className="h-3 w-3/4 rounded-[3px] bg-white/[0.08]" />
+          <Rule />
+          <span className="h-3 w-40 rounded-[3px] bg-white/[0.08]" />
+        </Stack>
       ))}
     </div>
   )
@@ -617,36 +703,32 @@ function GridSkeleton() {
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="border hairline border-slate-verdant/40 px-10 py-20 text-center">
-      <p className="font-serif text-[28px] font-medium">Could not reach the market.</p>
-      <p className="mt-3 text-sm text-newsprint-gray">
+    <Stack surface pad={[40, 40, 40, 40]} gap={12} className="items-center text-center">
+      <Txt size={20} lead={26} weight="bold" tone="ink">
+        Could not reach the market.
+      </Txt>
+      <Txt size={13} lead={20} tone="slate">
         The catalogue service did not respond. It should be back shortly.
-      </p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className={cx(button('primary', 'lg'), 'mt-8')}
-      >
+      </Txt>
+      <Btn kind="primary" onClick={onRetry} className="mt-4">
         Retry
-      </button>
-    </div>
+      </Btn>
+    </Stack>
   )
 }
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
-    <div className="border hairline border-slate-verdant/40 px-10 py-20 text-center">
-      <p className="font-serif text-[28px] font-medium">Nothing matches.</p>
-      <p className="mt-3 text-sm text-newsprint-gray">
+    <Stack surface pad={[40, 40, 40, 40]} gap={12} className="items-center text-center">
+      <Txt size={20} lead={26} weight="bold" tone="ink">
+        Nothing matches.
+      </Txt>
+      <Txt size={13} lead={20} tone="slate">
         No agent fits that filter. Clear it to see the full catalogue.
-      </p>
-      <button
-        type="button"
-        onClick={onReset}
-        className={cx(button('primary', 'lg'), 'mt-8')}
-      >
+      </Txt>
+      <Btn kind="primary" onClick={onReset} className="mt-4">
         Show all agents
-      </button>
-    </div>
+      </Btn>
+    </Stack>
   )
 }
