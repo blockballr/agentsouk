@@ -48,8 +48,8 @@ describe("waiting for a transaction receipt", () => {
   });
 
   it("a hanging send rejects in time with the latch and hash untouched, so the wizard can retry", async () => {
-    let latched = false;
-    let txHash: string | null = null;
+    const latched = false;
+    const txHash: string | null = null;
     const started = Date.now();
     const err = await withSendTimeout(hang(), 30).then(
       () => null,

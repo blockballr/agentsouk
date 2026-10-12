@@ -2,7 +2,7 @@ import { ImageResponse } from "@vercel/og";
 import { readFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
-const ROOT = "C:\Users\user\Desktop\agora";
+const ROOT = "C:/Users/user/Desktop/agora";
 const FONT_DIR = path.join(ROOT, "node_modules/@fontsource-variable");
 
 const inter = await readFile(

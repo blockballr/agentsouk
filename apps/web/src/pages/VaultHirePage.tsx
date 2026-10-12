@@ -340,7 +340,7 @@ export default function VaultHirePage() {
           <p className="mt-2 text-[13px] leading-5 text-press-black">
             This listing lives on {requestedChainLabel}, but the vault is live on {CHAIN.label}
             {' '}at {vault ? `${short(vault)}` : 'not configured'}. The listing is named above, and funding it
-            here would put the deposit on the vault's own chain, not the listing's.
+            here would put the deposit on the vault&apos;s own chain, not the listing&apos;s.
           </p>
         </div>
       ) : null}

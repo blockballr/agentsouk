@@ -1611,7 +1611,7 @@ function HirePanel({
               Sandbox settlement: the signature was verified and the session is
               recorded by the facilitator; no on-chain transfer occurred. Live
               Live settlement on {chainLabel(Number(chainId))} uses the same flow,
-              with the relay broadcasting the authorization to the agent's own
+              with the relay broadcasting the authorization to the agent&apos;s own
               wallet.
             </p>
           )}

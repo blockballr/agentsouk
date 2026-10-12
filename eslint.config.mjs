@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // build output and gitignored local tooling: neither is shipped source, and
+    // the minified bundles parse as binary rather than as JavaScript
+    "dist/**",
+    "**/dist/**",
+    ".local-scripts/**",
   ]),
 ]);
 

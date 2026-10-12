@@ -489,7 +489,7 @@ function AgentHistory({
     <div className="mt-16">
       <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">How each agent is doing</h2>
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        Buyer hires by day over the last two weeks, and each agent's latest checks. The oldest is on the left.
+        Buyer hires by day over the last two weeks, and each agent&apos;s latest checks. The oldest is on the left.
       </p>
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         {agents.map((agent) => {
