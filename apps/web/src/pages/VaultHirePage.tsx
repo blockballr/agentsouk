@@ -8,6 +8,7 @@ import {
   expiryFor,
   EXPIRY_PRESETS,
   MAX_SLIPPAGE_BPS,
+  MAX_TERM_SECONDS,
   openCalldata,
   vaultFor,
   vaultTokenA,
@@ -19,7 +20,24 @@ import {
 import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { explorerAddressUrl } from '../lib/contracts'
-import { Action, LABEL, ResultBox, TextSlot, button, card, cx } from '../components/ui'
+import { ResultBox } from '../components/ui'
+import {
+  Stack,
+  Row,
+  Txt,
+  Pill,
+  Dot,
+  SectionHead,
+  NoteBox,
+  Kpi,
+  DataTable,
+  Btn,
+  Rule,
+  Label,
+  LogoMark,
+  AgentAvatar,
+  type TableRowSpec,
+} from '../components/souk'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -216,144 +234,334 @@ export default function VaultHirePage() {
 
   const capLine = caps ? `caps ${caps.capA} WBNB / ${caps.capB} USDT` : 'caps read from the vault when the wallet connects'
 
+  // the band states only what the deployment itself publishes
+  const termDays = MAX_TERM_SECONDS / 86_400
+  const kpis = [
+    ...(caps
+      ? [
+          { value: `${caps.capA} WBNB`, label: 'Cap per deposit, token A' },
+          { value: `${caps.capB} USDT`, label: 'Cap per deposit, token B' },
+        ]
+      : []),
+    { value: `${termDays} days`, label: 'Longest term the vault takes' },
+    { value: `${MAX_SLIPPAGE_BPS} bps`, label: 'Widest slippage the vault takes' },
+  ]
+
+  // cap text waits on the read, the pair itself is pinned in lib/vault
+  const capFor = (symbol: string) =>
+    caps ? `${symbol === 'WBNB' ? caps.capA : caps.capB} per deposit` : 'read when the wallet connects'
+  const pairRows: TableRowSpec[] = [vaultTokenA(97), vaultTokenB(97)].flatMap((t) =>
+    t
+      ? [
+          {
+            cells: [
+              { text: t.symbol, weight: 'semibold', tone: 'ink' },
+              { text: t.address, size: 12, mono: true, tone: 'slate' },
+              { text: String(t.decimals), size: 12, mono: true, tone: 'steel' },
+              { text: capFor(t.symbol), size: 12, mono: true, tone: 'data' },
+            ],
+          },
+        ]
+      : [],
+  )
+
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10">
-      <div className={cx(card('plain', 'lg'))}>
-        <p className={LABEL}>Funded hire</p>
-        <h1 className="mt-2 font-serif text-3xl text-press-black">Hire an agent that trades a bounded deposit</h1>
-        <p className="mt-3 max-w-2xl text-[15px] leading-6 text-newsprint-gray">
+    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 text-souk-ink lg:pb-16">
+      <Stack gap={10} className="pt-8">
+        <Txt size={11} lead={16} mono upper tone="data">
+          VAULT HIRE · {CHAIN.label} {CHAIN.id} · VAULT {vault ? short(vault) : 'not configured'}
+          {tokenId ? ` · TOKEN #${tokenId}` : ''}
+        </Txt>
+        <h1 className="m-0">
+          <Txt size={34} lead={42} weight="bold" tone="ink">
+            Hire an agent that trades a bounded deposit.
+          </Txt>
+        </h1>
+        <Txt size={15} lead={23} tone="slate" className="max-w-[1180px]">
           The deposit sits in the HireVault contract, not with the marketplace and not with the agent.
           The agent is named per hire and may only trade the bound pair inside a floor fixed at open
           and a drawdown budget that bounds the whole loss. Revoking is one transaction, yours alone.
-        </p>
-        {prefill?.name ? (
-          <p className="mt-3 text-[15px] text-press-black">
-            Hiring {prefill.name}, the agent the registry records at {agentAddress ? short(agentAddress) : 'no wallet'}.
-          </p>
-        ) : null}
-      </div>
+        </Txt>
+      </Stack>
 
-      <div className={cx(card('plain', 'lg'))}>
-        <p className={LABEL}>Open a hire</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className={LABEL}>Deposit token</p>
-            <div className="mt-2 flex gap-2">
-              {(['WBNB', 'USDT'] as const).map((s) => (
-                <button key={s} type="button" onClick={() => setTokenChoice(s)} className={cx(button(tokenChoice === s ? 'primary' : 'secondary', 'sm'))}>
-                  {s}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-[13px] leading-5 text-newsprint-gray">
-              {tokenChoice === 'USDT'
-                ? 'USDT is the un-minted testnet stable, bought from the vaults own pool first. The open only spends what you approve.'
-                : 'WBNB is wrapped from the chains tBNB in the signed step below. The open only spends what you approve.'}
-            </p>
-          </div>
-          <div>
-            <p className={LABEL}>Deposit size ({caps ? capLine : 'connecting'})</p>
-            <input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              inputMode="decimal"
-              className={cx('mt-2 w-full rounded-[5px] border border-slate-verdant/50 bg-white px-3 py-2 font-mono text-sm text-press-black')}
-            />
-          </div>
-          <div>
-            <p className={LABEL}>The hire ends</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {EXPIRY_PRESETS.map((p, i) => (
-                <button key={p.label} type="button" onClick={() => setExpiryIndex(i)} className={cx(button(expiryIndex === i ? 'primary' : 'secondary', 'sm'))}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className={LABEL}>Slippage ceiling, 1 to {MAX_SLIPPAGE_BPS} bps</p>
-            <input
-              value={slippage}
-              onChange={(e) => setSlippage(Number(e.target.value) || 0)}
-              inputMode="numeric"
-              className={cx('mt-2 w-full rounded-[5px] border border-slate-verdant/50 bg-white px-3 py-2 font-mono text-sm text-press-black')}
-            />
-          </div>
-          {!prefill?.wallet ? (
-            <div className="sm:col-span-2">
-              <p className={LABEL}>Agent wallet to name</p>
-              <input
-                value={manualAgent}
-                onChange={(e) => setManualAgent(e.target.value)}
-                placeholder="0x..."
-                className={cx('mt-2 w-full rounded-[5px] border border-slate-verdant/50 bg-white px-3 py-2 font-mono text-sm text-press-black')}
+      {kpis.length > 0 ? (
+        <Row gap={20} className="mt-6 flex-wrap">
+          {kpis.map((k) => (
+            <Kpi key={k.label} value={k.value} label={k.label} />
+          ))}
+        </Row>
+      ) : null}
+
+      <div className="mt-5 grid grid-cols-1 items-start gap-5 lg:grid-cols-[1316fr_518fr]">
+        <div className="flex min-w-0 flex-col gap-5">
+          {prefill?.name ? (
+            <Stack surface pad={[20, 22, 20, 22]} gap={12}>
+              <SectionHead
+                title="The agent this hire names"
+                note={`REGISTRY ${requestedChain} · TOKEN #${tokenId}`}
               />
-            </div>
+              <Row align="center" gap={11} className="flex-wrap">
+                <AgentAvatar size={34} name={prefill.name} />
+                <Stack gap={2} className="min-w-0">
+                  <Txt size={17} lead={22} weight="bold" tone="ink">
+                    {prefill.name}
+                  </Txt>
+                  <Txt size={11} lead={15} mono tone="labels">
+                    {agentAddress ? short(agentAddress) : 'no wallet on the record'}
+                  </Txt>
+                </Stack>
+              </Row>
+              <Txt size={13} lead={20} weight="semibold" tone="ink">
+                Hiring {prefill.name}, the agent the registry records at{' '}
+                {agentAddress ? short(agentAddress) : 'no wallet'}.
+              </Txt>
+              <Txt size={12} lead={18} tone="steel">
+                The registry record above is what the route points at: chain {requestedChain}, token {tokenId}.
+              </Txt>
+            </Stack>
           ) : null}
-        </div>
-        <div className="mt-5 flex items-center gap-3">
-          <Action variant="primary" size="lg" onClick={openHire} disabled={busy !== null}>
-            {busy === 'open' ? 'Opening...' : 'Approve and open'}
-          </Action>
-          <span className="text-[13px] text-newsprint-gray">three named signatures at most: wrap, approve, open</span>
-        </div>
-      </div>
 
-      <div className={cx(card('plain', 'lg'))}>
-        <div className="flex items-baseline justify-between">
-          <p className={LABEL}>Your hires on chain</p>
-          <Action variant="quiet" size="sm" onClick={refresh} disabled={!account}>
-            Refresh
-          </Action>
-        </div>
-        {hires && hires.length > 0 ? (
-          <div className="mt-4 flex flex-col gap-3">
-            {hires.map((h, i) => (
-              <div key={i} className="rounded-[10px] border border-slate-verdant/40 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-mono text-[13px] text-press-black">
-                    hire {i}: {h.open ? 'open' : 'closed'} | in {h.balanceA} WBNB, {h.balanceB} USDT | agent {short(h.agent)} | floor fee {h.fee} | slippage {h.maxSlippageBps} bps
-                  </p>
-                  {h.open ? (
-                    <Action variant="secondary" size="sm" onClick={() => withdrawHire(hireIds?.[i] ?? BigInt(i + 1))} disabled={busy !== null}>
-                      {busy === `withdraw ${hireIds?.[i] ?? BigInt(i + 1)}` ? 'Closing...' : 'Revoke and withdraw'}
-                    </Action>
-                  ) : null}
-                </div>
+          {vault && pairRows.length > 0 ? (
+            <Stack surface pad={[20, 22, 20, 22]} gap={12}>
+              <Row justify="between" align="center" gap={12} className="flex-wrap">
+                <Stack gap={3} className="min-w-0">
+                  <Txt size={18} lead={27} weight="bold" tone="ink">
+                    The bound pair
+                  </Txt>
+                  <Txt size={13} lead={20} tone="muted">
+                    The only positions a hire may hold, and the ceiling on each one
+                  </Txt>
+                </Stack>
+                <Row gap={8} align="center" className="shrink-0">
+                  <Pill>pancakeswap v3</Pill>
+                  <Pill variant="warn">bsc testnet {CHAIN.id}</Pill>
+                </Row>
+              </Row>
+              <DataTable
+                cols={[280, 540, 160, 292]}
+                header={['TOKEN', 'ADDRESS', 'DECIMALS', 'CAP PER DEPOSIT']}
+                rows={pairRows}
+              />
+              <div className="grid gap-2.5 sm:grid-cols-3">
+                {[
+                  { value: '500', label: 'Fee tier', note: 'bound when the hire opens' },
+                  { value: `${MAX_SLIPPAGE_BPS} bps`, label: 'Slippage ceiling', note: 'the widest the vault takes' },
+                  { value: `${termDays} days`, label: 'Term', note: 'the longest the vault holds a hire open' },
+                ].map((f) => (
+                  <Stack key={f.label} bg="surface2" radius={8} pad={[10, 12, 10, 12]} gap={3}>
+                    <Txt size={15} lead={21} weight="bold" mono tone="ink">
+                      {f.value}
+                    </Txt>
+                    <Label tone="muted">{f.label}</Label>
+                    <Txt size={11} lead={15} tone="steel">
+                      {f.note}
+                    </Txt>
+                  </Stack>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <TextSlot lines={2} className="mt-4">
-            {account ? 'No hires from this wallet on the vault yet.' : 'Connect the wallet to read your hires from the vault.'}
-          </TextSlot>
-        )}
+              <Txt size={12} lead={18} tone="steel">
+                The agent may swap part of the deposit between these two tokens and nothing else, and the
+                agent can never move the deposit out. The factory and the fee tier are fixed before the
+                hire opens, so the caller chooses none of them, and the floor a trade is measured against
+                is read at open rather than at the moment of the trade.
+              </Txt>
+            </Stack>
+          ) : null}
+
+          <Stack surface pad={[20, 22, 20, 22]} gap={14}>
+            <SectionHead title="Open a hire" note="THREE NAMED SIGNATURES AT MOST" />
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Stack gap={2} className="min-w-0">
+                <Label tone="muted">Deposit token</Label>
+                <Row gap={10} className="mt-1.5 flex-wrap">
+                  {(['WBNB', 'USDT'] as const).map((s) => (
+                    <Btn
+                      key={s}
+                      kind={tokenChoice === s ? 'primary' : 'off'}
+                      onClick={() => setTokenChoice(s)}
+                      className="w-[150px]"
+                    >
+                      {s}
+                    </Btn>
+                  ))}
+                </Row>
+                <Txt size={12} lead={18} tone="steel">
+                  {tokenChoice === 'USDT'
+                    ? 'USDT is the un-minted testnet stable, bought from the vaults own pool first. The open only spends what you approve.'
+                    : 'WBNB is wrapped from the chains tBNB in the signed step below. The open only spends what you approve.'}
+                </Txt>
+              </Stack>
+              <Stack gap={8} className="min-w-0">
+                <Label tone="muted">Deposit size ({caps ? capLine : 'connecting'})</Label>
+                <input
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  inputMode="decimal"
+                  className="h-11 w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 font-mono text-[13px] leading-[20px] text-souk-ink outline-none"
+                />
+              </Stack>
+            </div>
+            <Stack gap={8}>
+              <Label tone="muted">The hire ends · the farthest rung is the {termDays} day cap itself</Label>
+              <Row gap={8}>
+                {EXPIRY_PRESETS.map((p, i) => (
+                  <Btn
+                    key={p.label}
+                    kind={expiryIndex === i ? 'primary' : 'off'}
+                    onClick={() => setExpiryIndex(i)}
+                    className="min-w-0 flex-1 basis-0"
+                  >
+                    {p.label}
+                  </Btn>
+                ))}
+              </Row>
+            </Stack>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Stack gap={8} className="min-w-0">
+                <Label tone="muted">Slippage ceiling, 1 to {MAX_SLIPPAGE_BPS} bps</Label>
+                <input
+                  value={slippage}
+                  onChange={(e) => setSlippage(Number(e.target.value) || 0)}
+                  inputMode="numeric"
+                  className="h-11 w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 font-mono text-[13px] leading-[20px] text-souk-ink outline-none"
+                />
+              </Stack>
+              <Stack gap={4} className="min-w-0">
+                <Label tone="muted">The payout</Label>
+                <Txt size={12} lead={18} tone="steel">
+                  One withdraw returns every balance the hire holds, expired or not. There is no schedule
+                  and no standing approval, and the only signature it needs is the buyer&apos;s.
+                </Txt>
+              </Stack>
+            </div>
+            {!prefill?.wallet ? (
+              <Stack gap={8}>
+                <Label tone="muted">Agent wallet to name</Label>
+                <input
+                  value={manualAgent}
+                  onChange={(e) => setManualAgent(e.target.value)}
+                  placeholder="0x..."
+                  className="h-11 w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 font-mono text-[13px] leading-[20px] text-souk-ink outline-none"
+                />
+              </Stack>
+            ) : null}
+            <Rule hair />
+            <Row gap={12} align="center" className="flex-wrap">
+              <Btn kind="primary" onClick={openHire} disabled={busy !== null} className="w-[260px]">
+                {busy === 'open' ? 'Opening...' : 'Approve and open'}
+              </Btn>
+              <Txt size={12} lead={18} tone="labels">
+                three named signatures at most: wrap, approve, open
+              </Txt>
+            </Row>
+            <Txt size={12} lead={18} tone="steel">
+              The approval is scoped to the exact deposit, never a blanket number, and the open names the
+              agent, the deposit, the expiry, the slippage ceiling and the fee tier in one call.
+            </Txt>
+          </Stack>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-5">
+          <Stack surface pad={[20, 22, 20, 22]} gap={12}>
+            <Row justify="between" align="center">
+              <Txt size={15} lead={22} weight="bold" tone="ink">
+                Your hires on chain
+              </Txt>
+              <button
+                type="button"
+                onClick={refresh}
+                disabled={!account}
+                className="shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Txt size={10} lead={14} weight="bold" upper tone="data">
+                  Refresh
+                </Txt>
+              </button>
+            </Row>
+            {hires && hires.length > 0 ? (
+              <Stack gap={12}>
+                <Rule hair />
+                {hires.map((h, i) => {
+                  const id = hireIds?.[i] ?? BigInt(i + 1)
+                  return (
+                    <Row key={i} justify="between" align="center" gap={10}>
+                      <Row align="center" gap={9} className="min-w-0">
+                        <Dot tone={h.open ? 'good' : 'quiet'} />
+                        <Txt size={11} lead={16} mono tone="slate" className="min-w-0" >
+                          hire {i}: {h.open ? 'open' : 'closed'} | in {h.balanceA} WBNB, {h.balanceB} USDT | agent {short(h.agent)} | floor fee {h.fee} | slippage {h.maxSlippageBps} bps
+                        </Txt>
+                      </Row>
+                      {h.open ? (
+                        <Btn
+                          kind="off"
+                          onClick={() => withdrawHire(id)}
+                          disabled={busy !== null}
+                          className="shrink-0 whitespace-nowrap"
+                        >
+                          {busy === `withdraw ${id}` ? 'Closing...' : 'Revoke and withdraw'}
+                        </Btn>
+                      ) : null}
+                    </Row>
+                  )
+                })}
+              </Stack>
+            ) : (
+              <Stack pad={[14, 16, 14, 16]} gap={8} radius={14} hair className="items-center">
+                <LogoMark size={30} />
+                <Txt size={13} lead={19} weight="semibold" tone="ink">
+                  {account
+                    ? 'No hires from this wallet on the vault yet.'
+                    : 'Connect the wallet to read your hires from the vault.'}
+                </Txt>
+              </Stack>
+            )}
+            <Txt size={12} lead={18} tone="muted">
+              A revoke is unconditional: every balance comes back in one transaction and is not gated on
+              the timeout.
+            </Txt>
+          </Stack>
+
+          <NoteBox
+            title="Honest state"
+            copy={`The vault is live on ${CHAIN.label} at ${
+              vault ? `${short(vault)} (${explorerAddressUrl(97, vault)})` : 'not configured'
+            }, and its open-trade-withdraw loop is proven from scripts and a live smoke. The agent side that trades these hires runs from the executor service; a hire opened by a wallet the team owns does not count toward any quest.`}
+            rows={[
+              { label: 'VAULT', value: vault ? short(vault) : 'not configured', mono: true },
+              { label: 'CHAIN', value: `${CHAIN.label} ${CHAIN.id}` },
+              {
+                label: 'EXPLORER',
+                value: vault ? explorerAddressUrl(97, vault) : 'not configured',
+                mono: true,
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {lines.length > 0 ? (
-        <ResultBox label="What happened" preview={lines.join('\n')} className="whitespace-pre-wrap" />
-      ) : null}
-
-      {requestedChain !== CHAIN.id && tokenId ? (
-        <div className={cx(card('accent', 'md'))}>
-          <p className={LABEL}>Wrong chain for the vault</p>
-          <p className="mt-2 text-[13px] leading-5 text-press-black">
-            This listing lives on {requestedChainLabel}, but the vault is live on {CHAIN.label}
-            {' '}at {vault ? `${short(vault)}` : 'not configured'}. The listing is named above, and funding it
-            here would put the deposit on the vault&apos;s own chain, not the listing&apos;s.
-          </p>
+        <div className="mt-5">
+          <ResultBox label="What happened" preview={lines.join('\n')} className="whitespace-pre-wrap" />
         </div>
       ) : null}
 
-      <div className={cx(card('accent', 'md'))}>
-        <p className={LABEL}>Honest state</p>
-        <p className="mt-2 text-[13px] leading-5 text-press-black">
-          The vault is live on {CHAIN.label} at {vault ? `${short(vault)} (${explorerAddressUrl(97, vault)})` : 'not configured'}
-          , and its open-trade-withdraw loop is proven from scripts and a live smoke. The agent side that trades
-          these hires runs from the executor service; a hire opened by a wallet the team owns does not count
-          toward any quest.
-        </p>
-      </div>
+      {requestedChain !== CHAIN.id && tokenId ? (
+        <NoteBox
+          className="mt-5"
+          title="Wrong chain for the vault"
+          copy={`This listing lives on ${requestedChainLabel}, but the vault is live on ${CHAIN.label} at ${
+            vault ? short(vault) : 'not configured'
+          }. The listing is named above, and funding it here would put the deposit on the vault's own chain, not the listing's.`}
+        />
+      ) : null}
+
+      <Stack gap={2} className="mt-5">
+        <Rule />
+        <Txt size={12} lead={18} tone="muted">
+          Every figure above is read off the deployment: the caps, the bound pair, the term, the fee tier
+          and the slippage ceiling.
+        </Txt>
+      </Stack>
     </div>
   )
 }
