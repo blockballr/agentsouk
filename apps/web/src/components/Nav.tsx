@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
+import { shortAddress } from '@agora/core'
 import { QuickSearch } from './QuickSearch'
 import { NotificationBell } from './NotificationBell'
 import { cartCount, subscribe } from '../lib/cart'
+import { getActiveAccount } from '../lib/wallet'
+import { IconCart, LogoMark, Txt } from './souk'
 
 const links = [
   { to: '/agents', label: 'Marketplace' },
@@ -22,12 +25,24 @@ const itemClass = (isActive: boolean): string =>
       : 'border-transparent text-souk-steel hover:text-souk-ink'
   }`
 
-// the 38 square control the design puts in the bar's right cluster
+// the bar's control squares: the design's 38 tall, an 8 radius, one 16% rim, the rim
+// taking the hover since the icons carry their own colour rather than inheriting it
 const controlClass =
-  'flex h-[38px] items-center justify-center gap-2 rounded-[8px] border border-white/[0.16] px-2.5 text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data'
+  'relative flex h-[38px] shrink-0 items-center justify-center gap-2 rounded-[8px] border border-white/[0.16] text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
+
+// the profile chip: wider than a square, because the design puts the mark and the
+// connected address in it rather than an icon alone
+const profileClass =
+  'flex h-[38px] shrink-0 items-center gap-2 rounded-[8px] border border-white/[0.16] pl-2.5 pr-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
 
 export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false)
+  // the profile chip says the wallet rather than spelling out Profile: the address
+  // is the affordance, so the connected account is read once here and passed down
+  const [wallet, setWallet] = useState<string | null>(null)
+  useEffect(() => {
+    void getActiveAccount().then(setWallet)
+  }, [])
   return (
     <header className="relative z-10 border-b border-white/[0.16] bg-souk-canvas">
       <div className="mx-auto flex h-[62px] max-w-[1920px] items-center justify-between px-8">
@@ -59,7 +74,7 @@ export function Nav() {
           <QuickSearch />
           <NotificationBell />
           <CartLink />
-          <ProfileLink />
+          <ProfileLink wallet={wallet} />
         </div>
 
         <div className="lg:hidden">
@@ -97,7 +112,7 @@ export function Nav() {
             <div className="mt-2 flex items-center gap-6 py-3">
               <AboutLink onClick={() => setMenuOpen(false)} />
               <CartLink />
-              <ProfileLink onClick={() => setMenuOpen(false)} />
+              <ProfileLink onClick={() => setMenuOpen(false)} wallet={wallet} />
               <NotificationBell />
             </div>
           </nav>
@@ -112,8 +127,17 @@ function CartLink() {
   useEffect(() => subscribe(() => setCount(cartCount())), [])
   return (
     <Link to="/cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`} className={controlClass}>
-      <CartGlyph />
-      {count > 0 ? <span className="font-mono tabular-nums text-souk-ink">{count}</span> : null}
+      <IconCart />
+      {/* the count keeps its place as functionality, in the design's own badge chip and
+          in the same corner the outbox count sits when the cart is not empty */}
+      {count > 0 ? (
+        <span
+          aria-hidden="true"
+          className="absolute right-0 top-0 flex h-[18px] -translate-y-1/3 translate-x-1/3 items-center justify-center rounded-[6px] bg-souk-data px-1.5 font-mono text-[11px] font-bold leading-none text-souk-canvas"
+        >
+          {count}
+        </span>
+      ) : null}
     </Link>
   )
 }
@@ -126,51 +150,21 @@ function AboutLink({ onClick }: { onClick?: () => void }) {
   )
 }
 
-function ProfileLink({ onClick }: { onClick?: () => void }) {
+function ProfileLink({ onClick, wallet }: { onClick?: () => void; wallet: string | null }) {
   return (
     <NavLink
       to="/profile"
       onClick={onClick}
       aria-label="Profile, your listings"
-      className={({ isActive }) =>
-        `${controlClass} ${
-          isActive ? 'border-souk-data/60 text-souk-ink' : ''
-        }`
-      }
+      className={({ isActive }) => `${profileClass} ${isActive ? 'border-souk-data/60' : ''}`}
     >
-      <ProfileGlyph />
-      <span className="text-[13px] uppercase">Profile</span>
+      {/* the wallet says it: the design shows the connected address rather than the
+          word Profile, so an unconnected chip falls back to the noun alone */}
+      <LogoMark size={28} />
+      <Txt size={12} lead={18} mono tone="ink">
+        {wallet ? shortAddress(wallet) : 'Profile'}
+      </Txt>
     </NavLink>
-  )
-}
-
-function ProfileGlyph() {
-  return (
-    <svg width="14" height="15" viewBox="0 0 14 15" fill="none" aria-hidden="true">
-      <circle cx="7" cy="4.3" r="3.1" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M1.5 14c0-2.9 2.4-4.7 5.5-4.7s5.5 1.8 5.5 4.7"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-
-function CartGlyph() {
-  return (
-    <svg width="16" height="14" viewBox="0 0 16 14" fill="none" aria-hidden="true">
-      <path
-        d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="6.2" cy="12.8" r="1.1" fill="currentColor" />
-      <circle cx="12.2" cy="12.8" r="1.1" fill="currentColor" />
-    </svg>
   )
 }
 
