@@ -31,6 +31,7 @@ export function Nav() {
   return (
     <header className="relative z-10 border-b border-white/[0.16] bg-souk-canvas">
       <div className="mx-auto flex h-[62px] max-w-[1920px] items-center justify-between px-8">
+        {/* left: the wordmark and the section links, the design's first cluster */}
         <div className="flex items-center gap-[44px]">
           <Link
             to="/"
@@ -38,44 +39,41 @@ export function Nav() {
           >
             Agent Souk
           </Link>
-          <nav aria-label="Primary" className="flex items-center gap-7">
-            <ul className="hidden items-center gap-7 lg:flex">
-              {links.map((l) => (
-                <li key={l.to}>
-                  <NavLink to={l.to} end={l.to === '/'} className={({ isActive }) => itemClass(isActive)}>
-                    {l.label}
-                  </NavLink>
-                </li>
-              ))}
-              {/* the plain text links belong in this one row: a group that also holds
-                  the boxed controls is taller, so its text centres against a different
-                  box height and the row reads misaligned */}
-              <li>
-                <AboutLink />
-              </li>
-            </ul>
-            <div className="hidden lg:flex lg:items-center lg:gap-2.5">
-              <QuickSearch />
-              <NotificationBell />
-              <CartLink />
-              {/* profile is the rightmost control in the design, and the display
-                  toggle sits where the design puts its monitor button */}
-              <ProfileLink />
-            </div>
-            <div className="lg:hidden">
-              <QuickSearch large />
-            </div>
-            <button
-              type="button"
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-11 w-11 items-center justify-center text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data lg:hidden"
-            >
-              <MenuIcon />
-            </button>
+          <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
+            {links.map((l) => (
+              <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => itemClass(isActive)}>
+                {l.label}
+              </NavLink>
+            ))}
+            {/* the plain text links belong in this one row: a group that also holds
+                the boxed controls is taller, so its text centres against a different
+                box height and the row reads misaligned */}
+            <AboutLink />
           </nav>
         </div>
+
+        {/* right: the controls. The design draws them as the bar's second cluster, so
+            they are a sibling of the wordmark group and the space between pins them to
+            the far edge rather than to the end of the links */}
+        <div className="hidden lg:flex lg:items-center lg:gap-2.5">
+          <QuickSearch />
+          <NotificationBell />
+          <CartLink />
+          <ProfileLink />
+        </div>
+
+        <div className="lg:hidden">
+          <QuickSearch large />
+        </div>
+        <button
+          type="button"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
+          className="flex h-11 w-11 items-center justify-center text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data lg:hidden"
+        >
+          <MenuIcon />
+        </button>
       </div>
 
       {menuOpen && (
