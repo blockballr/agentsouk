@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES, formatUnits, shortAddress, timeAgo } from '@agora/core'
 import {
@@ -14,11 +14,32 @@ import {
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { checkMarks, checkSummary, countByDay, getCheckHistory, type CheckRecord } from '../lib/history'
-import { VERDICT_DOT, verdictFor } from '../lib/verdict'
+import { verdictFor, type VerdictTone } from '../lib/verdict'
 import { changeWallet, connectWallet, getActiveAccount } from '../lib/wallet'
-import { Action, BarStrip, CheckStrip, FigureTile, LABEL, TextSlot, button, card, cx } from '../components/ui'
+import {
+  AgentAvatar,
+  Btn,
+  Dot,
+  Kpi,
+  Label,
+  Pill,
+  Row,
+  Rule,
+  SectionHead,
+  Stack,
+  Txt,
+  type DotTone,
+} from '../components/souk'
 
 type HiresSource = 'postgres' | 'memory' | null
+
+// the verdict's four tones in the design's five-state dot grammar
+const VERDICT_TONE: Record<VerdictTone, DotTone> = {
+  good: 'good',
+  held: 'held',
+  bad: 'bad',
+  none: 'quiet',
+}
 
 function categoryLabel(key: string): string {
   return CATEGORIES.find((c) => c.key === key)?.label ?? (key === 'general' ? 'General' : key)
@@ -162,111 +183,127 @@ export function ProfilePage() {
   }
   const settledChain = hires?.[0]?.chainId ?? owned?.chainId ?? null
 
-  return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
-      <p className="micro text-newsprint-gray">Your profile</p>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
-        <h1 className="font-serif text-[clamp(40px,6vw,88px)] font-medium leading-[0.9] tracking-[-0.04em]">
-          Your listings.
-        </h1>
-        {account && owned && (
-          <div className="flex flex-wrap gap-6 text-[13px] text-newsprint-gray">
-            <span>
-              <strong className="text-press-black">{agents.length - offMarket}</strong>{' '}
-              {agents.length - offMarket === 1 ? 'listing' : 'listings'}
-              {offMarket > 0 ? ` · ${offMarket} off the market` : ''}
-            </span>
-          </div>
-        )}
-      </div>
+  const onMarket = agents.length - offMarket
+  const kicker = account
+    ? [
+        'profile',
+        shortAddress(account),
+        owned
+          ? `${onMarket} on the market${offMarket > 0 ? `, ${offMarket} off` : ''}`
+          : null,
+      ]
+        .filter((part): part is string => Boolean(part))
+        .join(' · ')
+    : 'profile'
 
-      <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        What you have listed, whether it answers our checks, and who has hired it.
-      </p>
+  return (
+    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+      <Stack gap={10} className="max-w-[1180px]">
+        <Txt size={11} lead={16} mono upper tone="data">
+          {kicker}
+        </Txt>
+        <h1 className="m-0">
+          <Txt size={34} lead={42} weight="bold" tone="ink">
+            Your listings.
+          </Txt>
+        </h1>
+        <Txt size={15} lead={23} tone="slate">
+          What you have listed, whether it answers our checks, and who has hired it.
+        </Txt>
+      </Stack>
 
       {!account && (
-        <div className="mt-10 metal rounded-[14px] border hairline border-slate-verdant/40 p-10">
-          <p className="text-[15px] text-typesetter-ink">
+        <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
+          <Txt size={15} lead={22} tone="ink">
             Connect the wallet you listed with.
-          </p>
-          <p className="mt-2 text-[13px] text-newsprint-gray">
+          </Txt>
+          <Txt size={13} lead={20} tone="muted">
             A listing belongs to the wallet the registry records as its owner.
-          </p>
-          <button
-            type="button"
-            onClick={onConnect}
-            disabled={connecting}
-            className={cx(button('primary', 'md'), 'mt-6')}
-          >
+          </Txt>
+          <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
             {connecting ? 'Connecting...' : 'Connect wallet'}
-          </button>
-        </div>
+          </Btn>
+        </Stack>
       )}
 
       {account && (
         <>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-            <p className="micro text-newsprint-gray">
-              Showing listings for{' '}
-              <span className="font-mono text-press-black">{shortAddress(account)}</span>
-            </p>
-            <button
-              type="button"
-              onClick={() => void load()}
-              disabled={loading}
-              className={button('secondary', 'sm')}
-            >
+          <Row justify="between" align="center" gap={16} className="mt-8 flex-wrap">
+            <Txt size={11} lead={16} mono tone="labels">
+              showing listings for <Txt tone="slate">{shortAddress(account)}</Txt>
+            </Txt>
+            <Btn kind="off" onClick={() => void load()} disabled={loading}>
               {loading ? 'Reading...' : 'Refresh'}
-            </button>
-          </div>
+            </Btn>
+          </Row>
 
           {error && (
-            <p className="mt-6 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-xs text-press-black">
-              {error}
-            </p>
+            <div role="alert" className="mt-6">
+              <Stack pad={[14, 16, 14, 16]} radius={14} hair>
+                <Txt size={13} lead={20} tone="peach">
+                  {error}
+                </Txt>
+              </Stack>
+            </div>
           )}
 
           {owned && agents.length > 0 && (
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <FigureTile
-                label="Buyer hires"
-                value={hires ? receivedLabel(customerHires.length, hiresSource) : 'Unavailable'}
-                note="Buyers only, not our checks"
-              />
-              <FigureTile label="Earned" value={hires ? earnedLabel(customerHires) : 'Unavailable'} note="Settled payments from buyers" />
-              <FigureTile
-                label="Agents answering"
-                value={`${answering} of ${agents.length - offMarket}`}
-                note="On their last check"
-              />
+              {[
+                {
+                  label: 'Buyer hires',
+                  value: hires ? receivedLabel(customerHires.length, hiresSource) : 'Unavailable',
+                  note: 'Buyers only, not our checks',
+                },
+                {
+                  label: 'Earned',
+                  value: hires ? earnedLabel(customerHires) : 'Unavailable',
+                  note: 'Settled payments from buyers',
+                },
+                {
+                  label: 'Agents answering',
+                  value: `${answering} of ${onMarket}`,
+                  note: 'On their last check',
+                },
+              ].map((k) => (
+                <div key={k.label} className="min-w-0">
+                  <Kpi value={k.value} label={k.label} />
+                  <Txt size={11} lead={16} tone="muted" className="mt-1.5 block truncate">
+                    {k.note}
+                  </Txt>
+                </div>
+              ))}
             </div>
           )}
 
-          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {owned && agents.length === 0 && (
-              <div className={cx(card('plain', 'xl'), 'md:col-span-2 lg:col-span-3')}>
-                <p className="text-[15px] text-newsprint-gray">
-                  This wallet owns no listed agents on this chain yet.
-                </p>
-                <p className="mt-2 text-[13px] text-newsprint-gray/80">
-                  Just registered? The catalogue reads the chain again within a minute, and a listing shows once it has an endpoint we can call.
-                </p>
-                <Action variant="primary" size="md" onClick={() => void onChangeWallet()} disabled={connecting} className="mt-6">
-                  {connecting ? 'Connecting...' : 'Connect wallet'}
-                </Action>
-              </div>
-            )}
+          <div className="mt-10">
+            <SectionHead title="Your listings" note={owned ? `${agents.length} owned on this chain` : undefined} />
+            <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {owned && agents.length === 0 && (
+                <Stack surface pad={[28, 28, 28, 28]} gap={8} className="md:col-span-2 lg:col-span-3">
+                  <Txt size={15} lead={22} tone="slate">
+                    This wallet owns no listed agents on this chain yet.
+                  </Txt>
+                  <Txt size={13} lead={20} tone="muted">
+                    Just registered? The catalogue reads the chain again within a minute, and a listing shows once it has an endpoint we can call.
+                  </Txt>
+                  <Btn kind="primary" onClick={() => void onChangeWallet()} disabled={connecting} className="mt-2 self-start">
+                    {connecting ? 'Connecting...' : 'Connect wallet'}
+                  </Btn>
+                </Stack>
+              )}
 
-            {agents.map((agent) => (
-              <OwnedAgentCard
-                key={`${agent.chainId}:${agent.tokenId}`}
-                agent={agent}
-                received={byToken.get(`${agent.chainId}:${agent.tokenId}`)?.length ?? 0}
-                earned={earnedLabel(byToken.get(`${agent.chainId}:${agent.tokenId}`) ?? [])}
-                source={hiresSource}
-                onChanged={() => void load()}
-              />
-            ))}
+              {agents.map((agent) => (
+                <OwnedAgentCard
+                  key={`${agent.chainId}:${agent.tokenId}`}
+                  agent={agent}
+                  received={byToken.get(`${agent.chainId}:${agent.tokenId}`)?.length ?? 0}
+                  earned={earnedLabel(byToken.get(`${agent.chainId}:${agent.tokenId}`) ?? [])}
+                  source={hiresSource}
+                  onChanged={() => void load()}
+                />
+              ))}
+            </div>
           </div>
 
           {agents.length > 0 && (
@@ -280,23 +317,39 @@ export function ProfilePage() {
             chainId={settledChain}
           />
 
-          <div
-            className="mt-16 metal rounded-[14px] border hairline border-highlighter-green/50 bg-highlighter-green/5 p-8"
+          <Row
+            justify="between"
+            align="center"
+            gap={12}
+            pad={[14, 16, 14, 16]}
+            radius={8}
+            bg="indigo"
+            hair
+            className="mt-14 flex-wrap"
           >
-            <h2 className="font-serif text-2xl font-medium">List another agent</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-newsprint-gray">
-              One transaction from your wallet registers it, with you as the owner.
-            </p>
+            <Row align="center" gap={10}>
+              <Dot tone="sky" size={8} />
+              <Stack gap={2}>
+                <Txt size={13} lead={20} weight="bold" tone="ink">
+                  List another agent
+                </Txt>
+                <Txt size={12} lead={18} tone="slate">
+                  One transaction from your wallet registers it, with you as the owner.
+                </Txt>
+              </Stack>
+            </Row>
             <Link
               to="/list"
-              className={cx(button('primary', 'lg'), 'mt-6')}
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-[8px] border border-white/[0.16] bg-souk-surface1 px-5 transition hover:border-white/[0.32]"
             >
-              Open the listing wizard
+              <Txt size={14} lead={20} weight="semibold" tone="slate">
+                Open the listing wizard
+              </Txt>
             </Link>
-          </div>
+          </Row>
         </>
       )}
-    </section>
+    </div>
   )
 }
 
@@ -415,62 +468,147 @@ function OwnedAgentCard({
   const boostText = offMarket ? 'Not shown while off the market' : boostLabel(boost)
 
   return (
-    <article className={cx(card('plain', 'sm'), 'flex h-[392px] min-w-0 flex-col [overflow-wrap:anywhere]')}>
-      <Link to={agentHref} className="min-w-0 truncate font-serif text-[22px] leading-tight text-press-black hover:underline">
-        {agent.name}
-      </Link>
-      <TextSlot lines={1} className="mt-1 text-[12px]">
-        {categoryLabel(agent.category)} · agent #{agent.tokenId}
-        {!agent.isActive ? ' · inactive' : ''}
-      </TextSlot>
-      <p className="mt-3 flex items-center gap-2 text-[14px] font-medium text-press-black" title={offMarket ? undefined : verdict.explain}>
-        <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[offMarket ? 'bad' : verdict.tone]}`} />
-        <span className="truncate">{offMarket ? 'Off the market' : verdict.label}</span>
-        {!offMarket && verification ? (
-          <span className="shrink-0 font-normal text-newsprint-gray">· checked {timeAgo(verification.checkedAt)}</span>
-        ) : null}
-      </p>
-      <TextSlot lines={2} className="mt-1">
-        <span title={note}>{note}</span>
-      </TextSlot>
+    <Stack surface pad={[20, 22, 20, 22]} gap={10} className="h-[392px] min-w-0 [overflow-wrap:anywhere]">
+      <Row align="center" gap={12}>
+        <AgentAvatar size={34} name={agent.name} />
+        <Stack gap={2} className="min-w-0 flex-1">
+          <Link to={agentHref} className="min-w-0 truncate">
+            <Txt size={16} lead={24} weight="bold" tone="ink">
+              {agent.name}
+            </Txt>
+          </Link>
+          <Txt size={11} lead={16} mono tone="labels" className="truncate">
+            {categoryLabel(agent.category)} · #{agent.tokenId}
+            {!agent.isActive ? ' · inactive' : ''}
+          </Txt>
+        </Stack>
+        {offMarket ? <Pill variant="warn">Off market</Pill> : null}
+      </Row>
 
-      <dl className="mt-3 grid grid-cols-2 gap-3 text-[13px]">
-        <div className="min-w-0">
-          <dt className={LABEL}>Buyer hires</dt>
-          <dd className="mt-0.5 truncate text-press-black">{receivedLabel(received, source)}</dd>
-        </div>
-        <div className="min-w-0">
-          <dt className={LABEL}>Earned</dt>
-          <dd className="mt-0.5 truncate text-press-black">{earned}</dd>
-        </div>
-        <div className="col-span-2 min-w-0">
-          <dt className={LABEL}>Boost</dt>
-          <dd className="mt-0.5 truncate text-press-black" title={boostText}>
-            {boostText}
-          </dd>
-        </div>
-      </dl>
+      <Row justify="between" align="center" gap={8} className="min-w-0">
+        <span title={offMarket ? undefined : verdict.explain} className="inline-flex min-w-0 items-center gap-2">
+          <Dot tone={VERDICT_TONE[offMarket ? 'bad' : verdict.tone]} size={9} />
+          <Txt size={14} lead={18} tone="slate" className="truncate">
+            {offMarket ? 'Off the market' : verdict.label}
+          </Txt>
+        </span>
+        {!offMarket && verification ? (
+          <Txt size={11} lead={16} mono tone="muted" className="shrink-0">
+            checked {timeAgo(verification.checkedAt)}
+          </Txt>
+        ) : null}
+      </Row>
+
+      <span title={note} className="inline-block">
+        <Txt size={12} lead={18} tone="steel" className="line-clamp-2">
+          {note}
+        </Txt>
+      </span>
+
+      <Rule />
+
+      <Stack gap={6}>
+        <Row justify="between" align="start" gap={12}>
+          <Txt size={12} lead={18} tone="muted">
+            Buyer hires
+          </Txt>
+          <Txt size={12} lead={18} mono tone="slate" className="min-w-0 text-right">
+            {receivedLabel(received, source)}
+          </Txt>
+        </Row>
+        <Row justify="between" align="start" gap={12}>
+          <Txt size={12} lead={18} tone="muted">
+            Earned
+          </Txt>
+          <Txt size={12} lead={18} mono tone="slate" className="min-w-0 text-right">
+            {earned}
+          </Txt>
+        </Row>
+        <Row justify="between" align="start" gap={12}>
+          <Txt size={12} lead={18} tone="muted">
+            Boost
+          </Txt>
+          <span title={boostText} className="min-w-0 text-right">
+            <Txt size={12} lead={18} mono tone="slate" className="line-clamp-2">
+              {boostText}
+            </Txt>
+          </span>
+        </Row>
+      </Stack>
 
       {/* the actions in an even two-column grid pinned to the bottom, so they line up across a row */}
-      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
-        <Action to={agentHref} className="w-full">
+      <div className="mt-auto grid grid-cols-2 gap-2 pt-2">
+        <CardAction to={agentHref} className="w-full">
           Open agent
-        </Action>
-        <Action href={registryUrl} className="w-full">
+        </CardAction>
+        <CardAction href={registryUrl} className="w-full">
           Registry
-        </Action>
+        </CardAction>
         {verification?.status !== 'delivered' ? (
-          <Action onClick={() => void onRecheck()} disabled={rechecking} className="w-full">
+          <CardAction onClick={() => void onRecheck()} disabled={rechecking} className="w-full">
             {rechecking ? 'Probing...' : 'Re-check now'}
-          </Action>
+          </CardAction>
         ) : null}
         {offMarket ? (
-          <Action variant="primary" onClick={() => void onRelist()} disabled={switching} className="w-full">
+          <CardAction variant="primary" onClick={() => void onRelist()} disabled={switching} className="w-full">
             {switching ? 'Relisting...' : 'Relist'}
-          </Action>
+          </CardAction>
         ) : null}
       </div>
-    </article>
+    </Stack>
+  )
+}
+
+// the card's own action, in the design's small hairline button: one primary per card,
+// the rest resting on the rim, with the same props the old action slot carried
+function CardAction({
+  variant,
+  to,
+  href,
+  onClick,
+  disabled,
+  className,
+  children,
+}: {
+  variant?: 'primary'
+  to?: string
+  href?: string
+  onClick?: () => void
+  disabled?: boolean
+  className?: string
+  children: ReactNode
+}) {
+  const primary = variant === 'primary'
+  const cls = [
+    'inline-flex h-9 w-full items-center justify-center rounded-[8px] border px-3 text-left transition',
+    primary ? 'border-transparent bg-souk-data text-souk-canvas' : 'border-white/[0.16] bg-souk-surface1 text-souk-slate',
+    disabled ? 'cursor-not-allowed opacity-40' : primary ? 'hover:opacity-90' : 'hover:border-white/[0.32]',
+    className ?? '',
+  ].join(' ')
+  if (to) {
+    return (
+      <Link to={to} className={cls}>
+        <Txt size={12} lead={18} weight="semibold" tone={variant === 'primary' ? 'canvas' : 'slate'} className="truncate">
+          {children}
+        </Txt>
+      </Link>
+    )
+  }
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={cls}>
+        <Txt size={12} lead={18} weight="semibold" tone="slate" className="truncate">
+          {children}
+        </Txt>
+      </a>
+    )
+  }
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={cls}>
+      <Txt size={12} lead={18} weight="semibold" tone={variant === 'primary' ? 'canvas' : 'slate'} className="truncate">
+        {children}
+      </Txt>
+    </button>
   )
 }
 
@@ -486,42 +624,96 @@ function AgentHistory({
   checks: Record<string, CheckRecord[]> | null
 }) {
   return (
-    <div className="mt-16">
-      <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">How each agent is doing</h2>
-      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
+    <div className="mt-12">
+      <SectionHead title="How each agent is doing" note="LAST TWO WEEKS" />
+      <Txt size={13} lead={20} tone="muted" className="mt-3 block max-w-[900px]">
         Buyer hires by day over the last two weeks, and each agent&apos;s latest checks. The oldest is on the left.
-      </p>
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      </Txt>
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
         {agents.map((agent) => {
           const own = hires.filter((h) => h.chainId === agent.chainId && h.tokenId === agent.tokenId)
           const days = countByDay(own.map((h) => h.createdAt))
           const total = days.reduce((sum, d) => sum + d.count, 0)
           const record = checks?.[agent.tokenId] ?? []
           return (
-            <article key={`${agent.chainId}:${agent.tokenId}`} className={cx(card('plain', 'sm'), 'min-w-0')}>
-              <h3 className="truncate font-serif text-[20px] leading-tight text-press-black">{agent.name}</h3>
-              <p className={cx(LABEL, 'mt-4')}>Buyer hires, last 14 days</p>
-              <div className="mt-2">
-                <BarStrip days={days} label={`${total} buyer ${total === 1 ? 'hire' : 'hires'} in the last 14 days`} />
-              </div>
-              <TextSlot lines={1} className="mt-1">
-                {total === 0 ? 'None in the last two weeks' : `${total} in the last two weeks`}
-              </TextSlot>
-              <p className={cx(LABEL, 'mt-4')}>Checks</p>
-              <div className="mt-2 min-h-3">
-                {record.length > 0 ? <CheckStrip marks={checkMarks(record)} label={checkSummary(record)} /> : null}
-              </div>
-              <TextSlot lines={1} className="mt-1">
+            <Stack key={`${agent.chainId}:${agent.tokenId}`} surface pad={[16, 16, 16, 16]} gap={10} className="min-w-0">
+              <Link to={`/agents/${agent.chainId}/${agent.tokenId}`} className="min-w-0 truncate">
+                <Txt size={15} lead={20} weight="bold" tone="ink">
+                  {agent.name}
+                </Txt>
+              </Link>
+              <Label>Buyer hires, last 14 days</Label>
+              <HistoryBar days={days} label={`${total} buyer ${total === 1 ? 'hire' : 'hires'} in the last 14 days`} />
+              <Txt size={11} lead={16} mono tone="labels">
+                {total === 0 ? 'none in the last two weeks' : `${total} in the last two weeks`}
+              </Txt>
+              <Rule />
+              <Label>Checks</Label>
+              {record.length > 0 ? <CheckMarks marks={checkMarks(record)} label={checkSummary(record)} /> : null}
+              <Txt size={12} lead={18} tone="steel">
                 {checks === null
                   ? 'The record could not be read just now'
                   : record.length === 0
                     ? 'No checks recorded yet'
                     : checkSummary(record)}
-              </TextSlot>
-            </article>
+              </Txt>
+            </Stack>
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// the day strip, redrawn in the register's tones: a day with nothing keeps a faint tick,
+// so the days can still be counted
+function HistoryBar({ days, label }: { days: { day: string; count: number }[]; label: string }) {
+  const top = Math.max(1, ...days.map((d) => d.count))
+  const step = 10
+  const height = 32
+  return (
+    <svg
+      viewBox={`0 0 ${days.length * step} ${height}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label={label}
+      className="h-8 w-full"
+    >
+      {days.map((d, i) => {
+        const h = d.count === 0 ? 1 : Math.max(3, Math.round((d.count / top) * (height - 2)))
+        return (
+          <rect
+            key={d.day}
+            x={i * step + 1.5}
+            y={height - h}
+            width={step - 3}
+            height={h}
+            className={d.count === 0 ? 'fill-white/[0.08]' : 'fill-souk-data'}
+          >
+            <title>{`${d.day}: ${d.count}`}</title>
+          </rect>
+        )
+      })}
+    </svg>
+  )
+}
+
+// the check record as marks: filled when it answered, held when gated, rim only when missed
+function CheckMarks({ marks, label }: { marks: { state: 'answered' | 'gated' | 'missed'; title: string }[]; label: string }) {
+  return (
+    <div role="img" aria-label={label} className="flex flex-wrap gap-[3px]">
+      {marks.map((m, i) => (
+        <span
+          key={i}
+          title={m.title}
+          className={[
+            'h-3 w-3 rounded-[3px]',
+            m.state === 'answered' && 'bg-souk-data',
+            m.state === 'gated' && 'bg-souk-data/50',
+            m.state === 'missed' && 'border border-souk-steel',
+          ].filter(Boolean).join(' ')}
+        />
+      ))}
     </div>
   )
 }
@@ -548,75 +740,86 @@ function HiresPanel({
   }
   const agentGroups = [...byAgent.values()].sort((a, b) => b.length - a.length)
   return (
-    <div className="mt-16">
-      <h2 className="font-serif text-[32px] font-medium tracking-[-0.02em]">Who hired your agents</h2>
-      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
+    <div className="mt-12">
+      <SectionHead title="Who hired your agents" note={network ?? undefined} />
+      <Txt size={13} lead={20} tone="muted" className="mt-3 block max-w-[900px]">
         Payments to this wallet{network ? ` on ${network}` : ''}. Our checks and your own test hires
         are kept apart from buyers.
-      </p>
+      </Txt>
 
       {error && (
-        <p role="alert" className="mt-6 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-[13px] text-press-black">
-          {error}
-        </p>
+        <div role="alert" className="mt-6">
+          <Stack pad={[14, 16, 14, 16]} radius={14} hair>
+            <Txt size={13} lead={20} tone="peach">
+              {error}
+            </Txt>
+          </Stack>
+        </div>
       )}
 
       {source === 'memory' && (
-        <p className="mt-6 rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 text-[13px] leading-relaxed text-newsprint-gray">
-          This server keeps receipts in memory only, so the list below may be incomplete.
-        </p>
+        <Stack pad={[14, 16, 14, 16]} radius={14} hair className="mt-6">
+          <Txt size={13} lead={20} tone="slate">
+            This server keeps receipts in memory only, so the list below may be incomplete.
+          </Txt>
+        </Stack>
       )}
 
       {hires && customers.length === 0 && (
-        <p className="mt-6 text-[15px] text-newsprint-gray">
+        <Txt size={13} lead={20} tone="muted" className="mt-6 block">
           {source === 'memory'
             ? 'Nothing recorded on this server, which is not proof that nobody hired you.'
             : 'No buyer has hired your agents yet. Their payments appear here.'}
-        </p>
+        </Txt>
       )}
 
-      <div className="mt-6 space-y-6">
-        {agentGroups.map((list) => {
-          const first = list[0]
-          return (
-            <section key={`${first.chainId}:${first.tokenId}`} className={card('plain', 'none')}>
-              <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b hairline border-slate-verdant/25 px-5 py-4">
-                <Link
-                  to={`/agents/${first.chainId}/${first.tokenId}`}
-                  className="font-serif text-[22px] leading-tight text-press-black hover:underline"
-                >
-                  {first.agentName}
-                </Link>
-                <p className="text-[13px] text-newsprint-gray">
-                  {list.length} {list.length === 1 ? 'hire' : 'hires'} · earned{' '}
-                  <span className="text-press-black">{earnedLabel(list)}</span>
-                </p>
-              </div>
-              <ul className="divide-y hairline divide-slate-verdant/20">
-                {list.map((h) => (
-                  <HireLine key={h.paymentId} hire={h} />
-                ))}
-              </ul>
-            </section>
-          )
-        })}
-      </div>
+      {agentGroups.length > 0 && (
+        <Stack gap={20} className="mt-6">
+          {agentGroups.map((list) => {
+            const first = list[0]
+            return (
+              <Stack key={`${first.chainId}:${first.tokenId}`} surface pad={[16, 20, 16, 20]} gap={4} className="min-w-0">
+                <Row justify="between" align="center" gap={24} className="flex-wrap pb-2">
+                  <Link to={`/agents/${first.chainId}/${first.tokenId}`} className="min-w-0 truncate">
+                    <Txt size={15} lead={20} weight="bold" tone="ink">
+                      {first.agentName}
+                    </Txt>
+                  </Link>
+                  <Txt size={12} lead={18} tone="labels">
+                    {list.length} {list.length === 1 ? 'hire' : 'hires'} · earned{' '}
+                    <Txt size={12} lead={18} mono tone="data">
+                      {earnedLabel(list)}
+                    </Txt>
+                  </Txt>
+                </Row>
+                <ul className="m-0 list-none p-0">
+                  {list.map((h) => (
+                    <HireLine key={h.paymentId} hire={h} />
+                  ))}
+                </ul>
+              </Stack>
+            )
+          })}
+        </Stack>
+      )}
 
       {others.length > 0 && (
-        <details className="group mt-8 metal rounded-[14px] border hairline border-slate-verdant/30">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
-            <span className="text-[14px] text-press-black">
-              Checks and test hires <span className="text-newsprint-gray">· {others.length}</span>
-            </span>
-            <span aria-hidden="true" className="text-newsprint-gray transition group-open:rotate-180">
+        <details className="group mt-8">
+          <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-4 rounded-[8px] border border-white/[0.16] bg-souk-surface1 px-4 py-3 transition hover:border-white/[0.32] [&::-webkit-details-marker]:hidden">
+            <Txt size={11} lead={16} mono weight="semibold" upper tone="steel">
+              Checks and test hires · {others.length}
+            </Txt>
+            <span aria-hidden="true" className="text-souk-steel transition group-open:rotate-180">
               ▾
             </span>
           </summary>
-          <ul className="divide-y hairline divide-slate-verdant/20 border-t hairline border-slate-verdant/25">
-            {others.map((h) => (
-              <HireLine key={h.paymentId} hire={h} showAgent />
-            ))}
-          </ul>
+          <Stack surface pad={[8, 20, 8, 20]} className="mt-2">
+            <ul className="m-0 list-none p-0">
+              {others.map((h) => (
+                <HireLine key={h.paymentId} hire={h} showAgent />
+              ))}
+            </ul>
+          </Stack>
         </details>
       )}
     </div>
@@ -636,26 +839,26 @@ function HireLine({ hire, showAgent }: { hire: PayeeHire; showAgent?: boolean })
           ? 'Agent Souk team'
           : null
   return (
-    <li className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-5 py-3 text-[13px]">
-      <span className="text-newsprint-gray">
-        {showAgent ? <span className="text-press-black">{hire.agentName} · </span> : null}
-        {who ? <span className="text-press-black">{who}</span> : <span className="font-mono text-press-black">{shortAddress(hire.client)}</span>}
+    <li className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-white/[0.08] py-3 text-[13px] last:border-b-0">
+      <span className="min-w-0 leading-[20px] text-souk-slate">
+        {showAgent ? <span className="text-souk-ink">{hire.agentName} · </span> : null}
+        {who ? <span className="text-souk-ink">{who}</span> : <span className="font-mono text-souk-slate">{shortAddress(hire.client)}</span>}
         {' paid '}
-        <span className="text-press-black">
+        <span className="font-mono text-souk-ink">
           {formatHireAmount(hire)} {hire.symbol}
         </span>
         {' · '}
         {timeAgo(hire.createdAt)}
         {hire.mode === 'sandbox' ? ' · test settlement' : ''}
       </span>
-      <span className="flex items-center gap-4">
-        {hire.active && hire.payer !== 'check' ? <span className="text-press-black">Session live</span> : null}
+      <span className="flex items-baseline gap-4">
+        {hire.active && hire.payer !== 'check' ? <span className="text-[12px] leading-[18px] text-souk-data">Session live</span> : null}
         {canLinkTx && hire.txHash ? (
           <a
             href={`${explorerTxBase(hire.chainId)}/tx/${hire.txHash}`}
             target="_blank"
             rel="noreferrer"
-            className="text-newsprint-gray underline decoration-newsprint-gray/40 underline-offset-4 hover:text-press-black"
+            className="font-mono text-[11px] leading-[16px] text-souk-sky transition hover:text-souk-ink"
           >
             Transaction ↗
           </a>
