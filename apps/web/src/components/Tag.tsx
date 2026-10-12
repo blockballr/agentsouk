@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react'
 
-// a quiet fact about an agent; plain case on purpose, so x402 and sUSD read as written
+// a quiet fact about an agent; plain case on purpose, so x402 and sUSD read as written.
+// Squared like the design's chips rather than a pill, and on the card surface so it sits
+// in the dark system the ported screens now use.
 export function Tag({ title, href, children }: { title?: string; href?: string; children: ReactNode }) {
   const cls =
-    'inline-flex items-center rounded-full border hairline border-slate-verdant/35 px-2 py-0.5 text-[11px] font-[550] tracking-[0.01em] text-newsprint-gray'
+    'inline-flex items-center rounded-[6px] border border-white/[0.16] bg-souk-surface1 px-2 py-0.5 text-[11px] font-semibold tracking-[0.01em] text-souk-steel'
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noreferrer" title={title} className={`${cls} transition hover:border-press-black/50 hover:text-press-black`}>
+      <a href={href} target="_blank" rel="noreferrer" title={title} className={`${cls} transition hover:border-souk-data/40 hover:text-souk-ink`}>
         {children}
       </a>
     )
