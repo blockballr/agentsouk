@@ -505,8 +505,8 @@ export function AgentDetailPage() {
       >
         ← Marketplace
       </Link>
-      {/* phones read header, proof, hire, then the rest; wide screens keep hire in a sticky column */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:grid-rows-[auto_1fr] lg:gap-x-10">
+      {/* the design's own column split: 1316 of work and 520 of hire, 20 between */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_520px] lg:grid-rows-[auto_1fr]">
         <div className="min-w-0 lg:col-start-1 lg:row-start-1">
           <header className="flex flex-col gap-6 sm:flex-row sm:items-start">
             <img
@@ -606,7 +606,7 @@ export function AgentDetailPage() {
 
         <aside
           ref={setHirePanel}
-          className={cx(card('plain', 'md'), 'h-fit scroll-mt-4 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1')}
+          className="h-fit scroll-mt-4 self-start overflow-hidden rounded-[20px] border border-white/[0.08] bg-souk-surface1 p-[22px] lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1"
         >
           {quest && questStage && (
             <QuestGuide stage={questStage} step={quest.step} agentName={detail.name} hasTask={Boolean(quest.agent.task)} />
@@ -662,9 +662,14 @@ export function AgentDetailPage() {
               )}
             </div>
           )}
-          <h2 className="font-serif text-[24px] font-medium leading-tight text-press-black">
-            {mySession ? 'Run a task' : jobSeller ? 'How to hire' : 'Hire this agent'}
-          </h2>
+          <SoukRow justify="between" align="center">
+            <Txt size={18} lead={27} weight="bold" tone="ink">
+              {mySession ? 'Run a task' : jobSeller ? 'How to hire' : 'Hire this agent'}
+            </Txt>
+            {/* the rail the listing sells through, carried as the design's chip so the
+                buyer sees which one they are on before they spend */}
+            <Pill variant={jobSeller ? 'keep' : 'off'}>{jobSeller ? 'erc-8183' : 'x402'}</Pill>
+          </SoukRow>
           {!jobSeller && (
             <dl className="mt-4 space-y-2 text-[13px]">
               <div className="flex justify-between gap-4">
