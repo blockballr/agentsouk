@@ -1,24 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bone-white: #fafffa;
-  --color-press-black: #121613;
-  --color-typesetter-ink: #000000;
-  --color-slate-verdant: #232924;
-  --color-newsprint-gray: #516254;
-  --color-muted-sage: #c8d2c8;
+  /* the paper palette now runs its dark values as the base: the design is dark only,
+     so there is no light register to fall back to */
+  --color-bone-white: #0e1311;
+  --color-press-black: #f2f6f1;
+  --color-typesetter-ink: #f2f6f1;
+  --color-slate-verdant: #7d8f82;
+  --color-newsprint-gray: #9aa79d;
+  --color-muted-sage: #8f9c92;
   --color-highlighter-green: #2bee4b;
-  /* text on the green stays near black in both themes: the flipping ink read 1.4:1 on it in dark mode */
+  /* text on the green stays near black: the flipping ink read 1.4:1 on it in dark mode */
   --color-on-highlighter: #0b0f0c;
-  /* green as text on the page: the bright green reads 1.5:1 on white, so light mode darkens it */
-  --color-green-ink: #0f7a28;
+  /* green as text on the page: the bright value the dark register used */
+  --color-green-ink: #2bee4b;
   /* a floating bar keeps one dark palette in both themes, so its labels never flip onto a light bar */
   --color-night: #121613;
   --color-night-ink: #f2f6f1;
   --color-night-muted: #c8d2c8;
-  --color-shadow-moss: #93b799;
-  --color-echo-green: #c4e4c9;
-  --color-switch-knob: #fafffa;
+  --color-shadow-moss: #3f5c46;
+  --color-echo-green: #1d2a20;
+  --color-switch-knob: #f2f6f1;
 
   /* the figma pass, namespaced so a ported screen can wear the new palette while
      the pages not yet moved keep the newsprint one underneath */
@@ -51,64 +53,13 @@
   --shadow-lg-2: rgba(18, 146, 39, 0.25) 1px 8px 20px 0px;
 }
 
-/* the metal finish: a lit edge, a faint face sheen, scan lines and a glow on live dots */
+/* the metal finish in the dark register only: a lit edge, a faint face sheen, scan
+   lines and a glow on live dots */
 :root {
-  --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.2) 30%, rgb(255 255 255 / 0) 60%, rgb(15 122 40 / 0.22));
-  --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(18 22 19 / 0.02));
-  --metal-scan: rgb(18 22 19 / 0.018);
-  --metal-glow: rgb(43 238 75 / 0.5);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.04) 30%, rgb(255 255 255 / 0) 60%, rgb(43 238 75 / 0.18));
-    --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.025), rgb(255 255 255 / 0) 35%);
-    --metal-scan: rgb(255 255 255 / 0.014);
-    --metal-glow: rgb(43 238 75 / 0.55);
-    --color-bone-white: #0e1311;
-    --color-press-black: #f2f6f1;
-    --color-typesetter-ink: #f2f6f1;
-    --color-newsprint-gray: #9aa79d;
-    --color-slate-verdant: #7d8f82;
-    --color-echo-green: #1d2a20;
-    --color-muted-sage: #8f9c92;
-    --color-shadow-moss: #3f5c46;
-    --color-switch-knob: #f2f6f1;
-    --color-green-ink: #2bee4b;
-  }
-}
-
-:root[data-theme="dark"] {
   --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.04) 30%, rgb(255 255 255 / 0) 60%, rgb(43 238 75 / 0.18));
   --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.025), rgb(255 255 255 / 0) 35%);
   --metal-scan: rgb(255 255 255 / 0.014);
   --metal-glow: rgb(43 238 75 / 0.55);
-  --color-green-ink: #2bee4b;
-  --color-bone-white: #0e1311;
-  --color-press-black: #f2f6f1;
-  --color-typesetter-ink: #f2f6f1;
-  --color-newsprint-gray: #9aa79d;
-  --color-slate-verdant: #7d8f82;
-  --color-echo-green: #1d2a20;
-  --color-muted-sage: #8f9c92;
-  --color-shadow-moss: #3f5c46;
-  --color-switch-knob: #f2f6f1;
-}
-
-:root[data-theme="light"] {
-  --color-bone-white: #fafffa;
-  --color-press-black: #121613;
-  --color-typesetter-ink: #000000;
-  --color-newsprint-gray: #516254;
-  --color-slate-verdant: #232924;
-  --color-echo-green: #c4e4c9;
-  --color-muted-sage: #c8d2c8;
-  --color-shadow-moss: #93b799;
-  --color-green-ink: #0f7a28;
-  --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.2) 30%, rgb(255 255 255 / 0) 60%, rgb(15 122 40 / 0.22));
-  --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(18 22 19 / 0.02));
-  --metal-scan: rgb(18 22 19 / 0.018);
-  --metal-glow: rgb(43 238 75 / 0.5);
 }
 
 @layer base {
@@ -146,11 +97,12 @@
     border-style: solid;
   }
   .input-hairline {
-    border-color: color-mix(in oklab, var(--color-slate-verdant) 25%, transparent);
+    border-color: rgb(125 143 130 / 0.6);
   }
   .score-strip {
-    background: #a7f8b4;
-    border: 1px solid rgb(43 234 75 / 0.5);
+    /* the strip's only register now: the dark one the session box lives in */
+    background: #12341c;
+    border: 1px solid rgb(43 234 75 / 0.4);
   }
   /* a panel in the metal finish; the edge is drawn over its 1px border, so it needs one */
   .metal {
@@ -190,24 +142,5 @@
   from {
     opacity: 0;
     transform: scale(1.7);
-  }
-}
-
-:root[data-theme="dark"] .score-strip {
-  background: #12341c;
-  border-color: rgb(43 234 75 / 0.4);
-}
-
-:root[data-theme="dark"] .input-hairline {
-  border-color: rgb(125 143 130 / 0.6);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .score-strip {
-    background: #12341c;
-    border-color: rgb(43 234 75 / 0.4);
-  }
-  :root:not([data-theme="light"]) .input-hairline {
-    border-color: rgb(125 143 130 / 0.6);
   }
 }
