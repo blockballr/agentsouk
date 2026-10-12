@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { ThemeToggle } from './ThemeToggle'
 import { QuickSearch } from './QuickSearch'
 import { NotificationBell } from './NotificationBell'
 import { cartCount, subscribe } from '../lib/cart'
@@ -59,7 +58,6 @@ export function Nav() {
               <QuickSearch />
               <NotificationBell />
               <CartLink />
-              <ThemeToggle />
               {/* profile is the rightmost control in the design, and the display
                   toggle sits where the design puts its monitor button */}
               <ProfileLink />
@@ -103,7 +101,6 @@ export function Nav() {
               <CartLink />
               <ProfileLink onClick={() => setMenuOpen(false)} />
               <NotificationBell />
-              <ThemeToggle />
             </div>
           </nav>
         </div>

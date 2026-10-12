@@ -71,7 +71,7 @@ export function NotificationBell() {
         type="button"
         onClick={onOpen}
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-        className="relative rounded-[6px] p-1 text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className="relative flex h-[38px] w-[38px] items-center justify-center rounded-[8px] border border-white/[0.16] text-souk-steel transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
