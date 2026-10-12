@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { shortAddress } from '@agora/core'
 import { visitSeed } from '../lib/rotation'
 import { isOperatedByAgentSouk } from '../lib/first-party'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
 import { hireErrorText } from '../lib/hire'
+import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import {
   QUEST_STEPS,
@@ -26,7 +27,8 @@ import {
   type QuestStep,
   type StepKey,
 } from '../lib/quest'
-import { Action, LABEL, TextSlot, card, cx } from '../components/ui'
+import { cx } from '../components/ui'
+import { Stack, Row, Txt, Pill, Dot, SectionHead, NoteBox, DataTable, Btn, Rule, Label, AgentAvatar } from '../components/souk'
 import { QuestStamp } from '../components/QuestStamp'
 import { ShareCard } from '../components/ShareCard'
 import { SPECIMEN_SERIAL } from '../lib/share-card'
@@ -164,123 +166,366 @@ export function QuestPage() {
   const pointsFor = (step: QuestStep): number => awarded.get(AWARD_KEY[step.key]) ?? step.points
   // an agent already hired cannot be the next hire, so it is never offered again
   const hiredIds = new Set((progress?.hires ?? []).map((h) => h.tokenId))
+  const sealStep = QUEST_STEPS.find((s) => s.key === 'seal')
+  const chainLine = target ? `${chainLabel(target.chainId)} chain ${target.chainId}` : 'reading the network'
+
+  // the offer list a hire step's own card reads, worked out once so the card and the
+  // picks table never name different agents for the same step
+  const picksFor = (step: QuestStep): QuestAgent[] =>
+    chainId !== null && step.category && shelf !== undefined
+      ? questPicks(step, chainId, shelf?.[step.category], wallet).filter((a) => !hiredIds.has(a.tokenId))
+      : []
+  const readingFor = (step: QuestStep): boolean =>
+    Boolean(step.category) && (shelf === undefined || chainId === null)
+  const onlyOursFor = (step: QuestStep): boolean =>
+    Boolean(step.category && shelf?.[step.category]?.working.length && shelf[step.category].working.every((a) => isOperatedByAgentSouk(a.owner)))
+
+  // the shelf table reads the same payload the cards do, plus any category the server
+  // carries that no step points at, which is said in words rather than as a step
+  const countFor = (category: string, list: 'confirmed' | 'working'): string => {
+    if (shelf === undefined) return 'reading'
+    if (shelf === null) return 'unknown'
+    return String(shelf[category]?.[list].length ?? 0)
+  }
+  const totalFor = (category: string): string => {
+    if (shelf === undefined) return 'reading'
+    if (shelf === null) return 'unknown'
+    const s = shelf[category]
+    return `${(s?.confirmed.length ?? 0) + (s?.working.length ?? 0)} agents`
+  }
+  const pickRows = [
+    ...QUEST_STEPS.filter((s) => s.category).map((step) => {
+      const category = step.category as string
+      const picks = chainId !== null && shelf !== undefined ? picksFor(step) : []
+      const offers = readingFor(step)
+        ? 'Reading which agents are answering right now.'
+        : picks.length > 0
+          ? picks.map((a) => a.name).join(' · ')
+          : 'Points at the shelf.'
+      return {
+        cells: [
+          { text: step.title, weight: 'semibold' as const, tone: 'ink' as const },
+          { text: category, mono: true, tone: 'slate' as const },
+          { text: countFor(category, 'confirmed'), mono: true, tone: 'steel' as const },
+          { text: countFor(category, 'working'), mono: true, tone: 'steel' as const },
+          { text: totalFor(category), mono: true, tone: 'steel' as const },
+          { text: offers, tone: 'steel' as const },
+        ],
+      }
+    }),
+    ...(shelf
+      ? Object.keys(shelf)
+          .filter((category) => !QUEST_STEPS.some((s) => s.category === category))
+          .map((category) => ({
+            cells: [
+              { text: 'no step', tone: 'muted' as const },
+              { text: category, mono: true, tone: 'slate' as const },
+              { text: countFor(category, 'confirmed'), mono: true, tone: 'steel' as const },
+              { text: countFor(category, 'working'), mono: true, tone: 'steel' as const },
+              { text: totalFor(category), mono: true, tone: 'steel' as const },
+              { text: 'Nothing points here today.', tone: 'steel' as const },
+            ],
+          }))
+      : []),
+  ]
+
+  // the strip names the one thing to do now, read from the same step content the card below
+  // uses, so the strip and the card never disagree about what the next move is
+  const strip = next
+    ? stepContent(next, Boolean(stamps[next.key]), picksFor(next), readingFor(next), onlyOursFor(next), chainId, wallet, connect, connecting)
+    : null
+  const stripAction = strip?.actions[0] ?? null
+
+  const writtenPicks = QUEST_STEPS.flatMap((step) => {
+    const pair = step.agents?.[97]
+    if (!pair) return []
+    return [
+      { key: `${step.key}-primary`, stepTitle: step.title, name: pair.primary.name, tokenId: pair.primary.tokenId, slot: 'primary', task: pair.primary.task },
+      ...(pair.alternate
+        ? [{ key: `${step.key}-alternate`, stepTitle: step.title, name: pair.alternate.name, tokenId: pair.alternate.tokenId, slot: 'alternate', task: pair.alternate.task }]
+        : []),
+    ]
+  })
 
   return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
-      <p className={LABEL}>Set and Earn quest</p>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
-        <h1 className="font-serif text-[clamp(40px,6vw,88px)] font-medium leading-[0.9] tracking-[-0.04em]">Souk passport.</h1>
-        <div className="flex flex-wrap gap-6 text-[13px] text-newsprint-gray">
-          <span>
-            <strong className="tabular-nums text-press-black">{shownPoints.toLocaleString()}</strong> of {TOTAL.toLocaleString()} points
-          </span>
-          <span>
-            <strong className="text-press-black">{done}</strong> of 3 to finish
-          </span>
-          <span>
-            titled <strong className="text-press-black">{rank.title}</strong>
-          </span>
-        </div>
-      </div>
+    <div className="min-h-screen bg-souk-canvas text-souk-ink">
+      <div className="mx-auto max-w-[1920px] px-8 pb-28 pt-10 lg:pb-16">
+        <Stack gap={10}>
+          <Txt size={11} lead={16} mono upper tone="data">
+            {`Set and Earn · wallet ${wallet ? shortAddress(wallet) : 'not connected'} · ${chainLine}`}
+          </Txt>
+          <h1 className="text-[34px] font-bold leading-[42px] text-souk-ink">Souk passport.</h1>
+          <p className="max-w-[1180px] text-[15px] leading-[23px] text-souk-slate">
+            Hire an agent, list one of your own, then hire a second. That finishes your passport. A third hire is an
+            extra, for more points.
+          </p>
+        </Stack>
 
-      {/* the reminder comes first: a hire from any other wallet is not counted by the campaign */}
-      <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-press-black">
-        Take part with the wallet you entered on{' '}
-        <a
-          href={BNB_CAMPAIGN}
-          target="_blank"
-          rel="noreferrer"
-          className="underline decoration-newsprint-gray/40 underline-offset-4 hover:decoration-press-black"
+        {/* the reminder comes first: a hire from any other wallet is not counted by the campaign */}
+        <Row
+          bg="indigo"
+          hair
+          radius={8}
+          pad={[14, 16, 14, 16]}
+          gap={12}
+          align="center"
+          justify="between"
+          className="mt-8 flex-wrap gap-y-3"
         >
-          BNB Chain&apos;s Set and Earn form
-        </a>
-        . BNB Chain counts no other wallet.
-      </p>
-      <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        Hire an agent, list one of your own, then hire a second. That finishes your passport. A third hire is an extra,
-        for more points.
-      </p>
-      <p className="mt-3 max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">
-        The passport, its points and its titles are ours. The merch is BNB Chain&apos;s, and its rules ask for three hires
-        across at least two marketplaces, so one of yours has to be made somewhere else.
-      </p>
+          <Row gap={10} align="center" className="min-w-[320px] flex-1">
+            <Dot tone="sky" size={8} />
+            <Txt size={13} lead={20} tone="ink" className="max-w-[1180px]">
+              Take part with the wallet you entered on{' '}
+              <a
+                href={BNB_CAMPAIGN}
+                target="_blank"
+                rel="noreferrer"
+                className="text-souk-sky underline decoration-souk-sky/40 underline-offset-2 hover:decoration-souk-sky"
+              >
+                BNB Chain&apos;s Set and Earn form
+              </a>
+              . BNB Chain counts no other wallet, so a hire made from any other one earns nothing here.
+            </Txt>
+          </Row>
+          <Row gap={8} align="center">
+            {!wallet ? (
+              <Btn kind="primary" onClick={connect} disabled={connecting}>
+                {connecting ? 'Waiting for your wallet' : 'Connect wallet'}
+              </Btn>
+            ) : null}
+            <a href={BNB_CAMPAIGN} target="_blank" rel="noreferrer">
+              <Btn>Open the form</Btn>
+            </a>
+          </Row>
+        </Row>
 
-      <div className="mt-6">
-        <div className="flex items-center justify-between text-xs">
-          <span className={LABEL}>{wallet ? `Holder ${shortAddress(wallet)}` : 'No holder yet'}</span>
-          <span className="text-newsprint-gray">
-            {rank.next ? `${(rank.next.at - points).toLocaleString()} to ${rank.next.title}` : 'Every title earned'}
-          </span>
-        </div>
-        <div
-          className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-verdant/15"
-          role="progressbar"
-          aria-label="Quest points"
-          aria-valuemin={0}
-          aria-valuemax={TOTAL}
-          aria-valuenow={points}
-        >
-          <div className="h-full rounded-full bg-highlighter-green" style={{ width: `${Math.min(100, (shownPoints / TOTAL) * 100)}%` }} />
-        </div>
-      </div>
+        {error ? (
+          <div role="alert" className="mt-6">
+            <NoteBox title="The passport could not be read just now" copy={error} />
+          </div>
+        ) : null}
 
-      {error && (
-        <p role="alert" className="mt-6 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-xs text-press-black">
-          Your passport could not be read just now: {error}
-        </p>
-      )}
+        <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-8">
+          <SectionHead title="Your standing" note="SETTLED HIRES AND LISTINGS ONLY" />
+          <Row gap={10}>
+            <Stack pad={[10, 12, 10, 12]} gap={2} bg="surface2" radius={8} className="min-w-0 flex-1">
+              <Txt size={16} lead={22} mono tone="steel">{`${done} of 3`}</Txt>
+              <Label tone="muted">To finish</Label>
+            </Stack>
+            <Stack pad={[10, 12, 10, 12]} gap={2} bg="surface2" radius={8} className="min-w-0 flex-1">
+              <Txt size={16} lead={22} mono tone="steel">{rank.title}</Txt>
+              <Label tone="muted">Titled</Label>
+            </Stack>
+          </Row>
+          <Stack gap={8}>
+            <Row justify="between" align="center" gap={12}>
+              <Label tone="muted">Passport points</Label>
+              <Txt size={14} lead={18} mono tone={points > 0 ? 'data' : 'steel'}>
+                {`${shownPoints.toLocaleString()} of ${TOTAL.toLocaleString()}`}
+              </Txt>
+            </Row>
+            <Row justify="between" align="center" gap={12} className="flex-wrap">
+              <Txt size={12} lead={18} tone="steel">
+                {rank.next ? `${(rank.next.at - points).toLocaleString()} to ${rank.next.title}` : 'Every title earned'}
+              </Txt>
+              <Txt size={12} lead={18} mono tone="labels">
+                {wallet ? `wallet ${shortAddress(wallet)}` : 'no wallet yet'}
+              </Txt>
+            </Row>
+            <div
+              className="h-1.5 overflow-hidden rounded-[3px] bg-white/[0.16]"
+              role="progressbar"
+              aria-label="Quest points"
+              aria-valuemin={0}
+              aria-valuemax={TOTAL}
+              aria-valuenow={points}
+            >
+              <div
+                className="h-full rounded-[3px] bg-souk-data"
+                style={{ width: `${Math.min(100, (shownPoints / TOTAL) * 100)}%` }}
+              />
+            </div>
+            <Txt size={12} lead={18} tone="steel">
+              A step stamps once its hire has settled or its listing is on the shelf.
+            </Txt>
+          </Stack>
+          <Rule hair />
+          <Txt size={12} lead={18} tone="muted">
+            Any agent on the market counts for a hire, as long as it is not your own and not one you already hired.
+            Points and titles track your progress here and are not a token or a reward.
+          </Txt>
+        </Stack>
 
-      <ol className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {QUEST_STEPS.map((step, i) => (
-          <li key={step.key} className="min-w-0">
-            <StepCard
-              step={step}
-              number={i + 1}
-              points={pointsFor(step)}
-              stamped={stamps[step.key]}
-              fresh={fresh.includes(step.key)}
-              isNext={next?.key === step.key}
-              picks={
-                chainId !== null && step.category && shelf !== undefined
-                  ? questPicks(step, chainId, shelf?.[step.category], wallet).filter((a) => !hiredIds.has(a.tokenId))
-                  : []
-              }
-              reading={Boolean(step.category) && (shelf === undefined || chainId === null)}
-              onlyOurs={Boolean(step.category && shelf?.[step.category]?.working.length && shelf[step.category].working.every((a) => isOperatedByAgentSouk(a.owner)))}
-              chainId={chainId}
+        <section className="mt-10">
+          <SectionHead title={`${QUEST_STEPS.length} steps, three of them finish it`} note="ONE STAMP EACH" />
+          <div className="mt-5 grid gap-5 lg:grid-cols-3">
+            {QUEST_STEPS.map((step, i) => (
+              <StepCard
+                key={step.key}
+                step={step}
+                number={i + 1}
+                points={pointsFor(step)}
+                stamped={stamps[step.key]}
+                fresh={fresh.includes(step.key)}
+                isNext={next?.key === step.key}
+                picks={picksFor(step)}
+                reading={readingFor(step)}
+                onlyOurs={onlyOursFor(step)}
+                chainId={chainId}
+                wallet={wallet}
+                onConnect={connect}
+                connecting={connecting}
+              />
+            ))}
+            <Stack hair radius={20} pad={[20, 22, 20, 22]} gap={10} className="min-w-0">
+              <Txt size={15} lead={22} weight="bold" tone="ink">What counts</Txt>
+              <Txt size={12} lead={18} tone="slate">
+                Any agent on the market counts for a hire, as long as it is not your own and not one you already hired.
+                Points and titles track your progress here and are not a token or a reward.
+              </Txt>
+              <Txt size={12} lead={18} tone="muted">
+                The passport, its points and its titles are ours. The merch is BNB Chain&apos;s, and its rules ask for
+                three hires across at least two marketplaces, so one of yours has to be made somewhere else.
+              </Txt>
+              <Rule hair />
+              <Btn onClick={quit} className="w-full">Quit the quest</Btn>
+            </Stack>
+          </div>
+        </section>
+
+        <div className="mt-10 grid gap-6">
+          {wallet && progress?.completed ? (
+            <ShareCard
+              rank={rank.title}
+              points={points}
               wallet={wallet}
-              onConnect={connect}
-              connecting={connecting}
+              serial={progress.passport?.serial}
+              issuedAt={progress.passport?.issuedAt}
+              thirdHire={stamps.third}
             />
-          </li>
-        ))}
-      </ol>
+          ) : null}
+          {/* the card for the announcement, numbered ahead of every holder's; local builds only */}
+          {specimen ? (
+            <ShareCard rank={rankFor(TOTAL).title} points={TOTAL} wallet={wallet ?? SPECIMEN_HOLDER} serial={SPECIMEN_SERIAL} thirdHire />
+          ) : null}
+        </div>
 
-      {wallet && progress?.completed ? (
-        <ShareCard
-          rank={rank.title}
-          points={points}
-          wallet={wallet}
-          serial={progress.passport?.serial}
-          issuedAt={progress.passport?.issuedAt}
-          thirdHire={stamps.third}
-        />
-      ) : null}
-      {/* the card for the announcement, numbered ahead of every holder's; local builds only */}
-      {specimen ? (
-        <ShareCard rank={rankFor(TOTAL).title} points={TOTAL} wallet={wallet ?? SPECIMEN_HOLDER} serial={SPECIMEN_SERIAL} thirdHire />
-      ) : null}
+        <section className="mt-10">
+          <SectionHead title="What the shelf is offering" note="READ FROM /api/quest/picks" />
+          <Stack surface className="mt-5">
+            <div className="overflow-x-auto">
+              <div style={{ minWidth: 1200 }}>
+                <DataTable
+                  cols={[220, 250, 190, 190, 250, 756]}
+                  header={[
+                    'STEP',
+                    'CATEGORY',
+                    'CONFIRMED',
+                    'ANSWERING',
+                    target ? `SHELF ON ${chainLabel(target.chainId)} ${target.chainId}` : 'SHELF',
+                    'WHAT THE STEP OFFERS',
+                  ]}
+                  rows={pickRows}
+                />
+              </div>
+            </div>
+          </Stack>
+        </section>
 
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
-        <p className="max-w-2xl text-[13px] leading-relaxed text-newsprint-gray">
-          Any agent on the market counts for a hire, as long as it is not your own and not one you already hired. Points
-          and titles track your progress here and are not a token or a reward.
-        </p>
-        <Action variant="quiet" onClick={quit}>
-          Quit the quest
-        </Action>
+        <div className="mt-8 grid gap-5 lg:grid-cols-3">
+          <Stack surface pad={[20, 22, 20, 22]} gap={12} className="min-w-0 lg:col-span-2">
+            <SectionHead title="The picks the quest is written with" note="BNB 97 · NAMED IN THE PRODUCT" />
+            {writtenPicks.map((w) => (
+              <div key={w.key}>
+                <Row gap={12} align="center" justify="between">
+                  <Row gap={11} align="center" className="min-w-0">
+                    <AgentAvatar size={34} name={w.name} />
+                    <Stack gap={2} className="min-w-0">
+                      <Txt size={15} lead={20} weight="bold" tone="ink" className="block truncate">{w.name}</Txt>
+                      <Txt size={11} lead={15} mono tone="labels">{`BNB 97 · token ${w.tokenId} · ${w.slot}`}</Txt>
+                    </Stack>
+                  </Row>
+                  <Pill variant="off">{w.stepTitle}</Pill>
+                </Row>
+                {w.task ? (
+                  <Txt size={12} lead={18} tone="steel" className="mt-2 block pl-[45px]">
+                    {w.task}
+                  </Txt>
+                ) : null}
+              </div>
+            ))}
+            <Txt size={12} lead={18} tone="steel">
+              {target
+                ? `On ${chainLabel(target.chainId)} a hire step gets its offers from the shelf; on BNB 97 these are the agents the steps name outright.`
+                : 'On the connected chain a hire step gets its offers from the shelf; on BNB 97 these are the agents the steps name outright.'}
+            </Txt>
+          </Stack>
+          <Stack surface pad={[20, 22, 20, 22]} gap={12} className="min-w-0">
+            <SectionHead title="What it finishes into" note="THE GRAND SEAL" />
+            <Row justify="center">
+              <QuestStamp step="seal" stamped={Boolean(progress?.completed)} className="w-[92px]" />
+            </Row>
+            {sealStep
+              ? (
+                  [
+                    { k: 'The seal', v: `+${sealStep.points} points, once the rest is in`, mono: false },
+                    { k: 'Passport number', v: progress?.passport?.serial ?? 'not issued yet', mono: true },
+                    { k: 'Share card', v: progress?.completed ? 'drawn above' : 'not drawn yet', mono: true },
+                  ] as const
+                ).map(({ k, v, mono }) => (
+                  <Row key={k} gap={12} align="start">
+                    <Txt size={10} lead={16} weight="bold" upper tone="muted" className="w-[128px] shrink-0">
+                      {k}
+                    </Txt>
+                    <Txt
+                      size={12}
+                      lead={18}
+                      mono={mono}
+                      tone={mono ? 'steel' : 'slate'}
+                      className="min-w-0 flex-1 [overflow-wrap:anywhere]"
+                    >
+                      {v}
+                    </Txt>
+                  </Row>
+                ))
+              : null}
+          </Stack>
+        </div>
+
+        <Stack surface pad={[16, 22, 16, 22]} gap={10} className="mt-8">
+          <SectionHead title="The strip that brings you here" note="CARRIED ON THE PAGES A STEP SENDS YOU TO" />
+          <Row justify="between" align="start" gap={14}>
+            <Stack gap={6} className="min-w-0 flex-1">
+              <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                {`Souk passport · ${strip && next ? next.title : 'complete'}`}
+              </Txt>
+              <Txt size={13} lead={20} tone="slate">
+                {strip ? strip.instruction : 'Every step that finishes the passport is in.'}
+              </Txt>
+            </Stack>
+            <QuestStamp step={next ? next.key : 'seal'} stamped={next ? stamps[next.key] : true} className="w-[104px] shrink-0" />
+          </Row>
+          {stripAction ? (
+            stripAction.to ? (
+              <Link to={stripAction.to} className="mt-1 inline-block">
+                <Btn>{stripAction.label}</Btn>
+              </Link>
+            ) : (
+              <Btn onClick={stripAction.onClick} disabled={stripAction.disabled} className="mt-1">
+                {stripAction.label}
+              </Btn>
+            )
+          ) : null}
+        </Stack>
+
+        <div className="mt-10 pb-2">
+          <Rule />
+          <Txt size={11} lead={17} mono tone="muted" className="mt-3 block uppercase">
+            A stamp is earned by settled activity.
+          </Txt>
+        </div>
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -373,8 +618,8 @@ function stepContent(
   }
 }
 
-// every step is built from the same parts in the same order at a fixed height, so the passport
-// reads as one grid and the actions line up along the bottom
+// every step is built from the same parts in the same order, so the passport reads as one grid
+// and the actions line up along the bottom of every card
 function StepCard({
   step,
   number,
@@ -412,7 +657,8 @@ function StepCard({
   return (
     <article
       aria-label={`${title}, ${points} points, ${state.toLowerCase()}`}
-      className={cx(card(isNext ? 'strong' : 'plain', 'sm'), 'flex h-[264px] min-w-0 flex-col [overflow-wrap:anywhere]')}
+      className="relative flex h-full min-w-0 flex-col gap-3 overflow-hidden rounded-[20px] border border-white/[0.08] bg-souk-surface1 [overflow-wrap:anywhere]"
+      style={{ padding: '20px 22px' }}
     >
       <QuestStamp
         step={step.key}
@@ -421,37 +667,41 @@ function StepCard({
         className={cx('pointer-events-none absolute right-3 top-3', step.key === 'seal' ? 'w-[80px]' : 'w-[104px]')}
       />
       {/* the heading keeps clear of the stamp in the corner */}
-      <p className={cx(LABEL, 'pr-[100px]')}>
-        {step.key === 'seal' ? 'Finish' : step.optional ? 'Extra' : `Step ${number}`} · +{points} points
-      </p>
-      <h2 className="mt-2 truncate pr-[100px] font-serif text-[22px] leading-tight text-press-black">{title}</h2>
-      <p className="mt-3 flex items-center gap-2 text-[14px] font-medium text-press-black">
-        <span
-          aria-hidden="true"
-          className={cx('h-2 w-2 shrink-0 rounded-full', stamped ? 'glow bg-highlighter-green' : 'border hairline border-newsprint-gray bg-transparent')}
-        />
-        <span className="truncate">{state}</span>
-      </p>
-      <TextSlot lines={2} className="mt-1">
-        <span title={instruction}>{instruction}</span>
-      </TextSlot>
-
-      <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
-        {actions.map((a, i) => (
-          <Action
-            key={a.label}
-            variant={i === 0 && isNext ? 'primary' : 'secondary'}
-            to={a.to}
-            onClick={a.onClick}
-            disabled={a.disabled}
-            className={cx('w-full min-w-0', actions.length === 1 && 'col-span-2')}
-          >
-            {/* an agent's name can be any length, so the label stays on one line */}
-            <span className="truncate" title={a.label}>
-              {a.label}
-            </span>
-          </Action>
-        ))}
+      <Stack gap={4} className="pr-[100px]">
+        <Txt size={10} lead={14} weight="bold" upper tone="muted">
+          {step.key === 'seal' ? 'Finish' : step.optional ? 'Extra' : `Step ${number}`} · +{points} points
+        </Txt>
+        <Txt size={20} lead={26} weight="bold" tone="ink" className="block truncate">{title}</Txt>
+      </Stack>
+      <Row justify="between" align="center" gap={9} className="flex-wrap pr-[100px]">
+        <Row gap={9} align="center" className="min-w-0">
+          <Dot tone={stamped ? 'good' : 'quiet'} size={8} />
+          <Txt size={14} lead={20} tone={stamped || isNext ? 'ink' : 'slate'} className="truncate">{state}</Txt>
+        </Row>
+        {isNext ? <Pill variant="keep">Next up</Pill> : null}
+      </Row>
+      <Txt size={13} lead={20} tone="slate" className="block">{instruction}</Txt>
+      <Rule hair />
+      <div className="mt-auto grid grid-cols-2 gap-2">
+        {actions.map((a) =>
+          a.to ? (
+            <Link key={a.label} to={a.to} className={cx('block min-w-0', actions.length === 1 && 'col-span-2')}>
+              <Btn className="w-full">
+                {/* an agent's name can be any length, so the label stays on one line */}
+                <span className="block min-w-0 truncate" title={a.label}>{a.label}</span>
+              </Btn>
+            </Link>
+          ) : (
+            <Btn
+              key={a.label}
+              onClick={a.onClick}
+              disabled={a.disabled}
+              className={cx('w-full min-w-0', actions.length === 1 && 'col-span-2')}
+            >
+              <span className="block min-w-0 truncate" title={a.label}>{a.label}</span>
+            </Btn>
+          ),
+        )}
       </div>
     </article>
   )
