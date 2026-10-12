@@ -13,6 +13,7 @@ import {
   shortAddress,
   timeAgo,
   isJobStepSkill,
+  takesJobs,
   sellsByJob,
 } from '@agora/core'
 import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus } from '../lib/api'
@@ -411,6 +412,9 @@ export function AgentDetailPage() {
   const mySession = heldSession && heldSession.paymentId !== closedPaymentId ? heldSession : null
   const hireWarning = preHireWarning(detail.verification)
   const jobSeller = sellsByJob(detail.skills)
+  // an agent whose card names a real skill beside negotiate takes both rails, so the
+  // job protocol is offered as well rather than hidden by the job-only test
+  const takesJobsToo = !jobSeller && takesJobs(detail.skills)
   // a passport link opens the page ready for its step: the guide strip, and the run panel filled in
   // any agent counts for a hire step, so the guide shows whatever its category
   const quest = questStepFor(searchParams.get('quest'), Number(chainId), tokenId)
@@ -682,6 +686,15 @@ export function AgentDetailPage() {
             <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} name={detail.name} />
           ) : (
             <>
+              {takesJobsToo && (
+                <div className="mt-6 space-y-3">
+                  <p className="text-xs leading-relaxed text-newsprint-gray">
+                    This agent also sells through ERC-8183 jobs. A direct hire below pays per call
+                    over x402; a job funds escrow first and work starts once the job is funded.
+                  </p>
+                  <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} name={detail.name} />
+                </div>
+              )}
               {hireWarning && (
                 <p role="note" className="mt-6 rounded-[8px] border hairline border-slate-verdant/45 p-3 text-xs leading-relaxed text-newsprint-gray">
                   {hireWarning}
