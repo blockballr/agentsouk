@@ -14,9 +14,10 @@ const links = [
 
 // the design's top bar item: upper case, and the active one is the only ink in the
 // row with a rule under it. Steel is the resting tone so the current page reads at a
-// glance rather than every item competing.
+// glance rather than every item competing. The rule sits in the 5px gap the design
+// leaves under the label, not tight against it.
 const itemClass = (isActive: boolean): string =>
-  `border-b-2 text-[13px] uppercase leading-[18px] transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data ${
+  `border-b-2 pb-[5px] text-[13px] uppercase leading-[18px] transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data ${
     isActive
       ? 'border-souk-data font-semibold text-souk-ink'
       : 'border-transparent text-souk-steel hover:text-souk-ink'
@@ -58,8 +59,10 @@ export function Nav() {
               <QuickSearch />
               <NotificationBell />
               <CartLink />
-              <ProfileLink />
               <ThemeToggle />
+              {/* profile is the rightmost control in the design, and the display
+                  toggle sits where the design puts its monitor button */}
+              <ProfileLink />
             </div>
             <div className="lg:hidden">
               <QuickSearch large />
