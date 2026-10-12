@@ -231,11 +231,19 @@ export async function postLiveness(args: {
   try {
     const chain = args.chainId === BSC_TESTNET_CHAIN_ID ? bscTestnet : bsc;
     const account = privateKeyToAccount(key as `0x${string}`);
-    const wallet = createWalletClient({
-      account,
-      chain,
-      transport: rpcTransport(args.chainId, process.env.REGISTRY_RPC_URL),
-    });
+    const transport = rpcTransport(args.chainId, process.env.REGISTRY_RPC_URL);
+    // a posting to an address with no code on the target chain is a transaction
+    // that mines, costs gas and records nothing, so the chain is checked first
+    const deployed = await createPublicClient({ transport })
+      .getCode({ address: address as Address })
+      .catch(() => null);
+    if (!deployed || deployed === "0x") {
+      return {
+        ok: false,
+        error: `no oracle contract at ${address} on chain ${args.chainId}, so a posting would record nothing`,
+      };
+    }
+    const wallet = createWalletClient({ account, chain, transport });
     const data = encodeFunctionData({
       abi: REPORT_ABI,
       functionName: "report",
