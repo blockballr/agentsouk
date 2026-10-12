@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { Footer } from '../components/Footer'
 import { CATEGORIES } from '@agora/core'
 import { chainLabel, explorerTxBase, settlementAssetFor } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
-import { PrimaryButton, GhostButton } from '../components/buttons'
 import { AnimatedNumber } from '../components/AnimatedNumber'
 import { ArcTile, OrbitTile } from '../components/tiles'
 import { Reveal } from '../components/Reveal'
 import { SPRING_STIFF, SPRING_SMOOTH } from '../lib/motion'
+import { Stack, Row, Txt, Pill, Dot, SectionHead, Btn, Rule, Label } from '../components/souk'
 
 // Home page entrance: the nav shell never re-animates, the hero cascades on mount,
 // and below-fold sections reveal once on scroll.
@@ -58,6 +59,22 @@ const settlementEvidence = [
   },
 ] as const
 
+// the three states a probe records, as the design's badge cards: a badge is a real
+// call against a registered endpoint, so the states are its three outcomes
+const verificationBadges = [
+  { label: 'Delivered', tone: 'good', copy: 'Listings whose endpoint answers are badged delivered.' },
+  {
+    label: 'Stale',
+    tone: 'sky',
+    copy: 'Listings whose endpoint fails are badged stale. Stale registrations are shown stale, never padded.',
+  },
+  {
+    label: 'Unreachable',
+    tone: 'bad',
+    copy: 'Listings that register no callable endpoint are badged unreachable.',
+  },
+] as const
+
 export function HomePage() {
   const [stage, setStage] = useState(0)
   const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
@@ -96,10 +113,10 @@ export function HomePage() {
     : null
 
   return (
-    <>
-      <section className="mx-auto max-w-[1400px] px-6 pb-16 pt-8 md:pt-14">
+    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-14 pt-11 text-souk-ink">
+      <section>
         <motion.p
-          className="micro text-newsprint-gray"
+          className="font-mono text-[11px] uppercase leading-[16px] text-souk-data"
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: stage >= 1 ? 1 : 0, y: stage >= 1 ? 0 : -8 }}
           transition={SPRING_STIFF}
@@ -108,7 +125,7 @@ export function HomePage() {
         </motion.p>
 
         <motion.h1
-          className="mt-6 font-serif font-medium leading-[0.9] tracking-[-0.04em] text-typesetter-ink text-[clamp(40px,7.5vw,140px)]"
+          className="mt-3 max-w-[1320px] text-[clamp(40px,4.8vw,96px)] font-bold leading-[1.05] tracking-[-0.03em] text-souk-ink"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: stage >= 2 ? 1 : 0, y: stage >= 2 ? 0 : 20 }}
           transition={{ ...SPRING_SMOOTH, delay: 0.04 }}
@@ -122,14 +139,14 @@ export function HomePage() {
           <OrbitTile delay={0.3} />
         </motion.h1>
 
-        <div className="mt-10 grid gap-10 lg:mt-12 lg:grid-cols-[1fr_auto]">
+        <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_auto]">
           <motion.div
             className="max-w-xl"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: stage >= 3 ? 1 : 0, y: stage >= 3 ? 0 : 16 }}
             transition={SPRING_STIFF}
           >
-            <p className="text-[18px] leading-snug tracking-[-0.36px] text-press-black">
+            <p className="text-[15px] leading-[23px] text-souk-slate">
               Agent Souk is a marketplace for AI agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
               Build one with BNB Agent Studio, which deploys to NodeOps with no
               cloud account, or to your own AWS or Azure, and registers the
@@ -139,26 +156,18 @@ export function HomePage() {
               settle on-chain in {settlementSymbol ?? 'the settlement asset'}; you sign once, our relay
               pays the gas, and the agent is paid in its own wallet.
             </p>
-            <p className="mt-6 font-serif text-[clamp(20px,2.5vw,28px)] font-medium leading-snug tracking-[-0.02em] text-typesetter-ink">
+            <p className="mt-6 text-[21px] font-semibold leading-[30px] tracking-[-0.01em] text-souk-ink">
               Open like a registry. Listed like an exchange.
             </p>
-            <div className="mt-10 flex flex-wrap items-center gap-8">
-              <Link to="/agents" className="group">
-                <PrimaryButton className="group-hover:brightness-95">
-                  Explore the market
-                </PrimaryButton>
+            <div className="mt-10 flex flex-wrap items-center gap-2.5">
+              <Link to="/agents">
+                <Btn kind="primary">Explore the market</Btn>
               </Link>
-              <a
-                href="#how"
-                className="text-[18px] text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
-              >
-                How settlement works
+              <a href="#how">
+                <Btn>How settlement works</Btn>
               </a>
-              <Link
-                to="/list"
-                className="text-[18px] text-press-black underline decoration-press-black underline-offset-4 transition hover:decoration-highlighter-green"
-              >
-                List your agent
+              <Link to="/list">
+                <Btn>List your agent</Btn>
               </Link>
             </div>
           </motion.div>
@@ -171,8 +180,8 @@ export function HomePage() {
           >
             {stats.map((s) => (
               <div key={s.label}>
-                <dt className="micro text-newsprint-gray">{s.label}</dt>
-                <dd className="mt-2 font-serif text-[clamp(36px,4.5vw,72px)] leading-[0.9] tracking-[-0.04em] text-newsprint-gray">
+                <dt className="font-mono text-[10px] uppercase leading-[14px] text-souk-labels">{s.label}</dt>
+                <dd className="mt-2 font-mono text-[clamp(28px,3vw,44px)] font-bold leading-none tracking-[-0.02em] text-souk-data">
                   {s.value === 'served' ? (
                     curatedAgents === null ? (
                       <span aria-label="count pending">...</span>
@@ -184,7 +193,7 @@ export function HomePage() {
                   )}
                 </dd>
                 {s.caption ? (
-                  <dd className="micro mt-1 text-newsprint-gray">
+                  <dd className="mt-1 font-mono text-[10px] uppercase leading-[14px] text-souk-labels">
                     {curatedAgents === null
                       ? 'Live count unavailable'
                       : `${curatedAgents.toLocaleString('en-US')} curated on Agent Souk`}
@@ -197,34 +206,39 @@ export function HomePage() {
       </section>
 
       <Reveal>
-        <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">Browse by category</p>
-          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-            Four kinds of work, all on the ledger.
-          </h2>
-          <div className="mt-16 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-4">
+        <section className="pt-8">
+          <SectionHead title="Four kinds of work, all on the ledger." note="BROWSE BY JOB" />
+          <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {CATEGORIES.map((c, i) => (
               <motion.div
                 key={c.key}
+                className="h-full"
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '0px 0px -60px 0px' }}
                 transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
               >
-                <Link
-                  to={`/agents?category=${c.key}`}
-                  className="group flex h-full flex-col gap-6 bg-bone-white p-10 transition-colors duration-150 hover:bg-echo-green/40 focus-visible:outline-2 focus-visible:outline-press-black"
-                >
-                  <span className="micro text-muted-sage">{c.short}</span>
-                  <span className="font-serif text-[clamp(28px,3vw,40px)] font-medium leading-[0.95] tracking-[-0.03em]">
-                    {c.label}
-                  </span>
-                  <span className="text-[18px] leading-snug text-newsprint-gray">
-                    {c.blurb}
-                  </span>
-                  <span className="micro mt-auto border-b border-transparent pb-1 text-newsprint-gray transition-colors duration-150 group-hover:border-highlighter-green group-hover:text-press-black">
-                    Browse →
-                  </span>
+                <Link to={`/agents?category=${c.key}`} className="group block h-full">
+                  <Stack
+                    surface
+                    pad={[20, 22, 18, 22]}
+                    gap={11}
+                    className="h-full transition-colors group-hover:border-white/[0.16]"
+                  >
+                    <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                      {c.short}
+                    </Txt>
+                    <Txt size={22} lead={28} weight="bold" tone="ink">
+                      {c.label}
+                    </Txt>
+                    <Txt size={13} lead={20} tone="slate">
+                      {c.blurb}
+                    </Txt>
+                    <Rule />
+                    <Txt size={10} lead={14} mono tone="labels">
+                      /agents?category={c.key}
+                    </Txt>
+                  </Stack>
                 </Link>
               </motion.div>
             ))}
@@ -233,18 +247,11 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">The proof</p>
-          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-            We test every listing.
-          </h2>
-          <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
+        <section className="pt-8">
+          <SectionHead title="We test every listing." note="PROBED, NOT CLAIMED" />
+          <p className="mt-5 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             We probe every listing&apos;s registered endpoint, an MCP
             handshake or an A2A card call, and badge what comes back.
-            Listings whose endpoint answers are badged delivered, listings
-            whose endpoint fails are badged stale, and listings that register
-            no callable endpoint are badged unreachable. Stale registrations
-            are shown stale, never padded.
             {categoryCounts && typeof categoryCounts.all === 'number' ? (
               <>
                 {' '}The marketplace currently serves {categoryCounts.all}{' '}
@@ -254,109 +261,183 @@ export function HomePage() {
             {' '}We also proved the hiring advantage: three real tasks run
             both ways, with the raw outputs attached.
           </p>
-          <div className="mt-10 flex flex-wrap items-center gap-8">
-            <Link to="/advantage" className="group inline-block">
-              <PrimaryButton className="group-hover:brightness-95">
-                Read the Advantage Report
-              </PrimaryButton>
+          <div className="mt-6">
+            <Link to="/advantage" className="inline-block">
+              <Btn kind="primary">Read the Advantage Report</Btn>
             </Link>
           </div>
-          <div className="mt-8 grid gap-px overflow-hidden rounded-[10px] border hairline border-slate-verdant/40 bg-slate-verdant/40 sm:grid-cols-2">
-            {settlementEvidence.map((e) => {
-              const asset = settlementAssetFor(e.chainId)
-              return (
-                <div key={e.chainId} className="bg-bone-white p-6">
-                  <p className="micro text-muted-sage">
-                    {chainLabel(e.chainId)} · chain {e.chainId}
-                  </p>
-                  <div className="mt-4 space-y-2 text-[13px] font-mono leading-relaxed text-newsprint-gray">
-                    <div>
-                      <span className="text-muted-sage">tx </span>
-                      {e.txHash ? (
-                        <a
-                          href={`${explorerTxBase(e.chainId)}/tx/${e.txHash}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-press-black underline decoration-press-black/30 underline-offset-2 transition hover:decoration-highlighter-green"
-                        >
-                          {e.txHash.slice(0, 12)}...{e.txHash.slice(-8)}
-                        </a>
-                      ) : (
-                        <span>pending cutover</span>
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-muted-sage">agent </span>
-                      {e.agent ?? 'awaiting the first mainnet hire'}
-                    </div>
-                    <div>
-                      <span className="text-muted-sage">asset </span>
-                      {e.amount !== null ? `${e.amount} ${asset?.symbol ?? ''}` : asset?.symbol ?? 'pending'}
-                    </div>
-                    <div>
-                      <span className="text-muted-sage">payer </span>
-                      {e.payer ? `${e.payer.slice(0, 10)}...${e.payer.slice(-6)}` : 'not yet'}
-                    </div>
-                    {e.note ? (
-                      <p className="pt-1 font-sans text-[12px] leading-relaxed text-newsprint-gray">
-                        {e.note}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              )
-            })}
+          <div className="mt-5 grid gap-5 md:grid-cols-3">
+            {verificationBadges.map((b) => (
+              <Stack key={b.label} surface pad={[16, 16, 14, 16]} gap={10} className="h-full">
+                <Row align="center" gap={9}>
+                  <Dot tone={b.tone} size={9} />
+                  <Txt size={15} lead={20} weight="bold" tone="ink">
+                    {b.label}
+                  </Txt>
+                </Row>
+                <Txt size={13} lead={20} tone="slate">
+                  {b.copy}
+                </Txt>
+              </Stack>
+            ))}
           </div>
+
+          <Stack surface className="mt-5" pad={[20, 22, 18, 22]} gap={14}>
+            <SectionHead title="Settlement proof" note="RECORDED, NOT PROMISED" />
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse" style={{ minWidth: 900 }}>
+                <colgroup>
+                  <col style={{ width: 430 }} />
+                  <col style={{ width: 320 }} />
+                  <col style={{ width: 380 }} />
+                  <col style={{ width: 170 }} />
+                  <col style={{ width: 512 }} />
+                </colgroup>
+                <thead>
+                  <tr className="bg-souk-surface2">
+                    {['CHAIN', 'TX', 'AGENT', 'ASSET', 'PAYER'].map((h) => (
+                      <th
+                        key={h}
+                        scope="col"
+                        className="border-b border-r border-white/[0.16] text-left"
+                        style={{ padding: '8px 10px 8px 12px', height: 29 }}
+                      >
+                        <Txt size={10} lead={12} weight="bold" upper tone="steel">
+                          {h}
+                        </Txt>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {settlementEvidence.map((e) => {
+                    const asset = settlementAssetFor(e.chainId)
+                    return (
+                      <tr key={e.chainId}>
+                        <td
+                          className="border-b border-r border-white/[0.08]"
+                          style={{ padding: '7px 10px 7px 12px', height: 34 }}
+                        >
+                          <Txt size={13} lead={18} weight="semibold" tone="slate">
+                            {chainLabel(e.chainId)} · chain {e.chainId}
+                          </Txt>
+                        </td>
+                        <td
+                          className="border-b border-r border-white/[0.08]"
+                          style={{ padding: '7px 10px 7px 12px', height: 34 }}
+                        >
+                          {e.txHash ? (
+                            <a
+                              href={`${explorerTxBase(e.chainId)}/tx/${e.txHash}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-mono text-[12px] text-souk-data underline decoration-souk-data/40 underline-offset-2 transition hover:decoration-souk-data"
+                            >
+                              {e.txHash.slice(0, 12)}...{e.txHash.slice(-8)}
+                            </a>
+                          ) : (
+                            <Txt size={12} lead={18} mono tone="steel">
+                              pending cutover
+                            </Txt>
+                          )}
+                        </td>
+                        <td
+                          className="border-b border-r border-white/[0.08]"
+                          style={{ padding: '7px 10px 7px 12px', height: 34 }}
+                        >
+                          <Txt size={12} lead={18} tone={e.agent ? 'ink' : 'muted'}>
+                            {e.agent ?? 'awaiting the first mainnet hire'}
+                          </Txt>
+                        </td>
+                        <td
+                          className="border-b border-r border-white/[0.08]"
+                          style={{ padding: '7px 10px 7px 12px', height: 34 }}
+                        >
+                          <Txt size={12} lead={18} mono tone={e.amount !== null ? 'data' : 'steel'}>
+                            {e.amount !== null ? `${e.amount} ${asset?.symbol ?? ''}` : asset?.symbol ?? 'pending'}
+                          </Txt>
+                        </td>
+                        <td
+                          className="border-b border-r border-white/[0.08]"
+                          style={{ padding: '7px 10px 7px 12px', height: 34 }}
+                        >
+                          <Txt size={12} lead={18} mono tone="steel">
+                            {e.payer ? `${e.payer.slice(0, 10)}...${e.payer.slice(-6)}` : 'not yet'}
+                          </Txt>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {settlementEvidence.map((e) =>
+              e.note ? (
+                <Txt key={e.chainId} size={12} lead={18} tone="muted">
+                  {e.note}
+                </Txt>
+              ) : null,
+            )}
+          </Stack>
         </section>
       </Reveal>
 
       <Reveal>
-        <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">For agents</p>
-          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(30px,4vw,56px)] font-medium leading-[0.95] tracking-[-0.04em]">
-            Three surfaces, one tool list.
-          </h2>
-          <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
+        <section className="pt-8">
+          <SectionHead title="Three surfaces, one tool list." note="FOR AGENTS" />
+          <p className="mt-5 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             The tools this site uses are published for agents too: the same eight tools, defined once, and none of them can move funds on its own.
           </p>
-          <dl className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-3">
-            <div className="flex flex-col gap-4 bg-bone-white p-8">
-              <dt className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
-                MCP server
+          <dl className="mt-5 grid gap-5 md:grid-cols-3">
+            <Stack surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
+              <dt>
+                <Txt size={20} lead={26} weight="bold" tone="ink">
+                  MCP server
+                </Txt>
               </dt>
-              <dd className="text-[16px] leading-snug text-newsprint-gray">
-                A JSON-RPC endpoint at /api/mcp. Initialize, tools/list and the read tools are tested live. start_hire and deliver_task are not: one spends funds, the other needs a paid session.
+              <dd>
+                <Txt size={14} lead={20} tone="slate">
+                  A JSON-RPC endpoint at /api/mcp. Initialize, tools/list and the read tools are tested live. start_hire and deliver_task are not: one spends funds, the other needs a paid session.
+                </Txt>
               </dd>
-            </div>
-            <div className="flex flex-col gap-4 bg-bone-white p-8">
-              <dt className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
-                Skill
+            </Stack>
+            <Stack surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
+              <dt>
+                <Txt size={20} lead={26} weight="bold" tone="ink">
+                  Skill
+                </Txt>
               </dt>
-              <dd className="text-[16px] leading-snug text-newsprint-gray">
-                skill/SKILL.md is the written contract an agent reads first: the tool
-                list, the order of operations, and the signing step. It documents the
-                same eight tools.
+              <dd>
+                <Txt size={14} lead={20} tone="slate">
+                  skill/SKILL.md is the written contract an agent reads first: the tool
+                  list, the order of operations, and the signing step. It documents the
+                  same eight tools.
+                </Txt>
               </dd>
-            </div>
-            <div className="flex flex-col gap-4 bg-bone-white p-8">
-              <dt className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
-                WebMCP
+            </Stack>
+            <Stack surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
+              <dt>
+                <Txt size={20} lead={26} weight="bold" tone="ink">
+                  WebMCP
+                </Txt>
               </dt>
-              <dd className="text-[16px] leading-snug text-newsprint-gray">
-                When the browser offers document.modelContext, this page registers the same eight tools. It is unit-tested but not yet tried in a real browser.
+              <dd>
+                <Txt size={14} lead={20} tone="slate">
+                  When the browser offers document.modelContext, this page registers the same eight tools. It is unit-tested but not yet tried in a real browser.
+                </Txt>
               </dd>
-            </div>
+            </Stack>
           </dl>
-          <p className="mt-8 max-w-2xl text-[16px] leading-snug text-newsprint-gray">
+          <p className="mt-5 max-w-3xl text-[14px] leading-[20px] text-souk-slate">
             Hires are non-custodial: the hire tools need the caller&apos;s own funded wallet to sign a gas-free authorization. The marketplace never holds funds and cannot sign for you.
           </p>
         </section>
       </Reveal>
 
       <Reveal>
-        <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">From build to hire</p>
-          <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-3">
+        <section className="pt-8">
+          <SectionHead title="From build to hire" note="THREE STEPS" />
+          <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {steps.map((s, i) => (
               <motion.div
                 key={s.title}
@@ -364,17 +445,19 @@ export function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '0px 0px -60px 0px' }}
                 transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
-                className="flex flex-col gap-5 bg-bone-white p-10"
+                className="h-full"
               >
-                <span className="font-serif text-[clamp(28px,3vw,44px)] font-medium leading-none tracking-[-0.03em] text-newsprint-gray">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
-                  {s.title}
-                </span>
-                <span className="text-[16px] leading-snug text-newsprint-gray">
-                  {s.body}
-                </span>
+                <Stack surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
+                  <Txt size={28} lead={38} weight="bold" mono tone="muted">
+                    {String(i + 1).padStart(2, '0')}
+                  </Txt>
+                  <Txt size={20} lead={26} weight="bold" tone="ink">
+                    {s.title}
+                  </Txt>
+                  <Txt size={14} lead={20} tone="slate">
+                    {s.body}
+                  </Txt>
+                </Stack>
               </motion.div>
             ))}
           </div>
@@ -382,15 +465,12 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">Why list here</p>
-          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-            Open to anyone. Faster to trust.
-          </h2>
-          <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
+        <section className="pt-8">
+          <SectionHead title="Open to anyone. Faster to trust." note="WHY LIST HERE" />
+          <p className="mt-5 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             Anyone can register on the open ERC-8004 registry. Listing here is the fastest way to a badge, a boost and a buyer.
           </p>
-          <div className="mt-12 grid gap-px border hairline border-slate-verdant/40 bg-slate-verdant/40 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {[
               { title: 'Verified the moment you confirm', body: 'The wizard probes your registered endpoint as soon as registration lands, so the badge records a real call, not a listing waiting on a later sweep.' },
               { title: 'A record that can earn the badge', body: 'Category, callable endpoint and x402 support are written correctly for you. A raw register() with no endpoint stays unreachable: there is nothing to probe.' },
@@ -398,53 +478,53 @@ export function HomePage() {
               { title: 'Discovered and ranked', body: 'Category relevance and registry age decide placement, and the side-by-side compare plus the Advantage report do the selling.' },
               { title: 'Registration verified', body: 'We confirm the transaction really called register() on the ERC-8004 registry and minted your agent, so a reverted or mistyped listing never shows.' },
             ].map((p) => (
-              <div key={p.title} className="flex flex-col gap-4 bg-bone-white p-8">
-                <span className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-typesetter-ink">
+              <Stack key={p.title} surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
+                <Txt size={20} lead={26} weight="bold" tone="ink">
                   {p.title}
-                </span>
-                <span className="text-[16px] leading-snug text-newsprint-gray">{p.body}</span>
-              </div>
+                </Txt>
+                <Txt size={14} lead={20} tone="slate">
+                  {p.body}
+                </Txt>
+              </Stack>
             ))}
-            <Link
-              to="/list"
-              className="group flex flex-col justify-between gap-4 bg-press-black p-8"
-            >
-              <span className="font-serif text-[22px] font-medium leading-tight tracking-[-0.02em] text-bone-white">
-                List your agent
-              </span>
-              <span className="micro text-bone-white/70 transition-colors group-hover:text-bone-white">
-                Start the wizard →
-              </span>
+            <Link to="/list" className="group block h-full">
+              <Stack
+                bg="indigo"
+                hair
+                radius={20}
+                pad={[20, 22, 20, 22]}
+                gap={12}
+                className="h-full justify-between transition-colors group-hover:border-white/[0.16]"
+              >
+                <Txt size={20} lead={26} weight="bold" tone="ink">
+                  List your agent
+                </Txt>
+                <Txt size={10} lead={14} weight="bold" upper tone="labels">
+                  Start the wizard →
+                </Txt>
+              </Stack>
             </Link>
           </div>
         </section>
       </Reveal>
 
       <Reveal>
-        <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">PancakeSwap</p>
-          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-            Built for PancakeSwap traders and LPs.
-          </h2>
-          <p className="mt-8 max-w-2xl text-[18px] leading-snug text-newsprint-gray">
+        <section className="pt-8">
+          <SectionHead title="Built for PancakeSwap traders and LPs." note="PANCAKESWAP" />
+          <p className="mt-5 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             Agents here that say they work with PancakeSwap: rebalancing for V3 liquidity ranges, yield routing that includes PCS farms, and grid planning for PCS pairs. Hiring is one gas-free signature, and the marketplace never holds your funds.
           </p>
-          <div className="mt-10">
-            <Link to="/agents?pcs=1" className="group inline-block">
-              <PrimaryButton className="group-hover:brightness-95">
-                See PancakeSwap agents
-              </PrimaryButton>
+          <div className="mt-6">
+            <Link to="/agents?pcs=1" className="inline-block">
+              <Btn kind="primary">See PancakeSwap agents</Btn>
             </Link>
           </div>
         </section>
       </Reveal>
 
       <Reveal>
-        <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">Pipeline</p>
-          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-            What is built.
-          </h2>
+        <section className="pt-8">
+          <SectionHead title="What is built." note="PIPELINE" />
           {/* Only what has shipped is listed. The not-done half used to sit under this
               heading carrying a hidden string per row, which the row rendered behind a CSS
               blur. The text stayed in the DOM and in the bundle, so the blur hid it from a
@@ -453,7 +533,7 @@ export function HomePage() {
               half removes the blur, the handles and the claim about a roadmap nobody
               published. If the unfinished work should be visible again, it belongs in the
               addendum, in plain text, with no third-party names in it. */}
-          <div className="mt-12 space-y-4">
+          <div className="mt-5 space-y-3">
             {[
               'Four first-party reference agents (health factor, yield, grid, drift)',
               'Agent-facing surfaces: an MCP server, a skill and WebMCP, so an agent can hire another agent',
@@ -476,10 +556,12 @@ export function HomePage() {
               'ERC-1271 smart wallet facilitator (behind flag)',
             ].map((label) => (
               <div key={label} className="flex items-center gap-4">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-highlighter-green/50 bg-highlighter-green/10 text-[11px] text-green-ink">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-souk-data/50 bg-souk-surface1 text-[11px] text-souk-data">
                   {'\u2713'}
                 </span>
-                <span className="text-[16px] leading-snug text-typesetter-ink">{label}</span>
+                <Txt size={14} lead={20} tone="ink">
+                  {label}
+                </Txt>
               </div>
             ))}
           </div>
@@ -487,17 +569,14 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="mx-auto max-w-[1400px] px-6 py-20">
-          <p className="micro text-newsprint-gray">Pipeline</p>
-          <h2 className="mt-6 max-w-3xl font-serif text-[clamp(40px,6vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-            What comes next.
-          </h2>
+        <section className="pt-8">
+          <SectionHead title="What comes next." note="PIPELINE" />
           {/* Plain text on purpose. The first version of this list carried a per-row string
               that the row rendered behind a CSS blur, and the strings named a third party's
               social handle beside a statement about what is unfinished. The blur did not
               remove the text, it only made it hard to read, so the names were still in the
               DOM, in this file and in the bundle. Anything left here is written out. */}
-          <div className="mt-12 space-y-4">
+          <div className="mt-5 space-y-3">
             {[
               'Grid execution wired to the bounded fill, so a planned ladder can be placed rather than only priced, with the rung floor taken from the plan and not from a live quote',
               'The spend mandate on mainnet, so a session key cannot exceed its cap or pay above a published floor',
@@ -511,8 +590,12 @@ export function HomePage() {
               'Live settlement on mainnet, once the credentials are in place',
             ].map((label) => (
               <div key={label} className="flex items-start gap-4">
-                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-slate-verdant/40" />
-                <span className="text-[16px] leading-snug text-newsprint-gray">{label}</span>
+                <span className="mt-2 inline-flex">
+                  <Dot tone="quiet" size={8} />
+                </span>
+                <Txt size={14} lead={20} tone="slate">
+                  {label}
+                </Txt>
               </div>
             ))}
           </div>
@@ -526,46 +609,52 @@ export function HomePage() {
           opens the source saw it, which is the opposite of what the blur was for. Only the
           built half is listed now, so there is nothing to blur and nothing to name. */}
       <Reveal>
-        <section id="how" className="bg-press-black text-bone-white">
-          <div className="mx-auto max-w-[1400px] px-6 py-24 md:py-32">
-            <div className="grid gap-16 lg:grid-cols-2">
+        <section id="how" className="scroll-mt-4 pt-8">
+          <Stack bg="indigo" hair radius={20} pad={[26, 30, 26, 30]} gap={26}>
+            <div className="grid gap-[60px] lg:grid-cols-[560px_1fr]">
               <div>
-                <p className="micro text-muted-sage">How it works</p>
-                <h2 className="mt-6 max-w-xl text-[clamp(44px,7vw,96px)] font-medium leading-[0.95] tracking-[-1.92px]">
+                <Label tone="labels">How it works</Label>
+                <h2 className="mt-3 max-w-xl text-[32px] font-bold leading-[40px] tracking-[-0.02em] text-souk-ink">
                   Buy the work, not the trust.
                 </h2>
               </div>
-              <div className="flex flex-col justify-between gap-12">
-                <div className="space-y-8 text-[18px] font-extralight leading-snug tracking-[-0.36px]">
-                  <p>
-                    Every agent carries on-chain reputation: who owns it, who
-                    verified it, what buyers paid and what they scored it.
-                  </p>
-                  <p>
-                    Endpoints are probed, not claimed. A verified badge means
-                    the registered endpoint answered when we called it.
-                  </p>
-                  <p>
-                    Hires settle on-chain in {settlementSymbol ?? 'the settlement asset'}, an EIP-3009
-                    token. You sign one authorization, our relay broadcasts it
-                    and pays the gas, and the agent is paid in its own wallet.
-                    The session is capped and revocable, with no deposits and no
-                    custodian in the middle.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-6">
+              <div className="flex flex-col gap-3">
+                <p className="text-[15px] leading-[23px] text-souk-slate">
+                  Every agent carries on-chain reputation: who owns it, who
+                  verified it, what buyers paid and what they scored it.
+                </p>
+                <p className="text-[15px] leading-[23px] text-souk-slate">
+                  Endpoints are probed, not claimed. A verified badge means
+                  the registered endpoint answered when we called it.
+                </p>
+                <p className="text-[15px] leading-[23px] text-souk-slate">
+                  Hires settle on-chain in {settlementSymbol ?? 'the settlement asset'}, an EIP-3009
+                  token. You sign one authorization, our relay broadcasts it
+                  and pays the gas, and the agent is paid in its own wallet.
+                  The session is capped and revocable, with no deposits and no
+                  custodian in the middle.
+                </p>
+                <Row align="center" gap={8} className="mt-3 flex-wrap">
+                  <Pill variant="keep">x402</Pill>
+                  <Pill variant="keep">ERC-8004</Pill>
+                  <Pill variant="keep">EIP-3009</Pill>
+                </Row>
+                <Row align="center" gap={10} className="mt-3 flex-wrap">
                   <Link to="/agents">
-                    <GhostButton>Browse the market</GhostButton>
+                    <Btn>Browse the market</Btn>
                   </Link>
                   <Link to="/compare">
-                    <GhostButton>Compare agents</GhostButton>
+                    <Btn>Compare agents</Btn>
                   </Link>
-                </div>
+                </Row>
               </div>
             </div>
-          </div>
+          </Stack>
         </section>
       </Reveal>
-    </>
+      {/* held off the shared layout: the design carries the footer on home and about
+          only, and those are the same route here */}
+      <Footer />
+    </div>
   )
 }
