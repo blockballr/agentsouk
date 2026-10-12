@@ -172,8 +172,19 @@ export function MarketplacePage() {
     .join(' · ')
 
   return (
-    <div className="min-h-screen bg-souk-canvas text-souk-ink">
-      <div className="mx-auto max-w-[1920px] px-8 pb-16">
+    <div className="relative min-h-screen overflow-hidden bg-souk-canvas text-souk-ink">
+      {/* the screen's one wash, blended the way the reference holds it: a radial from
+          the upper left that is gone by its own edge, so no stop lands hard against
+          the canvas */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-44 -left-40 h-[880px] w-[1480px]"
+        style={{
+          backgroundImage:
+            'radial-gradient(closest-side, rgba(7, 74, 108, 0.30) 0%, rgba(2, 50, 71, 0.16) 46%, rgba(11, 14, 20, 0) 100%)',
+        }}
+      />
+      <div className="relative mx-auto max-w-[1920px] px-8 pb-16">
         <Stack gap={10} pad={[44, 0, 0, 0]}>
           <Row justify="between" align="center" gap={16} className="flex-wrap">
             <Txt size={11} lead={16} mono upper tone="data">
