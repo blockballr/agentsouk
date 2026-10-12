@@ -8,6 +8,7 @@ import {
   formatScore,
   isJobStepSkill,
   sellsByJob,
+  takesJobs,
   shortAddress,
   timeAgo,
 } from '@agora/core'
@@ -357,8 +358,14 @@ function CompareTable({
     },
     {
       label: 'How you pay',
-      // our relay settles a direct hire whatever the agent advertises, so only job sellers differ
-      cell: (a) => (sellsByJob(a.skills) ? 'By ERC-8183 job' : 'Per call, x402'),
+      // our relay settles a direct hire whatever the agent advertises, so only job sellers
+      // differ; an agent that takes both rails says so rather than picking one
+      cell: (a) =>
+        sellsByJob(a.skills)
+          ? 'By ERC-8183 job'
+          : takesJobs(a.skills)
+            ? 'Per call, x402, or ERC-8183 job'
+            : 'Per call, x402',
     },
     {
       label: 'What it does',
