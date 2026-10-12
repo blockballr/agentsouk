@@ -42,7 +42,10 @@ const REFRESH_MS = 30_000
 
 export function QuestPage() {
   const navigate = useNavigate()
-  const specimen = import.meta.env.DEV && new URLSearchParams(useLocation().search).has('specimen')
+  // always call the hook: gating the call on import.meta.env.DEV changes the
+  // hook order between the dev and production bundles
+  const location = useLocation()
+  const specimen = import.meta.env.DEV && new URLSearchParams(location.search).has('specimen')
   const target = useTargetChain()
   const chainId = target?.chainId ?? null
   const [wallet, setWallet] = useState<string | null>(null)
