@@ -58,7 +58,19 @@
     },
     {
       "path": "/api/cron/liveness",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/liveness",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/liveness",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/liveness",
+      "schedule": "0 20 * * *"
     },
     {
       "path": "/api/cron/pancake",
