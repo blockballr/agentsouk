@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getNotifications, markNotificationsRead, type NotificationRow } from '../lib/api'
 import { getActiveAccount } from '../lib/wallet'
 import { timeAgo } from '@agora/core'
+import { IconBell } from './souk'
 
 // The bell: one unread count in the nav, one panel of outbox rows. It watches
 // the wallet the same way the ongoing view does, so a release or a funded job
@@ -71,19 +72,16 @@ export function NotificationBell() {
         type="button"
         onClick={onOpen}
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-        className="relative flex h-[38px] w-[38px] items-center justify-center rounded-[8px] border border-white/[0.16] text-souk-steel transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        className="flex h-[38px] shrink-0 items-center gap-2 rounded-[8px] border border-white/[0.16] px-2 text-souk-steel transition-colors hover:border-souk-data/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 21a2 2 0 0 1-3.4 0"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <IconBell />
+        {/* the design's badge rides inside the button: the count sits in the data green
+            beside the bell rather than overlapping its corner */}
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-highlighter-green px-1 text-[9px] font-semibold text-on-highlighter">
+          <span
+            aria-hidden="true"
+            className="flex h-[18px] items-center justify-center rounded-[6px] bg-souk-data px-1.5 font-mono text-[11px] font-bold leading-none text-souk-canvas"
+          >
             {unread > 9 ? '9+' : unread}
           </span>
         )}

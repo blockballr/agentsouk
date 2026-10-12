@@ -172,14 +172,8 @@ export function MarketplacePage() {
     .join(' · ')
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-souk-canvas text-souk-ink">
-      {/* the screen's one corner glow: deep sea fading in at the top right, decoration only */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute right-0 top-0 h-[420px] w-[980px]"
-        style={{ backgroundImage: 'linear-gradient(90deg, rgba(2, 50, 71, 0) 0%, rgba(2, 50, 71, 0.55) 100%)' }}
-      />
-      <div className="relative mx-auto max-w-[1920px] px-8 pb-16">
+    <div className="min-h-screen bg-souk-canvas text-souk-ink">
+      <div className="mx-auto max-w-[1920px] px-8 pb-16">
         <Stack gap={10} pad={[44, 0, 0, 0]}>
           <Row justify="between" align="center" gap={16} className="flex-wrap">
             <Txt size={11} lead={16} mono upper tone="data">
@@ -609,8 +603,10 @@ function AgentCard({
         <Rule />
 
         <Row justify="between" align="center" gap={8}>
+          {/* the token id alone identifies the listing here: the table above the cards
+              already names the chain and asset, so the card does not repeat both */}
           <Txt size={11} lead={16} mono tone="steel">
-            {`${chainLabel(agent.chain_id)} ${agent.chain_id} · #${agent.token_id}`}
+            {`#${agent.token_id}`}
           </Txt>
           {when ? (
             <Txt size={11} lead={16} mono tone="muted">

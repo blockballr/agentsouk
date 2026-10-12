@@ -234,10 +234,22 @@ function categoryName(key: AgentSummary['category']): string {
 }
 
 function SearchGlyph() {
+  // the design's own magnifier, so the search key carries the same 18px steel stroke
+  // the bar's other squares carry
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="7" cy="7" r="5.2" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M11 11l3.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#8d93a3"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="M16.5 16.5 21 21" />
     </svg>
   )
 }
