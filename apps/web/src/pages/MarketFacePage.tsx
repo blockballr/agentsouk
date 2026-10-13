@@ -166,13 +166,13 @@ export function MarketFacePage() {
   const read = hires !== null
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
       <header className="flex max-w-[1180px] flex-col gap-2.5">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
         <h1 className="m-0">
-          <Txt size={34} lead={42} weight="bold" tone="ink">
+          <Txt size={34} lead={42} display weight="bold" tone="ink">
             Money and people.
           </Txt>
         </h1>

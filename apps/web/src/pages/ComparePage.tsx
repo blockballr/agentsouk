@@ -210,7 +210,7 @@ export function ComparePage() {
 
   return (
     <section className="min-h-screen bg-souk-canvas text-souk-ink">
-      <div className="mx-auto max-w-[1920px] px-8 pb-24">
+      <div className="px-8 pb-24">
         <Stack gap={10} pad={[32, 0, 0, 0]}>
           {effectiveIds.length > 0 ? (
             <Txt size={11} lead={16} mono upper tone="data">
@@ -221,7 +221,7 @@ export function ComparePage() {
               compare
             </Txt>
           )}
-          <Txt size={34} lead={42} weight="bold" tone="ink">
+          <Txt size={34} lead={42} display weight="bold" tone="ink">
             Side by side.
           </Txt>
           {effectiveIds.length > 0 ? (
@@ -374,7 +374,7 @@ function Picker({
       {loading ? (
         <div className="mt-6 animate-pulse space-y-3" role="status" aria-label="Loading candidates">
           {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="h-16 rounded-[8px] bg-white/[0.04]" />
+            <div key={i} className="h-16 rounded-[8px] bg-souk-surface2" />
           ))}
         </div>
       ) : (
@@ -385,8 +385,8 @@ function Picker({
             return (
               <label
                 key={key}
-                className={`flex cursor-pointer items-center gap-5 border-b border-white/[0.08] px-5 py-4 transition last:border-b-0 focus-within:bg-souk-data/10 ${
-                  checked ? 'bg-souk-data/10' : 'hover:bg-white/[0.04]'
+                className={`flex cursor-pointer items-center gap-5 border-b border-souk-edge px-5 py-4 transition last:border-b-0 focus-within:bg-souk-data/10 ${
+                  checked ? 'bg-souk-data/10' : 'hover:bg-souk-surface2'
                 }`}
               >
                 <input
@@ -437,16 +437,16 @@ function CompareTable({
     () => new Set(Object.values(bestByCategory(agents)).filter((id): id is string => id !== null)),
     [agents],
   )
-  // columns read by category, the best of each first, so a winner sits beside its rivals
-  const columns = useMemo(
-    () =>
-      categoryGroups(agents).flatMap((g) =>
-        [...g.agents]
-          .sort((a, b) => Number(winnerIds.has(b.agent_id)) - Number(winnerIds.has(a.agent_id)))
-          .map((agent) => ({ agent, category: g.label })),
-      ),
-    [agents, winnerIds],
-  )
+  // one column per category: only its best agent is surfaced, so a table comparing
+  // all four categories holds at most four columns and never scrolls sideways; the
+  // ledger below still lists every agent and how each result was arrived at
+  const columns = useMemo(() => {
+    const best = bestByCategory(agents)
+    return categoryGroups(agents).flatMap((g) => {
+      const winner = g.agents.find((a) => a.agent_id === best[g.category])
+      return winner ? [{ agent: winner, category: g.label }] : []
+    })
+  }, [agents])
 
   const cats = useMemo(() => [...new Set(columns.map((c) => c.category))], [columns])
   const catLabel = cats.length === 1 ? cats[0] : `${cats.length} categories`
@@ -595,7 +595,7 @@ function CompareTable({
       ) : loading ? (
         <div className="mt-12 animate-pulse space-y-3" role="status" aria-label="Loading comparison">
           {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="h-14 rounded-[8px] bg-white/[0.04]" />
+            <div key={i} className="h-14 rounded-[8px] bg-souk-surface2" />
           ))}
         </div>
       ) : (
@@ -612,25 +612,24 @@ function CompareTable({
           </Txt>
         </Row>
 
-          {/* the scroll sits inside the card: the card's edge is drawn a pixel outside it,
-              which a scrolling box counts as overflow and answers with scrollbars */}
+          {/* every column is that category's winner, so the card's edge is the only
+              boundary: the table fits its container rather than scrolling sideways */}
           <Stack surface className="w-full">
-            <div className="overflow-x-auto">
-              <table
-                className="w-full border-collapse text-left"
-                style={{ minWidth: 302 + columns.length * 518, tableLayout: 'fixed' }}
-              >
-                <colgroup>
-                  <col style={{ width: 302 }} />
-                  {columns.map(({ agent: a }) => (
-                    <col key={a.agent_id} style={{ width: `calc((100% - 302px) / ${columns.length})` }} />
-                  ))}
-                </colgroup>
+            <table
+              className="w-full border-collapse text-left"
+              style={{ tableLayout: 'fixed' }}
+            >
+              <colgroup>
+                <col style={{ width: 302 }} />
+                {columns.map(({ agent: a }) => (
+                  <col key={a.agent_id} style={{ width: `calc((100% - 302px) / ${columns.length})` }} />
+                ))}
+              </colgroup>
                 <thead>
                   <tr>
                     <th
                       scope="col"
-                      className="sticky left-0 z-10 bg-souk-surface1 border-b border-r border-white/[0.16] text-left"
+                      className="sticky left-0 z-10 bg-souk-surface1 border-b border-r border-souk-hair text-left"
                       style={{ padding: '16px 14px 14px 14px' }}
                     >
                       <Txt size={13} lead={18} weight="bold" tone="ink">
@@ -644,7 +643,7 @@ function CompareTable({
                         <th
                           key={a.agent_id}
                           scope="col"
-                          className="border-b border-r border-white/[0.16] text-left font-normal"
+                          className="border-b border-r border-souk-hair text-left font-normal"
                           style={{ padding: '16px 14px 14px 14px' }}
                         >
                           <Row align="center" gap={11}>
@@ -701,7 +700,7 @@ function CompareTable({
                     <tr key={r.label}>
                       <th
                         scope="row"
-                        className="sticky left-0 z-10 bg-souk-surface1 border-b border-r border-white/[0.08] text-left align-middle"
+                        className="sticky left-0 z-10 bg-souk-surface1 border-b border-r border-souk-edge text-left align-middle"
                         style={{ padding: '8px 14px 8px 14px' }}
                       >
                         <Txt size={11} lead={16} weight="bold" upper tone="steel">
@@ -711,7 +710,7 @@ function CompareTable({
                       {columns.map(({ agent: a }) => (
                         <td
                           key={a.agent_id}
-                          className="border-b border-r border-white/[0.08] align-middle text-souk-ink"
+                          className="border-b border-r border-souk-edge align-middle text-souk-ink"
                           style={{ padding: '8px 14px 8px 14px' }}
                         >
                           {r.cell(a)}
@@ -721,7 +720,6 @@ function CompareTable({
                   ))}
                 </tbody>
               </table>
-            </div>
           </Stack>
 
           <Stack gap={12} pad={[20, 0, 0, 0]}>
@@ -914,7 +912,7 @@ function ShortlistSearch({
         loading ? (
           <div className="mt-4 animate-pulse space-y-2" role="status" aria-label="Loading search results">
             {Array.from({ length: 3 }, (_, i) => (
-              <div key={i} className="h-10 rounded-[8px] bg-white/[0.04]" />
+              <div key={i} className="h-10 rounded-[8px] bg-souk-surface2" />
             ))}
           </div>
         ) : results.length === 0 ? (
@@ -929,8 +927,8 @@ function ShortlistSearch({
               return (
                 <label
                   key={key}
-                  className={`flex cursor-pointer items-center gap-4 border-b border-white/[0.08] px-4 py-2.5 transition last:border-b-0 focus-within:bg-souk-data/10 ${
-                    checked ? 'bg-souk-data/10' : 'hover:bg-white/[0.04]'
+                  className={`flex cursor-pointer items-center gap-4 border-b border-souk-edge px-4 py-2.5 transition last:border-b-0 focus-within:bg-souk-data/10 ${
+                    checked ? 'bg-souk-data/10' : 'hover:bg-souk-surface2'
                   }`}
                 >
                   <input

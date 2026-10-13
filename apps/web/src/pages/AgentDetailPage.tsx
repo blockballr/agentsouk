@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { questStepFor, type QuestStep } from '../lib/quest'
 import { QuestStrip } from '../components/QuestStrip'
@@ -47,7 +47,7 @@ import {
   type HireRequirementsData,
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
-import { Row as SoukRow, Stack, Txt, Dot, Pill, NoteBox, SectionHead, DataTable } from '../components/souk'
+import { Row as SoukRow, Stack, Txt, Dot, Pill, SectionHead, DataTable, Kpi } from '../components/souk'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -372,11 +372,11 @@ export function AgentDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-[1400px] px-6 py-16" role="status" aria-label="Loading agent">
+      <div className="px-6 py-16" role="status" aria-label="Loading agent">
         <div className="animate-pulse space-y-4">
-          <div className="h-3 w-24 bg-slate-verdant/10" />
-          <div className="h-10 w-72 bg-slate-verdant/10" />
-          <div className="h-4 w-1/2 bg-slate-verdant/10" />
+          <div className="h-3 w-24 bg-souk-surface2" />
+          <div className="h-10 w-72 bg-souk-surface2" />
+          <div className="h-4 w-1/2 bg-souk-surface2" />
         </div>
       </div>
     )
@@ -384,9 +384,9 @@ export function AgentDetailPage() {
 
   if (error || !detail) {
     return (
-      <div className="mx-auto max-w-[1400px] px-6 py-24 text-center">
+      <div className="px-6 py-24 text-center">
         <p className="font-serif text-[28px] font-medium">Agent not found.</p>
-        <p className="mt-3 text-sm text-newsprint-gray">
+        <p className="mt-3 text-sm text-souk-slate">
           It may have left the registry, or the chain lookup failed.
         </p>
         <Link
@@ -482,18 +482,18 @@ export function AgentDetailPage() {
     detail.agent_wallet.toLowerCase() === executor.address.toLowerCase()
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-10">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-10">
       {!hireInView && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t hairline border-slate-verdant/40 bg-press-black px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-souk-hair bg-souk-indigo px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
           {quest && questStage && (
-            <p className="micro mb-2 text-bone-white">
+            <p className="micro mb-2 text-souk-slate">
               Souk passport · {QUEST_STAGE_COUNT[questStage]}
             </p>
           )}
           <button
             type="button"
             onClick={() => hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className={cx(button('primary', 'md'), 'flex w-full focus-visible:outline-bone-white')}
+            className={cx(button('primary', 'md'), 'flex w-full focus-visible:outline-souk-data')}
           >
             {mySession ? 'Run a task in your session' : jobSeller ? 'How this agent is hired' : `Hire ${detail.name}`}
           </button>
@@ -501,7 +501,7 @@ export function AgentDetailPage() {
       )}
       <Link
         to="/agents"
-        className="micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className="micro text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         ← Marketplace
       </Link>
@@ -560,7 +560,7 @@ export function AgentDetailPage() {
                 {' · '}
                 Listed {formatDate(detail.created_at)}
               </Txt>
-              <p className="mt-4 max-w-3xl text-[17px] leading-snug text-newsprint-gray">
+              <p className="mt-4 max-w-3xl text-[17px] leading-snug text-souk-slate">
                 {detail.description || 'No description on-chain.'}
               </p>
               <SoukRow align="center" gap={8} className="mt-4 flex-wrap">
@@ -606,20 +606,23 @@ export function AgentDetailPage() {
 
         <aside
           ref={setHirePanel}
-          className="h-fit scroll-mt-4 self-start overflow-hidden rounded-[20px] border border-white/[0.08] bg-souk-surface1 p-[22px] lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1"
+          className="h-fit scroll-mt-4 space-y-4 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1"
         >
           {quest && questStage && (
-            <QuestGuide stage={questStage} step={quest.step} agentName={detail.name} hasTask={Boolean(quest.agent.task)} />
+            <AsideCard>
+              <QuestGuide stage={questStage} step={quest.step} agentName={detail.name} hasTask={Boolean(quest.agent.task)} />
+            </AsideCard>
           )}
           {ownSession && mySession && (
-            <div className="score-strip mb-6 rounded-[10px] p-4" role="status">
+            <AsideCard>
+              <div className="score-strip rounded-[10px] p-4" role="status">
               <div className="flex items-center justify-between gap-3">
-                <p className="micro text-press-black">Session active</p>
+                <p className="micro text-souk-ink">Session active</p>
                 <button
                   type="button"
                   onClick={revokeThisSession}
                   disabled={revoking}
-                  className="micro rounded-full border hairline border-slate-verdant/35 px-2 py-0.5 font-[550] tracking-[0.01em] text-newsprint-gray transition hover:border-press-black hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                  className="micro rounded-full border border-souk-hair px-2 py-0.5 font-[550] tracking-[0.01em] text-souk-slate transition hover:border-souk-hair hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
                 >
                   {revoking ? 'Revoking' : 'Revoke hire'}
                 </button>
@@ -629,11 +632,13 @@ export function AgentDetailPage() {
                 <Row label="Expires" value={formatExpiry(ownSession.expiresAt)} />
                 <Row label="Mode" value={sessionModeLabel(ownSession.mode)} />
               </div>
-            </div>
+              </div>
+            </AsideCard>
           )}
           {revokeOutcome && !mySession && (
-            <div className="mb-6 rounded-[10px] border hairline border-highlighter-green/50 p-4" role="status">
-              <p className="micro text-press-black">
+            <AsideCard>
+              <div className="rounded-[10px] border border-souk-data/50 p-4" role="status">
+              <p className="micro text-souk-ink">
                 {revokeOutcome.error
                   ? `Revoke refused: ${revokeOutcome.error}`
                   : revokeOutcome.alreadyRevoked
@@ -645,7 +650,7 @@ export function AgentDetailPage() {
                   href={revokeOutcome.txLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="micro mt-2 inline-block text-newsprint-gray underline transition hover:text-press-black"
+                  className="micro mt-2 inline-block text-souk-slate underline transition hover:text-souk-ink"
                 >
                   Sponsor refund tx
                 </a>
@@ -655,42 +660,24 @@ export function AgentDetailPage() {
                   href={`${explorerTxBase(revokeOutcome.chainId ?? Number(chainId))}/${revokeOutcome.txHash}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="micro mt-2 inline-block text-newsprint-gray underline transition hover:text-press-black"
+                  className="micro mt-2 inline-block text-souk-slate underline transition hover:text-souk-ink"
                 >
                   on-chain cancel {shortAddress(revokeOutcome.txHash)}
                 </a>
               )}
-            </div>
+              </div>
+            </AsideCard>
           )}
-          <SoukRow justify="between" align="center">
-            <Txt size={18} lead={27} weight="bold" tone="ink">
-              {mySession ? 'Run a task' : jobSeller ? 'How to hire' : 'Hire this agent'}
-            </Txt>
-            {/* the rail the listing sells through, carried as the design's chip so the
-                buyer sees which one they are on before they spend */}
-            <Pill variant={jobSeller ? 'keep' : 'off'}>{jobSeller ? 'erc-8183' : 'x402'}</Pill>
-          </SoukRow>
-          {/* the design's quote spec: a margin note inside the hire card, so the
-              terms sit under the rail rather than as a separate list of their own */}
-          {!jobSeller && (
-            <NoteBox
-              className="mt-4"
-              title="Signed quote"
-              copy="No quote yet. Ask for the price and the seller signs one before a single token moves."
-              rows={[
-                { label: 'Pricing', value: 'Per request' },
-                {
-                  label: 'Session',
-                  // reflects what the facilitator actually sets on the session,
-                  // rather than a second opinion in the markup: this said $10 while
-                  // production issued $5, so a live session contradicted the page
-                  value: `${SESSION_HOURS}h, $${SESSION_SPEND_CAP_USD} cap`,
-                },
-                { label: 'Network', value: chainLabel(Number(chainId)) },
-                { label: 'Funds', value: 'one transaction on BSC mainnet 56' },
-              ]}
-            />
-          )}
+
+          {/* the design's right column: the hire card and the quote are two cards
+              of the same shell, not one card holding a note */}
+          <AsideCard>
+            <SoukRow justify="between" align="center">
+              <Txt size={18} lead={27} weight="bold" tone="ink">
+                {mySession ? 'Run a task' : 'Hire this agent'}
+              </Txt>
+              <Pill variant="off">x402</Pill>
+            </SoukRow>
           {/* A wallet that already holds a live session should land on the run
               controls rather than on a second signature: the session is already
               bought, so offering the hire again invites paying twice for it. */}
@@ -706,23 +693,17 @@ export function AgentDetailPage() {
               />
             </div>
           ) : jobSeller ? (
-            <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} name={detail.name} />
+            <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} />
           ) : (
             <>
-              {takesJobsToo && (
-                <Stack gap={12} className="mt-4">
-                  <Txt size={12} lead={18} tone="slate">
-                    This agent also sells through ERC-8183 jobs. A direct hire below pays per call
-                    over x402; a job funds escrow first and work starts once the job is funded.
-                  </Txt>
-                  <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} name={detail.name} />
-                </Stack>
-              )}
               {hireWarning && (
                 <Txt size={12} lead={18} tone="muted" className="mt-4 block">
                   {hireWarning}
                 </Txt>
               )}
+              {/* the direct hire is this card's own action, so it leads; a job rail
+                  the agent also sells sits under it as its own block rather than
+                  pushing the primary button to the foot of the column */}
               <HirePanel
                 chainId={chainId}
                 tokenId={detail.token_id}
@@ -745,22 +726,67 @@ export function AgentDetailPage() {
               )}
             </>
           )}
+          </AsideCard>
+          {/* the second rail this agent sells is its own card, the way the drawing
+              keeps one rail per card rather than nesting one inside the other */}
+          {!mySession && !jobSeller && takesJobsToo && (
+            <AsideCard>
+              <SoukRow justify="between" align="center">
+                <Txt size={18} lead={27} weight="bold" tone="ink">
+                  Hire this job
+                </Txt>
+                <Pill variant="keep">erc-8183</Pill>
+              </SoukRow>
+              <Txt size={12} lead={18} tone="slate">
+                A direct hire above pays per call over x402. A job funds escrow first, and work
+                starts once the job is funded.
+              </Txt>
+              <Jobs8183HirePanel
+                tokenId={detail.token_id}
+                chainId={Number(detail.chain_id)}
+                cards={false}
+              />
+            </AsideCard>
+          )}
+          {/* the quote is its own card in the design, not a note inside the hire one.
+              a job seller's panel already draws that card, so only the x402 column
+              supplies one here */}
+          {!jobSeller && (
+            <AsideCard>
+              <Txt size={18} lead={27} weight="bold" tone="ink">
+                Signed quote
+              </Txt>
+              <Txt size={13} lead={20} tone="slate">
+                No quote yet. Ask for the price and the seller signs one before a single token moves.
+              </Txt>
+              <Row label="Pricing" value="Per request" />
+              {/* reflects what the facilitator actually sets on the session, rather
+                  than a second opinion in the markup: this said $10 while production
+                  issued $5, so a live session contradicted the page */}
+              <Row label="Session" value={`${SESSION_HOURS}h, $${SESSION_SPEND_CAP_USD} cap`} />
+              <Row label="Network" value={chainLabel(Number(chainId))} />
+              <Row label="Funds" value="one transaction on BSC mainnet 56" />
+            </AsideCard>
+          )}
           {/* owner-only, so it renders only for an owner */}
           {viewer && isListingOwner(viewer, detail) && (
-            <BoostPanel
-              chainId={chainId}
-              tokenId={detail.token_id}
-              name={detail.name}
-              ownerAddress={detail.owner_address}
-              agentWallet={detail.agent_wallet}
-              alreadyBoosted={Boolean((detail as { boosted?: boolean }).boosted)}
-              onBoosted={refreshDetail}
-            />
+            <AsideCard>
+              <BoostPanel
+                chainId={chainId}
+                tokenId={detail.token_id}
+                name={detail.name}
+                ownerAddress={detail.owner_address}
+                agentWallet={detail.agent_wallet}
+                alreadyBoosted={Boolean((detail as { boosted?: boolean }).boosted)}
+                onBoosted={refreshDetail}
+              />
+            </AsideCard>
           )}
         </aside>
 
         <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
           <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} />
+          <HowToReachCard detail={detail} jobSeller={jobSeller} />
 
           {/* the answer sits under what the agent expects, whichever path produced it */}
           {runResult && (runResult.output || runResult.task || runResult.job) && (
@@ -780,9 +806,11 @@ export function AgentDetailPage() {
           {/* permissions are part of the buying decision, read after what the agent does and
               what it answered; a job seller is not bought this way, so it shows none */}
           {!jobSeller && (
-            <section className={card('plain', 'md')}>
-              <h2 className="font-serif text-[22px] font-medium text-press-black">What you are authorising</h2>
-              <ul className="mt-4 space-y-2.5 text-[14px] leading-relaxed text-newsprint-gray">
+            <section className={cx(card('plain', 'md'), 'space-y-3')}>
+              <Txt size={18} lead={27} weight="bold" tone="ink">
+                What you are authorising
+              </Txt>
+              <ul className="space-y-2.5 text-[14px] leading-relaxed text-souk-slate">
                 <li>
                   One gas-free transfer of the hire amount to this agent&apos;s wallet. No standing
                   token approval.
@@ -804,37 +832,51 @@ export function AgentDetailPage() {
             </section>
           )}
 
-          <details className={cx(card('plain', 'none'), 'group')}>
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 sm:px-8 [&::-webkit-details-marker]:hidden">
-              <span>
-                <span className="block font-serif text-[22px] font-medium text-press-black">On-chain details</span>
-                <span className="mt-1 block text-[13px] text-newsprint-gray">
+        </div>
+      </div>
+
+          {/* the design draws this band across the full run, under both columns,
+              opened rather than folded behind a disclosure */}
+          <Stack surface pad={[20, 22, 20, 22]} gap={14}>
+            <SoukRow justify="between" align="start" gap={16} className="flex-wrap">
+              <Stack gap={3}>
+                <Txt size={18} lead={27} weight="bold" tone="ink">
+                  On-chain details
+                </Txt>
+                <Txt size={13} lead={20} tone="muted">
                   Registry record, reputation, endpoints and metadata
-                </span>
-              </span>
-              <span aria-hidden="true" className="text-newsprint-gray transition group-open:rotate-180">
-                ▾
-              </span>
-            </summary>
-            <div className="divide-y hairline divide-slate-verdant/25 border-t hairline border-slate-verdant/25">
-              <section className="p-6 sm:px-8">
-                <h3 className="micro text-newsprint-gray">Registry record</h3>
+                </Txt>
+              </Stack>
+              <SoukRow align="center" gap={10}>
+                {detail.created_block_number != null ? (
+                  <Txt size={11} lead={16} mono tone="muted">
+                    {`BLOCK ${detail.created_block_number.toLocaleString('en-US')}`}
+                  </Txt>
+                ) : null}
+                <Pill variant="keep">{`bsc mainnet ${chainId}`}</Pill>
+              </SoukRow>
+            </SoukRow>
+            {/* the drawing's four boxes at their own widths: registry, reputation,
+                the reading with its endpoints, and the metadata */}
+            <div className="grid gap-5 xl:grid-cols-[660fr_380fr_430fr_282fr] lg:grid-cols-2">
+              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5">
+                <Txt size={13} lead={20} weight="bold" tone="ink">Registry record</Txt>
                 <dl className="mt-4 space-y-3">
                   {detail.agent_id && (
                     <div>
-                      <dt className="micro text-newsprint-gray">Registry ID</dt>
-                      <dd className="mt-1 break-all font-mono text-xs text-press-black">{detail.agent_id}</dd>
+                      <dt className="micro text-souk-slate">Registry ID</dt>
+                      <dd className="mt-1 break-all font-mono text-xs text-souk-ink">{detail.agent_id}</dd>
                     </div>
                   )}
                   {detail.contract_address && (
                     <div>
-                      <dt className="micro text-newsprint-gray">Registry contract</dt>
+                      <dt className="micro text-souk-slate">Registry contract</dt>
                       <dd className="mt-1 break-all font-mono text-xs">
                         <a
                           href={`${explorer}/address/${detail.contract_address}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-press-black hover:underline"
+                          className="text-souk-ink hover:underline"
                         >
                           {detail.contract_address}
                         </a>
@@ -843,13 +885,13 @@ export function AgentDetailPage() {
                   )}
                   {detail.created_tx_hash && (
                     <div>
-                      <dt className="micro text-newsprint-gray">Registration transaction</dt>
+                      <dt className="micro text-souk-slate">Registration transaction</dt>
                       <dd className="mt-1 break-all font-mono text-xs">
                         <a
                           href={`${explorer}/tx/${detail.created_tx_hash}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-press-black hover:underline"
+                          className="text-souk-ink hover:underline"
                         >
                           {detail.created_tx_hash}
                         </a>
@@ -858,13 +900,13 @@ export function AgentDetailPage() {
                   )}
                   {detail.created_block_number != null && (
                     <div>
-                      <dt className="micro text-newsprint-gray">Creation block</dt>
+                      <dt className="micro text-souk-slate">Creation block</dt>
                       <dd className="mt-1 break-all font-mono text-xs">
                         <a
                           href={`${explorer}/block/${detail.created_block_number}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-press-black hover:underline"
+                          className="text-souk-ink hover:underline"
                         >
                           {detail.created_block_number.toLocaleString('en-US')}
                         </a>
@@ -872,18 +914,38 @@ export function AgentDetailPage() {
                     </div>
                   )}
                   <div>
-                    <dt className="micro text-newsprint-gray">Freshness</dt>
-                    <dd className="mt-1 text-xs text-press-black">
+                    <dt className="micro text-souk-slate">Freshness</dt>
+                    <dd className="mt-1 text-xs text-souk-ink">
                       {freshnessLine(detail.updated_at, detail.health_checked_at, detail.verification?.checkedAt)}
                     </dd>
                   </div>
                 </dl>
               </section>
 
-              {liveness ? (
-                <section className="p-6 sm:px-8">
-                  <h3 className="micro text-newsprint-gray">Marketplace liveness record</h3>
-                  <p className="mt-2 text-[13px] leading-5 text-press-black">
+              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5">
+                <Txt size={13} lead={20} weight="bold" tone="ink">Reputation on the registry index</Txt>
+                <div className="mt-4 grid grid-cols-3 gap-3">
+                  <Kpi value={formatScore(detail.total_score)} label="Score" />
+                  <Kpi value={formatNumber(detail.total_feedbacks)} label="Feedback" />
+                  <Kpi
+                    value={detail.health_score !== null ? formatScore(detail.health_score) : 'n/a'}
+                    label="Health"
+                  />
+                </div>
+                <div className="mt-5 space-y-3">
+                  {scoreBars.map((b) => (
+                    <ScoreBar key={b.label} label={b.label} value={Number(detail[b.key]) || 0} />
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5">
+                <Txt size={13} lead={20} weight="bold" tone="ink">
+                  Marketplace liveness record
+                </Txt>
+                {liveness ? (
+                  <div className="mt-2">
+                  <p className="mt-2 text-[13px] leading-5 text-souk-ink">
                     {liveness.exists
                       ? `Posted on chain by the marketplace's sweep. Verdict ${LIVENESS_LABEL[liveness.verdict] ?? liveness.verdict}.`
                       : 'No on-chain record for this listing yet. The sweep has not posted a probe for it.'}
@@ -892,73 +954,54 @@ export function AgentDetailPage() {
                     <dl className="mt-4 space-y-3">
                       {liveness.checkedAt ? (
                         <div>
-                          <dt className="micro text-newsprint-gray">Checked at</dt>
-                          <dd className="mt-1 text-xs text-press-black">
+                          <dt className="micro text-souk-slate">Checked at</dt>
+                          <dd className="mt-1 text-xs text-souk-ink">
                             {new Date(liveness.checkedAt).toUTCString().replace('GMT', 'UTC')}
                           </dd>
                         </div>
                       ) : null}
                       {liveness.method ? (
                         <div>
-                          <dt className="micro text-newsprint-gray">Method</dt>
-                          <dd className="mt-1 text-xs text-press-black">{liveness.method}</dd>
+                          <dt className="micro text-souk-slate">Method</dt>
+                          <dd className="mt-1 text-xs text-souk-ink">{liveness.method}</dd>
                         </div>
                       ) : null}
                       {liveness.responseMs != null ? (
                         <div>
-                          <dt className="micro text-newsprint-gray">Response</dt>
-                          <dd className="mt-1 text-xs text-press-black">{liveness.responseMs} ms</dd>
+                          <dt className="micro text-souk-slate">Response</dt>
+                          <dd className="mt-1 text-xs text-souk-ink">{liveness.responseMs} ms</dd>
                         </div>
                       ) : null}
                       {liveness.evidenceHash ? (
                         <div>
-                          <dt className="micro text-newsprint-gray">Evidence hash</dt>
-                          <dd className="mt-1 break-all font-mono text-xs text-press-black">{liveness.evidenceHash}</dd>
+                          <dt className="micro text-souk-slate">Evidence hash</dt>
+                          <dd className="mt-1 break-all font-mono text-xs text-souk-ink">{liveness.evidenceHash}</dd>
                         </div>
                       ) : null}
                       {liveness.reporter ? (
                         <div>
-                          <dt className="micro text-newsprint-gray">Reported by</dt>
-                          <dd className="mt-1 break-all font-mono text-xs text-press-black">{liveness.reporter}</dd>
+                          <dt className="micro text-souk-slate">Reported by</dt>
+                          <dd className="mt-1 break-all font-mono text-xs text-souk-ink">{liveness.reporter}</dd>
                         </div>
                       ) : null}
                     </dl>
                   ) : null}
-                </section>
-              ) : null}
-
-              <section className="p-6 sm:px-8">
-                <h3 className="micro text-newsprint-gray">Reputation on the registry index</h3>
-                <div className="mt-5 grid grid-cols-2 gap-6 sm:grid-cols-4">
-                  <BigMetric label="Total score" value={formatScore(detail.total_score)} />
-                  <BigMetric label="Avg feedback" value={formatScore(detail.average_score)} />
-                  <BigMetric label="Feedback" value={formatNumber(detail.total_feedbacks)} />
-                  <BigMetric
-                    label="Health"
-                    value={detail.health_score !== null ? formatScore(detail.health_score) : 'n/a'}
-                    note={statusFor(detail).value}
-                  />
-                </div>
-                <div className="mt-6 grid gap-x-8 gap-y-4 sm:grid-cols-2">
-                  {scoreBars.map((b) => (
-                    <ScoreBar key={b.label} label={b.label} value={Number(detail[b.key]) || 0} />
-                  ))}
-                </div>
-              </section>
-
-              <section className="p-6 sm:px-8">
-                <h3 className="micro text-newsprint-gray">Endpoints</h3>
-                <EndpointPanel detail={detail} />
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[13px] leading-5 text-souk-slate">
+                    No on-chain record for this listing yet. The sweep has not posted a probe for it.
+                  </p>
+                )}
               </section>
 
               {onchain.length > 0 && (
-                <section className="p-6 sm:px-8">
-                  <h3 className="micro text-newsprint-gray">On-chain metadata</h3>
+                <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5">
+                  <Txt size={13} lead={20} weight="bold" tone="ink">On-chain metadata</Txt>
                   <dl className="mt-4 space-y-3">
                     {onchain.map((m) => (
                       <div key={m.key}>
-                        <dt className="micro text-newsprint-gray">{m.key}</dt>
-                        <dd className="mt-1 break-all font-mono text-xs leading-relaxed text-press-black">
+                        <dt className="micro text-souk-slate">{m.key}</dt>
+                        <dd className="mt-1 break-all font-mono text-xs leading-relaxed text-souk-ink">
                           {decodeMetaValue(m.value)}
                         </dd>
                       </div>
@@ -967,9 +1010,7 @@ export function AgentDetailPage() {
                 </section>
               )}
             </div>
-          </details>
-        </div>
-      </div>
+          </Stack>
     </div>
   )
 }
@@ -1041,6 +1082,16 @@ function ProofStrip({
 
 // the skills an agent publishes, told as what it does and what to send, so a buyer can
 // hire it without reading a schema
+// a job seller's hire column is two cards of its own, so anything that has to ride
+// above them in that column wears the same shell rather than floating loose
+function AsideCard({ children }: { children: ReactNode }) {
+  return (
+    <Stack surface pad={[20, 22, 20, 22]} gap={14}>
+      {children}
+    </Stack>
+  )
+}
+
 function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['skills']>; jobSeller: boolean }) {
   // the job protocol's own steps are plumbing, so they are named once rather than listed as work
   const work = skills.filter((s) => !isJobStepSkill(s, skills))
@@ -1060,7 +1111,7 @@ function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['
         </Txt>
       ) : null}
       {!jobSeller && work.length > 0 && (
-        <div className="divide-y divide-white/[0.08]">
+        <div className="divide-y divide-souk-edge">
           {work.map((s) => (
             <SkillBlock key={s.id ?? s.name ?? 'skill'} skill={s} />
           ))}
@@ -1077,6 +1128,67 @@ function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['
   )
 }
 
+// the design's "How to reach it": the endpoints a hire can actually call, each one
+// labelled over its value, rather than folded inside the on-chain record
+function HowToReachCard({ detail, jobSeller }: { detail: DetailWithSession; jobSeller: boolean }) {
+  const rows: { label: string; value: string }[] = []
+  if (detail.a2a_endpoint) rows.push({ label: 'A2A endpoint', value: detail.a2a_endpoint })
+  if (detail.mcp_server) rows.push({ label: 'MCP server', value: detail.mcp_server })
+  if (detail.web_endpoint) rows.push({ label: 'Web endpoint', value: detail.web_endpoint })
+  if (detail.agent_url) rows.push({ label: 'Agent URL', value: detail.agent_url })
+  if (jobSeller) {
+    rows.push({ label: 'ERC-8183 quote', value: 'POST /api/jobs8183/quote, signed price in $U before money moves' })
+  }
+  if (detail.x402_supported) {
+    rows.push({ label: 'Payments', value: 'x402 supported, one payment id per call' })
+  }
+
+  const callable = rows.filter((r) => /endpoint/i.test(r.label)).length
+
+  return (
+    <Stack surface pad={[20, 22, 20, 22]} gap={12}>
+      <SectionHead title="How to reach it" />
+      {rows.length === 0 ? (
+        <Txt size={13} lead={20} tone="slate">
+          This agent publishes no endpoint at all, so a hire cannot reach it. Treat the listing as
+          reference only.
+        </Txt>
+      ) : (
+        <Stack gap={10}>
+          {rows.map((r) => (
+            <Stack key={r.label} gap={4}>
+              <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                {r.label}
+              </Txt>
+              {r.value.startsWith('http') ? (
+                <a
+                  href={r.value}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all text-[13px] leading-5 text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                >
+                  {r.value}
+                </a>
+              ) : (
+                <Txt size={13} lead={20} tone="slate" className="break-all">
+                  {r.value}
+                </Txt>
+              )}
+            </Stack>
+          ))}
+        </Stack>
+      )}
+      {callable > 0 ? (
+        <Txt size={12} lead={18} tone="muted">
+          {callable === 1
+            ? 'Invoked over the one endpoint the marketplace can call.'
+            : `Invoked over the ${callable} endpoints the marketplace can call.`}
+        </Txt>
+      ) : null}
+    </Stack>
+  )
+}
+
 function SkillBlock({ skill: s }: { skill: NonNullable<AgentDetail['skills']>[number] }) {
   const inputs = s.inputSchema?.properties ? Object.entries(s.inputSchema.properties) : []
   const outputs = s.outputSchema?.properties ? Object.entries(s.outputSchema.properties) : []
@@ -1084,18 +1196,18 @@ function SkillBlock({ skill: s }: { skill: NonNullable<AgentDetail['skills']>[nu
   return (
     <div className="py-6">
       <Txt size={15} lead={22} weight="bold" tone="ink">{s.name ?? s.id ?? 'Skill'}</Txt>
-      {s.description ? <p className="mt-1.5 text-sm leading-relaxed text-newsprint-gray">{s.description}</p> : null}
+      {s.description ? <p className="mt-1.5 text-sm leading-relaxed text-souk-slate">{s.description}</p> : null}
       {(inputs.length > 0 || outputs.length > 0) && (
       <div className="mt-4 grid gap-5 md:grid-cols-2">
         {inputs.length > 0 && (
           <div>
-            <p className="micro text-newsprint-gray">You send</p>
+            <p className="micro text-souk-slate">You send</p>
             <FieldList fields={inputs} required={s.inputSchema?.required ?? []} />
           </div>
         )}
         {outputs.length > 0 && (
           <div>
-            <p className="micro text-newsprint-gray">You get back</p>
+            <p className="micro text-souk-slate">You get back</p>
             <FieldList fields={outputs} required={[]} />
           </div>
         )}
@@ -1104,24 +1216,24 @@ function SkillBlock({ skill: s }: { skill: NonNullable<AgentDetail['skills']>[nu
       {example ? (
         <div className="mt-4">
           <div className="flex items-center justify-between gap-3">
-            <p className="micro text-newsprint-gray">Example you can send as is</p>
+            <p className="micro text-souk-slate">Example you can send as is</p>
             <CopyButton text={JSON.stringify(example)} />
           </div>
-          <pre className="mt-2 overflow-x-auto rounded-[10px] border hairline border-slate-verdant/30 bg-echo-green/30 p-3 font-mono text-[12px] leading-relaxed text-press-black">
+          <pre className="mt-2 overflow-x-auto rounded-[10px] border border-souk-edge bg-souk-surface2 p-3 font-mono text-[12px] leading-relaxed text-souk-ink">
             {JSON.stringify(example, null, 2)}
           </pre>
         </div>
       ) : null}
       {!s.inputSchema && s.examples && s.examples.length > 0 && (
         <div className="mt-4">
-          <p className="micro text-newsprint-gray">Try asking</p>
+          <p className="micro text-souk-slate">Try asking</p>
           <ul className="mt-2 space-y-1.5">
             {s.examples.map((e, at) => {
               // an example may be a JSON object rather than a sentence, and an
               // object is not renderable or copyable as it stands
               const text = typeof e === 'string' ? e : JSON.stringify(e, null, 2)
               return (
-                <li key={at} className="flex items-start justify-between gap-3 text-[14px] leading-relaxed text-press-black">
+                <li key={at} className="flex items-start justify-between gap-3 text-[14px] leading-relaxed text-souk-ink">
                   <span className="min-w-0 break-words">&ldquo;{text}&rdquo;</span>
                   <CopyButton text={text} />
                 </li>
@@ -1131,7 +1243,7 @@ function SkillBlock({ skill: s }: { skill: NonNullable<AgentDetail['skills']>[nu
         </div>
       )}
       {!s.inputSchema && s.inputModes && s.inputModes.length > 0 && (
-        <p className="mt-3 text-[12px] text-newsprint-gray">Send it {inputModeWords(s.inputModes)}</p>
+        <p className="mt-3 text-[12px] text-souk-slate">Send it {inputModeWords(s.inputModes)}</p>
       )}
     </div>
   )
@@ -1157,13 +1269,13 @@ function FieldList({
       {fields.map(([field, meta]) => (
         <div key={field}>
           <dt className="flex flex-wrap items-baseline gap-2">
-            <span className="font-mono text-[13px] text-press-black">{field}</span>
-            {meta.type ? <span className="text-[11px] text-newsprint-gray">{meta.type}</span> : null}
+            <span className="font-mono text-[13px] text-souk-ink">{field}</span>
+            {meta.type ? <span className="text-[11px] text-souk-slate">{meta.type}</span> : null}
             {required.includes(field) ? (
-              <span className="text-[11px] font-medium text-press-black">required</span>
+              <span className="text-[11px] font-medium text-souk-ink">required</span>
             ) : null}
           </dt>
-          {meta.description ? <dd className="text-[13px] leading-snug text-newsprint-gray">{meta.description}</dd> : null}
+          {meta.description ? <dd className="text-[13px] leading-snug text-souk-slate">{meta.description}</dd> : null}
         </div>
       ))}
     </dl>
@@ -1181,7 +1293,7 @@ function CopyButton({ text }: { text: string }) {
           window.setTimeout(() => setCopied(false), 1500)
         })
       }}
-      className="micro shrink-0 rounded-[5px] border hairline border-slate-verdant/40 px-2.5 py-1 text-newsprint-gray transition hover:border-press-black/50 hover:text-press-black focus-visible:outline-2 focus-visible:outline-press-black"
+      className="micro shrink-0 rounded-[5px] border border-souk-hair px-2.5 py-1 text-souk-slate transition hover:border-souk-hair hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-souk-data"
     >
       {copied ? 'Copied' : 'Copy'}
     </button>
@@ -1293,9 +1405,9 @@ function BoostPanel({
 
   if (alreadyBoosted) {
     return (
-      <div className="mt-6 rounded-[10px] border hairline border-highlighter-green/40 p-4">
-        <p className="micro text-green-ink">Boosted listing</p>
-        <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+      <div className="mt-6 rounded-[10px] border border-souk-data/40 p-4">
+        <p className="micro text-souk-data">Boosted listing</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-souk-slate">
           This agent sorts higher on the marketplace while the boost is active.
         </p>
       </div>
@@ -1303,16 +1415,16 @@ function BoostPanel({
   }
 
   return (
-    <div className="mt-6 rounded-[10px] border hairline border-slate-verdant/40 p-4">
-      <p className="micro text-newsprint-gray">Boost this listing</p>
-      <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+    <div className="mt-6 rounded-[10px] border border-souk-hair p-4">
+      <p className="micro text-souk-slate">Boost this listing</p>
+      <p className="mt-2 text-[11px] leading-relaxed text-souk-slate">
         Owner-only. You must meet the verifier checklist, sign as the registered
         owner, and pay with your own settled x402 receipt.
       </p>
       {status && !status.eligible && (
-        <ul className="mt-3 space-y-1 text-[11px] text-newsprint-gray">
+        <ul className="mt-3 space-y-1 text-[11px] text-souk-slate">
           {status.checks.map((c) => (
-            <li key={c.key} className={c.ok ? 'text-green-ink' : 'text-press-black'}>
+            <li key={c.key} className={c.ok ? 'text-souk-data' : 'text-souk-ink'}>
               {c.ok ? '✓' : '·'} {c.label}
               {!c.ok && c.detail ? ` · ${c.detail}` : ''}
             </li>
@@ -1320,7 +1432,7 @@ function BoostPanel({
         </ul>
       )}
       {account && !isOwner && (
-        <p className="mt-3 text-[11px] text-press-black">
+        <p className="mt-3 text-[11px] text-souk-ink">
           Connected wallet is not the owner of this agent.
         </p>
       )}
@@ -1328,7 +1440,7 @@ function BoostPanel({
         type="button"
         onClick={() => void boost()}
         disabled={phase === 'busy' || (status !== null && !status.eligible)}
-        className="micro mt-3 w-full rounded-[5px] border hairline border-highlighter-green/50 px-3 py-2 text-green-ink transition hover:bg-highlighter-green/10 disabled:opacity-50"
+        className="micro mt-3 w-full rounded-[5px] border border-souk-data/50 px-3 py-2 text-souk-data transition hover:bg-souk-data/10 disabled:opacity-50"
       >
         {phase === 'busy'
           ? 'Activating…'
@@ -1337,7 +1449,7 @@ function BoostPanel({
             : `Boost ${name}`}
       </button>
       {message && (
-        <p className={`mt-2 text-[11px] ${phase === 'error' ? 'text-press-black' : 'text-newsprint-gray'}`}>
+        <p className={`mt-2 text-[11px] ${phase === 'error' ? 'text-souk-ink' : 'text-souk-slate'}`}>
           {message}
         </p>
       )}
@@ -1349,7 +1461,7 @@ type QuestStage = 'hire' | 'run' | 'complete' | 'done'
 
 // a green outline on the one control the guide strip is talking about; the focus ring stays
 // press black, so a keyboard user can still tell where focus is
-const GUIDED = 'outline-2 outline-offset-2 outline-highlighter-green focus-visible:outline-press-black'
+const GUIDED = 'outline-2 outline-offset-2 outline-souk-data'
 const GUIDE_ID = 'quest-guide'
 
 const QUEST_STAGE_COUNT: Record<QuestStage, string> = {
@@ -1513,14 +1625,14 @@ function HirePanel({
         <button
           type="button"
           disabled
-          className="gloss micro w-full rounded-[5px] bg-highlighter-green/60 px-6 py-5 text-on-highlighter"
+          className="gloss micro w-full rounded-[5px] bg-souk-data px-6 py-5 text-souk-canvas"
         >
           Connecting wallet…
         </button>
       )}
 
       {(step === 'preview' || step === 'signing' || step === 'settling') && option && preview && (
-        <div className="rounded-[10px] border hairline border-slate-verdant/40 p-4">
+        <div className="rounded-[10px] border border-souk-hair p-4">
           <div className="space-y-2 text-xs">
             <Row label="Price" value={`$${option.amountUsd} ${option.tokenSymbol}`} mono />
             <Row label="To" value={shortAddress(option.payTo)} mono />
@@ -1529,7 +1641,7 @@ function HirePanel({
           {step === 'preview' ? (
             <div className="mt-4 space-y-2">
               {shortForHire && (
-                <p className="rounded-[10px] border border-highlighter-green/40 bg-highlighter-green/10 p-3 text-xs leading-relaxed text-green-ink">
+                <p className="rounded-[10px] border border-souk-data/40 bg-souk-data/10 p-3 text-xs leading-relaxed text-souk-data">
                   This wallet does not hold enough sUSD for the ${option.amountUsd} hire. Get 10
                   free below, then sign.
                 </p>
@@ -1543,8 +1655,8 @@ function HirePanel({
                   }
                   void signAndSettle()
                 }}
-                className={`micro w-full rounded-[5px] px-4 py-3 shadow transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black ${
-                  shortForHire ? 'bg-highlighter-green/40 text-press-black' : 'bg-highlighter-green text-on-highlighter hover:brightness-95'
+                className={`micro w-full rounded-[5px] px-4 py-3 shadow transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+                  shortForHire ? 'bg-souk-data/40 text-souk-ink' : 'bg-souk-data text-souk-canvas hover:brightness-95'
                 }`}
               >
                 {shortForHire ? (
@@ -1559,7 +1671,7 @@ function HirePanel({
               <button
                 type="button"
                 onClick={reset}
-                className="micro w-full rounded-[5px] border hairline border-slate-verdant/50 px-4 py-3 text-newsprint-gray transition hover:text-press-black"
+                className="micro w-full rounded-[5px] border border-souk-hair px-4 py-3 text-souk-slate transition hover:text-souk-ink"
               >
                 Cancel
               </button>
@@ -1573,7 +1685,7 @@ function HirePanel({
                     setError(hireErrorText(e))
                   }
                 }}
-                className="micro w-full px-4 py-1 text-center text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="micro w-full px-4 py-1 text-center text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               >
                 Change wallet
               </button>
@@ -1587,13 +1699,13 @@ function HirePanel({
                   setRequirements(null)
                   setError(null)
                 }}
-                className="micro w-full px-4 py-1 text-center text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="micro w-full px-4 py-1 text-center text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               >
                 Disconnect
               </button>
             </div>
           ) : (
-            <p className="micro mt-4 text-center text-newsprint-gray">
+            <p className="micro mt-4 text-center text-souk-slate">
               {step === 'signing' ? 'Waiting for signature…' : 'Settling…'}
             </p>
           )}
@@ -1601,14 +1713,14 @@ function HirePanel({
       )}
 
       {step === 'hired' && result && (
-        <div className="rounded-[10px] border hairline border-highlighter-green/50 p-4">
+        <div className="rounded-[10px] border border-souk-data/50 p-4">
           {/* the money's own progression sits where the receipt lands: with the
               funder live the bar carries the held/payment story, so the headline
               only says activated when there is no escrow at all */}
           {escrowRow ? (
             <EscrowFlowCard spine={escrowLifecycle(escrowRow) ?? null} agentName={name} />
           ) : (
-            <p className="micro text-green-ink">Agent activated</p>
+            <p className="micro text-souk-data">Agent activated</p>
           )}
           <div className="mt-3 space-y-2 text-xs">
             <Row label="Payment" value={result.paymentId} mono />
@@ -1620,14 +1732,14 @@ function HirePanel({
             )}
           </div>
           {result.txHash && (
-            <p className="mt-3 break-all font-mono text-[10px] text-newsprint-gray">
+            <p className="mt-3 break-all font-mono text-[10px] text-souk-slate">
               {isOnchainSettlement(receipt?.mode) ? (
                 <>
                   <a
                     href={`${explorerBase(chainId)}/tx/${result.txHash}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-press-black hover:text-highlighter-green"
+                    className="text-souk-ink hover:text-souk-data"
                   >
                     {result.txHash}
                   </a>
@@ -1639,7 +1751,7 @@ function HirePanel({
             </p>
           )}
           {(!receipt || receipt.mode === 'sandbox') && (
-            <p className="mt-3 text-[11px] leading-relaxed text-newsprint-gray">
+            <p className="mt-3 text-[11px] leading-relaxed text-souk-slate">
               Sandbox settlement: the signature was verified and the session is
               recorded by the facilitator; no on-chain transfer occurred. Live
               Live settlement on {chainLabel(Number(chainId))} uses the same flow,
@@ -1660,13 +1772,13 @@ function HirePanel({
 
       {error && (
         <>
-          <p className="mt-4 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-xs leading-relaxed text-press-black">
+          <p className="mt-4 rounded-[10px] border border-souk-edge bg-souk-surface2 p-4 text-xs leading-relaxed text-souk-ink">
             {error}
           </p>
           {/* 0xe450d38c is ERC20InsufficientBalance. A raw viem revert string is
               not an explanation, so name the cause and point at what fixes it. */}
           {/e450d38c|InsufficientBalance|insufficient balance/i.test(error) && (
-            <p className="mt-2 rounded-[10px] border border-highlighter-green/40 bg-highlighter-green/10 p-3 text-xs leading-relaxed text-green-ink">
+            <p className="mt-2 rounded-[10px] border border-souk-data/40 bg-souk-data/10 p-3 text-xs leading-relaxed text-souk-data">
               That failed because this wallet does not hold enough sUSD. Get 10 free below, then
               try again.
             </p>
@@ -1943,9 +2055,9 @@ function DeliveryPanel({
   // the next visit, or a reload, opens on a fresh hire
   if (job && jobClosed(job.status)) {
     return (
-      <div className="mt-4 rounded-[10px] border hairline border-highlighter-green/50 p-4" role="status">
-        <p className="micro text-newsprint-gray">ERC-8183 job {job.status}</p>
-        <p className="mt-2 text-[11px] leading-relaxed text-green-ink">
+      <div className="mt-4 rounded-[10px] border border-souk-data/50 p-4" role="status">
+        <p className="micro text-souk-slate">ERC-8183 job {job.status}</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-souk-data">
           {completeNote ??
             (job.status === 'Completed'
               ? 'Completed. The deliverable is attested and this hire is closed.'
@@ -1956,19 +2068,19 @@ function DeliveryPanel({
   }
 
   return (
-    <div className="mt-4 rounded-[10px] border hairline border-slate-verdant/40 p-4">
-      <p className="micro text-newsprint-gray">Run a task</p>
+    <div className="mt-4 rounded-[10px] border border-souk-hair p-4">
+      <p className="micro text-souk-slate">Run a task</p>
 
       {hireTask && (
-        <div className="mt-3 rounded-[8px] border hairline border-slate-verdant/30 p-3">
+        <div className="mt-3 rounded-[8px] border border-souk-edge p-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="micro text-newsprint-gray">Task {hireTask.status}</span>
-            <span className="micro text-newsprint-gray">
+            <span className="micro text-souk-slate">Task {hireTask.status}</span>
+            <span className="micro text-souk-slate">
               attempt {hireTask.attempts}/{hireTask.maxAttempts}
             </span>
           </div>
           {hireTask.quality && (
-            <p className="mt-2 text-[11px] text-newsprint-gray">
+            <p className="mt-2 text-[11px] text-souk-slate">
               quality {hireTask.quality.grade} ({hireTask.quality.score})
               {hireTask.quality.reason ? ` · ${hireTask.quality.reason}` : ''}
             </p>
@@ -1989,13 +2101,13 @@ function DeliveryPanel({
       {/* the buyer's task ends where the delivery happened: attest the Submitted
           job here, with the full list and its reject action one link away */}
       {job && (
-        <div className="mt-3 rounded-[8px] border hairline border-slate-verdant/30 p-3">
+        <div className="mt-3 rounded-[8px] border border-souk-edge p-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="micro text-newsprint-gray">ERC-8183 job {job.status}</span>
+            <span className="micro text-souk-slate">ERC-8183 job {job.status}</span>
             {offer !== 'none' && (
               <Link
                 to="/ongoing"
-                className="micro text-newsprint-gray transition hover:text-press-black"
+                className="micro text-souk-slate transition hover:text-souk-ink"
               >
                 All your hires
               </Link>
@@ -2004,13 +2116,13 @@ function DeliveryPanel({
           {offer === 'complete' && (
             <>
               {deliveryError ? (
-                <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+                <p className="mt-2 text-[11px] leading-relaxed text-souk-slate">
                   The seller attested a delivery and the job is Submitted, but the
                   reply read as an error: {deliveryError} Check the deliverable
                   looks real before you attest it complete.
                 </p>
               ) : (
-                <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+                <p className="mt-2 text-[11px] leading-relaxed text-souk-slate">
                   Your deliverable is recorded and the job is Submitted. Attest it complete
                   to close this hire.
                 </p>
@@ -2027,18 +2139,18 @@ function DeliveryPanel({
             </>
           )}
           {offer === 'refund' && (
-            <p className="mt-2 text-[11px] leading-relaxed text-newsprint-gray">
+            <p className="mt-2 text-[11px] leading-relaxed text-souk-slate">
               Nothing to complete yet: the job is still Funded. Reject it from
               Ongoing and the held payment comes back to your wallet.
             </p>
           )}
           {completeNote && (
-            <p className="mt-2 text-[11px] leading-relaxed text-green-ink">
+            <p className="mt-2 text-[11px] leading-relaxed text-souk-data">
               {completeNote}
             </p>
           )}
           {completeError && (
-            <p className="mt-2 rounded-[8px] border hairline border-press-black/20 bg-bone-white p-2 text-[11px] leading-relaxed text-press-black">
+            <p className="mt-2 rounded-[8px] border border-souk-edge bg-souk-surface2 p-2 text-[11px] leading-relaxed text-souk-ink">
               {completeError}
             </p>
           )}
@@ -2056,10 +2168,10 @@ function DeliveryPanel({
         </button>
       )}
 
-      {phase === 'loading' && <p className="micro mt-3 text-newsprint-gray">Loading capabilities…</p>}
+      {phase === 'loading' && <p className="micro mt-3 text-souk-slate">Loading capabilities…</p>}
 
       {blocked && (
-        <p className="mt-3 text-[11px] leading-relaxed text-newsprint-gray">{blocked}</p>
+        <p className="mt-3 text-[11px] leading-relaxed text-souk-slate">{blocked}</p>
       )}
 
       {phase === 'ready' && data && (
@@ -2073,7 +2185,7 @@ function DeliveryPanel({
                   const t = tools.find((x) => x.name === e.target.value)
                   if (t) setArgsText(skeletonArgs(t.schema))
                 }}
-                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-base sm:text-[11px] text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="w-full rounded-[5px] border border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-[11px] text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               >
                 {tools.map((t) => (
                   <option key={t.name} value={t.name}>
@@ -2082,7 +2194,7 @@ function DeliveryPanel({
                 ))}
               </select>
               {selected?.description && (
-                <p className="text-[11px] leading-relaxed text-newsprint-gray">{selected.description}</p>
+                <p className="text-[11px] leading-relaxed text-souk-slate">{selected.description}</p>
               )}
               <textarea
                 value={argsText}
@@ -2090,7 +2202,7 @@ function DeliveryPanel({
                 rows={5}
                 spellCheck={false}
                 aria-label="Tool arguments as JSON"
-                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="w-full rounded-[5px] border border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               />
               <button
                 type="button"
@@ -2105,7 +2217,7 @@ function DeliveryPanel({
             <div className="mt-3 space-y-2">
               {(skills ?? []).length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="micro text-newsprint-gray">Skills</span>
+                  <span className="micro text-souk-slate">Skills</span>
                   {(skills ?? [])
                     .filter((s) => s.id ?? s.name)
                     .map((s) => (
@@ -2118,7 +2230,7 @@ function DeliveryPanel({
                           if (p.input) setInputText(p.input)
                           setTaskText(p.task ?? '')
                         }}
-                        className="micro inline-flex items-center rounded-full border hairline border-slate-verdant/35 px-2 py-0.5 font-[550] tracking-[0.01em] text-newsprint-gray transition hover:border-press-black/50 hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                        className="micro inline-flex items-center rounded-full border border-souk-hair px-2 py-0.5 font-[550] tracking-[0.01em] text-souk-slate transition hover:border-souk-hair hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
                       >
                         {s.id ?? s.name}
                       </button>
@@ -2131,15 +2243,15 @@ function DeliveryPanel({
                 rows={3}
                 placeholder="Describe the task for this agent…"
                 aria-label="Task description"
-                className="w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-xs leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                className="w-full rounded-[5px] border border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-xs leading-relaxed text-souk-ink placeholder:text-souk-slate/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               />
               {/* some agents read a structured data part instead of prose; this stays
                   collapsed and empty by default so the text-only flow is unchanged */}
-              <details open={prefill?.input ? true : undefined} className="rounded-[5px] border hairline border-slate-verdant/40 p-3">
-                <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
+              <details open={prefill?.input ? true : undefined} className="rounded-[5px] border border-souk-hair p-3">
+                <summary className="micro cursor-pointer text-souk-slate transition hover:text-souk-ink">
                   Add structured input (JSON)
                 </summary>
-                <p className="mt-2 text-[10px] leading-relaxed text-newsprint-gray">
+                <p className="mt-2 text-[10px] leading-relaxed text-souk-slate">
                   Some agents read structured fields. Paste one JSON object, for example{' '}
                   {'{"walletAddress":"0x..."}'}, and it is sent alongside your task text.
                 </p>
@@ -2150,10 +2262,10 @@ function DeliveryPanel({
                   spellCheck={false}
                   placeholder={'{"walletAddress":"0x..."}'}
                   aria-label="Structured input as JSON"
-                  className="mt-2 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-press-black placeholder:text-newsprint-gray/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+                  className="mt-2 w-full rounded-[5px] border border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-souk-ink placeholder:text-souk-slate/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
                 />
                 {!structured.ok && (
-                  <p className="mt-2 text-[11px] leading-relaxed text-press-black">
+                  <p className="mt-2 text-[11px] leading-relaxed text-souk-ink">
                     {structured.error}
                   </p>
                 )}
@@ -2169,7 +2281,7 @@ function DeliveryPanel({
             </div>
           ) : null}
 
-          <p className="mt-3 text-[10px] leading-relaxed text-newsprint-gray/70">
+          <p className="mt-3 text-[10px] leading-relaxed text-souk-slate/70">
             Delivery is gated on your settled session; the marketplace relays the
             call to the agent&apos;s own endpoint.
           </p>
@@ -2177,13 +2289,13 @@ function DeliveryPanel({
       )}
 
       {runError && (
-        <p className="mt-3 rounded-[8px] border hairline border-press-black/20 bg-bone-white p-3 text-[11px] leading-relaxed text-press-black">
+        <p className="mt-3 rounded-[8px] border border-souk-edge bg-souk-surface2 p-3 text-[11px] leading-relaxed text-souk-ink">
           {runError}
         </p>
       )}
 
       {!onResult && output && (
-        <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-[8px] border hairline border-slate-verdant/40 bg-bone-white p-3 font-mono text-[11px] leading-relaxed text-press-black">
+        <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-[8px] border border-souk-hair bg-souk-surface2 p-3 font-mono text-[11px] leading-relaxed text-souk-ink">
           {output}
         </pre>
       )}
@@ -2203,10 +2315,10 @@ function ResultPanel({
   const rateable = !!rate && !!output && (job ? job.status === 'Completed' : task?.status === 'delivered')
   // tinted so the answer, and the rating under it, is the first thing the buyer's eye lands on
   return (
-    <div className="metal rounded-[14px] border hairline border-highlighter-green/60 bg-highlighter-green/[0.07] p-8">
+    <div className="metal rounded-[14px] border border-souk-data/60 bg-souk-data/[0.07] p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="micro text-newsprint-gray">Result</h2>
-        <div className="flex flex-wrap items-center gap-4 text-[11px] text-newsprint-gray">
+        <h2 className="micro text-souk-slate">Result</h2>
+        <div className="flex flex-wrap items-center gap-4 text-[11px] text-souk-slate">
           {task && <span>task {task.status}</span>}
           {task?.quality && (
             <span>
@@ -2217,22 +2329,23 @@ function ResultPanel({
         </div>
       </div>
       {output ? (
-        <pre className="mt-4 max-h-[420px] overflow-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-xs leading-relaxed text-press-black">
+        <pre className="mt-4 max-h-[420px] overflow-auto whitespace-pre-wrap rounded-[10px] border border-souk-hair bg-souk-surface2 p-4 font-mono text-xs leading-relaxed text-souk-ink">
           {output}
         </pre>
       ) : (
-        <p className="mt-4 text-sm text-newsprint-gray">No deliverable yet.</p>
+        <p className="mt-4 text-sm text-souk-slate">No deliverable yet.</p>
       )}
       {rateable && rate ? <RateAgent {...rate} /> : null}
     </div>
   )
 }
 
+// the design's spec row: a bold upper label at a fixed 96, the value beside it
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="micro shrink-0 text-newsprint-gray">{label}</span>
-      <span className={`text-right text-press-black ${mono ? 'font-mono text-[11px]' : ''}`}>{value}</span>
+    <div className="flex items-baseline gap-3">
+      <span className="micro w-[96px] shrink-0 font-bold text-souk-muted">{label}</span>
+      <span className={`text-[12px] leading-[18px] text-souk-labels ${mono ? 'font-mono' : ''}`}>{value}</span>
     </div>
   )
 }
@@ -2245,8 +2358,8 @@ function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
 
   return (
     <div className={cx(card('plain', 'lg'), 'mt-6')}>
-      <h2 className="micro text-newsprint-gray">Self-reported performance</h2>
-      <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
+      <h2 className="micro text-souk-slate">Self-reported performance</h2>
+      <p className="mt-4 text-sm leading-relaxed text-souk-slate">
         Self-reported by the agent&apos;s own endpoint. Not verified by Agent Souk.
         {probe.scannedAt ? (
           <>
@@ -2257,15 +2370,15 @@ function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
           ' Capture date unknown, so treat it as undated.'
         )}
       </p>
-      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-[11px] leading-relaxed text-press-black">
+      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-[10px] border border-souk-hair bg-souk-surface2 p-4 font-mono text-[11px] leading-relaxed text-souk-ink">
         {truncated}
       </pre>
       {raw.length > 400 && (
         <details className="mt-3">
-          <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
+          <summary className="micro cursor-pointer text-souk-slate transition hover:text-souk-ink">
             Full response from {probe.tool ?? 'the agent'}
           </summary>
-          <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[10px] border hairline border-slate-verdant/40 bg-bone-white p-4 font-mono text-[11px] leading-relaxed text-press-black">
+          <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[10px] border border-souk-hair bg-souk-surface2 p-4 font-mono text-[11px] leading-relaxed text-souk-ink">
             {raw}
           </pre>
         </details>
@@ -2274,96 +2387,25 @@ function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
   )
 }
 
-function BigMetric({ label, value, accent, note }: { label: string; value: string; accent?: boolean; note?: string }) {
-  return (
-    <div>
-      <div className="micro text-newsprint-gray">{label}</div>
-      <div className={`mt-2 truncate font-serif text-[28px] leading-none ${accent ? 'text-green-ink' : 'text-press-black'}`}>
-        {value}
-      </div>
-      {note ? <div className="micro mt-2 text-newsprint-gray">{note}</div> : null}
-    </div>
-  )
-}
-
+// the index scores six things, each as a label, its figure and a four pixel rail
 function ScoreBar({ label, value }: { label: string; value: number }) {
   const pct = Math.max(0, Math.min(100, value))
   return (
     <div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="micro text-newsprint-gray">{label}</span>
-        <span className="tabular-nums text-press-black">{formatScore(value)}</span>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[12px] leading-4 text-souk-slate">{label}</span>
+        <span className="font-mono text-[11px] leading-4 text-souk-muted">
+          {value > 0 ? formatScore(value) : 'not scored yet'}
+        </span>
       </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-verdant/15">
+      <div className="mt-2 h-1 w-full overflow-hidden rounded-[3px] bg-souk-hair">
         <div
-          className="h-full rounded-full bg-highlighter-green"
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-[3px] bg-souk-data"
+          style={{ width: `${pct}%`, minWidth: pct > 0 ? 4 : 0 }}
         />
       </div>
     </div>
   )
 }
 
-function EndpointPanel({ detail }: { detail: DetailWithSession }) {
-  const rows: { label: string; value: string; callable: boolean }[] = []
-  if (detail.a2a_endpoint) rows.push({ label: 'A2A', value: detail.a2a_endpoint, callable: true })
-  if (detail.mcp_server) rows.push({ label: 'MCP', value: detail.mcp_server, callable: true })
-  if (detail.web_endpoint) {
-    rows.push({ label: 'Web (browser-invoked)', value: detail.web_endpoint, callable: false })
-  }
-  if (detail.agent_url) rows.push({ label: 'Agent URL', value: detail.agent_url, callable: false })
-  if (detail.endpoint_verified_domain) {
-    rows.push({ label: 'Verified domain', value: detail.endpoint_verified_domain, callable: false })
-  }
 
-  const web = detail.web_endpoint ?? null
-  const callable = rows.filter((r) => r.callable)
-
-  if (rows.length === 0) {
-    return (
-      <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
-        This agent publishes no endpoint at all, so a hire cannot reach it. Treat the listing as
-        reference only.
-      </p>
-    )
-  }
-
-  return (
-    <>
-      <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
-        {callable.length === 0
-          ? 'The marketplace cannot call this agent.'
-          : callable.length === 1
-            ? 'Invoked over the one endpoint the marketplace can call.'
-            : `Invoked over the ${callable.length} endpoints the marketplace can call.`}
-      </p>
-
-      {/* a web-only listing is real, but there is nothing a hire can reach */}
-      {web && callable.length === 0 && (
-        <div className="mt-4 rounded-[10px] border hairline border-press-black/30 bg-bone-white p-4 text-sm leading-relaxed text-press-black">
-          <p className="micro">Invoked from a browser page</p>
-          <p className="mt-1">
-            Its tools live in a browser page, so the marketplace cannot call it. A hire can be
-            recorded, but nothing can be delivered to it automatically.
-          </p>
-        </div>
-      )}
-
-      <div className="mt-5 space-y-3">
-        {rows.map((r) => (
-          <div key={r.label} className="flex items-center justify-between gap-4">
-            <span className="micro text-newsprint-gray">{r.label}</span>
-            <a
-              href={r.value.startsWith('http') ? r.value : undefined}
-              target={r.value.startsWith('http') ? '_blank' : undefined}
-              rel="noreferrer"
-              className="max-w-[220px] truncate font-mono text-[11px] text-press-black hover:text-highlighter-green"
-            >
-              {r.value}
-            </a>
-          </div>
-        ))}
-      </div>
-    </>
-  )
-}

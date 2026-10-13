@@ -72,7 +72,7 @@ export function NotificationBell() {
         type="button"
         onClick={onOpen}
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-        className="flex h-[38px] shrink-0 items-center gap-2 rounded-[8px] border border-white/[0.16] px-2 text-souk-steel transition-colors hover:border-souk-data/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        className="flex h-[38px] min-w-[38px] shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair px-2 text-souk-steel transition-colors hover:border-souk-data/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         <IconBell />
         {/* the design's badge rides inside the button: the count sits in the data green
@@ -88,9 +88,9 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-2 w-[340px] rounded-[12px] border border-white/[0.16] bg-souk-surface2 p-1 shadow-lg">
-          {/* the outbox panel: one surface under the design's rim, the hairline
-              dividing the head from the rows without a box around the title */}
+        <div className="absolute right-0 z-40 mt-2 w-[340px] rounded-[20px] border border-souk-hair bg-souk-indigo p-1 shadow-lg">
+          {/* the outbox panel wears the account panel's shell: indigo navy under one
+              rim, the hairline dividing the head from the rows without a box */}
           <p className="micro px-3 pb-1 pt-2 text-souk-steel">Activity</p>
           {rows.length === 0 ? (
             <p className="px-3 pb-3 pt-1 text-[13px] text-souk-slate">
@@ -103,7 +103,7 @@ export function NotificationBell() {
                   <Link
                     to={r.href ?? '/ongoing'}
                     onClick={() => setOpen(false)}
-                    className="block rounded-[8px] px-3 py-2 hover:bg-white/[0.04]"
+                    className="block rounded-[8px] px-3 py-2 hover:bg-souk-surface2"
                   >
                     <div className="flex items-baseline justify-between gap-2">
                       <span className={`text-[13px] font-medium ${r.read ? 'text-souk-steel' : 'text-souk-ink'}`}>{r.title}</span>

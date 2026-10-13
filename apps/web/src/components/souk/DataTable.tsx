@@ -42,7 +42,7 @@ export function DataTable({
             <th
               key={i}
               scope="col"
-              className="border-b border-r border-white/[0.16] text-left"
+              className="border-b border-r border-souk-hair text-left"
               style={{ padding: '8px 10px 8px 12px', height: 29 }}
             >
               <Txt size={10} lead={12} weight="bold" upper tone="steel">
@@ -58,7 +58,7 @@ export function DataTable({
             {r.cells.map((c, ci) => (
               <td
                 key={ci}
-                className="border-b border-r border-white/[0.08]"
+                className="border-b border-r border-souk-edge"
                 style={{ padding: '7px 10px 7px 12px', height: r.height ?? 30 }}
               >
                 <Txt

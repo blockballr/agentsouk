@@ -89,9 +89,9 @@ const VERDICT_DOTTONE: Record<VerdictTone, DotTone> = {
 
 // the design's squared input: surface two at radius 8 under the 16 percent rim
 const inputClass =
-  'h-[42px] w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 text-[13px] leading-[20px] text-souk-ink placeholder:text-souk-muted focus-visible:outline-2 focus-visible:outline-souk-sky'
+  'h-[42px] w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 text-[13px] leading-[20px] text-souk-ink placeholder:text-souk-muted focus-visible:outline-2 focus-visible:outline-souk-sky'
 const areaClass =
-  'w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 py-3 text-[12px] leading-[18px] text-souk-ink placeholder:text-souk-muted focus-visible:outline-2 focus-visible:outline-souk-sky'
+  'w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 py-3 text-[12px] leading-[18px] text-souk-ink placeholder:text-souk-muted focus-visible:outline-2 focus-visible:outline-souk-sky'
 const labelClass = 'block'
 
 // accepts a bare token id, a 56:id pair, or a full 8004scan URL
@@ -131,7 +131,7 @@ export function ListAgentPage() {
   const [started, setStarted] = useState(false)
   const guide = questing ? LISTING_GUIDE[wizardStep] : null
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-11 text-souk-ink">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-11 text-souk-ink">
       {/* hero - list your agent */}
       <Stack gap={12}>
         <Txt size={11} lead={16} mono upper tone="data">
@@ -192,7 +192,7 @@ export function ListAgentPage() {
                 href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
                 target="_blank"
                 rel="noreferrer"
-                className="underline decoration-white/[0.16] underline-offset-4 hover:text-souk-ink"
+                className="underline decoration-souk-hair underline-offset-4 hover:text-souk-ink"
               >
                 <Txt size={12} lead={18} tone="ink">BNB Smart Chain Set and Earn Campaign</Txt>
               </a>
@@ -488,7 +488,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
               href={FAUCET_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-white/[0.16] bg-souk-surface1 px-5 hover:text-souk-ink"
+              className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-5 hover:text-souk-ink"
             >
               <Txt size={14} lead={20} weight="semibold" tone="slate">BSC testnet faucet →</Txt>
             </a>
@@ -531,7 +531,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
                     href={`${explorerTxBase(chainId)}/tx/${gasTxHash}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="underline decoration-white/[0.16] underline-offset-2 hover:text-souk-data"
+                    className="underline decoration-souk-hair underline-offset-2 hover:text-souk-data"
                   >
                     View the top-up
                   </a>
@@ -558,7 +558,7 @@ function CodeBlock({ lines }: { lines: string[] }) {
       gap={4}
       pad={[14, 16, 14, 16]}
       radius={8}
-      className="border border-white/[0.16] bg-souk-surface2"
+      className="border border-souk-hair bg-souk-surface2"
     >
       {lines.map((line) => (
         <Txt key={line} size={12} lead={18} mono tone="ink">
@@ -581,7 +581,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
         align="center"
         gap={9}
         pad={[0, 0, 9, 0]}
-        className="flex-wrap border-b border-b-white/[0.16]"
+        className="flex-wrap border-b border-b-souk-hair"
       >
         <Txt size={18} lead={27} weight="bold" tone="ink">
           1. Create and register with BNB Agent Studio
@@ -649,7 +649,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
                 href="https://docs.bnbchain.org/developer-kit/bnbchain-studio/"
                 target="_blank"
                 rel="noreferrer"
-                className="underline decoration-white/[0.16] underline-offset-4 hover:text-souk-ink"
+                className="underline decoration-souk-hair underline-offset-4 hover:text-souk-ink"
               >
                 <Txt size={13} lead={20} tone="ink">BNB&apos;s studio docs</Txt>
               </a>
@@ -686,7 +686,7 @@ function ChecklistSection() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full flex-wrap items-center justify-between gap-4 border-b border-b-white/[0.16] pb-3 text-left hover:text-souk-slate"
+        className="flex w-full flex-wrap items-center justify-between gap-4 border-b border-b-souk-hair pb-3 text-left hover:text-souk-slate"
       >
         <Txt size={22} lead={30} weight="bold" tone="ink">What the verifier looks for</Txt>
         <Txt size={20} lead={24} weight="bold" tone="steel" aria-hidden="true">
@@ -885,7 +885,7 @@ function PromptGeneratorCard({ chainId }: { chainId: number | null }) {
                 <Label tone="labels">Your prompt</Label>
                 <Btn kind="off" onClick={copy}>{copied ? 'Copied' : 'Copy'}</Btn>
               </div>
-              <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[8px] border border-white/[0.16] bg-souk-surface2 p-4 font-mono text-[11px] leading-[18px] text-souk-ink">
+              <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[8px] border border-souk-hair bg-souk-surface2 p-4 font-mono text-[11px] leading-[18px] text-souk-ink">
                 {prompt}
               </pre>
             </div>

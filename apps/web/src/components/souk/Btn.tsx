@@ -19,7 +19,7 @@ const FILL: Record<BtnKind, string> = {
 const RIM: Record<BtnKind, string> = {
   primary: 'border-transparent',
   keep: 'border-transparent',
-  off: 'border-white/[0.16]',
+  off: 'border-souk-hair',
 };
 
 const TEXT: Record<BtnKind, Tone> = {
@@ -69,7 +69,7 @@ export function IconBtn({
       title={label}
       aria-label={label}
       {...rest}
-      className="inline-flex h-[38px] w-[38px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-white/[0.16]"
+      className="inline-flex h-[38px] w-[38px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-souk-hair"
     >
       {children}
     </button>
@@ -78,7 +78,7 @@ export function IconBtn({
 
 export function ProfileChip({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-[38px] items-center rounded-[8px] border border-white/[0.16] pl-2.5 pr-3.5">
+    <span className="inline-flex h-[38px] items-center rounded-[8px] border border-souk-hair pl-2.5 pr-3.5">
       {children}
     </span>
   );

@@ -151,7 +151,7 @@ export function ScoutPage() {
       : candidates.filter((c) => c.category === filter)
 
   return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
+    <section className="px-6 pb-24 pt-10">
       <p className="micro text-newsprint-gray">Registry Scout (local preview)</p>
       <h1 className="mt-4 font-serif text-[clamp(40px,6vw,88px)] font-medium leading-[0.9] tracking-[-0.04em]">
         Scout.

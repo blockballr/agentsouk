@@ -197,13 +197,13 @@ export function ProfilePage() {
     : 'profile'
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
       <Stack gap={10} className="max-w-[1180px]">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
         <h1 className="m-0">
-          <Txt size={34} lead={42} weight="bold" tone="ink">
+          <Txt size={34} lead={42} display weight="bold" tone="ink">
             Your listings.
           </Txt>
         </h1>
@@ -340,7 +340,7 @@ export function ProfilePage() {
             </Row>
             <Link
               to="/list"
-              className="inline-flex h-11 shrink-0 items-center justify-center rounded-[8px] border border-white/[0.16] bg-souk-surface1 px-5 transition hover:border-white/[0.32]"
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-5 transition hover:border-souk-hair"
             >
               <Txt size={14} lead={20} weight="semibold" tone="slate">
                 Open the listing wizard
@@ -581,8 +581,8 @@ function CardAction({
   const primary = variant === 'primary'
   const cls = [
     'inline-flex h-9 w-full items-center justify-center rounded-[8px] border px-3 text-left transition',
-    primary ? 'border-transparent bg-souk-data text-souk-canvas' : 'border-white/[0.16] bg-souk-surface1 text-souk-slate',
-    disabled ? 'cursor-not-allowed opacity-40' : primary ? 'hover:opacity-90' : 'hover:border-white/[0.32]',
+    primary ? 'border-transparent bg-souk-data text-souk-canvas' : 'border-souk-hair bg-souk-surface1 text-souk-slate',
+    disabled ? 'cursor-not-allowed opacity-40' : primary ? 'hover:opacity-90' : 'hover:border-souk-hair',
     className ?? '',
   ].join(' ')
   if (to) {
@@ -688,7 +688,7 @@ function HistoryBar({ days, label }: { days: { day: string; count: number }[]; l
             y={height - h}
             width={step - 3}
             height={h}
-            className={d.count === 0 ? 'fill-white/[0.08]' : 'fill-souk-data'}
+            className={d.count === 0 ? 'fill-souk-surface2' : 'fill-souk-data'}
           >
             <title>{`${d.day}: ${d.count}`}</title>
           </rect>
@@ -805,7 +805,7 @@ function HiresPanel({
 
       {others.length > 0 && (
         <details className="group mt-8">
-          <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-4 rounded-[8px] border border-white/[0.16] bg-souk-surface1 px-4 py-3 transition hover:border-white/[0.32] [&::-webkit-details-marker]:hidden">
+          <summary className="flex w-full cursor-pointer list-none items-center justify-between gap-4 rounded-[8px] border border-souk-hair bg-souk-surface1 px-4 py-3 transition hover:border-souk-hair [&::-webkit-details-marker]:hidden">
             <Txt size={11} lead={16} mono weight="semibold" upper tone="steel">
               Checks and test hires · {others.length}
             </Txt>
@@ -839,7 +839,7 @@ function HireLine({ hire, showAgent }: { hire: PayeeHire; showAgent?: boolean })
           ? 'Agent Souk team'
           : null
   return (
-    <li className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-white/[0.08] py-3 text-[13px] last:border-b-0">
+    <li className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-souk-edge py-3 text-[13px] last:border-b-0">
       <span className="min-w-0 leading-[20px] text-souk-slate">
         {showAgent ? <span className="text-souk-ink">{hire.agentName} · </span> : null}
         {who ? <span className="text-souk-ink">{who}</span> : <span className="font-mono text-souk-slate">{shortAddress(hire.client)}</span>}

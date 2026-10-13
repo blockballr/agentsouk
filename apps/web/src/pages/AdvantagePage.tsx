@@ -106,7 +106,7 @@ export function AdvantagePage() {
   }, [])
 
   return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
+    <section className="px-6 pb-24 pt-10">
       <p className="micro text-newsprint-gray">Agent advantage</p>
       <h1 className="mt-4 font-serif text-[clamp(44px,7vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
         Agent vs. manual.

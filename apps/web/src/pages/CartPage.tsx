@@ -13,6 +13,7 @@ import {
   LogoMark,
   Row,
   Rule,
+  Section,
   SectionHead,
   Stack,
   Txt,
@@ -210,12 +211,14 @@ export function CartPage() {
 
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
-      <div className="mx-auto max-w-[1920px] px-8 pb-20">
+      <div className="px-8 pb-20">
+      {/* the hero owns its own top padding, so the band carries only the lower half of the rhythm */}
+      <Section pad="pb-16 md:pb-18">
         <Stack gap={10} pad={[32, 0, 0, 0]}>
           <Txt size={11} lead={16} mono upper tone="data">
             {strap}
           </Txt>
-          <Txt size={34} lead={42} weight="bold" tone="ink">
+          <Txt size={34} lead={42} display weight="bold" tone="ink">
             One checkout, one signature each.
           </Txt>
           <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
@@ -232,9 +235,11 @@ export function CartPage() {
             </Txt>
           </Stack>
         ) : null}
+      </Section>
 
         {items.length > 0 ? (
-          <Row align="start" gap={20} className="mt-6 flex-wrap">
+          <Section>
+            <Row align="start" gap={20} className="flex-wrap">
             <Stack
               surface
               pad={[20, 22, 20, 22]}
@@ -365,6 +370,7 @@ export function CartPage() {
               </Txt>
             </Stack>
           </Row>
+          </Section>
         ) : (
           <Stack pad={[24, 0, 0, 0]}>
             <Stack surface pad={[20, 22, 20, 22]} gap={8}>
@@ -413,7 +419,7 @@ export function CartPage() {
 // its explorer anchor, so this one follows the receipt tables elsewhere in the port
 function SummaryTable({ summary }: { summary: [string, Receipt][] }) {
   return (
-    <div className="overflow-hidden rounded-[20px] border border-white/[0.08] bg-souk-surface1">
+    <div className="overflow-hidden rounded-[20px] border border-souk-edge bg-souk-surface1">
       <table className="w-full border-collapse">
         <colgroup>
           {SUMMARY_COLS.map((w, i) => (
@@ -426,7 +432,7 @@ function SummaryTable({ summary }: { summary: [string, Receipt][] }) {
               <th
                 key={i}
                 scope="col"
-                className="border-b border-r border-white/[0.16] text-left"
+                className="border-b border-r border-souk-hair text-left"
                 style={{ padding: '8px 10px 8px 12px', height: 29 }}
               >
                 <Txt size={10} lead={12} weight="bold" upper tone="steel">
@@ -440,7 +446,7 @@ function SummaryTable({ summary }: { summary: [string, Receipt][] }) {
           {summary.map(([key, r]) => (
             <tr key={key}>
               <td
-                className="border-b border-r border-white/[0.08]"
+                className="border-b border-r border-souk-edge"
                 style={{ padding: '7px 10px 7px 12px', height: 30 }}
               >
                 <Txt size={13} lead={15} weight="semibold" tone="slate">
@@ -448,7 +454,7 @@ function SummaryTable({ summary }: { summary: [string, Receipt][] }) {
                 </Txt>
               </td>
               <td
-                className="border-b border-r border-white/[0.08]"
+                className="border-b border-r border-souk-edge"
                 style={{ padding: '7px 10px 7px 12px', height: 30 }}
               >
                 <Txt size={13} lead={15} mono tone="ink">
@@ -456,7 +462,7 @@ function SummaryTable({ summary }: { summary: [string, Receipt][] }) {
                 </Txt>
               </td>
               <td
-                className="border-b border-r border-white/[0.08]"
+                className="border-b border-r border-souk-edge"
                 style={{ padding: '7px 10px 7px 12px', height: 30 }}
               >
                 {r.txHash ? (
@@ -482,7 +488,7 @@ function SummaryTable({ summary }: { summary: [string, Receipt][] }) {
                 )}
               </td>
               <td
-                className="border-b border-r border-white/[0.08]"
+                className="border-b border-r border-souk-edge"
                 style={{ padding: '7px 10px 7px 12px', height: 30 }}
               >
                 <Txt
@@ -495,7 +501,7 @@ function SummaryTable({ summary }: { summary: [string, Receipt][] }) {
                 </Txt>
               </td>
               <td
-                className="border-b border-r border-white/[0.08]"
+                className="border-b border-r border-souk-edge"
                 style={{ padding: '7px 10px 7px 12px', height: 30 }}
               >
                 <Txt size={13} lead={15} tone="muted">

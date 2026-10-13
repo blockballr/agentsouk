@@ -3,7 +3,7 @@
 
 export { Txt } from './Txt';
 export type { Weight } from './Txt';
-export { Stack, Row, BG } from './Layout';
+export { Stack, Row, BG, Section } from './Layout';
 export type { BoxProps, BgName, Justify, Align } from './Layout';
 export { Pill, Dot, Rule, Label } from './Chips';
 export type { PillVariant, DotTone } from './Chips';

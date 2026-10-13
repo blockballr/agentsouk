@@ -21,7 +21,7 @@ export function SectionHead({ title, note }: { title: string; note?: string }) {
       pad={[0, 0, 9, 0]}
       // only the bottom edge takes the colour: a border-{colour} utility would paint
       // all four sides and box the heading in
-      className="border-b border-b-white/[0.16]"
+      className="border-b border-b-souk-hair"
     >
       <Txt size={18} lead={27} weight="bold" tone="ink">
         {title}

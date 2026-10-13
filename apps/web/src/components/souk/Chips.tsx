@@ -15,7 +15,7 @@ export type PillVariant = 'keep' | 'warn' | 'off';
 const PILL: Record<PillVariant, { box: string; text: Tone }> = {
   keep: { box: 'border-souk-data/40 bg-souk-surface1', text: 'data' },
   warn: { box: 'border-souk-peach/45 bg-souk-surface1', text: 'peach' },
-  off: { box: 'border-white/[0.16] bg-souk-surface1', text: 'steel' },
+  off: { box: 'border-souk-hair bg-souk-surface1', text: 'steel' },
 };
 
 export function Pill({
@@ -38,12 +38,15 @@ export function Pill({
   );
 }
 
-export type DotTone = 'good' | 'held' | 'sky' | 'bad' | 'quiet';
+// the design's five dot tones. each is its own colour rather than a faded version
+// of another, so a verdict reads at a glance instead of by opacity
+export type DotTone = 'good' | 'held' | 'sky' | 'peach' | 'bad' | 'quiet';
 
 const DOT: Record<DotTone, string> = {
   good: 'bg-souk-data',
-  held: 'bg-souk-data/50',
-  sky: 'bg-souk-sky/90',
+  held: 'bg-souk-peach',
+  sky: 'bg-souk-sky',
+  peach: 'bg-souk-peach',
   bad: 'border-souk-steel',
   quiet: 'border-souk-steel/50',
 };
@@ -64,7 +67,7 @@ export function Rule({ width = '100%', hair }: { width?: number | string; hair?:
   if (typeof width === 'number') style.height = 1;
   return (
     <div
-      className={hair ? 'border-t border-white/[0.16]' : 'border-t border-white/[0.08]'}
+      className={hair ? 'border-t border-souk-hair' : 'border-t border-souk-edge'}
       style={style}
     />
   );

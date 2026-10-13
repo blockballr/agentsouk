@@ -11,7 +11,11 @@ import { ListAgentPage } from './pages/ListAgentPage'
 import { CartPage } from './pages/CartPage'
 import { OngoingPage } from './pages/OngoingPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { StationPage } from './pages/StationPage'
 import { QuestPage } from './pages/QuestPage'
+import { SellerBoardPage } from './pages/SellerBoardPage'
+import { SellerStallsPage } from './pages/SellerStallsPage'
+import { MarketFacePage } from './pages/MarketFacePage'
 import VaultHirePage from './pages/VaultHirePage'
 
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
@@ -34,7 +38,11 @@ function App() {
           <Route path="/vault" element={<VaultHirePage />} />
           <Route path="/vault/:chainId/:tokenId" element={<VaultHirePage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/station" element={<StationPage />} />
           <Route path="/quest" element={<QuestPage />} />
+          <Route path="/seller" element={<SellerBoardPage />} />
+          <Route path="/seller/stalls" element={<SellerStallsPage />} />
+          <Route path="/seller/face" element={<MarketFacePage />} />
           {import.meta.env.DEV && (
             <Route
               path="/scout"

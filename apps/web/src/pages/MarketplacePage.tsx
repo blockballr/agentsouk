@@ -5,14 +5,13 @@ import { defaultAvatarFor } from '../lib/default-avatar'
 import { CATEGORIES, formatNumber, formatScore, shortAddress, timeAgo } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
 import { Tag } from '../components/Tag'
-import { getAgents, getNotifications, markNotificationsRead, type NotificationRow } from '../lib/api'
-import { getActiveAccount } from '../lib/wallet'
+import { getAgents } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
-import { Stack, Row, Txt, Pill, Dot, Rule, Label, Btn, type DotTone } from '../components/souk'
+import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../components/souk'
 
 const sorts = [
   {
@@ -43,101 +42,6 @@ const LEGEND: { tone: DotTone; label: string }[] = [
   { tone: 'bad', label: 'Unresponsive' },
   { tone: 'quiet', label: 'Not checked yet' },
 ]
-
-// the design's alerts band: the panel between the bar and the strap is what holds the
-// shelf's start point on the drawing, so the shelf carries the same band with the real
-// outbox the bell already reads rather than a spacer or invented rows.
-function ShelfAlerts() {
-  const [wallet, setWallet] = useState<string | null>(null)
-  const [rows, setRows] = useState<NotificationRow[]>([])
-  const [unread, setUnread] = useState(0)
-
-  useEffect(() => {
-    let cancelled = false
-    void getActiveAccount().then((a) => {
-      if (!cancelled) setWallet(a)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!wallet) {
-      setRows([])
-      setUnread(0)
-      return
-    }
-    let cancelled = false
-    getNotifications(wallet)
-      .then((r) => {
-        if (!cancelled) {
-          setRows(r.rows)
-          setUnread(r.unread)
-        }
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [wallet])
-
-  async function onMarkRead() {
-    if (!wallet) return
-    await markNotificationsRead(wallet)
-    const fresh = await getNotifications(wallet)
-    setRows(fresh.rows)
-    setUnread(fresh.unread)
-  }
-
-  // the drawing holds four rows in the panel; the shelf keeps that rhythm
-  const shown = rows.slice(0, 4)
-  return (
-    <Row justify="end" pad={[12, 0, 0, 0]}>
-      <Stack bg="indigo" radius={20} hair pad={[14, 16, 14, 16]} gap={10} className="w-[360px]">
-        <Row justify="between" align="center">
-          <Txt size={13} lead={20} weight="bold" tone="ink">
-            Alerts
-          </Txt>
-          <button
-            type="button"
-            onClick={onMarkRead}
-            disabled={!(unread > 0)}
-            className="text-[10px] font-bold uppercase tracking-[0.01em] text-souk-data transition-colors hover:text-souk-ink disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
-          >
-            Mark all read
-          </button>
-        </Row>
-        <Rule />
-        {shown.length > 0 ? (
-          shown.map((r) => (
-            <Row key={r.id} align="center" gap={9}>
-              <Dot tone={r.read ? 'quiet' : 'good'} size={8} />
-              <Link to={r.href ?? '/ongoing'} className="min-w-0 flex-1">
-                <Stack gap={2}>
-                  <Txt size={12} lead={18} tone={r.read ? 'steel' : 'slate'} className="truncate">
-                    {r.title}
-                  </Txt>
-                  <Txt size={11} lead={15} mono tone="labels">
-                    {timeAgo(r.createdAt)}
-                  </Txt>
-                </Stack>
-              </Link>
-            </Row>
-          ))
-        ) : (
-          <Txt size={13} lead={20} tone="slate">
-            Nothing yet. Releases, funded jobs and seller replies land here.
-          </Txt>
-        )}
-        <Rule />
-        <Txt size={12} lead={18} tone="labels">
-          Verdicts, hires and runner alerts land here, and one reads them all as done.
-        </Txt>
-      </Stack>
-    </Row>
-  )
-}
 
 export function MarketplacePage() {
   const [sp, setSp] = useSearchParams()
@@ -268,23 +172,12 @@ export function MarketplacePage() {
     .join(' · ')
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-souk-canvas text-souk-ink">
-      {/* the screen's one wash, blended the way the reference holds it: a radial from
-          the upper left that is gone by its own edge, so no stop lands hard against
-          the canvas */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-44 -left-40 h-[880px] w-[1480px]"
-        style={{
-          backgroundImage:
-            'radial-gradient(closest-side, rgba(7, 74, 108, 0.30) 0%, rgba(2, 50, 71, 0.16) 46%, rgba(11, 14, 20, 0) 100%)',
-        }}
-      />
-      <div className="relative mx-auto max-w-[1920px] px-8 pb-16">
-        {/* the design's alerts band: the panel between the bar and the strap is what holds
-            the shelf's start point, so the band is real data rather than a spacer */}
-        <ShelfAlerts />
-        <Stack gap={10} pad={[44, 0, 0, 0]}>
+    <div className="min-h-screen bg-souk-canvas text-souk-ink">
+      <div className="px-8 pb-16">
+        {/* the hero band keeps its own top padding and carries the lower half of the
+            rhythm, so the shelf opens right under the bar and still breathes below */}
+        <Section pad="pt-11 pb-16 md:pb-18">
+        <Stack gap={10}>
           <Row justify="between" align="center" gap={16} className="flex-wrap">
             <Txt size={11} lead={16} mono upper tone="data">
               {strap}
@@ -319,7 +212,7 @@ export function MarketplacePage() {
           </Row>
 
           <Row align="baseline" gap={12} className="flex-wrap">
-            <Txt size={34} lead={42} weight="bold" tone="ink">
+            <Txt size={34} lead={42} display weight="bold" tone="ink">
               {category === 'all' ? 'Hire from the shelf.' : labelFor(category)}
             </Txt>
             {loading && !result ? (
@@ -328,40 +221,23 @@ export function MarketplacePage() {
               </Txt>
             ) : null}
           </Row>
-
-          <Row
-            align="center"
-            pad={[0, 6, 0, 18]}
-            radius={8}
-            bg="surface2"
-            hair
-            className="h-11 w-full max-w-[1180px]"
-          >
-            <label className="sr-only" htmlFor="search">
-              Search agents
-            </label>
-            <input
-              id="search"
-              type="search"
-              value={q}
-              onChange={(e) => setParam('q', e.target.value)}
-              placeholder="Search agents, skills, endpoints"
-              className="w-full bg-transparent text-[13px] leading-5 text-souk-ink placeholder:text-souk-muted focus-visible:outline-none"
-            />
-          </Row>
         </Stack>
+        </Section>
 
-        <Stack gap={8} pad={[20, 0, 0, 0]}>
-          <Row justify="between" align="center" gap={16} className="flex-wrap">
-            <Row align="center" gap={8} className="flex-wrap">
-              <Chip active={category === 'all'} onClick={() => setParam('category', 'all')}>
-                All
-              </Chip>
-              {CATEGORIES.map((c) => (
-                <Chip key={c.key} active={category === c.key} onClick={() => setParam('category', c.key)}>
-                  {c.label}
-                </Chip>
-              ))}
+        {/* the controls band: categories, sorts, the cart alert; it carries the full
+            rhythm on both sides so the shelf's working part is its own island */}
+        <Section>
+        <Stack gap={16}>
+          <Row align="center" gap={24} className="flex-wrap">
+            <Tab active={category === 'all'} onClick={() => setParam('category', 'all')}>
+              All
+            </Tab>
+            {CATEGORIES.map((c) => (
+              <Tab key={c.key} active={category === c.key} onClick={() => setParam('category', c.key)}>
+                {c.label}
+              </Tab>
+            ))}
+            <Row align="center" gap={20} className="flex-wrap">
               <Switch
                 checked={pcs}
                 label="Show only agents that say they work with PancakeSwap"
@@ -387,19 +263,41 @@ export function MarketplacePage() {
                 </Txt>
               ) : null}
             </Row>
-            <Row align="center" gap={8} className="flex-wrap">
-              <Label>Sort</Label>
-              {sorts.map((s) => (
-                <Chip
-                  key={s.key}
-                  active={sort === s.key}
-                  title={'title' in s ? s.title : undefined}
-                  onClick={() => setParam('sort', s.key)}
-                >
-                  {s.label}
-                </Chip>
-              ))}
+          </Row>
+
+          {/* the sort row reads from the right: the search the hero used to hold sits
+              ahead of the sorts, so one row carries find and order together */}
+          <Row align="center" justify="end" gap={12} className="flex-wrap">
+            <Row
+              align="center"
+              pad={[0, 6, 0, 14]}
+              radius={8}
+              bg="surface2"
+              hair
+              className="h-10 w-full sm:w-[300px]"
+            >
+              <label className="sr-only" htmlFor="search">
+                Search agents
+              </label>
+              <input
+                id="search"
+                type="search"
+                value={q}
+                onChange={(e) => setParam('q', e.target.value)}
+                placeholder="Search agents, skills, endpoints"
+                className="w-full bg-transparent text-[13px] leading-5 text-souk-ink placeholder:text-souk-muted focus-visible:outline-none"
+              />
             </Row>
+            {sorts.map((s) => (
+              <SortButton
+                key={s.key}
+                active={sort === s.key}
+                title={'title' in s ? s.title : undefined}
+                onClick={() => setParam('sort', s.key)}
+              >
+                {s.label}
+              </SortButton>
+            ))}
           </Row>
 
           {cartFull ? (
@@ -412,8 +310,13 @@ export function MarketplacePage() {
             </Row>
           ) : null}
         </Stack>
+        </Section>
 
-        <Stack gap={10} pad={[22, 0, 0, 0]}>
+        {/* the grid band: the legend sits above the cards as their key, and the
+            pagination closes the same band rather than starting a new one */}
+        <Section>
+        <Stack gap={24}>
+        <Stack gap={10}>
           <Txt size={10} lead={14} weight="bold" upper tone="muted">
             The five states, in the order they cost you
           </Txt>
@@ -429,7 +332,7 @@ export function MarketplacePage() {
           </Row>
         </Stack>
 
-        <Stack pad={[24, 0, 0, 0]}>
+        <Stack>
           {error ? (
             <ErrorState onRetry={() => setSp(new URLSearchParams(sp))} />
           ) : loading ? (
@@ -453,7 +356,7 @@ export function MarketplacePage() {
 
         {result && totalPages > 1 ? (
           <nav aria-label="Pagination">
-            <Row justify="center" align="center" gap={20} className="mt-10 flex-wrap">
+            <Row justify="center" align="center" gap={20} className="flex-wrap">
               <Btn kind="off" disabled={page <= 1} onClick={() => setParam('page', String(page - 1))}>
                 ← Prev
               </Btn>
@@ -467,12 +370,14 @@ export function MarketplacePage() {
           </nav>
         ) : null}
 
-        <Stack gap={8} pad={[24, 0, 0, 0]}>
+        <Stack gap={8}>
           <Rule />
           <Txt size={11} lead={17} mono tone="muted">
             A probe proves reachability, a paid test hire proves delivery.
           </Txt>
         </Stack>
+        </Stack>
+        </Section>
       </div>
 
       <CompareBar
@@ -517,8 +422,36 @@ function labelFor(key: string): string {
   return CATEGORIES.find((c) => c.key === key)?.label ?? 'All agents'
 }
 
-// the filter chip is the design's pill, made clickable: keep when it is the active filter
-function Chip({
+// the category reads as plain text with the active one ruled in data, the way the
+// old shelf ruled its tabs rather than wrapping each in a pill
+function Tab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`shrink-0 cursor-pointer border-b-2 pb-[5px] text-[13px] uppercase leading-[18px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data ${
+        active
+          ? 'border-souk-data font-semibold text-souk-ink'
+          : 'border-transparent text-souk-steel hover:text-souk-ink'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+// the sort keeps the old shelf's read: the one in force is a filled data chip,
+// the rest sit as plain labels until picked
+function SortButton({
   active,
   onClick,
   title,
@@ -535,9 +468,13 @@ function Chip({
       onClick={onClick}
       title={title}
       aria-pressed={active}
-      className="shrink-0 cursor-pointer rounded-[6px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+      className={`shrink-0 cursor-pointer rounded-[6px] px-3 py-[7px] text-[12px] font-bold uppercase leading-[16px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+        active
+          ? 'bg-souk-data text-souk-canvas'
+          : 'text-souk-steel hover:bg-souk-surface2 hover:text-souk-ink'
+      }`}
     >
-      <Pill variant={active ? 'keep' : 'off'}>{children}</Pill>
+      {children}
     </button>
   )
 }
@@ -566,7 +503,7 @@ function Switch({
         aria-label={label}
         onClick={onChange}
         className={`relative h-[18px] w-[34px] shrink-0 cursor-pointer rounded-full border transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
-          checked ? 'border-souk-data bg-souk-data' : 'border-white/[0.16] bg-souk-surface2'
+          checked ? 'border-souk-data bg-souk-data' : 'border-souk-hair bg-souk-surface2'
         }`}
       >
         <span
@@ -654,7 +591,7 @@ function AgentCard({
             src={img}
             alt=""
             loading="lazy"
-            className="h-[34px] w-[34px] shrink-0 rounded-[8px] border border-white/[0.16] bg-souk-indigo object-cover"
+            className="h-[34px] w-[34px] shrink-0 rounded-[8px] border border-souk-hair bg-souk-indigo object-cover"
             onError={(e) => {
               // a dead image_url falls back to the listing's own default face
               const el = e.currentTarget
@@ -791,16 +728,16 @@ function GridSkeleton() {
       {Array.from({ length: 12 }, (_, i) => (
         <Stack key={i} surface gap={12} pad={[20, 22, 20, 22]} className="animate-pulse">
           <Row align="center" gap={11}>
-            <span className="h-[34px] w-[34px] shrink-0 rounded-[8px] bg-white/[0.08]" />
+            <span className="h-[34px] w-[34px] shrink-0 rounded-[8px] bg-souk-surface2" />
             <Stack gap={6} className="flex-1">
-              <span className="h-3 w-20 rounded-[3px] bg-white/[0.08]" />
-              <span className="h-4 w-32 rounded-[3px] bg-white/[0.08]" />
+              <span className="h-3 w-20 rounded-[3px] bg-souk-surface2" />
+              <span className="h-4 w-32 rounded-[3px] bg-souk-surface2" />
             </Stack>
           </Row>
-          <span className="h-3 w-full rounded-[3px] bg-white/[0.08]" />
-          <span className="h-3 w-3/4 rounded-[3px] bg-white/[0.08]" />
+          <span className="h-3 w-full rounded-[3px] bg-souk-surface2" />
+          <span className="h-3 w-3/4 rounded-[3px] bg-souk-surface2" />
           <Rule />
-          <span className="h-3 w-40 rounded-[3px] bg-white/[0.08]" />
+          <span className="h-3 w-40 rounded-[3px] bg-souk-surface2" />
         </Stack>
       ))}
     </div>

@@ -222,13 +222,13 @@ export function SellerStallsPage() {
     : 'seller / stalls'
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
       <Stack gap={10} className="max-w-[1180px]">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
         <h1 className="m-0">
-          <Txt size={34} lead={42} weight="bold" tone="ink">
+          <Txt size={34} lead={42} display weight="bold" tone="ink">
             Your stalls.
           </Txt>
         </h1>
@@ -373,8 +373,8 @@ function CardAction({
   const primary = variant === 'primary'
   const cls = [
     'inline-flex h-9 w-full items-center justify-center rounded-[8px] border px-3 text-left transition',
-    primary ? 'border-transparent bg-souk-data text-souk-canvas' : 'border-white/[0.16] bg-souk-surface1 text-souk-slate',
-    disabled ? 'cursor-not-allowed opacity-40' : primary ? 'hover:opacity-90' : 'hover:border-white/[0.32]',
+    primary ? 'border-transparent bg-souk-data text-souk-canvas' : 'border-souk-hair bg-souk-surface1 text-souk-slate',
+    disabled ? 'cursor-not-allowed opacity-40' : primary ? 'hover:opacity-90' : 'hover:border-souk-hair',
     className ?? '',
   ].join(' ')
   if (to) {

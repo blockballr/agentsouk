@@ -266,14 +266,14 @@ export default function VaultHirePage() {
   )
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 text-souk-ink lg:pb-16">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 text-souk-ink lg:pb-16">
       <Stack gap={10} className="pt-8">
         <Txt size={11} lead={16} mono upper tone="data">
           VAULT HIRE · {CHAIN.label} {CHAIN.id} · VAULT {vault ? short(vault) : 'not configured'}
           {tokenId ? ` · TOKEN #${tokenId}` : ''}
         </Txt>
         <h1 className="m-0">
-          <Txt size={34} lead={42} weight="bold" tone="ink">
+          <Txt size={34} lead={42} display weight="bold" tone="ink">
             Hire an agent that trades a bounded deposit.
           </Txt>
         </h1>
@@ -397,7 +397,7 @@ export default function VaultHirePage() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   inputMode="decimal"
-                  className="h-11 w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 font-mono text-[13px] leading-[20px] text-souk-ink outline-none"
+                  className="h-11 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 font-mono text-[13px] leading-[20px] text-souk-ink outline-none"
                 />
               </Stack>
             </div>
@@ -423,7 +423,7 @@ export default function VaultHirePage() {
                   value={slippage}
                   onChange={(e) => setSlippage(Number(e.target.value) || 0)}
                   inputMode="numeric"
-                  className="h-11 w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 font-mono text-[13px] leading-[20px] text-souk-ink outline-none"
+                  className="h-11 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 font-mono text-[13px] leading-[20px] text-souk-ink outline-none"
                 />
               </Stack>
               <Stack gap={4} className="min-w-0">
@@ -441,7 +441,7 @@ export default function VaultHirePage() {
                   value={manualAgent}
                   onChange={(e) => setManualAgent(e.target.value)}
                   placeholder="0x..."
-                  className="h-11 w-full rounded-[8px] border border-white/[0.16] bg-souk-surface2 px-3.5 font-mono text-[13px] leading-[20px] text-souk-ink outline-none"
+                  className="h-11 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 font-mono text-[13px] leading-[20px] text-souk-ink outline-none"
                 />
               </Stack>
             ) : null}
