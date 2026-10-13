@@ -28,7 +28,21 @@ import {
   type StepKey,
 } from '../lib/quest'
 import { cx } from '../components/ui'
-import { Stack, Row, Txt, Pill, Dot, SectionHead, NoteBox, DataTable, Btn, Rule, Label, AgentAvatar } from '../components/souk'
+import {
+  Stack,
+  Row,
+  Txt,
+  Pill,
+  Dot,
+  SectionHead,
+  NoteBox,
+  DataTable,
+  Btn,
+  Rule,
+  Label,
+  AgentAvatar,
+  Section,
+} from '../components/souk'
 import { QuestStamp } from '../components/QuestStamp'
 import { ShareCard } from '../components/ShareCard'
 import { SPECIMEN_SERIAL } from '../lib/share-card'
@@ -249,12 +263,12 @@ export function QuestPage() {
 
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
-      <div className="mx-auto max-w-[1920px] px-8 pb-28 pt-10 lg:pb-16">
+      <div className="px-8 pb-28 pt-10 lg:pb-16">
         <Stack gap={10}>
           <Txt size={11} lead={16} mono upper tone="data">
             {`Set and Earn · wallet ${wallet ? shortAddress(wallet) : 'not connected'} · ${chainLine}`}
           </Txt>
-          <h1 className="text-[34px] font-bold leading-[42px] text-souk-ink">Souk passport.</h1>
+          <h1 className="font-serif text-[34px] font-bold leading-[42px] text-souk-ink">Souk passport.</h1>
           <p className="max-w-[1180px] text-[15px] leading-[23px] text-souk-slate">
             Hire an agent, list one of your own, then hire a second. That finishes your passport. A third hire is an
             extra, for more points.
@@ -262,103 +276,109 @@ export function QuestPage() {
         </Stack>
 
         {/* the reminder comes first: a hire from any other wallet is not counted by the campaign */}
-        <Row
-          bg="indigo"
-          hair
-          radius={8}
-          pad={[14, 16, 14, 16]}
-          gap={12}
-          align="center"
-          justify="between"
-          className="mt-8 flex-wrap gap-y-3"
-        >
-          <Row gap={10} align="center" className="min-w-[320px] flex-1">
-            <Dot tone="sky" size={8} />
-            <Txt size={13} lead={20} tone="ink" className="max-w-[1180px]">
-              Take part with the wallet you entered on{' '}
-              <a
-                href={BNB_CAMPAIGN}
-                target="_blank"
-                rel="noreferrer"
-                className="text-souk-sky underline decoration-souk-sky/40 underline-offset-2 hover:decoration-souk-sky"
-              >
-                BNB Chain&apos;s Set and Earn form
+        <Section>
+          <Row
+            bg="indigo"
+            hair
+            radius={8}
+            pad={[14, 16, 14, 16]}
+            gap={12}
+            align="center"
+            justify="between"
+            className="flex-wrap gap-y-3"
+          >
+            <Row gap={10} align="center" className="min-w-[320px] flex-1">
+              <Dot tone="sky" size={8} />
+              <Txt size={13} lead={20} tone="ink" className="max-w-[1180px]">
+                Take part with the wallet you entered on{' '}
+                <a
+                  href={BNB_CAMPAIGN}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-souk-sky underline decoration-souk-sky/40 underline-offset-2 hover:decoration-souk-sky"
+                >
+                  BNB Chain&apos;s Set and Earn form
+                </a>
+                . BNB Chain counts no other wallet, so a hire made from any other one earns nothing here.
+              </Txt>
+            </Row>
+            <Row gap={8} align="center">
+              {!wallet ? (
+                <Btn kind="primary" onClick={connect} disabled={connecting}>
+                  {connecting ? 'Waiting for your wallet' : 'Connect wallet'}
+                </Btn>
+              ) : null}
+              <a href={BNB_CAMPAIGN} target="_blank" rel="noreferrer">
+                <Btn>Open the form</Btn>
               </a>
-              . BNB Chain counts no other wallet, so a hire made from any other one earns nothing here.
-            </Txt>
+            </Row>
           </Row>
-          <Row gap={8} align="center">
-            {!wallet ? (
-              <Btn kind="primary" onClick={connect} disabled={connecting}>
-                {connecting ? 'Waiting for your wallet' : 'Connect wallet'}
-              </Btn>
-            ) : null}
-            <a href={BNB_CAMPAIGN} target="_blank" rel="noreferrer">
-              <Btn>Open the form</Btn>
-            </a>
-          </Row>
-        </Row>
+        </Section>
 
         {error ? (
-          <div role="alert" className="mt-6">
-            <NoteBox title="The passport could not be read just now" copy={error} />
-          </div>
+          <Section>
+            <div role="alert">
+              <NoteBox title="The passport could not be read just now" copy={error} />
+            </div>
+          </Section>
         ) : null}
 
-        <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-8">
-          <SectionHead title="Your standing" note="SETTLED HIRES AND LISTINGS ONLY" />
-          <Row gap={10}>
-            <Stack pad={[10, 12, 10, 12]} gap={2} bg="surface2" radius={8} className="min-w-0 flex-1">
-              <Txt size={16} lead={22} mono tone="steel">{`${done} of 3`}</Txt>
-              <Label tone="muted">To finish</Label>
-            </Stack>
-            <Stack pad={[10, 12, 10, 12]} gap={2} bg="surface2" radius={8} className="min-w-0 flex-1">
-              <Txt size={16} lead={22} mono tone="steel">{rank.title}</Txt>
-              <Label tone="muted">Titled</Label>
-            </Stack>
-          </Row>
-          <Stack gap={8}>
-            <Row justify="between" align="center" gap={12}>
-              <Label tone="muted">Passport points</Label>
-              <Txt size={14} lead={18} mono tone={points > 0 ? 'data' : 'steel'}>
-                {`${shownPoints.toLocaleString()} of ${TOTAL.toLocaleString()}`}
-              </Txt>
+        <Section>
+          <Stack surface pad={[20, 22, 20, 22]} gap={14}>
+            <SectionHead title="Your standing" note="SETTLED HIRES AND LISTINGS ONLY" />
+            <Row gap={10}>
+              <Stack pad={[10, 12, 10, 12]} gap={2} bg="surface2" radius={8} className="min-w-0 flex-1">
+                <Txt size={16} lead={22} mono tone="steel">{`${done} of 3`}</Txt>
+                <Label tone="muted">To finish</Label>
+              </Stack>
+              <Stack pad={[10, 12, 10, 12]} gap={2} bg="surface2" radius={8} className="min-w-0 flex-1">
+                <Txt size={16} lead={22} mono tone="steel">{rank.title}</Txt>
+                <Label tone="muted">Titled</Label>
+              </Stack>
             </Row>
-            <Row justify="between" align="center" gap={12} className="flex-wrap">
-              <Txt size={12} lead={18} tone="steel">
-                {rank.next ? `${(rank.next.at - points).toLocaleString()} to ${rank.next.title}` : 'Every title earned'}
-              </Txt>
-              <Txt size={12} lead={18} mono tone="labels">
-                {wallet ? `wallet ${shortAddress(wallet)}` : 'no wallet yet'}
-              </Txt>
-            </Row>
-            <div
-              className="h-1.5 overflow-hidden rounded-[3px] bg-white/[0.16]"
-              role="progressbar"
-              aria-label="Quest points"
-              aria-valuemin={0}
-              aria-valuemax={TOTAL}
-              aria-valuenow={points}
-            >
+            <Stack gap={8}>
+              <Row justify="between" align="center" gap={12}>
+                <Label tone="muted">Passport points</Label>
+                <Txt size={14} lead={18} mono tone={points > 0 ? 'data' : 'steel'}>
+                  {`${shownPoints.toLocaleString()} of ${TOTAL.toLocaleString()}`}
+                </Txt>
+              </Row>
+              <Row justify="between" align="center" gap={12} className="flex-wrap">
+                <Txt size={12} lead={18} tone="steel">
+                  {rank.next ? `${(rank.next.at - points).toLocaleString()} to ${rank.next.title}` : 'Every title earned'}
+                </Txt>
+                <Txt size={12} lead={18} mono tone="labels">
+                  {wallet ? `wallet ${shortAddress(wallet)}` : 'no wallet yet'}
+                </Txt>
+              </Row>
               <div
-                className="h-full rounded-[3px] bg-souk-data"
-                style={{ width: `${Math.min(100, (shownPoints / TOTAL) * 100)}%` }}
-              />
-            </div>
-            <Txt size={12} lead={18} tone="steel">
-              A step stamps once its hire has settled or its listing is on the shelf.
+                className="h-1.5 overflow-hidden rounded-[3px] bg-souk-hair"
+                role="progressbar"
+                aria-label="Quest points"
+                aria-valuemin={0}
+                aria-valuemax={TOTAL}
+                aria-valuenow={points}
+              >
+                <div
+                  className="h-full rounded-[3px] bg-souk-data"
+                  style={{ width: `${Math.min(100, (shownPoints / TOTAL) * 100)}%` }}
+                />
+              </div>
+              <Txt size={12} lead={18} tone="steel">
+                A step stamps once its hire has settled or its listing is on the shelf.
+              </Txt>
+            </Stack>
+            <Rule hair />
+            <Txt size={12} lead={18} tone="muted">
+              Any agent on the market counts for a hire, as long as it is not your own and not one you already hired.
+              Points and titles track your progress here and are not a token or a reward.
             </Txt>
           </Stack>
-          <Rule hair />
-          <Txt size={12} lead={18} tone="muted">
-            Any agent on the market counts for a hire, as long as it is not your own and not one you already hired.
-            Points and titles track your progress here and are not a token or a reward.
-          </Txt>
-        </Stack>
+        </Section>
 
-        <section className="mt-10">
+        <Section>
           <SectionHead title={`${QUEST_STEPS.length} steps, three of them finish it`} note="ONE STAMP EACH" />
-          <div className="mt-5 grid gap-5 lg:grid-cols-3">
+          <div className="mt-12 grid gap-5 lg:grid-cols-3">
             {QUEST_STEPS.map((step, i) => (
               <StepCard
                 key={step.key}
@@ -391,24 +411,26 @@ export function QuestPage() {
               <Btn onClick={quit} className="w-full">Quit the quest</Btn>
             </Stack>
           </div>
-        </section>
+        </Section>
 
-        <div className="mt-10 grid gap-6">
-          {wallet && progress?.completed ? (
-            <ShareCard
-              rank={rank.title}
-              points={points}
-              wallet={wallet}
-              serial={progress.passport?.serial}
-              issuedAt={progress.passport?.issuedAt}
-              thirdHire={stamps.third}
-            />
-          ) : null}
-          {/* the card for the announcement, numbered ahead of every holder's; local builds only */}
-          {specimen ? (
-            <ShareCard rank={rankFor(TOTAL).title} points={TOTAL} wallet={wallet ?? SPECIMEN_HOLDER} serial={SPECIMEN_SERIAL} thirdHire />
-          ) : null}
-        </div>
+        <Section>
+          <div className="grid gap-5">
+            {wallet && progress?.completed ? (
+              <ShareCard
+                rank={rank.title}
+                points={points}
+                wallet={wallet}
+                serial={progress.passport?.serial}
+                issuedAt={progress.passport?.issuedAt}
+                thirdHire={stamps.third}
+              />
+            ) : null}
+            {/* the card for the announcement, numbered ahead of every holder's; local builds only */}
+            {specimen ? (
+              <ShareCard rank={rankFor(TOTAL).title} points={TOTAL} wallet={wallet ?? SPECIMEN_HOLDER} serial={SPECIMEN_SERIAL} thirdHire />
+            ) : null}
+          </div>
+        </Section>
 
         <section className="mt-10">
           <SectionHead title="What the shelf is offering" note="READ FROM /api/quest/picks" />
@@ -657,7 +679,7 @@ function StepCard({
   return (
     <article
       aria-label={`${title}, ${points} points, ${state.toLowerCase()}`}
-      className="relative flex h-full min-w-0 flex-col gap-3 overflow-hidden rounded-[20px] border border-white/[0.08] bg-souk-surface1 [overflow-wrap:anywhere]"
+      className="relative flex h-full min-w-0 flex-col gap-3 overflow-hidden rounded-[20px] border border-souk-edge bg-souk-surface1 [overflow-wrap:anywhere]"
       style={{ padding: '20px 22px' }}
     >
       <QuestStamp

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   actOnJob,
@@ -12,7 +12,7 @@ import {
   type OngoingBundle,
 } from '../lib/api'
 import { timeAgo } from '@agora/core'
-import { explorerTxBase } from '../lib/contracts'
+import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { mergeSessions, stabiliseSessions } from '../lib/ongoing-merge'
 import {
   escrowLifecycle,
@@ -24,6 +24,7 @@ import {
   type HireItem,
   type HireState,
 } from '../lib/hire-state'
+import { StopRail } from '../components/Jobs8183HirePanel'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
 import { hireErrorText } from '../lib/hire'
 import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
@@ -34,7 +35,19 @@ import { jobStatusName } from '../lib/jobs8183'
 import { RateAgent } from '../components/RateAgent'
 import { Action, Dialog, LABEL, RatingBoxes, ResultBox, TextSlot } from '../components/ui'
 import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
-import { AgentAvatar, Btn, DataTable, Dot, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
+import {
+  AgentAvatar,
+  Btn,
+  DataTable,
+  Dot,
+  Pill,
+  Row,
+  Rule,
+  Section,
+  SectionHead,
+  Stack,
+  Txt,
+} from '../components/souk'
 
 // the server holds each wallet's view for five seconds, so a faster poll only
 // re-reads the same answer
@@ -53,6 +66,18 @@ function formatExpiry(iso: string): string {
 function shortAddr(a: string): string {
   if (!a || a.length < 12) return a
   return `${a.slice(0, 6)}…${a.slice(-4)}`
+}
+
+// which of the five stops a job sits on, read from its own status rather than
+// guessed: an open job has only its price, a funded one holds money, and so on
+function stopIndexFor(item: HireItem): number {
+  const status = item.job?.status
+  if (!status) return item.task ? 2 : 0
+  if (status === 'Open') return 0
+  if (status === 'Funded') return 1
+  if (status === 'Submitted') return 3
+  if (status === 'Completed' || status === 'Rejected') return 4
+  return 2
 }
 
 export function OngoingPage() {
@@ -316,77 +341,85 @@ export function OngoingPage() {
   const standaloneRevocations = Object.entries(revokeResults).filter(([paymentId]) => !shownKeys.has(paymentId))
   // the live count is only claimed once the ledger has answered
   const liveCount = items.filter((i) => i.live).length
+  // the chain comes from the hires themselves rather than a page-level constant,
+  // since a wallet can hold jobs on more than one
+  const chainLine = items.length > 0 ? chainLabel(items[0].chainId) : null
   const kicker = account
-    ? ['Ongoing', shortAddr(account), data ? `${liveCount} live` : null].filter(Boolean).join(' · ')
+    ? ['Ongoing', shortAddr(account), chainLine, data ? `${liveCount} live` : null].filter(Boolean).join(' · ')
     : 'Ongoing'
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
-      <header className="flex max-w-[1180px] flex-col gap-2.5">
-        <Txt size={11} lead={16} mono upper tone="data">
-          {kicker}
-        </Txt>
-        <h1 className="m-0">
-          <Txt size={34} lead={42} weight="bold" tone="ink">
-            Your hires.
+    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+      {/* the hero owns its own top padding, so the band carries only the lower half of the rhythm */}
+      <Section pad="pb-16 md:pb-18">
+        <header className="flex max-w-[1180px] flex-col gap-2.5">
+          <Txt size={11} lead={16} mono upper tone="data">
+            {kicker}
           </Txt>
-        </h1>
-        <Txt size={15} lead={23} tone="slate">
-          Everything this wallet has hired. Anything waiting on you comes first.
-        </Txt>
-      </header>
-
-      {!account && (
-        <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
-          <Txt size={15} lead={22} tone="ink">
-            Connect the wallet you hired with.
-          </Txt>
-          <Txt size={13} lead={20} tone="muted">
-            Hires are kept per wallet, so this is how we find yours.
-          </Txt>
-          <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
-            {connecting ? 'Connecting…' : 'Connect wallet'}
-          </Btn>
-        </Stack>
-      )}
-
-      {error && (
-        <div role="alert" className="mt-6">
-          <Stack pad={[14, 16, 14, 16]} radius={14} hair>
-            <Txt size={13} lead={20} tone="peach">
-              {error}
+          <h1 className="m-0">
+            <Txt size={34} lead={42} display weight="bold" tone="ink">
+              Work in flight.
             </Txt>
+          </h1>
+          <Txt size={15} lead={23} tone="slate">
+            A job outlives one request, so it needs an id you can come back to, an event stream
+            you can read, and a retry that costs nothing when it fails. Released is the only stop
+            that pays the seller.
+          </Txt>
+        </header>
+
+        {!account && (
+          <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
+            <Txt size={15} lead={22} tone="ink">
+              Connect the wallet you hired with.
+            </Txt>
+            <Txt size={13} lead={20} tone="muted">
+              Hires are kept per wallet, so this is how we find yours.
+            </Txt>
+            <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
+              {connecting ? 'Connecting…' : 'Connect wallet'}
+            </Btn>
           </Stack>
-        </div>
-      )}
+        )}
 
-      {account && data && items.length === 0 && !error && (
-        <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
-          <Txt size={15} lead={22} tone="ink">
-            Nothing hired with this wallet yet.
-          </Txt>
-          <Txt size={13} lead={20} tone="muted">
-            Hire an agent and it shows up here while you use it.
-          </Txt>
-          <Link
-            to="/agents"
-            className="mt-2 inline-flex h-11 w-fit items-center justify-center rounded-[8px] bg-souk-data px-5"
-          >
-            <Txt size={14} lead={20} weight="semibold" tone="canvas">
-              Browse agents
+        {error && (
+          <div role="alert" className="mt-6">
+            <Stack pad={[14, 16, 14, 16]} radius={14} hair>
+              <Txt size={13} lead={20} tone="peach">
+                {error}
+              </Txt>
+            </Stack>
+          </div>
+        )}
+
+        {account && data && items.length === 0 && !error && (
+          <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
+            <Txt size={15} lead={22} tone="ink">
+              Nothing hired with this wallet yet.
             </Txt>
-          </Link>
-        </Stack>
-      )}
+            <Txt size={13} lead={20} tone="muted">
+              Hire an agent and it shows up here while you use it.
+            </Txt>
+            <Link
+              to="/agents"
+              className="mt-2 inline-flex h-11 w-fit items-center justify-center rounded-[8px] bg-souk-data px-5"
+            >
+              <Txt size={14} lead={20} weight="semibold" tone="canvas">
+                Browse agents
+              </Txt>
+            </Link>
+          </Stack>
+        )}
+      </Section>
 
       {account &&
         groups.map((g) => {
           const list = byGroup(g.key)
           if (list.length === 0) return null
           return (
-            <div key={g.key} className="mt-10">
+            <Section key={g.key}>
               <SectionHead title={g.title} note={`${list.length}`} />
-              <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {list.map((it) => (
                   <HireRow
                     key={it.key}
@@ -404,18 +437,29 @@ export function OngoingPage() {
                     onEscrow={(kind) => onEscrow(it.key, it.chainId, kind)}
                   />
                 ))}
+                {/* the drawing's task and escrow cards, alongside the row: the stop the
+                    job sits on and its event stream come from the task's own history,
+                    and the escrow's figures from the payment rather than the job */}
+                {list.map((it) => (
+                  <Fragment key={`${it.key}-cards`}>
+                    {it.task?.history && it.task.history.length > 0 ? (
+                      <OpenTaskCard item={it} at={stopIndexFor(it)} />
+                    ) : null}
+                    {it.escrow ? <EscrowFacts escrow={it.escrow} item={it} /> : null}
+                  </Fragment>
+                ))}
               </div>
-            </div>
+            </Section>
           )
         })}
 
       {account && kernelJobs.length > 0 && (
-        <div className="mt-10">
+        <Section>
           <SectionHead title="ERC-8183 jobs" note={`${kernelJobs.length}`} />
           <Txt size={13} lead={20} tone="muted" className="mt-3 block max-w-[760px]">
             Funded on the shared kernel; the status below is read from the chain, not from a promise.
           </Txt>
-          <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {kernelJobs.map((row) => (
               <Stack key={row.id} surface pad={[16, 16, 16, 16]} gap={10}>
                 <Row justify="between" align="baseline" gap={12}>
@@ -445,50 +489,63 @@ export function OngoingPage() {
               </Stack>
             ))}
           </div>
-        </div>
+        </Section>
       )}
 
       {account && items.length > 0 && (
-        <div className="mt-10">
+        <Section>
           <SectionHead title="Every task, one ledger" note="same order as the board" />
-          <div className="mt-5">
+          <div className="mt-12">
+            {/* six columns as the drawing lays them out. the money column reads the
+                figure the buyer committed in dollars, since the escrow's own amount
+                is a raw string with no unit this page can prove */}
             <DataTable
-              cols={[380, 320, 620, 180]}
-              header={['Task', 'Agent', 'State', 'Age']}
-              rows={items.map((i) => ({
-                cells: [
-                  { text: shortAddr(i.key), mono: true, tone: 'ink' },
-                  { text: i.agentName, weight: 'semibold', tone: 'slate' },
-                  { text: hireState(i).label, weight: 'semibold', tone: LEDGER_TONE[hireState(i).group] },
-                  { text: timeAgo(i.at), mono: true, tone: 'labels' },
-                ],
-              }))}
+              cols={[420, 330, 250, 280, 240, 336]}
+              header={['Task', 'Agent', 'State', 'Committed', 'Age', 'Last event']}
+              rows={items.map((i) => {
+                const committed = i.job
+                  ? `$${i.job.budgetUsd.toFixed(2)}`
+                  : i.session
+                    ? `$${i.session.spendCapUsd.toFixed(2)} cap`
+                    : 'none yet'
+                const last = i.task?.updatedAt ?? i.job?.updatedAt ?? i.at
+                return {
+                  cells: [
+                    { text: shortAddr(i.key), mono: true, tone: 'ink' },
+                    { text: i.agentName, weight: 'semibold', tone: 'slate' },
+                    { text: hireState(i).label, weight: 'semibold', tone: LEDGER_TONE[hireState(i).group] },
+                    { text: committed, mono: true, tone: 'slate' },
+                    { text: timeAgo(i.at), mono: true, tone: 'labels' },
+                    { text: timeAgo(last), mono: true, tone: 'labels' },
+                  ],
+                }
+              })}
             />
           </div>
-        </div>
+        </Section>
       )}
 
       {account && standaloneRevocations.length > 0 && (
-        <div className="mt-10">
+        <Section>
           <SectionHead title="Revoked" note={`${standaloneRevocations.length}`} />
-          <Stack gap={8} className="mt-4">
+          <Stack gap={8} className="mt-12">
             {standaloneRevocations.map(([paymentId, outcome]) => (
               <Stack key={paymentId} pad={[16, 16, 16, 16]} radius={14} hair>
                 <RevokeNote outcome={outcome} chainId={outcome.chainId ?? 0} />
               </Stack>
             ))}
           </Stack>
-        </div>
+        </Section>
       )}
 
       {account && (
-        <div className="mt-10">
+        <Section>
           <Rule />
           <Txt size={12} lead={18} tone="muted" className="mt-3 block max-w-[1180px]">
             A retry keeps the task id and the escrow it was funded with. A revoke is unconditional and
             returns the escrow in one transaction, and only a released job counts as earned.
           </Txt>
-        </div>
+        </Section>
       )}
     </div>
   )
@@ -585,7 +642,7 @@ function HireRow({
   return (
     <article
       className={`flex h-[520px] min-w-0 flex-col rounded-[20px] border bg-souk-surface1 p-5 [overflow-wrap:anywhere] ${
-        state.group === 'needs' ? 'border-souk-data/40' : 'border-white/[0.08]'
+        state.group === 'needs' ? 'border-souk-data/40' : 'border-souk-edge'
       }`}
     >
       <Row justify="between" align="center" gap={12}>
@@ -604,7 +661,7 @@ function HireRow({
             type="button"
             onClick={onRevoke}
             disabled={busy}
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-[8px] border border-white/[0.16] bg-souk-surface1 px-3 transition hover:border-white/[0.32] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-3 transition hover:border-souk-hair disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Txt size={12} lead={18} weight="semibold" tone="slate">
               {revoking ? 'Revoking…' : 'Revoke session'}
@@ -784,5 +841,111 @@ function RevokeNote({ outcome, chainId }: { outcome: RevokeOutcome; chainId: num
       Revoked in the ledger. Authorization not cancelled on chain
       {outcome.error ? `: ${outcome.error}` : '.'}
     </p>
+  )
+}
+
+// the drawing's task card: one live task with the stop it sits on and the event
+// stream the job has produced so far, read from the task's own history
+function OpenTaskCard({ item, at }: { item: HireItem; at: number }) {
+  const { session, task, job } = item
+  const events = task?.history ?? []
+  const shown = events.slice(-5)
+  const cap = session ? `$${session.spendCapUsd.toFixed(2)} cap` : null
+  const left = session ? formatExpiry(session.expiresAt) : null
+  const retries = task ? task.maxAttempts - task.attempts : null
+  return (
+    <article className="flex min-w-0 flex-col rounded-[20px] border border-souk-edge bg-souk-surface1 p-[22px] pb-[18px]">
+      <Row justify="between" align="center" gap={12} className="flex-wrap">
+        <Row align="center" gap={11} className="min-w-0">
+          <AgentAvatar size={34} name={item.agentName} />
+          <Link to={`/agents/${item.chainId}/${item.tokenId}`} className="min-w-0 truncate">
+            <Stack gap={2}>
+              <Txt size={17} lead={22} weight="bold" tone="ink">{item.agentName}</Txt>
+              <Txt size={11} lead={15} mono tone="labels">{`task ${shortAddr(item.key)}`}</Txt>
+            </Stack>
+          </Link>
+        </Row>
+        <Row align="center" gap={8} className="flex-wrap">
+          <Pill variant="keep">{job ? 'Working' : 'Waiting'}</Pill>
+          <Pill variant="off">{`Chain ${item.chainId}`}</Pill>
+        </Row>
+      </Row>
+      {cap && left ? (
+        <Txt size={11} lead={15} mono tone="data" className="mt-2">{`${left} · ${cap}`}</Txt>
+      ) : null}
+
+      <Txt size={18} lead={27} weight="bold" tone="ink" className="mt-4">Where the job is</Txt>
+      <div className="mt-3">
+        <StopRail at={at} />
+      </div>
+
+      <div className="mt-4">
+        <Rule />
+      </div>
+      <Row justify="between" align="center" className="mt-4">
+        <Txt size={18} lead={27} weight="bold" tone="ink">Events</Txt>
+        <Txt size={10} lead={14} mono upper tone="labels">the task streams until it completes</Txt>
+      </Row>
+      {shown.length > 0 ? (
+        <Stack gap={0} className="mt-2">
+          {shown.map((h, i) => (
+            <Row key={`${h.at}-${i}`} align="center" gap={12} className="min-h-[22px]">
+              <Txt size={11} lead={16} mono tone="labels" className="w-[96px] shrink-0">{timeAgo(h.at)}</Txt>
+              <Txt size={12} lead={18} mono tone="slate" className="min-w-0 flex-1">
+                {h.note ? `${h.status} · ${h.note}` : h.status}
+              </Txt>
+            </Row>
+          ))}
+        </Stack>
+      ) : (
+        <Txt size={12} lead={18} tone="muted" className="mt-2">No events yet. The stream starts when the task runs.</Txt>
+      )}
+      {retries !== null ? (
+        <Txt size={12} lead={18} tone="steel" className="mt-3">
+          {retries > 0
+            ? `A retry keeps the same task id and the same escrow. ${retries} are left before the job counts as failed.`
+            : 'No retries are left. The next failure releases whatever the work did not earn.'}
+        </Txt>
+      ) : null}
+    </article>
+  )
+}
+
+// the escrow's own facts, read from the payment rather than from the job, since
+// the money can outlive a finished job
+function EscrowFacts({ escrow, item }: { escrow: EscrowStatus; item: HireItem }) {
+  const held = escrow.status === 0
+  const released = escrow.verifiedAt > 0
+  const amount = item.job ? `$${item.job.budgetUsd.toFixed(2)}` : 'not priced'
+  const rows: { label: string; value: string; tone: 'ink' | 'data' | 'muted' | 'slate' }[] = [
+    { label: 'Quoted', value: amount, tone: 'ink' },
+    { label: 'Funded', value: held ? amount : released ? amount : 'nothing yet', tone: held || released ? 'data' : 'muted' },
+    { label: 'Released', value: released ? amount : 'nothing yet', tone: released ? 'data' : 'muted' },
+    { label: 'Payment', value: shortAddr(escrow.paymentId), tone: 'slate' },
+    { label: 'Timeout', value: escrow.windowEndsAt ? formatExpiry(new Date(escrow.windowEndsAt * 1000).toISOString()) : 'none set', tone: 'slate' },
+    { label: 'Status', value: held ? 'held by the funder' : released ? 'settled' : 'closed', tone: 'ink' },
+  ]
+  return (
+    <article className="flex min-w-0 flex-col rounded-[20px] border border-souk-edge bg-souk-surface1 p-4 pb-[14px]">
+      <Row justify="between" align="center" className="pb-[9px]">
+        <Txt size={18} lead={27} weight="bold" tone="ink">The escrow</Txt>
+        <Txt size={10} lead={14} mono upper tone="labels">{`chain ${item.chainId}`}</Txt>
+      </Row>
+      <Rule />
+      <Stack gap={0} className="mt-[10px]">
+        {rows.map((r) => (
+          <Row key={r.label} justify="between" align="center" className="min-h-[26px]">
+            <Txt size={12} lead={18} tone="muted">{r.label}</Txt>
+            <Txt size={12} lead={18} mono tone={r.tone}>{r.value}</Txt>
+          </Row>
+        ))}
+      </Stack>
+      <div className="mt-[10px]">
+        <Rule />
+      </div>
+      <Txt size={12} lead={18} tone="steel" className="mt-[10px]">
+        A revoke is unconditional. It is the buyer's own money out, and it is not gated on the timeout.
+      </Txt>
+    </article>
   )
 }

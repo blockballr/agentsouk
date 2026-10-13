@@ -51,8 +51,10 @@ export interface TxtProps {
   lead?: number;
   tone?: Tone;
   weight?: Weight;
-  // the design's mono(): data, addresses, figures. Falls back to the sans face.
+  // the design's data face
   mono?: boolean;
+  // the identity face: the serif display the port carried back for headlines alone
+  display?: boolean;
   upper?: boolean;
   className?: string;
 }
@@ -64,6 +66,7 @@ export function Txt({
   tone = 'ink',
   weight = 'regular',
   mono,
+  display,
   upper,
   className,
 }: TxtProps) {
@@ -76,6 +79,7 @@ export function Txt({
     else style.lineHeight = `${lead}px`;
   }
   if (mono) classes.push('font-mono');
+  if (display) classes.push('font-serif');
   if (upper) classes.push('uppercase');
   if (className) classes.push(className);
   return (

@@ -27,9 +27,10 @@ export const TONE: Record<Tone, string> = {
   canvas: 'text-souk-canvas',
 };
 
-// the design draws two edges: a card's own 8% rim and the 16% hairline between rows
-export const EDGE = 'border-white/[0.08]';
-export const HAIR = 'border-white/[0.16]';
+// the design draws two edges: a card's own 8% rim and the 16% hairline between rows.
+// they are colours, not a fixed white, so the light register can redraw them.
+export const EDGE = 'border-souk-edge';
+export const HAIR = 'border-souk-hair';
 
 // left pad, as the design states it: [top, right, bottom, left]
 export type Pad = [number, number, number, number];

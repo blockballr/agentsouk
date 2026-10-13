@@ -20,7 +20,7 @@ export function ThemeToggle() {
       }}
       aria-label={`Colour theme: ${LABEL[choice]}. Switch to ${LABEL[next]}`}
       title={`Theme: ${LABEL[choice]}. Tap for ${LABEL[next]}`}
-      className="flex h-[38px] w-[38px] items-center justify-center overflow-hidden rounded-[8px] border border-white/[0.16] text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+      className="flex h-[38px] w-[38px] items-center justify-center overflow-hidden rounded-[8px] border border-souk-hair text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.span

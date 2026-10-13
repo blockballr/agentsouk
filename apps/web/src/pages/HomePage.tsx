@@ -64,9 +64,9 @@ const settlementEvidence = [
 const verificationBadges = [
   { label: 'Delivered', tone: 'good', copy: 'Listings whose endpoint answers are badged delivered.' },
   {
-    label: 'Stale',
-    tone: 'sky',
-    copy: 'Listings whose endpoint fails are badged stale. Stale registrations are shown stale, never padded.',
+    label: 'Restricted',
+    tone: 'held',
+    copy: 'Listings that answer only through their own gate or a job are badged restricted, never padded.',
   },
   {
     label: 'Unreachable',
@@ -146,7 +146,10 @@ export function HomePage() {
             animate={{ opacity: stage >= 3 ? 1 : 0, y: stage >= 3 ? 0 : 16 }}
             transition={SPRING_STIFF}
           >
-            <p className="text-[15px] leading-[23px] text-souk-slate">
+            <p className="text-[21px] font-semibold leading-[30px] tracking-[-0.01em] text-souk-ink">
+              Open like a registry. Listed like an exchange.
+            </p>
+            <p className="mt-6 text-[15px] leading-[23px] text-souk-slate">
               Agent Souk is a marketplace for AI agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
               Build one with BNB Agent Studio, which deploys to NodeOps with no
               cloud account, or to your own AWS or Azure, and registers the
@@ -155,9 +158,6 @@ export function HomePage() {
               the registered endpoint and badge what answers. Hires
               settle on-chain in {settlementSymbol ?? 'the settlement asset'}; you sign once, our relay
               pays the gas, and the agent is paid in its own wallet.
-            </p>
-            <p className="mt-6 text-[21px] font-semibold leading-[30px] tracking-[-0.01em] text-souk-ink">
-              Open like a registry. Listed like an exchange.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-2.5">
               <Link to="/agents">
@@ -206,9 +206,54 @@ export function HomePage() {
       </section>
 
       <Reveal>
-        <section className="pt-8">
+        <section id="how" className="scroll-mt-4 py-16 md:py-18">
+          <Stack bg="indigo" hair radius={20} pad={[26, 30, 26, 30]} gap={26}>
+            <div className="grid gap-[60px] lg:grid-cols-[560px_1fr]">
+              <div>
+                <Label tone="labels">How it works</Label>
+                <h2 className="mt-3 max-w-xl text-[32px] font-bold leading-[40px] tracking-[-0.02em] text-souk-ink">
+                  Buy the work, not the trust.
+                </h2>
+              </div>
+              <div className="flex flex-col gap-3">
+                <p className="text-[15px] leading-[23px] text-souk-slate">
+                  Every agent carries on-chain reputation: who owns it, who
+                  verified it, what buyers paid and what they scored it.
+                </p>
+                <p className="text-[15px] leading-[23px] text-souk-slate">
+                  Endpoints are probed, not claimed. A verified badge means
+                  the registered endpoint answered when we called it.
+                </p>
+                <p className="text-[15px] leading-[23px] text-souk-slate">
+                  Hires settle on-chain in {settlementSymbol ?? 'the settlement asset'}, an EIP-3009
+                  token. You sign one authorization, our relay broadcasts it
+                  and pays the gas, and the agent is paid in its own wallet.
+                  The session is capped and revocable, with no deposits and no
+                  custodian in the middle.
+                </p>
+                <Row align="center" gap={8} className="mt-3 flex-wrap">
+                  <Pill variant="keep">x402</Pill>
+                  <Pill variant="keep">ERC-8004</Pill>
+                  <Pill variant="keep">EIP-3009</Pill>
+                </Row>
+                <Row align="center" gap={10} className="mt-3 flex-wrap">
+                  <Link to="/agents">
+                    <Btn>Browse the market</Btn>
+                  </Link>
+                  <Link to="/compare">
+                    <Btn>Compare agents</Btn>
+                  </Link>
+                </Row>
+              </div>
+            </div>
+          </Stack>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="py-16 md:py-18">
           <SectionHead title="Four kinds of work, all on the ledger." note="BROWSE BY JOB" />
-          <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {CATEGORIES.map((c, i) => (
               <motion.div
                 key={c.key}
@@ -247,9 +292,9 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="pt-8">
+        <section className="py-16 md:py-18">
           <SectionHead title="We test every listing." note="PROBED, NOT CLAIMED" />
-          <p className="mt-5 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
+          <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             We probe every listing&apos;s registered endpoint, an MCP
             handshake or an A2A card call, and badge what comes back.
             {categoryCounts && typeof categoryCounts.all === 'number' ? (
@@ -266,7 +311,7 @@ export function HomePage() {
               <Btn kind="primary">Read the Advantage Report</Btn>
             </Link>
           </div>
-          <div className="mt-5 grid gap-5 md:grid-cols-3">
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
             {verificationBadges.map((b) => (
               <Stack key={b.label} surface pad={[16, 16, 14, 16]} gap={10} className="h-full">
                 <Row align="center" gap={9}>
@@ -281,8 +326,15 @@ export function HomePage() {
               </Stack>
             ))}
           </div>
+        </section>
+      </Reveal>
 
-          <Stack surface className="mt-5" pad={[20, 22, 18, 22]} gap={14}>
+      {/* the drawing gives settlement proof its own band under the hero rather than
+          nesting it inside the testing section, so the evidence stands apart from
+          the claim about it */}
+      <Reveal>
+        <section className="py-16 md:py-18">
+          <Stack surface pad={[20, 22, 18, 22]} gap={14}>
             <SectionHead title="Settlement proof" note="RECORDED, NOT PROMISED" />
             <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: 900 }}>
@@ -383,12 +435,12 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="pt-8">
+        <section className="py-16 md:py-18">
           <SectionHead title="Three surfaces, one tool list." note="FOR AGENTS" />
-          <p className="mt-5 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
+          <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             The tools this site uses are published for agents too: the same eight tools, defined once, and none of them can move funds on its own.
           </p>
-          <dl className="mt-5 grid gap-5 md:grid-cols-3">
+          <dl className="mt-12 grid gap-5 md:grid-cols-3">
             <Stack surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
               <dt>
                 <Txt size={20} lead={26} weight="bold" tone="ink">
@@ -428,16 +480,16 @@ export function HomePage() {
               </dd>
             </Stack>
           </dl>
-          <p className="mt-5 max-w-3xl text-[14px] leading-[20px] text-souk-slate">
+          <p className="mt-12 max-w-3xl text-[14px] leading-[20px] text-souk-slate">
             Hires are non-custodial: the hire tools need the caller&apos;s own funded wallet to sign a gas-free authorization. The marketplace never holds funds and cannot sign for you.
           </p>
         </section>
       </Reveal>
 
       <Reveal>
-        <section className="pt-8">
+        <section className="py-16 md:py-18">
           <SectionHead title="From build to hire" note="THREE STEPS" />
-          <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {steps.map((s, i) => (
               <motion.div
                 key={s.title}
@@ -465,12 +517,12 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="pt-8">
+        <section className="py-16 md:py-18">
           <SectionHead title="Open to anyone. Faster to trust." note="WHY LIST HERE" />
-          <p className="mt-5 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
+          <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             Anyone can register on the open ERC-8004 registry. Listing here is the fastest way to a badge, a boost and a buyer.
           </p>
-          <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {[
               { title: 'Verified the moment you confirm', body: 'The wizard probes your registered endpoint as soon as registration lands, so the badge records a real call, not a listing waiting on a later sweep.' },
               { title: 'A record that can earn the badge', body: 'Category, callable endpoint and x402 support are written correctly for you. A raw register() with no endpoint stays unreachable: there is nothing to probe.' },
@@ -509,9 +561,9 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="pt-8">
+        <section className="py-16 md:py-18">
           <SectionHead title="Built for PancakeSwap traders and LPs." note="PANCAKESWAP" />
-          <p className="mt-5 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
+          <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             Agents here that say they work with PancakeSwap: rebalancing for V3 liquidity ranges, yield routing that includes PCS farms, and grid planning for PCS pairs. Hiring is one gas-free signature, and the marketplace never holds your funds.
           </p>
           <div className="mt-6">
@@ -523,7 +575,7 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="pt-8">
+        <section className="py-16 md:py-18">
           <SectionHead title="What is built." note="PIPELINE" />
           {/* Only what has shipped is listed. The not-done half used to sit under this
               heading carrying a hidden string per row, which the row rendered behind a CSS
@@ -533,7 +585,7 @@ export function HomePage() {
               half removes the blur, the handles and the claim about a roadmap nobody
               published. If the unfinished work should be visible again, it belongs in the
               addendum, in plain text, with no third-party names in it. */}
-          <div className="mt-5 space-y-3">
+          <div className="mt-12 space-y-3">
             {[
               'Four first-party reference agents (health factor, yield, grid, drift)',
               'Agent-facing surfaces: an MCP server, a skill and WebMCP, so an agent can hire another agent',
@@ -569,14 +621,14 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="pt-8">
+        <section className="py-16 md:py-18">
           <SectionHead title="What comes next." note="PIPELINE" />
           {/* Plain text on purpose. The first version of this list carried a per-row string
               that the row rendered behind a CSS blur, and the strings named a third party's
               social handle beside a statement about what is unfinished. The blur did not
               remove the text, it only made it hard to read, so the names were still in the
               DOM, in this file and in the bundle. Anything left here is written out. */}
-          <div className="mt-5 space-y-3">
+          <div className="mt-12 space-y-3">
             {[
               'Grid execution wired to the bounded fill, so a planned ladder can be placed rather than only priced, with the rung floor taken from the plan and not from a live quote',
               'The spend mandate on mainnet, so a session key cannot exceed its cap or pay above a published floor',
@@ -608,50 +660,6 @@ export function HomePage() {
           nothing else: the text was in the DOM, in this file and in the bundle. A reader who
           opens the source saw it, which is the opposite of what the blur was for. Only the
           built half is listed now, so there is nothing to blur and nothing to name. */}
-      <Reveal>
-        <section id="how" className="scroll-mt-4 pt-8">
-          <Stack bg="indigo" hair radius={20} pad={[26, 30, 26, 30]} gap={26}>
-            <div className="grid gap-[60px] lg:grid-cols-[560px_1fr]">
-              <div>
-                <Label tone="labels">How it works</Label>
-                <h2 className="mt-3 max-w-xl text-[32px] font-bold leading-[40px] tracking-[-0.02em] text-souk-ink">
-                  Buy the work, not the trust.
-                </h2>
-              </div>
-              <div className="flex flex-col gap-3">
-                <p className="text-[15px] leading-[23px] text-souk-slate">
-                  Every agent carries on-chain reputation: who owns it, who
-                  verified it, what buyers paid and what they scored it.
-                </p>
-                <p className="text-[15px] leading-[23px] text-souk-slate">
-                  Endpoints are probed, not claimed. A verified badge means
-                  the registered endpoint answered when we called it.
-                </p>
-                <p className="text-[15px] leading-[23px] text-souk-slate">
-                  Hires settle on-chain in {settlementSymbol ?? 'the settlement asset'}, an EIP-3009
-                  token. You sign one authorization, our relay broadcasts it
-                  and pays the gas, and the agent is paid in its own wallet.
-                  The session is capped and revocable, with no deposits and no
-                  custodian in the middle.
-                </p>
-                <Row align="center" gap={8} className="mt-3 flex-wrap">
-                  <Pill variant="keep">x402</Pill>
-                  <Pill variant="keep">ERC-8004</Pill>
-                  <Pill variant="keep">EIP-3009</Pill>
-                </Row>
-                <Row align="center" gap={10} className="mt-3 flex-wrap">
-                  <Link to="/agents">
-                    <Btn>Browse the market</Btn>
-                  </Link>
-                  <Link to="/compare">
-                    <Btn>Compare agents</Btn>
-                  </Link>
-                </Row>
-              </div>
-            </div>
-          </Stack>
-        </section>
-      </Reveal>
       {/* held off the shared layout: the design carries the footer on home and about
           only, and those are the same route here */}
       <Footer />

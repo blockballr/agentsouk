@@ -23,7 +23,7 @@ export function initialsFor(name: string): string {
 export function LogoMark({ size = 28 }: { size?: number }) {
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center rounded-full border border-white/[0.16]"
+      className="inline-flex shrink-0 items-center justify-center rounded-full border border-souk-hair"
       style={{ width: size, height: size, backgroundImage: METAL_BAND }}
     >
       <Txt size={Math.round(size * 0.4)} lead={Math.round(size * 0.52)} weight="bold" mono tone="ink">
@@ -46,7 +46,7 @@ export function AgentAvatar({
   const shared = { width: size, height: size, borderRadius: radius };
   return (
     <span
-      className="inline-flex shrink-0 items-center justify-center overflow-hidden border border-white/[0.16] bg-souk-indigo"
+      className="inline-flex shrink-0 items-center justify-center overflow-hidden border border-souk-hair bg-souk-indigo"
       style={shared}
     >
       {imageUrl ? (
@@ -66,11 +66,12 @@ export function AgentAvatar({
   );
 }
 
-// 18px line icons at the product's own stroke, so the bar reads as one set
+// 18px line icons at the product's own stroke, so the bar reads as one set. The
+// stroke inherits, so the control's own tone decides it in either register.
 const strokeProps = {
   viewBox: '0 0 24 24',
   fill: 'none',
-  stroke: '#8d93a3',
+  stroke: 'currentColor',
   strokeWidth: 1.8,
   strokeLinecap: 'round',
   strokeLinejoin: 'round',
@@ -116,7 +117,7 @@ export function IconMonitor() {
 // the winner's mark, in the earned colour because it marks a result
 export function IconTrophy() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#44b48b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-souk-data">
       <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
       <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
       <path d="M4 22h16" />

@@ -34,7 +34,7 @@ export function QuickSearch({ large }: { large?: boolean }) {
         onClick={() => setOpen(true)}
         aria-label="Search agents"
         title="Search agents  /"
-        className={`flex items-center justify-center rounded-[8px] border border-white/[0.16] text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+        className={`flex items-center justify-center rounded-[8px] border border-souk-hair text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
           large ? 'h-11 w-11' : 'h-[38px] w-[38px]'
         }`}
       >
@@ -148,9 +148,9 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Search agents"
-        className="relative w-full max-w-xl overflow-hidden rounded-[14px] border border-white/[0.16] bg-souk-surface1 shadow-[0_24px_60px_-16px_rgba(0,0,0,0.6)]"
+        className="relative w-full max-w-xl overflow-hidden rounded-[20px] border border-souk-hair bg-souk-indigo shadow-[0_24px_60px_-16px_rgba(0,0,0,0.6)]"
       >
-        <div className="flex items-center gap-3 border-b border-b-white/[0.16] px-4">
+        <div className="flex items-center gap-3 border-b border-b-souk-hair px-4">
           <span className="text-souk-steel">
             <SearchGlyph />
           </span>
@@ -169,7 +169,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
             aria-label="Search agents"
             className="h-14 w-full bg-transparent text-base text-souk-ink placeholder:text-souk-muted focus:outline-none"
           />
-          <kbd className="micro hidden rounded-[6px] border border-white/[0.16] px-1.5 py-0.5 font-mono text-[11px] text-souk-steel sm:inline">
+          <kbd className="micro hidden rounded-[6px] border border-souk-hair px-1.5 py-0.5 font-mono text-[11px] text-souk-steel sm:inline">
             Esc
           </kbd>
         </div>
@@ -218,7 +218,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={() => go(`/?q=${encodeURIComponent(q.trim())}`)}
-            className="micro block w-full border-t border-t-white/[0.16] px-4 py-3 text-left text-souk-muted transition hover:text-souk-ink"
+            className="micro block w-full border-t border-t-souk-hair px-4 py-3 text-left text-souk-muted transition hover:text-souk-ink"
           >
             See every match in the marketplace →
           </button>
@@ -235,14 +235,14 @@ function categoryName(key: AgentSummary['category']): string {
 
 function SearchGlyph() {
   // the design's own magnifier, so the search key carries the same 18px steel stroke
-  // the bar's other squares carry
+  // the bar's other squares carry, and it follows the control's own tone on paper
   return (
     <svg
       width="18"
       height="18"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#8d93a3"
+      stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"

@@ -72,6 +72,30 @@ function frameStyle(props: BoxProps): CSSProperties {
   return { ...style, ...padStyle(props.pad) };
 }
 
+// one band of a page. The rhythm is padding only: a section carries 64px of air on
+// mobile and 72px from 768px up, and no margin sits between two sections, so the
+// distance between bands is always twice its own padding rather than a gap someone
+// has to tune. A section holds one thing, which is what keeps a screen from
+// reading as one crowded stack.
+export function Section({
+  children,
+  id,
+  className,
+  pad,
+}: {
+  children?: ReactNode;
+  id?: string;
+  className?: string;
+  // the resting rhythm; a screen asks for its hero's own padding by overriding it
+  pad?: string;
+}) {
+  return (
+    <section id={id} className={`${pad ?? 'py-16 md:py-18'}${className ? ` ${className}` : ''}`}>
+      {children}
+    </section>
+  );
+}
+
 export function Stack({ children, ...props }: BoxProps) {
   return (
     <div className={`flex flex-col ${frameClass(props)}`} style={frameStyle(props)}>
