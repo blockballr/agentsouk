@@ -427,6 +427,8 @@ function CompareTable({
   agents: AgentDetail[]
   loading: boolean
   error: boolean
+  // carried for the drawing's empty state alone: a populated table has no right hand
+  // slot on its callout row, and the picker and the bar each hold their own clear
   onClear: () => void
   checkedIds: string[]
   onToggleChecked: (id: string) => void
@@ -598,20 +600,17 @@ function CompareTable({
         </div>
       ) : (
         <>
-          <Row align="center" justify="between" gap={10} pad={[24, 0, 0, 0]} className="flex-wrap">
-            <Row align="center" gap={10}>
-              <Txt size={11} lead={16} weight="bold" upper tone="data">
-                {catLabel}
-              </Txt>
-              <Txt size={11} lead={16} tone="muted">
-                {agents.length} agents
-                {cats.length === 1 ? ', one category' : ''}
-              </Txt>
-            </Row>
-            <Btn kind="off" onClick={onClear}>
-              Start over
-            </Btn>
-          </Row>
+          {/* the drawing's callout row: the category and the count, gap 10, no right
+            hand slot. Clearing stays with the picker and the floating bar */}
+        <Row align="center" gap={10} pad={[24, 0, 0, 0]}>
+          <Txt size={11} lead={16} weight="bold" upper tone="data">
+            {catLabel}
+          </Txt>
+          <Txt size={11} lead={16} tone="muted">
+            {agents.length} agents
+            {cats.length === 1 ? ', one category' : ''}
+          </Txt>
+        </Row>
 
           {/* the scroll sits inside the card: the card's edge is drawn a pixel outside it,
               which a scrolling box counts as overflow and answers with scrollbars */}
