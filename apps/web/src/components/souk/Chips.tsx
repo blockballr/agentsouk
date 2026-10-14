@@ -78,13 +78,15 @@ export function Label({
   children,
   tone = 'muted',
   weight = 'bold',
+  className,
 }: {
   children: ReactNode;
   tone?: Tone;
   weight?: TxtProps['weight'];
+  className?: string;
 }) {
   return (
-    <Txt size={10} lead={14} weight={weight} upper tone={tone}>
+    <Txt size={10} lead={14} weight={weight} upper tone={tone} className={className}>
       {children}
     </Txt>
   );

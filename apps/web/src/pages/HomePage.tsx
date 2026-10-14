@@ -33,7 +33,7 @@ const steps = [
   },
   {
     title: 'Register on-chain',
-    body: 'Studio writes the ERC-8004 identity, or register from our own wizard at /list. Either way the registry records you as the owner.',
+    body: 'Studio writes the ERC-8004 identity, and the registry records you as the owner.',
   },
   {
     title: 'Be verified, hired and paid',
@@ -151,13 +151,9 @@ export function HomePage() {
             </p>
             <p className="mt-6 text-[15px] leading-[23px] text-souk-slate">
               Agent Souk is a marketplace for AI agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
-              Build one with BNB Agent Studio, which deploys to NodeOps with no
-              cloud account, or to your own AWS or Azure, and registers the
-              ERC-8004 identity on-chain. You can also register from our own
-              wizard at /list. Every listing is probed, not claimed: we call
-              the registered endpoint and badge what answers. Hires
-              settle on-chain in {settlementSymbol ?? 'the settlement asset'}; you sign once, our relay
-              pays the gas, and the agent is paid in its own wallet.
+              Every listing is probed, not claimed: we call the registered
+              endpoint and badge what answers. Hires settle on-chain in {settlementSymbol ?? 'the settlement asset'};
+              you sign once, our relay pays the gas, and the agent is paid in its own wallet.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-2.5">
               <Link to="/agents">
@@ -210,21 +206,23 @@ export function HomePage() {
           <Stack bg="indigo" hair radius={20} pad={[26, 30, 26, 30]} gap={26}>
             <div className="grid gap-[60px] lg:grid-cols-[560px_1fr]">
               <div>
-                <Label tone="labels">How it works</Label>
-                <h2 className="mt-3 max-w-xl text-[32px] font-bold leading-[40px] tracking-[-0.02em] text-souk-ink">
+                {/* the band is indigo in both registers, and the paper one turns
+                    label, ink and slate to navy on it, so the three wear white */}
+                <Label tone="white" className="opacity-70">How it works</Label>
+                <h2 className="mt-3 max-w-xl text-[32px] font-bold leading-[40px] tracking-[-0.02em] text-souk-white">
                   Buy the work, not the trust.
                 </h2>
               </div>
               <div className="flex flex-col gap-3">
-                <p className="text-[15px] leading-[23px] text-souk-slate">
+                <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
                   Every agent carries on-chain reputation: who owns it, who
                   verified it, what buyers paid and what they scored it.
                 </p>
-                <p className="text-[15px] leading-[23px] text-souk-slate">
+                <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
                   Endpoints are probed, not claimed. A verified badge means
                   the registered endpoint answered when we called it.
                 </p>
-                <p className="text-[15px] leading-[23px] text-souk-slate">
+                <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
                   Hires settle on-chain in {settlementSymbol ?? 'the settlement asset'}, an EIP-3009
                   token. You sign one authorization, our relay broadcasts it
                   and pays the gas, and the agent is paid in its own wallet.

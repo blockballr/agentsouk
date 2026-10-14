@@ -250,18 +250,12 @@ export function ComparePage() {
               <Stack gap={12} className="min-w-[420px] flex-1">
                 <ShortlistSearch selected={effectiveIds} onToggle={toggleId} />
               </Stack>
-              <NoteBox
-                title="How a compare is fed"
-                copy="The shelf's Compare button adds an agent to the shortlist, and the page draws the table only once two or more are picked. Your picks stay as you switch category, and Clear drops them."
-                className="hidden w-[520px] shrink-0 lg:block"
-              />
             </Row>
             <Stack gap={8} pad={[20, 0, 0, 0]}>
               <Rule />
               <Txt size={12} lead={18} tone="muted" className="block">
                 Best in each category goes to the agent whose last check went best, then the higher
-                registry score, then more reviews. The best agent you can hire directly in each
-                category starts ticked.
+                registry score, then more reviews.
               </Txt>
             </Stack>
           </>
