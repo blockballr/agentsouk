@@ -125,7 +125,7 @@ export function HomePage() {
         </motion.p>
 
         <motion.h1
-          className="mt-3 max-w-[1320px] text-[clamp(40px,4.8vw,96px)] font-bold leading-[1.05] tracking-[-0.03em] text-souk-ink"
+          className="mt-3 max-w-[1320px] font-serif text-[clamp(40px,4.8vw,96px)] font-bold leading-[1.05] tracking-[-0.03em] text-souk-ink"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: stage >= 2 ? 1 : 0, y: stage >= 2 ? 0 : 20 }}
           transition={{ ...SPRING_SMOOTH, delay: 0.04 }}
