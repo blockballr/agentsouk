@@ -4,11 +4,12 @@ import { shortAddress } from '@agora/core'
 import { QuickSearch } from './QuickSearch'
 import { ThemeToggle } from './ThemeToggle'
 import { NotificationBell } from './NotificationBell'
+import { Wordmark } from './Wordmark'
 import { cartCount, subscribe } from '../lib/cart'
 import { connectWallet, disconnectWallet, getActiveAccount } from '../lib/wallet'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
-import { IconCart, LogoMark, Row, Rule, Stack, Txt } from './souk'
+import { Dot, IconCart, LogoMark, Row, Rule, Stack, Txt } from './souk'
 
 const links = [
   { to: '/agents', label: 'Marketplace' },
@@ -52,12 +53,7 @@ export function Nav() {
       <div className="mx-auto flex h-[62px] items-center justify-between px-8">
         {/* left: the wordmark and the section links, the design's first cluster */}
         <div className="flex items-center gap-[44px]">
-          <Link
-            to="/"
-            className="font-mono text-[13px] font-bold uppercase leading-[16px] text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
-          >
-            Agent Souk
-          </Link>
+          <Wordmark />
           <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => itemClass(isActive)}>
@@ -67,7 +63,7 @@ export function Nav() {
             {/* the plain text links belong in this one row: a group that also holds
                 the boxed controls is taller, so its text centres against a different
                 box height and the row reads misaligned */}
-            <AboutLink />
+            <ChainTag />
           </nav>
         </div>
 
@@ -120,7 +116,7 @@ export function Nav() {
               </NavLink>
             ))}
             <div className="mt-2 flex items-center gap-6 py-3">
-              <AboutLink onClick={() => setMenuOpen(false)} />
+              <ChainTag />
               <CartLink />
               {/* phones reach the account through the page; the panel is the wide bar's
                   affordance, so the mobile row links straight there */}
@@ -134,6 +130,23 @@ export function Nav() {
         </div>
       )}
     </header>
+  )
+}
+
+function ChainTag() {
+  const target = useTargetChain()
+  const on = target?.chainId === 56
+  const test = Boolean(target) && !on
+  // which chain the site is settling on, said in the bar: the campaign runs on
+  // mainnet and a quester needs to know it before signing anything
+  return (
+    <span
+      title={target ? `Settling on ${chainLabel(target.chainId)} · chain ${target.chainId}` : 'Reading the chain'}
+      className="inline-flex shrink-0 items-center gap-2 rounded-[8px] border border-souk-hair px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase leading-[14px] text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+    >
+      <Dot tone={on ? 'good' : test ? 'sky' : 'quiet'} size={6} />
+      {target ? (on ? 'Mainnet 56' : `Testnet ${target.chainId}`) : 'Reading chain'}
+    </span>
   )
 }
 
@@ -154,14 +167,6 @@ function CartLink() {
         </span>
       ) : null}
     </Link>
-  )
-}
-
-function AboutLink({ onClick }: { onClick?: () => void }) {
-  return (
-    <NavLink to="/about" onClick={onClick} className={({ isActive }) => itemClass(isActive)}>
-      About
-    </NavLink>
   )
 }
 

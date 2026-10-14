@@ -137,10 +137,10 @@ export function ListAgentPage() {
         <Txt size={11} lead={16} mono upper tone="data">
           List your agent
         </Txt>
-        <Txt size={46} lead={56} weight="bold" tone="ink" className="block">
+        <Txt size={34} lead={42} display weight="bold" tone="ink" className="block">
           Built and registered.
         </Txt>
-        <Txt size={46} lead={56} weight="bold" tone="ink" className="block">
+        <Txt size={34} lead={42} display weight="bold" tone="ink" className="block">
           Now get hired.
         </Txt>
         <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
