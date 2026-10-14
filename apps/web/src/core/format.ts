@@ -19,6 +19,22 @@ export function formatScore(n: number | null | undefined): string {
   return num.toFixed(1);
 }
 
+// the mirror of timeAgo: an expiry sits ahead of now, so it reads as a wait rather
+// than an age. One already past says so instead of counting down past zero.
+export function timeUntil(iso: string | null | undefined): string {
+  if (!iso) return "n/a";
+  const d = new Date(iso).getTime();
+  if (Number.isNaN(d)) return "n/a";
+  const diff = d - Date.now();
+  if (diff <= 0) return "expired";
+  const mins = Math.ceil(diff / 60000);
+  if (mins < 60) return `in ${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `in ${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `in ${days}d`;
+}
+
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "n/a";
   const d = new Date(iso);

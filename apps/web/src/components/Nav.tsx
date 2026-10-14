@@ -6,6 +6,8 @@ import { ThemeToggle } from './ThemeToggle'
 import { NotificationBell } from './NotificationBell'
 import { cartCount, subscribe } from '../lib/cart'
 import { connectWallet, disconnectWallet, getActiveAccount } from '../lib/wallet'
+import { chainLabel } from '../lib/contracts'
+import { useTargetChain } from '../lib/target-chain'
 import { IconCart, LogoMark, Row, Rule, Stack, Txt } from './souk'
 
 const links = [
@@ -240,6 +242,9 @@ function AccountRow({ label, route, Icon }: { label: string; route: string; Icon
 function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: () => void }) {
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement | null>(null)
+  // the panel names the chain the deployment actually serves, read from the server
+  // rather than compiled in, so it cannot claim a chain the instance is not on
+  const target = useTargetChain()
   useEffect(() => {
     if (!open) return
     const onAway = (e: MouseEvent) => {
@@ -282,7 +287,9 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
                 {wallet ? shortAddress(wallet) : 'Not connected'}
               </Txt>
               <Txt size={10} lead={14} weight="bold" upper tone="labels">
-                {wallet ? 'Connected · BNB Smart Chain 56' : 'Connect to list and hire'}
+                {wallet
+                  ? `Connected${target ? ` · ${chainLabel(target.chainId)}` : ''}`
+                  : 'Connect to list and hire'}
               </Txt>
             </Stack>
           </Row>
@@ -301,7 +308,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
               setOpen(false)
               window.location.reload()
             }}
-            className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 font-mono text-[13px] font-bold text-souk-peach transition-colors hover:bg-souk-surface2 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+            className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-peach transition-colors hover:bg-souk-surface2 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
           >
             {/* the one row that never navigates */}
             <PowerGlyph />
