@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { shortAddress, timeAgo } from '@agora/core'
+import { shortAddress, timeAgo, timeUntil } from '@agora/core'
 import {
   changeMemberRole,
   stationMembers,
@@ -39,7 +39,7 @@ const ROLE_BOX: Record<StationRole, { rows: [string, string][]; copy: string }> 
       ['Unlists a stall', 'asks the owner'],
       ['Probes a listing', 'yes'],
     ],
-    copy: 'The day to day hands. Everything they do is signed and listed below.',
+    copy: 'The day to day hands. Everything they do is signed.',
   },
   owner: {
     rows: [
@@ -51,6 +51,16 @@ const ROLE_BOX: Record<StationRole, { rows: [string, string][]; copy: string }> 
     ],
     copy: 'The wallet that registered the stalls. One per station, and it is not handed over in the UI.',
   },
+}
+
+// a live session counts down and a spent one reads as history, so the two take
+// different verbs: "expires in 12h" and "expired 2h ago" are both true statements
+function sessionNotice(expiresAt: string): string {
+  const left = Date.parse(expiresAt) - Date.now()
+  const tail = ' A new signature starts a new one, and the old nonce stops working the moment it lands.'
+  if (!Number.isFinite(left)) return `Your session state is unreadable.${tail}`
+  if (left <= 0) return `Your session expired ${timeAgo(expiresAt)}.${tail}`
+  return `Your session expires ${timeUntil(expiresAt)}.${tail}`
 }
 
 function readToken(): string | null {
@@ -196,7 +206,7 @@ export function StationPage() {
                   { text: shortAddress(m.address), mono: true, size: 13, tone: 'ink' },
                   { text: m.role, size: 13, weight: 'semibold', tone: 'ink' },
                   {
-                    text: m.address.toLowerCase() === session?.address.toLowerCase() ? 'this session' : '—',
+                    text: m.address.toLowerCase() === session?.address.toLowerCase() ? 'this session' : 'none',
                     size: 13,
                     tone: m.address.toLowerCase() === session?.address.toLowerCase() ? 'data' : 'muted',
                   },
@@ -205,7 +215,7 @@ export function StationPage() {
                       ? m.address.toLowerCase() === session?.address.toLowerCase()
                         ? 'this session'
                         : 'remove'
-                      : '—',
+                      : 'none',
                     size: 13,
                     weight: owner ? 'semibold' : 'regular',
                     tone: owner ? 'slate' : 'muted',
@@ -284,7 +294,7 @@ export function StationPage() {
                       size: 12,
                       tone: j.ok === null ? 'muted' : j.ok ? 'data' : 'peach',
                     },
-                    { text: j.note ?? '—', size: 12, tone: 'steel' },
+                    { text: j.note ?? 'none', size: 12, tone: 'steel' },
                   ],
                 }))}
               />
@@ -303,7 +313,7 @@ export function StationPage() {
                   cells: [
                     { text: a.action, size: 13, weight: 'semibold', tone: 'ink' },
                     { text: shortAddress(a.actor), mono: true, size: 12, tone: 'slate' },
-                    { text: a.detail ?? '—', size: 12, tone: 'steel' },
+                    { text: a.detail ?? 'none', size: 12, tone: 'steel' },
                     { text: timeAgo(a.at), mono: true, size: 12, tone: 'labels' },
                   ],
                 }))}
@@ -327,9 +337,7 @@ export function StationPage() {
             <Row align="center" gap={10}>
               <Dot tone="sky" size={8} />
               <Txt size={13} lead={18} tone="ink">
-                {session?.expiresAt
-                  ? `Your session expires ${timeAgo(session.expiresAt)}. A new signature starts a new one, and the old nonce stops working the moment it lands.`
-                  : 'A new signature starts a new session, and the old nonce stops working the moment it lands.'}
+                {session?.expiresAt ? sessionNotice(session.expiresAt) : 'A new signature starts a new session, and the old nonce stops working the moment it lands.'}
               </Txt>
             </Row>
             <Btn kind="off" className="shrink-0" disabled={busy} onClick={() => void onSignIn()}>

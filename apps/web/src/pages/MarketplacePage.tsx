@@ -650,10 +650,10 @@ function AgentCard({
         <Rule />
 
         <Row justify="between" align="center" gap={8}>
-          {/* the token id alone identifies the listing here: the table above the cards
-              already names the chain and asset, so the card does not repeat both */}
+          {/* both halves of the listing's identity: the shelf is a card grid with no
+              table above it, so a token id alone would not say which chain it is on */}
           <Txt size={11} lead={16} mono tone="steel">
-            {`#${agent.token_id}`}
+            {`BNB ${agent.chain_id} · #${agent.token_id}`}
           </Txt>
           {when ? (
             <Txt size={11} lead={16} mono tone="muted">

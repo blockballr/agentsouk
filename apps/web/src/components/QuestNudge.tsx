@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   getQuestProgress,
@@ -11,17 +11,18 @@ import {
 } from '../lib/quest'
 import { connectWallet, getActiveAccount } from '../lib/wallet'
 import { hireErrorText } from '../lib/hire'
-import { Action, LABEL, card, cx } from './ui'
+import { Action, cx } from './ui'
+import { Btn, Label, Row, Stack, Txt } from './souk'
 
 const REFRESH_MS = 30_000
 // the way back into a started quest sits under the nav on every screen, in the primary
 // colour, so it is the first thing seen and is small enough to cover nothing
 const RESUME = 'fixed right-3 top-20 z-40 sm:right-6'
-// the invitation floats over the page, so it carries its own background and shadow
-// on a wide screen it sits under the nav too; narrower than that the same spot holds the
-// page's own header, so it stays at the foot, and gives way to the compare bar there
+// the invitation floats over the page, carrying its own background. on a wide screen it
+// hangs under the page's first band, measured below; narrower than that the page's own
+// header owns the top, so it stays at the foot and gives way to the compare bar
 const INVITE =
-  'fixed bottom-3 left-3 right-3 z-40 bg-bone-white shadow-lg sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-sm xl:bottom-auto xl:top-20 [body:has([data-compare-bar])_&]:hidden xl:[body:has([data-compare-bar])_&]:block'
+  'fixed bottom-3 left-3 right-3 z-40 rounded-[20px] shadow-lg sm:bottom-6 sm:left-auto sm:right-6 sm:w-[430px] xl:bottom-auto xl:top-[var(--quest-top)] [body:has([data-compare-bar])_&]:hidden xl:[body:has([data-compare-bar])_&]:block'
 
 // the quest's one spot on the page: an invitation before it is started, then a way back in
 // until it is finished. Never a blocking modal, and kept off agent pages, whose
@@ -73,6 +74,29 @@ export function QuestNudge() {
 
   useEffect(() => subscribeQuest(() => redraw((n) => n + 1)), [])
 
+  // where the page's own first band ends: every screen opens its mono strap at a
+  // different height. taken as a page coordinate, so a resize arriving while scrolled
+  // measures the same thing an idle one does
+  const [band, setBand] = useState(140)
+
+  useEffect(() => {
+    const measure = () => {
+      const main = document.querySelector('main')
+      if (!main) return
+      const first = Array.from(main.querySelectorAll<HTMLElement>(':not(:has(*))')).find(
+        (node) => (node.textContent ?? '').trim() !== '' && node.getBoundingClientRect().height > 0,
+      )
+      if (!first) return
+      const bottom = first.getBoundingClientRect().bottom + window.scrollY
+      setBand(Math.round(bottom + 14))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    // the strap is set in a webfont, so its box can move once the fonts land
+    document.fonts.ready.then(measure).catch(() => {})
+    return () => window.removeEventListener('resize', measure)
+  }, [pathname])
+
   // read as it is drawn, so a wallet and its standing never disagree for a frame
   const mode = questModeFor(wallet)
   // the way back in belongs to the wallet that started; anyone else is still invited
@@ -108,27 +132,40 @@ export function QuestNudge() {
   if (mode !== null) return null
 
   return (
-    <aside aria-label="Set and Earn quest" className={cx(card('strong', 'sm'), INVITE)}>
-      <p className={LABEL}>Set and Earn quest</p>
-      <h2 className="mt-2 font-serif text-[22px] leading-tight text-press-black">Collect your Souk passport</h2>
-      <p className="mt-2 text-[13px] leading-5 text-newsprint-gray">
-        Hire two agents and list one of your own, for BNB Chain&apos;s Set and Earn. Three stamps finish it, paid from
-        your wallet.
-      </p>
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <Action
-          variant="primary"
-          onClick={start}
-          disabled={starting}
-          className="w-full"
-        >
-          {starting ? 'Waiting for your wallet' : 'Start quest'}
-        </Action>
-        <Action onClick={() => writeQuestMode(wallet, 'dismissed')} className="w-full">
-          Not now
-        </Action>
-      </div>
-      {error && <p className="mt-3 text-[13px] leading-5 text-press-black">{error}</p>}
+    <aside
+      aria-label="Set and Earn quest"
+      className={cx(INVITE)}
+      style={{ '--quest-top': `${band}px` } as CSSProperties}
+    >
+      <Stack bg="indigo" hair radius={20} pad={[16, 22, 16, 22]} gap={8}>
+        <Label>Set and Earn quest</Label>
+        <Txt size={20} lead={26} weight="bold" tone="white">
+          Collect your Souk passport
+        </Txt>
+        {/* white, because the paper register turns the slate to navy and this stays indigo */}
+        <Txt size={13} lead={20} tone="white" className="opacity-75">
+          Hire two agents and list one of your own, for BNB Chain&apos;s Set and Earn. Three stamps
+          finish it, paid from your wallet.
+        </Txt>
+        <Row gap={8} className="mt-2">
+          <Btn
+            kind="primary"
+            onClick={start}
+            disabled={starting}
+            className="grow basis-0"
+          >
+            {starting ? 'Waiting for your wallet' : 'Start quest'}
+          </Btn>
+          <Btn kind="off" onClick={() => writeQuestMode(wallet, 'dismissed')} className="grow basis-0">
+            Not now
+          </Btn>
+        </Row>
+        {error && (
+          <Txt size={13} lead={20} tone="peach">
+            {error}
+          </Txt>
+        )}
+      </Stack>
     </aside>
   )
 }
