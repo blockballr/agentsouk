@@ -3,11 +3,10 @@ import type { StepKey } from '../lib/quest'
 import { cx } from './ui'
 
 // the same stamps the share card carries, so a quester sees on each step the mark it leaves
-const VISA: Record<Exclude<StepKey, 'seal'>, { label: string; note: string; tilt: number }> = {
+const VISA: Record<StepKey, { label: string; note: string; tilt: number }> = {
   first: { label: 'FIRST HIRE', note: 'HIRED', tilt: -5 },
   stall: { label: 'OWN STALL', note: 'LISTED', tilt: -4 },
   second: { label: 'SECOND HIRE', note: 'HIRED', tilt: 4 },
-  third: { label: 'THIRD HIRE', note: 'HIRED', tilt: -3 },
 }
 
 // a faint outline of where the stamp goes until the step is finished, then the stamp in ink.
@@ -19,7 +18,7 @@ export function QuestStamp({
   press,
   className,
 }: {
-  step: StepKey
+  step: StepKey | 'seal'
   stamped: boolean
   // the stamp has only just been earned, so it comes down on the page
   press?: boolean
