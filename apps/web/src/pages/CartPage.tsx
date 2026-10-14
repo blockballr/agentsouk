@@ -221,11 +221,6 @@ export function CartPage() {
           <Txt size={34} lead={42} display weight="bold" tone="ink">
             One checkout, one signature each.
           </Txt>
-          <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
-            Every agent in the cart is paid on its own signature, straight to its own wallet.
-            Nothing is pooled and nothing waits for a batch, and the session a checkout opens is
-            capped before you sign it.
-          </Txt>
         </Stack>
 
         {notice ? (
@@ -377,9 +372,6 @@ export function CartPage() {
               <LogoMark size={30} />
               <Txt size={13} lead={19} weight="semibold" tone="ink">
                 Your cart is empty.
-              </Txt>
-              <Txt size={12} lead={18} tone="steel">
-                Queue a few agents on the market, then run one checkout.
               </Txt>
               <Link
                 to="/agents"

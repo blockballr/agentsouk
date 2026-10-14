@@ -75,9 +75,13 @@
    same two weights, and the green darkens enough to hold contrast on white. Every
    screen reads these names, so one block moves the whole app. */
 [data-theme='light'] {
-  --color-souk-canvas: #f7f8fa;
+  /* the page is a shade off the cards, not the same near-white: a white card on a
+     white page reads only by its rim, and the rim alone is too quiet on paper.
+     the wells stay a shade lighter than the page, the way surface2 sits above
+     surface1 in the dark register */
+  --color-souk-canvas: #e9ecf2;
   --color-souk-surface1: #ffffff;
-  --color-souk-surface2: #eef1f6;
+  --color-souk-surface2: #f2f4f9;
   --color-souk-indigo: #111a4a;
   --color-souk-ink: #111a4a;
   --color-souk-slate: #3f4a63;

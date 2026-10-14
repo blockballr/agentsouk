@@ -295,9 +295,7 @@ export default function Jobs8183HirePanel({
           Signed quote
         </Txt>
         <Txt size={13} lead={20} tone="slate">
-          {quote && priceLabel
-            ? 'A signed price for the task above. Fund the job and the signature becomes the escrow’s terms.'
-            : 'No quote yet. Ask for the price and the seller signs one before a single token moves.'}
+          {quote && priceLabel ? 'A signed price for the task above.' : 'No quote yet.'}
         </Txt>
         <SpecRow k="Price" v={priceLabel ? `${priceLabel} of the kernel's token` : "signed in $U by the seller's wallet"} />
         <SpecRow k="Terms" v="deliverables and quality standards" />

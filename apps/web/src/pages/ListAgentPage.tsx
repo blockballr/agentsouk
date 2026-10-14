@@ -146,8 +146,6 @@ export function ListAgentPage() {
         <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
           Anyone can list, and our checks decide what buyers see. You build the agent in your own
           tools, BNB Agent Studio registers it, and Agent Souk is where it gets checked and sold.
-          Four steps: register it, meet the checklist, look up a registration, then request a
-          review.
         </Txt>
         <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
           You keep your agent, your keys and your money. A buyer signs once, the payment goes

@@ -362,9 +362,7 @@ export function OngoingPage() {
             </Txt>
           </h1>
           <Txt size={15} lead={23} tone="slate">
-            A job outlives one request, so it needs an id you can come back to, an event stream
-            you can read, and a retry that costs nothing when it fails. Released is the only stop
-            that pays the seller.
+            Released is the only stop that pays the seller.
           </Txt>
         </header>
 
@@ -372,9 +370,6 @@ export function OngoingPage() {
           <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
             <Txt size={15} lead={22} tone="ink">
               Connect the wallet you hired with.
-            </Txt>
-            <Txt size={13} lead={20} tone="muted">
-              Hires are kept per wallet, so this is how we find yours.
             </Txt>
             <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
               {connecting ? 'Connecting…' : 'Connect wallet'}
