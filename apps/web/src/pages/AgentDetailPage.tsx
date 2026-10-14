@@ -681,7 +681,7 @@ export function AgentDetailPage() {
               />
             </div>
           ) : jobSeller ? (
-            <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} />
+            <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
           ) : (
             <>
               {hireWarning && (
@@ -733,6 +733,7 @@ export function AgentDetailPage() {
                 tokenId={detail.token_id}
                 chainId={Number(detail.chain_id)}
                 cards={false}
+                category={detail.category}
               />
             </AsideCard>
           )}

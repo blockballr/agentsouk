@@ -41,18 +41,34 @@ type Phase =
 // token, and the buyer's wallet signs the five calls that lock the price into
 // the kernel's escrow. Nothing here signs money away from the marketplace;
 // every signature is the buyer's own call on a public contract.
+// one written task per category, so the card opens with something the seller can
+// actually price
+const DEFAULT_TASK: Record<string, string> = {
+  'grid-trading': 'Plan a grid ladder for 10000 USDT between 250 and 320.',
+  yield: 'What is the net APR for moving 10000 USDT into Venus on BNB Smart Chain?',
+  'health-factor': 'Compute the health factor for collateral 1000 USD and debt 500 USD.',
+  rebalancing: 'Should this portfolio rebalance, and where should the allocation go?',
+}
+
 export default function Jobs8183HirePanel({
   tokenId,
   chainId,
   cards = true,
+  category,
 }: {
   tokenId: string
   chainId: number
   // a job seller's column carries the two cards; a dual-rail listing draws the
   // same content inside the x402 card, so it asks for the pair without the shells
   cards?: boolean
+  category?: string
 }) {
-  const [task, setTask] = useState('')
+  // a quote needs a task, so the card opens with one written for this agent's
+  // category rather than an empty box that leaves the price button dead. The grid
+  // line is the design's own; the rest borrow the wording the quest writes its
+  // tasks in, and a rebalance asks the question without naming a figure
+  const seed = DEFAULT_TASK[category ?? ''] ?? DEFAULT_TASK['grid-trading']
+  const [task, setTask] = useState(seed)
   const [account, setAccount] = useState<string | null>(null)
   const [quote, setQuote] = useState<NegotiationQuoteView | null>(null)
   const [stack, setStack] = useState<Jobs8183Stack | null>(null)
@@ -174,7 +190,7 @@ export default function Jobs8183HirePanel({
             rows={3}
             spellCheck={false}
             readOnly={funded}
-            placeholder={'Plan a grid ladder for 10000 USDT between 250 and 320.'}
+            placeholder={seed}
             aria-label="Job text for the ERC-8183 seller"
             className="w-full resize-none bg-transparent font-mono text-[11px] leading-[17px] text-souk-slate placeholder:text-souk-muted focus-visible:outline-none"
           />
