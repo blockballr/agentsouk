@@ -482,7 +482,7 @@ export function AgentDetailPage() {
     detail.agent_wallet.toLowerCase() === executor.address.toLowerCase()
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-10">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-14">
       {!hireInView && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-souk-hair bg-souk-indigo px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
           {quest && questStage && (
@@ -507,7 +507,7 @@ export function AgentDetailPage() {
       </Link>
       {/* the design's own column split: 1316 of work and 520 of hire, 20 between */}
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_520px] lg:grid-rows-[auto_1fr]">
-        <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+        <div className="min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1">
           <header className="flex flex-col gap-6 sm:flex-row sm:items-start">
             <img
               src={detail.image_url ?? defaultAvatarFor(Number(chainId), detail.token_id)}
@@ -525,7 +525,10 @@ export function AgentDetailPage() {
             />
             <div className="min-w-0 flex-1">
               <Txt size={12} lead={18} mono upper tone="steel">
-                Shelf / BNB Smart Chain {chainId} / Token #{detail.token_id}
+                Shelf / BNB Smart Chain {chainId} /{' '}
+                <a href={bscScan} target="_blank" rel="noreferrer" className="hover:text-souk-ink">
+                  Token #{detail.token_id}
+                </a>
               </Txt>
               <SoukRow align="center" gap={12}>
                 <Txt size={30} lead={38} weight="bold" tone="ink">
@@ -554,10 +557,9 @@ export function AgentDetailPage() {
                   {firstParty ? OPERATED_BY_LABEL : `Seller ${shortAddress(detail.owner_address)}`}
                 </a>
                 {' · '}
-                <a href={bscScan} target="_blank" rel="noreferrer" className="hover:text-souk-ink">
-                  Agent #{detail.token_id}
-                </a>
-                {' · '}
+                {/* the token is named in the shelf line above, so it is not named
+                    again here: the drawing fills this slot with a price, and a
+                    listing with no quote has no price to name */}
                 Listed {formatDate(detail.created_at)}
               </Txt>
               <p className="mt-4 max-w-3xl text-[17px] leading-snug text-souk-slate">
@@ -588,25 +590,11 @@ export function AgentDetailPage() {
               </SoukRow>
             </div>
           </header>
-
-          <ProofStrip
-            verdict={verdict}
-            checkedAt={detail.verification?.checkedAt ?? null}
-            parallel={detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok'}
-            payment={
-              jobSeller
-                ? { value: 'By ERC-8183 job', note: 'The settled hire funds the job on the record; delivery attested' }
-                : { value: 'Per call', note: `Paid over x402 in ${asset}, straight to its wallet` }
-            }
-            network={chainLabel(detail.chain_id)}
-            score={detail.total_score > 0 ? formatScore(detail.total_score) : null}
-            reviews={detail.total_feedbacks}
-          />
         </div>
 
         <aside
           ref={setHirePanel}
-          className="h-fit scroll-mt-4 space-y-4 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1"
+          className="h-fit scroll-mt-4 space-y-5 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-start-2"
         >
           {quest && questStage && (
             <AsideCard>
@@ -757,7 +745,7 @@ export function AgentDetailPage() {
                 Signed quote
               </Txt>
               <Txt size={13} lead={20} tone="slate">
-                No quote yet. Ask for the price and the seller signs one before a single token moves.
+                No quote yet.
               </Txt>
               <Row label="Pricing" value="Per request" />
               {/* reflects what the facilitator actually sets on the session, rather
@@ -784,7 +772,22 @@ export function AgentDetailPage() {
           )}
         </aside>
 
-        <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
+        <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-2">
+          {/* the drawn body band opens with the check panel level with the hire
+              column, so it leads this column rather than sitting under the title */}
+          <ProofStrip
+            verdict={verdict}
+            checkedAt={detail.verification?.checkedAt ?? null}
+            parallel={detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok'}
+            payment={
+              jobSeller
+                ? { value: 'By ERC-8183 job', note: 'The settled hire funds the job on the record; delivery attested' }
+                : { value: 'Per call', note: `Paid over x402 in ${asset}, straight to its wallet` }
+            }
+            network={chainLabel(detail.chain_id)}
+            score={detail.total_score > 0 ? formatScore(detail.total_score) : null}
+            reviews={detail.total_feedbacks}
+          />
           <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} />
           <HowToReachCard detail={detail} jobSeller={jobSeller} />
 
@@ -803,41 +806,13 @@ export function AgentDetailPage() {
 
           {perfProbe && <PerformanceSection probe={perfProbe} />}
 
-          {/* permissions are part of the buying decision, read after what the agent does and
-              what it answered; a job seller is not bought this way, so it shows none */}
-          {!jobSeller && (
-            <section className={cx(card('plain', 'md'), 'space-y-3')}>
-              <Txt size={18} lead={27} weight="bold" tone="ink">
-                What you are authorising
-              </Txt>
-              <ul className="space-y-2.5 text-[14px] leading-relaxed text-souk-slate">
-                <li>
-                  One gas-free transfer of the hire amount to this agent&apos;s wallet. No standing
-                  token approval.
-                </li>
-                <li>
-                  A session capped at ${SESSION_SPEND_CAP_USD} that ends in {SESSION_HOURS} hours. Later
-                  calls draw on it until you revoke it, or until its job is completed or rejected.
-                </li>
-                <li>
-                  {detail.mcp_server
-                    ? 'The agent is called over MCP, so it can run the tools it publishes.'
-                    : detail.a2a_endpoint
-                      ? 'The agent is called over A2A, so it receives the messages you send.'
-                      : detail.web_endpoint
-                        ? 'This agent runs in a browser page, so the marketplace cannot call it for you.'
-                        : 'No callable endpoint is published for this agent.'}
-                </li>
-              </ul>
-            </section>
-          )}
-
         </div>
       </div>
 
           {/* the design draws this band across the full run, under both columns,
-              opened rather than folded behind a disclosure */}
-          <Stack surface pad={[20, 22, 20, 22]} gap={14}>
+              opened rather than folded behind a disclosure. the twenty is the chain
+              band's own top padding, without which the cards above sit on its rim */}
+          <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5">
             <SoukRow justify="between" align="start" gap={16} className="flex-wrap">
               <Stack gap={3}>
                 <Txt size={18} lead={27} weight="bold" tone="ink">
@@ -1044,7 +1019,7 @@ function ProofStrip({
   // Evidence and Expires are dropped rather than filled: there is no hash and no window on
   // this record, only the verdict, the method, the score and when it was read.
   return (
-    <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5">
+    <Stack surface pad={[20, 22, 20, 22]} gap={14}>
       <SectionHead title="The check panel" note="KEYED BY CHAIN" />
       <DataTable
         cols={[150, 150, 150, 190]}
@@ -1096,28 +1071,18 @@ function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['
   // the job protocol's own steps are plumbing, so they are named once rather than listed as work
   const work = skills.filter((s) => !isJobStepSkill(s, skills))
   const alsoJobs = work.length > 0 && work.length < skills.length
+  // nothing to show when no callable work is published, and a job seller's work
+  // lives in its hire column, so neither is left holding an empty heading
+  if (jobSeller || work.length === 0) return null
   return (
     <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5">
-      <SectionHead title="What it does" note={jobSeller ? 'ERC-8183' : 'PER CALL'} />
-      {skills.length === 0 ? (
-        <Txt size={13} lead={20} tone="slate">
-          This agent publishes no skill list, so its description above is all it says about itself.
-          Its endpoints are under On-chain details.
-        </Txt>
-      ) : jobSeller ? (
-        <Txt size={13} lead={20} tone="slate">
-          It works through ERC-8183 jobs: it quotes a price, your settled hire funds the job on the
-          record, and it delivers against that job. Its description above says what the work is.
-        </Txt>
-      ) : null}
-      {!jobSeller && work.length > 0 && (
-        <div className="divide-y divide-souk-edge">
-          {work.map((s) => (
-            <SkillBlock key={s.id ?? s.name ?? 'skill'} skill={s} />
-          ))}
-        </div>
-      )}
-      {!jobSeller && alsoJobs && (
+      <SectionHead title="What it does" note="PER CALL" />
+      <div className="divide-y divide-souk-edge">
+        {work.map((s) => (
+          <SkillBlock key={s.id ?? s.name ?? 'skill'} skill={s} />
+        ))}
+      </div>
+      {alsoJobs && (
         <Txt size={13} lead={20} tone="slate">
           It also sells the same work through ERC-8183 jobs: a settled hire opens
           and funds the job on the record, and the delivery is attested before
