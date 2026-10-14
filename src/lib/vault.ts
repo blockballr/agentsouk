@@ -1,15 +1,14 @@
 import "server-only";
 
 import { encodeFunctionData } from "viem";
-import { BSC_TESTNET_CHAIN_ID } from "./types";
+import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID } from "./types";
 
 // the vault side of the split: what may move. The deposit sits in the vault
-// contract on chain 97; the executor's job is only to trade an open hire inside
-// the bounds the contract set at open. Chain 56 lands after the outside review
-// clears, so the table below carries 97 alone on purpose.
-
+// contract on chain 97 or chain 56; the executor's job is only to trade an open
+// hire inside the bounds the contract set at open.
 export const VAULT_BY_CHAIN: Record<number, string> = {
   [BSC_TESTNET_CHAIN_ID]: "0xc742e51f3fe3875a3335700a7d692f40dc8e60b8",
+  [BSC_CHAIN_ID]: "0xe8e8940145ee165c39b2405755d177818187730d",
 };
 
 export function vaultFor(chainId: number): string | null {

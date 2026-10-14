@@ -472,10 +472,10 @@ export function AgentDetailPage() {
   const asset = settlementAssetFor(detail.chain_id)?.symbol ?? 'the settlement asset'
   // the deposit hire rides only a pairing that can actually run: the named
   // agent's wallet must be the wallet the executor trades from, so a card with
-  // nothing to hand the vault never offers the option
+  // nothing to hand the vault never offers the option. both chains carry a vault
   const vaultCapable =
     firstParty &&
-    Number(detail.chain_id) === 97 &&
+    (Number(detail.chain_id) === 97 || Number(detail.chain_id) === 56) &&
     !!executor &&
     !!detail.agent_wallet &&
     detail.agent_wallet !== '0x0000000000000000000000000000000000000000' &&
