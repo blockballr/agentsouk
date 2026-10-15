@@ -213,9 +213,10 @@ export default function Jobs8183HirePanel({
           />
         </div>
 
-        {/* the one element the product itself supplies: five stops, 20% before a
-            quote and 40% once the money is in escrow */}
-        <Meter pct={funded ? 40 : 20} />
+        {/* the one element the product itself supplies: five stops, zero until
+            the price is asked, 20% once the quote lands, 40% once the money is
+            in escrow */}
+        <Meter pct={funded ? 40 : quote ? 20 : 0} pending={phase.kind === 'quoting'} />
 
         {funded ? (
           <StopRail at={1} />
@@ -228,7 +229,9 @@ export default function Jobs8183HirePanel({
         <Txt size={13} lead={20} tone="slate">
           {funded
             ? 'Stage 2 of 5: the job is funded. The escrow holds the money, and the seller\'s accepted work is the only thing that releases it.'
-            : 'Stage 1 of 5: the seller has signed a price in $U. Nothing is funded yet, so no money has moved.'}
+            : quote
+              ? 'Stage 1 of 5: the seller has signed a price in $U. Nothing is funded yet, so no money has moved.'
+              : 'Stage 1 of 5: ask the seller for a price in $U. Nothing is agreed yet, so no money has moved.'}
         </Txt>
 
         {funded ? (
@@ -360,8 +363,10 @@ export default function Jobs8183HirePanel({
 
 // the job progression meter: one label, one figure, and a six pixel rail whose fill
 // runs from the navy surface into the data green, so the head of the bar is always
-// the colour it is reaching for
-function Meter({ pct }: { pct: number }) {
+// the colour it is reaching for. the fill never teleports: while the price is being
+// fetched it crawls toward the stop it waits on, lands with the quote, and falls
+// back when the answer is no
+function Meter({ pct, pending }: { pct: number; pending: boolean }) {
   return (
     <Stack gap={8}>
       <Row justify="between" align="center">
@@ -370,17 +375,19 @@ function Meter({ pct }: { pct: number }) {
       </Row>
       <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-souk-hair">
         <div
-          className="meter-fill relative h-full rounded-[3px]"
+          className={`meter-fill relative h-full rounded-[3px] transition-[width] ease-out motion-reduce:transition-none ${pending ? 'duration-[2200ms]' : 'duration-700'}`}
           style={{
-            width: `${Math.max(pct, 2)}%`,
+            width: `${pending ? 19 : Math.max(pct, 2)}%`,
             minWidth: 6,
             backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #44b48b 100%)',
           }}
         >
-          <span
-            aria-hidden="true"
-            className="meter-shimmer absolute inset-y-0 left-0 w-[30%] rounded-[3px] bg-gradient-to-r from-transparent via-white/[0.42] to-transparent"
-          />
+          {pending ? (
+            <span
+              aria-hidden="true"
+              className="meter-shimmer absolute inset-y-0 left-0 w-[30%] rounded-[3px] bg-gradient-to-r from-transparent via-white/[0.42] to-transparent"
+            />
+          ) : null}
         </div>
       </div>
     </Stack>
