@@ -223,7 +223,7 @@ export function SellerStallsPage() {
 
   return (
     <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
-      <Stack gap={10} className="max-w-[1180px]">
+      <Stack gap={10} className="max-w-[1180px] xl:max-w-[min(1180px,calc(100%_-_460px))]">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>

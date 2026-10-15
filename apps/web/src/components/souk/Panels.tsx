@@ -78,8 +78,9 @@ export function NoteBox({
             lead={18}
             mono={r.mono}
             tone={r.tone ?? 'slate'}
-            // a value wider than its label wraps, and the design hands it a width
-            className={r.width ? 'max-w-full text-right' : undefined}
+            // a value wider than its label wraps, and the design hands it a width;
+            // break-all lets an unbreakable token (a url) wrap inside that width
+            className={r.width ? 'max-w-full break-all text-right' : undefined}
           >
             {r.value}
           </Txt>

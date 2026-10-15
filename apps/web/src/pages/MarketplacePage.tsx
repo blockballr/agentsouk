@@ -173,7 +173,7 @@ export function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
-      <div className="px-8 pb-16">
+      <div className="px-8 pb-[240px] xl:pb-16">
         {/* the hero band keeps its own top padding and carries the lower half of the
             rhythm, so the shelf opens right under the bar and still breathes below */}
         <Section pad="pt-11 pb-16 md:pb-18">

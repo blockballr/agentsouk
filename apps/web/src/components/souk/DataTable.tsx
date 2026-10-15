@@ -13,6 +13,9 @@ export interface CellSpec {
   weight?: Weight;
   tone?: Tone;
   mono?: boolean;
+  // a long unbreakable value (a hex address) needs to wrap inside its column
+  // rather than force the table wider than the design's colgroup
+  className?: string;
 }
 
 export interface TableRowSpec {
@@ -67,6 +70,7 @@ export function DataTable({
                   weight={c.weight ?? 'regular'}
                   tone={c.tone ?? 'steel'}
                   mono={c.mono}
+                  className={c.className}
                 >
                   {c.text}
                 </Txt>

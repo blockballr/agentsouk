@@ -121,7 +121,7 @@ export function HomePage() {
     : null
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-4 lg:px-8 pb-14 pt-11 text-souk-ink">
+    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-14">
       <section>
         <motion.p
           className="font-mono text-[11px] uppercase leading-[16px] text-souk-data"
