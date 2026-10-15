@@ -75,6 +75,10 @@ export default function Jobs8183HirePanel({
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
   const [lines, setLines] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
+  // a refusal asking again cannot undo stops the card from offering the ask; the
+  // text it failed on decides when the button comes back
+  const [failure, setFailure] = useState<'transient' | 'definitive' | null>(null)
+  const [asked, setAsked] = useState('')
 
   async function onQuote() {
     setError(null)
@@ -84,11 +88,15 @@ export default function Jobs8183HirePanel({
     if (!client) return setLines((l) => [...l, 'Connect the wallet first.'])
     setAccount(client)
     setPhase({ kind: 'quoting' })
-    const result = await getJobs8183Quote({ tokenId, task, client, chainId })
+    const text = task
+    const result = await getJobs8183Quote({ tokenId, task: text, client, chainId })
     if (!result.ok) {
       setPhase({ kind: 'failed' })
+      setFailure(result.transient ? 'transient' : 'definitive')
+      if (!result.transient) setAsked(text)
       return setError(result.error)
     }
+    setFailure(null)
     setStack(result.stack)
     setQuote(result.quote)
     setPhase({ kind: 'quoted' })
@@ -154,6 +162,7 @@ export default function Jobs8183HirePanel({
   const priceLabel = quote ? formatUnits(BigInt(quote.price), 18) : null
   const funded = phase.kind === 'funded'
   const holds = quote ? new Date(quote.validUntil * 1000).toLocaleTimeString() : null
+  const blocked = phase.kind === 'failed' && failure === 'definitive' && task === asked
 
   const jobBody = (
     <Stack gap={14}>
@@ -166,7 +175,7 @@ export default function Jobs8183HirePanel({
           <>
             <Row justify="between" align="center">
               <Txt size={18} lead={27} weight="bold" tone="ink">
-                {funded ? 'Your funded job' : 'Hire this job'}
+                {funded ? 'Your funded job' : 'Fund job'}
               </Txt>
               <Pill variant="keep">{funded ? 'funded' : 'erc-8183'}</Pill>
             </Row>
@@ -262,34 +271,38 @@ export default function Jobs8183HirePanel({
           </Txt>
         ) : null}
 
-        <Stack gap={12}>
-          <Btn
-            kind="primary"
-            className="w-full"
-            onClick={() => (phase.kind === 'quoted' && quote ? onFund() : onQuote())}
-            disabled={funded || phase.kind === 'quoting' || phase.kind === 'funding' || task.trim().length === 0}
-          >
-            {funded
-              ? 'The job is funded'
-              : phase.kind === 'quoting'
-                ? 'Getting the price..'
-                : phase.kind === 'quoted'
-                  ? 'Fund this job'
-                  : phase.kind === 'funding'
-                    ? `Signing ${phase.done} of 5..`
-                    : 'Get the price'}
-          </Btn>
-          <Txt size={12} lead={18} tone="muted">
-            {funded
-              ? 'Delivery is attested by the seller and settles to its own wallet.'
-              : 'The quote is signed by the wallet that registered this listing and holds for 10 minutes.'}
+        {/* a definitive refusal says what it means for the card, and the reason
+            above stays the seller's or the guard's own words */}
+        {error && phase.kind === 'failed' && failure === 'definitive' ? (
+          <Txt size={13} lead={20} tone="slate">
+            No signed price came back, so this card cannot fund a job.
           </Txt>
-        </Stack>
+        ) : null}
 
-        {error && phase.kind === 'failed' ? (
-          <Btn kind="off" className="w-fit" onClick={() => setPhase({ kind: 'idle' })}>
-            Try again
-          </Btn>
+        {!blocked ? (
+          <Stack gap={12}>
+            <Btn
+              kind="primary"
+              className="w-full"
+              onClick={() => (phase.kind === 'quoted' && quote ? onFund() : onQuote())}
+              disabled={funded || phase.kind === 'quoting' || phase.kind === 'funding' || task.trim().length === 0}
+            >
+              {funded
+                ? 'The job is funded'
+                : phase.kind === 'quoting'
+                  ? 'Getting the price..'
+                  : phase.kind === 'quoted'
+                    ? 'Fund this job'
+                    : phase.kind === 'funding'
+                      ? `Signing ${phase.done} of 5..`
+                      : 'Get the price'}
+            </Btn>
+            <Txt size={12} lead={18} tone="muted">
+              {funded
+                ? 'Delivery is attested by the seller and settles to its own wallet.'
+                : 'The quote is signed by the wallet that registered this listing and holds for 10 minutes.'}
+            </Txt>
+          </Stack>
         ) : null}
 
         {quote?.currency ? (
