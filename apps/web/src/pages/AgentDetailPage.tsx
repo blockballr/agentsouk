@@ -16,11 +16,11 @@ import {
   takesJobs,
   sellsByJob,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getOngoing, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
-import { escrowLifecycle } from '../lib/hire-state'
+import { escrowLifecycle, hireItems, hireState, type HireItem } from '../lib/hire-state'
 import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
 import { Tag } from '../components/Tag'
@@ -276,6 +276,31 @@ export function AgentDetailPage() {
   useEffect(() => {
     if (viewer !== null) setViewerKnown(true)
   }, [viewer])
+  // this agent's own trail for the viewer, ended failures included, so a failed
+  // job reads as a state on the page instead of nothing at all
+  const [agentItems, setAgentItems] = useState<HireItem[] | null>(null)
+  useEffect(() => {
+    if (!viewer) {
+      setAgentItems(null)
+      return
+    }
+    let cancelled = false
+    getOngoing(viewer)
+      .then((bundle) => {
+        if (cancelled) return
+        setAgentItems(
+          hireItems(bundle).filter(
+            (i) => i.chainId === Number(chainId) && i.tokenId === tokenId,
+          ),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setAgentItems(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [viewer, chainId, tokenId])
 
   useEffect(() => {
     let cancelled = false
@@ -596,6 +621,40 @@ export function AgentDetailPage() {
               </SoukRow>
             </div>
           </header>
+
+        {/* the viewer's own trail with this agent, ended failures included: the
+            page used to show only a live session, so a job that failed read as
+            nothing at all. the state lives here; its money moves on /ongoing */}
+        {viewer && agentItems && agentItems.length > 0 ? (
+          <div className="mt-5">
+            <Stack surface pad={[16, 20, 16, 20]} gap={8}>
+              <SoukRow justify="between" align="center" gap={12} className="flex-wrap">
+                <Txt size={15} lead={22} weight="bold" tone="ink">
+                  Your hires with this agent
+                </Txt>
+                <Action to="/ongoing" variant="quiet" size="sm">
+                  Open in your ongoing ledger
+                </Action>
+              </SoukRow>
+              {agentItems.map((it) => (
+                <SoukRow key={it.key} justify="between" align="center" gap={12} className="flex-wrap">
+                  <SoukRow align="center" gap={8} className="min-w-0">
+                    <Txt size={12} lead={18} mono tone="muted">
+                      {`task ${shortAddress(it.key)}`}
+                    </Txt>
+                    <Pill variant={it.live ? 'keep' : 'off'}>{hireState(it).label}</Pill>
+                  </SoukRow>
+                  <SoukRow align="center" gap={12}>
+                    <Txt size={12} lead={18} mono tone="data">
+                      {`$${(it.session?.spendCapUsd ?? it.job?.budgetUsd ?? 0).toFixed(2)}`}
+                    </Txt>
+                    <Txt size={12} lead={18} mono tone="muted">{timeAgo(it.at)}</Txt>
+                  </SoukRow>
+                </SoukRow>
+              ))}
+            </Stack>
+          </div>
+        ) : null}
         </div>
 
         <aside
