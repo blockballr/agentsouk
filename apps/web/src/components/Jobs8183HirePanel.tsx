@@ -14,7 +14,7 @@ import {
   type NegotiationQuoteView,
 } from '../lib/jobs8183'
 import { getJobs8183Quote, recordJobs8183Job } from '../lib/api'
-import { chainIdToHex, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
+import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { explorerAddressUrl } from '../lib/contracts'
 import { Btn, Pill, Row, Stack, Txt } from './souk'
@@ -84,8 +84,16 @@ export default function Jobs8183HirePanel({
     setError(null)
     setQuote(null)
     setStack(null)
-    const client = (await getActiveAccount().catch(() => null)) as string | null
-    if (!client) return setLines((l) => [...l, 'Connect the wallet first.'])
+    let client = (await getActiveAccount().catch(() => null)) as string | null
+    // a press without a wallet opens the connection instead of stacking an error line
+    if (!client) {
+      try {
+        client = await connectWallet()
+      } catch {
+        setError('Connect the wallet first.')
+        return
+      }
+    }
     setAccount(client)
     setPhase({ kind: 'quoting' })
     const text = task
