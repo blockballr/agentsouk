@@ -438,7 +438,15 @@ export function OngoingPage() {
                     {it.task?.history && it.task.history.length > 0 ? (
                       <OpenTaskCard item={it} at={stopIndexFor(it)} />
                     ) : null}
-                    {it.escrow ? <EscrowFacts escrow={it.escrow} item={it} /> : null}
+                    {it.escrow ? (
+                      <EscrowFacts
+                        escrow={it.escrow}
+                        item={it}
+                        onReject={onJobReject}
+                        busy={jobBusy === (it.job?.id ?? '')}
+                        canAct={Boolean(account) && Boolean(it.escrow.buyer) && account?.toLowerCase() === it.escrow.buyer.toLowerCase()}
+                      />
+                    ) : null}
                   </Fragment>
                 ))}
               </div>
@@ -906,10 +914,26 @@ function OpenTaskCard({ item, at }: { item: HireItem; at: number }) {
 
 // the escrow's own facts, read from the payment rather than from the job, since
 // the money can outlive a finished job
-function EscrowFacts({ escrow, item }: { escrow: EscrowStatus; item: HireItem }) {
+function EscrowFacts({
+  escrow,
+  item,
+  onReject,
+  busy,
+  canAct,
+}: {
+  escrow: EscrowStatus
+  item: HireItem
+  onReject?: (item: HireItem) => void
+  busy?: boolean
+  canAct?: boolean
+}) {
   const held = escrow.status === 0
   const released = escrow.verifiedAt > 0
   const amount = item.job ? `$${item.job.budgetUsd.toFixed(2)}` : 'not priced'
+  // the honest way out of escrowed money, read the same way the page's own reject
+  // reads it: refund before anything was verified, a dispute inside the window
+  // after, and a plain refusal the chain agrees with
+  const move = escrowRejectMove(escrow)
   const rows: { label: string; value: string; tone: 'ink' | 'data' | 'muted' | 'slate' }[] = [
     { label: 'Quoted', value: amount, tone: 'ink' },
     { label: 'Funded', value: held ? amount : released ? amount : 'nothing yet', tone: held || released ? 'data' : 'muted' },
@@ -939,6 +963,28 @@ function EscrowFacts({ escrow, item }: { escrow: EscrowStatus; item: HireItem })
       <Txt size={12} lead={18} tone="steel" className="mt-[10px]">
         A revoke is unconditional. It is the buyer's own money out, and it is not gated on the timeout.
       </Txt>
+      {onReject ? (
+        <div className="mt-[10px] flex flex-wrap items-center gap-2">
+          <Btn
+            kind="off"
+            disabled={busy || !canAct || move.kind === 'plain' || move.kind === 'refuse'}
+            onClick={() => onReject(item)}
+          >
+            {busy ? 'Waiting for your wallet' : move.kind === 'reject' ? 'Dispute this delivery' : 'Take the money back'}
+          </Btn>
+          {!canAct ? (
+            <Txt size={11} lead={16} tone="muted">Only the wallet that paid can move it.</Txt>
+          ) : move.kind === 'refuse' ? (
+            <Txt size={11} lead={16} tone="muted" className="min-w-0 flex-1">{move.reason}</Txt>
+          ) : (
+            <Txt size={11} lead={16} tone="muted" className="min-w-0 flex-1">
+              {move.kind === 'reject'
+                ? 'Inside the dispute window: the money comes back before the record changes.'
+                : 'Nothing was verified against this payment, so the whole deposit comes back.'}
+            </Txt>
+          )}
+        </div>
+      ) : null}
     </article>
   )
 }
