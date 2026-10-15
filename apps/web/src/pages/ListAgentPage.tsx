@@ -182,21 +182,26 @@ export function ListAgentPage() {
       </Stack>
       {!started ? null : (
         <>
-          {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB */}
-          <NoteBox title="Listing for Set and Earn?" className="mt-6 max-w-[768px]">
-            <Txt size={12} lead={18} tone="steel">
+          {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB.
+              the quest card's own indigo surface: white-family copy and white-alpha lines, so it
+              reads the same on paper */}
+          <Stack bg="indigo" radius={20} pad={[14, 22, 14, 22]} gap={4} className="mt-6 max-w-[768px] border border-white/15">
+            <Txt size={13} lead={20} weight="bold" tone="white">
+              Listing for Set and Earn?
+            </Txt>
+            <Txt size={12} lead={18} tone="white" className="opacity-75">
               Register your wallet with{' '}
               <a
                 href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
                 target="_blank"
                 rel="noreferrer"
-                className="underline decoration-souk-hair underline-offset-4 hover:text-souk-ink"
+                className="underline decoration-white/30 underline-offset-4 hover:text-white hover:opacity-100"
               >
-                <Txt size={12} lead={18} tone="ink">BNB Smart Chain Set and Earn Campaign</Txt>
+                BNB Smart Chain Set and Earn Campaign
               </a>
               .
             </Txt>
-          </NoteBox>
+          </Stack>
           {/* while the form is untouched the guide sits where the visitor lands; once the wizard
               moves, it follows the wizard */}
           {guide && wizardStep === 'form' && (
@@ -259,23 +264,33 @@ export function ListAgentPage() {
 }
 
 // the wizard's own loop, drawn at rest: each line waits its turn and claims no
-// outcome until the wizard running above fills the real ones in
+// outcome until the wizard running above fills the real ones in. carried on the
+// quest card's indigo so the running loop below reads as its filled-in self
 function LoopCard() {
   return (
-    <Stack surface gap={12} pad={[20, 22, 20, 22]}>
-      <SectionHead title="The verification loop" note="7 CHECKS, IN ORDER" />
+    <Stack bg="indigo" radius={20} pad={[20, 22, 20, 22]} gap={12} className="border border-white/15">
+      {/* the head is drawn in the on-indigo tones by hand: SectionHead's own tones
+          are canvas-side and would invert on the indigo surface */}
+      <Row justify="between" align="center" gap={12} className="flex-wrap">
+        <Txt size={18} lead={27} weight="bold" tone="white">
+          The verification loop
+        </Txt>
+        <Txt size={10} lead={12} weight="bold" upper tone="indigo-labels" mono>
+          7 checks, in order
+        </Txt>
+      </Row>
       {LOOP_STEPS.map((title, i) => {
         const last = i === LOOP_STEPS.length - 1
         return (
           <Row key={title} gap={10} align="start">
-            <Txt size={11} lead={18} mono tone="muted">{String(i + 1).padStart(2, '0')}</Txt>
+            <Txt size={11} lead={18} mono tone="indigo-labels">{String(i + 1).padStart(2, '0')}</Txt>
             <Stack gap={6}>
               <Row gap={8} align="center">
-                <Txt size={13} lead={18} tone="ink">{title}</Txt>
+                <Txt size={13} lead={18} tone="white">{title}</Txt>
                 <Pill variant="off">Waiting</Pill>
               </Row>
               {last && (
-                <Txt size={11} lead={16} tone="muted" className="block max-w-[440px]">
+                <Txt size={11} lead={16} tone="indigo-labels" className="block max-w-[440px]">
                   {LOOP_NOTE}
                 </Txt>
               )}
