@@ -27,7 +27,8 @@ import {
 import { StopRail } from '../components/Jobs8183HirePanel'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
 import { hireErrorText } from '../lib/hire'
-import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
+import { chainIdToHex, connectWallet, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
+import { useActiveAccount } from '../lib/use-active-account'
 import { encodeFunctionData, keccak256, toBytes } from 'viem'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { ratedHires } from '../lib/rating'
@@ -81,7 +82,9 @@ function stopIndexFor(item: HireItem): number {
 }
 
 export function OngoingPage() {
-  const [account, setAccount] = useState<string | null>(null)
+  // the buyer's wallet, watched so a switch inside the wallet re-reads the board
+  // and the escrows that wallet holds
+  const account = useActiveAccount()
   const [connecting, setConnecting] = useState(false)
   const [data, setData] = useState<OngoingBundle | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -94,10 +97,6 @@ export function OngoingPage() {
   const [escrowBusyId, setEscrowBusyId] = useState<string | null>(null)
   const [kernelJobs, setKernelJobs] = useState<Jobs8183Row[]>([])
   const inFlight = useRef(false)
-
-  useEffect(() => {
-    void getActiveAccount().then((a) => setAccount(a))
-  }, [])
 
   // kernel jobs are a slower loop: the escrow holds days, so one read per
   // connect plus one after each load is plenty
@@ -197,8 +196,7 @@ export function OngoingPage() {
   async function onConnect() {
     setConnecting(true)
     try {
-      const addr = await connectWallet()
-      setAccount(addr)
+      await connectWallet()
     } catch (e) {
       setError(hireErrorText(e))
     } finally {

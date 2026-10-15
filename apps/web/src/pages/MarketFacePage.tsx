@@ -8,7 +8,8 @@ import {
 } from '../lib/api'
 import { chainLabel } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
-import { connectWallet, getActiveAccount } from '../lib/wallet'
+import { connectWallet } from '../lib/wallet'
+import { useActiveAccount } from '../lib/use-active-account'
 import { Btn, Dot, Pill, Row, Rule, Stack, Txt, type DotTone } from '../components/souk'
 
 type HiresSource = 'postgres' | 'memory' | null
@@ -96,7 +97,8 @@ function hireTone(h: PayeeHire): DotTone {
 }
 
 export function MarketFacePage() {
-  const [account, setAccount] = useState<string | null>(null)
+  // the connected wallet, watched: a switch inside the wallet re-points the page
+  const account = useActiveAccount()
   const [connecting, setConnecting] = useState(false)
   const [loading, setLoading] = useState(false)
   const [hires, setHires] = useState<PayeeHire[] | null>(null)
@@ -104,10 +106,6 @@ export function MarketFacePage() {
   const [hiresError, setHiresError] = useState<string | null>(null)
   const [feed, setFeed] = useState<NotificationRow[] | null>(null)
   const [feedError, setFeedError] = useState(false)
-
-  useEffect(() => {
-    void getActiveAccount().then(setAccount)
-  }, [])
 
   const load = useCallback(async () => {
     if (!account) {
@@ -145,7 +143,7 @@ export function MarketFacePage() {
   async function onConnect() {
     setConnecting(true)
     try {
-      setAccount(await connectWallet())
+      void connectWallet()
     } catch (e) {
       setHiresError(hireErrorText(e))
     } finally {

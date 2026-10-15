@@ -15,7 +15,8 @@ import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { checkMarks, checkSummary, countByDay, getCheckHistory, type CheckRecord } from '../lib/history'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
-import { changeWallet, connectWallet, getActiveAccount } from '../lib/wallet'
+import { changeWallet, connectWallet } from '../lib/wallet'
+import { useActiveAccount } from '../lib/use-active-account'
 import {
   AgentAvatar,
   Btn,
@@ -91,7 +92,8 @@ function receivedLabel(received: number, source: HiresSource): string {
 }
 
 export function ProfilePage() {
-  const [account, setAccount] = useState<string | null>(null)
+  // the profile's wallet, watched so a switch inside the wallet re-reads the board
+  const account = useActiveAccount()
   const [connecting, setConnecting] = useState(false)
   const [owned, setOwned] = useState<OwnedAgentsResult | null>(null)
   const [hires, setHires] = useState<PayeeHire[] | null>(null)
@@ -101,10 +103,6 @@ export function ProfilePage() {
   const [hiresError, setHiresError] = useState<string | null>(null)
   // each listing's recent checks, for its strip; null until read, and left null if it cannot be
   const [checks, setChecks] = useState<Record<string, CheckRecord[]> | null>(null)
-
-  useEffect(() => {
-    void getActiveAccount().then(setAccount)
-  }, [])
 
   const load = useCallback(async () => {
     if (!account) {
@@ -149,9 +147,9 @@ export function ProfilePage() {
   async function onChangeWallet() {
     setConnecting(true)
     try {
-      const addr = await changeWallet()
-      // a dismissed picker has already dropped the old choice, so show what is connected now
-      setAccount(addr ?? (await getActiveAccount()))
+      await changeWallet()
+      // a dismissed picker has already dropped the old choice, so the watched
+      // account shows what is connected now
     } catch (e) {
       setError(hireErrorText(e))
     } finally {
@@ -162,8 +160,7 @@ export function ProfilePage() {
   async function onConnect() {
     setConnecting(true)
     try {
-      const addr = await connectWallet()
-      setAccount(addr)
+      await connectWallet()
     } catch (e) {
       setError(hireErrorText(e))
     } finally {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getNotifications, markNotificationsRead, type NotificationRow } from '../lib/api'
-import { getActiveAccount } from '../lib/wallet'
+import { useActiveAccount } from '../lib/use-active-account'
 import { timeAgo } from '@agora/core'
 import { IconBell } from './souk'
 
@@ -12,12 +12,8 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [rows, setRows] = useState<NotificationRow[]>([])
   const [unread, setUnread] = useState(0)
-  const [wallet, setWallet] = useState<string | null>(null)
+  const wallet = useActiveAccount()
   const box = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    void getActiveAccount().then(setWallet)
-  }, [])
 
   useEffect(() => {
     if (!wallet) {
