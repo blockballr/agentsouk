@@ -14,13 +14,14 @@ export type { KpiSpec, NoteRow } from './Panels';
 export { DataTable } from './DataTable';
 export type { CellSpec, TableRowSpec } from './DataTable';
 export {
-  LogoMark,
+  SoukMark,
   AgentAvatar,
   initialsFor,
   IconSearch,
   IconBell,
   IconCart,
   IconMonitor,
+  IconChevron,
   IconTrophy,
 } from './Marks';
 export { TONE, EDGE, HAIR, METAL_BAND, R } from './tokens';

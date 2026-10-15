@@ -9,7 +9,7 @@ import { cartCount, subscribe } from '../lib/cart'
 import { connectWallet, disconnectWallet, getActiveAccount } from '../lib/wallet'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
-import { Dot, IconCart, LogoMark, Row, Rule, Stack, Txt } from './souk'
+import { Dot, IconCart, SoukMark, Row, Rule, Stack, Txt } from './souk'
 
 const links = [
   { to: '/agents', label: 'Marketplace' },
@@ -50,7 +50,7 @@ export function Nav() {
   }, [])
   return (
     <header className="relative z-10 border-b border-souk-hair bg-souk-canvas">
-      <div className="mx-auto flex h-[62px] items-center justify-between px-8">
+      <div className="mx-auto flex h-[62px] items-center justify-between px-4 lg:px-8">
         {/* left: the wordmark and the section links, the design's first cluster */}
         <div className="flex items-center gap-[44px]">
           <Wordmark />
@@ -99,7 +99,7 @@ export function Nav() {
 
       {menuOpen && (
         <div className="border-b border-souk-hair bg-souk-canvas lg:hidden">
-          <nav aria-label="Mobile" className="mx-auto flex flex-col gap-1 px-8 py-4">
+          <nav aria-label="Mobile" className="mx-auto flex flex-col gap-1 px-4 lg:px-8 py-4">
             {links.map((l) => (
               <NavLink
                 key={l.to}
@@ -270,7 +270,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
         onClick={() => (wallet ? setOpen((v) => !v) : onConnect())}
         className={wallet ? profileClass : `${profileClass} pr-4`}
       >
-        {wallet ? <LogoMark size={28} /> : null}
+        {wallet ? <SoukMark size={28} /> : null}
         <Txt size={12} lead={18} mono tone="ink">
           {wallet ? shortAddress(wallet) : 'Connect Wallet'}
         </Txt>
@@ -286,7 +286,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
           className="absolute right-0 top-full z-50 mt-2 w-[300px] shadow-lg"
         >
           <Row align="center" pad={[0, 8, 8, 8]} gap={10}>
-            <LogoMark size={30} />
+            <SoukMark size={30} />
             <Stack gap={2}>
               <Txt size={12} lead={18} mono tone="ink">
                 {wallet ? shortAddress(wallet) : 'Not connected'}

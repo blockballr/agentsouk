@@ -450,14 +450,14 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
       <div
         className={`metal rounded-[14px] border hairline p-8 ${
           refused
-            ? 'border-slate-verdant/60 bg-bone-white'
-            : 'border-highlighter-green/50 bg-highlighter-green/5'
+            ? 'border-souk-hair bg-souk-surface2'
+            : 'border-souk-data bg-souk-data/10'
         }`}
       >
         <h3 className="font-serif text-2xl font-medium">
           {refused ? 'Registered, but not on the shelf' : 'Your agent is registered'}
         </h3>
-        <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
+        <p className="mt-3 text-sm leading-relaxed text-souk-muted">
           {refused ? (
             `The registry confirms the registration, so the token is yours and the transaction below is real. The shelf declined to carry it: ${
               result.listingReason ?? 'it did not pass the shelf gate'
@@ -473,17 +473,17 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
         )}
         <dl className="mt-5 space-y-3 text-sm">
           <div>
-            <dt className="micro text-newsprint-gray">Agent id</dt>
-            <dd className="mt-1 font-mono text-xs text-press-black">{result.agentId}</dd>
+            <dt className="micro text-souk-muted">Agent id</dt>
+            <dd className="mt-1 font-mono text-xs text-souk-ink">{result.agentId}</dd>
           </div>
           <div>
-            <dt className="micro text-newsprint-gray">Registration</dt>
+            <dt className="micro text-souk-muted">Registration</dt>
             <dd className="mt-1 break-all font-mono text-xs">
               <a
                 href={`${explorerTxBase(displayChain)}/tx/${result.txHash}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-press-black hover:text-highlighter-green"
+                className="text-souk-ink hover:text-souk-data"
               >
                 {result.txHash}
               </a>
@@ -502,7 +502,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
         >
           Open your listings
         </Link>
-        <p className="mt-4 text-sm leading-relaxed text-newsprint-gray">
+        <p className="mt-4 text-sm leading-relaxed text-souk-muted">
           {refused
             ? 'Your profile lists every agent this wallet owns and whether it is live, so this one shows there as registered while it stays off the shelf. The reason above is the whole story: if it names the endpoint, fixing the endpoint is what lets the next catalogue pull shelve it. If it does not show there, send us the agent id above.'
             : 'Your profile lists every agent this wallet owns, whether it is live, and who hired it. That page reads the agent from the registry, so it is the place to watch as the index catches up. If the agent declares no endpoint, or one that does not answer publicly, it will not be shelved; a browser-invoked listing appears, but is not callable by the marketplace. If it does not show there, send us the agent id above.'}
@@ -514,7 +514,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
   return (
     <div className={card('plain', 'lg')}>
       <h3 className="font-serif text-2xl font-medium">Register your agent</h3>
-      <p className="mt-3 text-sm leading-relaxed text-newsprint-gray">
+      <p className="mt-3 text-sm leading-relaxed text-souk-muted">
         Describe the agent, then send the ERC-8004 registration from your own wallet. You pay the
         gas for that one transaction, and nothing is charged by us. Registration is on{' '}
         {chainLabel(displayChain)}.
@@ -522,24 +522,24 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
 
       <div className="mt-6 space-y-4">
         <label className="block">
-          <span className="micro text-newsprint-gray">Name</span>
+          <span className="micro text-souk-muted">Name</span>
           <input
             value={draft.name}
             onChange={(e) => set('name', e.target.value)}
             disabled={busy || step !== 'form'}
-            className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black disabled:opacity-60"
+            className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
             placeholder="Venus Yield Router"
           />
         </label>
 
         <label className="block">
-          <span className="micro text-newsprint-gray">What it does</span>
+          <span className="micro text-souk-muted">What it does</span>
           <textarea
             value={draft.description}
             onChange={(e) => set('description', e.target.value)}
             disabled={busy || step !== 'form'}
             rows={4}
-            className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black disabled:opacity-60"
+            className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
             placeholder="What it does, and how a buyer invokes it."
           />
         </label>
@@ -547,9 +547,9 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
         {/* the category select below files the shelf; this text is what search,
             relevance and buyers read, so a description that names the capability
             does real work for the lister either way */}
-        <div className="rounded-[10px] border hairline border-slate-verdant/40 p-4">
-          <p className="micro text-newsprint-gray">What a description has to say</p>
-          <p className="mt-2 text-xs leading-relaxed text-newsprint-gray">
+        <div className="rounded-[10px] border hairline border-souk-hair p-4">
+          <p className="micro text-souk-muted">What a description has to say</p>
+          <p className="mt-2 text-xs leading-relaxed text-souk-muted">
             The shelf files your agent under the category you pick below. Search,
             relevance and buyers read these words instead, so name the capability in
             plain words from that category&apos;s own vocabulary ({
@@ -557,7 +557,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
             }), say what the caller supplies, say what comes back, and say what the
             agent does not do, so nobody expects a live price feed from arithmetic.
           </p>
-          <p className="mt-3 text-xs leading-relaxed text-press-black">
+          <p className="mt-3 text-xs leading-relaxed text-souk-ink">
             Worked example for a health factor agent: computes the health factor and
             liquidation distance of a lending position from the collateral value and debt
             value the caller supplies, with an optional liquidation threshold. The
@@ -576,12 +576,12 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="micro text-newsprint-gray">Category</span>
+            <span className="micro text-souk-muted">Category</span>
             <select
               value={draft.category}
               onChange={(e) => set('category', e.target.value as RegistrationDraft['category'])}
               disabled={busy || step !== 'form'}
-              className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black disabled:opacity-60"
+              className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
             >
               {CATEGORY_OPTIONS.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -592,7 +592,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
           </label>
 
           <label className="block">
-            <span className="micro text-newsprint-gray">How it is invoked</span>
+            <span className="micro text-souk-muted">How it is invoked</span>
             <select
               value={draft.endpointKind}
               onChange={(e) => {
@@ -600,7 +600,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
                 setProbe(null)
               }}
               disabled={busy || step !== 'form'}
-              className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 text-base sm:text-sm text-press-black disabled:opacity-60"
+              className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
             >
               <option value="A2A">A2A</option>
               <option value="MCP">MCP</option>
@@ -610,7 +610,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
         </div>
 
         <label className="block">
-          <span className="micro text-newsprint-gray">Endpoint</span>
+          <span className="micro text-souk-muted">Endpoint</span>
           <input
             value={draft.endpoint}
             onChange={(e) => {
@@ -618,10 +618,10 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
               setProbe(null)
             }}
             disabled={busy || step !== 'form'}
-            className="mt-1 w-full rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-base sm:text-xs text-press-black disabled:opacity-60"
+            className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-xs text-souk-ink disabled:opacity-60"
             placeholder="https://your-agent.example/.well-known/agent-card.json"
           />
-          <span className="mt-1 block text-xs text-newsprint-gray">
+          <span className="mt-1 block text-xs text-souk-muted">
             A reachable https URL. An agent nobody can call is not a listing.
           </span>
         </label>
@@ -629,9 +629,9 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
 
       {/* the pre-flight card is the idle form; once the loop runs, the stepped panel replaces it */}
       {step === 'form' && checks === null && (
-        <div className="mt-5 rounded-[10px] border hairline border-slate-verdant/40 p-4">
-          <p className="micro text-newsprint-gray">Before you spend gas</p>
-          <p className="mt-2 text-xs leading-relaxed text-newsprint-gray">
+        <div className="mt-5 rounded-[10px] border hairline border-souk-hair p-4">
+          <p className="micro text-souk-muted">Before you spend gas</p>
+          <p className="mt-2 text-xs leading-relaxed text-souk-muted">
             A registration can succeed on-chain and still sit unseen. Two things decide it: the endpoint must answer, and the description must say plainly what the agent does.
           </p>
 
@@ -648,7 +648,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
                 >
                   {probing ? 'Asking the endpoint' : 'Test the endpoint'}
                 </button>
-                <span className="text-xs leading-relaxed text-newsprint-gray">
+                <span className="text-xs leading-relaxed text-souk-muted">
                   The request comes from your browser, never from our servers.
                 </span>
               </div>
@@ -657,7 +657,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
           )}
 
           {draft.endpointKind === 'web' && (
-            <div className="mt-3 rounded-[8px] border border-press-black/20 bg-bone-white p-3 text-xs leading-relaxed text-press-black">
+            <div className="mt-3 rounded-[8px] border border-press-black/20 bg-souk-surface2 p-3 text-xs leading-relaxed text-souk-ink">
               <p className="micro">Web listings appear, but the marketplace cannot call them</p>
               <p className="mt-1">
                 A browser-invoked agent is listed, but the marketplace cannot call it, so a hire records the payment and nothing is delivered. Pick A2A or MCP if your agent speaks either.
@@ -676,7 +676,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
       )}
 
       {errors.length > 0 && (
-        <ul className="mt-4 space-y-1 rounded-[10px] border border-press-black/20 bg-bone-white p-4 text-xs text-press-black">
+        <ul className="mt-4 space-y-1 rounded-[10px] border border-press-black/20 bg-souk-surface2 p-4 text-xs text-souk-ink">
           {errors.map((e) => (
             <li key={e}>{e}</li>
           ))}
@@ -684,20 +684,20 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
       )}
 
       {message && (
-        <p className="mt-4 rounded-[10px] border border-press-black/20 bg-bone-white p-4 text-xs leading-relaxed text-press-black">
+        <p className="mt-4 rounded-[10px] border border-press-black/20 bg-souk-surface2 p-4 text-xs leading-relaxed text-souk-ink">
           {message}
         </p>
       )}
 
       {prepared && step !== 'form' && (
-        <div className="mt-5 rounded-[10px] border hairline border-slate-verdant/40 p-4">
-          <p className="micro text-newsprint-gray">This will be published at</p>
-          <p className="mt-2 break-all font-mono text-[11px] text-press-black">{prepared.agentUri}</p>
+        <div className="mt-5 rounded-[10px] border hairline border-souk-hair p-4">
+          <p className="micro text-souk-muted">This will be published at</p>
+          <p className="mt-2 break-all font-mono text-[11px] text-souk-ink">{prepared.agentUri}</p>
           <a
             href={prepared.agentUri}
             target="_blank"
             rel="noreferrer"
-            className="micro mt-2 inline-block text-newsprint-gray underline hover:text-press-black"
+            className="micro mt-2 inline-block text-souk-muted underline hover:text-souk-ink"
           >
             Read the document first
           </a>
@@ -736,7 +736,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
           <button
             type="button"
             onClick={() => void changeAndSign()}
-            className="micro mt-3 w-full rounded-[5px] border hairline border-slate-verdant/50 px-6 py-3 text-center text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+            className="micro mt-3 w-full rounded-[8px] border hairline border-souk-hair px-6 py-3 text-center text-souk-muted transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
           >
             Use a different wallet
           </button>
@@ -767,7 +767,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
           <button
             type="button"
             onClick={() => setStep('prepared')}
-            className="micro w-full rounded-[5px] border hairline border-slate-verdant/50 px-6 py-3 text-center text-newsprint-gray transition hover:text-press-black"
+            className="micro w-full rounded-[8px] border hairline border-souk-hair px-6 py-3 text-center text-souk-muted transition hover:text-souk-ink"
           >
             Try again
           </button>
@@ -786,10 +786,10 @@ function EndpointProbeResult({ probe }: { probe: EndpointProbe }) {
         : 'Could not verify'
   const tone =
     probe.state === 'answered'
-      ? 'border-highlighter-green/50 text-press-black'
+      ? 'border-souk-data text-souk-ink'
       : probe.state === 'refused'
-        ? 'border-press-black/30 text-press-black'
-        : 'border-slate-verdant/45 text-newsprint-gray'
+        ? 'border-press-black/30 text-souk-ink'
+        : 'border-souk-hair text-souk-muted'
   return (
     <div
       role="status"
@@ -808,7 +808,7 @@ function CategoryCheck({ draft }: { draft: RegistrationDraft }) {
   const text = `${draft.name} ${draft.description}`.trim()
   if (!text) {
     return (
-      <p className="mt-3 text-xs leading-relaxed text-newsprint-gray">
+      <p className="mt-3 text-xs leading-relaxed text-souk-muted">
         The shelf files this under {shelfTab}. With the name and description still
         empty, search has nothing to match and a buyer reading the page learns
         nothing before hiring.
@@ -818,7 +818,7 @@ function CategoryCheck({ draft }: { draft: RegistrationDraft }) {
   const { category } = classifyAgent(text)
   if (category === 'general') {
     return (
-      <div className="mt-3 rounded-[8px] border border-press-black/20 bg-bone-white p-3 text-xs leading-relaxed text-press-black">
+      <div className="mt-3 rounded-[8px] border border-press-black/20 bg-souk-surface2 p-3 text-xs leading-relaxed text-souk-ink">
         <p className="micro">The description does not name a category</p>
         <p className="mt-1">
           The shelf files this under {shelfTab} either way, but the text reads as
@@ -830,7 +830,7 @@ function CategoryCheck({ draft }: { draft: RegistrationDraft }) {
     )
   }
   return (
-    <p className="mt-3 text-xs leading-relaxed text-newsprint-gray">
+    <p className="mt-3 text-xs leading-relaxed text-souk-muted">
       The shelf files this under {shelfTab}, and the description also reads as{' '}
       {categoryDef(category).label}, so search reaches it both ways.
     </p>

@@ -34,7 +34,7 @@ import {
   Btn,
   Rule,
   Label,
-  LogoMark,
+  SoukMark,
   AgentAvatar,
   type TableRowSpec,
 } from '../components/souk'
@@ -266,7 +266,7 @@ export default function VaultHirePage() {
   )
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 text-souk-ink lg:pb-16">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 text-souk-ink lg:pb-16">
       <Stack gap={10} className="pt-8">
         <Txt size={11} lead={16} mono upper tone="data">
           VAULT HIRE · {CHAIN.label} {CHAIN.id} · VAULT {vault ? short(vault) : 'not configured'}
@@ -493,7 +493,7 @@ export default function VaultHirePage() {
                       </Row>
                       {h.open ? (
                         <Btn
-                          kind="off"
+                          kind="warn"
                           onClick={() => withdrawHire(id)}
                           disabled={busy !== null}
                           className="shrink-0 whitespace-nowrap"
@@ -507,7 +507,7 @@ export default function VaultHirePage() {
               </Stack>
             ) : (
               <Stack pad={[14, 16, 14, 16]} gap={8} radius={14} hair className="items-center">
-                <LogoMark size={30} />
+                <SoukMark size={30} />
                 <Txt size={13} lead={19} weight="semibold" tone="ink">
                   {account
                     ? 'No hires from this wallet on the vault yet.'

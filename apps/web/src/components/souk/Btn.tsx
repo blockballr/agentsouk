@@ -1,31 +1,36 @@
-// The design's button: 44 tall, radius 8, twenty of side padding, and three kinds.
+// The design's button: 44 tall, radius 8, twenty of side padding, and four kinds.
 //
 // primary is the one action on a card, and it is the data colour, not a brand green.
-// keep is a held commitment, the same colour at 40%. off is the resting hairline. A
-// screen carries at most one primary, which is what keeps the hierarchy readable.
+// keep is a held commitment, the same colour at 40%. off is the resting hairline. warn
+// is the destructive one, in the attention colour the design keeps for exactly this,
+// the same peach the disconnect row wears. A screen carries at most one primary, which
+// is what keeps the hierarchy readable.
 
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Txt } from './Txt';
 import type { Tone } from './tokens';
 
-export type BtnKind = 'primary' | 'keep' | 'off';
+export type BtnKind = 'primary' | 'keep' | 'off' | 'warn';
 
 const FILL: Record<BtnKind, string> = {
   primary: 'bg-souk-data',
   keep: 'bg-souk-data/40',
   off: 'bg-souk-surface1',
+  warn: 'bg-souk-surface1',
 };
 
 const RIM: Record<BtnKind, string> = {
   primary: 'border-transparent',
   keep: 'border-transparent',
   off: 'border-souk-hair',
+  warn: 'border-souk-peach/40',
 };
 
 const TEXT: Record<BtnKind, Tone> = {
   primary: 'canvas',
   keep: 'ink',
   off: 'slate',
+  warn: 'peach',
 };
 
 export function Btn({

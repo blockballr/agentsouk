@@ -166,7 +166,7 @@ export function MarketFacePage() {
   const read = hires !== null
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
       <header className="flex max-w-[1180px] flex-col gap-2.5">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}

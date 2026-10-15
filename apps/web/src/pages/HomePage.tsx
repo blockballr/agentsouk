@@ -43,12 +43,20 @@ const steps = [
 
 // Recorded settlement evidence, one slot per chain. The testnet hire below was
 // authorised by our agent-owner wallet, a declared team wallet, and paid a third-party
-// agent's own wallet, so it proves settlement to a wallet we do not control. The mainnet
-// slot stays pending until the cutover produces a real transaction, never a
-// placeholder hash. When a hire whose work was completed exists, it replaces this
-// one, because a settled hire with a delivered result is stronger still.
+// agent's own wallet, so it proves settlement to a wallet we do not control; that row's
+// note says so. The mainnet slot stays pending until a real transaction exists, never a
+// placeholder hash, and the hire it waits for is an escrow hire made through this
+// marketplace by a quest participant. When one lands it replaces the pending row, and the
+// note describes what actually happened.
 const settlementEvidence = [
-  { chainId: 56, txHash: null, agent: null, amount: null, payer: null, note: null },
+  {
+    chainId: 56,
+    txHash: null,
+    agent: null,
+    amount: null,
+    payer: null,
+    note: 'awaiting the first escrow hire through this marketplace, by a quest participant',
+  },
   {
     chainId: 97,
     txHash: '0x6d5c3de6016ed3cf4e5671447e7fa82066396d8a22a131890d3d64ea706d59a6',
@@ -113,7 +121,7 @@ export function HomePage() {
     : null
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-8 pb-14 pt-11 text-souk-ink">
+    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-4 lg:px-8 pb-14 pt-11 text-souk-ink">
       <section>
         <motion.p
           className="font-mono text-[11px] uppercase leading-[16px] text-souk-data"
@@ -291,7 +299,7 @@ export function HomePage() {
 
       <Reveal>
         <section className="py-16 md:py-18">
-          <SectionHead title="We test every listing." note="PROBED, NOT CLAIMED" />
+          <SectionHead title="We test every listing." note="PROBED" />
           <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             We probe every listing&apos;s registered endpoint, an MCP
             handshake or an A2A card call, and badge what comes back.
@@ -333,7 +341,7 @@ export function HomePage() {
       <Reveal>
         <section className="py-16 md:py-18">
           <Stack surface pad={[20, 22, 18, 22]} gap={14}>
-            <SectionHead title="Settlement proof" note="RECORDED, NOT PROMISED" />
+            <SectionHead title="Settlement proof" note="RECORDED" />
             <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: 900 }}>
                 <colgroup>
@@ -396,7 +404,7 @@ export function HomePage() {
                           style={{ padding: '7px 10px 7px 12px', height: 34 }}
                         >
                           <Txt size={12} lead={18} tone={e.agent ? 'ink' : 'muted'}>
-                            {e.agent ?? 'awaiting the first mainnet hire'}
+                            {e.agent ?? 'awaiting the first escrow hire'}
                           </Txt>
                         </td>
                         <td
@@ -424,7 +432,7 @@ export function HomePage() {
             {settlementEvidence.map((e) =>
               e.note ? (
                 <Txt key={e.chainId} size={12} lead={18} tone="muted">
-                  {e.note}
+                  {`${chainLabel(e.chainId)} · chain ${e.chainId}: ${e.note}`}
                 </Txt>
               ) : null,
             )}
