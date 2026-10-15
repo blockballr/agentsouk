@@ -116,6 +116,8 @@ export interface AgentDetail {
   creator_address: string;
   name: string;
   description: string | null;
+  // the shelf's category for this listing, written by the classifier
+  category?: string;
   agent_wallet: string | null;
   x402_supported: boolean;
   image_url: string | null;

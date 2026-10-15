@@ -6,7 +6,13 @@ import { NextRequest, NextResponse } from "next/server";
 // multiple preview origins can be allowed explicitly
 // the site's own origins are always allowed, so a partial WEB_ORIGIN on a
 // deployment cannot cut the site off from its API
-const SITE_ORIGINS = ["https://agentsouk.xyz", "https://www.agentsouk.xyz", "https://agentsouk.pages.dev"];
+const SITE_ORIGINS = [
+  "https://agentsouk.xyz",
+  "https://www.agentsouk.xyz",
+  "https://agentsouk.pages.dev",
+  "https://station.agentsouk.xyz",
+  "https://docs.agentsouk.xyz",
+];
 
 // a branch preview of our own Pages project, such as ui-uplift.agentsouk.pages.dev;
 // only that project can serve names under it, and the anchors refuse lookalikes

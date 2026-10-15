@@ -176,16 +176,16 @@ export function CompareBar({
 function hireLine(i: HireItemState): { text: string; tone: string } {
     switch (i.phase) {
       case 'settled':
-        return { text: `✓ ${i.name} settled`, tone: 'text-highlighter-green' }
+        return { text: `✓ ${i.name} settled`, tone: 'text-souk-data' }
       case 'failed':
-        return { text: `failed ${i.name}: ${i.error ?? 'Something went wrong.'}`, tone: 'text-night-ink' }
+        return { text: `failed ${i.name}: ${i.error ?? 'Something went wrong.'}`, tone: 'text-souk-peach' }
       case 'signing':
       case 'requirements':
-        return { text: `signing ${i.name}...`, tone: 'text-night-muted' }
+        return { text: `signing ${i.name}...`, tone: 'text-souk-slate' }
       case 'settling':
-        return { text: `settling ${i.name}...`, tone: 'text-night-muted' }
+        return { text: `settling ${i.name}...`, tone: 'text-souk-slate' }
       default:
-        return { text: `${i.name} queued`, tone: 'text-night-muted/60' }
+        return { text: `${i.name} queued`, tone: 'text-souk-muted' }
     }
   }
 
@@ -207,10 +207,10 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
               : { opacity: 0, y: 32, scale: 0.96, transition: EXIT_TWEEN }
           }
         >
-          <div className="mx-auto max-w-2xl rounded-[14px] bg-night ring-1 ring-white/10 px-5 py-3.5 text-night-ink shadow-lg sm:px-6">
+          <div className="mx-auto max-w-2xl rounded-[14px] bg-souk-surface1 ring-1 ring-white/10 px-5 py-3.5 text-souk-ink shadow-lg sm:px-6">
             {/* one main action per place: compare from the shortlist, add to cart from the table */}
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-              <span className="micro text-night-muted">
+              <span className="micro font-mono text-souk-steel">
                 {hire
                   ? `${hire.winners.length} of ${count} selected for hire`
                   : `${count} ${count === 1 ? 'agent' : 'agents'} to compare`}
@@ -219,7 +219,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="micro min-h-11 text-night-muted transition hover:text-night-ink focus-visible:outline-2 focus-visible:outline-night-ink sm:min-h-0"
+                  className="micro min-h-11 font-mono text-souk-muted transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-souk-data sm:min-h-0"
                 >
                   Clear
                 </button>
@@ -230,7 +230,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                       onClick={startHire}
                       disabled={running || allSettled || hire.winners.length === 0}
                       title="Sign and pay for each selected agent now, without the cart"
-                      className="micro min-h-11 text-night-muted underline decoration-night-muted/50 underline-offset-4 transition hover:text-night-ink focus-visible:outline-2 focus-visible:outline-night-ink disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0"
+                      className="micro min-h-11 font-mono text-souk-muted underline decoration-souk-steel/50 underline-offset-4 transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-souk-data disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0"
                     >
                       {running ? 'Hiring…' : allSettled ? 'Hired' : 'Hire now'}
                     </button>
@@ -239,7 +239,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                       onClick={() => startAddToCartRefs(hire.winners)}
                       disabled={cartBusy || hire.winners.length === 0}
                       title={hire.winners.length === 0 ? 'Tick Include in hire on an agent in the table' : undefined}
-                      className="gloss micro rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-night-ink disabled:cursor-not-allowed disabled:opacity-40"
+                      className="micro rounded-[8px] bg-souk-data px-5 py-3 text-souk-canvas transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {cartPhase === 'adding'
                         ? 'Adding…'
@@ -258,7 +258,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                     onClick={onCompare}
                     disabled={count < 2}
                     title={count < 2 ? 'Pick one more agent to compare' : undefined}
-                    className="gloss micro rounded-[5px] bg-highlighter-green px-5 py-3 text-on-highlighter shadow-lg transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-night-ink disabled:cursor-not-allowed disabled:opacity-40"
+                    className="micro rounded-[8px] bg-souk-data px-5 py-3 text-souk-canvas transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {count < 2 ? 'Pick one more' : `Compare ${count}`}
                   </button>
@@ -267,7 +267,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
             </div>
             {items.length > 0 && (
               <div className="mt-3 space-y-1.5 border-t border-white/10 pt-3">
-                {batchError && <p className="micro font-mono text-night-ink">{batchError}</p>}
+                {batchError && <p className="micro font-mono text-souk-peach">{batchError}</p>}
                 {items.map((i) => {
                   const line = hireLine(i)
                   return (

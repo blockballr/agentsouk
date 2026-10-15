@@ -12,7 +12,8 @@ function Filter({ children, className }: { children: React.ReactNode; className?
       width="220"
       height="150"
       viewBox="0 0 220 150"
-      className={`duotone ${className ?? ''}`}
+      // no colour pass: the tiles sit on the dark register as themselves
+      className={className ?? ''}
       aria-hidden="true"
     >
       {children}
@@ -27,9 +28,9 @@ export function ArcTile({ delay = 0 }: { delay?: number }) {
   const trail = !reduced
   const outer = 'M40 130V70a50 50 0 0 1 100 0v60'
   return (
-    <Filter className="mx-5 hidden h-auto w-32 align-middle md:inline-block lg:w-40">
-      <rect width="220" height="150" fill="#fafffa" />
-      <motion.g fill="none" stroke="#121613" strokeWidth="3">
+    <Filter className="rounded-[8px] mx-5 hidden h-auto w-32 align-middle overflow-hidden md:inline-block lg:w-40">
+      <rect width="220" height="150" fill="#111a4a" />
+      <motion.g fill="none" stroke="#e8eaf2" strokeWidth="3">
         <motion.path
           d={outer}
           initial={{ pathLength: 0 }}
@@ -51,7 +52,7 @@ export function ArcTile({ delay = 0 }: { delay?: number }) {
       </motion.g>
       {trail && (
         <>
-          <circle r="4" fill="#121613">
+          <circle r="4" fill="#e8eaf2">
             <animateMotion
               dur="8s"
               repeatCount="indefinite"
@@ -59,7 +60,7 @@ export function ArcTile({ delay = 0 }: { delay?: number }) {
               path={outer}
             />
           </circle>
-          <circle r="3.5" fill="#121613">
+          <circle r="3.5" fill="#e8eaf2">
             <animateMotion
               dur="8s"
               repeatCount="indefinite"
@@ -76,20 +77,20 @@ export function ArcTile({ delay = 0 }: { delay?: number }) {
 // concentric orbits, dots travelling the rings, centre dot breathing
 export function OrbitTile({ delay = 0 }: { delay?: number }) {
   return (
-    <Filter className="mx-5 hidden h-auto w-24 align-middle md:inline-block lg:w-32">
-      <rect width="220" height="150" fill="#fafffa" />
-      <g fill="none" stroke="#121613" strokeWidth="2">
+    <Filter className="rounded-[8px] mx-5 hidden h-auto w-24 align-middle overflow-hidden md:inline-block lg:w-32">
+      <rect width="220" height="150" fill="#111a4a" />
+      <g fill="none" stroke="#e8eaf2" strokeWidth="2">
         <circle cx="110" cy="75" r="55" />
         <circle cx="110" cy="75" r="32" />
         <ellipse cx="110" cy="75" rx="70" ry="22" />
       </g>
-      <g fill="#121613">
+      <g fill="#e8eaf2">
         <circle cx="110" cy="20" r="3" />
         <circle cx="110" cy="130" r="3" />
       </g>
       <motion.circle
         r="4"
-        fill="#121613"
+        fill="#e8eaf2"
         animate={{
           cx: [165, 110, 55, 110],
           cy: [75, 20, 75, 130],
@@ -104,7 +105,7 @@ export function OrbitTile({ delay = 0 }: { delay?: number }) {
       />
       <motion.circle
         r="3"
-        fill="#121613"
+        fill="#e8eaf2"
         animate={{
           cx: [55, 110, 165, 110],
           cy: [75, 130, 75, 20],
@@ -121,7 +122,7 @@ export function OrbitTile({ delay = 0 }: { delay?: number }) {
         cx="110"
         cy="75"
         r="4"
-        fill="#121613"
+        fill="#e8eaf2"
         initial={{ scale: 0 }}
         animate={{ scale: [1, 1.6, 1] }}
         transition={{
@@ -147,8 +148,8 @@ export function LedgerTile({ delay = 0 }: { delay?: number }) {
   ]
   return (
     <Filter>
-      <rect width="220" height="150" fill="#fafffa" />
-      <g stroke="#121613" strokeWidth="3" fill="none">
+      <rect width="220" height="150" fill="#111a4a" />
+      <g stroke="#e8eaf2" strokeWidth="3" fill="none">
         {lines.map((d, i) => (
           <motion.path
             key={d}
@@ -165,7 +166,7 @@ export function LedgerTile({ delay = 0 }: { delay?: number }) {
           cx={p.x}
           cy={p.y}
           r="4"
-          fill="#121613"
+          fill="#e8eaf2"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ ...STROKE, delay: delay + 0.3 + i * 0.12 }}

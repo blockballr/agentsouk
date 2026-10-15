@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { executorWallet } from "@/lib/vault-executor";
 import { vaultFor } from "@/lib/vault";
-import { BSC_TESTNET_CHAIN_ID } from "@/lib/types";
+import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,6 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   return NextResponse.json({
     executor: executorWallet(),
-    vault: vaultFor(BSC_TESTNET_CHAIN_ID),
+    vault: vaultFor(targetChainId()),
   });
 }

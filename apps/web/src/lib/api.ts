@@ -696,18 +696,31 @@ export async function getJobs8183Quote(input: {
       }
       stack: { commerce: string; router: string; policy: string; paymentToken: string }
     }
-  | { ok: false; error: string }
+  | { ok: false; error: string; transient?: boolean }
 > {
-  const res = await fetch(`${BASE}/jobs8183/quote`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(input),
-  })
+  let res: Response
+  try {
+    res = await fetch(`${BASE}/jobs8183/quote`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+  } catch {
+    return { ok: false, error: 'the quoting route could not be reached', transient: true } as const
+  }
   const body = (await res.json().catch(() => null)) as
     | { success?: boolean; error?: string; quote?: Jobs8183QuotePayload; stack?: Jobs8183StackShape }
     | null
   if (!res.ok || !body?.success) {
-    return { ok: false, error: body?.error ?? `the quoting route refused (${res.status})` } as const
+    const reason = body?.error
+    if (typeof reason === 'string' && reason) {
+      // the route's one answer for an endpoint that never answered; every other
+      // refusal is the seller's or a guard's and comes back identical on a retry
+      const transient = reason.includes('did not answer the negotiate call')
+      return { ok: false, error: reason, ...(transient ? { transient: true } : {}) } as const
+    }
+    // no reason in the body means a crash or an html error page, not an answer
+    return { ok: false, error: `the quoting route refused (${res.status})`, transient: true } as const
   }
   return { ok: true, quote: body.quote as Jobs8183QuotePayload, stack: body.stack as Jobs8183StackShape } as const
 }

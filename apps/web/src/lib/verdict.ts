@@ -65,8 +65,8 @@ export function verdictFor(
 
 // the dot beside a verdict; text stays in the body colour so it reads in both themes
 export const VERDICT_DOT: Record<VerdictTone, string> = {
-  good: 'glow bg-highlighter-green',
-  held: 'bg-slate-verdant/60',
-  bad: 'border hairline border-newsprint-gray bg-transparent',
-  none: 'border hairline border-slate-verdant/50 bg-transparent',
+  good: 'bg-souk-data',
+  held: 'bg-souk-peach',
+  bad: 'border border-souk-steel bg-transparent',
+  none: 'border border-souk-steel/50 bg-transparent',
 }

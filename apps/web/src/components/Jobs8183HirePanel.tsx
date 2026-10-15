@@ -14,12 +14,15 @@ import {
   type NegotiationQuoteView,
 } from '../lib/jobs8183'
 import { getJobs8183Quote, recordJobs8183Job } from '../lib/api'
-import { chainIdToHex, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
+import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { explorerAddressUrl } from '../lib/contracts'
-import { Action, button, cx } from './ui'
+import { Btn, Pill, Row, Stack, Txt } from './souk'
 
 const FUND_DEADLINE_EXTRA_SECONDS = 1800
+
+// the five stops an ERC-8183 job sells in
+const STOPS = ['Quoted', 'Funded', 'Working', 'Submitted', 'Released']
 
 function short(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -38,28 +41,70 @@ type Phase =
 // token, and the buyer's wallet signs the five calls that lock the price into
 // the kernel's escrow. Nothing here signs money away from the marketplace;
 // every signature is the buyer's own call on a public contract.
-export default function Jobs8183HirePanel({ tokenId, chainId, name }: { tokenId: string; chainId: number; name: string }) {
-  const [task, setTask] = useState('')
+// one written task per category, so the card opens with something the seller can
+// actually price
+const DEFAULT_TASK: Record<string, string> = {
+  'grid-trading': 'Plan a grid ladder for 10000 USDT between 250 and 320.',
+  yield: 'What is the net APR for moving 10000 USDT into Venus on BNB Smart Chain?',
+  'health-factor': 'Compute the health factor for collateral 1000 USD and debt 500 USD.',
+  rebalancing: 'Should this portfolio rebalance, and where should the allocation go?',
+}
+
+export default function Jobs8183HirePanel({
+  tokenId,
+  chainId,
+  cards = true,
+  category,
+}: {
+  tokenId: string
+  chainId: number
+  // a job seller's column carries the two cards; a dual-rail listing draws the
+  // same content inside the x402 card, so it asks for the pair without the shells
+  cards?: boolean
+  category?: string
+}) {
+  // a quote needs a task, so the card opens with one written for this agent's
+  // category rather than an empty box that leaves the price button dead. The grid
+  // line is the design's own; the rest borrow the wording the quest writes its
+  // tasks in, and a rebalance asks the question without naming a figure
+  const seed = DEFAULT_TASK[category ?? ''] ?? DEFAULT_TASK['grid-trading']
+  const [task, setTask] = useState(seed)
   const [account, setAccount] = useState<string | null>(null)
   const [quote, setQuote] = useState<NegotiationQuoteView | null>(null)
   const [stack, setStack] = useState<Jobs8183Stack | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
   const [lines, setLines] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
+  // a refusal asking again cannot undo stops the card from offering the ask; the
+  // text it failed on decides when the button comes back
+  const [failure, setFailure] = useState<'transient' | 'definitive' | null>(null)
+  const [asked, setAsked] = useState('')
 
   async function onQuote() {
     setError(null)
     setQuote(null)
     setStack(null)
-    const client = (await getActiveAccount().catch(() => null)) as string | null
-    if (!client) return setLines((l) => [...l, 'Connect the wallet first.'])
+    let client = (await getActiveAccount().catch(() => null)) as string | null
+    // a press without a wallet opens the connection instead of stacking an error line
+    if (!client) {
+      try {
+        client = await connectWallet()
+      } catch {
+        setError('Connect the wallet first.')
+        return
+      }
+    }
     setAccount(client)
     setPhase({ kind: 'quoting' })
-    const result = await getJobs8183Quote({ tokenId, task, client, chainId })
+    const text = task
+    const result = await getJobs8183Quote({ tokenId, task: text, client, chainId })
     if (!result.ok) {
       setPhase({ kind: 'failed' })
+      setFailure(result.transient ? 'transient' : 'definitive')
+      if (!result.transient) setAsked(text)
       return setError(result.error)
     }
+    setFailure(null)
     setStack(result.stack)
     setQuote(result.quote)
     setPhase({ kind: 'quoted' })
@@ -123,91 +168,267 @@ export default function Jobs8183HirePanel({ tokenId, chainId, name }: { tokenId:
   }
 
   const priceLabel = quote ? formatUnits(BigInt(quote.price), 18) : null
+  const funded = phase.kind === 'funded'
+  const holds = quote ? new Date(quote.validUntil * 1000).toLocaleTimeString() : null
+  const blocked = phase.kind === 'failed' && failure === 'definitive' && task === asked
 
-  return (
-    <div className="mt-6">
-      <label className="text-sm font-medium text-press-black" htmlFor="jobs8183-task">
-        What should {name} do?
-      </label>
-      <textarea
-        id="jobs8183-task"
-        value={task}
-        onChange={(e) => setTask(e.target.value)}
-        rows={4}
-        spellCheck={false}
-        placeholder={'Plan a grid ladder for 10000 USDT between 250 and 320.'}
-        aria-label="Job text for the ERC-8183 seller"
-        className="mt-2 w-full rounded-[5px] border border-slate-verdant/50 bg-white px-3 py-2 font-mono text-sm text-press-black focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
-      />
-      <p className="mt-2 text-xs leading-relaxed text-newsprint-gray">
-        The agent quotes a price for the task. You fund the job on the shared kernel and the escrow holds the price until
-        the work is delivered and settled.
-      </p>
+  const jobBody = (
+    <Stack gap={14}>
+      {/* the design's hire card for a job seller: the task the seller prices, the
+          meter that says where the job is, and the one action the stage allows.
+          bare mode is drawn inside a card that already carries the head and the
+          framing copy, and its framing copy would be wrong for an agent a direct
+          hire also reaches */}
+        {cards && (
+          <>
+            <Row justify="between" align="center">
+              <Txt size={18} lead={27} weight="bold" tone="ink">
+                {funded ? 'Your funded job' : 'Fund job'}
+              </Txt>
+              <Pill variant="keep">{funded ? 'funded' : 'erc-8183'}</Pill>
+            </Row>
 
-      {phase.kind === 'quoted' && quote && priceLabel && (
-        <dl className="mt-4 space-y-2 text-[13px]">
-          <div className="flex justify-between gap-4">
-            <dt className="text-newsprint-gray">Price</dt>
-            <dd className="font-mono text-press-black">{priceLabel}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-newsprint-gray">Seller wallet</dt>
-            <dd className="font-mono text-press-black">{short(quote.providerAddress)}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-newsprint-gray">Quote holds until</dt>
-            <dd className="text-press-black">{new Date(quote.validUntil * 1000).toLocaleTimeString()}</dd>
-          </div>
-        </dl>
-      )}
+            <Txt size={13} lead={20} tone="slate">
+              {funded
+                ? 'The job is funded on chain, so the escrow holds the price and the seller has been told to start. Work is released the only way it can be: by the seller delivering it.'
+                : 'This agent sells through its own ERC-8183 job, so a direct paid hire cannot reach it. Ask for a signed price, then fund the job on chain.'}
+            </Txt>
+          </>
+        )}
 
-      {lines.length > 0 && (
-        <div className="mt-4 space-y-1 rounded-[8px] border hairline p-3 font-mono text-xs text-newsprint-gray">
-          {lines.map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
+        <Txt size={10} lead={14} weight="bold" upper tone="muted">
+          {funded ? 'Job text, locked when the job was funded' : 'Job text'}
+        </Txt>
+        <div className="rounded-[8px] border border-souk-hair bg-souk-surface2 px-[14px] py-3">
+          <textarea
+            id="jobs8183-task"
+            value={task}
+            onChange={(e) => setTask(e.target.value)}
+            rows={3}
+            spellCheck={false}
+            readOnly={funded}
+            placeholder={seed}
+            aria-label="Job text for the ERC-8183 seller"
+            className="w-full resize-none bg-transparent font-mono text-[11px] leading-[17px] text-souk-slate placeholder:text-souk-muted focus-visible:outline-none"
+          />
         </div>
-      )}
 
-      {error && (
-        <p role="note" className="mt-3 rounded-[8px] border hairline border-slate-verdant/45 p-3 text-xs leading-relaxed text-newsprint-gray">
-          {error}
-        </p>
-      )}
+        {/* the one element the product itself supplies: five stops, 20% before a
+            quote and 40% once the money is in escrow */}
+        <Meter pct={funded ? 40 : 20} />
 
-      <div className="mt-4 flex gap-2">
-        <Action variant="primary" size="lg" onClick={onQuote} disabled={phase.kind === 'quoting' || task.trim().length === 0}>
-          {phase.kind === 'quoting' ? 'Getting the price..' : 'Get the price'}
-        </Action>
-        {phase.kind === 'quoted' && (
-          <Action variant="primary" size="lg" onClick={onFund}>
-            Fund this job
-          </Action>
+        {funded ? (
+          <StopRail at={1} />
+        ) : (
+          <Txt size={11} lead={16} mono tone="steel">
+            {STOPS.join(' → ')}
+          </Txt>
         )}
-        {phase.kind === 'funding' && (
-          <Action variant="primary" size="lg" disabled>
-            {`Signing ${phase.done} of 5..`}
-          </Action>
-        )}
-        {phase.kind === 'funded' && (
-          <span className="self-center text-sm text-press-black">The job is funded.</span>
-        )}
+
+        <Txt size={13} lead={20} tone="slate">
+          {funded
+            ? 'Stage 2 of 5: the job is funded. The escrow holds the money, and the seller\'s accepted work is the only thing that releases it.'
+            : 'Stage 1 of 5: the seller has signed a price in $U. Nothing is funded yet, so no money has moved.'}
+        </Txt>
+
+        {funded ? (
+          <Stack gap={2}>
+            <Row justify="between" align="center">
+              <Txt size={10} lead={16} weight="bold" upper tone="muted">Funded</Txt>
+              <Txt size={12} lead={18} mono tone="data">
+                {priceLabel ? `${priceLabel} of the kernel's token, held` : 'held in escrow'}
+              </Txt>
+            </Row>
+            <Row justify="between" align="center">
+              <Txt size={10} lead={16} weight="bold" upper tone="muted">Released</Txt>
+              <Txt size={12} lead={18} mono tone="muted">nothing yet</Txt>
+            </Row>
+          </Stack>
+        ) : null}
+
+        {quote && priceLabel ? (
+          <Stack gap={2}>
+            <Row justify="between" align="center">
+              <Txt size={10} lead={16} weight="bold" upper tone="muted">Price</Txt>
+              <Txt size={12} lead={18} mono tone="data">{priceLabel}</Txt>
+            </Row>
+            <Row justify="between" align="center">
+              <Txt size={10} lead={16} weight="bold" upper tone="muted">Seller wallet</Txt>
+              <Txt size={12} lead={18} mono tone="slate">{short(quote.providerAddress)}</Txt>
+            </Row>
+            {holds ? (
+              <Row justify="between" align="center">
+                <Txt size={10} lead={16} weight="bold" upper tone="muted">Quote holds until</Txt>
+                <Txt size={12} lead={18} mono tone="slate">{holds}</Txt>
+              </Row>
+            ) : null}
+          </Stack>
+        ) : null}
+
+        {lines.length > 0 ? (
+          <div className="space-y-1 rounded-[8px] border border-souk-edge p-3 font-mono text-[11px] leading-[16px] text-souk-muted">
+            {lines.map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
+          </div>
+        ) : null}
+
+        {error ? (
+          <Txt size={12} lead={18} tone="peach" className="block">
+            {error}
+          </Txt>
+        ) : null}
+
+        {/* a definitive refusal says what it means for the card, and the reason
+            above stays the seller's or the guard's own words */}
+        {error && phase.kind === 'failed' && failure === 'definitive' ? (
+          <Txt size={13} lead={20} tone="slate">
+            No signed price came back, so this card cannot fund a job.
+          </Txt>
+        ) : null}
+
+        {!blocked ? (
+          <Stack gap={12}>
+            <Btn
+              kind="primary"
+              className="w-full"
+              onClick={() => (phase.kind === 'quoted' && quote ? onFund() : onQuote())}
+              disabled={funded || phase.kind === 'quoting' || phase.kind === 'funding' || task.trim().length === 0}
+            >
+              {funded
+                ? 'The job is funded'
+                : phase.kind === 'quoting'
+                  ? 'Getting the price..'
+                  : phase.kind === 'quoted'
+                    ? 'Fund this job'
+                    : phase.kind === 'funding'
+                      ? `Signing ${phase.done} of 5..`
+                      : 'Get the price'}
+            </Btn>
+            <Txt size={12} lead={18} tone="muted">
+              {funded
+                ? 'Delivery is attested by the seller and settles to its own wallet.'
+                : 'The quote is signed by the wallet that registered this listing and holds for 10 minutes.'}
+            </Txt>
+          </Stack>
+        ) : null}
+
+        {quote?.currency ? (
+          <Txt size={12} lead={18} tone="muted">
+            Payment token <span className="font-mono">{short(quote.currency)}</span>
+            {' · '}
+            <a href={explorerAddressUrl(chainId, quote.currency)} target="_blank" rel="noreferrer" className="underline">
+              on the explorer
+            </a>
+          </Txt>
+        ) : null}
+    </Stack>
+  )
+
+  const quoteBody = (
+    <Stack gap={10}>
+      {/* the design's signed quote card, the terms the signature actually carries */}
+        <Txt size={18} lead={27} weight="bold" tone="ink" className="border-b border-souk-hair pb-[9px]">
+          Signed quote
+        </Txt>
+        <Txt size={13} lead={20} tone="slate">
+          {quote && priceLabel ? 'A signed price for the task above.' : 'No quote yet.'}
+        </Txt>
+        <SpecRow k="Price" v={priceLabel ? `${priceLabel} of the kernel's token` : "signed in $U by the seller's wallet"} />
+        <SpecRow k="Terms" v="deliverables and quality standards" />
+        <SpecRow k="Holds for" v="10 minutes, then it is worthless" />
+        <SpecRow k="Funds" v="one transaction on BSC mainnet 56" />
+    </Stack>
+  )
+
+  // bare mode is drawn inside a card that supplies its own head, copy and quote,
+  // so only the task, the meter and the stage carry over
+  if (!cards) {
+    return <Stack gap={16}>{jobBody}</Stack>
+  }
+  return (
+    <>
+      <Stack bg="surface1" radius={20} hair pad={[20, 22, 20, 22]} className="w-full">
+        {jobBody}
+      </Stack>
+      <Stack bg="surface1" radius={20} hair pad={[20, 22, 20, 22]} className="w-full">
+        {quoteBody}
+      </Stack>
+    </>
+  )
+}
+
+// the job progression meter: one label, one figure, and a six pixel rail whose fill
+// runs from the navy surface into the data green, so the head of the bar is always
+// the colour it is reaching for
+function Meter({ pct }: { pct: number }) {
+  return (
+    <Stack gap={8}>
+      <Row justify="between" align="center">
+        <Txt size={11} lead={16} weight="bold" upper tone="muted">Job progression</Txt>
+        <Txt size={14} lead={18} mono weight="bold" tone={pct >= 90 ? 'peach' : 'data'}>{pct}%</Txt>
+      </Row>
+      <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-souk-hair">
+        <div
+          className="meter-fill relative h-full rounded-[3px]"
+          style={{
+            width: `${Math.max(pct, 2)}%`,
+            minWidth: 6,
+            backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #44b48b 100%)',
+          }}
+        >
+          <span
+            aria-hidden="true"
+            className="meter-shimmer absolute inset-y-0 left-0 w-[30%] rounded-[3px] bg-gradient-to-r from-transparent via-white/[0.42] to-transparent"
+          />
+        </div>
       </div>
+    </Stack>
+  )
+}
 
-      {quote?.currency && (
-        <p className="mt-3 text-xs text-newsprint-gray">
-          Payment token: <span className="font-mono">{short(quote.currency)}</span>
-          {' '}
-          <a href={explorerAddressUrl(chainId, quote.currency)} target="_blank" rel="noreferrer" className="underline">
-            on the explorer
-          </a>
-        </p>
-      )}
-      {error && phase.kind === 'failed' && (
-        <button type="button" onClick={() => setPhase({ kind: 'idle' })} className={cx(button('secondary', 'sm'), 'mt-3')}>
-          Try again
-        </button>
-      )}
+// the five stops an ERC-8183 job sells in, drawn as rail: dots for what is passed,
+// a ring on the one in force, labels under each
+export function StopRail({ at }: { at: number }) {
+  return (
+    <Stack gap={8}>
+      <Row align="center" gap={0}>
+        {STOPS.map((s, i) => (
+          <div key={s} className="flex flex-1 items-center">
+            <span
+              className={`flex h-[10px] w-[10px] shrink-0 rounded-full ${
+                i === at
+                  ? 'bg-souk-data ring-2 ring-souk-sky/85'
+                  : i < at
+                    ? 'bg-souk-data'
+                    : 'border border-souk-steel/50'
+              }`}
+            />
+            {i < STOPS.length - 1 ? <span className="h-px flex-1 bg-souk-hair" /> : null}
+          </div>
+        ))}
+      </Row>
+      <Row align="center" gap={0}>
+        {STOPS.map((s, i) => (
+          <span
+            key={s}
+            className={`flex-1 text-center font-mono text-[11px] uppercase leading-[16px] ${
+              i <= at ? 'font-bold text-souk-ink' : 'font-semibold text-souk-muted'
+            }`}
+          >
+            {s}
+          </span>
+        ))}
+      </Row>
+    </Stack>
+  )
+}
+
+function SpecRow({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-baseline gap-3">
+      <span className="micro w-[96px] shrink-0 font-bold text-souk-muted">{k}</span>
+      <span className="text-[12px] leading-[18px] text-souk-labels">{v}</span>
     </div>
   )
 }

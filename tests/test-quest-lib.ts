@@ -1,11 +1,12 @@
-// the passport's own logic: which stamps a progress reading earns, the titles points reach, which
-// quest link belongs to which agent, and state that survives a browser with no storage at all
+// the passport's own logic: which stamps a progress reading earns, how many of them finish a
+// passport, which quest link belongs to which agent, and state that survives a browser with no
+// storage at all
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   QUEST_STEPS,
   questPicks,
   questStepFor,
-  rankFor,
+  requiredDone,
   questModeFor,
   readQuestMode,
   readSeenPoints,
@@ -40,26 +41,17 @@ afterEach(() => {
 });
 
 describe("stamps", () => {
-  it("reads the hires by how many agents were hired, the listing and the seal", () => {
+  it("reads the hires by how many agents were hired and the listing", () => {
     const s = stampsFrom(progress({ agentsHired: 1, listedOne: true }));
-    expect(s).toEqual({ first: true, stall: true, second: false, third: false, seal: false });
-    expect(stampsFrom(progress({ agentsHired: 3 }))).toMatchObject({ first: true, second: true, third: true });
-    expect(stampsFrom(progress({ completed: true })).seal).toBe(true);
-    expect(stampsFrom(null)).toEqual({ first: false, stall: false, second: false, third: false, seal: false });
+    expect(s).toEqual({ first: true, stall: true, second: false });
+    expect(stampsFrom(progress({ agentsHired: 3 }))).toMatchObject({ first: true, second: true });
+    expect(stampsFrom(null)).toEqual({ first: false, stall: false, second: false });
   });
 
-  it("adds up to the thousand points the passport shows", () => {
-    expect(QUEST_STEPS.reduce((sum, s) => sum + s.points, 0)).toBe(1000);
-  });
-});
-
-describe("titles", () => {
-  it("follow the points and name the next one", () => {
-    expect(rankFor(0)).toEqual({ title: "Adventurer", next: { at: 100, title: "Trader" } });
-    expect(rankFor(250).title).toBe("Merchant");
-    expect(rankFor(549).title).toBe("Merchant");
-    expect(rankFor(550).title).toBe("Stallholder");
-    expect(rankFor(1000)).toEqual({ title: "Master of the Souk", next: null });
+  it("counts the stamps that finish a passport", () => {
+    expect(requiredDone(progress({ agentsHired: 2, listedOne: true }))).toBe(3);
+    expect(requiredDone(progress({ agentsHired: 1 }))).toBe(1);
+    expect(requiredDone(null)).toBe(0);
   });
 });
 
@@ -79,10 +71,10 @@ describe("quest links", () => {
   });
 
   it("fill in the structured input for the agents that need it", () => {
-    for (const key of ["first", "third"] as const) {
-      const step = QUEST_STEPS.find((s) => s.key === key)!;
-      expect(step.agents?.[97]?.primary.input).toBeTruthy();
-    }
+    const first = QUEST_STEPS.find((s) => s.key === "first")!;
+    const second = QUEST_STEPS.find((s) => s.key === "second")!;
+    expect(first.agents?.[97]?.primary.input).toBeTruthy();
+    expect(second.agents?.[97]?.alternate?.input).toBeTruthy();
   });
 });
 
