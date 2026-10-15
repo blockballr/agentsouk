@@ -174,10 +174,10 @@ export function MarketplacePage() {
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
       <div className="px-8 pb-[240px] xl:pb-16">
-        {/* the register's masthead wash, carried onto the market's first band: the
-            deep-sea gradient at 117 degrees, the 3px rail and the hairline gloss
-            that separates a masthead from the page it opens */}
-        <div className="-mx-8 mb-8 rounded-b-[20px] border-b-[3px] border-souk-canvas bg-[linear-gradient(117deg,rgba(2,50,71,0.5),rgba(2,50,71,0)_70%)] px-8 shadow-[0_3px_0_-1px_var(--color-souk-hair)]">
+        {/* the register's masthead wash, driven by the theme's own variable: deep-sea
+            in the dark register, the drawn sky wash on paper. the 3px rail and the
+            hairline gloss separate a masthead from the page it opens */}
+        <div className="-mx-8 mb-8 rounded-b-[20px] border-b-[3px] border-souk-canvas bg-[linear-gradient(117deg,var(--mast-wash),transparent_70%)] px-8 shadow-[0_3px_0_-1px_var(--color-souk-hair)]">
         {/* the hero band keeps its own top padding and carries the lower half of the
             rhythm, so the shelf opens right under the bar and still breathes below */}
         <Section pad="pt-11 pb-16 md:pb-18">
