@@ -131,7 +131,7 @@ export function ListAgentPage() {
   const [started, setStarted] = useState(false)
   const guide = questing ? LISTING_GUIDE[wizardStep] : null
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-11 text-souk-ink">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-11 text-souk-ink">
       {/* hero - list your agent */}
       <Stack gap={12}>
         <Txt size={11} lead={16} mono upper tone="data">

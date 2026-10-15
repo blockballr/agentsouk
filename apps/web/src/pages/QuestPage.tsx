@@ -232,7 +232,7 @@ export function QuestPage() {
 
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
-      <div className="px-8 pb-28 pt-10 lg:pb-16">
+      <div className="px-4 lg:px-8 pb-28 pt-10 lg:pb-16">
         <Stack gap={10}>
           <Txt size={11} lead={16} mono upper tone="data">
             {`Set and Earn · wallet ${wallet ? shortAddress(wallet) : 'not connected'} · ${chainLine}`}

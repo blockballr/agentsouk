@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
-import { Label, LogoMark, Row, Stack, Txt } from './souk'
+import { Label, Row, Stack, Txt } from './souk'
+import { Wordmark } from './Wordmark'
 
 // No external flag. The columns that used to carry one were re-pointed at internal routes
 // when the about link was dropped, which left the anchor branch unreachable, so it was
@@ -41,11 +42,9 @@ const columns: { heading: string; links: FooterLink[] }[] = [
 
 export function Footer() {
   const target = useTargetChain()
-  // the design prints the route beside each label, which is the one place a reader can
-  // see where a link goes before following it
   return (
     <footer className="border-t border-souk-edge bg-souk-canvas">
-      <div className="px-8 pb-16 pt-8">
+      <div className="px-4 lg:px-8 pb-16 pt-8">
         <Stack gap={20}>
           <Txt size={13} lead={20} tone="muted">
             Anyone can register on the open ERC-8004 registry. Listing here is the fastest
@@ -53,10 +52,7 @@ export function Footer() {
           </Txt>
           <div className="flex flex-col gap-[60px] lg:flex-row">
             <Stack gap={8} className="max-w-[420px]">
-              <LogoMark size={34} />
-              <Txt size={13} lead={16} weight="bold" mono upper tone="ink">
-                Agent Souk
-              </Txt>
+              <Wordmark />
               <Txt size={15} lead={22} tone="slate">
                 The open market for working agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
               </Txt>
@@ -94,17 +90,13 @@ export function Footer() {
                 <Stack gap={9}>
                   <Label tone="muted">{col.heading}</Label>
                   {col.links.map((l) => (
-                    <Row key={l.label} justify="between" align="center">
-                      <Link
-                        to={l.to}
-                        className="text-[14px] leading-[20px] text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
-                      >
-                        {l.label}
-                      </Link>
-                      <Txt size={10} lead={14} mono tone="muted">
-                        {l.to}
-                      </Txt>
-                    </Row>
+                    <Link
+                      key={l.label}
+                      to={l.to}
+                      className="text-[14px] leading-[20px] text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
+                    >
+                      {l.label}
+                    </Link>
                   ))}
                 </Stack>
               </nav>

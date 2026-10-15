@@ -10,7 +10,7 @@ import {
   Btn,
   Dot,
   type DotTone,
-  LogoMark,
+  SoukMark,
   Row,
   Rule,
   Section,
@@ -211,7 +211,7 @@ export function CartPage() {
 
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
-      <div className="px-8 pb-20">
+      <div className="px-4 lg:px-8 pb-20">
       {/* the hero owns its own top padding, so the band carries only the lower half of the rhythm */}
       <Section pad="pb-16 md:pb-18">
         <Stack gap={10} pad={[32, 0, 0, 0]}>
@@ -369,7 +369,7 @@ export function CartPage() {
         ) : (
           <Stack pad={[24, 0, 0, 0]}>
             <Stack surface pad={[20, 22, 20, 22]} gap={8}>
-              <LogoMark size={30} />
+              <SoukMark size={30} />
               <Txt size={13} lead={19} weight="semibold" tone="ink">
                 Your cart is empty.
               </Txt>

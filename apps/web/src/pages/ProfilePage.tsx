@@ -197,7 +197,7 @@ export function ProfilePage() {
     : 'profile'
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
       <Stack gap={10} className="max-w-[1180px]">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
@@ -288,7 +288,7 @@ export function ProfilePage() {
                     Just registered? The catalogue reads the chain again within a minute, and a listing shows once it has an endpoint we can call.
                   </Txt>
                   <Btn kind="primary" onClick={() => void onChangeWallet()} disabled={connecting} className="mt-2 self-start">
-                    {connecting ? 'Connecting...' : 'Connect wallet'}
+                    {connecting ? 'Switching...' : 'Switch wallet'}
                   </Btn>
                 </Stack>
               )}

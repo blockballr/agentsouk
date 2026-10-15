@@ -580,7 +580,9 @@ function AgentCard({
       surface
       gap={12}
       pad={[20, 22, 20, 22]}
-      className={checked ? 'ring-1 ring-souk-data' : undefined}
+      // the card answers to its own width, so four-across on a narrow screen
+      // stacks its actions instead of squeezing them into a wrap
+      className={checked ? 'ring-1 ring-souk-data @container' : '@container'}
     >
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
@@ -649,7 +651,12 @@ function AgentCard({
 
         <Rule />
 
-        <Row justify="between" align="center" gap={8}>
+        <Row
+          justify="between"
+          align="center"
+          gap={8}
+          className="flex-col items-start @[380px]:flex-row @[380px]:items-center"
+        >
           {/* both halves of the listing's identity: the shelf is a card grid with no
               table above it, so a token id alone would not say which chain it is on */}
           <Txt size={11} lead={16} mono tone="steel">
@@ -663,10 +670,10 @@ function AgentCard({
         </Row>
       </Link>
 
-      <Row gap={10}>
+      <div className="flex flex-col gap-2.5 @[380px]:flex-row">
         <Btn
           kind={checked ? 'keep' : 'off'}
-          className="basis-0 grow"
+          className="w-full min-w-0 @[380px]:basis-0 @[380px]:grow"
           onClick={() => onToggle(key)}
           aria-pressed={checked}
         >
@@ -690,7 +697,7 @@ function AgentCard({
         </Btn>
         <Btn
           kind={inCart ? 'keep' : 'off'}
-          className="basis-0 grow"
+          className="w-full min-w-0 @[380px]:basis-0 @[380px]:grow"
           onClick={() => onToggleCart(key)}
           aria-pressed={inCart}
         >
@@ -708,7 +715,7 @@ function AgentCard({
             <span className="sr-only">: {agent.name}</span>
           </span>
         </Btn>
-      </Row>
+      </div>
     </Stack>
   )
 }

@@ -349,7 +349,7 @@ export function OngoingPage() {
     : 'Ongoing'
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
       {/* the hero owns its own top padding, so the band carries only the lower half of the rhythm */}
       <Section pad="pb-16 md:pb-18">
         <header className="flex max-w-[1180px] flex-col gap-2.5">

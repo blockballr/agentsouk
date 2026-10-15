@@ -6,7 +6,6 @@
 // the shelf is where a buyer picks on sight.
 
 import { Txt } from './Txt';
-import { METAL_BAND } from './tokens';
 
 export function initialsFor(name: string): string {
   const parts = String(name || 'Agent')
@@ -20,16 +19,22 @@ export function initialsFor(name: string): string {
   return `${(first ? first[0] : 'A') + (second ? second[0] : '')}`.toUpperCase();
 }
 
-export function LogoMark({ size = 28 }: { size?: number }) {
+// the souk mark: four squares, the fourth in the data green. the brand's own
+// lockup, so it stands wherever the wordmark's logo half is called for
+export function SoukMark({ size = 22 }: { size?: number }) {
   return (
-    <span
-      className="inline-flex shrink-0 items-center justify-center rounded-full border border-souk-hair"
-      style={{ width: size, height: size, backgroundImage: METAL_BAND }}
+    <svg
+      aria-hidden="true"
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      className="shrink-0"
     >
-      <Txt size={Math.round(size * 0.4)} lead={Math.round(size * 0.52)} weight="bold" mono tone="ink">
-        AS
-      </Txt>
-    </span>
+      <rect x="8" y="8" width="22" height="22" rx="4" fill="currentColor" />
+      <rect x="34" y="8" width="22" height="22" rx="4" fill="currentColor" />
+      <rect x="8" y="34" width="22" height="22" rx="4" fill="currentColor" />
+      <rect x="34" y="34" width="22" height="22" rx="4" fill="var(--color-souk-data)" />
+    </svg>
   );
 }
 
@@ -110,6 +115,15 @@ export function IconMonitor() {
     <svg width="18" height="18" {...strokeProps}>
       <rect x="2.5" y="4" width="19" height="13" rx="2" />
       <path d="M8.5 21h7M12 17v4" />
+    </svg>
+  );
+}
+
+// the disclosure's own mark: which way the folded section opens
+export function IconChevron({ className }: { className?: string }) {
+  return (
+    <svg width="16" height="16" className={className} {...strokeProps}>
+      <path d="m4 8 6 6 6-6" />
     </svg>
   );
 }

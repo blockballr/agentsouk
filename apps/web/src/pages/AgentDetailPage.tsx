@@ -47,7 +47,7 @@ import {
   type HireRequirementsData,
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
-import { Row as SoukRow, Stack, Txt, Dot, Pill, SectionHead, DataTable, Kpi } from '../components/souk'
+import { Row as SoukRow, Stack, Txt, Dot, Pill, SectionHead, DataTable, Kpi, IconChevron } from '../components/souk'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -266,6 +266,9 @@ export function AgentDetailPage() {
   const [hirePanel, setHirePanel] = useState<HTMLElement | null>(null)
   const [hireInView, setHireInView] = useState(false)
   const [executor, setExecutor] = useState<{ kind: 'rawkey' | 'altana'; address: string } | null>(null)
+  // the on-chain band folds on a phone: the drawing opens it, four boxes stacked
+  // push the hire card off the screen
+  const [chainOpen, setChainOpen] = useState(false)
 
   useEffect(() => {
     void getActiveAccount().then((a) => {
@@ -480,9 +483,12 @@ export function AgentDetailPage() {
     !!detail.agent_wallet &&
     detail.agent_wallet !== '0x0000000000000000000000000000000000000000' &&
     detail.agent_wallet.toLowerCase() === executor.address.toLowerCase()
+  // a gated listing answers only behind its own wall, so a per-call hire would pay
+  // and reach nothing: the card says how to reach it instead of offering that button
+  const gatedOnly = !jobSeller && !mySession && detail.verification?.status === 'gated'
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink lg:pb-14">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-14">
       {!hireInView && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-souk-hair bg-souk-indigo px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
           {quest && questStage && (
@@ -610,7 +616,7 @@ export function AgentDetailPage() {
                   type="button"
                   onClick={revokeThisSession}
                   disabled={revoking}
-                  className="micro rounded-full border border-souk-hair px-2 py-0.5 font-[550] tracking-[0.01em] text-souk-slate transition hover:border-souk-hair hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                  className="micro rounded-full border border-souk-peach/40 px-2 py-0.5 font-[550] tracking-[0.01em] text-souk-peach transition hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
                 >
                   {revoking ? 'Revoking' : 'Revoke hire'}
                 </button>
@@ -660,12 +666,16 @@ export function AgentDetailPage() {
           {/* the design's right column: the hire card and the quote are two cards
               of the same shell, not one card holding a note */}
           <AsideCard>
-            <SoukRow justify="between" align="center">
-              <Txt size={18} lead={27} weight="bold" tone="ink">
-                {mySession ? 'Run a task' : 'Hire this agent'}
-              </Txt>
-              <Pill variant="off">x402</Pill>
-            </SoukRow>
+            {/* a job seller's panel carries its own head, so this card adds none:
+                one rail, one head, never the two stacked */}
+            {(!jobSeller || mySession) && (
+              <SoukRow justify="between" align="center">
+                <Txt size={18} lead={27} weight="bold" tone="ink">
+                  {mySession ? 'Run a task' : gatedOnly ? 'How this agent is hired' : 'Hire this agent'}
+                </Txt>
+                {gatedOnly ? null : <Pill variant="off">x402</Pill>}
+              </SoukRow>
+            )}
           {/* A wallet that already holds a live session should land on the run
               controls rather than on a second signature: the session is already
               bought, so offering the hire again invites paying twice for it. */}
@@ -682,6 +692,20 @@ export function AgentDetailPage() {
             </div>
           ) : jobSeller ? (
             <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
+          ) : gatedOnly ? (
+            /* a gated listing answers only behind its own wall, so a per-call hire
+               would pay and reach nothing. the card says how to reach it instead of
+               offering the button that cannot work */
+            <Stack gap={3}>
+              <Txt size={13} lead={20} tone="slate">
+                This agent answers only behind its own access gate, so the marketplace cannot
+                call it directly.
+              </Txt>
+              <Txt size={13} lead={20} tone="muted">
+                The way in is an ERC-8183 job: the seller signs a price, the settled hire funds
+                the job, and the release follows a verified delivery.
+              </Txt>
+            </Stack>
           ) : (
             <>
               {hireWarning && (
@@ -721,7 +745,7 @@ export function AgentDetailPage() {
             <AsideCard>
               <SoukRow justify="between" align="center">
                 <Txt size={18} lead={27} weight="bold" tone="ink">
-                  Hire this job
+                  {mySession ? 'Run a task' : 'Fund job'}
                 </Txt>
                 <Pill variant="keep">erc-8183</Pill>
               </SoukRow>
@@ -812,9 +836,16 @@ export function AgentDetailPage() {
 
           {/* the design draws this band across the full run, under both columns,
               opened rather than folded behind a disclosure. the twenty is the chain
-              band's own top padding, without which the cards above sit on its rim */}
+              band's own top padding, without which the cards above sit on its rim.
+              on a phone it folds, because four boxes stacked push the hire card off
+              the screen */}
           <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5">
-            <SoukRow justify="between" align="start" gap={16} className="flex-wrap">
+            <button
+              type="button"
+              onClick={() => setChainOpen((open) => !open)}
+              aria-expanded={chainOpen}
+              className="flex w-full items-start justify-between gap-4 text-left lg:cursor-default"
+            >
               <Stack gap={3}>
                 <Txt size={18} lead={27} weight="bold" tone="ink">
                   On-chain details
@@ -823,19 +854,29 @@ export function AgentDetailPage() {
                   Registry record, reputation, endpoints and metadata
                 </Txt>
               </Stack>
-              <SoukRow align="center" gap={10}>
-                {detail.created_block_number != null ? (
-                  <Txt size={11} lead={16} mono tone="muted">
-                    {`BLOCK ${detail.created_block_number.toLocaleString('en-US')}`}
-                  </Txt>
-                ) : null}
-                <Pill variant="keep">{`bsc mainnet ${chainId}`}</Pill>
-              </SoukRow>
-            </SoukRow>
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <SoukRow align="center" gap={10}>
+                  {detail.created_block_number != null ? (
+                    <Txt size={11} lead={16} mono tone="muted">
+                      {`BLOCK ${detail.created_block_number.toLocaleString('en-US')}`}
+                    </Txt>
+                  ) : null}
+                  <Pill variant="keep">{`bsc mainnet ${chainId}`}</Pill>
+                </SoukRow>
+                <IconChevron
+                  className={cx('text-souk-steel transition-transform lg:hidden', chainOpen && 'rotate-180')}
+                />
+              </div>
+            </button>
             {/* the drawing's four boxes at their own widths: registry, reputation,
                 the reading with its endpoints, and the metadata */}
-            <div className="grid gap-5 xl:grid-cols-[660fr_380fr_430fr_282fr] lg:grid-cols-2">
-              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5">
+            <div
+              className={cx(
+                'grid gap-5 xl:grid-cols-[660fr_380fr_430fr_282fr] lg:grid-cols-2',
+                !chainOpen && 'hidden lg:grid',
+              )}
+            >
+              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                 <Txt size={13} lead={20} weight="bold" tone="ink">Registry record</Txt>
                 <dl className="mt-4 space-y-3">
                   {detail.agent_id && (
@@ -898,7 +939,7 @@ export function AgentDetailPage() {
                 </dl>
               </section>
 
-              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5">
+              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                 <Txt size={13} lead={20} weight="bold" tone="ink">Reputation on the registry index</Txt>
                 <div className="mt-4 grid grid-cols-3 gap-3">
                   <Kpi value={formatScore(detail.total_score)} label="Score" />
@@ -915,7 +956,7 @@ export function AgentDetailPage() {
                 </div>
               </section>
 
-              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5">
+              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                 <Txt size={13} lead={20} weight="bold" tone="ink">
                   Marketplace liveness record
                 </Txt>
@@ -971,7 +1012,7 @@ export function AgentDetailPage() {
               </section>
 
               {onchain.length > 0 && (
-                <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5">
+                <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                   <Txt size={13} lead={20} weight="bold" tone="ink">On-chain metadata</Txt>
                   <dl className="mt-4 space-y-3">
                     {onchain.map((m) => (

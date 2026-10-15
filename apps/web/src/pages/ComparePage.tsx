@@ -210,7 +210,7 @@ export function ComparePage() {
 
   return (
     <section className="min-h-screen bg-souk-canvas text-souk-ink">
-      <div className="px-8 pb-24">
+      <div className="px-4 lg:px-8 pb-24">
         <Stack gap={10} pad={[32, 0, 0, 0]}>
           {effectiveIds.length > 0 ? (
             <Txt size={11} lead={16} mono upper tone="data">

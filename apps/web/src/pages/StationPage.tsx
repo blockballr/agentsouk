@@ -154,7 +154,7 @@ export function StationPage() {
   const signedIn = Boolean(session?.token)
 
   return (
-    <div className="min-h-screen bg-souk-canvas px-8 pb-28 pt-10 text-souk-ink">
+    <div className="min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink">
       {/* the hero names the room and says what signs it */}
       <Stack gap={10} pad={[32, 0, 0, 0]}>
         <Txt size={11} lead={16} mono upper tone="data">
