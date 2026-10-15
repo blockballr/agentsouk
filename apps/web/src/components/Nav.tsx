@@ -6,7 +6,8 @@ import { ThemeToggle } from './ThemeToggle'
 import { NotificationBell } from './NotificationBell'
 import { Wordmark } from './Wordmark'
 import { cartCount, subscribe } from '../lib/cart'
-import { connectWallet, disconnectWallet, getActiveAccount } from '../lib/wallet'
+import { connectWallet, disconnectWallet } from '../lib/wallet'
+import { useActiveAccount } from '../lib/use-active-account'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { Dot, IconCart, SoukMark, Row, Rule, Stack, Txt } from './souk'
@@ -43,11 +44,9 @@ const profileClass =
 export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false)
   // the profile chip says the wallet rather than spelling out Profile: the address
-  // is the affordance, so the connected account is read once here and passed down
-  const [wallet, setWallet] = useState<string | null>(null)
-  useEffect(() => {
-    void getActiveAccount().then(setWallet)
-  }, [])
+  // is the affordance, and the wallet is watched so a switch inside the wallet
+  // moves the chip with it
+  const wallet = useActiveAccount()
   return (
     <header className="relative z-10 border-b border-souk-hair bg-souk-canvas">
       <div className="mx-auto flex h-[62px] items-center justify-between px-4 lg:px-8">
@@ -78,7 +77,7 @@ export function Nav() {
           <ProfileChip
             wallet={wallet}
             onConnect={() => {
-              void connectWallet().then(setWallet)
+              void connectWallet()
             }}
           />
         </div>

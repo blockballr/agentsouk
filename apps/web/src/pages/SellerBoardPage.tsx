@@ -11,7 +11,8 @@ import { chainLabel } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { countByDay } from '../lib/history'
 import { verdictFor } from '../lib/verdict'
-import { connectWallet, getActiveAccount } from '../lib/wallet'
+import { connectWallet } from '../lib/wallet'
+import { useActiveAccount } from '../lib/use-active-account'
 import { Btn, Dot, Kpi, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
 
 type HiresSource = 'postgres' | 'memory' | null
@@ -94,7 +95,8 @@ function catalogueFreshness(cat: Catalogue | null): string | null {
 }
 
 export function SellerBoardPage() {
-  const [account, setAccount] = useState<string | null>(null)
+  // the seller's wallet, watched so a switch inside the wallet re-reads the board
+  const account = useActiveAccount()
   const [connecting, setConnecting] = useState(false)
   const [owned, setOwned] = useState<OwnedAgentsResult | null>(null)
   const [hires, setHires] = useState<PayeeHire[] | null>(null)
@@ -103,10 +105,6 @@ export function SellerBoardPage() {
   const [loading, setLoading] = useState(false)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    void getActiveAccount().then(setAccount)
-  }, [])
 
   const load = useCallback(async () => {
     if (!account) {
@@ -153,7 +151,7 @@ export function SellerBoardPage() {
   async function onConnect() {
     setConnecting(true)
     try {
-      setAccount(await connectWallet())
+      void connectWallet()
     } catch (e) {
       setError(hireErrorText(e))
     } finally {

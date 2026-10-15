@@ -355,12 +355,24 @@ export function disconnectWallet(): void {
 
 let activeProvider: Eip1193Provider | null = null;
 
+// surfaces that show the wallet watch the active account instead of reading it
+// once, so switching account in the wallet updates the page instead of leaving
+// the first address on screen
+const accountWatchers = new Set<(account: string | null) => void>();
+
+function emitActiveAccount(account: string | null): void {
+  for (const watcher of accountWatchers) watcher(account);
+}
+
 function handleAccountsChanged(accounts: unknown): void {
   const list = Array.isArray(accounts) ? (accounts as string[]) : [];
   if (list.length === 0) {
     // disconnected in the wallet: drop the connection entirely
     clearWalletChoice();
+    emitActiveAccount(null);
+    return;
   }
+  emitActiveAccount(list[0]);
 }
 
 function handleChainChanged(chainId: unknown): void {
@@ -368,7 +380,29 @@ function handleChainChanged(chainId: unknown): void {
   // a stale wrong-chain connection must never reach the settle path
   if (typeof chainId === "string" && chainId.toLowerCase() !== chainIdToHex(targetChainId)) {
     clearWalletChoice();
+    emitActiveAccount(null);
+    return;
   }
+  // back on the right chain: the provider's own active account is truth again
+  void getActiveAccount().then(emitActiveAccount);
+}
+
+// the provider's own events, attached once there is a watcher to feed; a fresh
+// page load with an already authorized wallet gets its listeners here rather
+// than waiting for an explicit connect
+export function watchActiveAccount(listener: (account: string | null) => void): () => void {
+  accountWatchers.add(listener);
+  void (async () => {
+    try {
+      attachProviderListeners(await getProvider());
+    } catch {
+      // no provider yet: a later connect attaches through requestAccounts
+    }
+    listener(await getActiveAccount());
+  })();
+  return () => {
+    accountWatchers.delete(listener);
+  };
 }
 
 function detachProviderListeners(): void {
@@ -428,6 +462,9 @@ async function requestAccounts(provider: Eip1193Provider): Promise<string> {
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   if (!accounts?.length) throw new Error("No account authorized.");
   attachProviderListeners(provider);
+  // a request does not always emit accountsChanged, so the connection's own
+  // account is pushed to the watchers here; every surface follows it
+  emitActiveAccount(accounts[0]);
   return accounts[0];
 }
 

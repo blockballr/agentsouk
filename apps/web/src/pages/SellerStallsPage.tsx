@@ -17,7 +17,8 @@ import {
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { jobStatusName } from '../lib/jobs8183'
-import { connectWallet, getActiveAccount, getProvider } from '../lib/wallet'
+import { connectWallet, getProvider } from '../lib/wallet'
+import { useActiveAccount } from '../lib/use-active-account'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 import {
   AgentAvatar,
@@ -134,7 +135,8 @@ function jobsWithin(days: number, list: Jobs8183Row[]): Jobs8183Row[] {
 }
 
 export function SellerStallsPage() {
-  const [account, setAccount] = useState<string | null>(null)
+  // the seller's wallet, watched so a switch inside the wallet re-reads the stalls
+  const account = useActiveAccount()
   const [connecting, setConnecting] = useState(false)
   const [owned, setOwned] = useState<OwnedAgentsResult | null>(null)
   const [hires, setHires] = useState<PayeeHire[] | null>(null)
@@ -144,14 +146,10 @@ export function SellerStallsPage() {
   const [error, setError] = useState<string | null>(null)
   const [hiresError, setHiresError] = useState<string | null>(null)
 
-  useEffect(() => {
-    void getActiveAccount().then(setAccount)
-  }, [])
-
   async function connect() {
     setConnecting(true)
     try {
-      setAccount(await connectWallet())
+      void connectWallet()
     } finally {
       setConnecting(false)
     }

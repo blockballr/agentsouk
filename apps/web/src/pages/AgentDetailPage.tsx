@@ -35,10 +35,10 @@ import {
   connectWallet,
   disconnectWallet,
   ensureBscChain,
-  getActiveAccount,
   getProvider,
   setTargetChain,
 } from '../lib/wallet'
+import { useActiveAccount } from '../lib/use-active-account'
 import {
   deliveryErrorText,
   fetchHireRequirements,
@@ -241,9 +241,8 @@ export function AgentDetailPage() {
   const [perfProbe, setPerfProbe] = useState<PerformanceProbe | null>(null)
   const [liveness, setLiveness] = useState<OnchainLiveness | null>(null)
   // the connected viewer, so owner-only affordances can be hidden from everyone else
-  const [viewer, setViewer] = useState<string | null>(null)
+  // (the wallet itself comes from the watched hook below)
   // whether the wallet read and the hire lookup have answered, so nothing is claimed before they do
-  const [viewerKnown, setViewerKnown] = useState(false)
   const [hireLookedUp, setHireLookedUp] = useState(false)
   // the viewer's live hire for this agent, found through the receipts store rather
   // than the instance's own ledger
@@ -270,12 +269,13 @@ export function AgentDetailPage() {
   // push the hire card off the screen
   const [chainOpen, setChainOpen] = useState(false)
 
+  // the viewer's wallet, watched rather than read once: a switch inside the
+  // wallet re-points the session controls at the new account
+  const viewer = useActiveAccount()
+  const [viewerKnown, setViewerKnown] = useState(false)
   useEffect(() => {
-    void getActiveAccount().then((a) => {
-      setViewer(a)
-      setViewerKnown(true)
-    })
-  }, [])
+    if (viewer !== null) setViewerKnown(true)
+  }, [viewer])
 
   useEffect(() => {
     let cancelled = false
@@ -1328,15 +1328,16 @@ function BoostPanel({
 }) {
   const [phase, setPhase] = useState<'idle' | 'busy' | 'done' | 'error'>('idle')
   const [message, setMessage] = useState<string | null>(null)
-  const [account, setAccount] = useState<string | null>(null)
   const [status, setStatus] = useState<{
     eligible: boolean
     checks: { key: string; label: string; ok: boolean; detail?: string }[]
     missing: string[]
   } | null>(null)
 
+  // the owner's wallet, watched: the boost card is the owner's affordance and a
+  // switch inside the wallet hands it to the other account without a reload
+  const account = useActiveAccount()
   useEffect(() => {
-    void getActiveAccount().then(setAccount)
     void getBoostStatus(Number(chainId), tokenId)
       .then((s) => setStatus({ eligible: s.eligible, checks: s.checks, missing: s.missing }))
       .catch(() => setStatus(null))
@@ -1352,7 +1353,6 @@ function BoostPanel({
     setMessage(null)
     try {
       const addr = account ?? (await connectWallet())
-      setAccount(addr)
       if (!ownerSet.includes(addr.toLowerCase())) {
         setPhase('error')
         setMessage('Connect the wallet that owns this agent (registry owner or agent wallet).')
