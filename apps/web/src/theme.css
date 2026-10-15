@@ -58,6 +58,14 @@
      shadow in, rather than the old register's forest green */
   --shadow-lg: rgba(2, 50, 71, 0.55) 1px 8px 20px 0px;
   --shadow-lg-2: rgba(2, 50, 71, 0.32) 1px 8px 20px 0px;
+
+  /* the mast wash behind a page's first band: deep-sea in the dark register,
+     the drawn sky wash at 55 percent on paper */
+  --mast-wash: rgba(2, 50, 71, 0.5);
+
+  /* labels on indigo: the register's one token that stays the same in both,
+     so copy sitting on the indigo card never inverts into it */
+  --color-souk-indigo-labels: #9498ae;
 }
 
 /* the metal finish: a lit edge, a faint face sheen, scan lines and the one glow
@@ -141,6 +149,10 @@
   --color-switch-knob: #111a4a;
   --shadow-lg: rgba(17 26 74 / 0.28) 1px 8px 20px 0px;
   --shadow-lg-2: rgba(17 26 74 / 0.18) 1px 8px 20px 0px;
+
+  /* paper's first band washes in the drawn sky, never in deep-sea */
+  --mast-wash: rgba(136, 222, 235, 0.55);
+  --color-souk-indigo-labels: #9498ae;
 }
 
 [data-theme='light'] .duotone {
