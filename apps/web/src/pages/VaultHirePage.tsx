@@ -256,7 +256,7 @@ export default function VaultHirePage() {
           {
             cells: [
               { text: t.symbol, weight: 'semibold', tone: 'ink' },
-              { text: t.address, size: 12, mono: true, tone: 'slate' },
+              { text: t.address, size: 12, mono: true, tone: 'slate', className: 'break-all' },
               { text: String(t.decimals), size: 12, mono: true, tone: 'steel' },
               { text: capFor(t.symbol), size: 12, mono: true, tone: 'data' },
             ],
@@ -266,7 +266,7 @@ export default function VaultHirePage() {
   )
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 text-souk-ink lg:pb-16">
+    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-[240px] text-souk-ink xl:pb-16">
       <Stack gap={10} className="pt-8">
         <Txt size={11} lead={16} mono upper tone="data">
           VAULT HIRE · {CHAIN.label} {CHAIN.id} · VAULT {vault ? short(vault) : 'not configured'}
@@ -292,7 +292,7 @@ export default function VaultHirePage() {
         </Row>
       ) : null}
 
-      <div className="mt-5 grid grid-cols-1 items-start gap-5 lg:grid-cols-[1316fr_518fr]">
+      <div className="mt-5 grid grid-cols-1 items-start gap-5 lg:grid-cols-[1316fr_520fr]">
         <div className="flex min-w-0 flex-col gap-5">
           {prefill?.name ? (
             <Stack surface pad={[20, 22, 20, 22]} gap={12}>
@@ -337,11 +337,15 @@ export default function VaultHirePage() {
                   <Pill variant="warn">bsc testnet {CHAIN.id}</Pill>
                 </Row>
               </Row>
-              <DataTable
-                cols={[280, 540, 160, 292]}
-                header={['TOKEN', 'ADDRESS', 'DECIMALS', 'CAP PER DEPOSIT']}
-                rows={pairRows}
-              />
+              {/* the address column is a fixed 540 in the design; letting the table
+                  scroll keeps the page itself from going sideways on a phone */}
+              <div className="overflow-x-auto">
+                <DataTable
+                  cols={[280, 540, 160, 292]}
+                  header={['TOKEN', 'ADDRESS', 'DECIMALS', 'CAP PER DEPOSIT']}
+                  rows={pairRows}
+                />
+              </div>
               <div className="grid gap-2.5 sm:grid-cols-3">
                 {[
                   { value: '500', label: 'Fee tier', note: 'bound when the hire opens' },
@@ -524,15 +528,20 @@ export default function VaultHirePage() {
           <NoteBox
             title="Honest state"
             copy={`The vault is live on ${CHAIN.label} at ${
-              vault ? `${short(vault)} (${explorerAddressUrl(97, vault)})` : 'not configured'
+              vault ? short(vault) : 'not configured'
             }, and its open-trade-withdraw loop is proven from scripts and a live smoke. The agent side that trades these hires runs from the executor service; a hire opened by a wallet the team owns does not count toward any quest.`}
             rows={[
               { label: 'VAULT', value: vault ? short(vault) : 'not configured', mono: true },
               { label: 'CHAIN', value: `${CHAIN.label} ${CHAIN.id}` },
               {
                 label: 'EXPLORER',
-                value: vault ? explorerAddressUrl(97, vault) : 'not configured',
+                // host plus short address, the drawn value; the full url has no break
+                // opportunity and pushed the page sideways on a phone
+                value: vault
+                  ? `${explorerAddressUrl(97, vault).replace(/^https?:\/\//, '').split('/address/')[0]}/address/${short(vault)}`
+                  : 'not configured',
                 mono: true,
+                width: 220,
               },
             ]}
           />
