@@ -839,7 +839,7 @@ export function AgentDetailPage() {
               band's own top padding, without which the cards above sit on its rim.
               on a phone it folds, because four boxes stacked push the hire card off
               the screen */}
-          <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5">
+          <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5 @container">
             <button
               type="button"
               onClick={() => setChainOpen((open) => !open)}
@@ -872,8 +872,8 @@ export function AgentDetailPage() {
                 the reading with its endpoints, and the metadata */}
             <div
               className={cx(
-                'grid gap-5 xl:grid-cols-[660fr_380fr_430fr_282fr] lg:grid-cols-2',
-                !chainOpen && 'hidden lg:grid',
+                'gap-5 grid-cols-1 @[900px]:grid-cols-2 @[1600px]:grid-cols-[660fr_380fr_430fr_282fr]',
+                chainOpen ? 'grid' : 'hidden lg:grid',
               )}
             >
               <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
