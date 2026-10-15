@@ -129,7 +129,9 @@ export function RatingBoxes({
   )
 }
 
-// a modal for whatever is longer than its slot; Escape and the close button both dismiss it
+// a modal for whatever is longer than its slot; Escape and the close button both dismiss it.
+// written on the indigo surface, the quest card's own treatment, so the fields and
+// copy carry the on-indigo tones and stay readable in both registers
 export function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -139,14 +141,14 @@ export function Dialog({ title, onClose, children }: { title: string; onClose: (
     <dialog
       ref={ref}
       onClose={onClose}
-      className="m-auto w-[min(640px,92vw)] rounded-[14px] border hairline border-slate-verdant/40 bg-bone-white p-0 text-press-black backdrop:bg-black/60"
+      className="m-auto w-[min(640px,92vw)] rounded-[14px] border border-white/15 bg-souk-indigo p-0 text-white backdrop:bg-black/60"
     >
-      <div className="flex items-center justify-between gap-4 border-b hairline border-slate-verdant/30 px-5 py-3">
-        <p className={LABEL}>{title}</p>
+      <div className="flex items-center justify-between gap-4 border-b border-white/15 px-5 py-3">
+        <p className="micro text-souk-indigo-labels">{title}</p>
         <button
           type="button"
           onClick={() => ref.current?.close()}
-          className="micro min-h-10 px-2 text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-press-black"
+          className="micro min-h-10 px-2 text-souk-indigo-labels transition hover:text-white focus-visible:outline-2 focus-visible:outline-white"
         >
           Close
         </button>

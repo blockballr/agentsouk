@@ -106,7 +106,7 @@ export function AdvantagePage() {
   }, [])
 
   return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
+    <section className="px-6 pb-[240px] pt-10 xl:pb-24">
       <p className="micro text-newsprint-gray">Agent advantage</p>
       <h1 className="mt-4 font-serif text-[clamp(44px,7vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
         Agent vs. manual.
@@ -177,7 +177,7 @@ function NetworkPanel({ report }: { report: AdvantageReport }) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {network ? (
-        <div className="border hairline border-slate-verdant/40 p-8">
+        <div className="min-w-0 border hairline border-slate-verdant/40 p-8">
           <p className="micro text-newsprint-gray">Network</p>
           <p className="mt-3 font-serif text-2xl font-medium">{network.name}</p>
           <p className="mt-1 text-sm text-newsprint-gray">{networkLine(network)}</p>
@@ -216,13 +216,13 @@ function NetworkPanel({ report }: { report: AdvantageReport }) {
             </dl>
           ) : null}
           {capture?.note ? (
-            <p className="mt-5 max-w-3xl text-sm leading-snug text-newsprint-gray">{capture.note}</p>
+            <p className="mt-5 max-w-3xl text-sm leading-snug text-newsprint-gray [overflow-wrap:anywhere]">{capture.note}</p>
           ) : null}
         </div>
       ) : null}
 
       {openMainnet && mainnet ? (
-        <div className="border hairline border-slate-verdant/40 p-8">
+        <div className="min-w-0 border hairline border-slate-verdant/40 p-8">
           <div className="flex items-center justify-between gap-4">
             <p className="micro text-newsprint-gray">Mainnet</p>
             <span className="micro rounded-full border hairline border-slate-verdant/40 px-2.5 py-1 text-slate-verdant">
@@ -232,7 +232,7 @@ function NetworkPanel({ report }: { report: AdvantageReport }) {
           <p className="mt-3 font-serif text-2xl font-medium">{mainnet.name}</p>
           <p className="mt-1 text-sm text-newsprint-gray">{networkLine(mainnet)}</p>
           {mainnet.note ? (
-            <p className="mt-5 max-w-3xl text-sm leading-snug text-newsprint-gray">{mainnet.note}</p>
+            <p className="mt-5 max-w-3xl text-sm leading-snug text-newsprint-gray [overflow-wrap:anywhere]">{mainnet.note}</p>
           ) : null}
         </div>
       ) : null}

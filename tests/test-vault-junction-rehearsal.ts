@@ -1,4 +1,4 @@
-﻿// The junction rehearsal, against the live vault on chain 97: a granted Altana
+// The junction rehearsal, against the live vault on chain 97: a granted Altana
 // session initiates the trade, the sweep executes through the actor, and the
 // buyer's revoke holds everything back. Per the proposed-write rule every step
 // is bound: the buyer hands 0.02 in a Testnet USDT that it funded itself, and

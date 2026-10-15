@@ -67,8 +67,8 @@ export async function getQuestProgress(wallet: string): Promise<QuestProgress> {
   }
 }
 
-// hire, list, hire again and the passport is finished; the third hire is an extra for its points
-export type StepKey = 'first' | 'stall' | 'second' | 'third' | 'seal'
+// the passport is three stamps: a hire, a stall of your own, and a second hire
+export type StepKey = 'first' | 'stall' | 'second'
 
 export interface QuestAgent {
   tokenId: string
@@ -109,9 +109,6 @@ export interface QuestStep {
   title: string
   // a hire step suggests agents from one category; an agent of any category counts for it
   category?: CategoryKey
-  points: number
-  // not needed to finish the passport
-  optional?: boolean
   // the agents a step suggests are chain 97 listings; on any other chain the step points at the category
   agents?: Record<number, { primary: QuestAgent; alternate?: QuestAgent }>
 }
@@ -121,7 +118,6 @@ export const QUEST_STEPS: QuestStep[] = [
     key: 'first',
     title: 'First hire',
     category: 'health-factor',
-    points: 100,
     agents: {
       97: {
         primary: {
@@ -134,12 +130,11 @@ export const QUEST_STEPS: QuestStep[] = [
       },
     },
   },
-  { key: 'stall', title: 'Your stall', points: 300 },
+  { key: 'stall', title: 'Your stall' },
   {
     key: 'second',
     title: 'Second hire',
     category: 'yield',
-    points: 200,
     agents: {
       97: {
         primary: {
@@ -156,24 +151,6 @@ export const QUEST_STEPS: QuestStep[] = [
       },
     },
   },
-  {
-    key: 'third',
-    title: 'Third hire',
-    category: 'grid-trading',
-    points: 150,
-    optional: true,
-    agents: {
-      97: {
-        primary: {
-          tokenId: '2522',
-          name: 'Souk Grid Planner',
-          task: 'Plan a grid between 550 and 650 USD with 5 levels and 100 USD per order.',
-          input: { lowerUsd: 550, upperUsd: 650, levels: 5, orderSizeUsd: 100 },
-        },
-      },
-    },
-  },
-  { key: 'seal', title: 'Grand seal', points: 250 },
 ]
 
 // hire stamps go by how many different agents were hired, not by which category they were in
@@ -183,8 +160,6 @@ export function stampsFrom(progress: QuestProgress | null): Record<StepKey, bool
     first: hired >= 1,
     stall: Boolean(progress?.listedOne),
     second: hired >= 2,
-    third: hired >= 3,
-    seal: Boolean(progress?.completed),
   }
 }
 
@@ -235,22 +210,6 @@ export function questPicks(
   const filled = [...confirmed, ...workingWritten].find((a) => a.task)
   if (filled && !picks.some((a) => a.task)) picks[picks.length < 2 ? picks.length : 1] = filled
   return picks
-}
-
-// titles are cosmetic: they read the same points the server works out, and carry no value
-export const RANKS: { at: number; title: string }[] = [
-  { at: 0, title: 'Adventurer' },
-  { at: 100, title: 'Trader' },
-  { at: 250, title: 'Merchant' },
-  { at: 550, title: 'Stallholder' },
-  { at: 750, title: 'Market maker' },
-  { at: 1000, title: 'Master of the Souk' },
-]
-
-export function rankFor(points: number): { title: string; next: { at: number; title: string } | null } {
-  const reached = RANKS.filter((r) => points >= r.at)
-  const current = reached[reached.length - 1] ?? RANKS[0]
-  return { title: current.title, next: RANKS.find((r) => r.at > points) ?? null }
 }
 
 // the quest's standing in this browser: a wallet starts it or sets it aside, and anyone,

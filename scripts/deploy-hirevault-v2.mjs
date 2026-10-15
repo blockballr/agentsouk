@@ -107,7 +107,7 @@ if (DRY) {
 const hash = await walletClient.deployContract({
   abi: artifact.abi,
   bytecode: artifact.bytecode.object,
-  args: [target.wbnb, target.usdt, target.router, target.factory, capWbnb, capUsdt, retainedBps],
+  args: [target.router, target.factory, target.wbnb, target.usdt, capWbnb, capUsdt, retainedBps],
 });
 
 const receipt = await publicClient.waitForTransactionReceipt({ hash });

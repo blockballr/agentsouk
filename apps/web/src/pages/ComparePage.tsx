@@ -18,8 +18,52 @@ import { CompareBar } from '../components/CompareBar'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
 import { builtWithFrom } from '../lib/onchain-meta'
-import { VERDICT_DOT, verdictFor } from '../lib/verdict'
-import { card, cx } from '../components/ui'
+import { verdictFor, type VerdictTone } from '../lib/verdict'
+import { chainLabel } from '../lib/contracts'
+import {
+  AgentAvatar,
+  Btn,
+  DataTable,
+  Dot,
+  IconTrophy,
+  NoteBox,
+  Pill,
+  Row,
+  Rule,
+  SectionHead,
+  Stack,
+  Txt,
+  type DotTone,
+  type TableRowSpec,
+} from '../components/souk'
+
+// the verdict's four tones in the design's five-state dot grammar
+const VERDICT_TONE: Record<VerdictTone, DotTone> = {
+  good: 'good',
+  held: 'held',
+  bad: 'bad',
+  none: 'quiet',
+}
+
+// the check's own stamp, read off the verification record in UTC
+function utcStamp(iso: string): string | null {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  const time = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} UTC`
+  const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][
+    d.getUTCMonth()
+  ]
+  return `${time} · ${d.getUTCDate()} ${month} ${d.getUTCFullYear()}`
+}
+
+// the rails an agent actually answers on, read off its record for the head chips
+function railsFor(a: AgentDetail): string[] {
+  const rails: string[] = []
+  if (a.a2a_endpoint || a.agent_url) rails.push('a2a')
+  if (a.x402_supported) rails.push('x402')
+  if (sellsByJob(a.skills) || takesJobs(a.skills)) rails.push('erc-8183')
+  return rails
+}
 
 export function ComparePage() {
   const [sp, setSp] = useSearchParams()
@@ -147,39 +191,86 @@ export function ComparePage() {
     }
   }, [effectiveIds])
 
-  return (
-    <section className="mx-auto max-w-[1400px] px-6 pb-24 pt-10">
-      <p className="micro text-newsprint-gray">Compare</p>
-      <h1 className="mt-4 font-serif text-[clamp(44px,7vw,96px)] font-medium leading-[0.9] tracking-[-0.04em]">
-        Side by side.
-      </h1>
+  // the strap carries only what the table actually read: the count on it and the
+  // newest check that landed, in UTC
+  const newestCheck = useMemo(
+    () =>
+      agents
+        .map((a) => a.verification?.checkedAt)
+        .filter((t): t is string => Boolean(t))
+        .sort()
+        .at(-1) ?? null,
+    [agents],
+  )
+  const strapParts = [`compare`, `${agents.length} agents`]
+  if (newestCheck) {
+    const stamp = utcStamp(newestCheck)
+    if (stamp) strapParts.push(`read ${stamp}`)
+  }
 
-      {effectiveIds.length === 0 ? (
-        <Picker selected={shortlistIds} onToggle={toggleId} onClear={clearSelection} />
-      ) : (
-        <>
-          <CompareTable
-            agents={agents}
-            loading={loading}
-            error={error}
-            onClear={clearSelection}
-            checkedIds={selectedIds}
-            onToggleChecked={toggleSelected}
-          />
-          {!loading && !error && agents.length >= 2 && <CompareCommentary agents={agents} />}
-          <ShortlistSearch selected={effectiveIds} onToggle={toggleId} />
-        </>
-      )}
-      <CompareBar
-        count={effectiveIds.length > 0 ? effectiveIds.length : shortlistIds.length}
-        ids={effectiveIds.length > 0 ? effectiveIds : shortlistIds}
-        onClear={clearSelection}
-        onCompare={effectiveIds.length > 0 ? scrollToTable : goCompare}
-        onHired={handleHired}
-        // derive the actions from the RENDERED table agents: selection is re-synced on every load,
-        // so the counts always equal what the actions act on
-        hire={effectiveIds.length > 0 && !loading && !error && agents.length > 0 ? { winners: selectedAgents } : undefined}
-      />
+  return (
+    <section className="min-h-screen bg-souk-canvas text-souk-ink">
+      <div className="px-4 lg:px-8 pb-[240px] xl:pb-24">
+        <Stack gap={10} pad={[32, 0, 0, 0]}>
+          {effectiveIds.length > 0 ? (
+            <Txt size={11} lead={16} mono upper tone="data">
+              {strapParts.join(' · ')}
+            </Txt>
+          ) : (
+            <Txt size={11} lead={16} mono upper tone="data">
+              compare
+            </Txt>
+          )}
+          <Txt size={34} lead={42} display weight="bold" tone="ink">
+            Side by side.
+          </Txt>
+          {effectiveIds.length > 0 ? (
+            <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
+              Two or three agents off the shelf, one row per fact, every figure read off the record
+              the shelf reads. A field the record does not carry says so, and a zero that was never
+              earned stays a zero.
+            </Txt>
+          ) : null}
+        </Stack>
+
+        {effectiveIds.length === 0 ? (
+          <Picker selected={shortlistIds} onToggle={toggleId} onClear={clearSelection} />
+        ) : (
+          <>
+            <CompareTable
+              agents={agents}
+              loading={loading}
+              error={error}
+              onClear={clearSelection}
+              checkedIds={selectedIds}
+              onToggleChecked={toggleSelected}
+            />
+            {!loading && !error && agents.length >= 2 && <CompareCommentary agents={agents} />}
+            <Row align="start" gap={20} pad={[20, 0, 0, 0]} className="flex-wrap">
+              <Stack gap={12} className="min-w-[420px] flex-1">
+                <ShortlistSearch selected={effectiveIds} onToggle={toggleId} />
+              </Stack>
+            </Row>
+            <Stack gap={8} pad={[20, 0, 0, 0]}>
+              <Rule />
+              <Txt size={12} lead={18} tone="muted" className="block">
+                Best in each category goes to the agent whose last check went best, then the higher
+                registry score, then more reviews.
+              </Txt>
+            </Stack>
+          </>
+        )}
+        <CompareBar
+          count={effectiveIds.length > 0 ? effectiveIds.length : shortlistIds.length}
+          ids={effectiveIds.length > 0 ? effectiveIds : shortlistIds}
+          onClear={clearSelection}
+          onCompare={effectiveIds.length > 0 ? scrollToTable : goCompare}
+          onHired={handleHired}
+          // derive the actions from the RENDERED table agents: selection is re-synced on every load,
+          // so the counts always equal what the actions act on
+          hire={effectiveIds.length > 0 && !loading && !error && agents.length > 0 ? { winners: selectedAgents } : undefined}
+        />
+      </div>
     </section>
   )
 }
@@ -220,11 +311,8 @@ function Picker({
   const keyFor = (a: AgentSummary) => `${a.chain_id}/${a.token_id}`
 
   return (
-    <div className="mt-12">
-      <p className="max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        Pick two or more agents to see them side by side. Your picks stay as you switch category.
-      </p>
-      <div className="mt-6 flex flex-wrap items-center gap-6">
+    <div>
+      <Row align="center" gap={14} pad={[20, 0, 0, 0]} className="flex-wrap">
         <FilterChip active={category === 'all'} onClick={() => setCategory('all')}>
           All
         </FilterChip>
@@ -237,71 +325,85 @@ function Picker({
             {c.label}
           </FilterChip>
         ))}
-        <label className="sr-only" htmlFor="compare-search">
-          Search agents
-        </label>
-        <input
-          id="compare-search"
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search name, endpoint or tag"
-          className="border hairline input-hairline w-full rounded-[6px] bg-transparent px-3 py-2 text-base sm:w-64 sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
-        />
-      </div>
+        <Row
+          align="center"
+          gap={12}
+          radius={8}
+          bg="surface2"
+          hair
+          pad={[0, 6, 0, 18]}
+          className="h-11 w-full max-w-[1180px] sm:w-96"
+        >
+          <label className="sr-only" htmlFor="compare-search">
+            Search agents
+          </label>
+          <input
+            id="compare-search"
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search name, endpoint or tag"
+            className="w-full bg-transparent text-[13px] leading-5 text-souk-ink placeholder:text-souk-muted focus-visible:outline-none"
+          />
+        </Row>
+      </Row>
 
-      <div className="mt-6 flex items-center gap-6 text-xs text-newsprint-gray">
-        <span>
-          {selected.length > 0 ? `${selected.length} shortlisted` : 'Nothing shortlisted yet'}
-        </span>
+      <Row align="center" gap={16} pad={[14, 0, 0, 0]}>
+        <Txt size={11} lead={16} mono tone={selected.length > 0 ? 'data' : 'muted'}>
+          {selected.length > 0
+            ? `${selected.length} shortlisted`
+            : 'nothing shortlisted yet'}
+        </Txt>
         {selected.length > 0 && (
           <button
             type="button"
             onClick={onClear}
-            className="micro text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green"
+            className="text-[10px] font-bold uppercase text-souk-steel transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
           >
             Clear
           </button>
         )}
-      </div>
+      </Row>
 
       {loading ? (
-        <div className="mt-8 animate-pulse space-y-3" role="status" aria-label="Loading candidates">
+        <div className="mt-6 animate-pulse space-y-3" role="status" aria-label="Loading candidates">
           {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="h-16 bg-slate-verdant/10" />
+            <div key={i} className="h-16 rounded-[8px] bg-souk-surface2" />
           ))}
         </div>
       ) : (
-        <ul className={cx(card('plain', 'none'), 'mt-6 overflow-hidden')}>
+        <Stack surface className="mt-6">
           {options.map((a) => {
             const key = keyFor(a)
             const checked = selected.includes(key)
             return (
-              <li key={key}>
-                <label
-                  className={`flex cursor-pointer items-center gap-6 border-b hairline border-slate-verdant/40 px-6 py-5 transition last:border-b-0 ${
-                    checked ? 'bg-echo-green/40' : 'hover:bg-echo-green/20'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggle(key)}
-                    className="h-4 w-4 accent-highlighter-green"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-serif text-lg font-medium">{a.name}</span>
-                    <span className="mt-0.5 block text-[12px] text-newsprint-gray">
-                      {categoryName(a.category)} ·{' '}
-                      {isOperatedByAgentSouk(a.owner_address) ? OPERATED_BY_LABEL : shortAddress(a.owner_address)}
-                    </span>
-                  </span>
-                  <VerdictInline agent={a} />
-                </label>
-              </li>
+              <label
+                key={key}
+                className={`flex cursor-pointer items-center gap-5 border-b border-souk-edge px-5 py-4 transition last:border-b-0 focus-within:bg-souk-data/10 ${
+                  checked ? 'bg-souk-data/10' : 'hover:bg-souk-surface2'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(key)}
+                  className="h-4 w-4 accent-souk-data"
+                />
+                <AgentAvatar size={34} name={a.name} imageUrl={a.image_url} />
+                <span className="min-w-0 flex-1">
+                  <Txt size={15} lead={20} weight="bold" tone="ink" className="block truncate">
+                    {a.name}
+                  </Txt>
+                  <Txt size={11} lead={15} mono tone="labels" className="mt-0.5 block">
+                    {categoryName(a.category)} ·{' '}
+                    {isOperatedByAgentSouk(a.owner_address) ? OPERATED_BY_LABEL : shortAddress(a.owner_address)}
+                  </Txt>
+                </span>
+                <VerdictInline agent={a} />
+              </label>
             )
           })}
-        </ul>
+        </Stack>
       )}
 
     </div>
@@ -319,6 +421,8 @@ function CompareTable({
   agents: AgentDetail[]
   loading: boolean
   error: boolean
+  // carried for the drawing's empty state alone: a populated table has no right hand
+  // slot on its callout row, and the picker and the bar each hold their own clear
   onClear: () => void
   checkedIds: string[]
   onToggleChecked: (id: string) => void
@@ -327,16 +431,19 @@ function CompareTable({
     () => new Set(Object.values(bestByCategory(agents)).filter((id): id is string => id !== null)),
     [agents],
   )
-  // columns read by category, the best of each first, so a winner sits beside its rivals
-  const columns = useMemo(
-    () =>
-      categoryGroups(agents).flatMap((g) =>
-        [...g.agents]
-          .sort((a, b) => Number(winnerIds.has(b.agent_id)) - Number(winnerIds.has(a.agent_id)))
-          .map((agent) => ({ agent, category: g.label })),
-      ),
-    [agents, winnerIds],
-  )
+  // one column per category: only its best agent is surfaced, so a table comparing
+  // all four categories holds at most four columns and never scrolls sideways; the
+  // ledger below still lists every agent and how each result was arrived at
+  const columns = useMemo(() => {
+    const best = bestByCategory(agents)
+    return categoryGroups(agents).flatMap((g) => {
+      const winner = g.agents.find((a) => a.agent_id === best[g.category])
+      return winner ? [{ agent: winner, category: g.label }] : []
+    })
+  }, [agents])
+
+  const cats = useMemo(() => [...new Set(columns.map((c) => c.category))], [columns])
+  const catLabel = cats.length === 1 ? cats[0] : `${cats.length} categories`
 
   const rows: { label: string; cell: (a: AgentDetail) => ReactNode }[] = [
     {
@@ -344,13 +451,17 @@ function CompareTable({
       cell: (a) => {
         const v = verdictFor(a.chain_id, a.verification)
         return (
-          <span title={v.explain}>
-            <span className="flex items-center gap-2 font-medium text-press-black">
-              <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_DOT[v.tone]}`} />
-              {v.label}
+          <span className="block" title={v.explain}>
+            <span className="flex items-center gap-2">
+              <Dot tone={VERDICT_TONE[v.tone]} size={8} />
+              <Txt size={13} lead={19} weight="semibold" tone="slate">
+                {v.label}
+              </Txt>
             </span>
             {a.verification ? (
-              <span className="mt-0.5 block text-[12px] text-newsprint-gray">checked {timeAgo(a.verification.checkedAt)}</span>
+              <Txt size={11} lead={15} tone="muted" className="mt-0.5 block">
+                checked {timeAgo(a.verification.checkedAt)}
+              </Txt>
             ) : null}
           </span>
         )
@@ -374,144 +485,283 @@ function CompareTable({
           .filter((s) => !isJobStepSkill(s, a.skills ?? []))
           .map((s) => s.name ?? s.id)
           .filter((n): n is string => Boolean(n))
-        if (names.length === 0) return <span className="text-newsprint-gray">{a.description?.slice(0, 90) || 'No skill list'}</span>
+        if (names.length === 0)
+          return <Txt size={13} lead={19} tone="muted">{a.description?.slice(0, 90) || 'No skill list'}</Txt>
         return (
-          <ul className="space-y-0.5">
+          <span className="block space-y-0.5">
             {names.slice(0, 3).map((n) => (
-              <li key={n}>{n}</li>
+              <Txt key={n} size={13} lead={19} tone="slate" className="block">
+                {n}
+              </Txt>
             ))}
-            {names.length > 3 ? <li className="text-newsprint-gray">and {names.length - 3} more</li> : null}
-          </ul>
+            {names.length > 3 ? (
+              <Txt size={13} lead={19} tone="muted" className="block">
+                and {names.length - 3} more
+              </Txt>
+            ) : null}
+          </span>
         )
       },
     },
-    { label: 'Registry score', cell: (a) => formatScore(a.total_score) },
-    { label: 'Reviews', cell: (a) => formatNumber(a.total_feedbacks) },
-    { label: 'Health', cell: (a) => (a.health_score !== null ? formatScore(a.health_score) : 'n/a') },
+    { label: 'Registry score', cell: (a) => <Txt size={16} lead={22} mono tone="data">{formatScore(a.total_score)}</Txt> },
+    {
+      label: 'Reviews',
+      cell: (a) => <Txt size={14} lead={20} mono tone={a.total_feedbacks === 0 ? 'steel' : 'data'}>{formatNumber(a.total_feedbacks)}</Txt>,
+    },
+    {
+      label: 'Health',
+      cell: (a) => <Txt size={14} lead={20} mono tone="ink">{a.health_score !== null ? formatScore(a.health_score) : 'n/a'}</Txt>,
+    },
     {
       label: 'Built with',
-      cell: (a) => builtWithFrom(a.raw_metadata?.onchain ?? [])?.label ?? <span className="text-newsprint-gray">Not stated</span>,
+      cell: (a) => {
+        const b = builtWithFrom(a.raw_metadata?.onchain ?? [])
+        return b ? (
+          <Txt size={13} lead={19} tone="slate">{b.label}</Txt>
+        ) : (
+          <Txt size={13} lead={19} tone="muted">Not stated</Txt>
+        )
+      },
     },
     {
       label: 'Owner',
       cell: (a) =>
         isOperatedByAgentSouk(a.owner_address) ? (
-          <span title={OPERATED_BY_TITLE}>{OPERATED_BY_LABEL}</span>
+          <Txt size={13} lead={19} tone="slate" className="block" >
+            <span title={OPERATED_BY_TITLE}>{OPERATED_BY_LABEL}</span>
+          </Txt>
         ) : (
-          <span className="font-mono text-[12px]">{shortAddress(a.owner_address)}</span>
+          <Txt size={12} lead={18} mono tone="slate" className="block">
+            {shortAddress(a.owner_address)}
+          </Txt>
         ),
     },
   ]
 
-  return (
-    <div id="compare-table" className="mt-12 scroll-mt-8">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="micro text-newsprint-gray">{agents.length} agents</p>
-        <button
-          type="button"
-          onClick={onClear}
-          className="micro min-h-11 text-newsprint-gray transition hover:text-press-black focus-visible:outline-2 focus-visible:outline-highlighter-green sm:min-h-0"
-        >
-          Start over
-        </button>
-      </div>
+  // the check ledger behind each verdict: what the record carries and, where the
+  // record carries nothing, the words that say so rather than a borrowed figure
+  const ledgerNote = (() => {
+    const ran = newestVerification(agents)
+    const parts: string[] = []
+    if (ran?.checkedAt) {
+      const stamp = utcStamp(ran.checkedAt)
+      if (stamp) parts.push(`ran ${stamp}`)
+    }
+    parts.push('no evidence hash', 'no expiry')
+    return parts.join(' · ')
+  })()
+  const ledgerRows: TableRowSpec[] = agents.map((a) => {
+    const v = verdictFor(a.chain_id, a.verification)
+    return {
+      height: 36,
+      cells: [
+        { text: a.name, size: 13, lead: 19, weight: 'semibold', tone: 'slate' },
+        { text: v.label, size: 13, lead: 19, weight: 'semibold', tone: v.tone === 'held' ? 'peach' : 'steel' },
+        {
+          text: a.verification?.quality ? a.verification.quality.grade : 'none yet',
+          size: 13,
+          lead: 19,
+          tone: a.verification?.quality ? 'data' : 'muted',
+        },
+        {
+          text: a.verification?.quality?.reason ?? 'no check ran',
+          size: 12,
+          lead: 18,
+          tone: a.verification?.quality?.reason ? 'steel' : 'muted',
+        },
+        {
+          text: a.verification ? `${a.verification.responseMs}ms` : 'none yet',
+          mono: Boolean(a.verification),
+          size: 13,
+          lead: 19,
+          tone: a.verification ? 'data' : 'muted',
+        },
+        { text: 'no evidence hash', size: 13, lead: 19, tone: 'muted' },
+        { text: 'no expiry set', size: 13, lead: 19, tone: 'muted' },
+      ],
+    }
+  })
 
-      {error ? (
-        <p className="metal rounded-[14px] border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
-          Could not load those agents. Pick them again.
-        </p>
+  return (
+    <div id="compare-table" className="scroll-mt-8">
+      {error || agents.length === 0 ? (
+        <CompareEmpty failed={error} onPickAgain={onClear} />
       ) : loading ? (
-        <div className="animate-pulse space-y-3" role="status" aria-label="Loading comparison">
+        <div className="mt-12 animate-pulse space-y-3" role="status" aria-label="Loading comparison">
           {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="h-14 bg-slate-verdant/10" />
+            <div key={i} className="h-14 rounded-[8px] bg-souk-surface2" />
           ))}
         </div>
-      ) : agents.length === 0 ? (
-        <p className="metal rounded-[14px] border hairline border-slate-verdant/40 px-10 py-16 text-center text-sm text-newsprint-gray">
-          None of those agents could be loaded. They may have left the registry.
-        </p>
       ) : (
         <>
-          {/* the scroll sits inside the card: the card's edge is drawn a pixel outside it,
-              which a scrolling box counts as overflow and answers with scrollbars */}
-          <div className={card('plain', 'none')}>
-            <div className="overflow-x-auto rounded-[inherit]">
-            <table className="w-full min-w-[560px] border-collapse text-left text-[14px]">
-              <thead>
-                <tr>
-                  <th scope="col" className="sticky left-0 z-10 w-[132px] bg-bone-white p-4 align-bottom sm:w-[160px]">
-                    <span className="sr-only">Fact</span>
-                  </th>
-                  {columns.map(({ agent: a, category }) => {
-                    const best = winnerIds.has(a.agent_id)
-                    const checked = checkedIds.includes(a.agent_id)
-                    return (
-                      <th
-                        key={a.agent_id}
-                        scope="col"
-                        className={`min-w-[190px] border-l hairline border-slate-verdant/25 p-4 align-top font-normal ${best ? 'bg-highlighter-green/[0.07]' : ''}`}
-                      >
-                        <span className="micro block text-newsprint-gray">{category}</span>
-                        <Link
-                          to={`/agents/${a.chain_id}/${a.token_id}`}
-                          className="mt-1 block font-serif text-[19px] font-medium leading-tight text-press-black hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
-                        >
-                          {a.name}
-                        </Link>
-                        {best ? (
-                          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-press-black px-2 py-0.5 text-[11px] font-[550] text-bone-white">
-                            <TrophyIcon className="h-3 w-3" />
-                            Best in {category.toLowerCase()}
-                          </span>
-                        ) : null}
-                        {sellsByJob(a.skills) ? (
-                          <p className="mt-3 text-[13px] text-newsprint-gray" title={JOB_SELLER_NOTE}>
-                            Hired by ERC-8183 job, not here
-                          </p>
-                        ) : (
-                          <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-2 text-[13px] text-press-black sm:min-h-0">
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => onToggleChecked(a.agent_id)}
-                              className="h-4 w-4 accent-highlighter-green"
-                            />
-                            Include in hire
-                          </label>
-                        )}
-                      </th>
-                    )
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.label} className="border-t hairline border-slate-verdant/25">
-                    <th scope="row" className="micro sticky left-0 z-10 bg-bone-white p-4 align-top font-[550] text-newsprint-gray">
-                      {r.label}
-                    </th>
-                    {columns.map(({ agent: a }) => (
-                      <td
-                        key={a.agent_id}
-                        className={`border-l hairline border-slate-verdant/25 p-4 align-top text-press-black ${winnerIds.has(a.agent_id) ? 'bg-highlighter-green/[0.07]' : ''}`}
-                      >
-                        {r.cell(a)}
-                      </td>
-                    ))}
-                  </tr>
+          {/* the drawing's callout row: the category and the count, gap 10, no right
+            hand slot. Clearing stays with the picker and the floating bar */}
+        <Row align="center" gap={10} pad={[24, 0, 0, 0]}>
+          <Txt size={11} lead={16} weight="bold" upper tone="data">
+            {catLabel}
+          </Txt>
+          <Txt size={11} lead={16} tone="muted">
+            {agents.length} agents
+            {cats.length === 1 ? ', one category' : ''}
+          </Txt>
+        </Row>
+
+          {/* every column is that category's winner, so the card's edge is the only
+              boundary: the table fits its container rather than scrolling sideways */}
+          <Stack surface className="w-full">
+            <table
+              className="w-full border-collapse text-left"
+              style={{ tableLayout: 'fixed' }}
+            >
+              <colgroup>
+                <col style={{ width: 302 }} />
+                {columns.map(({ agent: a }) => (
+                  <col key={a.agent_id} style={{ width: `calc((100% - 302px) / ${columns.length})` }} />
                 ))}
-              </tbody>
-            </table>
-            </div>
-          </div>
-          <p className="mt-4 max-w-3xl text-[13px] leading-relaxed text-newsprint-gray">
-            Best in each category goes to the agent whose last check went best, then the higher
-            registry score, then more reviews. The best agent you can hire directly in each category
-            starts ticked.
-          </p>
+              </colgroup>
+                <thead>
+                  <tr>
+                    <th
+                      scope="col"
+                      className="sticky left-0 z-10 bg-souk-surface1 border-b border-r border-souk-hair text-left"
+                      style={{ padding: '16px 14px 14px 14px' }}
+                    >
+                      <Txt size={13} lead={18} weight="bold" tone="ink">
+                        Fact
+                      </Txt>
+                    </th>
+                    {columns.map(({ agent: a, category }) => {
+                      const best = winnerIds.has(a.agent_id)
+                      const checked = checkedIds.includes(a.agent_id)
+                      return (
+                        <th
+                          key={a.agent_id}
+                          scope="col"
+                          className="border-b border-r border-souk-hair text-left font-normal"
+                          style={{ padding: '16px 14px 14px 14px' }}
+                        >
+                          <Row align="center" gap={11}>
+                            <AgentAvatar size={34} name={a.name} imageUrl={a.image_url} />
+                            <span className="min-w-0">
+                              <span className="flex items-center gap-1.5">
+                                <Link
+                                  to={`/agents/${a.chain_id}/${a.token_id}`}
+                                  className="text-[16px] font-bold leading-[22px] text-souk-ink transition hover:text-souk-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                                >
+                                  {a.name}
+                                </Link>
+                                {best ? (
+                                  <span title={`Best in ${category.toLowerCase()} per the shelf's order: last check, then registry score, then reviews`}>
+                                    <IconTrophy />
+                                  </span>
+                                ) : null}
+                              </span>
+                              <Txt size={11} lead={15} mono tone="labels" className="block">
+                                {chainLabel(a.chain_id)} · #{a.token_id}
+                              </Txt>
+                            </span>
+                          </Row>
+                          <Row align="center" gap={6} pad={[8, 0, 0, 0]} className="flex-wrap">
+                            <Pill variant="off">{category}</Pill>
+                            {railsFor(a).map((rail) => (
+                              <Pill key={rail} variant="off">
+                                {rail}
+                              </Pill>
+                            ))}
+                          </Row>
+                          {sellsByJob(a.skills) ? (
+                            <Txt size={12} lead={17} tone="steel" className="mt-2 block">
+                              <span title={JOB_SELLER_NOTE}>Hired by ERC-8183 job, not here</span>
+                            </Txt>
+                          ) : (
+                            <label className="mt-2 flex cursor-pointer items-center gap-2 text-[12px] leading-[17px] text-souk-steel">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => onToggleChecked(a.agent_id)}
+                                className="h-4 w-4 accent-souk-data"
+                              />
+                              Include in hire
+                            </label>
+                          )}
+                        </th>
+                      )
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.label}>
+                      <th
+                        scope="row"
+                        className="sticky left-0 z-10 bg-souk-surface1 border-b border-r border-souk-edge text-left align-middle"
+                        style={{ padding: '8px 14px 8px 14px' }}
+                      >
+                        <Txt size={11} lead={16} weight="bold" upper tone="steel">
+                          {r.label}
+                        </Txt>
+                      </th>
+                      {columns.map(({ agent: a }) => (
+                        <td
+                          key={a.agent_id}
+                          className="border-b border-r border-souk-edge align-middle text-souk-ink"
+                          style={{ padding: '8px 14px 8px 14px' }}
+                        >
+                          {r.cell(a)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+          </Stack>
+
+          <Stack gap={12} pad={[20, 0, 0, 0]}>
+            <SectionHead title="The check behind each verdict" note={ledgerNote} />
+            <Stack surface>
+              <div className="overflow-x-auto">
+                <DataTable
+                  cols={[360, 140, 96, 460, 130, 380, 290]}
+                  header={['Agent', 'Verdict', 'Grade', 'Method', 'Response', 'Evidence', 'Expiry']}
+                  rows={ledgerRows}
+                />
+              </div>
+            </Stack>
+          </Stack>
         </>
       )}
     </div>
+  )
+}
+
+// the newest verification on the table, or null when none of the agents carries one
+function newestVerification(agents: AgentDetail[]): AgentDetail['verification'] | null {
+  const withCheck = agents
+    .filter((a) => a.verification)
+    .sort((a, b) => (a.verification!.checkedAt < b.verification!.checkedAt ? 1 : -1))
+  return withCheck[0]?.verification ?? null
+}
+
+// the design's honest empty state: the count reads zero and the copy says why
+// rather than guessing, because neither loader failure borrows a figure
+function CompareEmpty({ failed, onPickAgain }: { failed: boolean; onPickAgain: () => void }) {
+  return (
+    <Stack gap={12} pad={[24, 0, 0, 0]}>
+      <SectionHead title="When a compare cannot load" note="THE HONEST EMPTY STATE" />
+      <Stack radius={20} hair gap={12} pad={[40, 22, 40, 22]} className="items-center text-center">
+        <Txt size={24} lead={30} mono tone="steel">
+          0 agents
+        </Txt>
+        <Txt size={13} lead={20} tone="steel" className="block max-w-[560px]">
+          {failed
+            ? 'Could not load those agents. Pick them again.'
+            : 'None of those agents could be loaded. They may have left the registry.'}
+        </Txt>
+        <Btn kind="off" onClick={onPickAgain}>
+          Pick them again
+        </Btn>
+      </Stack>
+    </Stack>
   )
 }
 
@@ -574,25 +824,11 @@ function CompareCommentary({ agents }: { agents: AgentDetail[] }) {
 
   if (!result) return null
   return (
-    <div className="mt-6 border hairline border-slate-verdant/40 bg-echo-green/20 px-6 py-5">
-      <p className="micro text-newsprint-gray">AI commentary · {result.model}</p>
-      <p className="mt-3 font-serif text-lg leading-snug text-press-black">{result.commentary}</p>
-    </div>
-  )
-}
-
-function TrophyIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      width="14"
-      height="14"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M6 3h12v2h3v3a5 5 0 0 1-4.58 4.98A6.01 6.01 0 0 1 13 16.92V19h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.08a6.01 6.01 0 0 1-3.42-3.94A5 5 0 0 1 3 8V5h3V3Zm0 4H5v1a3 3 0 0 0 1 2.24V7Zm12 0v3.24A3 3 0 0 0 19 8V7h-1Z" />
-    </svg>
+    <NoteBox title={`AI commentary · ${result.model}`} className="mt-6">
+      <Txt size={13} lead={20} tone="slate" className="block">
+        {result.commentary}
+      </Txt>
+    </NoteBox>
   )
 }
 
@@ -605,17 +841,15 @@ function FilterChip({
   onClick: () => void
   children: string
 }) {
+  // the filter chip is the design's pill, made clickable: keep when it is the active filter
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`micro py-2 transition focus-visible:outline-2 focus-visible:outline-highlighter-green lg:py-0 ${
-        active
-          ? 'text-press-black underline decoration-highlighter-green decoration-2 underline-offset-8'
-          : 'text-newsprint-gray hover:text-press-black'
-      }`}
+      aria-pressed={active}
+      className="shrink-0 cursor-pointer rounded-[6px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
-      {children}
+      <Pill variant={active ? 'keep' : 'off'}>{children}</Pill>
     </button>
   )
 }
@@ -652,9 +886,10 @@ function ShortlistSearch({
   }, [q])
 
   return (
-    <div className="mt-12">
-      <div className="flex flex-wrap items-center gap-6">
-        <label className="micro text-newsprint-gray" htmlFor="compare-add-search">
+    <div>
+      <SectionHead title="Add another agent" />
+      <Row align="center" gap={12} radius={8} bg="surface2" hair pad={[0, 6, 0, 18]} className="mt-3 h-11 w-full max-w-[540px]">
+        <label className="sr-only" htmlFor="compare-add-search">
           Add another agent
         </label>
         <input
@@ -663,49 +898,49 @@ function ShortlistSearch({
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search name, endpoint or tag"
-          className="border hairline input-hairline w-full rounded-[6px] bg-transparent sm:w-64 px-3 py-2 text-base sm:text-sm text-press-black placeholder:text-newsprint-gray focus-visible:outline-2 focus-visible:outline-highlighter-green"
+          className="w-full bg-transparent text-[13px] leading-5 text-souk-ink placeholder:text-souk-muted focus-visible:outline-none"
         />
-      </div>
+      </Row>
 
       {q.trim() ? (
         loading ? (
           <div className="mt-4 animate-pulse space-y-2" role="status" aria-label="Loading search results">
             {Array.from({ length: 3 }, (_, i) => (
-              <div key={i} className="h-10 bg-slate-verdant/10" />
+              <div key={i} className="h-10 rounded-[8px] bg-souk-surface2" />
             ))}
           </div>
         ) : results.length === 0 ? (
-          <p className="mt-4 border hairline border-slate-verdant/40 px-6 py-6 text-sm text-newsprint-gray">
+          <Txt size={13} lead={18} tone="muted" className="mt-4 block px-1">
             Nothing matches that search.
-          </p>
+          </Txt>
         ) : (
-          <ul className="mt-4 border hairline border-slate-verdant/40">
+          <Stack hair radius={14} className="mt-4 overflow-hidden">
             {results.map((a) => {
               const key = `${a.chain_id}/${a.token_id}`
               const checked = selected.includes(key)
               return (
-                <li key={key}>
-                  <label
-                    className={`flex cursor-pointer items-center gap-4 border-b hairline border-slate-verdant/40 px-4 py-2.5 transition last:border-b-0 ${
-                      checked ? 'bg-echo-green/40' : 'hover:bg-echo-green/20'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => onToggle(key)}
-                      aria-label={`Compare ${a.name}`}
-                      className="h-3.5 w-3.5 accent-highlighter-green"
-                    />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                      {a.name}
-                    </span>
-                    <VerdictInline agent={a} />
-                  </label>
-                </li>
+                <label
+                  key={key}
+                  className={`flex cursor-pointer items-center gap-4 border-b border-souk-edge px-4 py-2.5 transition last:border-b-0 focus-within:bg-souk-data/10 ${
+                    checked ? 'bg-souk-data/10' : 'hover:bg-souk-surface2'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onToggle(key)}
+                    aria-label={`Compare ${a.name}`}
+                    className="h-3.5 w-3.5 accent-souk-data"
+                  />
+                  <AgentAvatar size={28} name={a.name} imageUrl={a.image_url} />
+                  <Txt size={14} lead={20} weight="semibold" tone="ink" className="min-w-0 flex-1 block truncate">
+                    {a.name}
+                  </Txt>
+                  <VerdictInline agent={a} />
+                </label>
               )
             })}
-          </ul>
+          </Stack>
         )
       ) : null}
     </div>
@@ -715,8 +950,8 @@ function ShortlistSearch({
 function VerdictInline({ agent }: { agent: AgentSummary }) {
   const v = verdictFor(agent.chain_id, agent.verification)
   return (
-    <span className="flex shrink-0 items-center gap-2 text-[13px] text-press-black" title={v.explain}>
-      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${VERDICT_DOT[v.tone]}`} />
+    <span className="flex shrink-0 items-center gap-2 text-[13px] leading-[19px] text-souk-slate" title={v.explain}>
+      <Dot tone={VERDICT_TONE[v.tone]} size={8} />
       {v.label}
     </span>
   )

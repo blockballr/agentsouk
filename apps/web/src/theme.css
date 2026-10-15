@@ -1,93 +1,162 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bone-white: #fafffa;
-  --color-press-black: #121613;
-  --color-typesetter-ink: #000000;
-  --color-slate-verdant: #232924;
-  --color-newsprint-gray: #516254;
-  --color-muted-sage: #c8d2c8;
+  /* the paper palette now runs its dark values as the base: the design is dark only,
+     so there is no light register to fall back to */
+  --color-bone-white: #0e1311;
+  --color-press-black: #f2f6f1;
+  --color-typesetter-ink: #f2f6f1;
+  --color-slate-verdant: #7d8f82;
+  --color-newsprint-gray: #9aa79d;
+  --color-muted-sage: #8f9c92;
   --color-highlighter-green: #2bee4b;
-  /* text on the green stays near black in both themes: the flipping ink read 1.4:1 on it in dark mode */
+  /* text on the green stays near black: the flipping ink read 1.4:1 on it in dark mode */
   --color-on-highlighter: #0b0f0c;
-  /* green as text on the page: the bright green reads 1.5:1 on white, so light mode darkens it */
-  --color-green-ink: #0f7a28;
+  /* green as text on the page: the bright value the dark register used */
+  --color-green-ink: #2bee4b;
   /* a floating bar keeps one dark palette in both themes, so its labels never flip onto a light bar */
   --color-night: #121613;
   --color-night-ink: #f2f6f1;
   --color-night-muted: #c8d2c8;
-  --color-shadow-moss: #93b799;
-  --color-echo-green: #c4e4c9;
-  --color-switch-knob: #fafffa;
+  --color-shadow-moss: #3f5c46;
+  --color-echo-green: #1d2a20;
+  --color-switch-knob: #f2f6f1;
 
+  /* the figma pass, namespaced so a ported screen can wear the new palette while
+     the pages not yet moved keep the newsprint one underneath */
+  --color-souk-canvas: #0b0e14;
+  --color-souk-surface1: #131722;
+  --color-souk-surface2: #181d2a;
+  --color-souk-indigo: #111a4a;
+  --color-souk-ink: #e8eaf2;
+  --color-souk-slate: #b8bcc8;
+  --color-souk-steel: #8d93a3;
+  --color-souk-muted: #6b7180;
+  --color-souk-data: #44b48b;
+  --color-souk-labels: #9498ae;
+  --color-souk-sky: #88deeb;
+  --color-souk-peach: #f2936b;
+  --color-souk-deepsea: #023247;
+  --color-souk-white: #ffffff;
+  --color-souk-metal0: #1d2a5e;
+  --color-souk-metal1: #111a4a;
+  --color-souk-metal2: #0a1030;
+  /* the two rims, as colours rather than a fixed white: the dark register draws
+     them at 8 and 16 over the canvas, the light one draws the same two rules in
+     the brand navy so a card still reads as a card on paper */
+  --color-souk-edge: rgb(255 255 255 / 0.08);
+  --color-souk-hair: rgb(255 255 255 / 0.16);
+
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-serif: "Fraunces Variable", ui-serif, Georgia, "Times New Roman",
     serif;
   --font-times: "Times", "Times New Roman", serif;
 
-  --shadow-lg: rgba(16, 94, 29, 0.45) 1px 8px 20px 0px;
-  --shadow-lg-2: rgba(18, 146, 39, 0.25) 1px 8px 20px 0px;
+  /* the elevation the filled button carries: the deep sea the design washes its
+     shadow in, rather than the old register's forest green */
+  --shadow-lg: rgba(2, 50, 71, 0.55) 1px 8px 20px 0px;
+  --shadow-lg-2: rgba(2, 50, 71, 0.32) 1px 8px 20px 0px;
+
+  /* the mast wash behind a page's first band: deep-sea in the dark register,
+     the drawn sky wash at 55 percent on paper */
+  --mast-wash: rgba(2, 50, 71, 0.5);
+
+  /* labels on indigo: the register's one token that stays the same in both,
+     so copy sitting on the indigo card never inverts into it */
+  --color-souk-indigo-labels: #9498ae;
 }
 
-/* the metal finish: a lit edge, a faint face sheen, scan lines and a glow on live dots */
+/* the metal finish: a lit edge, a faint face sheen, scan lines and the one glow
+   the live dots carry. Both registers read these, so the green is the design's
+   data green in each rather than the old neon. */
 :root {
-  --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.2) 30%, rgb(255 255 255 / 0) 60%, rgb(15 122 40 / 0.22));
-  --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(18 22 19 / 0.02));
-  --metal-scan: rgb(18 22 19 / 0.018);
-  --metal-glow: rgb(43 238 75 / 0.5);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.04) 30%, rgb(255 255 255 / 0) 60%, rgb(43 238 75 / 0.18));
-    --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.025), rgb(255 255 255 / 0) 35%);
-    --metal-scan: rgb(255 255 255 / 0.014);
-    --metal-glow: rgb(43 238 75 / 0.55);
-    --color-bone-white: #0e1311;
-    --color-press-black: #f2f6f1;
-    --color-typesetter-ink: #f2f6f1;
-    --color-newsprint-gray: #9aa79d;
-    --color-slate-verdant: #7d8f82;
-    --color-echo-green: #1d2a20;
-    --color-muted-sage: #8f9c92;
-    --color-shadow-moss: #3f5c46;
-    --color-switch-knob: #f2f6f1;
-    --color-green-ink: #2bee4b;
-  }
-}
-
-:root[data-theme="dark"] {
-  --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.04) 30%, rgb(255 255 255 / 0) 60%, rgb(43 238 75 / 0.18));
+  --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.04) 30%, rgb(255 255 255 / 0) 60%, rgb(68 180 139 / 0.2));
   --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.025), rgb(255 255 255 / 0) 35%);
   --metal-scan: rgb(255 255 255 / 0.014);
-  --metal-glow: rgb(43 238 75 / 0.55);
-  --color-green-ink: #2bee4b;
-  --color-bone-white: #0e1311;
-  --color-press-black: #f2f6f1;
-  --color-typesetter-ink: #f2f6f1;
-  --color-newsprint-gray: #9aa79d;
-  --color-slate-verdant: #7d8f82;
-  --color-echo-green: #1d2a20;
-  --color-muted-sage: #8f9c92;
-  --color-shadow-moss: #3f5c46;
-  --color-switch-knob: #f2f6f1;
+  --metal-glow: rgb(68 180 139 / 0.5);
 }
 
-:root[data-theme="light"] {
-  --color-bone-white: #fafffa;
-  --color-press-black: #121613;
-  --color-typesetter-ink: #000000;
-  --color-newsprint-gray: #516254;
-  --color-slate-verdant: #232924;
-  --color-echo-green: #c4e4c9;
-  --color-muted-sage: #c8d2c8;
-  --color-shadow-moss: #93b799;
-  --color-green-ink: #0f7a28;
-  --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.9), rgb(255 255 255 / 0.2) 30%, rgb(255 255 255 / 0) 60%, rgb(15 122 40 / 0.22));
-  --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(18 22 19 / 0.02));
-  --metal-scan: rgb(18 22 19 / 0.018);
-  --metal-glow: rgb(43 238 75 / 0.5);
+/* the light register. Same names, redrawn for paper: the canvas turns to the
+   reference's near-white, the surfaces lift, the rims become the brand navy at the
+   same two weights, and the green darkens enough to hold contrast on white. Every
+   screen reads these names, so one block moves the whole app. */
+[data-theme='light'] {
+  /* the page is a shade off the cards, not the same near-white: a white card on a
+     white page reads only by its rim, and the rim alone is too quiet on paper.
+     the wells stay a shade lighter than the page, the way surface2 sits above
+     surface1 in the dark register */
+  --color-souk-canvas: #e9ecf2;
+  --color-souk-surface1: #ffffff;
+  --color-souk-surface2: #f2f4f9;
+  --color-souk-indigo: #111a4a;
+  --color-souk-ink: #111a4a;
+  --color-souk-slate: #3f4a63;
+  --color-souk-steel: #5b6577;
+  --color-souk-muted: #79808f;
+  --color-souk-data: #0f8f6a;
+  --color-souk-labels: #6b7385;
+  --color-souk-sky: #0e7490;
+  --color-souk-peach: #b45309;
+  --color-souk-white: #ffffff;
+  --color-souk-metal0: #dfe4f2;
+  --color-souk-metal1: #111a4a;
+  --color-souk-metal2: #c9d1e6;
+  --color-souk-edge: rgb(17 26 74 / 0.08);
+  --color-souk-hair: rgb(17 26 74 / 0.16);
+
+  /* the metal finish answers with the same three weights on paper: a lit edge in
+     the navy rather than in white, and no glow on live dots */
+  --metal-edge: linear-gradient(135deg, rgb(17 26 74 / 0.22), rgb(17 26 74 / 0.06) 30%, rgb(17 26 74 / 0) 60%, rgb(15 143 106 / 0.22));
+  --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 35%);
+  --metal-scan: rgb(17 26 74 / 0.012);
+  --metal-glow: rgb(15 143 106 / 0.45);
+}
+
+[data-theme='light'] body {
+  background: var(--color-souk-canvas);
+  color: var(--color-souk-ink);
+}
+
+[data-theme='light'] .score-strip {
+  background: #e6f4ee;
+  border: 1px solid rgb(15 143 106 / 0.45);
+}
+
+[data-theme='light'] .input-hairline {
+  border-color: rgb(17 26 74 / 0.35);
+}
+
+/* the paper register flips the way it always has: the page turns to paper, the ink
+   turns to the navy, and the green darkens. Anything still drawing in the old names
+   keeps its inversion rather than going invisible on the lighter canvas. */
+[data-theme='light'] {
+  --color-bone-white: #f7f8fa;
+  --color-press-black: #111a4a;
+  --color-typesetter-ink: #111a4a;
+  --color-slate-verdant: #5b6577;
+  --color-newsprint-gray: #6b7385;
+  --color-muted-sage: #79808f;
+  --color-highlighter-green: #0f8f6a;
+  --color-on-highlighter: #ffffff;
+  --color-green-ink: #0b6b4f;
+  --color-night: #111a4a;
+  --color-night-ink: #f7f8fa;
+  --color-night-muted: #c9d1e6;
+  --color-shadow-moss: #2f6b52;
+  --color-echo-green: #e6f4ee;
+  --color-switch-knob: #111a4a;
+  --shadow-lg: rgba(17 26 74 / 0.28) 1px 8px 20px 0px;
+  --shadow-lg-2: rgba(17 26 74 / 0.18) 1px 8px 20px 0px;
+
+  /* paper's first band washes in the drawn sky, never in deep-sea */
+  --mast-wash: rgba(136, 222, 235, 0.55);
+  --color-souk-indigo-labels: #9498ae;
+}
+
+[data-theme='light'] .duotone {
+  filter: saturate(0.9) contrast(1.02);
 }
 
 @layer base {
@@ -100,7 +169,7 @@
     }
   }
   body {
-    background: var(--color-bone-white);
+    background: var(--color-souk-canvas);
     background-image: repeating-linear-gradient(0deg, var(--metal-scan) 0 1px, transparent 1px 4px);
     color: var(--color-typesetter-ink);
     font-family: var(--font-sans);
@@ -125,11 +194,12 @@
     border-style: solid;
   }
   .input-hairline {
-    border-color: color-mix(in oklab, var(--color-slate-verdant) 25%, transparent);
+    border-color: rgb(125 143 130 / 0.6);
   }
   .score-strip {
-    background: #a7f8b4;
-    border: 1px solid rgb(43 234 75 / 0.5);
+    /* the strip's only register now: the dark one the session box lives in */
+    background: #12341c;
+    border: 1px solid rgb(43 234 75 / 0.4);
   }
   /* a panel in the metal finish; the edge is drawn over its 1px border, so it needs one */
   .metal {
@@ -162,6 +232,11 @@
     .stamp-press {
       animation: stamp-press 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
     }
+    /* the band of light the job progression meter carries: it crosses the fill
+       rather than the track, so it never lights the empty part of the rail */
+    .meter-shimmer {
+      animation: meter-sweep 2.4s ease-in-out infinite;
+    }
   }
 }
 
@@ -172,21 +247,12 @@
   }
 }
 
-:root[data-theme="dark"] .score-strip {
-  background: #12341c;
-  border-color: rgb(43 234 75 / 0.4);
-}
-
-:root[data-theme="dark"] .input-hairline {
-  border-color: rgb(125 143 130 / 0.6);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .score-strip {
-    background: #12341c;
-    border-color: rgb(43 234 75 / 0.4);
+@keyframes meter-sweep {
+  0%,
+  100% {
+    transform: translateX(-110%);
   }
-  :root:not([data-theme="light"]) .input-hairline {
-    border-color: rgb(125 143 130 / 0.6);
+  50% {
+    transform: translateX(110%);
   }
 }
