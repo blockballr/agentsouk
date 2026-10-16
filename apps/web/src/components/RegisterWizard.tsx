@@ -10,6 +10,7 @@ import {
   endpointRefusal,
   prepareRegistration,
   probeEndpoint,
+  readAgentCard,
   tokenIdFromReceipt,
   waitForTransactionReceipt,
   withSendTimeout,
@@ -151,6 +152,8 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
   const sentLatch = useRef(false)
   // null until the lister proceeds; each entry updates as its check runs
   const [checks, setChecks] = useState<CheckLine[] | null>(null)
+  // a new picture address earns a fresh try; the browser is what reports a dead image
+  const [imageOk, setImageOk] = useState(true)
   // how the listing sells: a call listing takes paid calls to its endpoint, a job listing takes
   // ERC-8183 jobs only, and the document this claim mints follows the answer
   const [mode, setMode] = useState<'job' | 'call'>('call')
@@ -177,6 +180,31 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
     }
   }
 
+  // the card a pasted endpoint serves carries the agent's own name, words and
+  // face; they fill the empty fields after the url settles, so the lister
+  // confirms what the agent already says instead of retyping it. A filled field
+  // is never touched again: whatever the lister typed outranks the card.
+  useEffect(() => {
+    const endpoint = (draft.endpoint ?? '').trim()
+    if (!endpoint || endpointRefusal(endpoint)) return
+    let cancelled = false
+    const timer = setTimeout(() => {
+      void readAgentCard(endpoint).then((card) => {
+        if (!card || cancelled) return
+        setDraft((d) => ({
+          ...d,
+          name: d.name?.trim() ? d.name : card.name ?? d.name,
+          description: d.description?.trim() ? d.description : card.description ?? d.description,
+          image: d.image?.trim() ? d.image : card.image ?? d.image,
+        }))
+      })
+    }, 700)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [draft.endpoint])
+
   // the shortcut: the wallet the page already knows, connected first when it does
   // not know one, so the field carries the address rather than a typed guess
   async function fillWallet() {
@@ -194,6 +222,19 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
   // a deterministic address or scheme fault is refused before the transaction; the browser probe
   // never blocks, because a cross-origin block is not proof the endpoint is down
   const endpointFault = endpointRefusal(draft.endpoint ?? '')
+
+  // the picture is cosmetic and never blocks: an http or unparsable address is
+  // said out loud, a dead image falls back to the default face on every page,
+  // and the profile's edit route can change it after listing
+  const imageRaw = (draft.image ?? '').trim()
+  const imageFault =
+    imageRaw && !/^https:\/\/\S+$/i.test(imageRaw)
+      ? 'A picture needs a public https address: an http one is blocked by the browser and a private one never serves.'
+      : null
+  const imagePreview = imageRaw
+  useEffect(() => {
+    setImageOk(true)
+  }, [draft.image])
 
   // the wallet field is refused here in the same shape the route refuses it, so a
   // bad address never reaches the claim it would be minted into; the job branch also
@@ -653,6 +694,35 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
             className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
             placeholder="What it does, and how a buyer invokes it."
           />
+        </label>
+
+        {/* the picture rides the same rule as the words: the card may arrive with
+            one, whatever the lister pastes outranks it, and a broken image is
+            cosmetic on every page rather than a reason to refuse */}
+        <label className="block">
+          <span className="micro text-souk-muted">Profile picture</span>
+          <input
+            value={draft.image ?? ''}
+            onChange={(e) => set('image', e.target.value)}
+            disabled={busy || step !== 'form'}
+            className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
+            placeholder="https://…/agent.png"
+          />
+          {imageFault && <span className="mt-1 block text-xs text-souk-peach">{imageFault}</span>}
+          {imagePreview &&
+            (imageOk ? (
+              <img
+                src={imagePreview}
+                alt=""
+                onError={() => setImageOk(false)}
+                className="mt-3 h-16 w-16 rounded-[12px] border border-souk-hair object-cover"
+              />
+            ) : (
+              <span className="mt-3 block rounded-[12px] border border-souk-hair px-3 py-2 text-xs text-souk-muted">
+                This image did not load from that address. The listing shows the default face until
+                one does, and you can change it from your profile after listing.
+              </span>
+            ))}
         </label>
 
         {/* the category select below files the shelf; this text is what search,

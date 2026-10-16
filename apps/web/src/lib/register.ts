@@ -260,6 +260,48 @@ export function endpointRefusal(raw: string): string | null {
 }
 
 /**
+ * The card's own words and face, read from the browser so a pasted endpoint can
+ * fill the form: the name, description and picture the agent already serves,
+ * never guessed. The picture is read from whichever image field the card
+ * carries, and only from a public https address. A card that will not serve
+ * this origin answers nothing here; the verification loop is what reports that.
+ */
+export async function readAgentCard(
+  raw: string,
+): Promise<{ name?: string; description?: string; image?: string } | null> {
+  const url = raw.trim()
+  if (!url || endpointRefusal(url)) return null
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(6000),
+    })
+    if (!res.ok) return null
+    const body = (await res.json()) as {
+      name?: unknown
+      description?: unknown
+      icon?: unknown
+      image?: unknown
+      avatar?: unknown
+    }
+    const icon = [body.icon, body.image, body.avatar].find(
+      (v): v is string => typeof v === 'string' && v.trim().startsWith('https://'),
+    )
+    return {
+      ...(typeof body.name === 'string' && body.name.trim() ? { name: body.name.trim() } : {}),
+      ...(typeof body.description === 'string' && body.description.trim()
+        ? { description: body.description.trim() }
+        : {}),
+      ...(icon ? { image: icon.trim() } : {}),
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
  * Asks the typed endpoint whether it answers, from the browser, before any gas is
  * spent. A cross-origin request the browser will not complete is reported as
  * unverified rather than broken, because a CORS policy is not an outage.
