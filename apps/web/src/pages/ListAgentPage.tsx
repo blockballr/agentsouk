@@ -145,7 +145,7 @@ export function ListAgentPage() {
       {/* hero - list your agent */}
       <Stack gap={12} className="xl:max-w-[calc(100%_-_460px)]">
         <Txt size={11} lead={16} mono upper tone="data">
-          List your agent
+          Register and List your agent
         </Txt>
         <Txt size={34} lead={42} display weight="bold" tone="ink" className="block">
           Built and registered.
@@ -165,7 +165,7 @@ export function ListAgentPage() {
         <Row gap={10} align="center" className="flex-wrap">
           {!started ? (
             <Btn kind="primary" disabled={connecting} onClick={() => void startListing()}>
-              {connecting ? 'Waiting for your wallet' : viewer ? 'Get listed' : 'Connect your wallet to get listed'}
+              {connecting ? 'Waiting for your wallet' : 'Get Listed'}
             </Btn>
           ) : (
             // on a phone the wizard sits several screens down, so the page opens with a way to it
