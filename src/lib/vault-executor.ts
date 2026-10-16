@@ -1,13 +1,13 @@
 import "server-only";
 
-import {
-  createPublicClient,
-  encodeFunctionData,
-  type PublicClient,
-} from "viem";
+import { randomUUID } from "node:crypto";
+import type { PublicClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { pancakeToken } from "./pancake";
-import { vaultFor, VAULT_READ_ABI, tradeIntent, type HireView } from "./vault";
+import { readPancakePrice } from "./pancake-read";
+import { vaultFor, VAULT_READ_ABI, tradeCallFor, type HireView } from "./vault";
+import { decideHire, policyFromEnv, type HireFacts } from "./grid-strategy";
+import { acquireLease, getStrategyState, releaseLease, saveStrategyState } from "./strategy-store";
 import type { VaultActor } from "./vault-actor";
 
 // which wallet the executor trades from, as the page pairing needs it: the raw
@@ -50,6 +50,11 @@ export interface TradeReport {
   status: "traded" | "skipped" | "refused";
   reason: string | null;
   txHash: string | null;
+  /** set when the row carries one layer intent */
+  rungIndex?: number;
+  side?: string;
+  amountIn?: string;
+  rungPrice?: number;
 }
 
 // every open hire that names this actor is in scope and only it: the actor
@@ -95,12 +100,28 @@ export async function readHire(
     balanceB: h[6] as bigint,
     refPriceX96: h[7] as bigint,
     fee: Number(h[8]),
+    depositInToken0: h[9] as bigint,
   };
 }
 
-export type TradePolicy = ReturnType<typeof tradeIntent>;
+// a runner holds one hire this long; the ttl outlives any sweep, so a crashed
+// runner releases the hire on the clock rather than on its exit
+const LEASE_TTL_MS = 25 * 60 * 1000;
 
-// one report line per candidate hire, in the order the run would touch them
+function factsOf(h: HireView): HireFacts {
+  return {
+    id: h.id,
+    open: h.open,
+    expiry: h.expiry,
+    balanceA: h.balanceA,
+    balanceB: h.balanceB,
+    refPriceX96: h.refPriceX96,
+    depositInToken0: h.depositInToken0,
+    maxSlippageBps: h.maxSlippageBps,
+  };
+}
+
+// one report line per intent the layer raised, in the order the run touched them
 export async function sweepOwnHires(
   client: PublicClient,
   chainId: number,
@@ -110,32 +131,106 @@ export async function sweepOwnHires(
   execute: boolean,
 ): Promise<TradeReport[]> {
   const agent = await actor.address();
+  const vault = vaultFor(chainId);
   const tokenA = pancakeToken(chainId, "WBNB");
   const tokenB = pancakeToken(chainId, "USDT");
   if (!tokenA || !tokenB) throw new Error(`the bound pair is not configured on chain ${chainId}`);
+  if (!vault) throw new Error(`no vault deployed on chain ${chainId}`);
+  const policy = policyFromEnv(process.env);
+  const kill = process.env.VAULT_KILL === "1";
+  // one holder name per runner, so two instances can never share a lease
+  const holder = `${agent}:${randomUUID()}`;
   const ids = await agentHireIds(client, chainId, agent);
   const reports: TradeReport[] = [];
+  const nowSec = () => Math.floor(Date.now() / 1000);
+
   for (const id of ids.slice(0, limit)) {
     if (outOfTime()) break;
-    const hire = await readHire(client, chainId, id);
-    const intent = tradeIntent(hire, tokenA.address, tokenB.address);
-    if (!intent) {
-      reports.push({ id: id.toString(), buyer: hire.buyer, status: "skipped", reason: hire.open ? "expired" : "not open", txHash: null });
+    const lease = await acquireLease(chainId, id.toString(), holder, LEASE_TTL_MS);
+    if (!lease) {
+      reports.push({
+        id: id.toString(),
+        buyer: "",
+        status: "skipped",
+        reason: "another runner holds the lease for this hire",
+        txHash: null,
+      });
       continue;
     }
-    if (!execute) {
-      // a dry run rehearses everything but the send, and says so per row
-      reports.push({ id: id.toString(), buyer: hire.buyer, status: "skipped", reason: "dry run: VAULT_EXECUTE not set", txHash: null });
-      continue;
-    }
-    // the call points at the vault, the data at trade(); one shared shape so
-    // both custody halves send the identical payload
-    const call = { to: vaultFor(chainId) as `0x${string}`, data: intent.calldata };
     try {
-      const txHash = await actor.trade(call);
-      reports.push({ id: id.toString(), buyer: hire.buyer, status: "traded", reason: null, txHash });
-    } catch (e) {
-      reports.push({ id: id.toString(), buyer: hire.buyer, status: "refused", reason: (e as Error).message.slice(0, 200), txHash: null });
+      const hire = await readHire(client, chainId, id);
+      const row = { id: id.toString(), buyer: hire.buyer };
+      if (!hire.open || nowSec() >= hire.expiry) {
+        reports.push({
+          ...row,
+          status: "skipped",
+          reason: hire.open ? "expired" : "not open",
+          txHash: null,
+        });
+        continue;
+      }
+      // the pool the hire's own fee tier names; its quote-per-base price is the
+      // scale refPriceX96 itself carries, so the crossing is a comparison
+      const quote = await readPancakePrice(chainId, tokenA.symbol, tokenB.symbol, {
+        feeTier: hire.fee,
+      });
+      if ("error" in quote) {
+        reports.push({ ...row, status: "skipped", reason: `no price mark: ${quote.error}`, txHash: null });
+        continue;
+      }
+      const outcome = decideHire({
+        hire: factsOf(hire),
+        policy,
+        state: await getStrategyState(chainId, id.toString()),
+        price: quote.price,
+        blockNumber: BigInt(quote.blockNumber),
+        nowSec: nowSec(),
+        kill,
+      });
+      await saveStrategyState(chainId, id.toString(), outcome.state);
+
+      if (outcome.action !== "trade" || outcome.intents.length === 0) {
+        reports.push({ ...row, status: "skipped", reason: outcome.reason, txHash: null });
+        continue;
+      }
+      for (const intent of outcome.intents) {
+        const line = {
+          ...row,
+          rungIndex: intent.rungIndex,
+          side: intent.side,
+          amountIn: intent.amountIn.toString(),
+          rungPrice: intent.rungPrice,
+        };
+        if (!execute) {
+          reports.push({
+            ...line,
+            status: "skipped",
+            reason: `dry run: would ${intent.side} ${intent.amountIn} of token ${intent.tokenInSide} at rung ${intent.rungIndex} (${intent.rungPrice})`,
+            txHash: null,
+          });
+          continue;
+        }
+        const data = tradeCallFor(
+          id,
+          intent.tokenInSide === "A" ? tokenA.address : tokenB.address,
+          intent.amountIn,
+        );
+        try {
+          const txHash = await actor.trade({ to: vault as `0x${string}`, data });
+          reports.push({ ...line, status: "traded", reason: null, txHash });
+        } catch (e) {
+          // the contract is the last line: one refusal stops this hire's intents
+          reports.push({
+            ...line,
+            status: "refused",
+            reason: (e as Error).message.slice(0, 200),
+            txHash: null,
+          });
+          break;
+        }
+      }
+    } finally {
+      await releaseLease(chainId, id.toString(), holder);
     }
   }
   return reports;
