@@ -11,6 +11,7 @@ import {
   shortAddress,
 } from '@agora/core'
 import { connectWallet, getActiveAccount, getProvider } from '../lib/wallet'
+import { useActiveAccount } from '../lib/use-active-account'
 import { useTargetChain } from '../lib/target-chain'
 import { FAUCET_URL, MINT_PER_CLICK, isTestnet, readNativeBalance } from '../lib/mint'
 import {
@@ -117,6 +118,9 @@ function formatNative(wei: bigint): string {
 
 export function ListAgentPage() {
   const [foundTokenId, setFoundTokenId] = useState<string | null>(null)
+  // the listing flow signs from this wallet, so the entry point asks for it up front
+  // rather than mid-loop, where a refusal would strand the lister
+  const viewer = useActiveAccount()
   // The chain comes from the shared store, which starts unknown and learns the
   // deployment's chain once from the server, so a direct load cannot paint a
   // compiled-in mainnet default and hand a testnet participant wrong advice.
@@ -130,6 +134,26 @@ export function ListAgentPage() {
   // one action rather than on the wizard
   const [started, setStarted] = useState(false)
   const guide = questing ? LISTING_GUIDE[wizardStep] : null
+
+  const [connecting, setConnecting] = useState(false)
+
+  // the flow begins with the wallet it will sign from: a dismissal at this door leaves the
+  // page where it is, instead of starting a flow that would only ask again later
+  async function startListing() {
+    if (viewer) {
+      setStarted(true)
+      return
+    }
+    setConnecting(true)
+    try {
+      const addr = await connectWallet()
+      if (addr) setStarted(true)
+    } catch {
+      // no wallet chosen, so nothing started
+    } finally {
+      setConnecting(false)
+    }
+  }
   return (
     <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-28">
       {/* hero - list your agent */}
@@ -154,8 +178,8 @@ export function ListAgentPage() {
         </Txt>
         <Row gap={10} align="center" className="flex-wrap">
           {!started ? (
-            <Btn kind="primary" onClick={() => setStarted(true)}>
-              Get listed
+            <Btn kind="primary" disabled={connecting} onClick={() => void startListing()}>
+              {connecting ? 'Waiting for your wallet' : viewer ? 'Get listed' : 'Connect your wallet to get listed'}
             </Btn>
           ) : (
             // on a phone the wizard sits several screens down, so the page opens with a way to it
@@ -450,7 +474,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
       <Txt size={12} lead={18} tone="steel" className="block">
         Registration is one transaction sent from your own wallet, which is how the
         registry records you as the owner. Nobody can send it for you, so your wallet
-        pays a little {symbol} in gas. A fresh testnet wallet starts with none.
+        pays a little {symbol} in gas.
       </Txt>
 
       <dl className="flex flex-wrap items-center gap-x-6 gap-y-2">
