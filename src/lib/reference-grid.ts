@@ -79,6 +79,55 @@ export function gridAgentMessagingUrl(origin: string): string {
   return `${origin.replace(/\/+$/, "")}${GRID_AGENT_MESSAGING_PATH}`;
 }
 
+// the planner's own skill, carried by this card and by the trading agent that
+// sells its work: the schema is the plan's, wherever the card is served
+export function gridPlanSkill(): GridAgentSkill {
+  return {
+    id: "plan_grid",
+    name: "Grid ladder planning",
+    description:
+      "Plans a grid trading ladder from a lower price, an upper price, a rung count and a value per rung, with an optional round trip fee in basis points. Returns the rung spacing, the first and last rung prices, the value committed, the gross, fee and net capture of one round trip, and the total net capture across a full traversal. Instead of the two prices, name a PancakeSwap pair such as WBNB/USDT and a width in percent: the range is centred on the pair's current PancakeSwap price on the chain this marketplace runs on, and the answer names the pool and the block it read. Read-only; it never trades.",
+    tags: ["grid-trading", "grid", "trading", "ladder", "range", "orders"],
+    examples: [
+      "Plan a grid from lower 1000 to upper 2000 with 11 levels and 100 per order",
+      "Plan a grid on WBNB/USDT 10% wide, levels 11, order size 100",
+      "What spacing and net capture does a grid trading ladder have",
+    ],
+    inputModes: ["text/plain", "application/json"],
+    outputModes: ["text/plain", "application/json"],
+    inputSchema: {
+      type: "object",
+      properties: {
+        lowerUsd: { type: "number", description: "lower price of the range in USD; leave out when naming a pair" },
+        upperUsd: { type: "number", description: "upper price of the range in USD; leave out when naming a pair" },
+        levels: { type: "number", description: "number of price rungs, 2 to 200" },
+        orderSizeUsd: { type: "number", description: "value placed at each rung in USD" },
+        feeBps: { type: "number", description: "optional round trip fee in basis points; 0 by default, or the pool's own round trip fee when a pair is named" },
+        pair: { type: "string", description: "instead of lowerUsd and upperUsd: a PancakeSwap pair priced in dollars, WBNB/USDT" },
+        widthPct: { type: "number", description: "with a pair: the range width in percent, centred on the pool price" },
+        feeTier: { type: "number", description: "with a pair: optional pool fee tier, 100, 500, 2500 or 10000; the deepest pool otherwise" },
+      },
+      // the range is either two prices or a pair and a width, so only the rest is always required
+      required: ["levels", "orderSizeUsd"],
+      examples: [
+        { lowerUsd: 1000, upperUsd: 2000, levels: 11, orderSizeUsd: 100, feeBps: 10 },
+        { pair: "WBNB/USDT", widthPct: 10, levels: 11, orderSizeUsd: 100 },
+      ],
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        spacingUsd: { type: "number", description: "spacing between rungs in USD" },
+        firstRungUsd: { type: "number", description: "price of the first rung" },
+        lastRungUsd: { type: "number", description: "price of the last rung" },
+        committedUsd: { type: "number", description: "value committed across the ladder" },
+        netCaptureUsd: { type: "number", description: "net capture of one completed round trip" },
+        totalNetCaptureUsd: { type: "number", description: "total net capture across a full traversal" },
+      },
+    },
+  };
+}
+
 export function gridAgentCard(origin: string): GridAgentCard {
   const base = origin.replace(/\/+$/, "");
   const messagingUrl = gridAgentMessagingUrl(base);
@@ -92,52 +141,7 @@ export function gridAgentCard(origin: string): GridAgentCard {
     capabilities: { streaming: false, pushNotifications: false, stateTransitionHistory: false },
     defaultInputModes: ["text/plain", "application/json"],
     defaultOutputModes: ["text/plain", "application/json"],
-    skills: [
-      {
-        id: "plan_grid",
-        name: "Grid ladder planning",
-        description:
-          "Plans a grid trading ladder from a lower price, an upper price, a rung count and a value per rung, with an optional round trip fee in basis points. Returns the rung spacing, the first and last rung prices, the value committed, the gross, fee and net capture of one round trip, and the total net capture across a full traversal. Instead of the two prices, name a PancakeSwap pair such as WBNB/USDT and a width in percent: the range is centred on the pair's current PancakeSwap price on the chain this marketplace runs on, and the answer names the pool and the block it read. Read-only; it never trades.",
-        tags: ["grid-trading", "grid", "trading", "ladder", "range", "orders"],
-        examples: [
-          "Plan a grid from lower 1000 to upper 2000 with 11 levels and 100 per order",
-          "Plan a grid on WBNB/USDT 10% wide, levels 11, order size 100",
-          "What spacing and net capture does a grid trading ladder have",
-        ],
-        inputModes: ["text/plain", "application/json"],
-        outputModes: ["text/plain", "application/json"],
-        inputSchema: {
-          type: "object",
-          properties: {
-            lowerUsd: { type: "number", description: "lower price of the range in USD; leave out when naming a pair" },
-            upperUsd: { type: "number", description: "upper price of the range in USD; leave out when naming a pair" },
-            levels: { type: "number", description: "number of price rungs, 2 to 200" },
-            orderSizeUsd: { type: "number", description: "value placed at each rung in USD" },
-            feeBps: { type: "number", description: "optional round trip fee in basis points; 0 by default, or the pool's own round trip fee when a pair is named" },
-            pair: { type: "string", description: "instead of lowerUsd and upperUsd: a PancakeSwap pair priced in dollars, WBNB/USDT" },
-            widthPct: { type: "number", description: "with a pair: the range width in percent, centred on the pool price" },
-            feeTier: { type: "number", description: "with a pair: optional pool fee tier, 100, 500, 2500 or 10000; the deepest pool otherwise" },
-          },
-          // the range is either two prices or a pair and a width, so only the rest is always required
-          required: ["levels", "orderSizeUsd"],
-          examples: [
-            { lowerUsd: 1000, upperUsd: 2000, levels: 11, orderSizeUsd: 100, feeBps: 10 },
-            { pair: "WBNB/USDT", widthPct: 10, levels: 11, orderSizeUsd: 100 },
-          ],
-        },
-        outputSchema: {
-          type: "object",
-          properties: {
-            spacingUsd: { type: "number", description: "spacing between rungs in USD" },
-            firstRungUsd: { type: "number", description: "price of the first rung" },
-            lastRungUsd: { type: "number", description: "price of the last rung" },
-            committedUsd: { type: "number", description: "value committed across the ladder" },
-            netCaptureUsd: { type: "number", description: "net capture of one completed round trip" },
-            totalNetCaptureUsd: { type: "number", description: "total net capture across a full traversal" },
-          },
-        },
-      },
-    ],
+    skills: [gridPlanSkill()],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
   };
 }
