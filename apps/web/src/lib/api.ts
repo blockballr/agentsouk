@@ -2,7 +2,8 @@ import type { AgentDetail, AgentSummary } from '../core/types'
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '../core/x402'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
-import { getActiveAccount, getProvider, setTargetChain } from './wallet'
+import { getProvider, setTargetChain } from './wallet'
+import { sessionAccount } from './wallet-session'
 import { visitSeed } from './rotation'
 import { listingControlMessage, type ListingAction } from './listing-control'
 
@@ -577,7 +578,7 @@ export interface RecheckResult {
 // Force a fresh probe of one owned listing. The owner signs, so the reprobe
 // window is bypassed for this token only; anyone else keeps the twenty hour cap.
 export async function recheckAgent(chainId: number, tokenId: string): Promise<RecheckResult> {
-  const owner = await getActiveAccount()
+  const owner = await sessionAccount()
   if (!owner) throw new Error('Connect the wallet that owns this listing.')
   const message = recheckMessage(chainId, tokenId, owner)
   const provider = await getProvider()
@@ -602,7 +603,7 @@ export async function recheckAgent(chainId: number, tokenId: string): Promise<Re
 // Take an owned listing off the market or put it back. The owner signs a message bound
 // to this token and action; the on-chain registration is untouched either way.
 export async function setListingState(chainId: number, tokenId: string, action: ListingAction): Promise<void> {
-  const owner = await getActiveAccount()
+  const owner = await sessionAccount()
   if (!owner) throw new Error('Connect the wallet that owns this listing.')
   const message = listingControlMessage(chainId, tokenId, owner, action)
   const provider = await getProvider()
@@ -852,7 +853,7 @@ export async function actOnJob(
   action: JobAction,
   body: { by?: string; reason?: string; deliverable?: string } = {},
 ): Promise<Erc8183Job> {
-  const address = body.by ?? (await getActiveAccount())
+  const address = body.by ?? (await sessionAccount())
   if (!address) throw new Error('Connect a wallet to act on this job.')
 
   const message = jobActionMessage({

@@ -3,7 +3,8 @@
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '../core/x402'
 import { X402_VERSION, randomNonce, x402Domain } from '../core/x402'
 import { HireRefusedError, getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
-import { activeAccountMatches, chainIdToHex, ensureBscChain, getActiveAccount, getChainTimestamp, setTargetChain, WalletUnavailableError, WrongSignerError, signTransferAuthorization } from './wallet'
+import { activeAccountMatches, chainIdToHex, ensureBscChain, getChainTimestamp, setTargetChain, WalletUnavailableError, WrongSignerError, signTransferAuthorization } from './wallet'
+import { sessionAccount } from './wallet-session'
 import { setPaymentInFlight } from './stale-chunk'
 
 export type HireRequirementsData = X402Requirements['data']
@@ -222,8 +223,9 @@ export async function signAndSettleHire(
         cancelled: true,
       }
     }
-    // re-read the active account at sign time; the wallet signs with whatever is active
-    const signer = await getActiveAccount()
+    // the signed-in address is who the hire signs as; the wallet's own active
+    // account must still read the same just before signing
+    const signer = await sessionAccount()
     if (!signer) {
       return {
         success: false,

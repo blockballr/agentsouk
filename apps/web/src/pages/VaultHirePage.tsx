@@ -17,7 +17,8 @@ import {
   wrapCalldata,
   type VaultHire,
 } from '../lib/vault'
-import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from '../lib/wallet'
+import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
+import { connectWallet } from '../lib/wallet-session'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { explorerAddressUrl } from '../lib/contracts'
 import { ResultBox } from '../components/ui'
@@ -114,7 +115,7 @@ export default function VaultHirePage() {
   const agentAddress = prefill?.wallet && prefill.wallet !== '0x0000000000000000000000000000000000000000' ? prefill.wallet : manualAgent
 
   useEffect(() => {
-    connectWallet().then(getActiveAccount).then(setAccount).catch(() => setAccount(null))
+    connectWallet().then(setAccount).catch(() => setAccount(null))
   }, [])
 
   useEffect(() => {

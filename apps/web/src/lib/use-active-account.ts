@@ -1,23 +1,12 @@
 import { useEffect, useState } from 'react'
-import { getActiveAccount, watchActiveAccount } from './wallet'
+import { watchSession } from './wallet-session'
 
-// the wallet's active account: read once on mount and then watched, so a switch
-// inside the wallet updates every surface that shows it rather than leaving the
-// first address on screen
+// the wallet's signed-in address: the session established by a signature,
+// read once on mount and then watched, so a switch inside the wallet adopts a
+// recorded address or disconnects instead of changing who the page thinks you
+// are
 export function useActiveAccount(): string | null {
   const [account, setAccount] = useState<string | null>(null)
-  useEffect(() => {
-    let live = true
-    void getActiveAccount().then((a) => {
-      if (live) setAccount(a)
-    })
-    const unwatch = watchActiveAccount((a) => {
-      if (live) setAccount(a)
-    })
-    return () => {
-      live = false
-      unwatch()
-    }
-  }, [])
+  useEffect(() => watchSession(setAccount), [])
   return account
 }

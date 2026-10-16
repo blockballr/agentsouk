@@ -344,20 +344,14 @@ export function clearWalletChoice(): void {
   }
 }
 
-// Forget the wallet and end our side of the session: an injected wallet keeps its own
-// permission grant, so only the stored choice and what derives from it can be cleared.
-export function disconnectWallet(): void {
-  clearWalletChoice();
-}
-
 // --- EIP-1193 account/chain change handling ---
 // an empty accountsChanged array (or leaving BSC) invalidates the stored connection
 
 let activeProvider: Eip1193Provider | null = null;
 
-// surfaces that show the wallet watch the active account instead of reading it
-// once, so switching account in the wallet updates the page instead of leaving
-// the first address on screen
+// raw account reports from the wallet: the session layer in wallet-session.ts
+// is the only subscriber, so a switch decides adoption or a disconnect there
+// instead of changing who the page thinks you are on its own
 const accountWatchers = new Set<(account: string | null) => void>();
 
 function emitActiveAccount(account: string | null): void {
@@ -468,7 +462,9 @@ async function requestAccounts(provider: Eip1193Provider): Promise<string> {
   return accounts[0];
 }
 
-export async function connectWallet(): Promise<string> {
+// provider connect only (picker, discovery, stored choice); the sign-in step
+// lives in wallet-session.ts, whose connectWallet wraps this
+export async function connectProvider(): Promise<string> {
   // 1. a choice made earlier this session (or WC restoring its pairing)
   const rdns = readStoredRdns();
   if (rdns) {

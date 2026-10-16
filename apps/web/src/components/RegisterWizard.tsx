@@ -22,12 +22,11 @@ import { chainLabel, explorerTxBase } from '../lib/contracts'
 import {
   chainIdToHex,
   changeWallet,
-  connectWallet,
   ensureBscChain,
-  getActiveAccount,
   getProvider,
   setTargetChain,
 } from '../lib/wallet'
+import { connectWallet, sessionAccount } from '../lib/wallet-session'
 import { button, card, cx } from './ui'
 
 // pending means the wallet already sent a transaction and we are waiting on its receipt, so the
@@ -161,7 +160,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
   // the shortcut: the wallet the page already knows, connected first when it does
   // not know one, so the field carries the address rather than a typed guess
   async function fillWallet() {
-    const addr = (await getActiveAccount().catch(() => null)) ?? (await connectWallet())
+    const addr = (await sessionAccount().catch(() => null)) ?? (await connectWallet())
     if (addr) set('agentWallet', addr)
   }
 
@@ -259,7 +258,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
     // response, not the client default, because the calldata is encoded for the server's chain
     mark('terms', 'checking')
     try {
-      const account = (await getActiveAccount()) ?? (await connectWallet())
+      const account = (await sessionAccount()) ?? (await connectWallet())
       const res = await prepareRegistration(draft, account)
       setTargetChain(res.chainId)
       let onChain: string
@@ -329,7 +328,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
     try {
       const provider = await withWalletTimeout(getProvider())
       const account =
-        (await getActiveAccount()) ?? (await withWalletTimeout(connectWallet()))
+        (await sessionAccount()) ?? (await withWalletTimeout(connectWallet()))
       // sent from the participant's own wallet, so the registry records them as owner
       hash = (await withSendTimeout(
         provider.request({

@@ -8,7 +8,8 @@ import {
   SUSD_ADDRESS,
   watchSusd,
 } from '../lib/mint'
-import { connectWallet, getProvider } from '../lib/wallet'
+import { getProvider } from '../lib/wallet'
+import { connectWallet } from '../lib/wallet-session'
 import { button, cx } from './ui'
 
 type Phase = 'idle' | 'reading' | 'minting' | 'done' | 'error'

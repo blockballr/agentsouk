@@ -9,7 +9,7 @@ import {
   subscribeQuest,
   writeQuestMode,
 } from '../lib/quest'
-import { connectWallet, getActiveAccount } from '../lib/wallet'
+import { connectWallet, sessionAccount } from '../lib/wallet-session'
 import { hireErrorText } from '../lib/hire'
 import { Action, cx } from './ui'
 import { Btn, Label, Row, Stack, Txt } from './souk'
@@ -56,10 +56,10 @@ export function QuestNudge() {
     }
   }
 
-  // looked up again on each page, since a wallet can be connected anywhere on the site
+  // looked up again on each page, since a wallet can be signed in anywhere on the site
   useEffect(() => {
     let live = true
-    getActiveAccount()
+    sessionAccount()
       .then((a) => {
         if (live) setWallet(a)
       })

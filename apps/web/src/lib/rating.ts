@@ -1,5 +1,6 @@
 import { encodeFunctionData, zeroHash } from 'viem'
-import { chainIdToHex, connectWallet, ensureBscChain, getActiveAccount, getProvider, setTargetChain } from './wallet'
+import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from './wallet'
+import { connectWallet, sessionAccount } from './wallet-session'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from './register'
 import { reputationRegistryFor } from './contracts'
 
@@ -98,7 +99,7 @@ export async function rateAgent(chainId: number, tokenId: string, stars: number)
   const data = feedbackCalldata(tokenId, stars)
   try {
     const provider = await getProvider()
-    const account = (await getActiveAccount()) ?? (await connectWallet())
+    const account = (await sessionAccount()) ?? (await connectWallet())
     if (!account) throw new Error('Connect the wallet that hired this agent.')
     // the wallet's target chain is only set by some pages, so a rating opened on a fresh load
     // would otherwise go to the same address on the other chain, a different contract there
