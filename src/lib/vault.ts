@@ -44,30 +44,17 @@ export interface HireView {
   balanceB: bigint;
   refPriceX96: bigint;
   fee: number;
+  depositInToken0: bigint;
 }
 
-// the token the hire counts as untraded: whichever side still holds the balance
-export function tradeTokenIn(h: HireView): "A" | "B" | null {
-  if (!h.open || Date.now() / 1000 >= h.expiry) return null;
-  if (h.balanceA > 0n) return "A";
-  if (h.balanceB > 0n) return "B";
-  return null;
+// one layer intent becomes one call at the vault; minOut stays zero on purpose:
+// the contract computes the buyer's floor from the stored reference price, and
+// only the contract bounds the trade
+export function tradeCallFor(id: bigint, tokenIn: string, amountIn: bigint): `0x${string}` {
+  return encodeFunctionData({
+    abi: VAULT_ABI,
+    functionName: "trade",
+    args: [id, tokenIn as `0x${string}`, amountIn, 0n],
+  }) as `0x${string}`;
 }
 
-export function tradeIntent(h: HireView, tokenA: string, tokenB: string) {
-  const side = tradeTokenIn(h);
-  if (!side) return null;
-  // minOut stays zero on purpose: the contract computes the buyer's floor from
-  // the stored reference price, and only the contract bounds the trade
-  return {
-    id: h.id,
-    tokenIn: side === "A" ? tokenA : tokenB,
-    amountIn: side === "A" ? h.balanceA : h.balanceB,
-    minOut: 0n,
-    calldata: encodeFunctionData({
-      abi: VAULT_ABI,
-      functionName: "trade",
-      args: [h.id, side === "A" ? (tokenA as `0x${string}`) : (tokenB as `0x${string}`), side === "A" ? h.balanceA : h.balanceB, 0n],
-    }),
-  };
-}
