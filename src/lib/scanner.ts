@@ -1227,11 +1227,24 @@ export async function getAgentByToken(
       // The callable endpoints need the same treatment: a fresh registration is
       // admitted locally with its endpoint, and the upstream index catches up later,
       // so a missing field here is a lag rather than a removal.
+      // within the freshness window the confirm-time record outranks an index that has
+      // not read the document yet, so a fresh listing shows the name, words and price
+      // flags its lister declared instead of the index's generated fallbacks; the
+      // chain's own facts, owner and dates, stay the live read's
+      const admitted = cached && isFreshAdmission(cached.admitted_at) ? cached : null;
       const merged = {
         ...detail,
         web_endpoint: detail.web_endpoint ?? cached?.web_endpoint ?? null,
         a2a_endpoint: detail.a2a_endpoint ?? cached?.a2a_endpoint ?? null,
         mcp_server: detail.mcp_server ?? cached?.mcp_server ?? null,
+        ...(admitted
+          ? {
+              name: admitted.name || detail.name,
+              description: admitted.description ?? detail.description,
+              image_url: admitted.image_url ?? detail.image_url,
+              x402_supported: admitted.x402_supported,
+            }
+          : {}),
       };
       // Served regardless, because the caller asked for this exact agent by id; shelved only if it
       // qualifies, so a direct read cannot smuggle an unqualified listing into browse.
