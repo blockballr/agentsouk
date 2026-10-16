@@ -104,6 +104,9 @@ export interface AgentSummary {
   categoryScores?: Partial<Record<CategoryKey, number>>;
   verification?: Verification;
   pcs?: boolean;
+  // the agent card's skill declarations ride in the list payload; the shelf reads
+  // them to know which listings sell by job rather than by call
+  skills?: AgentDetail["skills"];
 }
 
 export interface AgentDetail {
