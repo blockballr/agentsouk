@@ -183,4 +183,24 @@ describe("seller8183: env config", () => {
     expect(cfg.agentName).toBe("Souk Health Guard");
     expect(cfg.agentId).toBe(2504);
   });
+
+  it("lets a suffixed listing carry its own wallet, key and price", () => {
+    process.env.SELLER8183_PROVIDER_TESTNET_TAJIR = "0x5CbDd86a2FA8Dc4bDdd8a8f69dBa48572EeC07FB";
+    process.env.SELLER8183_PRIVATE_KEY_TESTNET_TAJIR = `0x${"33".repeat(32)}`;
+    process.env.SELLER8183_PRICE_U_TAJIR = "7";
+    try {
+      const mine = sellerConfigFromEnv(97, 9, "Tajir Al Souk", "_TAJIR");
+      expect(mine.providerWallet).toBe("0x5CbDd86a2FA8Dc4bDdd8a8f69dBa48572EeC07FB");
+      expect(mine.sellerKey).toBe(`0x${"33".repeat(32)}`);
+      expect(mine.priceUsd).toBe(7);
+      // the unsuffixed config never sees the listing's own env
+      const shared = sellerConfigFromEnv(97, 2504, "Souk Health Guard");
+      expect(shared.providerWallet).not.toBe(mine.providerWallet);
+      expect(shared.priceUsd).toBe(2);
+    } finally {
+      delete process.env.SELLER8183_PROVIDER_TESTNET_TAJIR;
+      delete process.env.SELLER8183_PRIVATE_KEY_TESTNET_TAJIR;
+      delete process.env.SELLER8183_PRICE_U_TAJIR;
+    }
+  });
 });
