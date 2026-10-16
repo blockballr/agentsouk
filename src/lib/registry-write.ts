@@ -74,6 +74,7 @@ export interface RegistrationFile {
   name: string;
   description: string;
   image?: string;
+  agentWallet?: string;
   services: RegistrationService[];
   x402Support: boolean;
   active: boolean;
@@ -85,6 +86,8 @@ const LIMITS = {
   description: 1000,
   endpoint: 300,
   image: 300,
+  // 0x plus forty hex characters, the shape every EVM address is paid at
+  agentWallet: 42,
 } as const;
 
 export interface DraftValidation {
@@ -98,6 +101,21 @@ function isHttpsUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+// an EVM address, checksummed when the case says so; the zero address is a real
+// address and the caller refuses it separately, because a payment there burns
+function isEvmAddress(value: string): boolean {
+  try {
+    getAddress(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isZeroAddress(value: string): boolean {
+  return /^0x0{40}$/i.test(value);
 }
 
 // Brief item 4: what it does, how it is invoked, and an endpoint, since an agent nobody can call is not a listing.
@@ -137,6 +155,20 @@ export function validateDraft(draft: RegistrationDraft): DraftValidation {
     errors.push("Image must be an https URL.");
   }
 
+  // the wallet a hire pays, when the lister states one: a real address, never the
+  // zero address, because a payment there burns; absent is allowed and simply
+  // leaves the document without one
+  const wallet = (draft.agentWallet ?? "").trim();
+  if (wallet) {
+    if (wallet.length > LIMITS.agentWallet) {
+      errors.push(`Agent wallet must be ${LIMITS.agentWallet} characters or fewer.`);
+    } else if (!isEvmAddress(wallet)) {
+      errors.push("Agent wallet must be a valid EVM address.");
+    } else if (isZeroAddress(wallet)) {
+      errors.push("Agent wallet cannot be the zero address: a payment there is burned.");
+    }
+  }
+
   return { ok: errors.length === 0, errors };
 }
 
@@ -166,6 +198,7 @@ export function buildRegistrationFile(input: {
     name: draft.name.trim(),
     description: draft.description.trim(),
     ...(draft.image?.trim() ? { image: draft.image.trim() } : {}),
+    ...(draft.agentWallet?.trim() ? { agentWallet: draft.agentWallet.trim() } : {}),
     services,
     x402Support: draft.x402Support ?? true,
     active: true,

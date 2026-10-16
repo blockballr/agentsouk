@@ -21,4 +21,7 @@ export interface RegistrationDraft {
   endpointKind?: EndpointKind
   image?: string
   x402Support?: boolean
+  // where a hire pays the agent, written into the registration document the
+  // lister signs; absent means the document states no wallet
+  agentWallet?: string
 }

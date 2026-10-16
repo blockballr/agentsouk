@@ -158,9 +158,27 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
     }
   }
 
+  // the shortcut: the wallet the page already knows, connected first when it does
+  // not know one, so the field carries the address rather than a typed guess
+  async function fillWallet() {
+    const addr = (await getActiveAccount().catch(() => null)) ?? (await connectWallet())
+    if (addr) set('agentWallet', addr)
+  }
+
   // a deterministic address or scheme fault is refused before the transaction; the browser probe
   // never blocks, because a cross-origin block is not proof the endpoint is down
   const endpointFault = endpointRefusal(draft.endpoint ?? '')
+
+  // the wallet field is refused here in the same shape the route refuses it, so a
+  // bad address never reaches the claim it would be minted into
+  const walletRaw = (draft.agentWallet ?? '').trim()
+  const walletFault = !walletRaw
+    ? null
+    : !/^0x[0-9a-fA-F]{40}$/.test(walletRaw)
+      ? 'That is not an EVM address: 0x followed by forty hex characters.'
+      : /^0x0{40}$/i.test(walletRaw)
+        ? 'A payment to the zero address is burned. Use the address that should be paid.'
+        : null
 
   // The whole judgement the marketplace applies, run in order the moment the lister proceeds, with
   // each step reporting its own real outcome as it happens rather than all at once at the end.
@@ -168,6 +186,12 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
     setErrors([])
     setMessage(null)
     setBusy(true)
+    // a wallet the route would refuse stops here, before any check spends a paint
+    if (walletFault) {
+      setErrors([walletFault])
+      setBusy(false)
+      return
+    }
     setChecks(initialChecks())
 
     // 1. the deterministic address rule, the same rule src/lib/endpoint.ts enforces server-side
@@ -625,6 +649,32 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
             A reachable https URL. An agent nobody can call is not a listing.
           </span>
         </label>
+
+        <label className="block">
+          <span className="micro text-souk-muted">Agent wallet</span>
+          <input
+            value={draft.agentWallet ?? ''}
+            onChange={(e) => set('agentWallet', e.target.value)}
+            disabled={busy || step !== 'form'}
+            className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-xs text-souk-ink disabled:opacity-60"
+            placeholder="0x…"
+          />
+          {walletFault ? (
+            <span className="mt-1 block text-xs text-souk-peach">{walletFault}</span>
+          ) : (
+            <span className="mt-1 block text-xs text-souk-muted">
+              Where a hire pays this agent. Optional: the registration can say nothing.
+            </span>
+          )}
+        </label>
+        <button
+          type="button"
+          disabled={busy || step !== 'form'}
+          onClick={() => void fillWallet()}
+          className={cx(button('secondary', 'sm'), 'mt-2')}
+        >
+          Use my connected wallet
+        </button>
       </div>
 
       {/* the pre-flight card is the idle form; once the loop runs, the stepped panel replaces it */}

@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     ...(typeof source.endpoint === "string" ? { endpoint: source.endpoint } : {}),
     ...(typeof source.endpointKind === "string" ? { endpointKind: source.endpointKind } : {}),
     ...(typeof source.image === "string" ? { image: source.image } : {}),
+    ...(typeof source.agentWallet === "string" ? { agentWallet: source.agentWallet } : {}),
     ...(typeof source.x402Support === "boolean" ? { x402Support: source.x402Support } : {}),
   };
 
