@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { AgentSummary } from '../core/types'
 import { defaultAvatarFor } from '../lib/default-avatar'
-import { CATEGORIES, formatNumber, formatScore, shortAddress, timeAgo } from '@agora/core'
+import { CATEGORIES, formatNumber, formatScore, takesJobs, shortAddress, timeAgo } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
 import { Tag } from '../components/Tag'
 import { getAgents } from '../lib/api'
@@ -14,6 +14,11 @@ import { verdictFor, type VerdictTone } from '../lib/verdict'
 import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../components/souk'
 
 const sorts = [
+  {
+    key: 'executable',
+    label: 'Executable first',
+    title: 'Agents that take jobs through escrow come first, then the ones you call. A paid boost still sits above both.',
+  },
   {
     key: 'reachability',
     label: 'Working first',
@@ -48,7 +53,9 @@ export function MarketplacePage() {
   const navigate = useNavigate()
   const category = sp.get('category') ?? 'all'
   const q = sp.get('q') ?? ''
-  const sort = (sp.get('sort') ?? 'reachability') as (typeof sorts)[number]['key']
+  // the shelf opens on executable first, the order the marketplace sells in; a
+  // visitor who wants an advisory agent flips the control rather than scrolling
+  const sort = (sp.get('sort') ?? 'executable') as (typeof sorts)[number]['key']
   const pcs = sp.get('pcs') === '1'
   const hide = sp.get('hide') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
@@ -643,6 +650,9 @@ function AgentCard({
         </Txt>
 
         <Row align="center" gap={6} className="flex-wrap">
+          {takesJobs(agent.skills) ? (
+            <Tag title="Takes work as an ERC-8183 job: it quotes a price, the money is funded on chain and held in escrow, and it is paid on delivery">Executes jobs</Tag>
+          ) : null}
           {agent.x402_supported ? <Tag title="Takes payment per call over x402">x402</Tag> : null}
           {agent.pcs ? <Tag title="Says it works with PancakeSwap">PancakeSwap</Tag> : null}
           {boosted ? <Tag title="Paid boost">Boosted</Tag> : null}

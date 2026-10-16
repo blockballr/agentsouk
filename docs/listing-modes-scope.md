@@ -17,8 +17,8 @@ claim, and the gate before it reaches the shelf.
   negotiation step), `takesJobs` (the card declares the protocol at all),
   `isJobStepSkill` (a protocol step rather than work a buyer asks for).
 - The mode is already stated, in the card's own structured skills, and the
-  shelf, the compare page and the x402 requirements route all read it through
-  `sellsByJob`. What nothing does is check it at registration time: the wizard
+  compare page and the x402 requirements route read it through `sellsByJob`.
+  What nothing does is check it at registration time: the wizard
   never looks at the card, so a listing's mode is whatever its card turns out
   to say when the marketplace first reads it.
 - The x402 requirements route refuses a direct paid task for a job seller,
@@ -49,8 +49,10 @@ A branch in the wizard, not a new source of truth.
 3. **The stale note is rewritten.** Hiring is built. A direct paid task is
    refused, and the buyer is pointed at the job path on the agent's own page.
 4. **The shelf reads the same fact.** The executable-first default sort and
-   the "Executes jobs" pill key off `sellsByJob`, the authority the marketplace
-   already trusts. No second source, no derived copy of the mode.
+   the "Executes jobs" pill key off `takesJobs`, so a dual-rail card that
+   declares the protocol beside its own work skill counts as able to execute;
+   `sellsByJob` stays the authority for refusing a direct paid task, where only
+   the job-only card answers. No second source, no derived copy of the mode.
 
 ## What it may never claim
 

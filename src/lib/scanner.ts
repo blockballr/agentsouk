@@ -15,7 +15,7 @@ import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
 import { loadDelisted } from "./delist-store";
 import { rotationSeed, withoutHouseAgents, workingFirst } from "./working-rotation";
-import { LISTABLE_CATEGORIES, type RegistrationDraft } from "@agora/core";
+import { LISTABLE_CATEGORIES, takesJobs, type RegistrationDraft } from "@agora/core";
 import {
   AgentRemovedError,
   classifyLiveReadFailure,
@@ -880,10 +880,18 @@ export async function refreshIndexFromLive(
     // persist the admitted entries so the whole fleet, and the next process,
     // sees what this pull learned
     await saveShelfAgents(admitted);
-    // capture what each newly admitted agent declares about how it is called,
-    // bounded and best effort, so the shelf carries it without a per-view fetch
-    const toCapture = admitted
-      .filter((s) => !index.agents.get(indexKey(s.chain_id, s.token_id))?.skills)
+    // capture what an agent declares about how it is called, bounded and best
+    // effort, so the shelf carries it without a per-view fetch: what this pull
+    // admitted first, then any entry that still declares nothing, so a snapshot
+    // listing gets read eventually instead of never
+    const seen = new Set<string>();
+    const toCapture = [...admitted, ...index.agents.values()]
+      .filter((s) => {
+        const key = indexKey(s.chain_id, s.token_id);
+        if (s.chain_id !== chainId || seen.has(key)) return false;
+        seen.add(key);
+        return !index.agents.get(key)?.skills;
+      })
       .slice(0, CAPTURE_PER_TOPUP);
     for (const s of toCapture) {
       const skills = await captureAgentSkills(s).catch(() => null);
@@ -948,7 +956,7 @@ function scheduleShelfTopUp(): void {
 export interface QueryOptions {
   category?: string;
   q?: string;
-  sort?: "score" | "newest" | "feedback" | "health" | "reachability";
+  sort?: "executable" | "score" | "newest" | "feedback" | "health" | "reachability";
   page?: number;
   limit?: number;
   ensureWarm?: boolean;
@@ -1098,6 +1106,18 @@ function sortAgents(
 ): AgentSummary[] {
   const copy = [...items];
   switch (sort) {
+    case "executable":
+      // the shelf's default order: a buyer who wants work done meets the agents
+      // whose card declares the ERC-8183 job protocol first, a dual-rail card
+      // included, and each half keeps the working-first order every other sort
+      // serves, so the split alone never buries an agent
+      {
+        const ordered = workingFirst(copy, verifications, seed);
+        return [
+          ...ordered.filter((a) => takesJobs(a.skills)),
+          ...ordered.filter((a) => !takesJobs(a.skills)),
+        ];
+      }
     case "newest":
       copy.sort(
         (a, b) =>
