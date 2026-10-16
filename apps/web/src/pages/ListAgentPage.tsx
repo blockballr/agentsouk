@@ -66,21 +66,6 @@ const checklist = [
   },
 ]
 
-// the seven checks the wizard runs, in its own order; the sweep line is the same
-// note the wizard's loop reports once the registration is confirmed
-const LOOP_STEPS = [
-  'Endpoint address rule',
-  'The agent card answers',
-  'Shelf category and search words',
-  'Registration terms from the server',
-  'Transaction sent and mined',
-  'Registration confirmed on chain',
-  'The verification sweep, after this',
-]
-
-const LOOP_NOTE =
-  'Nothing in this wizard earns the badge. Once the registration is confirmed, the verifier probes the registered endpoint on its next sweep; the badge it awards follows whether that endpoint answers, not anything done here.'
-
 // the dot beside a verdict, mapped from the shared verdict tone
 const VERDICT_DOTTONE: Record<VerdictTone, DotTone> = {
   good: 'good',
@@ -271,12 +256,7 @@ export function ListAgentPage() {
                   </>
                 )}
               </Stack>
-              {chain !== null && (
-                <Stack gap={20}>
-                  <GasRequirement chainId={chain} />
-                  <LoopCard />
-                </Stack>
-              )}
+              {chain !== null && <GasRequirement chainId={chain} />}
             </div>
           </div>
           <ChecklistSection />
@@ -285,45 +265,6 @@ export function ListAgentPage() {
         </>
       )}
     </div>
-  )
-}
-
-// the wizard's own loop, drawn at rest: each line waits its turn and claims no
-// outcome until the wizard running above fills the real ones in. carried on the
-// quest card's indigo so the running loop below reads as its filled-in self
-function LoopCard() {
-  return (
-    <Stack bg="indigo" radius={20} pad={[20, 22, 20, 22]} gap={12} className="border border-white/15">
-      {/* the head is drawn in the on-indigo tones by hand: SectionHead's own tones
-          are canvas-side and would invert on the indigo surface */}
-      <Row justify="between" align="center" gap={12} className="flex-wrap">
-        <Txt size={18} lead={27} weight="bold" tone="white">
-          The verification loop
-        </Txt>
-        <Txt size={10} lead={12} weight="bold" upper tone="indigo-labels" mono>
-          7 checks, in order
-        </Txt>
-      </Row>
-      {LOOP_STEPS.map((title, i) => {
-        const last = i === LOOP_STEPS.length - 1
-        return (
-          <Row key={title} gap={10} align="start">
-            <Txt size={11} lead={18} mono tone="indigo-labels">{String(i + 1).padStart(2, '0')}</Txt>
-            <Stack gap={6}>
-              <Row gap={8} align="center">
-                <Txt size={13} lead={18} tone="white">{title}</Txt>
-                <Pill variant="off">Waiting</Pill>
-              </Row>
-              {last && (
-                <Txt size={11} lead={16} tone="indigo-labels" className="block max-w-[440px]">
-                  {LOOP_NOTE}
-                </Txt>
-              )}
-            </Stack>
-          </Row>
-        )
-      })}
-    </Stack>
   )
 }
 

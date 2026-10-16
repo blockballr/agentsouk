@@ -595,7 +595,7 @@ export function AgentDetailPage() {
                 {detail.description || 'No description on-chain.'}
               </p>
               <SoukRow align="center" gap={8} className="mt-4 flex-wrap">
-                <Pill>{`bsc mainnet ${chainId}`}</Pill>
+                <Pill>{chainLabel(Number(chainId))}</Pill>
                 {detail.a2a_endpoint ? <Pill>A2A</Pill> : null}
                 {detail.mcp_server ? <Pill>MCP</Pill> : null}
                 {jobSeller ? <Pill variant="keep">ERC-8183</Pill> : <Pill>x402</Pill>}
@@ -918,7 +918,7 @@ export function AgentDetailPage() {
                       {`BLOCK ${detail.created_block_number.toLocaleString('en-US')}`}
                     </Txt>
                   ) : null}
-                  <Pill variant="keep">{`bsc mainnet ${chainId}`}</Pill>
+                  <Pill variant="keep">{chainLabel(Number(chainId))}</Pill>
                 </SoukRow>
                 <IconChevron
                   className={cx('text-souk-steel transition-transform lg:hidden', chainOpen && 'rotate-180')}

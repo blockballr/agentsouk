@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { takesJobs } from "@agora/core";
-import { fetchAgentDetail } from "@/lib/scanner";
+import { getAgentByToken } from "@/lib/scanner";
 import { fetchAgentCardSkills } from "@/lib/delivery";
 import { loadDelisted } from "@/lib/delist-store";
 import { isAgentOwner } from "@/lib/boost-auth";
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const detail = await fetchAgentDetail(chainId, tokenId);
+  const detail = await getAgentByToken(chainId, tokenId);
   if (!detail) {
     return NextResponse.json({ success: false, error: "agent not found" }, { status: 404 });
   }
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     );
   }
-  // the live registry read carries no skills, so the card is read as the agent page reads it
+  // the shelf read carries no skills of its own, so the card is read as the agent page reads it
   const skills = detail.skills ?? (detail.a2a_endpoint ? await fetchAgentCardSkills(detail.a2a_endpoint, 4000) : null);
   if (!takesJobs(skills)) {
     return NextResponse.json(
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const expectedProvider = detail.agent_wallet ?? detail.owner_address;
+  const expectedProvider = ("agent_wallet" in detail ? detail.agent_wallet : null) ?? detail.owner_address;
   const result = await negotiateQuote(chainId, detail.a2a_endpoint ?? "", task, expectedProvider);
   return NextResponse.json(
     {
