@@ -68,13 +68,9 @@ export function Nav() {
           </nav>
         </div>
 
-        {/* a declined sign-in must say so where the connect click happened, rather
-            than leave the chip unchanged with only a console rejection */}
-        {connectError && (
-          <p className="border-b border-souk-hair bg-souk-canvas px-4 py-2 text-[12px] text-souk-peach">
-            {connectError}
-          </p>
-        )}
+        {/* a declined sign-in must say so where the connect click happened, but as a
+            notice that leaves on its own, never a permanent resident of the bar */}
+        <ConnectNotice message={connectError} onDismiss={() => setConnectError(null)} />
 
         {/* right: the controls. The design draws them as the bar's second cluster, so
             they are a sibling of the wordmark group and the space between pins them to
@@ -353,5 +349,40 @@ function MenuIcon() {
     >
       <path d="M0 1h18M0 7h18M0 13h18" stroke="currentColor" strokeWidth="2" />
     </svg>
+  )
+}
+
+// The connect fault says its piece under the bar and then gets out of the way:
+// it fades on its own, leaves the header's layout alone, and a click sends it
+// early. A new message restarts the cycle instead of stacking a second notice.
+function ConnectNotice({ message, onDismiss }: { message: string | null; onDismiss: () => void }) {
+  const [visible, setVisible] = useState(false)
+  const dismissRef = useRef(onDismiss)
+  useEffect(() => {
+    dismissRef.current = onDismiss
+  })
+
+  useEffect(() => {
+    if (!message) return
+    setVisible(true)
+    const fade = setTimeout(() => setVisible(false), 5500)
+    const gone = setTimeout(() => dismissRef.current(), 6000)
+    return () => {
+      clearTimeout(fade)
+      clearTimeout(gone)
+    }
+  }, [message])
+
+  if (!message) return null
+  return (
+    <p
+      role="status"
+      onClick={() => dismissRef.current()}
+      className={`fixed left-1/2 top-[76px] z-[60] w-max max-w-[min(92vw,560px)] -translate-x-1/2 cursor-pointer rounded-[10px] border border-souk-peach/40 bg-souk-surface2 px-4 py-3 text-center text-[13px] leading-[18px] text-souk-peach shadow-lg transition-opacity duration-300 motion-reduce:transition-none ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
+      {message}
+    </p>
   )
 }
