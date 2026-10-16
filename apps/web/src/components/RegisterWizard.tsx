@@ -5,6 +5,7 @@ import type { RegistrationDraft } from '@agora/core'
 import {
   RECEIPT_POLL_MS,
   RECEIPT_TIMEOUT_MS,
+  CardCheckRefused,
   confirmRegistration,
   endpointRefusal,
   prepareRegistration,
@@ -65,21 +66,37 @@ const TEMPLATE_DESCRIPTION =
 
 // The checks the marketplace applies, in the order it applies them. The old form checked the
 // endpoint and the category in separate places; this list is the whole judgement in one place.
-type LoopId = 'endpoint' | 'card' | 'classifier' | 'terms' | 'transaction' | 'confirm' | 'sweep'
+type LoopId =
+  | 'endpoint'
+  | 'card'
+  | 'classifier'
+  | 'job'
+  | 'terms'
+  | 'transaction'
+  | 'confirm'
+  | 'sweep'
 
 const SWEEP_DETAIL =
   'Nothing in this wizard earns the badge. Once the registration is confirmed, the verifier probes the registered endpoint on its next sweep; the badge it awards follows whether that endpoint answers, not anything done here.'
 
-function initialChecks(): CheckLine[] {
-  return [
+function initialChecks(mode: 'job' | 'call'): CheckLine[] {
+  const before: CheckLine[] = [
     { id: 'endpoint', title: 'Endpoint address rule', state: 'waiting' },
     { id: 'card', title: 'The agent card answers', state: 'waiting' },
     { id: 'classifier', title: 'Shelf category and search words', state: 'waiting' },
+  ]
+  const jobLine: CheckLine[] =
+    mode === 'job'
+      ? [{ id: 'job', title: 'The card declares the job protocol (ERC-8183)', state: 'waiting' }]
+      : []
+  const after: CheckLine[] = [
     { id: 'terms', title: 'Registration terms from the server', state: 'waiting' },
     { id: 'transaction', title: 'Transaction sent and mined', state: 'waiting' },
     { id: 'confirm', title: 'Registration confirmed on chain', state: 'waiting' },
     { id: 'sweep', title: 'The verification sweep, after this', state: 'waiting', detail: SWEEP_DETAIL },
   ]
+  // the job line runs inside the terms step, so it sits before it, and only on the job branch
+  return [...before, ...jobLine, ...after]
 }
 
 // A synchronous check needs one painted frame between its checking state and its result.
@@ -134,6 +151,9 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
   const sentLatch = useRef(false)
   // null until the lister proceeds; each entry updates as its check runs
   const [checks, setChecks] = useState<CheckLine[] | null>(null)
+  // how the listing sells: a call listing takes paid calls to its endpoint, a job listing takes
+  // ERC-8183 jobs only, and the document this claim mints follows the answer
+  const [mode, setMode] = useState<'job' | 'call'>('call')
 
   const set = <K extends keyof RegistrationDraft>(key: K, value: RegistrationDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }))
@@ -164,15 +184,25 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
     if (addr) set('agentWallet', addr)
   }
 
+  // the mode answer drives what the claim mints: x402 rides the document, forced off for a job
+  // seller, which refuses a direct paid task by construction, and back on for a call listing
+  function chooseMode(next: 'job' | 'call') {
+    setMode(next)
+    set('x402Support', next === 'call')
+  }
+
   // a deterministic address or scheme fault is refused before the transaction; the browser probe
   // never blocks, because a cross-origin block is not proof the endpoint is down
   const endpointFault = endpointRefusal(draft.endpoint ?? '')
 
   // the wallet field is refused here in the same shape the route refuses it, so a
-  // bad address never reaches the claim it would be minted into
+  // bad address never reaches the claim it would be minted into; the job branch also
+  // requires one, because that wallet is who gets paid when a job releases
   const walletRaw = (draft.agentWallet ?? '').trim()
   const walletFault = !walletRaw
-    ? null
+    ? mode === 'job'
+      ? 'A job seller is paid from this wallet when a job releases, so the address is required: paste it, or press "Use my connected wallet".'
+      : null
     : !/^0x[0-9a-fA-F]{40}$/.test(walletRaw)
       ? 'That is not an EVM address: 0x followed by forty hex characters.'
       : /^0x0{40}$/i.test(walletRaw)
@@ -191,7 +221,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
       setBusy(false)
       return
     }
-    setChecks(initialChecks())
+    setChecks(initialChecks(mode))
 
     // 1. the deterministic address rule, the same rule src/lib/endpoint.ts enforces server-side
     mark('endpoint', 'checking')
@@ -257,9 +287,11 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
     // 4. the server mints the document and returns the terms; the chain to be on comes from its
     // response, not the client default, because the calldata is encoded for the server's chain
     mark('terms', 'checking')
+    if (mode === 'job') mark('job', 'checking')
     try {
       const account = (await sessionAccount()) ?? (await connectWallet())
-      const res = await prepareRegistration(draft, account)
+      const res = await prepareRegistration(draft, account, mode)
+      if (res.cardCheck) mark('job', 'passed', res.cardCheck.detail)
       setTargetChain(res.chainId)
       let onChain: string
       try {
@@ -290,7 +322,20 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
       await nextPaint()
       void sign(res)
     } catch (e) {
+      // the card refusal owns the job line and stops before the server minted anything, so the
+      // terms line reads as not attempted rather than failed
+      if (e instanceof CardCheckRefused) {
+        mark('job', 'failed', e.message)
+        mark(
+          'terms',
+          'waiting',
+          'Not attempted: the card check refused the job branch before the server minted the document. Nothing was sent.',
+        )
+        setErrors([e.message])
+        return
+      }
       const detail = (e as Error).message
+      if (mode === 'job') mark('job', 'undetermined', `Not completed: ${detail}`)
       mark('terms', 'failed', detail)
       setErrors([detail])
     } finally {
@@ -544,6 +589,49 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
       </p>
 
       <div className="mt-6 space-y-4">
+        <div className="rounded-[10px] border hairline border-souk-hair p-4">
+          <p className="micro text-souk-muted">How does this agent sell?</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled={busy || step !== 'form'}
+              onClick={() => chooseMode('call')}
+              aria-pressed={mode === 'call'}
+              className={button(mode === 'call' ? 'primary' : 'secondary', 'md')}
+            >
+              By call: endpoint and x402
+            </button>
+            <button
+              type="button"
+              disabled={busy || step !== 'form'}
+              onClick={() => chooseMode('job')}
+              aria-pressed={mode === 'job'}
+              className={button(mode === 'job' ? 'primary' : 'secondary', 'md')}
+            >
+              By job (ERC-8183)
+            </button>
+          </div>
+          {mode === 'job' ? (
+            <div className="mt-3 space-y-2 text-xs leading-relaxed text-souk-muted">
+              <p>
+                A job seller quotes a price, takes work only through a funded ERC-8183 job in
+                escrow, and is paid on delivery. At continue, the server fetches this listing's card
+                once and must find the job protocol declared on it; a card without the protocol is
+                refused there, before anything is sent.
+              </p>
+              <p className="text-souk-peach">
+                x402 machine payment is off on this registration: a job seller refuses a direct paid
+                task by construction, so the listing will not offer one.
+              </p>
+            </div>
+          ) : (
+            <p className="mt-3 text-xs leading-relaxed text-souk-muted">
+              Buyers call the endpoint directly, with x402 machine payment when the registration
+              says so. A card that sells only by job refuses the direct paid task at hire time.
+            </p>
+          )}
+        </div>
+
         <label className="block">
           <span className="micro text-souk-muted">Name</span>
           <input

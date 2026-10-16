@@ -4,12 +4,32 @@ import type { RegistrationDraft } from '@agora/core'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 
+export type JobCardState = 'verified' | 'unverified' | 'unreachable'
+
+export interface JobCardCheck {
+  state: JobCardState
+  detail: string
+}
+
 export interface PrepareResult {
   claimId: string
   agentUri: string
   chainId: number
   registryAddress: string
   registerCalldata: string
+  // present only on the job branch: the server's own fetch of the card at prepare
+  cardCheck?: JobCardCheck
+}
+
+// A job branch refused by the server's card fetch is a different stop from a validation error:
+// the loop line that carries it is the job line, and the state says which refusal it was.
+export class CardCheckRefused extends Error {
+  readonly state: Exclude<JobCardState, 'verified'>
+  constructor(state: Exclude<JobCardState, 'verified'>, message: string) {
+    super(message)
+    this.name = 'CardCheckRefused'
+    this.state = state
+  }
 }
 
 export interface ConfirmResult {
@@ -26,16 +46,21 @@ export interface ConfirmResult {
 export async function prepareRegistration(
   draft: RegistrationDraft,
   owner: string,
+  mode: 'job' | 'call' = 'call',
 ): Promise<PrepareResult> {
   const res = await fetch(`${BASE}/agents/register/prepare`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ draft, owner }),
+    body: JSON.stringify({ draft, owner, mode }),
   })
   const body = (await res.json().catch(() => null)) as
     | (PrepareResult & { success: boolean; error?: string; errors?: string[] })
     | null
   if (!res.ok || !body?.success) {
+    const check = body?.cardCheck
+    if (check && check.state !== 'verified') {
+      throw new CardCheckRefused(check.state, check.detail)
+    }
     throw new Error(body?.errors?.[0] ?? body?.error ?? 'Could not prepare the listing.')
   }
   return body

@@ -9,6 +9,7 @@ import {
   type RegistrationDraft,
 } from "@/lib/registry-write";
 import { claimsMode, createClaim, isWalletAddress, newClaimId } from "@/lib/listing-claims";
+import { jobCardCheck, type JobCardCheck } from "@/lib/job-card-check";
 import {
   enforcePrepareRateLimit,
   type RateLimitVerdict,
@@ -91,6 +92,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // the job branch's authority is the card, fetched once here and bounded; a card that does not
+  // declare the protocol refuses the branch before any claim exists, and the claim this mints
+  // carries no x402 support, because a job seller refuses a direct paid task by construction
+  const mode = body.mode === "job" ? "job" : "call";
+  let cardCheck: JobCardCheck | undefined;
+  if (mode === "job") {
+    if (!(draft.agentWallet ?? "").trim()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "A job seller is paid from an agent wallet when a job releases, so this listing needs one before it can register.",
+        },
+        { status: 400 },
+      );
+    }
+    cardCheck = await jobCardCheck((draft.endpoint ?? "").trim());
+    if (cardCheck.state !== "verified") {
+      return NextResponse.json(
+        { success: false, error: cardCheck.detail, cardCheck },
+        { status: 400 },
+      );
+    }
+    draft.x402Support = false;
+  }
+
   const chainId = targetChainId();
   let registry: Address;
   try {
@@ -119,5 +146,6 @@ export async function POST(req: NextRequest) {
     registryAddress: registry,
     registerCalldata: encodeRegister(chainId, claim.agentUri),
     persistence: claimsMode(),
+    ...(cardCheck ? { cardCheck } : {}),
   });
 }
