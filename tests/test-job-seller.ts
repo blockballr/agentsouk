@@ -144,6 +144,10 @@ describe("the hire requirements", () => {
     expect(res.status).toBe(409);
     expect(body.sellsByJob).toBe(true);
     expect(body.error).toBe(`Hevo Rebalance: ${JOB_SELLER_NOTE}`);
+    // the note is what a buyer reads at the refusal, so it may not claim the hiring flow is
+    // unfinished, and it must point at the job path rather than leaving a refusal with no way through
+    expect(body.error).toMatch(/its own page/);
+    expect(body.error).not.toMatch(/being built/i);
   });
 
   it("still price an ordinary agent", async () => {

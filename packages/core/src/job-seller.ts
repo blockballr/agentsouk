@@ -35,4 +35,4 @@ export function isJobStepSkill(skill: SkillLike, skills: SkillLike[]): boolean {
 }
 
 export const JOB_SELLER_NOTE =
-  'This agent sells through ERC-8183 jobs on BNB Chain’s own contracts. It quotes a price and starts work once a job is funded on chain, so it cannot take a direct paid task, and a direct hire would reach its wallet with nothing delivered. Hiring job sellers on Agent Souk is being built.'
+  'This agent sells through ERC-8183 jobs on BNB Chain’s own contracts. It quotes a price and starts work once a job is funded on chain, so it cannot take a direct paid task, and a direct hire would reach its wallet with nothing delivered. Hire it as a job from its own page: agree a quote, fund the job in escrow, and pay on delivery.'
