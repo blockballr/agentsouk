@@ -92,6 +92,23 @@ describe("validateDraft", () => {
     expect(validateDraft({ ...goodDraft, name: "   Venus   " }).ok).toBe(true);
     expect(validateDraft({ ...goodDraft, name: "    " }).ok).toBe(false);
   });
+
+  it("takes a stated agent wallet, and takes none as simply unstated", () => {
+    expect(validateDraft({ ...goodDraft, agentWallet: "0x2222222222222222222222222222222222222222" }).ok).toBe(true);
+    expect(validateDraft(goodDraft).ok).toBe(true);
+  });
+
+  it("refuses a wallet that is not an EVM address", () => {
+    const result = validateDraft({ ...goodDraft, agentWallet: "0x1234" });
+    expect(result.ok).toBe(false);
+    expect(result.errors.join(" ")).toMatch(/valid EVM address/);
+  });
+
+  it("refuses the zero address, because a payment there is burned", () => {
+    const result = validateDraft({ ...goodDraft, agentWallet: "0x0000000000000000000000000000000000000000" });
+    expect(result.ok).toBe(false);
+    expect(result.errors.join(" ")).toMatch(/zero address/);
+  });
 });
 
 describe("buildRegistrationFile", () => {
@@ -132,6 +149,17 @@ describe("buildRegistrationFile", () => {
     });
     expect(file.services[0].name).toBe("web");
     expect("image" in file).toBe(false);
+  });
+
+  it("states the agent wallet when the lister gave one, and states none when not", () => {
+    const paid = buildRegistrationFile({
+      agentId: 1,
+      chainId: 97,
+      draft: { ...goodDraft, agentWallet: "0x2222222222222222222222222222222222222222" },
+    });
+    expect(paid.agentWallet).toBe("0x2222222222222222222222222222222222222222");
+    const unstated = buildRegistrationFile({ agentId: 1, chainId: 97, draft: goodDraft });
+    expect("agentWallet" in unstated).toBe(false);
   });
 
   it("serialises to JSON, since this document is fetched over http", () => {
