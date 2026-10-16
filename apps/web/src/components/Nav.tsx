@@ -6,7 +6,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { NotificationBell } from './NotificationBell'
 import { Wordmark } from './Wordmark'
 import { cartCount, subscribe } from '../lib/cart'
-import { connectWallet, disconnectWallet } from '../lib/wallet'
+import { connectWallet, disconnectWallet, signOut } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
@@ -43,9 +43,11 @@ const profileClass =
 
 export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false)
-  // the profile chip says the wallet rather than spelling out Profile: the address
-  // is the affordance, and the wallet is watched so a switch inside the wallet
-  // moves the chip with it
+  // a declined sign-in surfaces here, where the connect click happened
+  const [connectError, setConnectError] = useState<string | null>(null)
+  // the profile chip says the signed-in address rather than spelling out Profile:
+  // the session is watched, so a switch inside the wallet adopts a recorded
+  // address or disconnects rather than moving the chip to whoever is active
   const wallet = useActiveAccount()
   return (
     <header className="relative z-10 border-b border-souk-hair bg-souk-canvas">
@@ -66,6 +68,14 @@ export function Nav() {
           </nav>
         </div>
 
+        {/* a declined sign-in must say so where the connect click happened, rather
+            than leave the chip unchanged with only a console rejection */}
+        {connectError && (
+          <p className="border-b border-souk-hair bg-souk-canvas px-4 py-2 text-[12px] text-souk-peach">
+            {connectError}
+          </p>
+        )}
+
         {/* right: the controls. The design draws them as the bar's second cluster, so
             they are a sibling of the wordmark group and the space between pins them to
             the far edge rather than to the end of the links */}
@@ -77,7 +87,13 @@ export function Nav() {
           <ProfileChip
             wallet={wallet}
             onConnect={() => {
-              void connectWallet()
+              connectWallet()
+                .then(() => setConnectError(null))
+                .catch((e) =>
+                  setConnectError(
+                    e instanceof Error ? e.message : 'Sign-in was declined, connect again to sign in.',
+                  ),
+                )
             }}
           />
         </div>
@@ -307,7 +323,9 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
             type="button"
             disabled={!wallet}
             onClick={() => {
-              // after a disconnect the page's own reads re-key to nobody
+              // forget this browser: the session, the wallet choice and the
+              // record go, so a reload stays disconnected
+              signOut()
               disconnectWallet()
               setOpen(false)
               window.location.reload()

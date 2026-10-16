@@ -31,13 +31,11 @@ import { builtWithFrom, decodeMetaValue } from '../lib/onchain-meta'
 import { defaultAvatarFor } from '../lib/default-avatar'
 import { verdictFor, type Verdict } from '../lib/verdict'
 import {
-  changeWallet,
-  connectWallet,
-  disconnectWallet,
   ensureBscChain,
   getProvider,
   setTargetChain,
 } from '../lib/wallet'
+import { changeWallet, connectWallet, disconnectWallet } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import {
   deliveryErrorText,

@@ -15,7 +15,7 @@ import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { checkMarks, checkSummary, countByDay, getCheckHistory, type CheckRecord } from '../lib/history'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
-import { changeWallet, connectWallet } from '../lib/wallet'
+import { changeWallet, connectWallet } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import {
   AgentAvatar,

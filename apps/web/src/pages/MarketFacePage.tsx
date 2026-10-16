@@ -8,7 +8,7 @@ import {
 } from '../lib/api'
 import { chainLabel } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
-import { connectWallet } from '../lib/wallet'
+import { connectWallet } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import { Btn, Dot, Pill, Row, Rule, Stack, Txt, type DotTone } from '../components/souk'
 

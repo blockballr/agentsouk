@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { shortAddress } from '@agora/core'
 import { visitSeed } from '../lib/rotation'
 import { isOperatedByAgentSouk } from '../lib/first-party'
-import { connectWallet, getActiveAccount } from '../lib/wallet'
+import { connectWallet, sessionAccount } from '../lib/wallet-session'
 import { hireErrorText } from '../lib/hire'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
@@ -77,7 +77,7 @@ export function QuestPage() {
 
   useEffect(() => {
     let live = true
-    getActiveAccount()
+    sessionAccount()
       .then((a) => {
         if (live) setWallet(a)
       })

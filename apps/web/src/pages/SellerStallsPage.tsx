@@ -17,7 +17,8 @@ import {
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { jobStatusName } from '../lib/jobs8183'
-import { connectWallet, getProvider } from '../lib/wallet'
+import { getProvider } from '../lib/wallet'
+import { connectWallet } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 import {

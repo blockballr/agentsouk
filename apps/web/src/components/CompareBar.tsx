@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { connectWallet, ensureBscChain } from '../lib/wallet'
+import { ensureBscChain } from '../lib/wallet'
+import { connectWallet } from '../lib/wallet-session'
 import { hireErrorText, runHire, type HireAgentRef } from '../lib/hire'
 import { getAgentDetail } from '../lib/api'
 import { addToCart, removeFromCart } from '../lib/cart'

@@ -11,7 +11,7 @@ import { chainLabel } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { countByDay } from '../lib/history'
 import { verdictFor } from '../lib/verdict'
-import { connectWallet } from '../lib/wallet'
+import { connectWallet } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import { Btn, Dot, Kpi, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
 

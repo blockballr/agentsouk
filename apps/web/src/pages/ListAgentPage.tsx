@@ -10,7 +10,8 @@ import {
   mintRequestMessage,
   shortAddress,
 } from '@agora/core'
-import { connectWallet, getActiveAccount, getProvider } from '../lib/wallet'
+import { getProvider } from '../lib/wallet'
+import { connectWallet, sessionAccount } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import { useTargetChain } from '../lib/target-chain'
 import { FAUCET_URL, MINT_PER_CLICK, isTestnet, readNativeBalance } from '../lib/mint'
@@ -390,7 +391,7 @@ function GasRequirement({ chainId }: { chainId: number }) {
   useEffect(() => {
     let cancelled = false
     void (async () => {
-      const active = await getActiveAccount()
+      const active = await sessionAccount()
       if (cancelled) return
       setAccount(active)
       await refresh(active)

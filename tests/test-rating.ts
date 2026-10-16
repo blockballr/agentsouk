@@ -13,6 +13,14 @@ const wallet = vi.hoisted(() => ({
 }));
 vi.mock("../apps/web/src/lib/wallet", () => wallet);
 
+// the identity a rating is sent as comes from the signed-in session; this
+// suite pins calldata and chain targeting, so the session itself is faked
+const session = vi.hoisted(() => ({
+  sessionAccount: vi.fn(),
+  connectWallet: vi.fn(),
+}));
+vi.mock("../apps/web/src/lib/wallet-session", () => session);
+
 import { decodeFunctionData, parseAbi, zeroHash } from "viem";
 import { feedbackCalldata, markRated, rateAgent, ratedHires, starsToScore } from "../apps/web/src/lib/rating";
 import { reputationRegistryFor } from "../apps/web/src/lib/contracts";
@@ -102,7 +110,7 @@ describe("sending a rating", () => {
 
   it("points the wallet at the rating's chain and sends to that chain's registry", async () => {
     wallet.getProvider.mockResolvedValue(provider());
-    wallet.getActiveAccount.mockResolvedValue(BUYER);
+    session.sessionAccount.mockResolvedValue(BUYER);
     wallet.ensureBscChain.mockResolvedValue("0x61");
     const result = await rateAgent(97, "2504", 5);
     expect(wallet.setTargetChain).toHaveBeenCalledWith(97);
@@ -112,7 +120,7 @@ describe("sending a rating", () => {
 
   it("sends nothing when the wallet stays on the other chain", async () => {
     wallet.getProvider.mockResolvedValue(provider());
-    wallet.getActiveAccount.mockResolvedValue(BUYER);
+    session.sessionAccount.mockResolvedValue(BUYER);
     wallet.ensureBscChain.mockResolvedValue("0x38");
     await expect(rateAgent(97, "2504", 5)).rejects.toThrow("Switch your wallet to BSC testnet");
     expect(sent).toEqual([]);
