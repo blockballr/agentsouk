@@ -1,6 +1,6 @@
 import { MotionConfig } from 'framer-motion'
 import { lazy, Suspense } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { HomePage } from './pages/HomePage'
 import { MarketplacePage } from './pages/MarketplacePage'
@@ -20,6 +20,9 @@ import VaultHirePage from './pages/VaultHirePage'
 
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
 
+// the station's own address opens on the station rather than the market
+const STATION_HOST = window.location.hostname === 'station.agentsouk.xyz'
+
 function App() {
   return (
     <MotionConfig reducedMotion="user">
@@ -27,7 +30,7 @@ function App() {
         <Route element={<Layout />}>
           {/* The homepage is the about page, and the marketplace lives at /agents.
               /about stays as an alias so the nav link and any shared URL keep working. */}
-          <Route index element={<HomePage />} />
+          <Route index element={STATION_HOST ? <Navigate to="/station" replace /> : <HomePage />} />
           <Route path="/about" element={<HomePage />} />
           <Route path="/agents" element={<MarketplacePage />} />
           <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
