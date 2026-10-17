@@ -138,7 +138,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         amountUsd: {
           type: "number",
           exclusiveMinimum: 0,
-          description: "Session price in USD. Defaults to the marketplace price.",
+          description: "Optional session price in USD. It defaults to the marketplace price and may raise it, never lower it.",
         },
         client: {
           type: "string",
@@ -183,7 +183,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         amountUsd: {
           type: "number",
           exclusiveMinimum: 0,
-          description: "Session price in USD, matching the signed value.",
+          description: "The session budget in USD recorded against the hire. Not the price: the price is the signed requirement.",
         },
       },
       required: ["tokenId", "paymentRequirements", "paymentPayload"],
