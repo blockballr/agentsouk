@@ -57,7 +57,7 @@ afterEach(() => {
 describe("the trading agent's card", () => {
   it("carries one name, the plan skill and both job steps", () => {
     const card = tajirAgentCard("https://api.agentsouk.xyz");
-    expect(card.name).toBe("Tajir Al Souk");
+    expect(card.name).toBe("Souk Grid Pilot");
     expect(card.version).toBe("1.0.0");
     expect(card.skills.map((s) => s.id)).toEqual(["plan_grid", "negotiate", "notify_funded"]);
     // the job branch reads the card for the protocol, so this card must pass it
