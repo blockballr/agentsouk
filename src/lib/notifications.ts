@@ -23,6 +23,8 @@ export type NotificationKind =
   | "job_expired"
   | "quote_ready"
   | "seller_no_ack"
+  | "listing_failing"
+  | "listing_delisted"
   | "topup_needed"
   | "deploy_live"
   | "deploy_failed"
