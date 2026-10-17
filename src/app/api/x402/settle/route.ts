@@ -9,7 +9,9 @@ import { loadDelisted } from "@/lib/delist-store";
 import { isAgentOwner, normalizeAddr } from "@/lib/boost-auth";
 import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
 import { targetChainId } from "@/lib/types";
+import { parseUnits } from "@/lib/format";
 import { escrowFunder, escrowTermsFor } from "@/lib/escrow";
+import { DEFAULT_HIRE_PRICE_USD } from "@/app/api/x402/requirements/route";
 
 export const dynamic = "force-dynamic";
 
@@ -184,6 +186,26 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
+    // a requirement that skipped the terms step is held here all the same: below
+    // the marketplace floor, however it was signed, is not a hire
+    let signed = 0n;
+    try {
+      signed = BigInt(body.paymentRequirements.amount ?? "");
+    } catch {
+      signed = 0n;
+    }
+    const floor = parseUnits(String(DEFAULT_HIRE_PRICE_USD), 18);
+    if (signed < floor) {
+      return NextResponse.json(
+        {
+          success: false,
+          refused: true,
+          error: `This payment pays less than the marketplace price of $${DEFAULT_HIRE_PRICE_USD}, so it cannot settle.`,
+        },
+        { status: 409 },
+      );
+    }
+
     const refusal = await hireRefusal(agent, payer, payee, isCheck, terms ? terms.agentPayTo : null);
     // refused marks the sentence as ours, so the site shows it as it is
     if (refusal) return NextResponse.json({ success: false, refused: true, ...refusal }, { status: 409 });

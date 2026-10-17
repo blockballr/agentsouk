@@ -103,7 +103,7 @@ describe("settlement", () => {
   const settle = (payer: string, payTo: string, extra: Record<string, unknown> = {}) =>
     post(settleRoute, "/api/x402/settle", {
       paymentPayload: { payload: { authorization: { from: payer } } },
-      paymentRequirements: { payTo },
+      paymentRequirements: { payTo, amount: "2000000000000000000" },
       agent: { chainId: 97, tokenId: "4200", name: "Own Agent" },
       ...extra,
     });

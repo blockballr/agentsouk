@@ -87,7 +87,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const priceUsd = body.amountUsd ?? DEFAULT_HIRE_PRICE_USD;
+  // the price belongs to the seller's side of the sale: a caller may raise it,
+  // for a tip or a longer session, but never name a lower one
+  const requested = Number(body.amountUsd);
+  const priceUsd =
+    Number.isFinite(requested) && requested >= DEFAULT_HIRE_PRICE_USD ? requested : DEFAULT_HIRE_PRICE_USD;
   // the asset is resolved per chain (97 settles in sUSD, 56 in $U), so the advertised
   // EIP-712 domain always matches what the relay will actually broadcast
   const token = settlementAsset(chainId);

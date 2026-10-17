@@ -72,7 +72,7 @@ async function settle(paymentId: string, payer = BUYER, chainId: unknown = 97) {
       body: JSON.stringify({
         paymentId,
         paymentPayload: { payload: { authorization: { from: payer } } },
-        paymentRequirements: { payTo: AGENT_WALLET },
+        paymentRequirements: { payTo: AGENT_WALLET, amount: "2000000000000000000" },
         agent: { chainId, tokenId: "4100", name: "Quiet Agent" },
       }),
     }),
