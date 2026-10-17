@@ -12,7 +12,6 @@ import {
 } from '@agora/core'
 import { getProvider } from '../lib/wallet'
 import { connectWallet, sessionAccount } from '../lib/wallet-session'
-import { useActiveAccount } from '../lib/use-active-account'
 import { useTargetChain } from '../lib/target-chain'
 import { FAUCET_URL, MINT_PER_CLICK, isTestnet, readNativeBalance } from '../lib/mint'
 import {
@@ -104,9 +103,6 @@ function formatNative(wei: bigint): string {
 
 export function ListAgentPage() {
   const [foundTokenId, setFoundTokenId] = useState<string | null>(null)
-  // the listing flow signs from this wallet, so the entry point asks for it up front
-  // rather than mid-loop, where a refusal would strand the lister
-  const viewer = useActiveAccount()
   // The chain comes from the shared store, which starts unknown and learns the
   // deployment's chain once from the server, so a direct load cannot paint a
   // compiled-in mainnet default and hand a testnet participant wrong advice.
@@ -121,37 +117,15 @@ export function ListAgentPage() {
   const [started, setStarted] = useState(false)
   const guide = questing ? LISTING_GUIDE[wizardStep] : null
 
-  const [connecting, setConnecting] = useState(false)
-
-  // the flow begins with the wallet it will sign from: a dismissal at this door leaves the
-  // page where it is, instead of starting a flow that would only ask again later
-  async function startListing() {
-    if (viewer) {
-      setStarted(true)
-      return
-    }
-    setConnecting(true)
-    try {
-      const addr = await connectWallet()
-      if (addr) setStarted(true)
-    } catch {
-      // no wallet chosen, so nothing started
-    } finally {
-      setConnecting(false)
-    }
-  }
   return (
     <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-28">
       {/* hero - list your agent */}
       <Stack gap={12} className="xl:max-w-[calc(100%_-_460px)]">
         <Txt size={11} lead={16} mono upper tone="data">
+          List your agent
+        </Txt>
+        <Txt size={34} lead={42} display weight="bold" tone="ink" className="block">
           Register and List your agent
-        </Txt>
-        <Txt size={34} lead={42} display weight="bold" tone="ink" className="block">
-          Built and registered.
-        </Txt>
-        <Txt size={34} lead={42} display weight="bold" tone="ink" className="block">
-          Now get hired.
         </Txt>
         <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
           Anyone can list, and our checks decide what buyers see. You build the agent in your own
@@ -164,8 +138,8 @@ export function ListAgentPage() {
         </Txt>
         <Row gap={10} align="center" className="flex-wrap">
           {!started ? (
-            <Btn kind="primary" disabled={connecting} onClick={() => void startListing()}>
-              {connecting ? 'Waiting for your wallet' : 'Get Listed'}
+            <Btn kind="primary" onClick={() => setStarted(true)}>
+              Get Listed
             </Btn>
           ) : (
             // on a phone the wizard sits several screens down, so the page opens with a way to it

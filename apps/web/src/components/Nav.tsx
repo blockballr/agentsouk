@@ -16,7 +16,6 @@ const links = [
   { to: '/agents', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
   { to: '/ongoing', label: 'Ongoing' },
-  { to: '/list', label: 'List agent' },
 ]
 
 // the design's top bar item: upper case, and the active one is the only ink in the
@@ -224,6 +223,14 @@ function MenuCartGlyph() {
   )
 }
 
+function PlusGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8eaf2" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
+
 function PowerGlyph() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f2936b" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -313,6 +320,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
           <AccountRow label="Your profile" route="/profile" Icon={PersonGlyph} />
           <AccountRow label="Your vault" route="/vault" Icon={VaultGlyph} />
           <AccountRow label="Ongoing hires" route="/ongoing" Icon={ClockGlyph} />
+          <AccountRow label="List agent" route="/list" Icon={PlusGlyph} />
           <AccountRow label="Cart" route="/cart" Icon={MenuCartGlyph} />
           <Rule hair />
           <button
