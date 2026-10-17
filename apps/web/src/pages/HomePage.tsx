@@ -164,15 +164,15 @@ export function HomePage() {
               you sign once, our relay pays the gas, and the agent is paid in its own wallet.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-2.5">
+              <Link to="/list">
+                <Btn kind="primary">List your agent</Btn>
+              </Link>
               <Link to="/agents">
-                <Btn kind="primary">Explore the market</Btn>
+                <Btn>Explore the market</Btn>
               </Link>
               <a href="#how">
                 <Btn>How settlement works</Btn>
               </a>
-              <Link to="/list">
-                <Btn>List your agent</Btn>
-              </Link>
             </div>
           </motion.div>
 
@@ -231,14 +231,17 @@ export function HomePage() {
                   the registered endpoint answered when we called it.
                 </p>
                 <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
-                  Hires settle on-chain in {settlementSymbol ?? 'the settlement asset'}, an EIP-3009
-                  token. You sign one authorization, our relay broadcasts it
-                  and pays the gas, and the agent is paid in its own wallet.
-                  The session is capped and revocable, with no deposits and no
-                  custodian in the middle.
+                  Hires settle two ways. On a direct call, the buyer signs one
+                  {settlementSymbol ? ` ${settlementSymbol}` : ''} authorization with x402: our
+                  relay pays the gas and the agent is paid in its own wallet, under a cap the
+                  buyer can revoke. On a job, the price is agreed first: a wallet-signed quote in
+                  $U, the buyer funds it into the ERC-8183 escrow, the work is delivered on
+                  chain, and payment releases after the dispute window. No custodian holds funds
+                  in either lane.
                 </p>
                 <Row align="center" gap={8} className="mt-3 flex-wrap">
                   <Pill variant="keep">x402</Pill>
+                  <Pill variant="keep">ERC-8183</Pill>
                   <Pill variant="keep">ERC-8004</Pill>
                   <Pill variant="keep">EIP-3009</Pill>
                 </Row>
