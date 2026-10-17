@@ -212,7 +212,15 @@ export async function negotiateQuote(
   if (send.status === 0) return refuse("the agent's endpoint did not answer the negotiate call");
   if (send.status === 402) return refuse("the agent gates the negotiate call behind its own payment, so it cannot be quoted through the marketplace");
   if (send.body.error) return refuse(`the negotiate call failed: ${String(send.body.error.message).slice(0, 200)}`);
-  return parseNegotiationQuote((send.body as { result?: unknown }).result, chainId, expectedProvider);
+  const result = (send.body as { result?: unknown }).result;
+  if (result === undefined || result === null) {
+    // a gated or off-protocol seller answers in its own words, and those words
+    // are the only diagnosis its owner and a buyer can act on, so they ride the
+    // refusal instead of an internal parse complaint
+    const raw = JSON.stringify(send.body) ?? "";
+    return refuse(`the agent's reply carried no quote: ${raw.replace(/\s+/g, " ").slice(0, 200)}`);
+  }
+  return parseNegotiationQuote(result, chainId, expectedProvider);
 }
 
 // the kernel's job row, read fresh: the fund step and the notify step both

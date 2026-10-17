@@ -239,4 +239,17 @@ describe("negotiateQuote", () => {
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.quote.price).toBe(1000000000000000000n);
   });
+
+  it("carries the seller's own words when the reply holds no quote", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string) => new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 })),
+    );
+    const result = await negotiateQuote(97, `https://agent.example/a2a`, "buy a grid plan", PROVIDER);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("carried no quote");
+      expect(result.error).toContain("Unauthorized");
+    }
+  });
 });
