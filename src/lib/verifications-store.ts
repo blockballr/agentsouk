@@ -292,6 +292,10 @@ export interface StaleToken {
   failingSince: string;
 }
 
+// the delist clock: maintenance removes a listing unanswered this long, and
+// the shelf health panel counts down the same window
+export const DELIST_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
 // Tokens the verifier has read as not-delivered continuously for at least the
 // window, so maintenance can warn the owner and then delist. A delivered reading
 // clears failing_since, so a token never reaches here on a single bad sweep.

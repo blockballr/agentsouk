@@ -123,6 +123,33 @@ export function stationOperations(token: string): Promise<{ success: true; opera
   return authed(token, 'operations')
 }
 
+export interface ShelfHealthRow {
+  tokenId: string
+  name: string
+  category: string
+  owner: string
+  ours: boolean
+  status: string
+  checkedAt: string | null
+  failingSince: string | null
+  delisted: { reason: string | null; at: string | null } | null
+  boosted: boolean
+}
+
+export interface StationShelfHealth {
+  generatedAt: string
+  chainId: number
+  windowDays: number
+  onShelf: { total: number; answering: number }
+  failing: (ShelfHealthRow & { daysLeft: number })[]
+  delisted: (ShelfHealthRow & { daysOff: number })[]
+  neverEligible: number
+}
+
+export function stationShelfHealth(token: string): Promise<{ success: true; health: StationShelfHealth }> {
+  return authed(token, 'shelf-health')
+}
+
 // a change is signed against its own nonce and against the target address, so the
 // server cannot be replayed into promoting a different wallet
 export async function changeMemberRole(

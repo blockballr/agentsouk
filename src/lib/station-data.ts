@@ -17,7 +17,7 @@ import { countPassports } from "./passport-store";
 import { countCheckPayments, listOutsidePayments, listRecentPayments, receiptsMode } from "./receipts-store";
 import { rpcTransport } from "./rpc";
 import { queryAgents } from "./scanner";
-import { shelfStoreMode } from "./shelf-store";
+import { loadShelfAgents, shelfStoreMode } from "./shelf-store";
 import {
   checkPassed,
   checksByDay,
@@ -34,7 +34,7 @@ import { listTasks, listTasksForPayments } from "./tasks";
 import { TEAM_WALLETS, isTeamWallet } from "./team-wallets";
 import { BSC_TESTNET_CHAIN_ID, settlementAsset, targetChainId } from "./types";
 import { loadVerifications } from "./verifications";
-import { loadStaleTokens } from "./verifications-store";
+import { loadStaleTokens, DELIST_WINDOW_MS } from "./verifications-store";
 
 const DAY_MS = 86_400_000;
 const CRON_JOBS = ["verify", "liveness", "refresh", "maintenance", "pancake"] as const;
@@ -182,6 +182,64 @@ export async function stationAgents(): Promise<StationAgent[]> {
       boosted: isBoosted(chainId, a.token_id),
     };
   });
+}
+
+export interface ShelfHealthRow {
+  tokenId: string;
+  name: string;
+  category: string;
+  owner: string;
+  ours: boolean;
+  status: string;
+  checkedAt: string | null;
+  failingSince: string | null;
+  delisted: { reason: string | null; at: string | null } | null;
+  boosted: boolean;
+}
+
+export interface StationShelfHealth {
+  generatedAt: string;
+  chainId: number;
+  // the delist clock's length, so every countdown reads one window
+  windowDays: number;
+  onShelf: { total: number; answering: number };
+  // failing with a clock running, soonest removal first
+  failing: (ShelfHealthRow & { daysLeft: number })[];
+  // off the market, relistable with a signature
+  delisted: (ShelfHealthRow & { daysOff: number })[];
+  // shelf rows the endpoint gate hides at every read
+  neverEligible: number;
+}
+
+// the shelf as three states of one clock, read off the catalogue stationAgents
+// serves, so the panel cannot disagree with the board
+export async function stationShelfHealth(now = Date.now()): Promise<StationShelfHealth> {
+  const [agents, storeRows] = await Promise.all([stationAgents(), loadShelfAgents(targetChainId())]);
+  const daysLeft = (since: string) => Math.max(0, Math.ceil((Date.parse(since) + DELIST_WINDOW_MS - now) / DAY_MS));
+  const daysOff = (at: string) => Math.max(0, Math.floor((now - Date.parse(at)) / DAY_MS));
+  const failing: (ShelfHealthRow & { daysLeft: number })[] = [];
+  const delisted: (ShelfHealthRow & { daysOff: number })[] = [];
+  let answering = 0;
+  for (const a of agents) {
+    if (a.delisted) {
+      delisted.push({ ...a, daysOff: a.delisted.at ? daysOff(a.delisted.at) : 0 });
+    } else if (a.failingSince) {
+      failing.push({ ...a, daysLeft: daysLeft(a.failingSince) });
+    } else if (a.status === "delivered") {
+      answering += 1;
+    }
+  }
+  failing.sort((a, b) => a.daysLeft - b.daysLeft);
+  delisted.sort((a, b) => b.daysOff - a.daysOff);
+  return {
+    generatedAt: new Date(now).toISOString(),
+    chainId: targetChainId(),
+    windowDays: Math.round(DELIST_WINDOW_MS / DAY_MS),
+    onShelf: { total: agents.length - delisted.length, answering },
+    failing,
+    delisted,
+    neverEligible: Math.max(0, storeRows.length - agents.length),
+  };
 }
 
 export interface StationHire {
