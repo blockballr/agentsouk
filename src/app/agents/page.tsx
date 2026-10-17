@@ -44,11 +44,6 @@ export default async function AgentsPage({
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-50">
           Agent marketplace
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-          Live agents registered under ERC-8004 on BNB Smart Chain, grouped by
-          what they do. Filter by category, search, and compare track records
-          before you hire.
-        </p>
       </div>
       <BrowseClient initialCategory={category} />
     </div>
