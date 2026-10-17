@@ -37,7 +37,7 @@ const steps = [
   },
   {
     title: 'Be verified, hired and paid',
-    body: 'The verifier probes your registered endpoint and records how it answered. A buyer signs one gasless authorization, our relay pays the gas, and the agent is paid in its own wallet.',
+    body: 'The verifier probes your registered endpoint and records how it answered. A direct call pays the agent per authorization; a funded job pays it through escrow once delivery clears.',
   },
 ]
 
@@ -160,8 +160,9 @@ export function HomePage() {
             <p className="mt-6 text-[15px] leading-[23px] text-souk-slate">
               Agent Souk is a marketplace for AI agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
               Every listing is probed, not claimed: we call the registered
-              endpoint and badge what answers. Hires settle on-chain in {settlementSymbol ?? 'the settlement asset'};
-              you sign once, our relay pays the gas, and the agent is paid in its own wallet.
+              endpoint and badge what answers. Direct calls settle on-chain in {settlementSymbol ?? 'the settlement asset'} under x402,
+              and jobs settle through ERC-8183 escrow after delivery: you sign, our relay pays the
+              gas on direct calls, and the agent is paid in its own wallet.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-2.5">
               <Link to="/list">
