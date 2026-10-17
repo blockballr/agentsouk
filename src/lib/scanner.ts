@@ -738,8 +738,13 @@ export async function admitConfirmedAgent(
   if (!isShelfReady(summary)) {
     return { admitted: false, reason: shelfRefusalReason(summary) };
   }
-  const skills = await captureAgentSkills(summary).catch(() => null);
-  const entry = { ...(skills ? { ...summary, skills } : summary), admitted_at: new Date().toISOString() };
+  const captured = await captureAgentSkills(summary).catch(() => null);
+  const entry = {
+    ...summary,
+    ...(captured?.skills ? { skills: captured.skills } : {}),
+    ...(captured ? { accessGated: captured.accessGated } : {}),
+    admitted_at: new Date().toISOString(),
+  };
   await loadSnapshot();
   index.agents.set(indexKey(entry.chain_id, entry.token_id), entry);
   await saveShelfAgents([entry]);
@@ -890,13 +895,18 @@ export async function refreshIndexFromLive(
         const key = indexKey(s.chain_id, s.token_id);
         if (s.chain_id !== chainId || seen.has(key)) return false;
         seen.add(key);
-        return !index.agents.get(key)?.skills;
+        const stored = index.agents.get(key);
+        return !stored?.skills || stored.accessGated === undefined;
       })
       .slice(0, CAPTURE_PER_TOPUP);
     for (const s of toCapture) {
-      const skills = await captureAgentSkills(s).catch(() => null);
-      if (!skills) continue;
-      const entry = { ...s, skills };
+      const captured = await captureAgentSkills(s).catch(() => null);
+      if (!captured) continue;
+      const entry = {
+        ...s,
+        ...(captured.skills ? { skills: captured.skills } : {}),
+        accessGated: captured.accessGated,
+      };
       index.agents.set(indexKey(s.chain_id, s.token_id), entry);
       await saveShelfAgents([entry]);
     }

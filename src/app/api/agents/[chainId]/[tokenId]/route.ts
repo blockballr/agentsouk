@@ -33,7 +33,9 @@ export async function GET(
   const verification = verifications.get(agent.token_id);
   // the shelf's stored list first, then what the agent publishes right now: an
   // A2A card, or the tools its MCP server lists
-  const skills = agent.skills ?? (await captureAgentSkills(agent)) ?? undefined;
+  const captured = agent.skills ? null : await captureAgentSkills(agent).catch(() => null);
+  const skills = agent.skills ?? captured?.skills ?? undefined;
+  const accessGated = agent.accessGated ?? captured?.accessGated ?? false;
   // the shelf's category is the tab the listing sits under, which a re-read of its text can miss
   const shelved = (await queryAgents({ limit: 5000, includeHouse: true, includeDelisted: true })).items.find(
     (a) => a.token_id === agent.token_id,
@@ -41,10 +43,11 @@ export async function GET(
   const categorised = shelved?.category ? { ...agent, category: shelved.category } : agent;
   const data = verification ? { ...categorised, verification } : categorised;
   const withSkills = skills ? { ...data, skills } : data;
+  const withAccess = accessGated ? { ...withSkills, accessGated: true } : withSkills;
   const withPcs =
     readsPancakeSwap(Number(chainId), tokenId) || isPancakeSwapAgent(agent.name, agent.description ?? "")
-      ? { ...withSkills, pcs: true }
-      : withSkills;
+      ? { ...withAccess, pcs: true }
+      : withAccess;
   const found = findActiveSession(Number(chainId), tokenId);
   // a revoke recorded on another instance never reaches this ledger, so the
   // durable receipt decides whether the page is still offered run controls

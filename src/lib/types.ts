@@ -196,6 +196,8 @@ export interface AgentSummary {
   verification?: Verification;
   pcs?: boolean;
   skills?: AgentCardSkill[];
+  // the card declares its own access: the seller issues the credentials
+  accessGated?: boolean;
   // set when a confirmed registration is shelved ahead of the index
   admitted_at?: string;
 }
@@ -249,4 +251,6 @@ export interface AgentDetail {
   verification?: Verification;
   pcs?: boolean;
   skills?: AgentCardSkill[];
+  // the card declares its own access: the seller issues the credentials
+  accessGated?: boolean;
 }

@@ -180,9 +180,10 @@ describe("capture reads the card first and the tools second", () => {
         : { status: 500, json: {} },
     );
 
-    const skills = await captureAgentSkills({ a2a_endpoint: CARD, mcp_server: MCP });
+    const captured = await captureAgentSkills({ a2a_endpoint: CARD, mcp_server: MCP });
 
-    expect(skills).toEqual([{ id: "negotiate", name: "Negotiate an ERC-8183 job" }]);
+    expect(captured?.skills).toEqual([{ id: "negotiate", name: "Negotiate an ERC-8183 job" }]);
+    expect(captured?.accessGated).toBe(false);
     expect(calls.map((c) => c.url)).toEqual([CARD]);
   });
 
@@ -191,18 +192,18 @@ describe("capture reads the card first and the tools second", () => {
       call.url === CARD ? { json: {} } : mcpRoute([{ name: "apy", description: "Reads the pool APY." }])(call),
     );
 
-    const skills = await captureAgentSkills({ a2a_endpoint: CARD, mcp_server: MCP });
+    const captured = await captureAgentSkills({ a2a_endpoint: CARD, mcp_server: MCP });
 
-    expect(skills).toEqual([{ id: "apy", name: "apy", description: "Reads the pool APY." }]);
+    expect(captured?.skills).toEqual([{ id: "apy", name: "apy", description: "Reads the pool APY." }]);
     expect(calls.map((c) => c.url)).toEqual([CARD, MCP, MCP, MCP]);
   });
 
   it("reads the tools for an agent with no card at all", async () => {
     stubFetch((call) => mcpRoute([{ name: "stake" }])(call));
 
-    const skills = await captureAgentSkills({ a2a_endpoint: null, mcp_server: MCP });
+    const captured = await captureAgentSkills({ a2a_endpoint: null, mcp_server: MCP });
 
-    expect(skills).toEqual([{ id: "stake", name: "stake" }]);
+    expect(captured?.skills).toEqual([{ id: "stake", name: "stake" }]);
   });
 
   it("answers nothing for an agent that publishes neither", async () => {
