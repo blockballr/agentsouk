@@ -163,10 +163,6 @@ export function StationPage() {
         <Txt size={34} lead={42} weight="bold" tone="ink">
           Your team&apos;s own room.
         </Txt>
-        <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
-          Members sign in with a wallet, so nothing is handed out as a password and every action
-          lands in the ledger below against the wallet that took it.
-        </Txt>
       </Stack>
 
       {error ? (

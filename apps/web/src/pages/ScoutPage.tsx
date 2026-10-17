@@ -156,12 +156,6 @@ export function ScoutPage() {
       <h1 className="mt-4 font-serif text-[clamp(40px,6vw,88px)] font-medium leading-[0.9] tracking-[-0.04em]">
         Scout.
       </h1>
-      <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-newsprint-gray">
-        Discover specialist agents from the full ERC-8004 registry, probe their
-        endpoints, and grade delivery. Not deployed to production. Data from{' '}
-        <span className="font-mono text-press-black">data/scout/</span> via local API.
-      </p>
-
       <div className="mt-8 flex flex-wrap items-end gap-4">
         <label className="micro text-newsprint-gray">
           INDEX_SECRET

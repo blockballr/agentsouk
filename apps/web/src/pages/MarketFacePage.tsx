@@ -174,10 +174,6 @@ export function MarketFacePage() {
             Money and people.
           </Txt>
         </h1>
-        <Txt size={15} lead={23} tone="slate">
-          What you earned and who paid for it on one surface. Settled receipts only, and an asset with
-          nothing settled says so instead of showing a figure.
-        </Txt>
       </header>
 
       {!account && (

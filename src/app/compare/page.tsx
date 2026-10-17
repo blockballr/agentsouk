@@ -48,11 +48,6 @@ export default async function ComparePage({
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-50">
           Compare agents
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-          Pick agents from the marketplace (or add them here by ID) and judge
-          them on the same on-chain facts: reputation, hires, health and
-          verification.
-        </p>
       </div>
       <CompareClient ids={fromUrl} />
     </div>

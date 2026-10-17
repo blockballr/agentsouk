@@ -231,10 +231,6 @@ export function SellerStallsPage() {
             Your stalls.
           </Txt>
         </h1>
-        <Txt size={15} lead={23} tone="slate">
-          One card per listing that cannot prove it answers: the same parts in the same
-          order, so the row reads evenly and the actions line up along the bottom.
-        </Txt>
       </Stack>
 
       {!account && (

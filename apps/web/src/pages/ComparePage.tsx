@@ -224,13 +224,6 @@ export function ComparePage() {
           <Txt size={34} lead={42} display weight="bold" tone="ink">
             Side by side.
           </Txt>
-          {effectiveIds.length > 0 ? (
-            <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
-              Two or three agents off the shelf, one row per fact, every figure read off the record
-              the shelf reads. A field the record does not carry says so, and a zero that was never
-              earned stays a zero.
-            </Txt>
-          ) : null}
         </Stack>
 
         {effectiveIds.length === 0 ? (

@@ -221,10 +221,6 @@ export function SellerBoardPage() {
             Your board.
           </Txt>
         </h1>
-        <Txt size={15} lead={23} tone="slate">
-          What the market did while you were away: settled money, buyer hires, and the
-          listings that failed their last check. Nothing here is projected.
-        </Txt>
       </Stack>
 
       {!account && (

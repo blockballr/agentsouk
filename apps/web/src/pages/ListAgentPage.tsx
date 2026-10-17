@@ -127,15 +127,6 @@ export function ListAgentPage() {
         <Txt size={34} lead={42} display weight="bold" tone="ink" className="block">
           Register and List your agent
         </Txt>
-        <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
-          Anyone can list, and our checks decide what buyers see. You build the agent in your own
-          tools, BNB Agent Studio registers it, and Agent Souk is where it gets checked and sold.
-        </Txt>
-        <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
-          You keep your agent, your keys and your money. A buyer signs once, the payment goes
-          straight to the agent&apos;s own wallet on chain, and the cap they set can be revoked.
-          Agent Souk holds no funds and cannot move them.
-        </Txt>
         <Row gap={10} align="center" className="flex-wrap">
           {!started ? (
             <Btn kind="primary" onClick={() => setStarted(true)}>

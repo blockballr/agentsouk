@@ -278,11 +278,6 @@ export default function VaultHirePage() {
             Hire an agent that trades a bounded deposit.
           </Txt>
         </h1>
-        <Txt size={15} lead={23} tone="slate" className="max-w-[1180px]">
-          The deposit sits in the HireVault contract, not with the marketplace and not with the agent.
-          The agent is named per hire and may only trade the bound pair inside a floor fixed at open
-          and a drawdown budget that bounds the whole loss. Revoking is one transaction, yours alone.
-        </Txt>
       </Stack>
 
       {kpis.length > 0 ? (
