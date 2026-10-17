@@ -1,4 +1,4 @@
-// Tajir Al Souk: the first-party grid trading agent. It plans ladders over a2a
+// Souk Grid Pilot: the first-party grid trading agent. It plans ladders over a2a
 // and as ERC-8183 jobs through the planner's own arithmetic, quotes jobs with a
 // wallet-signed price, and trades funded HireVault hires through the strategy
 // layer inside the contract's bounds. The endpoint itself holds no key: the
@@ -7,7 +7,7 @@
 import { privateEndpointReason } from "./endpoint";
 import { gridPlanSkill, type GridAgentCard, type GridAgentSkill } from "./reference-grid";
 
-export const TAJIR_AGENT_NAME = "Tajir Al Souk";
+export const TAJIR_AGENT_NAME = "Souk Grid Pilot";
 export const TAJIR_AGENT_VERSION = "1.0.0";
 export const TAJIR_AGENT_CATEGORY = "grid-trading";
 export const TAJIR_AGENT_PROTOCOL_VERSION = "0.3.0";
