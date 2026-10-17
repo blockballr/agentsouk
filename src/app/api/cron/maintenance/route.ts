@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loggedCronRun } from "@/lib/history-store";
-import { loadStaleTokens } from "@/lib/verifications-store";
+import { loadStaleTokens, DELIST_WINDOW_MS } from "@/lib/verifications-store";
 import { setDelisted } from "@/lib/delist-store";
 import { targetChainId } from "@/lib/types";
 import { escrowFunder, escrowStatuses, releaseEscrowIfDue } from "@/lib/escrow";
@@ -10,12 +10,6 @@ import { queryAgents } from "@/lib/scanner";
 
 export const dynamic = "force-dynamic";
 
-// Maintenance pass: a listing the verifier has read as not-delivered
-// continuously for seven days leaves the market. One good probe clears the
-// clock, so this never fires on a single bad sweep. It writes the same durable
-// delisted row the manual route writes, so the owner relists with a signature
-// and lifts it.
-const STALE_MS = 7 * 24 * 60 * 60 * 1000;
 // a day without an answer already earns the owner a bell, early enough to fix
 // the listing rather than lose it; the daily cadence keeps it to one notice
 const WARN_MS = 24 * 60 * 60 * 1000;
@@ -26,8 +20,13 @@ function authorized(req: NextRequest): boolean {
   return (req.headers.get("authorization") ?? "") === `Bearer ${secret}`;
 }
 
+// Maintenance pass: a listing the verifier has read as not-delivered
+// continuously for the delist window leaves the market. One good probe clears
+// the clock, so this never fires on a single bad sweep. It writes the same
+// durable delisted row the manual route writes, so the owner relists with a
+// signature and lifts it.
 async function run(): Promise<NextResponse> {
-  const stale = await loadStaleTokens(STALE_MS);
+  const stale = await loadStaleTokens(DELIST_WINDOW_MS);
   const staleIds = new Set(stale.map((t) => t.tokenId));
   const warnOnly = (await loadStaleTokens(WARN_MS)).filter((t) => !staleIds.has(t.tokenId));
   const watched = [...stale, ...warnOnly];
@@ -122,7 +121,7 @@ async function run(): Promise<NextResponse> {
   return NextResponse.json({
     success: true,
     chainId: targetChainId(),
-    windowMs: STALE_MS,
+    windowMs: DELIST_WINDOW_MS,
     considered: stale.length,
     delisted,
     warned,

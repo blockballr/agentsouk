@@ -13,6 +13,7 @@ const store = vi.hoisted(() => ({
   // the window argument tells the two reads apart: the delist asks for seven
   // days, the warn asks for one
   loadStaleTokens: vi.fn(async (_windowMs?: number) => [] as Stale[]),
+  DELIST_WINDOW_MS: 7 * 24 * 60 * 60 * 1000,
 }));
 vi.mock("@/lib/verifications-store", () => store);
 

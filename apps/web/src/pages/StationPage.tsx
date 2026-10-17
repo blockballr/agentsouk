@@ -4,12 +4,14 @@ import {
   changeMemberRole,
   stationMembers,
   stationOperations,
+  stationShelfHealth,
   stationSignIn,
   stationSignOut,
   type AuditEntry,
   type StationMember,
   type StationOperations,
   type StationRole,
+  type StationShelfHealth,
   type StationSession,
 } from '../lib/station'
 import { Btn, Dot, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
@@ -87,17 +89,20 @@ export function StationPage() {
   const [members, setMembers] = useState<StationMember[]>([])
   const [audit, setAudit] = useState<AuditEntry[]>([])
   const [ops, setOps] = useState<StationOperations | null>(null)
+  const [shelf, setShelf] = useState<StationShelfHealth | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async (token: string) => {
-    const [list, operations] = await Promise.all([
+    const [list, operations, shelfHealth] = await Promise.all([
       stationMembers(token),
       stationOperations(token).catch(() => null),
+      stationShelfHealth(token).catch(() => null),
     ])
     setMembers(list.members)
     setAudit(list.audit)
     if (operations) setOps(operations.operations)
+    if (shelfHealth) setShelf(shelfHealth.health)
   }, [])
 
   useEffect(() => {
@@ -294,6 +299,61 @@ export function StationPage() {
                   ],
                 }))}
               />
+            </Stack>
+          ) : null}
+
+          {/* the shelf's health: holding, failing, gone */}
+          {shelf ? (
+            <Stack gap={12} pad={[20, 0, 0, 0]}>
+              <SectionHead title="Shelf health" note={`WHAT THE SHELF HOLDS, ON A ${shelf.windowDays} DAY CLOCK`} />
+              <Row align="center" gap={8} className="flex-wrap">
+                <Pill variant="off">{`${shelf.onShelf.total} on the shelf`}</Pill>
+                <Pill variant="keep">{`${shelf.onShelf.answering} answering`}</Pill>
+                {shelf.failing.length ? (
+                  <Pill variant="warn">{`${shelf.failing.length} failing`}</Pill>
+                ) : null}
+                <Pill variant="off">{`${shelf.delisted.length} delisted, relistable`}</Pill>
+                <Pill variant="off">{`${shelf.neverEligible} never eligible`}</Pill>
+              </Row>
+              {shelf.failing.length ? (
+                <DataTable
+                  cols={[420, 220, 160, 200]}
+                  header={['Failing', 'Category', 'Reads as', 'Clock']}
+                  rows={shelf.failing.map((f) => ({
+                    height: 34,
+                    cells: [
+                      { text: f.name, size: 13, tone: 'ink' },
+                      { text: f.category, size: 12, tone: 'slate' },
+                      { text: f.status, size: 12, mono: true, tone: 'peach' },
+                      {
+                        text: f.daysLeft <= 0 ? 'due for removal' : `${f.daysLeft}d left`,
+                        size: 12,
+                        mono: true,
+                        tone: f.daysLeft <= 1 ? 'peach' : 'steel',
+                      },
+                    ],
+                  }))}
+                />
+              ) : null}
+              {shelf.delisted.length ? (
+                <DataTable
+                  cols={[420, 220, 200]}
+                  header={['Delisted', 'Why', 'Off since']}
+                  rows={shelf.delisted.map((d) => ({
+                    height: 34,
+                    cells: [
+                      { text: d.name, size: 13, tone: 'ink' },
+                      { text: d.delisted?.reason ?? 'manual', size: 12, tone: 'steel' },
+                      {
+                        text: d.delisted?.at ? timeAgo(d.delisted.at) : 'unknown',
+                        size: 12,
+                        mono: true,
+                        tone: 'muted',
+                      },
+                    ],
+                  }))}
+                />
+              ) : null}
             </Stack>
           ) : null}
 
