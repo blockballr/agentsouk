@@ -12,7 +12,7 @@ const NEGOTIATION = /^(negotiate(-erc8183-job)?|notify_funded)$/i
 
 export function sellsByJob(skills: SkillLike[] | null | undefined): boolean {
   if (!Array.isArray(skills) || skills.length === 0) return false
-  const names = skills.map((s) => (s.id ?? s.name ?? '').trim())
+  const names = skills.map((s) => ((s.id && s.id.trim()) ? s.id : (s.name ?? '')).trim())
   const at = names.findIndex((n) => NEGOTIATE.test(n))
   if (at < 0) return false
   if (!names.every((n) => NEGOTIATION.test(n))) return false
@@ -24,14 +24,14 @@ export function sellsByJob(skills: SkillLike[] | null | undefined): boolean {
 export function takesJobs(skills: SkillLike[] | null | undefined): boolean {
   if (!Array.isArray(skills)) return false
   return skills.some((s) => {
-    const n = (s.id ?? s.name ?? '').trim()
+    const n = ((s.id && s.id.trim()) ? s.id : (s.name ?? '')).trim()
     return /^notify_funded$/i.test(n) || (NEGOTIATE.test(n) && /8183/.test(s.description ?? ''))
   })
 }
 
 // a step of the job protocol rather than work a buyer asks for, judged against the whole card
 export function isJobStepSkill(skill: SkillLike, skills: SkillLike[]): boolean {
-  return takesJobs(skills) && NEGOTIATION.test((skill.id ?? skill.name ?? '').trim())
+  return takesJobs(skills) && NEGOTIATION.test((((skill.id && skill.id.trim()) ? skill.id : (skill.name ?? ''))).trim())
 }
 
 export const JOB_SELLER_NOTE =
