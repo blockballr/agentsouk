@@ -716,11 +716,50 @@ async function loadSnapshot(): Promise<boolean> {
     // overlay the shared store so an instance that never pulled still serves what
     // another instance learned
     await mergeDurableShelf();
+    // populate skills for entries that never captured them, so job-capable
+    // agents surface in the jobs sort and carry the executes-jobs tag. done
+    // synchronously for a first batch so the first page already shows them;
+    // the rest follows on later loads. skipped in tests to keep the read path
+    // free of side effects
+    if (process.env.NODE_ENV !== "test") {
+      await captureMissingShelfSkills(targetChainId(), 12).catch(() => {});
+    }
     return true;
   } catch {
     return false;
   }
 }
+
+async function captureMissingShelfSkills(chainId: number, limit?: number): Promise<void> {
+  let missing = [...index.agents.values()].filter(
+    (a) => a.chain_id === chainId && (!a.skills || a.accessGated === undefined),
+  );
+  if (limit) missing = missing.slice(0, limit);
+  if (missing.length === 0) return;
+  const concurrency = 8;
+  let i = 0;
+  async function worker() {
+    while (i < missing.length) {
+      const s = missing[i++];
+      try {
+        const captured = await captureAgentSkills(s).catch(() => null);
+        if (!captured) continue;
+        const entry = {
+          ...s,
+          ...(captured.skills ? { skills: captured.skills } : {}),
+          accessGated: captured.accessGated,
+        };
+        index.agents.set(indexKey(entry.chain_id, entry.token_id), entry);
+        await saveShelfAgents([entry]).catch(() => {});
+      } catch {
+        // best effort
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, missing.length) }, () => worker()));
+}
+
+
 
 export interface ShelfAdmission {
   admitted: boolean;
@@ -805,7 +844,7 @@ export interface RefreshReport {
 // How many newly admitted agents to inspect for their declared interface per top
 // up. A card fetch or MCP handshake per agent is fine for a handful, but doing it
 // for a whole page would stall the pull behind dead endpoints.
-const CAPTURE_PER_TOPUP = 6;
+const CAPTURE_PER_TOPUP = 24;
 
 // Reads through to 8004scan because the committed snapshot is frozen at deploy
 // time; a failed pull leaves the snapshot untouched rather than emptying the shelf.
@@ -966,7 +1005,7 @@ function scheduleShelfTopUp(): void {
 export interface QueryOptions {
   category?: string;
   q?: string;
-  sort?: "jobs" | "score" | "newest" | "feedback" | "health" | "reachability";
+  sort?: "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability";
   page?: number;
   limit?: number;
   ensureWarm?: boolean;
@@ -1117,15 +1156,25 @@ function sortAgents(
   const copy = [...items];
   switch (sort) {
     case "jobs":
-      // the shelf's default order: a buyer who wants work done meets the agents
-      // whose card declares the ERC-8183 job protocol first, a dual-rail card
-      // included, and each half keeps the working-first order every other sort
-      // serves, so the split alone never buries an agent
+      // the shelf's default order: job sellers first, then the agents a buyer
+      // can call directly over x402, then the rest; each tier keeps the
+      // working-first order so a verified agent is never buried by the split
       {
         const ordered = workingFirst(copy, verifications, seed);
         return [
           ...ordered.filter((a) => takesJobs(a.skills)),
-          ...ordered.filter((a) => !takesJobs(a.skills)),
+          ...ordered.filter((a) => !takesJobs(a.skills) && a.x402_supported),
+          ...ordered.filter((a) => !takesJobs(a.skills) && !a.x402_supported),
+        ];
+      }
+    case "x402":
+      // x402-capable agents first (direct calls), then the rest; each tier
+      // keeps the working-first order so a verified agent is never buried
+      {
+        const ordered = workingFirst(copy, verifications, seed);
+        return [
+          ...ordered.filter((a) => a.x402_supported),
+          ...ordered.filter((a) => !a.x402_supported),
         ];
       }
     case "newest":

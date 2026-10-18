@@ -10,12 +10,13 @@ import { withListingEdit } from "@/lib/listing-edit";
 import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const category = sp.get("category") ?? "all";
   const q = sp.get("q") ?? "";
-  const sort = (sp.get("sort") as "jobs" | "score" | "newest" | "feedback" | "health" | "reachability") ?? "reachability";
+  const sort = (sp.get("sort") as "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability") ?? "reachability";
   const page = Math.max(1, Number(sp.get("page") ?? 1) || 1);
   const limit = Math.min(60, Math.max(1, Number(sp.get("limit") ?? 24) || 24));
   const warm = sp.get("warm") === "1";
@@ -37,6 +38,41 @@ export async function GET(req: NextRequest) {
     seed: sp.get("seed"),
     includeHouse: sp.get("house") === "all",
   });
+
+  // capture skills for entries that never had them, so the shelf carries the
+  // job protocol (and the executes-jobs tag) without waiting for a refresh.
+  // bounded and best-effort: a slow card must not hold the whole page
+  try {
+    const { captureAgentSkills } = await import("@/lib/agent-interface");
+    const { saveShelfAgents } = await import("@/lib/shelf-store");
+    const missing = result.items.filter((a) => !a.skills || a.accessGated === undefined).slice(0, 6);
+    if (missing.length > 0) {
+      await Promise.all(
+        missing.map(async (a) => {
+          try {
+            const captured = await Promise.race([
+              captureAgentSkills(a),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+            ]);
+            if (!captured) return;
+            const entry = {
+              ...a,
+              ...(captured.skills ? { skills: captured.skills } : {}),
+              accessGated: captured.accessGated,
+            };
+            // update the in-memory result so this response carries the skills
+            const idx = result.items.findIndex((x) => x.chain_id === a.chain_id && x.token_id === a.token_id);
+            if (idx >= 0) result.items[idx] = { ...result.items[idx], ...entry };
+            await saveShelfAgents([entry]).catch(() => {});
+          } catch {
+            // best effort
+          }
+        }),
+      );
+    }
+  } catch {
+    // capture must never break the listing
+  }
 
   await hydrateBoostsFromDb();
 

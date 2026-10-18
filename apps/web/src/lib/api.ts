@@ -10,7 +10,7 @@ import { listingControlMessage, type ListingAction } from './listing-control'
 export interface AgentsQuery {
   category?: string
   q?: string
-  sort?: 'jobs' | 'score' | 'newest' | 'feedback' | 'health' | 'reachability'
+  sort?: 'jobs' | 'x402' | 'score' | 'newest' | 'feedback' | 'health' | 'reachability'
   page?: number
   limit?: number
   pcs?: boolean

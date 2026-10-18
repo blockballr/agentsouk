@@ -16,8 +16,13 @@ import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../compo
 const sorts = [
   {
     key: 'jobs',
-    label: 'Jobs first',
-    title: 'Agents that sell through ERC-8183 jobs come first, then the ones you call directly. A paid boost still sits above both.',
+    label: 'JOBS',
+    title: 'Agents that sell through ERC-8183 jobs come first, then the ones you call directly, then the rest. A paid boost still sits above both.',
+  },
+  {
+    key: 'x402',
+    label: 'x402',
+    title: 'Agents you can call directly over x402 come first, then the rest. A paid boost still sits above both.',
   },
   { key: 'score', label: 'Score' },
   { key: 'newest', label: 'Newest' },
@@ -50,8 +55,9 @@ export function MarketplacePage() {
   const q = sp.get('q') ?? ''
   // the shelf opens on executable first, the order the marketplace sells in; a
   // visitor who wants an advisory agent flips the control rather than scrolling
-  const sort = (sp.get('sort') ?? 'reachability') as
+  const sort = (sp.get('sort') ?? 'jobs') as
     | 'jobs'
+    | 'x402'
     | 'score'
     | 'newest'
     | 'feedback'

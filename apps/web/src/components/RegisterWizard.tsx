@@ -81,7 +81,7 @@ type LoopId =
 const SWEEP_DETAIL =
   'Nothing in this wizard earns the badge. Once the registration is confirmed, the verifier probes the registered endpoint on its next sweep; the badge it awards follows whether that endpoint answers, not anything done here.'
 
-function initialChecks(mode: 'job' | 'call'): CheckLine[] {
+export function initialChecks(mode: 'job' | 'call'): CheckLine[] {
   const before: CheckLine[] = [
     { id: 'endpoint', title: 'Endpoint address rule', state: 'waiting' },
     { id: 'card', title: 'The agent card answers', state: 'waiting' },
