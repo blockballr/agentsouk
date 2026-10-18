@@ -96,13 +96,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("executable first", () => {
+describe("jobs first", () => {
   it("leads with every card that declares the job protocol, dual-rail included", async () => {
     env.rows = [row("1", DUAL_CARD), row("2", PLAIN_CARD), row("3", JOB_CARD), row("4")];
     vi.resetModules();
     const { queryAgents } = await import("../src/lib/scanner");
 
-    const { items } = await queryAgents({ sort: "executable", limit: 500, seed: "souk" });
+    const { items } = await queryAgents({ sort: "jobs", limit: 500, seed: "souk" });
     const pos = (t: string) => items.findIndex((a) => a.token_id === t);
 
     expect(items).toHaveLength(4);
