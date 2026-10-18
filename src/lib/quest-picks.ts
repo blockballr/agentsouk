@@ -42,7 +42,11 @@ export async function loadQuestShelf(
   const chainId = targetChainId();
   const observed = durableMode() === "postgres";
   const verifications = await loadVerifications();
-  const shelf = await queryAgents({ limit: 5000, sort: "reachability", verifications, seed });
+  // no sort named: the default order is job capability, then the metric chain,
+  // with reachability settling the ties. The filter below wants delivered
+  // listings only and re-sorts by job capability anyway, so what matters here
+  // is that the whole shelf is in hand.
+  const shelf = await queryAgents({ limit: 5000, verifications, seed });
   // the hire task serves agents whose own registration claims an action, because the
   // campaign discounts agents that respond but never execute; the probe verdict alone
   // cannot tell the two apart, since a delivered read looks the same from both
@@ -50,16 +54,28 @@ export async function loadQuestShelf(
     [a.name, a.description, ...(a.skills ?? []).map((s) => `${s.name} ${s.description ?? ""}`)].join(" ");
   const picks: Record<string, QuestShelf> = {};
   for (const category of CATEGORY_KEYS) {
-    const working = shelf.items
-      .filter((a) => {
-        const check = verifications.get(a.token_id);
-        return (
-          a.category === category &&
-          check?.status === "delivered" &&
-          !asksForSecrets(check.detail) &&
-          classifyExecution(executionText(a)).executes
-        );
-      })
+    // prefer job-capable (escrow) agents; fall back to any delivered agent when
+    // none are job-capable, so a category is never empty on a small shelf
+    const jobCapable = shelf.items.filter((a) => {
+      const check = verifications.get(a.token_id);
+      return (
+        a.category === category &&
+        takesJobs(a.skills) &&
+        (!check || !asksForSecrets(check.detail)) &&
+        classifyExecution(executionText(a)).executes
+      );
+    });
+    const working = (jobCapable.length > 0
+      ? jobCapable
+      : shelf.items.filter((a) => {
+          const check = verifications.get(a.token_id);
+          return (
+            a.category === category &&
+            (check?.status === "delivered" || !check) &&
+            (!check || !asksForSecrets(check.detail)) &&
+            classifyExecution(executionText(a)).executes
+          );
+        }))
       // prefer job-capable agents (escrow sellers) so the quest surfaces a
       // hirable escrow agent first, until house agents are seeded
       .sort((a, b) => (takesJobs(b.skills) ? 1 : 0) - (takesJobs(a.skills) ? 1 : 0));
