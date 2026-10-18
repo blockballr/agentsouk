@@ -104,7 +104,7 @@ export function HomePage() {
     const base = import.meta.env.VITE_API_URL ?? '/api'
     // the marketplace's own count and category split, from its own endpoint,
     // with no hardcoded fallback that could overstate the inventory
-    fetch(`${base}/agents?limit=1`)
+    fetch(`${base}/agents?type=all&limit=1`)
       .then((r) => r.json())
       .then((d) => {
         if (typeof d?.total === 'number') setCuratedAgents(d.total)
@@ -165,8 +165,8 @@ export function HomePage() {
               gas on direct calls, and the agent is paid in its own wallet.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-2.5">
-              <Link to="/list">
-                <Btn kind="primary">List your agent</Btn>
+              <Link to="/quest">
+                <Btn kind="primary">Set and Earn Quest</Btn>
               </Link>
               <Link to="/agents">
                 <Btn>Explore the market</Btn>

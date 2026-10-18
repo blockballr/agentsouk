@@ -550,7 +550,9 @@ function stepContent(
     instruction: first
       ? 'Hire with the wallet on your Set and Earn form. Any agent but your own counts.'
       : 'Hire any agent that is not your own and that you have not hired yet.',
-    actions: [{ label: 'Browse the shelf', to: '/agents?sort=reachability' }],
+    // no sort named: the shelf opens on its own default, which is the order
+    // this step wants anyway
+    actions: [{ label: 'Browse the shelf', to: '/agents' }],
   }
 }
 
