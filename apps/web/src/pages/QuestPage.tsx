@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { shortAddress } from '@agora/core'
 import { visitSeed } from '../lib/rotation'
 import { isOperatedByAgentSouk } from '../lib/first-party'
@@ -25,7 +25,7 @@ import {
   type StepKey,
 } from '../lib/quest'
 import { cx } from '../components/ui'
-import { SupportButton } from '../components/SupportButton'
+
 import {
   Stack,
   Row,
@@ -48,7 +48,6 @@ const BNB_CAMPAIGN = 'https://www.bnbchain.org/en/hackathons/smart-money-era-set
 const REFRESH_MS = 30_000
 
 export function QuestPage() {
-  const navigate = useNavigate()
   // always call the hook: gating the call on import.meta.env.DEV changes the
   // hook order between the dev and production bundles
   const target = useTargetChain()
@@ -139,11 +138,6 @@ export function QuestPage() {
     }
   }
 
-  function quit() {
-    writeQuestMode(wallet, 'quit')
-    navigate('/agents')
-  }
-
   const stamps = stampsFrom(progress)
   const open = QUEST_STEPS.filter((s) => !stamps[s.key])
   // the next thing to do is simply the first stamp still missing
@@ -220,16 +214,46 @@ export function QuestPage() {
     : null
   const stripAction = strip?.actions[0] ?? null
 
-  const writtenPicks = QUEST_STEPS.flatMap((step) => {
-    const pair = step.agents?.[97]
-    if (!pair) return []
-    return [
-      { key: `${step.key}-primary`, stepTitle: step.title, name: pair.primary.name, tokenId: pair.primary.tokenId, slot: 'primary', task: pair.primary.task },
-      ...(pair.alternate
-        ? [{ key: `${step.key}-alternate`, stepTitle: step.title, name: pair.alternate.name, tokenId: pair.alternate.tokenId, slot: 'alternate', task: pair.alternate.task }]
-        : []),
-    ]
-  })
+  const writtenPicks = chainId === 97
+    ? QUEST_STEPS.flatMap((step) => {
+        const pair = step.agents?.[97]
+        if (!pair) return []
+        return [
+          { key: `${step.key}-primary`, stepTitle: step.title, name: pair.primary.name, tokenId: pair.primary.tokenId, slot: 'primary', task: pair.primary.task, category: step.category ?? 'general', chainId: 97, imageUrl: undefined },
+          ...(pair.alternate
+            ? [{ key: `${step.key}-alternate`, stepTitle: step.title, name: pair.alternate.name, tokenId: pair.alternate.tokenId, slot: 'alternate', task: pair.alternate.task, category: step.category ?? 'general', chainId: 97, imageUrl: undefined }]
+            : []),
+        ]
+      })
+    : []
+  // other working hirable agents from the shelf across the four categories
+  const shelfPicks = shelf
+    ? Object.entries(shelf).flatMap(([cat, s]) => (s?.working ?? []).map((a) => ({
+        key: `shelf-${a.tokenId}`,
+        stepTitle: 'Other pick',
+        name: a.name,
+        tokenId: a.tokenId,
+        slot: 'primary' as const,
+        task: undefined,
+        category: cat,
+        chainId: chainId ?? 97,
+        imageUrl: a.imageUrl,
+      })))
+    : []
+  const otherPicks = [...shelfPicks, ...writtenPicks.filter((w) => !shelfPicks.some((s) => s.tokenId === w.tokenId))]
+  // arrange into the four categories, one pick per category (job-capable preferred)
+  const CATEGORY_ORDER = ['health-factor', 'grid-trading', 'rebalancing', 'yield']
+  const CATEGORY_LABEL: Record<string, string> = {
+    'health-factor': 'Health factor',
+    'grid-trading': 'Grid trading',
+    'rebalancing': 'Rebalancing',
+    'yield': 'Yield',
+  }
+  const picksByCategory = CATEGORY_ORDER.map((cat) => ({
+    cat,
+    label: CATEGORY_LABEL[cat],
+    picks: otherPicks.filter((p) => p.category === cat).slice(0, 2),
+  }))
 
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
@@ -238,11 +262,10 @@ export function QuestPage() {
           <Txt size={11} lead={16} mono upper tone="data">
             {`Set and Earn · wallet ${wallet ? shortAddress(wallet) : 'not connected'} · ${chainLine}`}
           </Txt>
-          <h1 className="font-serif text-[34px] font-bold leading-[42px] text-souk-ink">Souk passport.</h1>
+          <h1 className="font-serif text-[34px] font-bold leading-[42px] text-souk-ink">Set and Earn Quest.</h1>
           <p className="max-w-[1180px] text-[15px] leading-[23px] text-souk-slate">
             Hire an agent, list one of your own, then hire a second. That finishes your passport.
           </p>
-          <SupportButton className="self-start" />
         </Stack>
 
         {/* the reminder comes first: a hire from any other wallet is not counted by the campaign */}
@@ -275,11 +298,6 @@ export function QuestPage() {
               </Txt>
             </Row>
             <Row gap={8} align="center">
-              {!wallet ? (
-                <Btn kind="primary" onClick={connect} disabled={connecting}>
-                  {connecting ? 'Waiting for your wallet' : 'Connect wallet'}
-                </Btn>
-              ) : null}
               <a href={BNB_CAMPAIGN} target="_blank" rel="noreferrer">
                 <Btn>Open the form</Btn>
               </a>
@@ -287,12 +305,36 @@ export function QuestPage() {
           </Row>
         </Section>
 
+        <Stack surface pad={[16, 22, 16, 22]} gap={10} className="mt-4">
+          <SectionHead title="The strip that brings you here" />
+          <Row justify="between" align="start" gap={14}>
+            <Stack gap={6} className="min-w-0 flex-1">
+              <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                {`Souk passport A- ${strip && next ? next.title : 'complete'}`}
+              </Txt>
+              <Txt size={13} lead={20} tone="slate">
+                {strip ? strip.instruction : 'Every step that finishes the passport is in.'}
+              </Txt>
+            </Stack>
+            <QuestStamp step={next ? next.key : 'seal'} stamped={next ? stamps[next.key] : true} className="w-[104px] shrink-0" />
+          </Row>
+          {stripAction ? (
+            stripAction.to ? (
+              <Link to={stripAction.to} className="mt-1 inline-block">
+                <Btn kind={stripAction.label.toLowerCase().includes('wallet') ? 'primary' : 'off'}>{stripAction.label}</Btn>
+              </Link>
+            ) : (
+              <Btn kind={stripAction.label.toLowerCase().includes('wallet') ? 'primary' : 'off'} onClick={stripAction.onClick} disabled={stripAction.disabled} className="mt-1">
+                {stripAction.label}
+              </Btn>
+            )
+          ) : null}
+        </Stack>
+
         {error ? (
           <Section>
             <div role="alert">
-              <NoteBox title="The passport could not be read just now" copy={error}>
-                <SupportButton />
-              </NoteBox>
+              <NoteBox title="The passport could not be read just now" copy={error} />
             </div>
           </Section>
         ) : null}
@@ -349,19 +391,9 @@ export function QuestPage() {
                 onlyOurs={onlyOursFor(step)}
                 chainId={chainId}
                 wallet={wallet}
-                onConnect={connect}
-                connecting={connecting}
               />
             ))}
-            <Stack hair radius={20} pad={[20, 22, 20, 22]} gap={10} className="min-w-0">
-              <Txt size={15} lead={22} weight="bold" tone="ink">What counts</Txt>
-              <Txt size={12} lead={18} tone="slate">
-                The rules ask for three hires across at least two marketplaces. And one listing of
-                your own agent.
-              </Txt>
-              <Rule hair />
-              <Btn onClick={quit} className="w-full">Quit the quest</Btn>
-            </Stack>
+
           </div>
         </Section>
 
@@ -389,28 +421,39 @@ export function QuestPage() {
 
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
           <Stack surface pad={[20, 22, 20, 22]} gap={12} className="min-w-0 lg:col-span-2">
-            <SectionHead title="The picks the quest is written with" note="BNB 97 · NAMED IN THE PRODUCT" />
-            {writtenPicks.map((w) => (
-              <div key={w.key}>
-                <Row gap={12} align="center" justify="between">
-                  <Row gap={11} align="center" className="min-w-0">
-                    <AgentAvatar size={34} name={w.name} />
-                    <Stack gap={2} className="min-w-0">
-                      <Txt size={15} lead={20} weight="bold" tone="ink" className="block truncate">{w.name}</Txt>
-                      <Txt size={11} lead={15} mono tone="labels">{`BNB 97 · token ${w.tokenId} · ${w.slot}`}</Txt>
-                    </Stack>
-                  </Row>
-                  <Pill variant="off">{w.stepTitle}</Pill>
-                </Row>
-                {w.task ? (
-                  <Txt size={12} lead={18} tone="steel" className="mt-2 block pl-[45px]">
-                    {w.task}
-                  </Txt>
-                ) : null}
+            <SectionHead title="Other picks to choose from" note="NAMED IN THE PRODUCT" />
+            {picksByCategory.map(({ cat, label, picks }) => (
+              <div key={cat} className="space-y-2">
+                <Txt size={11} lead={14} weight="bold" upper tone="muted">{label}</Txt>
+                {picks.length === 0 ? (
+                  <Txt size={12} lead={18} tone="steel">No agent on the shelf yet.</Txt>
+                ) : (
+                  picks.map((w) => (
+                    <Link key={w.key} to={`/agents/${w.chainId ?? 97}/${w.tokenId}`} className="block transition hover:opacity-80">
+                      <div>
+                        <Row gap={12} align="center" justify="between">
+                          <Row gap={11} align="center" className="min-w-0">
+                            <AgentAvatar size={34} name={w.name} imageUrl={w.imageUrl} />
+                            <Stack gap={2} className="min-w-0">
+                              <Txt size={15} lead={20} weight="bold" tone="ink" className="block truncate">{w.name}</Txt>
+                              <Txt size={11} lead={15} mono tone="labels">{`token ${w.tokenId} · ${w.slot}`}</Txt>
+                            </Stack>
+                          </Row>
+                          <Pill variant="off">{w.stepTitle}</Pill>
+                        </Row>
+                        {w.task ? (
+                          <Txt size={12} lead={18} tone="steel" className="mt-2 block pl-[45px]">
+                            {w.task}
+                          </Txt>
+                        ) : null}
+                      </div>
+                    </Link>
+                  ))
+                )}
               </div>
             ))}
           </Stack>
-          <Stack surface pad={[20, 22, 20, 22]} gap={12} className="min-w-0">
+          <Stack surface pad={[20, 22, 20, 22]} gap={12} className="min-w-0 self-start">
             <SectionHead title="What it finishes into" note="THE GRAND SEAL" />
             <Row justify="center">
               <QuestStamp step="seal" stamped={Boolean(progress?.completed)} className="w-[92px]" />
@@ -431,32 +474,6 @@ export function QuestPage() {
             </Row>
           </Stack>
         </div>
-
-        <Stack surface pad={[16, 22, 16, 22]} gap={10} className="mt-8">
-          <SectionHead title="The strip that brings you here" />
-          <Row justify="between" align="start" gap={14}>
-            <Stack gap={6} className="min-w-0 flex-1">
-              <Txt size={10} lead={14} weight="bold" upper tone="muted">
-                {`Souk passport · ${strip && next ? next.title : 'complete'}`}
-              </Txt>
-              <Txt size={13} lead={20} tone="slate">
-                {strip ? strip.instruction : 'Every step that finishes the passport is in.'}
-              </Txt>
-            </Stack>
-            <QuestStamp step={next ? next.key : 'seal'} stamped={next ? stamps[next.key] : true} className="w-[104px] shrink-0" />
-          </Row>
-          {stripAction ? (
-            stripAction.to ? (
-              <Link to={stripAction.to} className="mt-1 inline-block">
-                <Btn>{stripAction.label}</Btn>
-              </Link>
-            ) : (
-              <Btn onClick={stripAction.onClick} disabled={stripAction.disabled} className="mt-1">
-                {stripAction.label}
-              </Btn>
-            )
-          ) : null}
-        </Stack>
 
         <div className="mt-10 pb-2">
           <Rule />
@@ -485,10 +502,10 @@ function stepContent(
   onlyOurs: boolean,
   chainId: number | null,
   wallet: string | null,
-  onConnect: () => void,
-  connecting: boolean,
+  onConnect?: () => void,
+  connecting?: boolean,
 ): { title: string; instruction: string; actions: StepAction[] } {
-  const title = step.key === 'stall' ? 'Open your stall' : step.title
+  const title = step.key === 'stall' ? 'List your agent' : step.title
   if (stamped) {
     const what = step.key === 'stall' ? 'Your listed agent is counted.' : 'Your settled hire is counted.'
     return { title, instruction: `Stamped. ${what}`, actions: [] }
@@ -501,14 +518,16 @@ function stepContent(
       instruction: first
         ? 'Connect the wallet you entered on BNB Chain\'s Set and Earn form.'
         : 'Connect the wallet you will hire with.',
-      actions: [{ label: connecting ? 'Waiting for your wallet' : 'Connect wallet', onClick: onConnect, disabled: connecting }],
+      actions: onConnect
+        ? [{ label: connecting ? 'Waiting for your wallet' : 'Connect wallet', onClick: onConnect, disabled: connecting }]
+        : [],
     }
   }
   if (step.key === 'stall') {
     return {
       title,
       instruction: 'List one agent of your own. Its hires pay your wallet directly.',
-      actions: [{ label: 'List an agent', to: '/list?quest=stall' }],
+      actions: [{ label: 'List your agent', to: '/list?quest=stall' }],
     }
   }
   if (reading) return { title, instruction: 'Reading which agents are answering right now.', actions: [] }
@@ -548,8 +567,6 @@ function StepCard({
   onlyOurs,
   chainId,
   wallet,
-  onConnect,
-  connecting,
 }: {
   step: QuestStep
   number: number
@@ -564,10 +581,8 @@ function StepCard({
   onlyOurs: boolean
   chainId: number | null
   wallet: string | null
-  onConnect: () => void
-  connecting: boolean
 }) {
-  const { title, instruction, actions } = stepContent(step, stamped, picks, reading, onlyOurs, chainId, wallet, onConnect, connecting)
+  const { title, instruction, actions } = stepContent(step, stamped, picks, reading, onlyOurs, chainId, wallet)
   const state = stamped ? 'Stamped' : isNext ? 'Next up' : 'Not stamped yet'
   return (
     <article

@@ -9,15 +9,14 @@ import {
   subscribeQuest,
   writeQuestMode,
 } from '../lib/quest'
-import { connectWallet, sessionAccount } from '../lib/wallet-session'
+import { sessionAccount } from '../lib/wallet-session'
 import { hireErrorText } from '../lib/hire'
-import { Action, cx } from './ui'
+import { cx } from './ui'
 import { Btn, Label, Row, Stack, Txt } from './souk'
 
 const REFRESH_MS = 30_000
 // the way back into a started quest sits under the nav on every screen, in the primary
 // colour, so it is the first thing seen and is small enough to cover nothing
-const RESUME = 'fixed right-3 top-20 z-40 sm:right-6'
 // the invitation floats over the page, carrying its own background. on a wide screen it
 // hangs under the page's first band, measured below; narrower than that the page's own
 // header owns the top, so it stays at the foot and gives way to the compare bar
@@ -39,6 +38,9 @@ export function QuestNudge() {
   // a quest belongs to a wallet, so starting one asks for that wallet first
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [minimized, setMinimized] = useState<boolean>(() => {
+    try { return localStorage.getItem('agentsouk.quest.minimized') === '1' } catch { return false }
+  })
 
   // the whole quest is gated on this: without a wallet every step card would offer the same
   // connect prompt, so the wallet is taken once here rather than four times over there
@@ -46,8 +48,7 @@ export function QuestNudge() {
     setStarting(true)
     setError(null)
     try {
-      const who = wallet ?? (await connectWallet())
-      writeQuestMode(who, 'active')
+      if (wallet) writeQuestMode(wallet, 'active')
       navigate('/quest')
     } catch (e) {
       setError(hireErrorText(e))
@@ -73,6 +74,19 @@ export function QuestNudge() {
   }, [pathname])
 
   useEffect(() => subscribeQuest(() => redraw((n) => n + 1)), [])
+
+  // a minimized card hands off to the bottom bar; the bar can hand it back
+  useEffect(() => {
+    const onVis = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { minimized?: boolean } | undefined
+      if (detail?.minimized === false) {
+        setMinimized(false)
+        try { localStorage.removeItem('agentsouk.quest.minimized') } catch {}
+      }
+    }
+    window.addEventListener('agentsouk.quest.visibility', onVis)
+    return () => window.removeEventListener('agentsouk.quest.visibility', onVis)
+  }, [])
 
   // where the page's own first band ends: every screen opens its mono strap at a
   // different height. taken as a page coordinate, so a resize arriving while scrolled
@@ -115,6 +129,7 @@ export function QuestNudge() {
   }, [wallet, started, hidden, pathname])
 
   if (hidden || !walletKnown) return null
+  if (minimized) return null
 
   if (started) {
     // progress read for another wallet says nothing about this one
@@ -123,9 +138,38 @@ export function QuestNudge() {
     if (progress?.completed) return null
     const done = requiredDone(progress)
     return (
-      <Action to="/quest" variant="primary" className={RESUME}>
-        {done > 0 ? `Resume quest ${done}/3` : 'Resume quest'}
-      </Action>
+      <aside
+        aria-label="Set and Earn Quest"
+        className={cx(INVITE)}
+        style={{ '--quest-top': `${band}px` } as CSSProperties}
+      >
+        <Stack bg="indigo" hair radius={20} pad={[16, 22, 16, 22]} gap={8} className="relative">
+          <button
+            type="button"
+            aria-label="Minimize quest card"
+            onClick={() => {
+              setMinimized(true)
+              try { localStorage.setItem('agentsouk.quest.minimized', '1') } catch {}
+              window.dispatchEvent(new CustomEvent('agentsouk.quest.visibility', { detail: { minimized: true } }))
+            }}
+            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-[4px] border border-white/30 text-[14px] font-bold leading-none text-white/60 transition hover:bg-white/10 hover:text-white"
+          >
+            -
+          </button>
+          <Label>Collect your Souk passport</Label>
+          <Txt size={20} lead={26} weight="bold" tone="white">
+            Set and Earn Quest
+          </Txt>
+          <Txt size={13} lead={20} tone="white" className="opacity-75">
+            Hire two agents and list one of your own, for BNB Chain's Set and Earn. Three stamps finish it, paid from your wallet.
+          </Txt>
+          <Row gap={8} className="mt-2">
+            <Btn kind="primary" onClick={() => navigate('/quest')} className="grow basis-0">
+              {done > 0 ? `Resume quest ${done}/3` : 'Resume quest'}
+            </Btn>
+          </Row>
+        </Stack>
+      </aside>
     )
   }
 
@@ -133,18 +177,30 @@ export function QuestNudge() {
 
   return (
     <aside
-      aria-label="Set and Earn quest"
+      aria-label="Set and Earn Quest"
       className={cx(INVITE)}
       style={{ '--quest-top': `${band}px` } as CSSProperties}
     >
-      <Stack bg="indigo" hair radius={20} pad={[16, 22, 16, 22]} gap={8}>
-        <Label>Set and Earn quest</Label>
+      <Stack bg="indigo" hair radius={20} pad={[16, 22, 16, 22]} gap={8} className="relative">
+        <button
+          type="button"
+          aria-label="Minimize quest card"
+          onClick={() => {
+            setMinimized(true)
+            try { localStorage.setItem('agentsouk.quest.minimized', '1') } catch {}
+            window.dispatchEvent(new CustomEvent('agentsouk.quest.visibility', { detail: { minimized: true } }))
+          }}
+          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-[4px] border border-white/30 text-[14px] font-bold leading-none text-white/60 transition hover:bg-white/10 hover:text-white"
+        >
+          -
+        </button>
+        <Label>Collect your Souk passport</Label>
         <Txt size={20} lead={26} weight="bold" tone="white">
-          Set and Earn
+          Set and Earn Quest
         </Txt>
         {/* white, because the paper register turns the slate to navy and this stays indigo */}
         <Txt size={13} lead={20} tone="white" className="opacity-75">
-          Collect your Souk passport
+          Hire two agents and list one of your own, for BNB Chain's Set and Earn. Three stamps finish it, paid from your wallet.
         </Txt>
         <Row gap={8} className="mt-2">
           <Btn
@@ -153,10 +209,7 @@ export function QuestNudge() {
             disabled={starting}
             className="grow basis-0"
           >
-            {starting ? 'Waiting for your wallet' : 'Start quest'}
-          </Btn>
-          <Btn kind="off" onClick={() => writeQuestMode(wallet, 'dismissed')} className="grow basis-0">
-            Not now
+            {starting ? 'Waiting for your wallet' : 'Start Quest'}
           </Btn>
         </Row>
         {error && (
