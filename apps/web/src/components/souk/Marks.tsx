@@ -62,7 +62,7 @@ export function AgentAvatar({
           lead={Math.round(size * 0.46)}
           weight="bold"
           mono
-          tone="ink"
+          tone="white"
         >
           {initialsFor(name)}
         </Txt>
