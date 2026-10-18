@@ -13,6 +13,7 @@ import { sessionAccount } from '../lib/wallet-session'
 import { hireErrorText } from '../lib/hire'
 import { cx } from './ui'
 import { Btn, Label, Row, Stack, Txt } from './souk'
+import { motion, useReducedMotion } from 'framer-motion'
 
 const REFRESH_MS = 30_000
 // the way back into a started quest sits under the nav on every screen, in the primary
@@ -41,6 +42,10 @@ export function QuestNudge() {
   const [minimized, setMinimized] = useState<boolean>(() => {
     try { return localStorage.getItem('agentsouk.quest.minimized') === '1' } catch { return false }
   })
+  const reducedMotion = useReducedMotion()
+  const [minimizing, setMinimizing] = useState(false)
+  const [minimizeTarget, setMinimizeTarget] = useState<{ x: number; y: number } | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   // the whole quest is gated on this: without a wallet every step card would offer the same
   // connect prompt, so the wallet is taken once here rather than four times over there
@@ -143,24 +148,50 @@ export function QuestNudge() {
         className={cx(INVITE)}
         style={{ '--quest-top': `${band}px` } as CSSProperties}
       >
-        <Stack bg="indigo" hair radius={20} pad={[16, 22, 16, 22]} gap={8} className="relative">
+        <motion.div ref={cardRef} animate={minimizing && minimizeTarget ? { x: minimizeTarget.x, y: minimizeTarget.y, scale: 0.04, scaleX: 0.04, scaleY: 0.015, opacity: 0, rotate: minimizeTarget.x >= 0 ? 14 : -14, rotateX: 55, borderRadius: 999 } : { x: 0, y: 0, scale: 1, scaleX: 1, scaleY: 1, opacity: 1, rotate: 0, rotateX: 0, borderRadius: 20 }} transition={minimizing ? { duration: 0.7, ease: [0.55, 0, 1, 1] } : { duration: 0.2 }} onAnimationComplete={() => { if (minimizing) { setMinimized(true); setMinimizing(false); setMinimizeTarget(null); try { localStorage.setItem('agentsouk.quest.minimized', '1') } catch {}; window.dispatchEvent(new CustomEvent('agentsouk.quest.visibility', { detail: { minimized: true } })) } }} style={{ transformOrigin: '50% 100%', perspective: 900, transformStyle: 'preserve-3d' }}><Stack hair radius={20} pad={[16, 22, 16, 22]} gap={8} className="relative bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] backdrop-blur-md ring-1 ring-white/10 shadow-lg">
           <button
             type="button"
             aria-label="Minimize quest card"
             onClick={() => {
-              setMinimized(true)
+              if (reducedMotion) {
+                setMinimized(true)
+                try { localStorage.setItem('agentsouk.quest.minimized', '1') } catch {}
+                window.dispatchEvent(new CustomEvent('agentsouk.quest.visibility', { detail: { minimized: true } }))
+                return
+              }
+              // reveal the Start Quest tab immediately so the card has a real
+              // target to wrap into, then measure it after it renders
               try { localStorage.setItem('agentsouk.quest.minimized', '1') } catch {}
               window.dispatchEvent(new CustomEvent('agentsouk.quest.visibility', { detail: { minimized: true } }))
+              setMinimizing(true)
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  const btn = [...document.querySelectorAll('button')].find((b) =>
+                    /resume quest|start quest/i.test(b.textContent || ''),
+                  )
+                  const card = cardRef.current
+                  if (btn && card) {
+                    const br = btn.getBoundingClientRect()
+                    const cr = card.getBoundingClientRect()
+                    setMinimizeTarget({
+                      x: br.left + br.width / 2 - (cr.left + cr.width / 2),
+                      y: br.top + br.height / 2 - (cr.top + cr.height / 2),
+                    })
+                  } else {
+                    setMinimizeTarget({ x: 200, y: 300 })
+                  }
+                })
+              })
             }}
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-[4px] border border-white/30 text-[14px] font-bold leading-none text-white/60 transition hover:bg-white/10 hover:text-white"
+            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-[4px] border border-souk-ink/30 text-[14px] font-bold leading-none text-souk-ink/60 transition hover:bg-souk-ink/10 hover:text-souk-ink"
           >
             -
           </button>
           <Label>Collect your Souk passport</Label>
-          <Txt size={20} lead={26} weight="bold" tone="white">
-            Set and Earn Quest
+          <Txt size={20} lead={26} weight="bold" tone="ink">
+            Set and Earn
           </Txt>
-          <Txt size={13} lead={20} tone="white" className="opacity-75">
+          <Txt size={13} lead={20} tone="ink" className="opacity-75">
             Hire two agents and list one of your own, for BNB Chain's Set and Earn. Three stamps finish it, paid from your wallet.
           </Txt>
           <Row gap={8} className="mt-2">
@@ -168,7 +199,7 @@ export function QuestNudge() {
               {done > 0 ? `Resume quest ${done}/3` : 'Resume quest'}
             </Btn>
           </Row>
-        </Stack>
+        </Stack></motion.div>
       </aside>
     )
   }
@@ -181,25 +212,50 @@ export function QuestNudge() {
       className={cx(INVITE)}
       style={{ '--quest-top': `${band}px` } as CSSProperties}
     >
-      <Stack bg="indigo" hair radius={20} pad={[16, 22, 16, 22]} gap={8} className="relative">
+      <motion.div ref={cardRef} animate={minimizing && minimizeTarget ? { x: minimizeTarget.x, y: minimizeTarget.y, scale: 0.04, scaleX: 0.04, scaleY: 0.015, opacity: 0, rotate: minimizeTarget.x >= 0 ? 14 : -14, rotateX: 55, borderRadius: 999 } : { x: 0, y: 0, scale: 1, scaleX: 1, scaleY: 1, opacity: 1, rotate: 0, rotateX: 0, borderRadius: 20 }} transition={minimizing ? { duration: 0.7, ease: [0.55, 0, 1, 1] } : { duration: 0.2 }} onAnimationComplete={() => { if (minimizing) { setMinimized(true); setMinimizing(false); setMinimizeTarget(null); try { localStorage.setItem('agentsouk.quest.minimized', '1') } catch {}; window.dispatchEvent(new CustomEvent('agentsouk.quest.visibility', { detail: { minimized: true } })) } }} style={{ transformOrigin: '50% 100%', perspective: 900, transformStyle: 'preserve-3d' }}><Stack hair radius={20} pad={[16, 22, 16, 22]} gap={8} className="relative bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] backdrop-blur-md ring-1 ring-white/10 shadow-lg">
         <button
           type="button"
           aria-label="Minimize quest card"
           onClick={() => {
-            setMinimized(true)
+            if (reducedMotion) {
+              setMinimized(true)
+              try { localStorage.setItem('agentsouk.quest.minimized', '1') } catch {}
+              window.dispatchEvent(new CustomEvent('agentsouk.quest.visibility', { detail: { minimized: true } }))
+              return
+            }
+            // reveal the Start Quest tab immediately so the card has a real
+            // target to wrap into, then measure it after it renders
             try { localStorage.setItem('agentsouk.quest.minimized', '1') } catch {}
             window.dispatchEvent(new CustomEvent('agentsouk.quest.visibility', { detail: { minimized: true } }))
+            setMinimizing(true)
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                const btn = [...document.querySelectorAll('button')].find((b) =>
+                  /resume quest|start quest/i.test(b.textContent || ''),
+                )
+                const card = cardRef.current
+                if (btn && card) {
+                  const br = btn.getBoundingClientRect()
+                  const cr = card.getBoundingClientRect()
+                  setMinimizeTarget({
+                    x: br.left + br.width / 2 - (cr.left + cr.width / 2),
+                    y: br.top + br.height / 2 - (cr.top + cr.height / 2),
+                  })
+                } else {
+                  setMinimizeTarget({ x: 200, y: 300 })
+                }
+              })
+            })
           }}
-          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-[4px] border border-white/30 text-[14px] font-bold leading-none text-white/60 transition hover:bg-white/10 hover:text-white"
+          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-[4px] border border-souk-ink/30 text-[14px] font-bold leading-none text-souk-ink/60 transition hover:bg-souk-ink/10 hover:text-souk-ink"
         >
           -
         </button>
         <Label>Collect your Souk passport</Label>
-        <Txt size={20} lead={26} weight="bold" tone="white">
-          Set and Earn Quest
+        <Txt size={20} lead={26} weight="bold" tone="ink">
+          Set and Earn
         </Txt>
-        {/* white, because the paper register turns the slate to navy and this stays indigo */}
-        <Txt size={13} lead={20} tone="white" className="opacity-75">
+        <Txt size={13} lead={20} tone="ink" className="opacity-75">
           Hire two agents and list one of your own, for BNB Chain's Set and Earn. Three stamps finish it, paid from your wallet.
         </Txt>
         <Row gap={8} className="mt-2">
@@ -217,7 +273,7 @@ export function QuestNudge() {
             {error}
           </Txt>
         )}
-      </Stack>
+      </Stack></motion.div>
     </aside>
   )
 }

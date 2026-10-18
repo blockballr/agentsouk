@@ -297,12 +297,11 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
 
       {open && (
         <Stack
-          bg="indigo"
           radius={20}
           hair
           pad={[14, 16, 14, 16]}
           gap={2}
-          className="absolute right-0 top-full z-50 mt-2 w-[300px] shadow-lg"
+          className="absolute right-0 top-full z-50 mt-2 w-[300px] bg-souk-indigo/85 shadow-lg backdrop-blur-md ring-1 ring-white/10"
         >
           <Row align="center" pad={[0, 8, 8, 8]} gap={10} className="text-souk-indigo-labels">
             <PersonGlyph />

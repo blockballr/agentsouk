@@ -148,7 +148,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Search agents"
-        className="relative w-full max-w-xl overflow-hidden rounded-[20px] border border-souk-hair bg-souk-indigo shadow-[0_24px_60px_-16px_rgba(0,0,0,0.6)]"
+        className="relative w-full max-w-xl overflow-hidden rounded-[20px] border border-souk-hair bg-souk-indigo/85 shadow-[0_24px_60px_-16px_rgba(0,0,0,0.6)] backdrop-blur-md ring-1 ring-white/10"
       >
         <div className="flex items-center gap-3 border-b border-b-souk-hair px-4">
           <span className="text-souk-indigo-labels">
