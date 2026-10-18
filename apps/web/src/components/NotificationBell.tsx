@@ -87,9 +87,9 @@ export function NotificationBell() {
         <div className="absolute right-0 z-40 mt-2 w-[340px] rounded-[20px] border border-souk-hair bg-souk-indigo p-1 shadow-lg">
           {/* the outbox panel wears the account panel's shell: indigo navy under one
               rim, the hairline dividing the head from the rows without a box */}
-          <p className="micro px-3 pb-1 pt-2 text-souk-steel">Activity</p>
+          <p className="micro px-3 pb-1 pt-2 text-souk-indigo-labels">Activity</p>
           {rows.length === 0 ? (
-            <p className="px-3 pb-3 pt-1 text-[13px] text-souk-slate">
+            <p className="px-3 pb-3 pt-1 text-[13px] text-souk-indigo-labels">
               Nothing yet. Releases, funded jobs and seller replies land here.
             </p>
           ) : (
@@ -102,10 +102,10 @@ export function NotificationBell() {
                     className="block rounded-[8px] px-3 py-2 hover:bg-souk-surface2"
                   >
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className={`text-[13px] font-medium ${r.read ? 'text-souk-steel' : 'text-souk-ink'}`}>{r.title}</span>
-                      <span className="shrink-0 font-mono text-[11px] text-souk-steel">{timeAgo(r.createdAt)}</span>
+                      <span className={`text-[13px] font-medium ${r.read ? 'text-souk-indigo-labels' : 'text-white'}`}>{r.title}</span>
+                      <span className="shrink-0 font-mono text-[11px] text-souk-indigo-labels">{timeAgo(r.createdAt)}</span>
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-souk-slate">{r.body}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] leading-relaxed text-souk-indigo-labels">{r.body}</p>
                   </Link>
                 </li>
               ))}

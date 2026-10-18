@@ -46,10 +46,6 @@ export function Footer() {
     <footer className="border-t border-souk-edge bg-souk-canvas">
       <div className="px-4 lg:px-8 pb-16 pt-8">
         <Stack gap={20}>
-          <Txt size={13} lead={20} tone="muted">
-            Anyone can register on the open ERC-8004 registry. Listing here is the fastest
-            way to a badge, a boost and a buyer.
-          </Txt>
           <div className="flex flex-col gap-[60px] lg:flex-row">
             <Stack gap={8} className="max-w-[420px]">
               <Wordmark />
