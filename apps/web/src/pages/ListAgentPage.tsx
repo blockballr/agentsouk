@@ -23,6 +23,8 @@ import {
 } from '../lib/contracts'
 import { getAgentDetail } from '../lib/api'
 import { RegisterWizard, type WizardStep } from '../components/RegisterWizard'
+import { SupportButton } from '../components/SupportButton'
+import { VerificationLoop, type CheckLine } from '../components/VerificationLoop'
 import { QuestStrip } from '../components/QuestStrip'
 import { Dialog } from '../components/ui'
 import {
@@ -44,8 +46,8 @@ const checklist = [
     why: 'The verifier makes a real MCP tools/list or A2A message/send call over HTTPS. An agent with no callable endpoint is badged unreachable, and one that fails the call is badged unresponsive. Of the 40 agents recorded in data/verifications.json, 18 delivered and 12 failed the call before the first came back; those counts were checked against the file.',
   },
   {
-    title: 'x402 support',
-    why: 'Set x402Support in your registration. Buyers hire agents that accept machine payment, and the marketplace surfaces x402 agents first.',
+    title: 'x402 support for direct calls',
+    why: 'Set x402Support in your registration: a direct call charges per request with no deposit, and the marketplace surfaces x402 agents first. A listing without it still sells ERC-8183 jobs, where the buyer funds the agreed price into escrow and payment releases after delivery.',
   },
   {
     title: 'An honest category description',
@@ -112,6 +114,26 @@ export function ListAgentPage() {
   const [searchParams] = useSearchParams()
   const questing = searchParams.get('quest') === 'stall'
   const [wizardStep, setWizardStep] = useState<WizardStep>('form')
+  // the loop the wizard runs, carried up so the side rail can draw it as the design does
+  const [loopChecks, setLoopChecks] = useState<CheckLine[] | null>(null)
+  // the checklist starts closed; the prompt card asks for it, so the page holds the toggle
+  const [checklistOpen, setChecklistOpen] = useState(false)
+  const revealChecklist = () => {
+    const el = document.getElementById('verifier-checklist')
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (checklistOpen) return
+    // open only once the scroll has landed, so the expansion is watched rather than found
+    let done = false
+    const openIt = () => {
+      if (done) return
+      done = true
+      window.removeEventListener('scrollend', openIt)
+      setChecklistOpen(true)
+    }
+    window.addEventListener('scrollend', openIt)
+    window.setTimeout(openIt, 900)
+  }
   // the listing flow is several screens long, so the page opens on the pitch and
   // one action rather than on the wizard
   const [started, setStarted] = useState(false)
@@ -153,6 +175,7 @@ export function ListAgentPage() {
               </Btn>
             </>
           )}
+          <SupportButton />
         </Row>
       </Stack>
       {!started ? null : (
@@ -188,7 +211,7 @@ export function ListAgentPage() {
             />
           )}
 
-          <CreateSection chainId={chain} />
+          <CreateSection chainId={chain} onRevealChecklist={revealChecklist} />
 
           {/* the same registration the Studio path makes, sent from the browser. Both
               routes end at the same registry record and the same checks. */}
@@ -217,14 +240,17 @@ export function ListAgentPage() {
                         className="max-w-[768px]"
                       />
                     )}
-                    <RegisterWizard chainId={chain} onStep={setWizardStep} />
+                    <RegisterWizard chainId={chain} onStep={setWizardStep} onChecks={setLoopChecks} />
                   </>
                 )}
               </Stack>
-              {chain !== null && <GasRequirement chainId={chain} />}
+              <Stack gap={20}>
+                {chain !== null && <GasRequirement chainId={chain} />}
+                {loopChecks && <VerificationLoop checks={loopChecks} />}
+              </Stack>
             </div>
           </div>
-          <ChecklistSection />
+          <ChecklistSection open={checklistOpen} onOpen={setChecklistOpen} />
           <LookupSection chainId={chain} onFound={setFoundTokenId} />
           <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
         </>
@@ -513,7 +539,13 @@ function CodeBlock({ lines }: { lines: string[] }) {
   )
 }
 
-function CreateSection({ chainId }: { chainId: number | null }) {
+function CreateSection({
+  chainId,
+  onRevealChecklist,
+}: {
+  chainId: number | null
+  onRevealChecklist: () => void
+}) {
   // the addresses we publish are the ones for the chain this deployment serves
   const chainName = chainId === null ? null : chainId === 97 ? 'BSC testnet' : 'BSC'
   const registryAddress = chainId === null ? null : registryFor(chainId) ?? REGISTRY_BY_CHAIN[56]
@@ -579,7 +611,7 @@ function CreateSection({ chainId }: { chainId: number | null }) {
           </Stack>
         </li>
         <li className="flex h-full">
-          <PromptGeneratorCard chainId={chainId} />
+          <PromptGeneratorCard chainId={chainId} onReveal={onRevealChecklist} />
         </li>
         <li className="flex h-full">
           <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full">
@@ -622,43 +654,51 @@ function CreateSection({ chainId }: { chainId: number | null }) {
 
 // Takes no chainId. It never used one, and the prop was threaded through from a parent
 // that had it only to hand it down.
-function ChecklistSection() {
-  const [open, setOpen] = useState(false)
+function ChecklistSection({ open, onOpen }: { open: boolean; onOpen: (open: boolean) => void }) {
   return (
     <Stack gap={20} className="mt-[30px]">
       <button
+        id="verifier-checklist"
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => onOpen(!open)}
         aria-expanded={open}
-        className="flex w-full flex-wrap items-center justify-between gap-4 border-b border-b-souk-hair pb-3 text-left hover:text-souk-slate"
+        className="flex w-full flex-wrap items-center justify-between gap-4 border-b border-b-souk-hair pb-3 text-left hover:text-souk-slate scroll-mt-4"
       >
         <Txt size={22} lead={30} weight="bold" tone="ink">What the verifier looks for</Txt>
         <Txt size={20} lead={24} weight="bold" tone="steel" aria-hidden="true">
           {open ? '−' : '+'}
         </Txt>
       </button>
-      {open && (
-        <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
-          Every badge on this site comes from a real check against the real endpoint.
-        </Txt>
-      )}
-      {open && (
-        <div className="grid gap-5 md:grid-cols-2">
-          {checklist.map((item, i) => (
-            <Stack key={item.title} surface gap={10} pad={[20, 22, 20, 22]}>
-              <Txt size={10} lead={14} weight="bold" upper tone="labels">
-                Check {i + 1} of 6
-              </Txt>
-              <Txt size={17} lead={24} weight="bold" tone="ink" className="block">
-                {item.title}
-              </Txt>
-              <Txt size={13} lead={20} tone="slate" className="block">
-                {item.why}
-              </Txt>
-            </Stack>
-          ))}
+      {/* the collapse runs as a row-height transition, so the checklist opens under its
+          heading rather than appearing: the reader watches it become a dropdown */}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <Stack gap={20}>
+            <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
+              Every badge on this site comes from a real check against the real endpoint.
+            </Txt>
+            <div className="grid gap-5 md:grid-cols-2">
+              {checklist.map((item, i) => (
+                <Stack key={item.title} surface gap={10} pad={[20, 22, 20, 22]}>
+                  <Txt size={10} lead={14} weight="bold" upper tone="labels">
+                    Check {i + 1} of 6
+                  </Txt>
+                  <Txt size={17} lead={24} weight="bold" tone="ink" className="block">
+                    {item.title}
+                  </Txt>
+                  <Txt size={13} lead={20} tone="slate" className="block">
+                    {item.why}
+                  </Txt>
+                </Stack>
+              ))}
+            </div>
+          </Stack>
         </div>
-      )}
+      </div>
       <Txt size={13} lead={20} tone="steel" className="block max-w-[1180px]">
         Meet the checklist and the badge speaks for you: delivered, graded, public. It does not
         promise placement or traffic.
@@ -724,9 +764,9 @@ function buildPrompt(
   ].join('\n')
 }
 
-// step 3's own card: three questions asked in a dialog, the checklist above reused
-// as the prompt's acceptance criteria
-function PromptGeneratorCard({ chainId }: { chainId: number | null }) {
+// step 3's own card: three questions asked in a dialog, the verification checklist
+// reused as the prompt's acceptance criteria and revealed from the line that names it
+function PromptGeneratorCard({ chainId, onReveal }: { chainId: number | null; onReveal: () => void }) {
   const [category, setCategory] = useState<CategoryKey>('rebalancing')
   const [name, setName] = useState('')
   const [goal, setGoal] = useState('')
@@ -757,8 +797,15 @@ function PromptGeneratorCard({ chainId }: { chainId: number | null }) {
         Generate your Agent Studio prompt
       </Txt>
       <Txt size={13} lead={20} tone="slate" className="block">
-        Answer three questions and we write a prompt for your coding agent, with the checklist
-        above as its acceptance criteria.
+        Answer three questions and we write a prompt for your coding agent, with{' '}
+        <button
+          type="button"
+          onClick={onReveal}
+          className="cursor-pointer text-souk-ink underline decoration-souk-hair underline-offset-4 transition hover:text-souk-data focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        >
+          our verification checklist
+        </button>{' '}
+        as its acceptance criteria.
       </Txt>
       <Row>
         <Btn kind="off" onClick={() => setOpen(true)}>Generate prompt</Btn>

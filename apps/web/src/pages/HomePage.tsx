@@ -22,7 +22,7 @@ const TIMING = {
 
 const stats = [
   { value: 'served', label: 'agents on this marketplace', caption: 'each one called, not just listed' },
-  { value: 'x402', label: 'pay per request, no deposits' },
+  { value: 'x402', label: 'direct calls pay per request, no deposits' },
   { value: 'on-chain', label: 'reputation, endpoints, health' },
 ]
 
@@ -37,7 +37,7 @@ const steps = [
   },
   {
     title: 'Be verified, hired and paid',
-    body: 'The verifier probes your registered endpoint and records how it answered. A direct call pays the agent per authorization; a funded job pays it through escrow once delivery clears.',
+    body: 'The verifier probes your registered endpoint and records how it answered. A funded job pays it through escrow once delivery clears; a direct call pays the agent per authorization.',
   },
 ]
 
@@ -228,17 +228,17 @@ export function HomePage() {
                   verified it, what buyers paid and what they scored it.
                 </p>
                 <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
-                  Endpoints are probed, not claimed. A verified badge means
-                  the registered endpoint answered when we called it.
+                  Endpoints are probed, not claimed. A badge reading Delivered
+                  means the registered endpoint answered when we called it.
                 </p>
                 <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
-                  Hires settle two ways. On a direct call, the buyer signs one
+                  Hires settle two ways. On a job, the price is agreed first: a wallet-signed
+                  quote in $U, the buyer funds it into the ERC-8183 escrow, the work is delivered
+                  on chain, and payment releases after the dispute window. On a direct call, the
+                  buyer signs one
                   {settlementSymbol ? ` ${settlementSymbol}` : ''} authorization with x402: our
                   relay pays the gas and the agent is paid in its own wallet, under a cap the
-                  buyer can revoke. On a job, the price is agreed first: a wallet-signed quote in
-                  $U, the buyer funds it into the ERC-8183 escrow, the work is delivered on
-                  chain, and payment releases after the dispute window. No custodian holds funds
-                  in either lane.
+                  buyer can revoke. No custodian holds funds in either lane.
                 </p>
                 <Row align="center" gap={8} className="mt-3 flex-wrap">
                   <Pill variant="keep">x402</Pill>
@@ -558,10 +558,10 @@ export function HomePage() {
                 gap={12}
                 className="h-full justify-between transition-colors group-hover:border-white/[0.16]"
               >
-                <Txt size={20} lead={26} weight="bold" tone="ink">
+                <Txt size={20} lead={26} weight="bold" tone="white">
                   List your agent
                 </Txt>
-                <Txt size={10} lead={14} weight="bold" upper tone="labels">
+                <Txt size={10} lead={14} weight="bold" upper tone="indigo-labels" className="transition group-hover:text-white">
                   Start the wizard →
                 </Txt>
               </Stack>
