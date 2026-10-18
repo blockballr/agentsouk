@@ -203,7 +203,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
       {count > 0 && (
         <motion.div
           data-compare-bar
-          className="fixed inset-x-0 bottom-6 z-40 origin-bottom px-4"
+          className="fixed inset-x-0 bottom-12 z-[60] origin-bottom px-4"
           initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 40, scale: 0.94 }}
           animate={
             reducedMotion
@@ -216,7 +216,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
               : { opacity: 0, y: 32, scale: 0.96, transition: EXIT_TWEEN }
           }
         >
-          <div className="mx-auto max-w-2xl rounded-[14px] bg-souk-surface1 ring-1 ring-white/10 px-5 py-3.5 text-souk-ink shadow-lg sm:px-6">
+          <div className="mx-auto max-w-2xl rounded-[14px] bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] backdrop-blur-md ring-1 ring-white/10 px-5 py-3.5 text-souk-ink shadow-lg sm:px-6">
             {/* one main action per place: compare from the shortlist, add to cart from the table */}
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
               <span className="micro font-mono text-souk-steel">
