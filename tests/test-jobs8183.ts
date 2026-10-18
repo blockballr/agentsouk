@@ -188,9 +188,23 @@ describe("kernelJob", () => {
       { type: "uint8" },
       { type: "address" },
     ] as const;
+    // the kernel answers getJob as one struct: an outer offset word carries the
+    // nine-field tuple, which is the shape the live chains return
     const fixture = encodeAbiParameters(
-      TUPLE,
-      [4242n, "0x0000000000000000000000000000000000000000", "0x26dFfA1C42ff523Ee70F208a22424A2aEa4Df928", "0x0000000000000000000000000000000000000001", "", 1000000000000000000n, 1791500000n, 1, "0x0000000000000000000000000000000000000002"],
+      [{ type: "tuple", components: TUPLE }] as const,
+      [
+        [
+          4242n,
+          "0x0000000000000000000000000000000000000000",
+          "0x26dFfA1C42ff523Ee70F208a22424A2aEa4Df928",
+          "0x0000000000000000000000000000000000000001",
+          "",
+          1000000000000000000n,
+          1791500000n,
+          1,
+          "0x0000000000000000000000000000000000000002",
+        ],
+      ],
     );
     vi.stubGlobal(
       "fetch",
