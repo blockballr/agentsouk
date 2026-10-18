@@ -77,6 +77,7 @@ export interface QuestAgent {
   input?: Record<string, unknown>
   // the registry owner, when the pick came from the live shelf
   owner?: string | null
+  imageUrl?: string | null
 }
 
 // an agent the server offers for a step
@@ -84,6 +85,7 @@ export interface QuestCandidate {
   tokenId: string
   name: string
   owner?: string | null
+  imageUrl?: string | null
 }
 
 // what a step may offer in one category, in the order the shelf rotated them for this visit:
@@ -200,7 +202,7 @@ export function questPicks(
   const offer = (list: QuestCandidate[]): QuestAgent[] =>
     list
       .filter((a) => !me || a.owner?.toLowerCase() !== me)
-      .map((a) => ({ ...writtenById.get(a.tokenId), tokenId: a.tokenId, name: a.name, owner: a.owner ?? null }))
+      .map((a) => ({ ...writtenById.get(a.tokenId), tokenId: a.tokenId, name: a.name, owner: a.owner ?? null, imageUrl: a.imageUrl ?? null }))
   const confirmed = offer(shelf?.confirmed ?? [])
   const workingWritten = offer(shelf?.working ?? []).filter((a) => writtenById.has(a.tokenId))
   // an unread shelf falls back to the written picks; a read one that offers nothing is believed
