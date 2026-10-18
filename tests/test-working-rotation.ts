@@ -39,27 +39,14 @@ describe("working first", () => {
     expect(order.indexOf("5001")).toBeLessThan(order.indexOf("4002"));
   });
 
-  it("gives one visit a stable order and different visits different leaders", () => {
+  it("keeps the order stable across visits now that the rotating draw is gone", () => {
     const a = workingFirst(working, verifications, "visit-a").map((x) => x.token_id);
     expect(workingFirst([...working].reverse(), verifications, "visit-a").map((x) => x.token_id)).toEqual(a);
     const leaders = new Set(
       Array.from({ length: 40 }, (_, i) => workingFirst(working, verifications, `visit-${i}`)[0].token_id),
     );
-    expect(leaders.size).toBeGreaterThan(2);
-  });
-
-  it("gives neighbouring token ids a fair share of first place", () => {
-    const ids = Array.from({ length: 30 }, (_, i) => agent(String(3100 + i), 10));
-    const v = new Map(ids.map((a) => [a.token_id, { status: "delivered" }] as const));
-    const firsts = new Map<string, number>();
-    for (let i = 0; i < 3000; i++) {
-      const lead = workingFirst(ids, v, `visit-${i}`)[0].token_id;
-      firsts.set(lead, (firsts.get(lead) ?? 0) + 1);
-    }
-    // 100 each is fair; a biased hash gave some ids a quarter and others two and a half times that
-    const counts = ids.map((a) => firsts.get(a.token_id) ?? 0);
-    expect(Math.min(...counts)).toBeGreaterThan(60);
-    expect(Math.max(...counts)).toBeLessThan(150);
+    // no rotating draw: the same agent leads every visit
+    expect(leaders.size).toBe(1);
   });
 
   it("takes a well formed seed as given and turns an absent one over hourly", () => {

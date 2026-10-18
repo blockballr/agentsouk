@@ -16,7 +16,11 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const category = sp.get("category") ?? "all";
   const q = sp.get("q") ?? "";
-  const sort = (sp.get("sort") as "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability") ?? "reachability";
+  // no sort named reads as score: the chain's first metric, with reachability
+  // settling the ties underneath it and job tiering leading everything
+  const type = sp.get("type") as "all" | "jobs" | "x402" | "others" | null;
+  const metric = sp.get("metric") as "score" | "newest" | "feedback" | "health" | null;
+  const sort = sp.get("sort") as string | null;
   const page = Math.max(1, Number(sp.get("page") ?? 1) || 1);
   const limit = Math.min(60, Math.max(1, Number(sp.get("limit") ?? 24) || 24));
   const warm = sp.get("warm") === "1";
@@ -28,7 +32,9 @@ export async function GET(req: NextRequest) {
   const result = await queryAgents({
     category,
     q,
-    sort,
+    type: type ?? undefined,
+    metric: metric ?? undefined,
+    sort: (sort as "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability" | undefined) ?? undefined,
     page,
     limit,
     ensureWarm: warm,

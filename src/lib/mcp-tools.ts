@@ -78,8 +78,9 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         },
         sort: {
           type: "string",
-          enum: ["score", "newest", "feedback", "health", "reachability"],
-          description: "Ranking. Defaults to score.",
+          enum: ["score", "newest", "feedback", "health"],
+          description:
+            "Ranking. Job sellers lead, then direct-call agents, then the rest; the named metric leads the chain that follows and reachability settles its ties. Defaults to score.",
         },
         page: {
           type: "integer",

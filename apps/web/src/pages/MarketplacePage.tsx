@@ -13,19 +13,36 @@ import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../components/souk'
 
-const sorts = [
+// The sorts are the four metrics a buyer picks from; reachability is not one of
+// them because it is not a choice. It settles the ties underneath every metric,
+// so an agent that answered its last probe outranks one never checked, and job
+// capability leads all of it. Picking a metric names what leads the chain, not
+// what replaces that order.
+const jobSorts = [
   {
     key: 'jobs',
-    label: 'JOBS',
-    title: 'Agents that sell through ERC-8183 jobs come first, then the ones you call directly, then the rest. A paid boost still sits above both.',
+    label: 'Jobs',
+    title: 'Job sellers lead: agents that sell both jobs and x402 ahead of jobs-only, then direct-call x402 agents, then the rest.',
   },
   {
     key: 'x402',
     label: 'x402',
-    title: 'Agents you can call directly over x402 come first, then the rest. A paid boost still sits above both.',
+    title: 'Direct-call x402 agents lead, then job sellers, then the rest.',
   },
-  { key: 'score', label: 'Score' },
+  {
+    key: 'others',
+    label: 'Others',
+    title: 'The rest lead: agents that are neither job sellers nor direct-call x402, then job sellers, then direct-call agents.',
+  },
+] as const
+
+const defaultSorts = [
   { key: 'newest', label: 'Newest' },
+  {
+    key: 'score',
+    label: 'Score',
+    title: 'Buyer feedback leads, most reviewed next, then newest, then health. Reachability settles every tie, and job sellers lead each group.',
+  },
   { key: 'feedback', label: 'Most reviewed' },
   { key: 'health', label: 'Health' },
 ] as const
@@ -53,16 +70,11 @@ export function MarketplacePage() {
   const navigate = useNavigate()
   const category = sp.get('category') ?? 'all'
   const q = sp.get('q') ?? ''
-  // the shelf opens on executable first, the order the marketplace sells in; a
-  // visitor who wants an advisory agent flips the control rather than scrolling
-  const sort = (sp.get('sort') ?? 'jobs') as
-    | 'jobs'
-    | 'x402'
-    | 'score'
-    | 'newest'
-    | 'feedback'
-    | 'health'
-    | 'reachability'
+  // no sort named reads as score, the chain's first metric; reachability is not
+  // a choice here, it settles the ties underneath whichever metric is picked,
+  // and job capability leads every one of them
+  const type = (sp.get('type') ?? 'jobs') as 'all' | 'jobs' | 'x402' | 'others'
+  const metric = (sp.get('metric') ?? 'newest') as 'score' | 'newest' | 'feedback' | 'health'
   const pcs = sp.get('pcs') === '1'
   const hide = sp.get('hide') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
@@ -121,7 +133,7 @@ export function MarketplacePage() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getAgents({ category, q, sort, page, limit: PAGE_SIZE, pcs })
+    getAgents({ category, q, type, metric, page, limit: PAGE_SIZE, pcs })
       .then((r) => {
         if (!cancelled) {
           setResult({
@@ -144,7 +156,7 @@ export function MarketplacePage() {
     return () => {
       cancelled = true
     }
-  }, [category, q, sort, pcs, page])
+  }, [category, q, type, metric, pcs, page])
 
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(sp)
@@ -286,38 +298,60 @@ export function MarketplacePage() {
 
           {/* the sort row reads from the right: the search the hero used to hold sits
               ahead of the sorts, so one row carries find and order together */}
-          <Row align="center" justify="end" gap={12} className="flex-wrap">
-            <Row
-              align="center"
-              pad={[0, 6, 0, 14]}
-              radius={8}
-              bg="surface2"
-              hair
-              className="h-10 w-full sm:w-[300px]"
-            >
-              <label className="sr-only" htmlFor="search">
-                Search agents
-              </label>
-              <input
-                id="search"
-                type="search"
-                value={q}
-                onChange={(e) => setParam('q', e.target.value)}
-                placeholder="Search agents, skills, endpoints"
-                className="w-full bg-transparent text-[13px] leading-5 text-souk-ink placeholder:text-souk-muted focus-visible:outline-none"
-              />
-            </Row>
-            {sorts.map((s) => (
-              <SortButton
-                key={s.key}
-                active={sort === s.key}
-                title={'title' in s ? s.title : undefined}
-                onClick={() => setParam('sort', s.key)}
+          <Stack gap={8} className="items-end">
+            <Row align="center" justify="end" gap={12} className="flex-wrap">
+              <Row
+                align="center"
+                pad={[0, 6, 0, 14]}
+                radius={8}
+                bg="surface2"
+                hair
+                className="h-10 w-full sm:w-[300px]"
               >
-                {s.label}
-              </SortButton>
-            ))}
-          </Row>
+                <label className="sr-only" htmlFor="search">
+                  Search agents
+                </label>
+                <input
+                  id="search"
+                  type="search"
+                  value={q}
+                  onChange={(e) => setParam('q', e.target.value)}
+                  placeholder="Search agents, skills, endpoints"
+                  className="w-full bg-transparent text-[13px] leading-5 text-souk-ink placeholder:text-souk-muted focus-visible:outline-none"
+                />
+              </Row>
+              <Row align="center" gap={6}>
+                <Txt size={10} lead={12} tone="muted" className="uppercase tracking-wide">
+                  Job type
+                </Txt>
+                {jobSorts.map((s) => (
+                  <SortButton
+                    key={s.key}
+                    active={type === s.key}
+                    title={'title' in s ? s.title : undefined}
+                    onClick={() => setParam('type', s.key)}
+                  >
+                    {s.label}
+                  </SortButton>
+                ))}
+              </Row>
+            </Row>
+            <Row align="center" justify="end" gap={6}>
+              <Txt size={10} lead={12} tone="muted" className="uppercase tracking-wide">
+                Metric
+              </Txt>
+              {defaultSorts.map((s) => (
+                <SortButton
+                  key={s.key}
+                  active={metric === s.key}
+                  title={'title' in s ? s.title : undefined}
+                  onClick={() => setParam('metric', s.key)}
+                >
+                  {s.label}
+                </SortButton>
+              ))}
+            </Row>
+          </Stack>
 
           {cartFull ? (
             // the register's own alert grammar: one indigo band when something needs attention
