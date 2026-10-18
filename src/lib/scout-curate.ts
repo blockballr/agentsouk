@@ -29,6 +29,9 @@ export interface CurationResult {
   total: number;
   addedAgents: AgentSummary[];
   counts: Record<string, number>;
+  // per-agent reasons for the skipped, so a missing working agent is named
+  // and countable instead of hiding behind the skipped total
+  skippedReasons: { tokenId: string; name: string; reason: string }[];
 }
 
 function agentsPath(chainId: number = targetChainId()): string {
@@ -174,6 +177,7 @@ export async function autoCurateScout(chainId: number = targetChainId()): Promis
   }
 
   const addedAgents: AgentSummary[] = [];
+  const skippedReasons: { tokenId: string; name: string; reason: string }[] = [];
   let added = 0;
   let skipped = 0;
   let already = 0;
@@ -182,6 +186,7 @@ export async function autoCurateScout(chainId: number = targetChainId()): Promis
     if (added >= ADD_PER_RUN) break;
     if (Number(cand.chain_id) !== chainId) {
       skipped += 1;
+      skippedReasons.push({ tokenId: String(cand.token_id), name: cand.name ?? "", reason: "wrong chain" });
       continue;
     }
     if (existing.has(String(cand.token_id))) {
@@ -189,14 +194,24 @@ export async function autoCurateScout(chainId: number = targetChainId()): Promis
       continue;
     }
     const verification = verifications.get(String(cand.token_id)) ?? null;
-    if (!shouldAddCandidate({ candidate: cand, verification, existingTokenIds: existing, categoryCounts })) {
+    let skipReason: string | null = null;
+    if (!verification || verification.status !== "delivered") {
+      skipReason = `not delivered (status: ${verification?.status ?? "none"})`;
+    } else if (cand.category === "general") {
+      skipReason = "classified as general";
+    } else if ((categoryCounts[cand.category] ?? 0) >= MAX_PER_CATEGORY) {
+      skipReason = `category full (${cand.category})`;
+    }
+    if (skipReason) {
       skipped += 1;
+      skippedReasons.push({ tokenId: String(cand.token_id), name: cand.name ?? "", reason: skipReason });
       continue;
     }
 
     const detail = await fetchAgentDetail(cand.chain_id, String(cand.token_id));
     if (!detail?.agent_id || !detail.name) {
       skipped += 1;
+      skippedReasons.push({ tokenId: String(cand.token_id), name: cand.name ?? "", reason: "detail unavailable" });
       continue;
     }
     const boost = scoreFor(verification?.status ?? "delivered", verification?.responseMs ?? 0);
@@ -239,5 +254,6 @@ export async function autoCurateScout(chainId: number = targetChainId()): Promis
     total: agents.length,
     addedAgents,
     counts,
+    skippedReasons,
   };
 }

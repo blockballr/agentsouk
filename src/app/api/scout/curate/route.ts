@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     already: result.already,
     total: result.total,
     names: result.addedAgents.map((a) => a.name),
+    skippedReasons: result.skippedReasons,
   }, chain);
 
   return NextResponse.json({
