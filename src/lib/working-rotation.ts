@@ -41,17 +41,33 @@ function rotationKey(seed: string, tokenId: string): number {
   return h;
 }
 
+// reachability on its own, with no opinion on order inside a rank. a caller that
+// wants the chosen metric to decide within a reachability rank leads with this and
+// only falls back to the fuller compare when nothing else separates the two
+export function reachabilityRankCompare(a: AgentSummary, b: AgentSummary, verifications: Verifications): number {
+  const rank = (x: AgentSummary) => RANK[verifications?.get(x.token_id)?.status ?? "unchecked"] ?? RANK.unchecked;
+  return rank(b) - rank(a);
+}
+
+// reachability as an ordering of two agents, so it can sit as one link in a
+// chain of metrics rather than only owning a whole sort
+export function reachabilityCompare(
+  a: AgentSummary,
+  b: AgentSummary,
+  verifications: Verifications,
+  seed: string,
+): number {
+  const rank = (x: AgentSummary) => RANK[verifications?.get(x.token_id)?.status ?? "unchecked"] ?? RANK.unchecked;
+  const ra = rank(a);
+  const rb = rank(b);
+  if (ra !== rb) return rb - ra;
+  // no rotating draw: keep the order deterministic so the same agent does not
+  // shuffle to a different spot on every visit
+  return b.total_score - a.total_score || b.total_feedbacks - a.total_feedbacks || a.token_id.localeCompare(b.token_id);
+}
+
 export function workingFirst(items: AgentSummary[], verifications: Verifications, seed: string): AgentSummary[] {
-  const rank = (a: AgentSummary) => RANK[verifications?.get(a.token_id)?.status ?? "unchecked"] ?? RANK.unchecked;
-  return [...items].sort((a, b) => {
-    const ra = rank(a);
-    const rb = rank(b);
-    if (ra !== rb) return rb - ra;
-    if (ra === DELIVERED) {
-      return rotationKey(seed, a.token_id) - rotationKey(seed, b.token_id) || a.token_id.localeCompare(b.token_id);
-    }
-    return b.total_score - a.total_score || b.total_feedbacks - a.total_feedbacks;
-  });
+  return [...items].sort((a, b) => reachabilityCompare(a, b, verifications, seed));
 }
 
 // the brief asks for three agents per category, so a house agent leaves a category only

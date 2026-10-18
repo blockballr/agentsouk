@@ -59,7 +59,9 @@ export interface WebMcpModelContextLike {
 }
 
 const CATEGORY_VALUES = ['all', ...CATEGORY_KEYS, 'general']
-const SORTS = ['score', 'newest', 'feedback', 'health', 'reachability']
+// reachability is not offered as a sort: it settles the ties underneath whichever
+// metric is named, so it is part of every order rather than one of the choices
+const SORTS = ['score', 'newest', 'feedback', 'health']
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -73,9 +75,9 @@ function asNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
-function asSort(value: unknown): 'score' | 'newest' | 'feedback' | 'health' | 'reachability' | undefined {
+function asSort(value: unknown): 'score' | 'newest' | 'feedback' | 'health' | undefined {
   const sort = asString(value)
-  return sort && SORTS.includes(sort) ? (sort as 'score' | 'newest' | 'feedback' | 'health' | 'reachability') : undefined
+  return sort && SORTS.includes(sort) ? (sort as 'score' | 'newest' | 'feedback' | 'health') : undefined
 }
 
 function textResult(text: string): WebMcpToolResult {
@@ -173,8 +175,9 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
         },
         sort: {
           type: 'string',
-          enum: ['score', 'newest', 'feedback', 'health', 'reachability'],
-          description: 'Ranking. Defaults to score.',
+          enum: ['score', 'newest', 'feedback', 'health'],
+          description:
+            'Ranking. Job sellers lead, then direct-call agents, then the rest; the named metric leads the chain that follows and reachability settles its ties. Defaults to score.',
         },
         page: {
           type: 'integer',
@@ -195,7 +198,7 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
       const result = await getAgents({
         category: asString(args.category),
         q: asString(args.q),
-        sort: asSort(args.sort),
+        metric: asSort(args.sort),
         page: asNumber(args.page),
         limit: asNumber(args.limit),
       })

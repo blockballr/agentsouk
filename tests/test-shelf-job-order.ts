@@ -102,7 +102,7 @@ describe("jobs first", () => {
     vi.resetModules();
     const { queryAgents } = await import("../src/lib/scanner");
 
-    const { items } = await queryAgents({ sort: "jobs", limit: 500, seed: "souk" });
+    const { items } = await queryAgents({ type: "all", limit: 500, seed: "souk" });
     const pos = (t: string) => items.findIndex((a) => a.token_id === t);
 
     expect(items).toHaveLength(4);
@@ -117,7 +117,7 @@ describe("jobs first", () => {
     vi.resetModules();
     const { queryAgents } = await import("../src/lib/scanner");
 
-    const { items } = await queryAgents({ sort: "score", limit: 500 });
+    const { items } = await queryAgents({ type: "all", metric: "score", limit: 500 });
     expect(items).toHaveLength(4);
   });
 

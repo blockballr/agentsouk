@@ -14,7 +14,7 @@ import { isPancakeSwapAgent, readsPancakeSwap } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
 import { loadDelisted } from "./delist-store";
-import { rotationSeed, withoutHouseAgents, workingFirst } from "./working-rotation";
+import { rotationSeed, withoutHouseAgents, reachabilityCompare, reachabilityRankCompare } from "./working-rotation";
 import { LISTABLE_CATEGORIES, takesJobs, type RegistrationDraft } from "@agora/core";
 import {
   AgentRemovedError,
@@ -935,7 +935,7 @@ export async function refreshIndexFromLive(
         if (s.chain_id !== chainId || seen.has(key)) return false;
         seen.add(key);
         const stored = index.agents.get(key);
-        return !stored?.skills || stored.accessGated === undefined;
+        return !stored?.skills?.length || stored.accessGated === undefined;
       })
       .slice(0, CAPTURE_PER_TOPUP);
     for (const s of toCapture) {
@@ -1005,6 +1005,8 @@ function scheduleShelfTopUp(): void {
 export interface QueryOptions {
   category?: string;
   q?: string;
+  type?: "all" | "jobs" | "x402" | "others";
+  metric?: "score" | "newest" | "feedback" | "health";
   sort?: "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability";
   page?: number;
   limit?: number;
@@ -1053,7 +1055,20 @@ export interface QueryResult {
 export async function queryAgents(
   opts: QueryOptions = {},
 ): Promise<QueryResult> {
-  const { category, q, sort = "score", page = 1, limit = 24, verifications } = opts;
+  const { category, q, type, metric, sort, page = 1, limit = 24, verifications } = opts;
+  const resolvedType =
+    type ??
+    (sort === "x402"
+      ? "x402"
+      : (sort as string) === "others"
+        ? "others"
+        : (sort as string) === "jobs"
+          ? "jobs"
+          : "all");
+  const resolvedMetric =
+    metric ?? (["score", "newest", "feedback", "health"].includes(sort ?? "")
+      ? (sort as string)
+      : "newest");
   const chainId = targetChainId();
   await loadSnapshot();
   // no-op once the process has merged; covers the no-snapshot path too, where
@@ -1102,6 +1117,16 @@ export async function queryAgents(
     );
   }
 
+  // the job-type leg of the double sort: a chosen group keeps only its own
+  // agents, so the shelf shows that group rather than the whole tiered list
+  if (resolvedType === "jobs") {
+    items = items.filter((a) => takesJobs(a.skills));
+  } else if (resolvedType === "x402") {
+    items = items.filter((a) => a.x402_supported && !takesJobs(a.skills));
+  } else if (resolvedType === "others") {
+    items = items.filter((a) => !a.x402_supported && !takesJobs(a.skills));
+  }
+
   const categoryCounts: Record<string, number> = {
     all: shelf.length,
   };
@@ -1110,7 +1135,7 @@ export async function queryAgents(
     categoryCounts[key] = (categoryCounts[key] ?? 0) + 1;
   }
 
-  items = sortAgents(items, sort, category, verifications, rotationSeed(opts.seed));
+  items = sortAgents(items, resolvedType, resolvedMetric, category, verifications, rotationSeed(opts.seed));
 
   const total = items.length;
   const start = (page - 1) * limit;
@@ -1146,72 +1171,65 @@ export async function queryAgents(
   };
 }
 
+// the second sort leg is a chain, not a single metric: whichever the buyer
+// picked leads it and the other three follow in a fixed order, so a tie never
+// lands on the shelf's stored order. Reachability is not on this list because
+// it is not a sort a buyer picks: it settles the last tie in every comparison.
+const METRIC_CHAIN = ["newest", "score", "feedback", "health"] as const;
+type MetricKey = (typeof METRIC_CHAIN)[number];
+
 function sortAgents(
   items: AgentSummary[],
-  sort: string,
+  type: string,
+  metric: string,
   category?: string,
   verifications?: Map<string, { status?: string }>,
   seed: string = rotationSeed(null),
 ): AgentSummary[] {
   const copy = [...items];
-  switch (sort) {
-    case "jobs":
-      // the shelf's default order: job sellers first, then the agents a buyer
-      // can call directly over x402, then the rest; each tier keeps the
-      // working-first order so a verified agent is never buried by the split
-      {
-        const ordered = workingFirst(copy, verifications, seed);
-        return [
-          ...ordered.filter((a) => takesJobs(a.skills)),
-          ...ordered.filter((a) => !takesJobs(a.skills) && a.x402_supported),
-          ...ordered.filter((a) => !takesJobs(a.skills) && !a.x402_supported),
-        ];
-      }
-    case "x402":
-      // x402-capable agents first (direct calls), then the rest; each tier
-      // keeps the working-first order so a verified agent is never buried
-      {
-        const ordered = workingFirst(copy, verifications, seed);
-        return [
-          ...ordered.filter((a) => a.x402_supported),
-          ...ordered.filter((a) => !a.x402_supported),
-        ];
-      }
-    case "newest":
-      copy.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-      break;
-    case "feedback":
-      copy.sort((a, b) => b.total_feedbacks - a.total_feedbacks);
-      break;
-    case "health":
-      copy.sort(
-        (a, b) => (b.health_score ?? -1) - (a.health_score ?? -1),
-      );
-      break;
-    case "reachability":
-      return workingFirst(copy, verifications, seed);
-    case "score":
-    default:
-      if (category && category !== "all") {
-        // the UI sorts by the same total_score the card displays, so it must lead; relevance only breaks ties
-        copy.sort(
-          (a, b) =>
-            b.total_score - a.total_score ||
-            b.total_feedbacks - a.total_feedbacks ||
-            relevanceScore(b, category) - relevanceScore(a, category),
-        );
-      } else {
-        copy.sort(
-          (a, b) =>
-            b.total_score - a.total_score ||
-            b.total_feedbacks - a.total_feedbacks,
-        );
-      }
-  }
-  return copy;
+  // the first sort is job capability: a listing that sells through the ERC-8183
+  // job protocol, a direct-call x402 agent, or the rest. the selected type's
+  // group leads, so the buyer can re-order which group comes first
+  const group = (a: AgentSummary): number =>
+    takesJobs(a.skills) ? 0 : a.x402_supported ? 1 : 2; // 0=jobs 1=x402 2=others
+  const typeRank = (selected: string): number =>
+    selected === "x402" ? 1 : selected === "others" ? 2 : 0;
+  const leadGroup = typeRank(type);
+  const order = [leadGroup, ...[0, 1, 2].filter((g) => g !== leadGroup)];
+  const tier = (a: AgentSummary): number => order.indexOf(group(a));
+
+  const metricFns: Record<MetricKey, (a: AgentSummary, b: AgentSummary) => number> = {
+    score: (a, b) =>
+      category && category !== "all"
+        ? b.total_score - a.total_score ||
+          b.total_feedbacks - a.total_feedbacks ||
+          relevanceScore(b, category) - relevanceScore(a, category)
+        : b.total_score - a.total_score || b.total_feedbacks - a.total_feedbacks,
+    newest: (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    feedback: (a, b) => b.total_feedbacks - a.total_feedbacks,
+    health: (a, b) => (b.health_score ?? -1) - (a.health_score ?? -1),
+  };
+
+  const lead: MetricKey = (METRIC_CHAIN as readonly string[]).includes(metric)
+    ? (metric as MetricKey)
+    : "score";
+  const chain = [lead, ...METRIC_CHAIN.filter((k) => k !== lead)];
+  const chainFirst = (a: AgentSummary, b: AgentSummary) => {
+    // reachability leads every sort: an agent that answered its last probe
+    // outranks one that never was checked, so an unresponsive listing can never
+    // take the top of the shelf on score alone. it is asked as rank only, leaving
+    // the chosen metric to decide inside a rank, and the fuller compare settles
+    // what is still tied with its rotating draw
+    const rank = reachabilityRankCompare(a, b, verifications);
+    if (rank !== 0) return rank;
+    for (const key of chain) {
+      const n = metricFns[key](a, b);
+      if (n !== 0) return n;
+    }
+    return reachabilityCompare(a, b, verifications, seed);
+  };
+
+  return [...copy].sort((a, b) => tier(a) - tier(b) || chainFirst(a, b));
 }
 
 export interface PlatformStats {

@@ -10,7 +10,8 @@ import { listingControlMessage, type ListingAction } from './listing-control'
 export interface AgentsQuery {
   category?: string
   q?: string
-  sort?: 'jobs' | 'x402' | 'score' | 'newest' | 'feedback' | 'health' | 'reachability'
+  type?: 'all' | 'jobs' | 'x402' | 'others'
+  metric?: 'score' | 'newest' | 'feedback' | 'health'
   page?: number
   limit?: number
   pcs?: boolean
@@ -50,7 +51,8 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   const sp = new URLSearchParams()
   if (query.category && query.category !== 'all') sp.set('category', query.category)
   if (query.q) sp.set('q', query.q)
-  if (query.sort) sp.set('sort', query.sort)
+  if (query.type) sp.set('type', query.type)
+  if (query.metric) sp.set('metric', query.metric)
   if (query.page && query.page > 1) sp.set('page', String(query.page))
   if (query.limit) sp.set('limit', String(query.limit))
   if (query.pcs) sp.set('pcs', '1')
