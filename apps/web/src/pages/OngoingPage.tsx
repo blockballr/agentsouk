@@ -386,7 +386,7 @@ export function OngoingPage() {
           </div>
         )}
 
-        {account && data && items.length === 0 && !error && (
+        {account && data && items.length === 0 && kernelJobs.length === 0 && !error && (
           <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
             <Txt size={15} lead={22} tone="ink">
               Nothing hired with this wallet yet.
