@@ -97,6 +97,10 @@
       "schedule": "30 20 * * *"
     },
     {
+      "path": "/api/cron/audit-shelf",
+      "schedule": "0 5 * * *"
+    },
+    {
       "path": "/api/cron/reconcile",
       "schedule": "3 3 * * *"
     },
