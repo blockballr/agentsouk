@@ -203,7 +203,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
       {count > 0 && (
         <motion.div
           data-compare-bar
-          className="fixed inset-x-0 bottom-12 z-[60] origin-bottom px-4"
+          className="fixed inset-x-0 bottom-16 z-[60] origin-bottom px-4"
           initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 40, scale: 0.94 }}
           animate={
             reducedMotion

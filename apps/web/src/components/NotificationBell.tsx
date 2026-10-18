@@ -84,7 +84,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-2 w-[340px] rounded-[20px] border border-souk-hair bg-souk-indigo p-1 shadow-lg">
+        <div className="absolute right-0 z-40 mt-2 w-[340px] rounded-[20px] border border-souk-hair bg-souk-indigo/85 p-1 shadow-lg backdrop-blur-md ring-1 ring-white/10">
           {/* the outbox panel wears the account panel's shell: indigo navy under one
               rim, the hairline dividing the head from the rows without a box */}
           <p className="micro px-3 pb-1 pt-2 text-souk-indigo-labels">Activity</p>
