@@ -1,5 +1,5 @@
 import "server-only";
-import { CATEGORY_KEYS, classifyExecution } from "@agora/core";
+import { CATEGORY_KEYS, classifyExecution, takesJobs } from "@agora/core";
 import { durableMode, loadJobsByToken } from "./durable-store";
 import { asksForSecrets, hasConfirmedCompletion } from "./quest-eligibility";
 import { queryAgents } from "./scanner";
@@ -11,6 +11,7 @@ export interface QuestShelfAgent {
   tokenId: string;
   name: string;
   owner: string;
+  imageUrl?: string | null;
 }
 
 // what a quest step may offer in one category, both in the order the shelf rotated them for
@@ -49,15 +50,19 @@ export async function loadQuestShelf(
     [a.name, a.description, ...(a.skills ?? []).map((s) => `${s.name} ${s.description ?? ""}`)].join(" ");
   const picks: Record<string, QuestShelf> = {};
   for (const category of CATEGORY_KEYS) {
-    const working = shelf.items.filter((a) => {
-      const check = verifications.get(a.token_id);
-      return (
-        a.category === category &&
-        check?.status === "delivered" &&
-        !asksForSecrets(check.detail) &&
-        classifyExecution(executionText(a)).executes
-      );
-    });
+    const working = shelf.items
+      .filter((a) => {
+        const check = verifications.get(a.token_id);
+        return (
+          a.category === category &&
+          check?.status === "delivered" &&
+          !asksForSecrets(check.detail) &&
+          classifyExecution(executionText(a)).executes
+        );
+      })
+      // prefer job-capable agents (escrow sellers) so the quest surfaces a
+      // hirable escrow agent first, until house agents are seeded
+      .sort((a, b) => (takesJobs(b.skills) ? 1 : 0) - (takesJobs(a.skills) ? 1 : 0));
     const proven: typeof working = [];
     // without the durable store no job can be read back, so nothing is claimed as confirmed
     if (observed) {
@@ -69,6 +74,7 @@ export async function loadQuestShelf(
       tokenId: a.token_id,
       name: a.name,
       owner: a.owner_address,
+      imageUrl: a.image_url,
     });
     picks[category] = { confirmed: proven.slice(0, 3).map(shape), working: working.slice(0, 12).map(shape) };
   }

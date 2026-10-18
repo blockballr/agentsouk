@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { shortAddress } from '@agora/core'
 import { QuickSearch } from './QuickSearch'
-import { ThemeToggle } from './ThemeToggle'
+
 import { NotificationBell } from './NotificationBell'
 import { Wordmark } from './Wordmark'
 import { cartCount, subscribe } from '../lib/cart'
@@ -10,7 +10,7 @@ import { connectWallet, disconnectWallet, signOut } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
-import { Dot, IconCart, SoukMark, Row, Rule, Stack, Txt } from './souk'
+import { Dot, IconCart, Row, Rule, Stack, Txt } from './souk'
 
 const links = [
   { to: '/agents', label: 'Marketplace' },
@@ -39,7 +39,7 @@ const controlClass =
 // the profile chip: wider than a square, because the design puts the mark and the
 // connected address in it rather than an icon alone
 const profileClass =
-  'flex h-[38px] shrink-0 items-center gap-2 rounded-[8px] border border-souk-hair pl-2.5 pr-3.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
+  'flex h-[38px] shrink-0 items-center gap-2 rounded-[8px] border border-souk-hair pl-2.5 pr-3.5 text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
 
 export function Nav() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -76,7 +76,6 @@ export function Nav() {
             they are a sibling of the wordmark group and the space between pins them to
             the far edge rather than to the end of the links */}
         <div className="hidden lg:flex lg:items-center lg:gap-2.5">
-          <ThemeToggle />
           <QuickSearch />
           <NotificationBell />
           <CartLink />
@@ -134,7 +133,6 @@ export function Nav() {
               <NavLink to="/profile" onClick={() => setMenuOpen(false)} className={itemClass(false)}>
                 Profile
               </NavLink>
-              <ThemeToggle />
               <NotificationBell />
             </div>
           </nav>
@@ -189,7 +187,7 @@ function CartLink() {
 // the account icons the panel's rows carry, 18px line shapes at the design's strokes
 function PersonGlyph() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8eaf2" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
     </svg>
@@ -246,14 +244,14 @@ function AccountRow({ label, route, Icon }: { label: string; route: string; Icon
   return (
     <Link
       to={route}
-      className="flex h-[40px] items-center gap-2.5 rounded-[8px] px-2 transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+      className="flex h-[40px] items-center gap-2.5 rounded-[8px] px-2 text-souk-indigo-labels transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
       <Icon />
       <Stack gap={1}>
-        <Txt size={13} lead={18} weight="bold" tone="ink">
+        <Txt size={13} lead={18} weight="bold" tone="white">
           {label}
         </Txt>
-        <Txt size={10} lead={14} mono tone="labels">
+        <Txt size={10} lead={14} mono tone="indigo-labels">
           {route}
         </Txt>
       </Stack>
@@ -289,9 +287,9 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
         onClick={() => setOpen((v) => !v)}
         className={wallet ? profileClass : controlClass}
       >
-        <SoukMark size={28} />
+        <PersonGlyph />
         {wallet ? (
-          <Txt size={12} lead={18} mono tone="ink">
+          <Txt size={12} lead={18} mono tone="white">
             {shortAddress(wallet)}
           </Txt>
         ) : null}
@@ -306,13 +304,13 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
           gap={2}
           className="absolute right-0 top-full z-50 mt-2 w-[300px] shadow-lg"
         >
-          <Row align="center" pad={[0, 8, 8, 8]} gap={10}>
-            <SoukMark size={30} />
+          <Row align="center" pad={[0, 8, 8, 8]} gap={10} className="text-souk-indigo-labels">
+            <PersonGlyph />
             <Stack gap={2}>
-              <Txt size={12} lead={18} mono tone="ink">
+              <Txt size={12} lead={18} mono tone="white">
                 {wallet ? shortAddress(wallet) : 'Not connected'}
               </Txt>
-              <Txt size={10} lead={14} weight="bold" upper tone="labels">
+              <Txt size={10} lead={14} weight="bold" upper tone="indigo-labels">
                 {wallet
                   ? `Connected${target ? ` · ${chainLabel(target.chainId)}` : ''}`
                   : 'Connect to list and hire'}
@@ -337,7 +335,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
                 setOpen(false)
                 window.location.reload()
               }}
-              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-peach transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-peach transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
             >
               {/* the one row that never navigates */}
               <PowerGlyph />
@@ -350,7 +348,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
                 setOpen(false)
                 onConnect()
               }}
-              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-data transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-data transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
             >
               <PersonGlyph />
               Connect wallet

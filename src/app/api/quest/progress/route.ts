@@ -8,6 +8,7 @@ import { issuePassport } from "@/lib/passport-store";
 import { serialLabel } from "@/lib/passport-serial";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 // One wallet's passport: the agents it has hired here, what it has listed, and whether
 // that finishes it. Two different agents hired and one listed is a finished passport.
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: false, error: "wallet must be an address" }, { status: 400 });
   }
   const w = wallet.toLowerCase();
+  try {
 
   // a stamp once earned stays: an agent that has since left the shelf still counts, both
   // as a hire and as a listing, so the whole catalogue is read and not only what is on show
@@ -99,4 +101,10 @@ export async function GET(req: NextRequest) {
     // surfaced so a reader can tell a genuinely empty answer from an incomplete one
     source: receiptsMode(),
   });
+  } catch (e) {
+    return NextResponse.json(
+      { success: false, error: e instanceof Error ? e.message : String(e) },
+      { status: 500 },
+    );
+  }
 }

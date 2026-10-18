@@ -22,8 +22,8 @@ import {
   registryFor,
 } from '../lib/contracts'
 import { getAgentDetail } from '../lib/api'
-import { RegisterWizard, type WizardStep } from '../components/RegisterWizard'
-import { SupportButton } from '../components/SupportButton'
+import { RegisterWizard, initialChecks, type WizardStep } from '../components/RegisterWizard'
+
 import { VerificationLoop, type CheckLine } from '../components/VerificationLoop'
 import { QuestStrip } from '../components/QuestStrip'
 import { Dialog } from '../components/ui'
@@ -115,7 +115,7 @@ export function ListAgentPage() {
   const questing = searchParams.get('quest') === 'stall'
   const [wizardStep, setWizardStep] = useState<WizardStep>('form')
   // the loop the wizard runs, carried up so the side rail can draw it as the design does
-  const [loopChecks, setLoopChecks] = useState<CheckLine[] | null>(null)
+  const [loopChecks, setLoopChecks] = useState<CheckLine[] | null>(() => initialChecks('call'))
   // the checklist starts closed; the prompt card asks for it, so the page holds the toggle
   const [checklistOpen, setChecklistOpen] = useState(false)
   const revealChecklist = () => {
@@ -136,7 +136,7 @@ export function ListAgentPage() {
   }
   // the listing flow is several screens long, so the page opens on the pitch and
   // one action rather than on the wizard
-  const [started, setStarted] = useState(false)
+  const [started, setStarted] = useState(true)
   const guide = questing ? LISTING_GUIDE[wizardStep] : null
 
   return (
@@ -175,7 +175,6 @@ export function ListAgentPage() {
               </Btn>
             </>
           )}
-          <SupportButton />
         </Row>
       </Stack>
       {!started ? null : (
@@ -219,12 +218,7 @@ export function ListAgentPage() {
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_520px]">
               <Stack gap={20}>
                 <SectionHead title="2. List your agent" note="ONE TRANSACTION" />
-                <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
-                  The same registration, without installing anything. You send one transaction from
-                  your own wallet, and the registry records you as the owner. We then probe the
-                  endpoint and decide whether the shelf carries it, the same as for a Studio
-                  registration.
-                </Txt>
+
                 {chain === null ? (
                   <Txt size={13} lead={20} tone="steel" className="block">
                     Checking the network before the registration step.
