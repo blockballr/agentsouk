@@ -150,6 +150,14 @@ export function stationShelfHealth(token: string): Promise<{ success: true; heal
   return authed(token, 'shelf-health')
 }
 
+export function stationSweep(token: string): Promise<{ success: true; report: unknown }> {
+  return authed(token, 'sweep')
+}
+
+export function stationProbe(token: string, limit = 25, all = false, dry = false): Promise<{ success: boolean; [key: string]: unknown }> {
+  return authed(token, `probe?limit=${limit}${all ? '&all=1' : ''}${dry ? '&dry=1' : ''}`)
+}
+
 // a change is signed against its own nonce and against the target address, so the
 // server cannot be replayed into promoting a different wallet
 export async function changeMemberRole(

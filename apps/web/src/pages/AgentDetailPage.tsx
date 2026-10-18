@@ -790,7 +790,7 @@ export function AgentDetailPage() {
                   agent's wallet are one wallet, so the option exists only on
                   the listing the executor lane serves */}
               {vaultCapable && (
-                <Action to={`/vault/97/${detail.token_id}`} variant="quiet" size="sm" className="mt-3 w-full">
+                <Action to={`/vault/${detail.chain_id}/${detail.token_id}`} variant="quiet" size="sm" className="mt-3 w-full">
                   Open a funded hire on this vault
                 </Action>
               )}

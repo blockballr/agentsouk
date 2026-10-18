@@ -62,6 +62,9 @@ export interface GridAgentCard {
   defaultOutputModes: string[];
   skills: GridAgentSkill[];
   supportedInterfaces: { url: string; transport: string }[];
+  // Agent Souk's HireVault, per chain, where a funded trading mandate runs.
+  // Published so a buyer on any marketplace can open a vault with this agent.
+  vault?: { chainId: number; address: string }[];
 }
 
 // The card must never name a private or loopback address, so a configured
