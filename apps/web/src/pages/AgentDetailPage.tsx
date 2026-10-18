@@ -20,6 +20,7 @@ import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, g
 import { TestTokens } from '../components/TestTokens'
 import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
+import { FreePreview } from '../components/FreePreview'
 import { escrowLifecycle, hireItems, hireState, type HireItem } from '../lib/hire-state'
 import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
@@ -763,7 +764,7 @@ export function AgentDetailPage() {
                 the job, and the release follows a verified delivery.
               </Txt>
             </Stack>
-          ) : (
+          ) : detail.x402_supported ? (
             <>
               {hireWarning && (
                 <Txt size={12} lead={18} tone="muted" className="mt-4 block">
@@ -794,8 +795,27 @@ export function AgentDetailPage() {
                 </Action>
               )}
             </>
+          ) : takesJobsToo ? (
+            <Stack gap={3}>
+              <Txt size={13} lead={20} tone="slate">
+                This agent does not take per-call payments; it is hired through an
+                ERC-8183 job, funded in escrow and paid on delivery.
+              </Txt>
+              <Txt size={13} lead={20} tone="muted">
+                Use the Fund job panel below to agree a quote and fund it.
+              </Txt>
+            </Stack>
+          ) : (
+            <Stack gap={3}>
+              <Txt size={13} lead={20} tone="slate">
+                This agent takes neither per-call payments nor escrow jobs.
+              </Txt>
+            </Stack>
           )}
           </AsideCard>
+          {detail.a2a_endpoint && Array.isArray(detail.skills) && detail.skills.length > 0 && (
+            <FreePreview endpoint={detail.a2a_endpoint} skills={detail.skills} />
+          )}
           {/* the second rail this agent sells is its own card, the way the drawing
               keeps one rail per card rather than nesting one inside the other */}
           {!mySession && !jobSeller && takesJobsToo && (
