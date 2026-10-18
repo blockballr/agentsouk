@@ -242,16 +242,26 @@ const KERNEL_JOB_ABI = [
     type: "function",
     stateMutability: "view",
     inputs: [{ name: "jobId", type: "uint256" }],
+    // the kernel returns the job as one struct, so its abi answer is an outer
+    // offset word followed by the nine fields; declaring the nine flat made
+    // every decode read the evaluator address as the description's offset and
+    // throw, which 500'd the record route and left the seller unnotified
     outputs: [
-      { name: "id", type: "uint256" },
-      { name: "client", type: "address" },
-      { name: "provider", type: "address" },
-      { name: "evaluator", type: "address" },
-      { name: "description", type: "string" },
-      { name: "budget", type: "uint256" },
-      { name: "expiredAt", type: "uint256" },
-      { name: "status", type: "uint8" },
-      { name: "hook", type: "address" },
+      {
+        name: "job",
+        type: "tuple",
+        components: [
+          { name: "id", type: "uint256" },
+          { name: "client", type: "address" },
+          { name: "provider", type: "address" },
+          { name: "evaluator", type: "address" },
+          { name: "description", type: "string" },
+          { name: "budget", type: "uint256" },
+          { name: "expiredAt", type: "uint256" },
+          { name: "status", type: "uint8" },
+          { name: "hook", type: "address" },
+        ],
+      },
     ],
   },
 ] as const;
@@ -278,17 +288,25 @@ export async function kernelJob(
     abi: KERNEL_JOB_ABI,
     functionName: "getJob",
     args: [BigInt(onchainJobId)],
-  })) as readonly unknown[];
-  const row = job as unknown as readonly unknown[];
-  // the string body is in the tail, but readContract already decodes the tuple
+  })) as unknown as {
+    id: bigint;
+    client: string;
+    provider: string;
+    evaluator: string;
+    description: string;
+    budget: bigint;
+    expiredAt: bigint;
+    status: number;
+    hook: string;
+  };
   return {
-    client: String(row[1]),
-    provider: String(row[2]),
-    evaluator: String(row[3]),
-    description: String(row[4]),
-    budget: row[5] as bigint,
-    expiredAt: (row[6] as bigint),
-    status: Number(row[7]),
+    client: String(job.client),
+    provider: String(job.provider),
+    evaluator: String(job.evaluator),
+    description: String(job.description),
+    budget: job.budget,
+    expiredAt: job.expiredAt,
+    status: Number(job.status),
   };
 }
 
