@@ -966,7 +966,7 @@ function scheduleShelfTopUp(): void {
 export interface QueryOptions {
   category?: string;
   q?: string;
-  sort?: "executable" | "score" | "newest" | "feedback" | "health" | "reachability";
+  sort?: "jobs" | "score" | "newest" | "feedback" | "health" | "reachability";
   page?: number;
   limit?: number;
   ensureWarm?: boolean;
@@ -1116,7 +1116,7 @@ function sortAgents(
 ): AgentSummary[] {
   const copy = [...items];
   switch (sort) {
-    case "executable":
+    case "jobs":
       // the shelf's default order: a buyer who wants work done meets the agents
       // whose card declares the ERC-8183 job protocol first, a dual-rail card
       // included, and each half keeps the working-first order every other sort
