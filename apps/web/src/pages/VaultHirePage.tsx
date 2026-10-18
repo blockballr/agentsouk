@@ -42,8 +42,10 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
-// the vault is a chain-97 contract today; chain 56 waits on the outside review
-const CHAIN = { id: 97, label: 'BSC testnet', rpc: 'https://bsc-testnet-rpc.publicnode.com', explorer: 'https://testnet.bscscan.com/tx/' } as const
+const CHAINS: Record<number, { id: number; label: string; rpc: string; explorer: string }> = {
+  56: { id: 56, label: 'BNB Smart Chain', rpc: 'https://bsc-dataseed.bnbchain.org', explorer: 'https://bscscan.com/tx/' },
+  97: { id: 97, label: 'BSC testnet', rpc: 'https://bsc-testnet-rpc.publicnode.com', explorer: 'https://testnet.bscscan.com/tx/' },
+}
 
 interface Prefill {
   name: string | null
@@ -55,7 +57,7 @@ interface Prefill {
 // url asked for, because a listing's identity is only true on its own chain.
 async function loadPrefill(chainId: string, tokenId: string): Promise<Prefill> {
   try {
-    const chain = Number(chainId) > 0 ? Number(chainId) : CHAIN.id
+    const chain = Number(chainId) > 0 ? Number(chainId) : 97
     const res = await fetch(`${API_BASE}/agents/${chain}/${tokenId}`)
     const body = await res.json().catch(() => null)
     const agent = body?.data ?? body
@@ -94,8 +96,8 @@ export default function VaultHirePage() {
   const params = useParams()
   const tokenId = params.tokenId ?? ''
   // the chain the url asked for, so a listing's identity is read from its own chain
-  const requestedChain = Number(params.chainId) > 0 ? Number(params.chainId) : CHAIN.id
-  const requestedChainLabel = requestedChain === 97 ? 'BSC testnet' : 'BNB Smart Chain'
+  const requestedChain = Number(params.chainId) > 0 ? Number(params.chainId) : 97
+  const CHAIN = CHAINS[requestedChain] ?? CHAINS[97]
 
   const [account, setAccount] = useState<string | null>(null)
   const [prefill, setPrefill] = useState<Prefill | null>(null)
@@ -110,8 +112,8 @@ export default function VaultHirePage() {
   const [busy, setBusy] = useState<string | null>(null)
   const [lines, setLines] = useState<string[]>([])
 
-  const token = tokenChoice === 'WBNB' ? vaultTokenA(97) : vaultTokenB(97)
-  const vault = vaultFor(97)
+  const token = tokenChoice === 'WBNB' ? vaultTokenA(requestedChain) : vaultTokenB(requestedChain)
+  const vault = vaultFor(requestedChain)
   const agentAddress = prefill?.wallet && prefill.wallet !== '0x0000000000000000000000000000000000000000' ? prefill.wallet : manualAgent
 
   useEffect(() => {
@@ -119,7 +121,7 @@ export default function VaultHirePage() {
   }, [])
 
   useEffect(() => {
-    if (tokenId) loadPrefill(params.chainId ?? String(CHAIN.id), tokenId).then(setPrefill)
+    if (tokenId) loadPrefill(params.chainId ?? '97', tokenId).then(setPrefill)
   }, [params.chainId, tokenId])
 
   useEffect(() => {
@@ -175,9 +177,9 @@ export default function VaultHirePage() {
   }, [account])
 
   async function ensureChain() {
-    setTargetChain(97)
+    setTargetChain(requestedChain)
     const chain = await ensureBscChain()
-    if (chain?.toLowerCase() !== chainIdToHex(97)) {
+    if (chain?.toLowerCase() !== chainIdToHex(requestedChain)) {
       throw new Error(`Switch the wallet to ${CHAIN.label} for this vault.`)
     }
   }
@@ -251,7 +253,7 @@ export default function VaultHirePage() {
   // cap text waits on the read, the pair itself is pinned in lib/vault
   const capFor = (symbol: string) =>
     caps ? `${symbol === 'WBNB' ? caps.capA : caps.capB} per deposit` : 'read when the wallet connects'
-  const pairRows: TableRowSpec[] = [vaultTokenA(97), vaultTokenB(97)].flatMap((t) =>
+  const pairRows: TableRowSpec[] = [vaultTokenA(requestedChain), vaultTokenB(requestedChain)].flatMap((t) =>
     t
       ? [
           {
@@ -330,7 +332,7 @@ export default function VaultHirePage() {
                 </Stack>
                 <Row gap={8} align="center" className="shrink-0">
                   <Pill>pancakeswap v3</Pill>
-                  <Pill variant="warn">bsc testnet {CHAIN.id}</Pill>
+                  <Pill variant="warn">{CHAIN.label} {CHAIN.id}</Pill>
                 </Row>
               </Row>
               {/* the address column is a fixed 540 in the design; letting the table
@@ -534,7 +536,7 @@ export default function VaultHirePage() {
                 // host plus short address, the drawn value; the full url has no break
                 // opportunity and pushed the page sideways on a phone
                 value: vault
-                  ? `${explorerAddressUrl(97, vault).replace(/^https?:\/\//, '').split('/address/')[0]}/address/${short(vault)}`
+                  ? `${explorerAddressUrl(requestedChain, vault).replace(/^https?:\/\//, '').split('/address/')[0]}/address/${short(vault)}`
                   : 'not configured',
                 mono: true,
                 width: 220,
@@ -550,15 +552,7 @@ export default function VaultHirePage() {
         </div>
       ) : null}
 
-      {requestedChain !== CHAIN.id && tokenId ? (
-        <NoteBox
-          className="mt-5"
-          title="Wrong chain for the vault"
-          copy={`This listing lives on ${requestedChainLabel}, but the vault is live on ${CHAIN.label} at ${
-            vault ? short(vault) : 'not configured'
-          }. The listing is named above, and funding it here would put the deposit on the vault's own chain, not the listing's.`}
-        />
-      ) : null}
+
 
       <Stack gap={2} className="mt-5">
         <Rule />

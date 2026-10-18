@@ -69,10 +69,10 @@ function sleep(ms: number) {
 // the same reading is posted to the liveness oracle. No hire is settled and no
 // agent is paid for answering, which is what makes a sweep repeatable.
 export function GET(req: NextRequest) {
-  return loggedCronRun("liveness", () => run(req));
+  return loggedCronRun("liveness", () => runLiveness(req));
 }
 
-async function run(req: NextRequest): Promise<NextResponse> {
+export async function runLiveness(req: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
     return NextResponse.json({ error: "liveness sweep is not configured" }, { status: 503 });
@@ -88,6 +88,7 @@ async function run(req: NextRequest): Promise<NextResponse> {
     Math.min(MAX_LIMIT, Number(req.nextUrl.searchParams.get("limit") ?? DEFAULT_LIMIT) || DEFAULT_LIMIT),
   );
   const all = req.nextUrl.searchParams.get("all") === "1";
+  const dry = req.nextUrl.searchParams.get("dry") === "1";
 
   const shelf = await queryAgents({ limit: 5000, includeHouse: true });
   const seen = await loadVerifications(chainId);
@@ -161,17 +162,22 @@ async function run(req: NextRequest): Promise<NextResponse> {
       quality ? { grade: quality.grade, reason: quality.reason, model: "deterministic" } : undefined,
     );
 
-    const heartbeat = await postLiveness({
-      chainId,
-      tokenId: verdict.tokenId,
-      grade: livenessGrade(probe),
-      method: livenessMethod(probe.protocol),
-      responseMs: verdict.responseMs,
-      detail: probe.detail,
-    });
-    if (heartbeat.ok) oracle.posted += 1;
-    else if (heartbeat.skipped) oracle.skipped += 1;
-    else oracle.failed += 1;
+    let heartbeat: { ok: boolean; skipped?: boolean; hash?: string } = { ok: false, skipped: true };
+    if (!dry) {
+      heartbeat = await postLiveness({
+        chainId,
+        tokenId: verdict.tokenId,
+        grade: livenessGrade(probe),
+        method: livenessMethod(probe.protocol),
+        responseMs: verdict.responseMs,
+        detail: probe.detail,
+      });
+      if (heartbeat.ok) oracle.posted += 1;
+      else if (heartbeat.skipped) oracle.skipped += 1;
+      else oracle.failed += 1;
+    } else {
+      oracle.skipped += 1;
+    }
 
     if (verdict.status === "delivered") counts.online += 1;
     else if (verdict.status === "gated") counts.gated += 1;

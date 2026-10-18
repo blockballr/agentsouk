@@ -5,9 +5,10 @@ export const PANCAKE_V3_FACTORY = '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865' a
 // the funded shape of a hire: the deposit sits in our own vault contract, the
 // named agent trades inside the bounds the contract set at open, and the
 // buyer's withdraw ends the agent's authority in one transaction. vault
-// addresses are per chain; chain 56 waits on the outside review.
+// addresses are per chain; chain 56 already deployed (0xe8e8940145ee165c39b2405755d177818187730d), mirrored from the server-side vault table
 
 export const VAULT_BY_CHAIN: Record<number, string> = {
+  56: '0xe8e8940145ee165c39b2405755d177818187730d',
   97: '0xc742e51f3fe3875a3335700a7d692f40dc8e60b8',
 }
 
@@ -97,6 +98,10 @@ interface PancakeLike {
 }
 
 const VAULT_TOKENS: Record<number, { A: PancakeLike; B: PancakeLike }> = {
+  56: {
+    A: { symbol: 'WBNB', address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', decimals: 18 },
+    B: { symbol: 'USDT', address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 },
+  },
   97: {
     A: { symbol: 'WBNB', address: '0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd', decimals: 18 },
     B: { symbol: 'USDT', address: '0x337610d27c682E347C9cD60BD4b3b107C9d34dDd', decimals: 18 },

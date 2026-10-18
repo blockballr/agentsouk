@@ -6,6 +6,7 @@
 
 import { privateEndpointReason } from "./endpoint";
 import { gridPlanSkill, type GridAgentCard, type GridAgentSkill } from "./reference-grid";
+import { VAULT_BY_CHAIN } from "./vault";
 
 export const TAJIR_AGENT_NAME = "Souk Grid Pilot";
 export const TAJIR_AGENT_VERSION = "1.0.0";
@@ -82,5 +83,13 @@ export function tajirAgentCard(origin: string): GridAgentCard {
     defaultOutputModes: ["text/plain", "application/json"],
     skills: [gridPlanSkill(), NEGOTIATE_SKILL, NOTIFY_SKILL],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
+    // Agent Souk's HireVault, published so a buyer on any marketplace can open
+    // a funded trading mandate with this agent. It is read from the same table
+    // the executor sweeps rather than typed here: a hire opened at an address
+    // this card invented is a hire no one trades, and the two drifted once.
+    vault: Object.entries(VAULT_BY_CHAIN).map(([chainId, address]) => ({
+      chainId: Number(chainId),
+      address,
+    })),
   };
 }
