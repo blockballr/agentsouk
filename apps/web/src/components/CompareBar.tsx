@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { sellsByJob } from '@agora/core'
 import { ensureBscChain } from '../lib/wallet'
 import { connectWallet } from '../lib/wallet-session'
 import { hireErrorText, runHire, type HireAgentRef } from '../lib/hire'
@@ -8,7 +9,7 @@ import { addToCart, removeFromCart } from '../lib/cart'
 import { categoryOf } from '../lib/compare'
 import { removeFromShortlist } from '../lib/shortlist'
 
-type CartPhase = 'idle' | 'adding' | 'added' | 'full' | 'error'
+type CartPhase = 'idle' | 'adding' | 'added' | 'full' | 'error' | 'job'
 
 type HireItemPhase = 'pending' | 'requirements' | 'signing' | 'settling' | 'settled' | 'failed'
 
@@ -60,18 +61,24 @@ export function CompareBar({
   const allSettled = items.length > 0 && items.every((i) => i.phase === 'settled')
 
   // one detail fetch per agent (the cart needs the category), then into the
-  // existing cart api; full/failed surfaces briefly on the button
+  // existing cart api; full/failed surfaces briefly on the button, and a pure
+  // job seller never enters: the server refuses its direct hire anyway
   async function startAddToCartRefs(refs: HireAgentRef[]) {
     if (cartBusy || refs.length === 0) return
     setCartBusy(true)
     setCartPhase('adding')
     let full = false
     let failed = false
+    let skipped = 0
     for (const r of refs) {
       try {
         const d = await getAgentDetail(String(r.chainId), String(r.tokenId))
         if (!d) {
           failed = true
+          continue
+        }
+        if (sellsByJob(d.skills)) {
+          skipped += 1
           continue
         }
         const res = addToCart({
@@ -86,7 +93,8 @@ export function CompareBar({
       }
     }
     setCartBusy(false)
-    setCartPhase(failed ? 'error' : full ? 'full' : 'added')
+    const phase: CartPhase = failed ? 'error' : full ? 'full' : skipped > 0 && skipped === refs.length ? 'job' : 'added'
+    setCartPhase(phase)
     window.setTimeout(() => setCartPhase('idle'), 1800)
   }
 
@@ -250,7 +258,9 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                             ? 'Cart full'
                             : cartPhase === 'error'
                               ? 'Failed, retry'
-                              : `Add ${hire.winners.length} to cart`}
+                              : cartPhase === 'job'
+                                ? 'Sells by job'
+                                : `Add ${hire.winners.length} to cart`}
                     </button>
                   </>
                 ) : (

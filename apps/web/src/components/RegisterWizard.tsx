@@ -19,7 +19,7 @@ import {
   type PrepareResult,
   type TransactionReceipt,
 } from '../lib/register'
-import { VerificationLoop, type CheckLine, type CheckState } from './VerificationLoop'
+import type { CheckLine, CheckState } from './VerificationLoop'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import {
   chainIdToHex,
@@ -29,6 +29,7 @@ import {
   setTargetChain,
 } from '../lib/wallet'
 import { connectWallet, sessionAccount } from '../lib/wallet-session'
+import { SupportButton } from './SupportButton'
 import { button, card, cx } from './ui'
 
 // pending means the wallet already sent a transaction and we are waiting on its receipt, so the
@@ -133,7 +134,15 @@ function withWalletTimeout<T>(work: Promise<T>): Promise<T> {
 }
 
 /** The listing wizard: fill the draft, review the document, register from the owner's wallet, then let the server check the chain. */
-export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: (step: WizardStep) => void }) {
+export function RegisterWizard({
+  chainId,
+  onStep,
+  onChecks,
+}: {
+  chainId: number
+  onStep?: (step: WizardStep) => void
+  onChecks?: (checks: CheckLine[] | null) => void
+}) {
   const [step, setStep] = useState<WizardStep>('form')
   // lets the page's quest guide follow where the wizard has got to
   useEffect(() => {
@@ -152,6 +161,11 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
   const sentLatch = useRef(false)
   // null until the lister proceeds; each entry updates as its check runs
   const [checks, setChecks] = useState<CheckLine[] | null>(null)
+  // the list page draws the same panel in its side rail, so the wizard reports its
+  // checks outward instead of holding the panel itself
+  useEffect(() => {
+    onChecks?.(checks)
+  }, [checks, onChecks])
   // a new picture address earns a fresh try; the browser is what reports a dead image
   const [imageOk, setImageOk] = useState(true)
   const [fileNote, setFileNote] = useState<string | null>(null)
@@ -591,11 +605,6 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
             `The registry confirms it, so the registration is settled. The shelf files it under ${shelfTab}, and the catalogue reads the chain again, so it appears within a minute. A browser-invoked listing appears too, but the marketplace cannot call it, so a hire cannot run automatically. The verifier probes a callable endpoint on its next sweep, once the registry has indexed it, and the badge follows what it finds. You can re-check it any time from your profile.`
           )}
         </p>
-        {checks && (
-          <div className="mt-5">
-            <VerificationLoop checks={checks} />
-          </div>
-        )}
         <dl className="mt-5 space-y-3 text-sm">
           <div>
             <dt className="micro text-souk-muted">Agent id</dt>
@@ -868,7 +877,7 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
         </button>
       </div>
 
-      {/* the pre-flight card is the idle form; once the loop runs, the stepped panel replaces it */}
+      {/* the pre-flight card is the idle form; once the loop runs, the side rail carries it */}
       {step === 'form' && checks === null && (
         <div className="mt-5 rounded-[10px] border hairline border-souk-hair p-4">
           <p className="micro text-souk-muted">Before you spend gas</p>
@@ -910,18 +919,15 @@ export function RegisterWizard({ chainId, onStep }: { chainId: number; onStep?: 
         </div>
       )}
 
-      {checks && (
-        <div className="mt-5">
-          <VerificationLoop checks={checks} />
-        </div>
-      )}
-
       {errors.length > 0 && (
-        <ul className="mt-4 space-y-1 rounded-[10px] border border-press-black/20 bg-souk-surface2 p-4 text-xs text-souk-ink">
-          {errors.map((e) => (
-            <li key={e}>{e}</li>
-          ))}
-        </ul>
+        <>
+          <ul className="mt-4 space-y-1 rounded-[10px] border border-press-black/20 bg-souk-surface2 p-4 text-xs text-souk-ink">
+            {errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+          <SupportButton className="mt-3" />
+        </>
       )}
 
       {message && (

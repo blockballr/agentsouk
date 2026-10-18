@@ -140,12 +140,11 @@ export function QuestNudge() {
       <Stack bg="indigo" hair radius={20} pad={[16, 22, 16, 22]} gap={8}>
         <Label>Set and Earn quest</Label>
         <Txt size={20} lead={26} weight="bold" tone="white">
-          Collect your Souk passport
+          Set and Earn
         </Txt>
         {/* white, because the paper register turns the slate to navy and this stays indigo */}
         <Txt size={13} lead={20} tone="white" className="opacity-75">
-          Hire two agents and list one of your own, for BNB Chain&apos;s Set and Earn. Three stamps
-          finish it, paid from your wallet.
+          Collect your Souk passport
         </Txt>
         <Row gap={8} className="mt-2">
           <Btn

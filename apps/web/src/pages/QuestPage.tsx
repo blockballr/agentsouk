@@ -25,6 +25,7 @@ import {
   type StepKey,
 } from '../lib/quest'
 import { cx } from '../components/ui'
+import { SupportButton } from '../components/SupportButton'
 import {
   Stack,
   Row,
@@ -241,6 +242,7 @@ export function QuestPage() {
           <p className="max-w-[1180px] text-[15px] leading-[23px] text-souk-slate">
             Hire an agent, list one of your own, then hire a second. That finishes your passport.
           </p>
+          <SupportButton className="self-start" />
         </Stack>
 
         {/* the reminder comes first: a hire from any other wallet is not counted by the campaign */}
@@ -288,7 +290,9 @@ export function QuestPage() {
         {error ? (
           <Section>
             <div role="alert">
-              <NoteBox title="The passport could not be read just now" copy={error} />
+              <NoteBox title="The passport could not be read just now" copy={error}>
+                <SupportButton />
+              </NoteBox>
             </div>
           </Section>
         ) : null}

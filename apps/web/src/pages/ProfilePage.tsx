@@ -209,30 +209,24 @@ export function ProfilePage() {
         </Txt>
       </Stack>
 
-      {!account && (
-        <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
-          <Txt size={15} lead={22} tone="ink">
-            Connect the wallet you listed with.
-          </Txt>
-          <Txt size={13} lead={20} tone="muted">
-            A listing belongs to the wallet the registry records as its owner.
-          </Txt>
-          <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
+      <Row justify="between" align="center" gap={16} className="mt-8 flex-wrap">
+        <Txt size={11} lead={16} mono tone="labels">
+          {account ? (
+            <>showing listings for <Txt tone="slate">{shortAddress(account)}</Txt></>
+          ) : (
+            'no wallet connected'
+          )}
+        </Txt>
+        {account ? (
+          <Btn kind="off" onClick={() => void load()} disabled={loading}>
+            {loading ? 'Reading...' : 'Refresh'}
+          </Btn>
+        ) : (
+          <Btn kind="primary" onClick={onConnect} disabled={connecting}>
             {connecting ? 'Connecting...' : 'Connect wallet'}
           </Btn>
-        </Stack>
-      )}
-
-      {account && (
-        <>
-          <Row justify="between" align="center" gap={16} className="mt-8 flex-wrap">
-            <Txt size={11} lead={16} mono tone="labels">
-              showing listings for <Txt tone="slate">{shortAddress(account)}</Txt>
-            </Txt>
-            <Btn kind="off" onClick={() => void load()} disabled={loading}>
-              {loading ? 'Reading...' : 'Refresh'}
-            </Btn>
-          </Row>
+        )}
+      </Row>
 
           {error && (
             <div role="alert" className="mt-6">
@@ -276,6 +270,20 @@ export function ProfilePage() {
           <div className="mt-10">
             <SectionHead title="Your listings" note={owned ? `${agents.length} owned on this chain` : undefined} />
             <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {!account && (
+                <Stack surface pad={[28, 28, 28, 28]} gap={8} className="md:col-span-2 lg:col-span-3">
+                  <Txt size={15} lead={22} tone="slate">
+                    Connect the wallet you listed with.
+                  </Txt>
+                  <Txt size={13} lead={20} tone="muted">
+                    A listing belongs to the wallet the registry records as its owner.
+                  </Txt>
+                  <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
+                    {connecting ? 'Connecting...' : 'Connect wallet'}
+                  </Btn>
+                </Stack>
+              )}
+
               {owned && agents.length === 0 && (
                 <Stack surface pad={[28, 28, 28, 28]} gap={8} className="md:col-span-2 lg:col-span-3">
                   <Txt size={15} lead={22} tone="slate">
@@ -344,8 +352,6 @@ export function ProfilePage() {
               </Txt>
             </Link>
           </Row>
-        </>
-      )}
     </div>
   )
 }

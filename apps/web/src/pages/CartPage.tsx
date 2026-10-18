@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { SESSION_HOURS, SESSION_SPEND_CAP_USD, shortAddress } from '@agora/core'
+import { SESSION_HOURS, SESSION_SPEND_CAP_USD, sellsByJob, shortAddress } from '@agora/core'
 import { getCart, removeFromCart, subscribe, type CartItem } from '../lib/cart'
+import { getAgentDetail } from '../lib/api'
 import { ensureBscChain } from '../lib/wallet'
 import { connectWallet } from '../lib/wallet-session'
 import { hireErrorText, runHire } from '../lib/hire'
@@ -79,9 +80,32 @@ export function CartPage() {
   const [connecting, setConnecting] = useState(false)
   const [address, setAddress] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // job sellers can no longer be added, but a cart saved before the guard may
+  // still hold one; each is read once and kept out of checkout instead of
+  // failing at requirements with nothing signed
+  const [jobOnlyKeys, setJobOnlyKeys] = useState<string[]>([])
   const addressRef = useRef<string | null>(null)
 
   useEffect(() => subscribe(() => setItems(getCart())), [])
+
+  useEffect(() => {
+    let stale = false
+    void (async () => {
+      const found: string[] = []
+      for (const item of items) {
+        try {
+          const d = await getAgentDetail(String(item.chainId), String(item.tokenId))
+          if (d && sellsByJob(d.skills)) found.push(`${item.chainId}/${item.tokenId}`)
+        } catch {
+          // an unreadable detail stays in checkout; the server refuses it safely
+        }
+      }
+      if (!stale) setJobOnlyKeys(found)
+    })()
+    return () => {
+      stale = true
+    }
+  }, [items])
 
   function setStep(key: string, step: Step) {
     setSteps((prev) => ({ ...prev, [key]: step }))
@@ -149,15 +173,18 @@ export function CartPage() {
   }
 
   function handleCheckout() {
-    void runCheckout(items)
+    void runCheckout(directItems)
   }
 
   function handleRetry(key: string) {
-    const item = items.find((i) => `${i.chainId}/${i.tokenId}` === key)
+    const item = directItems.find((i) => `${i.chainId}/${i.tokenId}` === key)
     if (item) void runCheckout([item])
   }
 
-  const failedKeys = items
+  const isJobOnly = (key: string) => jobOnlyKeys.includes(key)
+  const directItems = items.filter((i) => !isJobOnly(`${i.chainId}/${i.tokenId}`))
+  const jobItemCount = items.length - directItems.length
+  const failedKeys = directItems
     .map((i) => `${i.chainId}/${i.tokenId}`)
     .filter((key) => steps[key]?.status === 'failed')
   const summary = Object.entries(receipts)
@@ -168,11 +195,11 @@ export function CartPage() {
     'cart',
     address ? `wallet ${shortAddress(address)}` : null,
     chainIds.map((id) => `${chainLabel(id)} ${id}`).join(' + '),
-    `${items.length} hires`,
+    `${directItems.length} hire${directItems.length === 1 ? '' : 's'}`,
   ]
     .filter((part): part is string => Boolean(part))
     .join(' · ')
-  const total = items.length * PRICE_USD
+  const total = directItems.length * PRICE_USD
   const asset = chainIds.length === 1 ? settlementAssetFor(chainIds[0]) : null
 
   // the terms a buyer reads before they sign. The session cap is last on purpose,
@@ -244,12 +271,13 @@ export function CartPage() {
             >
               {items.map((item) => {
                 const key = `${item.chainId}/${item.tokenId}`
+                const job = isJobOnly(key)
                 const step = steps[key]?.status ?? 'queued'
                 return (
                   <Row key={key} align="center" gap={14} className="flex-wrap">
                     <Row align="center" gap={12} grow className="min-w-0">
                       <AgentAvatar size={40} name={item.name} />
-                      <Dot size={10} tone={dotToneFor(step)} />
+                      <Dot size={10} tone={job ? 'quiet' : dotToneFor(step)} />
                       <Stack gap={3} className="min-w-0">
                         <Txt size={15} lead={20} weight="bold" tone="ink" className="block truncate">
                           {item.name}
@@ -260,12 +288,23 @@ export function CartPage() {
                           tone="labels"
                           className="block truncate"
                         >
-                          {item.category || 'General'} · about ${PRICE_USD} U per hire
+                          {job
+                            ? `${item.category || 'General'} · priced on its own page as a job`
+                            : `${item.category || 'General'} · about ${PRICE_USD} U per hire`}
                         </Txt>
                       </Stack>
                     </Row>
                     <Row align="center" gap={10}>
-                      <StepLabel step={step} error={steps[key]?.error} />
+                      {job ? (
+                        <Link
+                          to={`/agents/${item.chainId}/${item.tokenId}`}
+                          className="cursor-pointer text-[12px] leading-[17px] text-souk-data underline decoration-souk-steel/50 underline-offset-4 transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                        >
+                          Get price
+                        </Link>
+                      ) : (
+                        <StepLabel step={step} error={steps[key]?.error} />
+                      )}
                       {step === 'failed' && !running ? (
                         <Btn
                           kind="off"
@@ -295,15 +334,29 @@ export function CartPage() {
                   Total {total.toFixed(0)} U
                 </Txt>
                 <Txt size={12} lead={18} mono tone="labels">
-                  ({items.length} agent{items.length === 1 ? '' : 's'} x ${PRICE_USD})
+                  ({directItems.length} agent{directItems.length === 1 ? '' : 's'} x ${PRICE_USD})
                 </Txt>
               </Row>
-              <Btn kind="primary" className="w-full" onClick={handleCheckout} disabled={busy}>
+              {jobItemCount > 0 ? (
+                <Txt size={12} lead={18} tone="muted" className="block">
+                  {jobItemCount === 1
+                    ? 'One agent here sells as an ERC-8183 job. It is priced on its own page and not checked out here.'
+                    : `${jobItemCount} agents here sell as ERC-8183 jobs. They are priced on their own pages and not checked out here.`}
+                </Txt>
+              ) : null}
+              <Btn
+                kind="primary"
+                className="w-full"
+                onClick={handleCheckout}
+                disabled={busy || directItems.length === 0}
+              >
                 {connecting
                   ? 'Connecting wallet...'
                   : running
                     ? 'Running checkout...'
-                    : `Checkout ${items.length} agent${items.length === 1 ? '' : 's'}`}
+                    : directItems.length === 0
+                      ? 'Nothing to check out'
+                      : `Checkout ${directItems.length} agent${directItems.length === 1 ? '' : 's'}`}
               </Btn>
               {failedKeys.length > 0 && !running ? (
                 <Btn
@@ -326,8 +379,8 @@ export function CartPage() {
             <Stack surface pad={[20, 22, 20, 22]} gap={10} className="w-[520px] shrink-0">
               <SectionHead title="What you are authorising" note="one signature per agent" />
               <Txt size={13} lead={20} tone="slate" className="block">
-                {items.length} hire{items.length === 1 ? '' : 's'}, {items.length} signature
-                {items.length === 1 ? '' : 's'}. Each pays its own agent directly, and neither can
+                {directItems.length} hire{directItems.length === 1 ? '' : 's'}, {directItems.length} signature
+                {directItems.length === 1 ? '' : 's'}. Each pays its own agent directly, and neither can
                 pull from your wallet again on its own.
               </Txt>
               {authRows.map((r) => (

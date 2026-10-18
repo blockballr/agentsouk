@@ -19,6 +19,7 @@ import { connectWallet, sessionAccount } from '../lib/wallet-session'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { explorerAddressUrl } from '../lib/contracts'
 import { Btn, Pill, Row, Stack, Txt } from './souk'
+import { SupportButton } from './SupportButton'
 
 const FUND_DEADLINE_EXTRA_SECONDS = 1800
 
@@ -291,6 +292,8 @@ export default function Jobs8183HirePanel({
           </Txt>
         ) : null}
 
+        {error ? <SupportButton /> : null}
+
         {!blocked ? (
           <Stack gap={12}>
             <Btn
@@ -376,20 +379,13 @@ function Meter({ pct, pending }: { pct: number; pending: boolean }) {
       </Row>
       <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-souk-hair">
         <div
-          className={`meter-fill relative h-full rounded-[3px] transition-[width] ease-out motion-reduce:transition-none ${pending ? 'duration-[2200ms]' : 'duration-700'}`}
+          className={`h-full rounded-[3px] transition-[width] ease-out motion-reduce:transition-none ${pending ? 'duration-[2200ms]' : 'duration-700'}`}
           style={{
             width: `${pending ? 19 : Math.max(pct, 2)}%`,
             minWidth: 6,
             backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #44b48b 100%)',
           }}
-        >
-          {pending ? (
-            <span
-              aria-hidden="true"
-              className="meter-shimmer absolute inset-y-0 left-0 w-[30%] rounded-[3px] bg-gradient-to-r from-transparent via-white/[0.42] to-transparent"
-            />
-          ) : null}
-        </div>
+        />
       </div>
     </Stack>
   )

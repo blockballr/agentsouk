@@ -16,6 +16,7 @@ const links = [
   { to: '/agents', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
   { to: '/ongoing', label: 'Ongoing' },
+  { to: '/quest', label: 'Quest' },
 ]
 
 // the design's top bar item: upper case, and the active one is the only ink in the
@@ -280,18 +281,20 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
     <div className="relative" ref={box}>
       <button
         type="button"
-        aria-haspopup={wallet ? 'true' : undefined}
-        aria-expanded={wallet ? open : undefined}
-        // a wallet nobody has picked yet connects on the spot; the account panel is
-        // only an affordance once there is an account to show. the mark rides beside
-        // an address, so with nothing connected the chip is the label alone
-        onClick={() => (wallet ? setOpen((v) => !v) : onConnect())}
-        className={wallet ? profileClass : `${profileClass} pr-4`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label={wallet ? undefined : 'Profile'}
+        // the mark carries the chip whether or not a wallet is picked, and the address
+        // joins it the moment one is; the panel opens either way, connect included
+        onClick={() => setOpen((v) => !v)}
+        className={wallet ? profileClass : controlClass}
       >
-        {wallet ? <SoukMark size={28} /> : null}
-        <Txt size={12} lead={18} mono tone="ink">
-          {wallet ? shortAddress(wallet) : 'Connect Wallet'}
-        </Txt>
+        <SoukMark size={28} />
+        {wallet ? (
+          <Txt size={12} lead={18} mono tone="ink">
+            {shortAddress(wallet)}
+          </Txt>
+        ) : null}
       </button>
 
       {open && (
@@ -323,23 +326,36 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
           <AccountRow label="List agent" route="/list" Icon={PlusGlyph} />
           <AccountRow label="Cart" route="/cart" Icon={MenuCartGlyph} />
           <Rule hair />
-          <button
-            type="button"
-            disabled={!wallet}
-            onClick={() => {
-              // forget this browser: the session, the wallet choice and the
-              // record go, so a reload stays disconnected
-              signOut()
-              disconnectWallet()
-              setOpen(false)
-              window.location.reload()
-            }}
-            className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-peach transition-colors hover:bg-souk-surface2 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
-          >
-            {/* the one row that never navigates */}
-            <PowerGlyph />
-            Disconnect wallet
-          </button>
+          {wallet ? (
+            <button
+              type="button"
+              onClick={() => {
+                // forget this browser: the session, the wallet choice and the
+                // record go, so a reload stays disconnected
+                signOut()
+                disconnectWallet()
+                setOpen(false)
+                window.location.reload()
+              }}
+              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-peach transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+            >
+              {/* the one row that never navigates */}
+              <PowerGlyph />
+              Disconnect wallet
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                onConnect()
+              }}
+              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-data transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+            >
+              <PersonGlyph />
+              Connect wallet
+            </button>
+          )}
         </Stack>
       )}
     </div>

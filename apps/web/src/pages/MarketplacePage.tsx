@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { AgentSummary } from '../core/types'
 import { defaultAvatarFor } from '../lib/default-avatar'
-import { CATEGORIES, formatNumber, formatScore, takesJobs, shortAddress, timeAgo } from '@agora/core'
+import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, shortAddress, timeAgo } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
 import { Tag } from '../components/Tag'
 import { getAgents } from '../lib/api'
@@ -575,6 +575,10 @@ function AgentCard({
   const verdict = verdictFor(agent.chain_id, agent.verification)
   const firstParty = isOperatedByAgentSouk(agent.owner_address)
   const boosted = (agent as { boosted?: boolean }).boosted
+  // the server refuses a direct hire to a pure job seller before anyone signs,
+  // so the card refuses to add one to the cart instead of letting checkout fail;
+  // a dual-lane agent still carries the cart because its x402 call is buyable
+  const jobOnly = sellsByJob(agent.skills)
   // indexer figures are mostly zero on a young chain, so they show only when they say something
   const score = agent.total_score > 0 ? formatScore(agent.total_score) : null
   const reviews = agent.total_feedbacks
@@ -710,26 +714,37 @@ function AgentCard({
             <span className="sr-only">: {agent.name}</span>
           </span>
         </Btn>
-        <Btn
-          kind={inCart ? 'keep' : 'off'}
-          className="w-full min-w-0 @[380px]:basis-0 @[380px]:grow"
-          onClick={() => onToggleCart(key)}
-          aria-pressed={inCart}
-        >
-          <span className="inline-flex items-center gap-2">
-            <svg width="13" height="12" viewBox="0 0 16 14" fill="none" aria-hidden="true">
-              <path
-                d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            {inCart ? 'In cart' : 'Add to cart'}
-            <span className="sr-only">: {agent.name}</span>
-          </span>
-        </Btn>
+        {jobOnly ? (
+          <Link
+            to={`/agents/${agent.chain_id}/${agent.token_id}`}
+            title="This agent sells by ERC-8183 job: it quotes a price, the job is funded in escrow, and it is paid on delivery. Get the quote on its page."
+            className="inline-flex h-11 w-full min-w-0 shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair bg-souk-surface1 text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data @[380px]:basis-0 @[380px]:grow"
+          >
+            <span className="text-[14px] font-semibold leading-[20px]">Get price</span>
+            <span className="sr-only">: {agent.name} quotes a job on its page</span>
+          </Link>
+        ) : (
+          <Btn
+            kind={inCart ? 'keep' : 'off'}
+            className="w-full min-w-0 @[380px]:basis-0 @[380px]:grow"
+            onClick={() => onToggleCart(key)}
+            aria-pressed={inCart}
+          >
+            <span className="inline-flex items-center gap-2">
+              <svg width="13" height="12" viewBox="0 0 16 14" fill="none" aria-hidden="true">
+                <path
+                  d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {inCart ? 'In cart' : 'Add to cart'}
+              <span className="sr-only">: {agent.name}</span>
+            </span>
+          </Btn>
+        )}
       </div>
     </Stack>
   )
