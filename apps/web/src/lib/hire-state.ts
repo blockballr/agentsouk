@@ -44,7 +44,7 @@ export function escrowLifecycle(escrow: EscrowStatus | null | undefined, now: nu
     return {
       stage: 'held',
       label: 'Held in escrow, waiting on delivery',
-      money: 'held by the kernel',
+      money: 'held in escrow',
       autoReleaseAt: null,
       // the refund is the buyer's free exit before any verified delivery
       actions: ['refund'],
@@ -55,7 +55,7 @@ export function escrowLifecycle(escrow: EscrowStatus | null | undefined, now: nu
   return {
     stage: 'verifiedWindow',
     label: open ? 'Delivered verified, dispute window open' : 'Ready to release',
-    money: 'held by the kernel',
+    money: 'held in escrow',
     autoReleaseAt,
     actions: open ? ['release', 'dispute'] : ['release'],
   }

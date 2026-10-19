@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { questStepFor, type QuestStep } from '../lib/quest'
 import { QuestStrip } from '../components/QuestStrip'
@@ -1745,21 +1745,22 @@ function HirePanel({
 
   // the settlement's own escrow, fetched as soon as the receipt exists: with
   // the funder live the money is held before it is paid, and the bar below the
-  // receipt carries that instead of a second sentence about it
-  useEffect(() => {
+  // receipt carries that instead of a second sentence about it. A delivery or
+  // attestation moves the money, so the same read runs again after either.
+  const refreshEscrow = useCallback(() => {
     const paymentId = result?.paymentId
     if (!paymentId) {
       setEscrowRow(null)
       return
     }
-    let cancelled = false
-    getEscrowStatuses([paymentId]).then((r) => {
-      if (!cancelled) setEscrowRow(r.byId[paymentId] ?? null)
-    }).catch(() => {})
-    return () => {
-      cancelled = true
-    }
+    getEscrowStatuses([paymentId])
+      .then((r) => setEscrowRow(r.byId[paymentId] ?? null))
+      .catch(() => {})
   }, [result?.paymentId])
+
+  useEffect(() => {
+    refreshEscrow()
+  }, [refreshEscrow])
 
   async function startHire() {
     setError(null)
@@ -1969,6 +1970,7 @@ function HirePanel({
             paymentId={result.paymentId}
             onResult={onResult}
             onClosed={() => { onClosed?.(result.paymentId); reset(); onHired() }}
+            onEscrowChange={refreshEscrow}
             prefill={prefill}
             skills={skills}
             guide={guide === 'run' || guide === 'complete' ? guide : undefined}
@@ -2089,6 +2091,7 @@ function DeliveryPanel({
   paymentId,
   onResult,
   onClosed,
+  onEscrowChange,
   prefill,
   skills,
   guide,
@@ -2100,6 +2103,7 @@ function DeliveryPanel({
   guide?: 'run' | 'complete'
   onResult?: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
   onClosed?: () => void
+  onEscrowChange?: () => void
 }) {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'blocked'>('idle')
   const [data, setData] = useState<DeliverData | null>(null)
@@ -2208,6 +2212,7 @@ function DeliveryPanel({
       if (d.jobAdvance?.jobId && d.jobAdvance.status) {
         setJob({ id: d.jobAdvance.jobId, status: d.jobAdvance.status })
       }
+      onEscrowChange?.()
     } catch (e) {
       setRunError(deliveryErrorText(e))
     } finally {
@@ -2242,6 +2247,7 @@ function DeliveryPanel({
       const updated = await actOnJob(job.id, 'complete', { reason: 'complete' })
       // only what the server confirmed: the returned job is the new state
       setJob({ id: updated.id, status: updated.status })
+      onEscrowChange?.()
       setCompleteNote('Completed. The deliverable is attested and this hire is closed.')
     } catch (e) {
       // the server's own reason, rather than a generic failure
@@ -2262,7 +2268,7 @@ function DeliveryPanel({
   if (job && jobClosed(job.status)) {
     return (
       <div className="mt-4 rounded-[10px] border border-souk-data/50 p-4" role="status">
-        <p className="micro text-souk-slate">ERC-8183 job {job.status}</p>
+        <p className="micro text-souk-slate">Hire {job.status.toLowerCase()}</p>
         <p className="mt-2 text-[11px] leading-relaxed text-souk-data">
           {completeNote ??
             (job.status === 'Completed'
@@ -2309,7 +2315,7 @@ function DeliveryPanel({
       {job && (
         <div className="mt-3 rounded-[8px] border border-souk-edge p-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span className="micro text-souk-slate">ERC-8183 job {job.status}</span>
+            <span className="micro text-souk-slate">Hire {job.status.toLowerCase()}</span>
             {offer !== 'none' && (
               <Link
                 to="/ongoing"

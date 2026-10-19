@@ -82,7 +82,7 @@ export function EscrowFlowCard({ spine, agentName }: { spine: EscrowLifecycle | 
             )
           })}
           <p className="pl-3.5 text-[11px] leading-4 text-newsprint-gray">
-            {agentName} holds nothing; the kernel escrow holds the price.
+            {agentName} holds nothing; the on-chain escrow holds the price.
             {note ? ` ${note}.` : ''}
           </p>
         </div>
