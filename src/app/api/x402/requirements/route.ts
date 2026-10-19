@@ -25,6 +25,46 @@ export const MAX_HIRE_USD = 2;
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
+// read the price the agent itself asks for, from its published x402 requirements
+// endpoint. returns null when the agent has no such endpoint, the fetch fails, or
+// the response carries no usable amount. token mismatch is handled by the caller.
+async function fetchAgentPrice(
+  chainId: number,
+  detail: { services: unknown | null },
+): Promise<{ priceUsd: number; asset: string } | null> {
+  const svc = detail.services;
+  let endpoint: string | null = null;
+  if (svc && typeof svc === "object" && !Array.isArray(svc)) {
+    const x = (svc as Record<string, unknown>).x402;
+    if (typeof x === "string") endpoint = x;
+    else if (x && typeof x === "object") {
+      const e = (x as { endpoint?: unknown }).endpoint;
+      if (typeof e === "string") endpoint = e;
+    }
+  }
+  if (!endpoint) return null;
+  try {
+    const res = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
+    // x402 endpoints answer 402 with the payment requirements; a 2xx with an
+    // accepts array is also acceptable
+    if (!res.ok && res.status !== 402) return null;
+    const body = (await res.json().catch(() => null)) as {
+      accepts?: { maxAmountRequired?: string; amount?: string; asset?: string }[];
+    } | null;
+    const accept = body?.accepts?.[0];
+    if (!accept) return null;
+    const raw = accept.maxAmountRequired ?? accept.amount;
+    if (typeof raw !== "string") return null;
+    const token = settlementAsset(chainId);
+    const priceUsd = Number(raw) / 10 ** token.decimals;
+    if (!Number.isFinite(priceUsd) || priceUsd <= 0) return null;
+    if (typeof accept.asset !== "string") return null;
+    return { priceUsd, asset: accept.asset };
+  } catch {
+    return null;
+  }
+}
+
 // the marketplace is the x402 merchant and the agent's receiving wallet is the payTo,
 // matching how BNB Agent Studio routes payments; in production this comes from the agent's own merchant endpoint.
 // With the funder deployed the payTo is the funder instead, and the agent's wallet
@@ -91,13 +131,31 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // the price belongs to the seller's side of the sale: a caller may raise it,
-  // for a tip or a longer session, but never name a lower one
+  // the price belongs to the seller's side of the sale. When the agent publishes
+  // its own x402 requirements, read the price it asks for and use it, so the
+  // hire is priced by the agent rather than by our floor. The agent's price is
+  // only honoured when it is quoted in the same token this marketplace settles
+  // in (otherwise we cannot move it) and is clamped to [floor, cap].
   const requested = Number(body.amountUsd);
+  let agentPrice: { priceUsd: number; asset: string } | null = null;
+  try {
+    agentPrice = await fetchAgentPrice(chainId, detail);
+  } catch {
+    agentPrice = null;
+  }
+  const settlementToken = settlementAsset(chainId).address.toLowerCase();
+  const agentPriceUsd =
+    agentPrice && agentPrice.asset.toLowerCase() === settlementToken
+      ? agentPrice.priceUsd
+      : null;
+  const basePrice =
+    agentPriceUsd !== null
+      ? Math.min(Math.max(agentPriceUsd, DEFAULT_HIRE_PRICE_USD), MAX_HIRE_USD)
+      : DEFAULT_HIRE_PRICE_USD;
   const priceUsd =
     Number.isFinite(requested) && requested >= DEFAULT_HIRE_PRICE_USD
       ? Math.min(requested, MAX_HIRE_USD)
-      : DEFAULT_HIRE_PRICE_USD;
+      : basePrice;
   // the asset is resolved per chain (97 settles in sUSD, 56 in $U), so the advertised
   // EIP-712 domain always matches what the relay will actually broadcast
   const token = settlementAsset(chainId);
