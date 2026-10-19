@@ -11,7 +11,7 @@ if (process.env.DATABASE_URL) {
   sql = postgres(process.env.DATABASE_URL, {
     max: 1,
     idle_timeout: 20,
-    connect_timeout: 5,
+    connect_timeout: 10,
   });
 }
 
@@ -39,34 +39,39 @@ async function ensureTables(): Promise<boolean> {
   if (!sql) return false;
   if (tablesReady) return tablesReady;
   tablesReady = (async () => {
-    try {
-      await sql!`
-        create table if not exists check_history (
-          id bigserial primary key,
-          token_id text not null,
-          status text not null,
-          response_ms integer,
-          checked_at timestamptz not null default now()
-        )
-      `;
-      await sql!`create index if not exists check_history_token_at on check_history (token_id, checked_at desc)`;
-      await sql!`create index if not exists check_history_at on check_history (checked_at)`;
-      await sql!`
-        create table if not exists cron_runs (
-          id bigserial primary key,
-          name text not null,
-          started_at timestamptz not null,
-          finished_at timestamptz not null,
-          ok boolean not null,
-          note text
-        )
-      `;
-      await sql!`create index if not exists cron_runs_name_at on cron_runs (name, started_at desc)`;
-      return true;
-    } catch {
-      tablesReady = null;
-      return false;
+    // a cold neon instance can take a few seconds to accept the first query,
+    // so retry once before giving up
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        await sql!`
+          create table if not exists check_history (
+            id bigserial primary key,
+            token_id text not null,
+            status text not null,
+            response_ms integer,
+            checked_at timestamptz not null default now()
+          )
+        `;
+        await sql!`create index if not exists check_history_token_at on check_history (token_id, checked_at desc)`;
+        await sql!`create index if not exists check_history_at on check_history (checked_at)`;
+        await sql!`
+          create table if not exists cron_runs (
+            id bigserial primary key,
+            name text not null,
+            started_at timestamptz not null,
+            finished_at timestamptz not null,
+            ok boolean not null,
+            note text
+          )
+        `;
+        await sql!`create index if not exists cron_runs_name_at on cron_runs (name, started_at desc)`;
+        return true;
+      } catch {
+        tablesReady = null;
+        if (attempt === 0) await new Promise((r) => setTimeout(r, 2000));
+      }
     }
+    return false;
   })();
   return tablesReady;
 }
@@ -106,7 +111,10 @@ export function recordCheck(tokenId: string, status: string, responseMs: number 
   return within(
     (async () => {
       try {
-        if (!(await ensureTables())) throw new Error("history tables unavailable");
+        if (!(await ensureTables())) {
+          remember(checks, { tokenId, status, responseMs, checkedAt: at });
+          return true;
+        }
         await db`
           insert into check_history (token_id, status, response_ms, checked_at)
           values (${tokenId}, ${status}, ${responseMs}, ${at})
@@ -114,6 +122,7 @@ export function recordCheck(tokenId: string, status: string, responseMs: number 
         return true;
       } catch (e) {
         console.error("[history] check not recorded", tokenId, reason(e));
+        remember(checks, { tokenId, status, responseMs, checkedAt: at });
         return false;
       }
     })(),
@@ -186,7 +195,12 @@ export function recordCronRun(run: CronRun): Promise<boolean> {
   return within(
     (async () => {
       try {
-        if (!(await ensureTables())) throw new Error("history tables unavailable");
+        if (!(await ensureTables())) {
+          // tables cannot be created (cold db, permissions): keep the run in
+          // memory so it is not lost, rather than logging a noisy failure
+          remember(runs, run);
+          return true;
+        }
         await db`
           insert into cron_runs (name, started_at, finished_at, ok, note)
           values (${run.name}, ${run.startedAt}, ${run.finishedAt}, ${run.ok}, ${run.note})
@@ -194,6 +208,7 @@ export function recordCronRun(run: CronRun): Promise<boolean> {
         return true;
       } catch (e) {
         console.error("[history] job run not recorded", run.name, reason(e));
+        remember(runs, run);
         return false;
       }
     })(),
