@@ -1226,12 +1226,16 @@ function sortAgents(
     // take the top of the shelf on score alone. it is asked as rank only, leaving
     // the chosen metric to decide inside a rank, and the fuller compare settles
     // what is still tied with its rotating draw
-    const rank = reachabilityRankCompare(a, b, verifications);
-    if (rank !== 0) return rank;
+    // Reputation (and the chosen metric) lead the sort. Reachability is not a
+    // metric the buyer picks; it settles what the metrics could not, so an
+    // unchecked agent with real reputation is no longer buried under a
+    // delivered one with none.
     for (const key of chain) {
       const n = metricFns[key](a, b);
       if (n !== 0) return n;
     }
+    const rank = reachabilityRankCompare(a, b, verifications);
+    if (rank !== 0) return rank;
     return reachabilityCompare(a, b, verifications, seed);
   };
 
