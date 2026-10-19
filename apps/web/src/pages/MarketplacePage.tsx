@@ -37,14 +37,14 @@ const jobSorts = [
 ] as const
 
 const defaultSorts = [
-  { key: 'newest', label: 'Newest' },
   {
     key: 'score',
-    label: 'Score',
-    title: 'Buyer feedback leads, most reviewed next, then newest, then health. Reachability settles every tie, and job sellers lead each group.',
+    label: 'Reputation',
+    title: 'Registry reputation leads, then newest, then health. Reachability settles every tie, and job sellers lead each group.',
   },
   { key: 'feedback', label: 'Most reviewed' },
   { key: 'health', label: 'Health' },
+  { key: 'newest', label: 'Newest' },
 ] as const
 
 // the verdict's four tones in the design's five-state dot grammar
@@ -74,7 +74,7 @@ export function MarketplacePage() {
   // a choice here, it settles the ties underneath whichever metric is picked,
   // and job capability leads every one of them
   const type = (sp.get('type') ?? 'jobs') as 'all' | 'jobs' | 'x402' | 'others'
-  const metric = (sp.get('metric') ?? 'newest') as 'score' | 'newest' | 'feedback' | 'health'
+  const metric = (sp.get('metric') ?? 'score') as 'score' | 'newest' | 'feedback' | 'health'
   const pcs = sp.get('pcs') === '1'
   const hide = sp.get('hide') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
@@ -83,6 +83,7 @@ export function MarketplacePage() {
   const [result, setResult] = useState<{
     items: AgentSummary[]
     snapshotTotal: number | null
+    shelved: number | null
     registryTotal: number | null
     snapshotTime: string | null
     catalogueRefreshedAt: string | null
@@ -139,6 +140,7 @@ export function MarketplacePage() {
           setResult({
             items: r.items,
             snapshotTotal: r.snapshotTotal,
+            shelved: r.shelved,
             registryTotal: r.registryTotal,
             snapshotTime: r.snapshotTime,
             catalogueRefreshedAt: r.indexStatus.catalogueRefreshedAt,
@@ -176,22 +178,23 @@ export function MarketplacePage() {
     : []
 
   // The catalogue's own freshness: the shared store's refresh time when it has
-  // one, otherwise the committed snapshot's date, and nothing when neither.
+  // one, and nothing when it does not. The committed snapshot's date is not
+  // shown, so a stale build cannot read as a fresh shelf.
   const freshness = useMemo(
-    () =>
-      catalogueFreshnessLabel(
-        result?.catalogueRefreshedAt ?? null,
-        result?.snapshotTime ?? null,
-      ),
+    () => catalogueFreshnessLabel(result?.catalogueRefreshedAt ?? null),
     [result],
   )
 
-  // the shelf's strap: the chain it reads, how many listings it holds and how fresh
-  // that reading is. A part the market has not answered for is dropped, not guessed.
+  // the shelf's strap: the chain it reads, how many listings the registry holds,
+  // how many of them are curated onto the shelf, and how fresh that reading is.
+  // A part the market has not answered for is dropped, not guessed.
   const strap = [
     'shelf',
     chainId === null ? 'checking the network' : `${chainLabel(chainId)} ${chainId}`,
     result?.registryTotal ? `${result.registryTotal.toLocaleString('en-US')} agents` : null,
+    (result?.shelved ?? result?.snapshotTotal)
+      ? `${(result?.shelved ?? result?.snapshotTotal)!.toLocaleString('en-US')} shelved`
+      : null,
     freshness,
   ]
     .filter((part): part is string => Boolean(part))
@@ -443,20 +446,19 @@ export function MarketplacePage() {
 }
 
 // The catalogue's freshness in one line: the store's own refresh time as a
-// relative age when it is known and real, otherwise the committed snapshot's
-// date. A future or unparseable refresh time is not freshness, so it falls back
-// rather than claiming a time that cannot be true.
+// relative age when it is known and real. A future or unparseable refresh time
+// is not freshness, so it says nothing rather than claiming a time that cannot
+// be true. The committed snapshot's date is deliberately not shown: it is a
+// build artifact, not a live reading, and a stale build should not read as a
+// fresh shelf.
 export function catalogueFreshnessLabel(
   catalogueRefreshedAt: string | null,
-  snapshotTime: string | null,
   now: number = Date.now(),
 ): string | null {
   const relative = catalogueRefreshedAt
     ? relativeAgeLabel(catalogueRefreshedAt, now)
     : null
-  if (relative) return `catalogue refreshed ${relative}`
-  if (snapshotTime) return `snapshot taken ${snapshotTime.slice(0, 10)}`
-  return null
+  return relative ? `catalogue refreshed ${relative}` : null
 }
 
 function relativeAgeLabel(iso: string, now: number): string | null {

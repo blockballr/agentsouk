@@ -1041,6 +1041,11 @@ export interface QueryResult {
     // The shared catalogue's own refresh time, from the store's meta; null when
     // the store has never recorded one, so the page falls back to the snapshot.
     catalogueRefreshedAt: string | null;
+    // How many agents the catalogue actually serves on this chain: the committed
+    // snapshot plus anything the shared store has added, minus the ones the sweeps
+    // removed. This is the curated count, as opposed to the registry's total for
+    // the chain.
+    shelved: number;
     // "store" when the shared store holds this chain's rows, otherwise the
     // committed snapshot is serving.
     catalogueSource: CatalogueSource;
@@ -1068,7 +1073,7 @@ export async function queryAgents(
   const resolvedMetric =
     metric ?? (["score", "newest", "feedback", "health"].includes(sort ?? "")
       ? (sort as string)
-      : "newest");
+      : "score");
   const chainId = targetChainId();
   await loadSnapshot();
   // no-op once the process has merged; covers the no-snapshot path too, where
@@ -1163,6 +1168,7 @@ export async function queryAgents(
       error: index.error,
       snapshotTime,
       catalogueRefreshedAt: index.catalogueRefreshedAt,
+      shelved: Array.from(index.agents.values()).filter((a) => a.chain_id === chainId).length,
       catalogueSource: index.catalogueSource,
       shelfMode: shelfStoreMode(),
       lastDurableReadAt: durableReadAt,
