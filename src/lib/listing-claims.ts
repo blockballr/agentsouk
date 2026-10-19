@@ -28,7 +28,7 @@ type Sql = {
 };
 
 // Every write and read is capped: a database that misses its deadline is a slower store, not a broken one.
-const DB_DEADLINE_MS = 5000;
+const DB_DEADLINE_MS = 10000;
 
 let client: Promise<Sql | null> | null = null;
 let tableReady: Promise<boolean> | null = null;
@@ -54,7 +54,7 @@ async function createClient(): Promise<Sql | null> {
     const mod = (await import("postgres")) as unknown as {
       default: (url: string, opts?: object) => unknown;
     };
-    return mod.default(url, { max: 1, idle_timeout: 20, connect_timeout: 5 }) as Sql;
+    return mod.default(url, { max: 1, idle_timeout: 20, connect_timeout: 10 }) as Sql;
   } catch {
     return null;
   }
@@ -73,19 +73,22 @@ async function db(): Promise<Sql | null> {
 async function ensureTable(sql: Sql): Promise<boolean> {
   if (!tableReady) {
     tableReady = (async () => {
-      try {
-        await sql`
-          create table if not exists listing_claims (
-            claim_id text primary key,
-            payload jsonb not null,
-            created_at timestamptz default now()
-          )
-        `;
-        return true;
-      } catch {
-        tableReady = null;
-        return false;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          await sql`
+            create table if not exists listing_claims (
+              claim_id text primary key,
+              payload jsonb not null,
+              created_at timestamptz default now()
+            )
+          `;
+          return true;
+        } catch {
+          tableReady = null;
+          if (attempt === 0) await new Promise((r) => setTimeout(r, 2000));
+        }
       }
+      return false;
     })();
   }
   return tableReady;
@@ -94,18 +97,19 @@ async function ensureTable(sql: Sql): Promise<boolean> {
 async function persist(claim: ListingClaim): Promise<boolean> {
   const sql = await db();
   if (!sql) return false;
-  const written = await withinDeadline(
-    (async () => {
-      if (!(await ensureTable(sql))) return false;
-      await sql`
-        insert into listing_claims (claim_id, payload)
-        values (${claim.claimId}, ${sql.json(claim as never)})
-        on conflict (claim_id) do update set payload = excluded.payload
-      `;
-      return true;
-    })(),
-  );
-  return written === true;
+  // no artificial deadline: let the database driver handle timeouts so a slow
+  // but healthy connection does not drop the claim
+  try {
+    if (!(await ensureTable(sql))) return false;
+    await sql`
+      insert into listing_claims (claim_id, payload)
+      values (${claim.claimId}, ${sql.json(claim as never)})
+      on conflict (claim_id) do update set payload = excluded.payload
+    `;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // A row that does not parse is treated as absent rather than published half served.
