@@ -21,7 +21,7 @@ export const TAJIR_AGENT_MESSAGING_PATH = "/api/tajir/a2a";
 // this listing's registry id, per chain, carried in every quote as agent_id so
 // a buyer's fund step never sees a stranger's id; filled the moment a chain's
 // listing mints, the way the house agent's was
-export const TAJIR_AGENT_TOKEN_IDS: Record<number, number> = {};
+export const TAJIR_AGENT_TOKEN_IDS: Record<number, number> = { 56: 376435 };
 
 export function tajirAgentTokenId(chainId: number): number | null {
   return TAJIR_AGENT_TOKEN_IDS[chainId] ?? null;
