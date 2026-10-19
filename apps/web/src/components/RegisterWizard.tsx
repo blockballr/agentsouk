@@ -81,14 +81,14 @@ type LoopId =
 const SWEEP_DETAIL =
   'Nothing in this wizard earns the badge. Once the registration is confirmed, the verifier probes the registered endpoint on its next sweep; the badge it awards follows whether that endpoint answers, not anything done here.'
 
-export function initialChecks(mode: 'job' | 'call'): CheckLine[] {
+export function initialChecks(mode: 'job' | 'call' | 'both'): CheckLine[] {
   const before: CheckLine[] = [
     { id: 'endpoint', title: 'Endpoint address rule', state: 'waiting' },
     { id: 'card', title: 'The agent card answers', state: 'waiting' },
     { id: 'classifier', title: 'Shelf category and search words', state: 'waiting' },
   ]
   const jobLine: CheckLine[] =
-    mode === 'job'
+    mode !== 'call'
       ? [{ id: 'job', title: 'The card declares the job protocol (ERC-8183)', state: 'waiting' }]
       : []
   const after: CheckLine[] = [
@@ -161,17 +161,26 @@ export function RegisterWizard({
   const sentLatch = useRef(false)
   // null until the lister proceeds; each entry updates as its check runs
   const [checks, setChecks] = useState<CheckLine[] | null>(null)
-  // the list page draws the same panel in its side rail, so the wizard reports its
-  // checks outward instead of holding the panel itself
-  useEffect(() => {
-    onChecks?.(checks)
-  }, [checks, onChecks])
   // a new picture address earns a fresh try; the browser is what reports a dead image
   const [imageOk, setImageOk] = useState(true)
   const [fileNote, setFileNote] = useState<string | null>(null)
-  // how the listing sells: a call listing takes paid calls to its endpoint, a job listing takes
-  // ERC-8183 jobs only, and the document this claim mints follows the answer
-  const [mode, setMode] = useState<'job' | 'call'>('call')
+  // how the listing sells: a call listing takes paid calls, a job listing takes
+  // ERC-8183 jobs only, and a both listing declares x402 while also taking jobs
+  const [mode, setMode] = useState<'job' | 'call' | 'both'>('call')
+
+  // the endpoint is the first thing the lister gives us, and the rest of the form
+  // only appears once it is usable. The flag latches so a correction does not
+  // collapse the details under the lister.
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  // idle until a usable endpoint settles: reading, read, or unread from this browser
+  const [cardState, setCardState] = useState<'idle' | 'reading' | 'read' | 'unread'>('idle')
+
+  // the list page draws the same panel in its side rail, so the wizard reports its
+  // checks outward instead of holding the panel itself. Before the checks run it
+  // reports the 0% state for the chosen mode, so the whole bar is visible from the start.
+  useEffect(() => {
+    onChecks?.(checks ?? initialChecks(mode))
+  }, [checks, mode, onChecks])
 
   const set = <K extends keyof RegistrationDraft>(key: K, value: RegistrationDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }))
@@ -201,11 +210,20 @@ export function RegisterWizard({
   // is never touched again: whatever the lister typed outranks the card.
   useEffect(() => {
     const endpoint = (draft.endpoint ?? '').trim()
-    if (!endpoint || endpointRefusal(endpoint)) return
+    if (!endpoint || endpointRefusal(endpoint)) {
+      setCardState('idle')
+      return
+    }
     let cancelled = false
+    setCardState('reading')
     const timer = setTimeout(() => {
       void readAgentCard(endpoint).then((card) => {
-        if (!card || cancelled) return
+        if (cancelled) return
+        if (!card) {
+          setCardState('unread')
+          return
+        }
+        setCardState('read')
         setDraft((d) => ({
           ...d,
           name: d.name?.trim() ? d.name : card.name ?? d.name,
@@ -229,14 +247,25 @@ export function RegisterWizard({
 
   // the mode answer drives what the claim mints: x402 rides the document, forced off for a job
   // seller, which refuses a direct paid task by construction, and back on for a call listing
-  function chooseMode(next: 'job' | 'call') {
+  function chooseMode(next: 'job' | 'call' | 'both') {
     setMode(next)
-    set('x402Support', next === 'call')
+    // job-only turns the direct rail off; both declares x402 while taking escrow work
+    set('x402Support', next !== 'job')
+    // the rail follows the branch: a job listing has its own line, so a mode change
+    // returns the panel to its 0% state for the checks that will actually run
+    setChecks(null)
   }
 
   // a deterministic address or scheme fault is refused before the transaction; the browser probe
   // never blocks, because a cross-origin block is not proof the endpoint is down
   const endpointFault = endpointRefusal(draft.endpoint ?? '')
+
+  // once the endpoint is a usable https URL the details open, prefilled from the
+  // card it serves; the endpoint itself stays the first field and stays editable
+  const endpointReady = (draft.endpoint ?? '').trim().length > 0 && endpointFault === null
+  useEffect(() => {
+    if (endpointReady) setDetailsOpen(true)
+  }, [endpointReady])
 
   // the picture is cosmetic and never blocks: an http or unparsable address is
   // said out loud, a dead image falls back to the default face on every page,
@@ -271,7 +300,7 @@ export function RegisterWizard({
   // requires one, because that wallet is who gets paid when a job releases
   const walletRaw = (draft.agentWallet ?? '').trim()
   const walletFault = !walletRaw
-    ? mode === 'job'
+    ? mode !== 'call'
       ? 'A job seller is paid from this wallet when a job releases, so the address is required: paste it, or press "Use my connected wallet".'
       : null
     : !/^0x[0-9a-fA-F]{40}$/.test(walletRaw)
@@ -358,7 +387,7 @@ export function RegisterWizard({
     // 4. the server mints the document and returns the terms; the chain to be on comes from its
     // response, not the client default, because the calldata is encoded for the server's chain
     mark('terms', 'checking')
-    if (mode === 'job') mark('job', 'checking')
+    if (mode !== 'call') mark('job', 'checking')
     try {
       const account = (await sessionAccount()) ?? (await connectWallet())
       const res = await prepareRegistration(draft, account, mode)
@@ -406,7 +435,7 @@ export function RegisterWizard({
         return
       }
       const detail = (e as Error).message
-      if (mode === 'job') mark('job', 'undetermined', `Not completed: ${detail}`)
+      if (mode !== 'call') mark('job', 'undetermined', `Not completed: ${detail}`)
       mark('terms', 'failed', detail)
       setErrors([detail])
     } finally {
@@ -646,278 +675,345 @@ export function RegisterWizard({
   }
 
   return (
-    <div className={card('plain', 'lg')}>
-      <h3 className="font-serif text-2xl font-medium">Register your agent</h3>
-      <p className="mt-3 text-sm leading-relaxed text-souk-muted">
-        Describe the agent, then send the ERC-8004 registration from your own wallet. You pay the
-        gas for that one transaction, and nothing is charged by us. Registration is on{' '}
-        {chainLabel(displayChain)}.
-      </p>
-
-      <div className="mt-6 space-y-4">
-        <div className="rounded-[10px] border hairline border-souk-hair p-4">
-          <p className="micro text-souk-muted">How does this agent sell?</p>
-          <div className="mt-3 flex flex-wrap gap-3">
-            <button
-              type="button"
-              disabled={busy || step !== 'form'}
-              onClick={() => chooseMode('call')}
-              aria-pressed={mode === 'call'}
-              className={button(mode === 'call' ? 'primary' : 'secondary', 'md')}
-            >
-              By call: endpoint and x402
-            </button>
-            <button
-              type="button"
-              disabled={busy || step !== 'form'}
-              onClick={() => chooseMode('job')}
-              aria-pressed={mode === 'job'}
-              className={button(mode === 'job' ? 'primary' : 'secondary', 'md')}
-            >
-              By job (ERC-8183)
-            </button>
-          </div>
-          {mode === 'job' ? (
-            <div className="mt-3 space-y-2 text-xs leading-relaxed text-souk-muted">
-              <p>
-                A job seller quotes a price, takes work only through a funded ERC-8183 job in
-                escrow, and is paid on delivery. At continue, the server fetches this listing's card
-                once and must find the job protocol declared on it; a card without the protocol is
-                refused there, before anything is sent.
-              </p>
-              <p className="text-souk-peach">
-                x402 machine payment is off on this registration: a job seller refuses a direct paid
-                task by construction, so the listing will not offer one.
-              </p>
-            </div>
-          ) : (
-            <p className="mt-3 text-xs leading-relaxed text-souk-muted">
-              Buyers call the endpoint directly, with x402 machine payment when the registration
-              says so. A card that sells only by job refuses the direct paid task at hire time.
-            </p>
-          )}
-        </div>
-
-        <label className="block">
-          <span className="micro text-souk-muted">Name</span>
-          <input
-            value={draft.name}
-            onChange={(e) => set('name', e.target.value)}
-            disabled={busy || step !== 'form'}
-            className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
-            placeholder="Venus Yield Router"
-          />
-        </label>
-
-        <label className="block">
-          <span className="micro text-souk-muted">What it does</span>
-          <textarea
-            value={draft.description}
-            onChange={(e) => set('description', e.target.value)}
-            disabled={busy || step !== 'form'}
-            rows={4}
-            className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
-            placeholder="What it does, and how a buyer invokes it."
-          />
-        </label>
-
-        {/* the picture rides the same rule as the words: the card may arrive with
-            one, whatever the lister pastes or picks outranks it, and a broken
-            image is cosmetic on every page rather than a reason to refuse */}
-        <div>
-          <label className="block">
-            <span className="micro text-souk-muted">Profile picture</span>
-            <input
-              value={draft.image ?? ''}
-              onChange={(e) => set('image', e.target.value)}
-              disabled={busy || step !== 'form'}
-              className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
-              placeholder="512x512"
-            />
-          </label>
-          {imageFault && <span className="mt-1 block text-xs text-souk-peach">{imageFault}</span>}
-          <label
-            className={cx(button('secondary', 'sm'), 'mt-3 inline-flex cursor-pointer items-center')}
-          >
-            Choose from device
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              disabled={busy || step !== 'form'}
-              onChange={(e) => {
-                chooseImage(e.target.files?.[0])
-                e.target.value = ''
-              }}
-            />
-          </label>
-          {fileNote && <span className="mt-1 block text-xs text-souk-peach">{fileNote}</span>}
-          {imagePreview &&
-            (imageOk ? (
-              <img
-                src={imagePreview}
-                alt=""
-                onError={() => setImageOk(false)}
-                className="mt-3 h-16 w-16 rounded-[12px] border border-souk-hair object-cover"
-              />
-            ) : (
-              <span className="mt-3 block rounded-[12px] border border-souk-hair px-3 py-2 text-xs text-souk-muted">
-                This image did not load. The listing shows the default face until one does, and you
-                can change it from your profile after listing.
-              </span>
-            ))}
-        </div>
-
-        {/* the category select below files the shelf; this text is what search,
-            relevance and buyers read, so a description that names the capability
-            does real work for the lister either way */}
-        <div className="rounded-[10px] border hairline border-souk-hair p-4">
-          <p className="micro text-souk-muted">What a description has to say</p>
-          <p className="mt-2 text-xs leading-relaxed text-souk-muted">
-            The shelf files your agent under the category you pick below. Search,
-            relevance and buyers read these words instead, so name the capability in
-            plain words from that category&apos;s own vocabulary ({
-              CATEGORY_OPTIONS.map((c) => c.label).join(', ')
-            }), say what the caller supplies, say what comes back, and say what the
-            agent does not do, so nobody expects a live price feed from arithmetic.
+    <div className={cx(card('plain', 'lg'), 'overflow-hidden')}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-serif text-2xl font-medium">Register your agent</h3>
+          <p className="mt-2 max-w-[56ch] text-sm leading-relaxed text-souk-muted">
+            Paste the endpoint first. We read the agent card it serves and fill the listing, then
+            you edit anything before paying gas. Registration is on {chainLabel(displayChain)}.
           </p>
-          <p className="mt-3 text-xs leading-relaxed text-souk-ink">
-            Worked example for a health factor agent: computes the health factor and
-            liquidation distance of a lending position from the collateral value and debt
-            value the caller supplies, with an optional liquidation threshold. The
-            arithmetic is deterministic and uses no market data, so the caller supplies the
-            valuation and can reproduce every figure.
-          </p>
-          <button
-            type="button"
-            disabled={busy || step !== 'form'}
-            onClick={() => set('description', TEMPLATE_DESCRIPTION)}
-            className={cx(button('secondary', 'sm'), 'mt-3')}
-          >
-            Start from the template
-          </button>
         </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="micro text-souk-muted">Category</span>
-            <select
-              value={draft.category}
-              onChange={(e) => set('category', e.target.value as RegistrationDraft['category'])}
-              disabled={busy || step !== 'form'}
-              className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
-            >
-              {CATEGORY_OPTIONS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="micro text-souk-muted">How it is invoked</span>
-            <select
-              value={draft.endpointKind}
-              onChange={(e) => {
-                set('endpointKind', e.target.value as RegistrationDraft['endpointKind'])
-                setProbe(null)
-              }}
-              disabled={busy || step !== 'form'}
-              className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-sm text-souk-ink disabled:opacity-60"
-            >
-              <option value="A2A">A2A</option>
-              <option value="MCP">MCP</option>
-              <option value="web">Web</option>
-            </select>
-          </label>
-        </div>
-
-        <label className="block">
-          <span className="micro text-souk-muted">Endpoint</span>
-          <input
-            value={draft.endpoint}
-            onChange={(e) => {
-              set('endpoint', e.target.value)
-              setProbe(null)
-            }}
-            disabled={busy || step !== 'form'}
-            className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-xs text-souk-ink disabled:opacity-60"
-            placeholder="https://your-agent.example/.well-known/agent-card.json"
-          />
-          <span className="mt-1 block text-xs text-souk-muted">
-            A reachable https URL. An agent nobody can call is not a listing.
-          </span>
-        </label>
-
-        <label className="block">
-          <span className="micro text-souk-muted">Agent wallet</span>
-          <input
-            value={draft.agentWallet ?? ''}
-            onChange={(e) => set('agentWallet', e.target.value)}
-            disabled={busy || step !== 'form'}
-            className="mt-1 w-full rounded-[8px] border hairline border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-xs text-souk-ink disabled:opacity-60"
-            placeholder="0x…"
-          />
-          {walletFault ? (
-            <span className="mt-1 block text-xs text-souk-peach">{walletFault}</span>
-          ) : (
-            <span className="mt-1 block text-xs text-souk-muted">
-              Where a hire pays this agent. Optional: the registration can say nothing.
-            </span>
-          )}
-        </label>
-        <button
-          type="button"
-          disabled={busy || step !== 'form'}
-          onClick={() => void fillWallet()}
-          className={cx(button('secondary', 'sm'), 'mt-2')}
-        >
-          Use my connected wallet
-        </button>
+        <span className="micro shrink-0 rounded-full border border-souk-hair px-3 py-1 text-souk-muted">
+          {detailsOpen ? 'Step 2 of 2' : 'Step 1 of 2'}
+        </span>
       </div>
 
-      {/* the pre-flight card is the idle form; once the loop runs, the side rail carries it */}
-      {step === 'form' && checks === null && (
-        <div className="mt-5 rounded-[10px] border hairline border-souk-hair p-4">
-          <p className="micro text-souk-muted">Before you spend gas</p>
-          <p className="mt-2 text-xs leading-relaxed text-souk-muted">
-            A registration can succeed on-chain and still sit unseen. Two things decide it: the endpoint must answer, and the description must say plainly what the agent does.
-          </p>
+      <div className="mt-6 space-y-5">
+        <section className="rounded-[12px] border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="micro text-souk-ink">1. The endpoint a buyer calls</p>
+            <CardState state={cardState} />
+          </div>
 
-          {endpointFault ? (
-            <EndpointProbeResult probe={{ state: 'refused', detail: endpointFault }} />
-          ) : (
-            <>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  disabled={probing || busy}
-                  onClick={() => void testEndpoint()}
-                  className={button('secondary', 'md')}
-                >
-                  {probing ? 'Asking the endpoint' : 'Test the endpoint'}
-                </button>
-                <span className="text-xs leading-relaxed text-souk-muted">
-                  The request comes from your browser, never from our servers.
-                </span>
-              </div>
-              {probe && <EndpointProbeResult probe={probe} />}
-            </>
-          )}
+          <label className="mt-3 block">
+            <span className="micro text-souk-muted">Endpoint</span>
+            <input
+              value={draft.endpoint}
+              onChange={(e) => {
+                set('endpoint', e.target.value)
+                setProbe(null)
+              }}
+              autoFocus
+              disabled={busy || step !== 'form'}
+              className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
+              placeholder="https://your-agent.example/.well-known/agent-card.json"
+            />
+            {endpointFault ? (
+              <span className="mt-1.5 block text-xs leading-relaxed text-souk-peach">
+                {endpointFault}
+              </span>
+            ) : (
+              <span className="mt-1.5 block text-xs leading-relaxed text-souk-muted">
+                A reachable https URL. The card it serves fills the next step.
+              </span>
+            )}
+          </label>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <label className="block">
+              <span className="micro text-souk-muted">How it is invoked</span>
+              <select
+                value={draft.endpointKind}
+                onChange={(e) => {
+                  set('endpointKind', e.target.value as RegistrationDraft['endpointKind'])
+                  setProbe(null)
+                }}
+                disabled={busy || step !== 'form'}
+                className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+              >
+                <option value="A2A">A2A</option>
+                <option value="MCP">MCP</option>
+                <option value="web">Web</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              disabled={probing || busy || !(draft.endpoint ?? '').trim()}
+              onClick={() => void testEndpoint()}
+              className={button('secondary', 'md')}
+            >
+              {probing ? 'Asking the endpoint' : 'Test the endpoint'}
+            </button>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-souk-muted">
+            The request comes from your browser, never from our servers. Testing does not register
+            anything.
+          </p>
+          {probe && <EndpointProbeResult probe={probe} />}
 
           {draft.endpointKind === 'web' && (
-            <div className="mt-3 rounded-[8px] border border-press-black/20 bg-souk-surface2 p-3 text-xs leading-relaxed text-souk-ink">
+            <div className="mt-3 rounded-[10px] border border-press-black/20 bg-souk-surface2 p-3 text-xs leading-relaxed text-souk-ink">
               <p className="micro">Web listings appear, but the marketplace cannot call them</p>
               <p className="mt-1">
-                A browser-invoked agent is listed, but the marketplace cannot call it, so a hire records the payment and nothing is delivered. Pick A2A or MCP if your agent speaks either.
+                A browser-invoked agent is listed, but the marketplace cannot call it, so a hire
+                records the payment and nothing is delivered. Pick A2A or MCP if your agent speaks
+                either.
               </p>
             </div>
           )}
+        </section>
 
-          <CategoryCheck draft={draft} />
-        </div>
-      )}
+        {detailsOpen && (
+          <section className="rounded-[12px] border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="micro text-souk-ink">2. What the listing says</p>
+              {cardState === 'read' && (
+                <span className="micro text-souk-data">Prefilled from the card, edit anything</span>
+              )}
+            </div>
+
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="micro text-souk-muted">Name</span>
+                <input
+                  value={draft.name}
+                  onChange={(e) => set('name', e.target.value)}
+                  disabled={busy || step !== 'form'}
+                  className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                  placeholder="Venus Yield Router"
+                />
+              </label>
+              <label className="block">
+                <span className="micro text-souk-muted">Category</span>
+                <select
+                  value={draft.category}
+                  onChange={(e) => set('category', e.target.value as RegistrationDraft['category'])}
+                  disabled={busy || step !== 'form'}
+                  className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                >
+                  {CATEGORY_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <label className="mt-4 block">
+              <span className="micro text-souk-muted">What it does</span>
+              <textarea
+                value={draft.description}
+                onChange={(e) => set('description', e.target.value)}
+                disabled={busy || step !== 'form'}
+                rows={5}
+                className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-3 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                placeholder="What it does, and how a buyer invokes it."
+              />
+            </label>
+            <CategoryCheck draft={draft} />
+
+            <details className="mt-4 rounded-[10px] border border-souk-hair bg-souk-surface2/60 p-3">
+              <summary className="micro cursor-pointer text-souk-muted marker:text-souk-muted">
+                What a description has to say
+              </summary>
+              <p className="mt-2 text-xs leading-relaxed text-souk-muted">
+                The shelf files your agent under the category you picked. Search, relevance and
+                buyers read these words instead, so name the capability in plain words from that
+                category&apos;s own vocabulary ({CATEGORY_OPTIONS.map((c) => c.label).join(', ')}),
+                say what the caller supplies, say what comes back, and say what the agent does not
+                do.
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-souk-ink">
+                Worked example for a health factor agent: computes the health factor and
+                liquidation distance of a lending position from the collateral value and debt value
+                the caller supplies, with an optional liquidation threshold. The arithmetic is
+                deterministic and uses no market data, so the caller supplies the valuation and can
+                reproduce every figure.
+              </p>
+              <button
+                type="button"
+                disabled={busy || step !== 'form'}
+                onClick={() => set('description', TEMPLATE_DESCRIPTION)}
+                className={cx(button('secondary', 'sm'), 'mt-3')}
+              >
+                Start from the template
+              </button>
+            </details>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
+              <div className="flex flex-col items-start gap-2">
+                {imagePreview && imageOk ? (
+                  <img
+                    src={imagePreview}
+                    alt=""
+                    onError={() => setImageOk(false)}
+                    className="h-24 w-24 rounded-[14px] border border-souk-hair object-cover"
+                  />
+                ) : (
+                  <div className="grid h-24 w-24 place-items-center rounded-[14px] border border-dashed border-souk-hair text-[11px] text-souk-muted">
+                    No picture
+                  </div>
+                )}
+                <label className={cx(button('secondary', 'sm'), 'inline-flex cursor-pointer items-center')}>
+                  Choose file
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={busy || step !== 'form'}
+                    onChange={(e) => {
+                      chooseImage(e.target.files?.[0])
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="min-w-0">
+                <label className="block">
+                  <span className="micro text-souk-muted">Profile picture</span>
+                  <input
+                    value={draft.image ?? ''}
+                    onChange={(e) => set('image', e.target.value)}
+                    disabled={busy || step !== 'form'}
+                    className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                    placeholder="https://... or choose a file"
+                  />
+                </label>
+                {imageFault && (
+                  <span className="mt-1 block text-xs text-souk-peach">{imageFault}</span>
+                )}
+                {fileNote && <span className="mt-1 block text-xs text-souk-peach">{fileNote}</span>}
+                {imagePreview && !imageOk && (
+                  <span className="mt-2 block rounded-[10px] border border-souk-hair px-3 py-2 text-xs text-souk-muted">
+                    This image did not load. The listing shows the default face until one does.
+                  </span>
+                )}
+                <p className="mt-2 text-xs leading-relaxed text-souk-muted">
+                  A public https address, or a file up to 500 KB.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <p className="micro text-souk-muted">How does this agent sell?</p>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  disabled={busy || step !== 'form'}
+                  onClick={() => chooseMode('call')}
+                  aria-pressed={mode === 'call'}
+                  className={cx(
+                    'rounded-[10px] border p-3 text-left transition',
+                    mode === 'call'
+                      ? 'border-souk-sky bg-souk-sky/5'
+                      : 'border-souk-hair bg-souk-surface2 hover:border-souk-sky/60',
+                  )}
+                >
+                  <span className="block text-sm font-medium text-souk-ink">By call</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-souk-muted">
+                    Buyers call the endpoint directly, with x402 machine payment when the
+                    registration says so.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || step !== 'form'}
+                  onClick={() => chooseMode('job')}
+                  aria-pressed={mode === 'job'}
+                  className={cx(
+                    'rounded-[10px] border p-3 text-left transition',
+                    mode === 'job'
+                      ? 'border-souk-sky bg-souk-sky/5'
+                      : 'border-souk-hair bg-souk-surface2 hover:border-souk-sky/60',
+                  )}
+                >
+                  <span className="block text-sm font-medium text-souk-ink">By job (ERC-8183)</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-souk-muted">
+                    Quotes a price, takes work only through a funded job in escrow, and is paid on
+                    delivery.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || step !== 'form'}
+                  onClick={() => chooseMode('both')}
+                  aria-pressed={mode === 'both'}
+                  className={cx(
+                    'rounded-[10px] border p-3 text-left transition sm:col-span-2',
+                    mode === 'both'
+                      ? 'border-souk-sky bg-souk-sky/5'
+                      : 'border-souk-hair bg-souk-surface2 hover:border-souk-sky/60',
+                  )}
+                >
+                  <span className="block text-sm font-medium text-souk-ink">
+                    Both: calls and jobs
+                  </span>
+                  <span className="mt-1 block text-xs leading-relaxed text-souk-muted">
+                    Takes paid calls with x402 and funded ERC-8183 jobs, so buyers can reach it
+                    either way. The card must declare the job protocol at continue.
+                  </span>
+                </button>
+              </div>
+              {mode === 'job' ? (
+                <div className="mt-3 space-y-1 text-xs leading-relaxed text-souk-muted">
+                  <p>
+                    At continue, the server fetches this listing&apos;s card once and must find the
+                    job protocol declared on it; a card without the protocol is refused there,
+                    before anything is sent.
+                  </p>
+                  <p className="text-souk-peach">
+                    x402 machine payment is off on this registration: a job seller refuses a direct
+                    paid task by construction.
+                  </p>
+                </div>
+              ) : mode === 'both' ? (
+                <div className="mt-3 space-y-1 text-xs leading-relaxed text-souk-muted">
+                  <p>
+                    At continue, the server fetches this listing&apos;s card once and must find the
+                    job protocol declared on it; a card without the protocol is refused there,
+                    before anything is sent.
+                  </p>
+                  <p>
+                    x402 stays on, so the listing also accepts a direct paid call at hire time.
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-3 text-xs leading-relaxed text-souk-muted">
+                  A card that sells only by job refuses the direct paid task at hire time.
+                </p>
+              )}
+            </div>
+
+            <label className="mt-5 block">
+              <span className="micro text-souk-muted">Agent wallet</span>
+              <input
+                value={draft.agentWallet ?? ''}
+                onChange={(e) => set('agentWallet', e.target.value)}
+                disabled={busy || step !== 'form'}
+                className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
+                placeholder="0x..."
+              />
+              {walletFault ? (
+                <span className="mt-1 block text-xs text-souk-peach">{walletFault}</span>
+              ) : (
+                <span className="mt-1 block text-xs text-souk-muted">
+                  Where a hire pays this agent. Optional: the registration can say nothing.
+                </span>
+              )}
+            </label>
+            <button
+              type="button"
+              disabled={busy || step !== 'form'}
+              onClick={() => void fillWallet()}
+              className={cx(button('secondary', 'sm'), 'mt-2')}
+            >
+              Use my connected wallet
+            </button>
+          </section>
+        )}
+      </div>
 
       {errors.length > 0 && (
         <>
@@ -955,15 +1051,17 @@ export function RegisterWizard({
         {step === 'form' && (
           <button
             type="button"
-            disabled={busy || endpointFault !== null}
+            disabled={busy || endpointFault !== null || !detailsOpen}
             onClick={() => void runChecks()}
             className={cx(button('primary', 'xl'), 'w-full')}
           >
             {endpointFault
               ? 'Fix the endpoint before registering'
-              : busy
-                ? 'Preparing'
-                : 'Continue to registration'}
+              : !detailsOpen
+                ? 'Enter an endpoint to continue'
+                : busy
+                  ? 'Preparing'
+                  : 'Continue to registration'}
           </button>
         )}
 
@@ -1022,6 +1120,21 @@ export function RegisterWizard({
       </div>
     </div>
   )
+}
+
+function CardState({ state }: { state: 'idle' | 'reading' | 'read' | 'unread' }) {
+  if (state === 'idle') return null
+  const label =
+    state === 'reading'
+      ? 'Reading the card'
+      : state === 'read'
+        ? 'Card read'
+        : 'Card could not be read here'
+  const tone =
+    state === 'read'
+      ? 'border-souk-data/50 text-souk-data'
+      : 'border-souk-hair text-souk-muted'
+  return <span className={`micro rounded-full border px-2 py-0.5 ${tone}`}>{label}</span>
 }
 
 function EndpointProbeResult({ probe }: { probe: EndpointProbe }) {

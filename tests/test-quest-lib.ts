@@ -84,27 +84,26 @@ describe("quest picks", () => {
   const guard = agent("2504", "Souk Health Guard");
   const keel = agent("2238", "Keel");
 
-  it("offers agents a job has completed on first, in the shelf's order", () => {
+  it("offers the agent a job has completed on first, in the shelf's order", () => {
     const picks = questPicks(health, 97, { confirmed: [agent("7001", "Newcomer"), guard], working: [guard, keel] }, null);
-    expect(picks.map((p) => p.tokenId)).toEqual(["7001", "2504"]);
+    expect(picks.map((p) => p.tokenId)).toEqual(["7001"]);
     // the featured pick is the confirmed one the shelf rotated to the front
     expect(questPicks(health, 97, { confirmed: [keel, agent("7001", "Newcomer")], working: [] }, null)[0].tokenId).toBe("2238");
   });
 
-  it("keeps a place for a working agent whose task is filled in", () => {
+  it("serves one agent per card, not a pair", () => {
     const picks = questPicks(
       health,
       97,
-      { confirmed: [agent("7001", "A"), agent("7002", "B")], working: [agent("7001", "A"), agent("7002", "B"), guard] },
+      { confirmed: [agent("7001", "A"), agent("7002", "B")], working: [agent("7001", "A"), guard] },
       null,
     );
-    expect(picks.map((p) => p.tokenId)).toEqual(["7001", "2504"]);
-    expect(picks[1].task).toBeTruthy();
+    expect(picks.map((p) => p.tokenId)).toEqual(["7001"]);
   });
 
-  it("offers the working agents it has a task for while none is confirmed", () => {
+  it("offers the first working agent while none is confirmed", () => {
     const picks = questPicks(health, 97, { confirmed: [], working: [agent("7001", "Unproven"), keel, guard] }, null);
-    expect(picks.map((p) => p.tokenId)).toEqual(["2238", "2504"]);
+    expect(picks.map((p) => p.tokenId)).toEqual(["7001"]);
   });
 
   it("never offers the visitor's own agent", () => {
@@ -112,12 +111,16 @@ describe("quest picks", () => {
     expect(picks.map((p) => p.tokenId)).toEqual(["2238"]);
   });
 
+  it("skips an agent the wallet has already hired", () => {
+    const picks = questPicks(health, 97, { confirmed: [keel, guard], working: [guard] }, null, new Set(["2238"]));
+    expect(picks.map((p) => p.tokenId)).toEqual(["2504"]);
+  });
+
   it("falls back to the written picks only when the shelf cannot be read", () => {
-    expect(questPicks(health, 97, undefined, null).map((p) => p.tokenId)).toEqual(["2504", "2238"]);
+    expect(questPicks(health, 97, undefined, null).map((p) => p.tokenId)).toEqual(["2504"]);
     expect(questPicks(health, 56, undefined, null)).toEqual([]);
     // a shelf that was read and offers nothing is believed, so no dead agent is suggested
     expect(questPicks(health, 97, { confirmed: [], working: [] }, null)).toEqual([]);
-    expect(questPicks(health, 97, { confirmed: [], working: [agent("7001", "Unproven")] }, null)).toEqual([]);
   });
 });
 

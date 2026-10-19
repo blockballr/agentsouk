@@ -10,8 +10,8 @@ import {
   mintRequestMessage,
   shortAddress,
 } from '@agora/core'
-import { getProvider } from '../lib/wallet'
-import { connectWallet, sessionAccount } from '../lib/wallet-session'
+import { getProvider, watchActiveAccount } from '../lib/wallet'
+import { connectWallet } from '../lib/wallet-session'
 import { useTargetChain } from '../lib/target-chain'
 import { FAUCET_URL, MINT_PER_CLICK, isTestnet, readNativeBalance } from '../lib/mint'
 import {
@@ -39,33 +39,6 @@ import {
   Txt,
   type DotTone,
 } from '../components/souk'
-
-const checklist = [
-  {
-    title: 'A reachable endpoint',
-    why: 'The verifier makes a real MCP tools/list or A2A message/send call over HTTPS. An agent with no callable endpoint is badged unreachable, and one that fails the call is badged unresponsive. Of the 40 agents recorded in data/verifications.json, 18 delivered and 12 failed the call before the first came back; those counts were checked against the file.',
-  },
-  {
-    title: 'x402 support for direct calls',
-    why: 'Set x402Support in your registration: a direct call charges per request with no deposit, and the marketplace surfaces x402 agents first. A listing without it still sells ERC-8183 jobs, where the buyer funds the agreed price into escrow and payment releases after delivery.',
-  },
-  {
-    title: 'An honest category description',
-    why: 'You pick the shelf category in the form; this description is what search, relevance and buyers read. Say what the agent does in that category\u2019s own words: rebalancing and LP ranges, grid trading, yield optimisation, health factor monitoring. It has to be true, because buyers read it before they hire.',
-  },
-  {
-    title: 'A graded response',
-    why: 'The verifier asks your agent a capability question over its own endpoint, and the reply is graded good, partial or poor, with the grade public on your badge. On chain 97 that grade is scored deterministically from the reply; the paid-hire verifier that grades a delivered task runs on chain 56.',
-  },
-  {
-    title: 'One agent, one registration',
-    why: 'Mass numbered duplicates and airdrop-farmer patterns are filtered from the catalog. One registration per agent keeps the shelf honest.',
-  },
-  {
-    title: 'A performance endpoint',
-    why: 'Expose a performance endpoint. A tool like get_performance that returns your live numbers (PnL, fees, hit rate) lets a buyer check your record before hiring. The listing does not show reported numbers yet; that collection is being built.',
-  },
-]
 
 // the dot beside a verdict, mapped from the shared verdict tone
 const VERDICT_DOTTONE: Record<VerdictTone, DotTone> = {
@@ -116,24 +89,15 @@ export function ListAgentPage() {
   const [wizardStep, setWizardStep] = useState<WizardStep>('form')
   // the loop the wizard runs, carried up so the side rail can draw it as the design does
   const [loopChecks, setLoopChecks] = useState<CheckLine[] | null>(() => initialChecks('call'))
-  // the checklist starts closed; the prompt card asks for it, so the page holds the toggle
-  const [checklistOpen, setChecklistOpen] = useState(false)
+  // the verifier panel in the side rail carries the whole checklist behind its
+  // own "What the checks require" toggle, so a prompt card only brings it into view
   const revealChecklist = () => {
-    const el = document.getElementById('verifier-checklist')
-    if (!el) return
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    if (checklistOpen) return
-    // open only once the scroll has landed, so the expansion is watched rather than found
-    let done = false
-    const openIt = () => {
-      if (done) return
-      done = true
-      window.removeEventListener('scrollend', openIt)
-      setChecklistOpen(true)
-    }
-    window.addEventListener('scrollend', openIt)
-    window.setTimeout(openIt, 900)
+    document.getElementById('verifier-check')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    })
   }
+
   // the listing flow is several screens long, so the page opens on the pitch and
   // one action rather than on the wizard
   const [started, setStarted] = useState(true)
@@ -215,10 +179,9 @@ export function ListAgentPage() {
           {/* the same registration the Studio path makes, sent from the browser. Both
               routes end at the same registry record and the same checks. */}
           <div id="register-here" className="mt-[30px] scroll-mt-4">
-            <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_520px]">
+            <SectionHead title="2. List your agent" note="ONE TRANSACTION" />
+            <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_520px]">
               <Stack gap={20}>
-                <SectionHead title="2. List your agent" note="ONE TRANSACTION" />
-
                 {chain === null ? (
                   <Txt size={13} lead={20} tone="steel" className="block">
                     Checking the network before the registration step.
@@ -244,7 +207,6 @@ export function ListAgentPage() {
               </Stack>
             </div>
           </div>
-          <ChecklistSection open={checklistOpen} onOpen={setChecklistOpen} />
           <LookupSection chainId={chain} onFound={setFoundTokenId} />
           <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
         </>
@@ -314,17 +276,15 @@ function GasRequirement({ chainId }: { chainId: number }) {
     [chainId],
   )
 
+  // A balance read needs no signature and no session: the wallet's permitted
+  // account is enough, so an already-connected wallet is read straight away
+  // instead of being asked to connect again. The wallet's own account events
+  // keep the figure current when it connects or switches later.
   useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const active = await sessionAccount()
-      if (cancelled) return
-      setAccount(active)
-      await refresh(active)
-    })()
-    return () => {
-      cancelled = true
-    }
+    return watchActiveAccount((who) => {
+      setAccount(who)
+      void refresh(who)
+    })
   }, [refresh])
 
   async function connect() {
@@ -396,98 +356,73 @@ function GasRequirement({ chainId }: { chainId: number }) {
   }
 
   return (
-    <Stack surface gap={14} pad={[20, 22, 20, 22]}>
-      <SectionHead title="Gas to list" note={chainLabel(chainId)} />
-      <Txt size={12} lead={18} tone="steel" className="block">
-        Registration is one transaction sent from your own wallet, which is how the
-        registry records you as the owner. Nobody can send it for you, so your wallet
-        pays a little {symbol} in gas.
-      </Txt>
+    <Stack surface gap={10} pad={[14, 16, 14, 16]}>
+      <Row justify="between" align="center" gap={8}>
+        <Txt size={10} lead={14} weight="bold" upper tone="muted">
+          Gas to list
+        </Txt>
+        <Txt size={10} lead={14} mono upper tone="labels">
+          {chainLabel(chainId)}
+        </Txt>
+      </Row>
 
-      <dl className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        <div className="flex items-center gap-2">
-          <dt>
-            <Label tone="labels">Your {symbol}</Label>
-          </dt>
-          <dd>
-            <Txt size={11} lead={16} mono tone="steel">
-              {!account
-                ? 'no wallet connected'
-                : reading
-                  ? 'reading'
-                  : balance === null
-                    ? 'unavailable'
-                    : `${formatNative(balance)} ${symbol}`}
-            </Txt>
-          </dd>
-        </div>
+      <Row justify="between" align="center" gap={8}>
+        <Txt size={12} lead={18} mono tone="ink">
+          {!account
+            ? 'No wallet connected'
+            : reading
+              ? 'Reading'
+              : balance === null
+                ? 'Unavailable'
+                : `${formatNative(balance)} ${symbol}`}
+        </Txt>
         {account && (
-          <div className="flex items-center gap-2">
-            <dt>
-              <Label tone="labels">Wallet</Label>
-            </dt>
-            <dd>
-              <Txt size={11} lead={16} mono tone="steel">
-                {shortAddress(account)}
-              </Txt>
-            </dd>
-          </div>
+          <Txt size={10} lead={14} mono tone="steel">
+            {shortAddress(account)}
+          </Txt>
         )}
-      </dl>
+      </Row>
 
       {!account && (
         <Btn kind="off" disabled={connecting} onClick={() => void connect()} className="w-full">
-          {connecting ? 'Connecting…' : 'Connect wallet to check'}
+          {connecting ? 'Connecting' : `Connect to read ${symbol}`}
         </Btn>
       )}
 
       {testnet ? (
         <>
-          <Txt size={12} lead={18} tone="slate" className="block">
-            Two ways: BNB&apos;s testnet faucet works for any wallet, or sign one free message
-            below and we pay for the mint.
-          </Txt>
-          <Row gap={12} align="center" className="flex-wrap">
+          <Row gap={8} align="center" className="flex-wrap">
             <a
               href={FAUCET_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-5 hover:text-souk-ink"
+              className="inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-3 hover:text-souk-ink"
             >
-              <Txt size={14} lead={20} weight="semibold" tone="slate">BSC testnet faucet →</Txt>
+              <Txt size={12} lead={18} weight="semibold" tone="slate">
+                Faucet
+              </Txt>
             </a>
             {!holdsGas && (
               <Btn kind="primary" disabled={phase === 'sending'} onClick={() => void getGas()}>
-                {phase === 'sending' ? (
-                  'Sign the message in your wallet'
-                ) : (
-                  <>Top up {symbol} for gas</>
-                )}
+                {phase === 'sending' ? 'Sign in wallet' : `Top up ${symbol}`}
               </Btn>
             )}
           </Row>
-          <Txt size={12} lead={18} tone="muted" className="block">
-            The sponsored mint grants 10 test sUSD, and it tops your {symbol} up to
-            0.001 {symbol} for gas when you hold less than that. It sends only the
-            shortfall, so a wallet holding dust is still covered. The mint itself
-            costs you no gas.
-          </Txt>
-          {holdsGas && balance !== null && (
-            <Txt size={12} lead={18} tone="ink" className="block">
-              This wallet already holds {formatNative(balance)} {symbol}, which
-              covers the gas for registration, so no top-up will be sent.
+          {holdsGas && (
+            <Txt size={11} lead={16} tone="data" className="block">
+              Enough for gas.
             </Txt>
           )}
           {phase === 'error' && error && (
             <p role="alert">
-              <Txt size={12} lead={18} tone="peach" className="block">
+              <Txt size={11} lead={16} tone="peach" className="block">
                 {error}
               </Txt>
             </p>
           )}
           {phase === 'sent' && (
-            <Txt size={12} lead={18} tone="ink" className="block">
-              {gasNote ?? 'Minted, but no gas top-up was reported.'}
+            <Txt size={11} lead={16} tone="ink" className="block">
+              {gasNote ?? 'Mint sent.'}
               {gasTxHash && (
                 <>
                   {' '}
@@ -497,18 +432,16 @@ function GasRequirement({ chainId }: { chainId: number }) {
                     rel="noreferrer"
                     className="underline decoration-souk-hair underline-offset-2 hover:text-souk-data"
                   >
-                    View the top-up
+                    View
                   </a>
-                  .
                 </>
               )}
             </Txt>
           )}
         </>
       ) : (
-        <Txt size={12} lead={18} tone="slate" className="block">
-          Keep a little {symbol} in the wallet before you register. There is no
-          sponsored top-up on mainnet.
+        <Txt size={11} lead={16} tone="steel" className="block">
+          Keep a little {symbol} in this wallet for gas.
         </Txt>
       )}
     </Stack>
@@ -641,61 +574,6 @@ function CreateSection({
 
       <Txt size={13} lead={20} tone="steel" className="block max-w-[1180px]">
         Studio builds and deploys the agent. Agent Souk is where buyers find it and where we check it.
-      </Txt>
-    </Stack>
-  )
-}
-
-// Takes no chainId. It never used one, and the prop was threaded through from a parent
-// that had it only to hand it down.
-function ChecklistSection({ open, onOpen }: { open: boolean; onOpen: (open: boolean) => void }) {
-  return (
-    <Stack gap={20} className="mt-[30px]">
-      <button
-        id="verifier-checklist"
-        type="button"
-        onClick={() => onOpen(!open)}
-        aria-expanded={open}
-        className="flex w-full flex-wrap items-center justify-between gap-4 border-b border-b-souk-hair pb-3 text-left hover:text-souk-slate scroll-mt-4"
-      >
-        <Txt size={22} lead={30} weight="bold" tone="ink">What the verifier looks for</Txt>
-        <Txt size={20} lead={24} weight="bold" tone="steel" aria-hidden="true">
-          {open ? '−' : '+'}
-        </Txt>
-      </button>
-      {/* the collapse runs as a row-height transition, so the checklist opens under its
-          heading rather than appearing: the reader watches it become a dropdown */}
-      <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
-          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
-        }`}
-      >
-        <div className="min-h-0 overflow-hidden">
-          <Stack gap={20}>
-            <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
-              Every badge on this site comes from a real check against the real endpoint.
-            </Txt>
-            <div className="grid gap-5 md:grid-cols-2">
-              {checklist.map((item, i) => (
-                <Stack key={item.title} surface gap={10} pad={[20, 22, 20, 22]}>
-                  <Txt size={10} lead={14} weight="bold" upper tone="labels">
-                    Check {i + 1} of 6
-                  </Txt>
-                  <Txt size={17} lead={24} weight="bold" tone="ink" className="block">
-                    {item.title}
-                  </Txt>
-                  <Txt size={13} lead={20} tone="slate" className="block">
-                    {item.why}
-                  </Txt>
-                </Stack>
-              ))}
-            </div>
-          </Stack>
-        </div>
-      </div>
-      <Txt size={13} lead={20} tone="steel" className="block max-w-[1180px]">
-        Meet the checklist and the badge speaks for you: delivered, graded, public. It does not
-        promise placement or traffic.
       </Txt>
     </Stack>
   )
@@ -984,7 +862,8 @@ function LookupSection({
 
 function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
   const [tokenId, setTokenId] = useState(defaultTokenId)
-  const [contact, setContact] = useState('')
+  const [email, setEmail] = useState('')
+  const [telegram, setTelegram] = useState('')
   const [note, setNote] = useState('')
   const [phase, setPhase] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -997,7 +876,7 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
       const res = await fetch('/api/listings/request', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tokenId, contact, note }),
+        body: JSON.stringify({ tokenId, email, telegram, note }),
       })
       const body = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null
       if (!res.ok || !body?.success) {
@@ -1016,14 +895,14 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
     <Stack gap={20} className="mt-[30px]">
       <SectionHead title="4. Request a listing review" note="A PERSON READS EVERY REQUEST" />
       <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
-        Met the checklist and still not listed? Send the token id and how to reach you. A person
-        reads every request.
+        Met the checklist and still not listed? Send the token id and your Telegram handle. A
+        person reads every request.
       </Txt>
 
       {phase === 'sent' ? (
         <NoteBox title="Request received." className="max-w-[768px]">
           <Txt size={12} lead={18} tone="steel" className="block">
-            We read every one and reply to the contact you left.
+            We read every one and reply on Telegram.
           </Txt>
         </NoteBox>
       ) : (
@@ -1044,20 +923,41 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
               />
             </div>
           </div>
-          <div>
-            <label className={labelClass} htmlFor="review-contact">
-              <Label tone="labels">Contact (email or handle)</Label>
-            </label>
-            <div className="mt-2">
-              <input
-                id="review-contact"
-                type="text"
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                placeholder="you@example.com or @handle"
-                autoComplete="email"
-                className={inputClass}
-              />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClass} htmlFor="review-telegram">
+                <Label tone="labels">Telegram handle</Label>
+              </label>
+              <div className="mt-2">
+                <input
+                  id="review-telegram"
+                  type="text"
+                  required
+                  value={telegram}
+                  onChange={(e) => setTelegram(e.target.value)}
+                  placeholder="@yourhandle"
+                  autoComplete="off"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="review-email">
+                <Label tone="labels">
+                  Email <span className="normal-case">(optional)</span>
+                </Label>
+              </label>
+              <div className="mt-2">
+                <input
+                  id="review-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className={inputClass}
+                />
+              </div>
             </div>
           </div>
           <div>

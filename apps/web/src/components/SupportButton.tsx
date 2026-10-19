@@ -4,7 +4,30 @@ import { cx } from './ui'
 // small question-mark button so it can sit beside the forms and failures themselves
 export const SUPPORT_TELEGRAM = 'https://t.me/agentsouk'
 
-export function SupportButton({ className, plain }: { className?: string; plain?: boolean }) {
+export function SupportButton({
+  className,
+  plain,
+  iconFirst,
+}: {
+  className?: string
+  plain?: boolean
+  iconFirst?: boolean
+}) {
+  const icon = (
+    <svg
+      aria-hidden="true"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  )
   return (
     <a
       href={SUPPORT_TELEGRAM}
@@ -16,20 +39,9 @@ export function SupportButton({ className, plain }: { className?: string; plain?
         className,
       )}
     >
+      {iconFirst ? icon : null}
       Support
-      <svg
-        aria-hidden="true"
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      </svg>
+      {iconFirst ? null : icon}
     </a>
   )
 }

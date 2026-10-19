@@ -54,7 +54,8 @@ async function sendViaResend(
 
 export async function notifyListingRequest(input: {
   tokenId: string;
-  contact: string;
+  email: string;
+  telegram: string;
   note: string;
   createdAt: string;
 }): Promise<NotifyResult[]> {
@@ -65,7 +66,8 @@ export async function notifyListingRequest(input: {
     `New listing review request on Agent Souk.`,
     ``,
     `Token id: ${input.tokenId}`,
-    `Contact: ${input.contact}`,
+    `Email: ${input.email || "(none)"}`,
+    `Telegram: ${input.telegram || "(none)"}`,
     `Created: ${input.createdAt}`,
     ``,
     `Note:`,
@@ -77,19 +79,24 @@ export async function notifyListingRequest(input: {
     results.push(r);
     if (!r.ok && r.error?.includes("RESEND_API_KEY")) {
       results.push({ ok: true, provider: "log", id: "team-log" });
-      console.log("[notify] listing request (no RESEND_API_KEY)", { tokenId: input.tokenId, contact: input.contact });
+      console.log("[notify] listing request (no RESEND_API_KEY)", {
+        tokenId: input.tokenId,
+        email: input.email,
+        telegram: input.telegram,
+      });
     }
   } else {
     console.log("[notify] listing request (no NOTIFY_EMAIL)", {
       tokenId: input.tokenId,
-      contact: input.contact,
+      email: input.email,
+      telegram: input.telegram,
     });
     results.push({ ok: true, provider: "log", id: "team-log" });
   }
 
-  if (isEmail(input.contact)) {
+  if (isEmail(input.email)) {
     const ack = await sendViaResend(
-      [input.contact.trim()],
+      [input.email.trim()],
       "We received your Agent Souk listing review request",
       [
         `Thanks. We have your request for token ${input.tokenId}.`,
@@ -100,7 +107,7 @@ export async function notifyListingRequest(input: {
     );
     results.push(ack);
     if (!ack.ok && ack.error?.includes("RESEND_API_KEY")) {
-      console.log("[notify] skip lister ack (no RESEND_API_KEY)", input.contact);
+      console.log("[notify] skip lister ack (no RESEND_API_KEY)", input.email);
     }
   }
 

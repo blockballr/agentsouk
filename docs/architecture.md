@@ -250,15 +250,14 @@ card, then feedbacks, and using relevance only to break a tie.
 ### Serving Queries
 
 `queryAgents` applies the category filter, then the search text over name,
-description, and owner address, then the sort. The sort modes are
-`reachability`, which is the default and ranks by the verifier's last verdict,
-delivered then gated then dead then unreachable then unchecked, rotating inside
-the delivered tier; `score`, which leads with `total_score` then feedbacks and
-uses relevance only to break ties; `newest` by registration time; `feedback` by
-total feedbacks; and `health` by health score, descending, with
-agents lacking one last. It returns the paged items, the total, the
-per-category counts, and index status: fetched count, snapshot total, last
-warm time, warming flag, and error.
+description, and owner address, then the sort. Job capability leads every sort,
+and the verifier's reachability rank (delivered, gated, unchecked, dead,
+unreachable) settles the ties underneath it. The metric modes are `score`, the
+default, which leads with `total_score` then feedbacks and uses relevance only
+to break ties; `newest` by registration time; `feedback` by total feedbacks;
+and `health` by health score, descending, with agents lacking one last. It
+returns the paged items, the total, the per-category counts, and index status:
+fetched count, snapshot total, last warm time, warming flag, and error.
 
 Agent detail normalizes object-typed fields before they reach the client. The
 registry can return `health_status` as a structure rather than a string, so

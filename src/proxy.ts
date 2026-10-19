@@ -45,7 +45,7 @@ export function proxy(req: NextRequest) {
 export function corsHeaders(allow: string | null): Record<string, string> {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
   if (allow) headers["Access-Control-Allow-Origin"] = allow;

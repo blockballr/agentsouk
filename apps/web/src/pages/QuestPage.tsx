@@ -24,7 +24,6 @@ import {
   type QuestStep,
   type StepKey,
 } from '../lib/quest'
-import { cx } from '../components/ui'
 
 import {
   Stack,
@@ -144,14 +143,14 @@ export function QuestPage() {
   const next = open[0] ?? null
   const done = requiredDone(progress)
   // an agent already hired cannot be the next hire, so it is never offered again
-  const hiredIds = new Set((progress?.hires ?? []).map((h) => h.tokenId))
+  const hiredIds = new Set((progress?.hires ?? []).map((h) => String(h.tokenId)))
   const chainLine = target ? `${chainLabel(target.chainId)} chain ${target.chainId}` : 'reading the network'
 
   // the offer list a hire step's own card reads, worked out once so the card and the
   // picks table never name different agents for the same step
   const picksFor = (step: QuestStep): QuestAgent[] =>
     chainId !== null && step.category && shelf !== undefined
-      ? questPicks(step, chainId, shelf?.[step.category], wallet).filter((a) => !hiredIds.has(a.tokenId))
+      ? questPicks(step, chainId, shelf?.[step.category], wallet, hiredIds)
       : []
   const readingFor = (step: QuestStep): boolean =>
     Boolean(step.category) && (shelf === undefined || chainId === null)
@@ -305,32 +304,6 @@ export function QuestPage() {
           </Row>
         </Section>
 
-        <Stack surface pad={[16, 22, 16, 22]} gap={10} className="mt-4">
-          <SectionHead title="The strip that brings you here" />
-          <Row justify="between" align="start" gap={14}>
-            <Stack gap={6} className="min-w-0 flex-1">
-              <Txt size={10} lead={14} weight="bold" upper tone="muted">
-                {`Souk passport A- ${strip && next ? next.title : 'complete'}`}
-              </Txt>
-              <Txt size={13} lead={20} tone="slate">
-                {strip ? strip.instruction : 'Every step that finishes the passport is in.'}
-              </Txt>
-            </Stack>
-            <QuestStamp step={next ? next.key : 'seal'} stamped={next ? stamps[next.key] : true} className="w-[104px] shrink-0" />
-          </Row>
-          {stripAction ? (
-            stripAction.to ? (
-              <Link to={stripAction.to} className="mt-1 inline-block">
-                <Btn kind={stripAction.label.toLowerCase().includes('wallet') ? 'primary' : 'off'}>{stripAction.label}</Btn>
-              </Link>
-            ) : (
-              <Btn kind={stripAction.label.toLowerCase().includes('wallet') ? 'primary' : 'off'} onClick={stripAction.onClick} disabled={stripAction.disabled} className="mt-1">
-                {stripAction.label}
-              </Btn>
-            )
-          ) : null}
-        </Stack>
-
         {error ? (
           <Section>
             <div role="alert">
@@ -339,7 +312,7 @@ export function QuestPage() {
           </Section>
         ) : null}
 
-        <Section>
+        <Section pad="pt-3 pb-4 md:pt-4 md:pb-6">
           <Stack surface pad={[20, 22, 20, 22]} gap={14}>
             <SectionHead title="Your standing" note="SETTLED HIRES AND LISTINGS ONLY" />
             <Row gap={10}>
@@ -369,13 +342,49 @@ export function QuestPage() {
               />
             </div>
             <Rule hair />
+            {/* the next move lives with the standing it follows from, rather than in a
+                second panel above it that repeats the step card below */}
+            <Row justify="between" align="start" gap={14}>
+              <Stack gap={5} className="min-w-0 flex-1">
+                <Label tone="muted">
+                  {next ? `Next: ${next.title}` : 'Passport complete'}
+                </Label>
+                <Txt size={13} lead={20} tone="ink">
+                  {strip ? strip.instruction : 'Every step that finishes the passport is in.'}
+                </Txt>
+                {stripAction ? (
+                  stripAction.to ? (
+                    <Link to={stripAction.to} className="inline-block">
+                      <Btn kind={stripAction.label.toLowerCase().includes('wallet') ? 'primary' : 'off'}>
+                        {stripAction.label}
+                      </Btn>
+                    </Link>
+                  ) : (
+                    <Btn
+                      kind={stripAction.label.toLowerCase().includes('wallet') ? 'primary' : 'off'}
+                      onClick={stripAction.onClick}
+                      disabled={stripAction.disabled}
+                      className="self-start"
+                    >
+                      {stripAction.label}
+                    </Btn>
+                  )
+                ) : null}
+              </Stack>
+              <QuestStamp
+                step={next ? next.key : 'seal'}
+                stamped={next ? stamps[next.key] : true}
+                className="w-[84px] shrink-0"
+              />
+            </Row>
+            <Rule hair />
             <Txt size={12} lead={18} tone="muted">
               Any agent on the market counts for a hire, as long as it is not your own and not one you already hired.
             </Txt>
           </Stack>
         </Section>
 
-        <Section>
+        <Section pad="pt-4 pb-16 md:pt-6 md:pb-18">
           <SectionHead title={`${QUEST_STEPS.length} steps`} note="ONE STAMP EACH" />
           <div className="mt-12 grid gap-5 lg:grid-cols-3">
             {QUEST_STEPS.map((step, i) => (
@@ -433,7 +442,7 @@ export function QuestPage() {
                       <div>
                         <Row gap={12} align="center" justify="between">
                           <Row gap={11} align="center" className="min-w-0">
-                            <AgentAvatar size={34} name={w.name} imageUrl={w.imageUrl} />
+                            <AgentAvatar size={34} name={w.name} imageUrl={w.imageUrl} chainId={w.chainId} tokenId={w.tokenId} />
                             <Stack gap={2} className="min-w-0">
                               <Txt size={15} lead={20} weight="bold" tone="ink" className="block truncate">{w.name}</Txt>
                               <Txt size={11} lead={15} mono tone="labels">{`token ${w.tokenId} · ${w.slot}`}</Txt>
@@ -539,20 +548,23 @@ function stepContent(
         : onlyOurs
           ? 'Only our own agents answer here today. One signature settles the hire.'
           : 'One signature settles the hire.',
-      actions: picks.map((a, i) => ({
-        label: `${i === 0 ? 'Hire' : 'Or'} ${a.name}`,
+      actions: picks.map((a) => ({
+        label: `Hire ${a.name}`,
         to: `/agents/${chainId}/${a.tokenId}?quest=${step.key}`,
       })),
     }
   }
+  if (onlyOurs) {
+    return {
+      title,
+      instruction: 'Only our own agents answer in this category, and hiring your own listing does not count.',
+      actions: [],
+    }
+  }
   return {
     title,
-    instruction: first
-      ? 'Hire with the wallet on your Set and Earn form. Any agent but your own counts.'
-      : 'Hire any agent that is not your own and that you have not hired yet.',
-    // no sort named: the shelf opens on its own default, which is the order
-    // this step wants anyway
-    actions: [{ label: 'Browse the shelf', to: '/agents' }],
+    instruction: 'No escrow agent in this category is answering just now. Refresh in a moment to see who is.',
+    actions: [],
   }
 }
 
@@ -614,10 +626,10 @@ function StepCard({
       </Row>
       <Txt size={13} lead={20} tone="slate" className="block">{instruction}</Txt>
       <Rule hair />
-      <div className="mt-auto grid grid-cols-2 gap-2">
+      <div className="mt-auto grid gap-2">
         {actions.map((a) =>
           a.to ? (
-            <Link key={a.label} to={a.to} className={cx('block min-w-0', actions.length === 1 && 'col-span-2')}>
+            <Link key={a.label} to={a.to} className="block min-w-0">
               <Btn className="w-full">
                 {/* an agent's name can be any length, so the label stays on one line */}
                 <span className="block min-w-0 truncate" title={a.label}>{a.label}</span>
@@ -628,7 +640,7 @@ function StepCard({
               key={a.label}
               onClick={a.onClick}
               disabled={a.disabled}
-              className={cx('w-full min-w-0', actions.length === 1 && 'col-span-2')}
+              className="w-full min-w-0"
             >
               <span className="block min-w-0 truncate" title={a.label}>{a.label}</span>
             </Btn>

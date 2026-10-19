@@ -56,13 +56,15 @@ describe("reading the listing review queue", () => {
     process.env.INDEX_SECRET = env.SECRET;
     await recordListingRequest({
       tokenId: "45381",
-      contact: "builder@example.com",
+      email: "builder@example.com",
+      telegram: "",
       note: "fixed the endpoint",
       createdAt: "2026-09-27T08:00:00.000Z",
     });
     await recordListingRequest({
       tokenId: "2044",
-      contact: "@handler",
+      email: "handler@example.com",
+      telegram: "@handler",
       note: "",
       createdAt: "2026-09-27T09:00:00.000Z",
     });

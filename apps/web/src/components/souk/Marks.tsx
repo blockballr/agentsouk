@@ -6,6 +6,7 @@
 // the shelf is where a buyer picks on sight.
 
 import { Txt } from './Txt';
+import { defaultAvatarFor } from '../../lib/default-avatar';
 
 export function initialsFor(name: string): string {
   const parts = String(name || 'Agent')
@@ -42,20 +43,42 @@ export function AgentAvatar({
   size = 40,
   name,
   imageUrl,
+  chainId,
+  tokenId,
 }: {
   size?: number;
   name: string;
   imageUrl?: string | null;
+  // the shelf's default face is keyed on the listing, so pass the identity
+  // wherever it is known and an agent without a picture keeps its own mark
+  chainId?: number | string;
+  tokenId?: string | number;
 }) {
   const radius = 8;
   const shared = { width: size, height: size, borderRadius: radius };
+  const fallback =
+    chainId !== undefined && tokenId !== undefined
+      ? defaultAvatarFor(Number(chainId), String(tokenId))
+      : null;
+  const src = imageUrl ?? fallback;
   return (
     <span
       className="inline-flex shrink-0 items-center justify-center overflow-hidden border border-souk-hair bg-souk-indigo"
       style={shared}
     >
-      {imageUrl ? (
-        <img src={imageUrl} alt="" width={size} height={size} className="h-full w-full object-cover" />
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          width={size}
+          height={size}
+          className="h-full w-full object-cover"
+          onError={(e) => {
+            if (fallback && e.currentTarget.getAttribute('src') !== fallback) {
+              e.currentTarget.src = fallback;
+            }
+          }}
+        />
       ) : (
         <Txt
           size={Math.round(size * 0.34)}
