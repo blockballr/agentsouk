@@ -4,6 +4,7 @@ import { decideGridAgentTaskLive } from "@/lib/reference-grid-live";
 import { MCP_PROTOCOL_VERSION, MCP_SUPPORTED_VERSIONS } from "@/lib/mcp-tools";
 import { getPaymentDurable, sessionRevoked } from "@/lib/receipts-store";
 import { authoriseRungFill } from "@/lib/grid-execute";
+import { legacyGate } from "@/lib/legacy-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -382,6 +383,8 @@ async function toolsCall(id: RpcId, params: unknown): Promise<NextResponse> {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const gate = legacyGate(req);
+  if (gate) return gate;
   const raw = await req.text().catch(() => "");
   let message: unknown;
   try {
@@ -459,3 +462,6 @@ export function DELETE(): NextResponse {
     { status: 405, headers: { ...JSON_HEADERS, allow: "POST, OPTIONS" } },
   );
 }
+
+
+
