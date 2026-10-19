@@ -1093,8 +1093,14 @@ export async function queryAgents(
   // Only the target chain belongs on this shelf; a live read for another chain cannot leak in.
   // a delisted token leaves the shelf even though its on-chain registration stands
   const delisted = await loadDelisted().catch(() => new Set<string>());
+  // only the four hackathon categories are shown: an agent that did not
+  // classify into one of them is not offered as hireable, so the catalog
+  // carries no "unclassified" entries for the Set and Earn diversity check
   const onChain = Array.from(index.agents.values()).filter(
-    (a) => a.chain_id === chainId && (opts.includeDelisted || !delisted.has(a.token_id)),
+    (a) =>
+      a.chain_id === chainId &&
+      (LISTABLE_CATEGORIES as readonly string[]).includes(a.category ?? "") &&
+      (opts.includeDelisted || !delisted.has(a.token_id)),
   );
   // the shelf sells work a hire can execute, so an entry the marketplace cannot
   // call is not served even when an earlier pass admitted it
