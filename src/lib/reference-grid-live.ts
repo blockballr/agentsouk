@@ -16,6 +16,50 @@ import {
 } from "./reference-grid";
 import { targetChainId } from "./types";
 
+// optional AI layer: a short analysis from Gemini, appended to the deterministic
+// plan. the deterministic numbers are always the source of truth; if this call
+// fails or times out the plan is still returned unchanged, so deterministic is
+// the fallback and nothing is invented.
+const LLM_API_KEY = process.env.LLM_EVAL_API_KEY ?? "";
+const LLM_BASE_URL = process.env.LLM_EVAL_BASE_URL ?? "https://generativelanguage.googleapis.com/v1beta/openai";
+const LLM_MODEL = process.env.LLM_EVAL_MODEL ?? "gemini-2.5-flash";
+
+async function aiGridCommentary(task: string, planText: string): Promise<string | null> {
+  if (!LLM_API_KEY) return null;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 8000);
+  try {
+    const res = await fetch(`${LLM_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${LLM_API_KEY}` },
+      body: JSON.stringify({
+        model: LLM_MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a grid trading analyst. Given a grid plan's numbers, write 2-3 sentences of plain prose: " +
+              "whether the spacing and capture look reasonable, one caveat, and what a trader should watch. " +
+              "Never invent numbers not in the plan. No markdown, no lists.",
+          },
+          { role: "user", content: `Task: ${task}\n\nPlan:\n${planText}` },
+        ],
+        max_tokens: 200,
+        temperature: 0.3,
+      }),
+      signal: ctl.signal,
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const text = json.choices?.[0]?.message?.content?.trim();
+    return text && text.length > 0 ? text : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // the grid agent's PancakeSwap mode: a named pair and a width stand in for the two
 // prices, read from the pool at one block; everything else is the ordinary planner
 
@@ -74,7 +118,12 @@ export async function decideGridAgentTaskLive(
     structured.pair !== undefined ||
     structured.invalid.includes("pair") ||
     (fields.pair !== undefined && (hasGridIntent(task) || fields.widthPct !== undefined));
-  if (!pairAsked) return decideGridAgentTask(task, input);
+  if (!pairAsked) {
+    const reply = decideGridAgentTask(task, input);
+    const ai = await aiGridCommentary(task, reply.text);
+    if (ai) return { ...reply, text: `${reply.text}\n\n${ai}` };
+    return reply;
+  }
   if (rangeGiven) {
     const reply = decideGridAgentTask(task, input);
     if (structured.pair === undefined && !structured.invalid.includes("pair")) return reply;
@@ -150,7 +199,7 @@ export async function decideGridAgentTaskLive(
   };
   // the pool's own round trip is two swaps at its fee tier; a tier of 500 is 5 bps a swap
   const feeBps = fields.feeBps ?? (2 * quote.feeTier) / 100;
-  return decideGridAgentTask(
+  const reply = decideGridAgentTask(
     task,
     {
       ...callerFields(input),
@@ -160,4 +209,7 @@ export async function decideGridAgentTaskLive(
     },
     source,
   );
+  const ai = await aiGridCommentary(task, reply.text);
+  if (ai) return { ...reply, text: `${reply.text}\n\n${ai}` };
+  return reply;
 }
