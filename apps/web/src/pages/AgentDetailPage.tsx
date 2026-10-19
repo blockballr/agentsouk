@@ -16,7 +16,7 @@ import {
   takesJobs,
   sellsByJob,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
 import Jobs8183JobCard from '../components/Jobs8183JobCard'
@@ -328,6 +328,43 @@ export function AgentDetailPage() {
       cancelled = true
     }
   }, [viewer, chainId, tokenId])
+
+  // recover funded jobs that lost their marketplace record (or were funded before
+  // the record step existed) by reading them straight off the chain from ids we
+  // kept in local storage. the job is on chain until expiredAt, so it can come
+  // back even when the database row is missing.
+  useEffect(() => {
+    if (!chainId || !tokenId) return
+    let cancelled = false
+    let stored: number[] = []
+    try {
+      stored = JSON.parse(localStorage.getItem(`jobs8183:funded:${chainId}:${tokenId}`) ?? '[]') as number[]
+    } catch {
+      stored = []
+    }
+    if (!stored.length) return
+    Promise.all(stored.map((id) => getJobs8183Job(Number(chainId), id)))
+      .then((rows) => {
+        if (cancelled) return
+        const recovered = rows.filter((r): r is Jobs8183Row => Boolean(r))
+        if (!recovered.length) return
+        setKernelJobs((prev) => {
+          const seen = new Set(prev.map((r) => r.onchainJobId))
+          const merged = [...prev]
+          for (const r of recovered) {
+            if (!seen.has(r.onchainJobId)) {
+              merged.push(r)
+              seen.add(r.onchainJobId)
+            }
+          }
+          return merged
+        })
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [chainId, tokenId])
 
   useEffect(() => {
     let cancelled = false
@@ -806,6 +843,11 @@ export function AgentDetailPage() {
                       Back to your job
                     </Btn>
                   </>
+                ) : null}
+                {!viewer ? (
+                  <Txt size={12} lead={18} tone="muted">
+                    Connect your wallet to see a funded job for this agent, or open one with ?job=&lt;id&gt;.
+                  </Txt>
                 ) : null}
                 <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
               </Stack>
@@ -2476,7 +2518,7 @@ function ResultPanel({
 }) {
   const { output, job, task } = result
   // a hire with a job is rated once the buyer completes it; one without a job ends at delivery
-  const rateable = !!rate && !!output && (job ? job.status === 'Completed' : task?.status === 'delivered')
+  const rateable = !!rate && !!output && (job ? (job.status === 'Completed' || job.status === 'Submitted') : task?.status === 'delivered')
   // tinted so the answer, and the rating under it, is the first thing the buyer's eye lands on
   return (
     <div className="metal rounded-[14px] border border-souk-data/60 bg-souk-data/[0.07] p-8">
