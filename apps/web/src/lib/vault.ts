@@ -48,6 +48,14 @@ const WITHDRAW_ABI = [
   { name: 'withdraw', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }], outputs: [] },
 ] as const
 
+const CLOSE_IF_GOAL_ABI = [
+  { name: 'closeIfGoal', type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }, { name: 'goalValueInToken0', type: 'uint256' }], outputs: [] },
+] as const
+
+const VALUE_IN_TOKEN0_ABI = [
+  { name: 'valueInToken0', type: 'function', stateMutability: 'view', inputs: [{ name: 'id', type: 'uint256' }], outputs: [{ name: '', type: 'uint256' }] },
+] as const
+
 const WRAP_ABI = [
   { name: 'deposit', type: 'function', stateMutability: 'payable', inputs: [], outputs: [] },
 ] as const
@@ -127,6 +135,14 @@ export function openCalldata(agent: string, token: string, amount: string, decim
 
 export function withdrawCalldata(id: bigint): `0x${string}` {
   return encodeFunctionData({ abi: WITHDRAW_ABI, functionName: 'withdraw', args: [id] })
+}
+
+export function closeIfGoalCalldata(id: bigint, goalValueInToken0: bigint): `0x${string}` {
+  return encodeFunctionData({ abi: CLOSE_IF_GOAL_ABI, functionName: 'closeIfGoal', args: [id, goalValueInToken0] })
+}
+
+export function valueInToken0Calldata(id: bigint): `0x${string}` {
+  return encodeFunctionData({ abi: VALUE_IN_TOKEN0_ABI, functionName: 'valueInToken0', args: [id] })
 }
 
 // wrapping tBNB into the bound WBNB so a deposit can be approved
