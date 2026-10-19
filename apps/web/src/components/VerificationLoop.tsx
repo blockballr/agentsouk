@@ -67,13 +67,20 @@ export function VerificationLoop({ checks }: { checks: CheckLine[] }) {
           zero the fill shows a sliver, so the track never reads as a broken control */}
       <div className="mt-3 h-[6px] w-full overflow-hidden rounded-[3px] bg-white/15">
         <div
-          className="h-full rounded-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
+          className="meter-fill relative h-full rounded-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
           style={{
             width: `${Math.max(pct, 2)}%`,
             minWidth: 6,
             backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #44b48b 100%)',
           }}
-        />
+        >
+          {current ? (
+            <span
+              aria-hidden="true"
+              className="meter-shimmer absolute inset-y-0 left-0 w-[30%] rounded-[3px] bg-gradient-to-r from-transparent via-white/[0.42] to-transparent"
+            />
+          ) : null}
+        </div>
       </div>
 
       {current ? (
