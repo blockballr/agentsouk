@@ -449,7 +449,7 @@ function Meter({ pct, pending }: { pct: number; pending: boolean }) {
           {pending ? (
             <span
               aria-hidden="true"
-              className="meter-shimmer absolute inset-y-0 left-0 w-[30%] rounded-[3px] bg-gradient-to-r from-transparent via-white/[0.42] to-transparent"
+              className="meter-shimmer absolute inset-y-0 left-0 w-[40%] rounded-[3px] bg-gradient-to-r from-transparent via-white/70 to-transparent"
             />
           ) : null}
         </div>
