@@ -419,7 +419,7 @@ export async function drawShareCard(canvas: HTMLCanvasElement, data: ShareCardDa
   // a quiet line under the seal; joined script breaks apart when spaced, so it is set with none
   const arabic = TITLE_ARABIC[data.rank]
   if (arabic) text(ctx, arabic, places.seal.x, places.seal.y + 122, `400 15px ${ARABIC}`, 'rgba(81, 98, 84, 0.6)', { align: 'center' })
-  text(ctx, 'The open market for agents that work', 648, 572, `500 15px ${SERIF}`, GRAY)
+  text(ctx, 'The open market for agents', 648, 572, `500 15px ${SERIF}`, GRAY)
 }
 
 export function cardBlob(canvas: HTMLCanvasElement): Promise<Blob> {
