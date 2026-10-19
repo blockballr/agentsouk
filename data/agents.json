@@ -7114,7 +7114,7 @@
       "cross_chain_versions": null,
       "created_at": "2026-08-25T22:08:59Z",
       "updated_at": "2026-10-11T04:05:00.135783Z",
-      "category": "general",
+      "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 1
       },

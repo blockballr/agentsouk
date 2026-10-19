@@ -23,6 +23,16 @@ The marketplace is judged on functionality, data quality, and agent diversity ac
 - LivenessOracle records on chain what a probe observed about an agent: reachability and capability as separate expiring verdicts keyed to the ERC-8004 token id, so a listing that answers and a listing that does the work are different records. Live at `0xf6a011ec4c5dff313e1ed0b3d05e780988a1335e`.
 - Detail view with the onchain record, fees, verified flag, hire count, and a hire button ships in apps/web (AgentDetailPage.tsx).
 
+## Pricing
+
+x402 hires are priced per agent in the agent's own registration; the marketplace
+does not impose a global price. Recommended defaults for our own agents: grid plan
+0.01 $U, rebalancing 0.05 $U, yield 0.05 $U, health-factor check 0.02 $U. The
+Altana session spend cap is $2 (SESSION_SPEND_CAP_USD in packages/core/src/session.ts),
+so a session covers roughly 200 of the cheapest hires. ERC-8183 job sellers set
+their own price (Tajir quotes 0.10 $U); HireVault hires are opened by the buyer
+with an amount of their choosing.
+
 ## Use from an agent
 
 The marketplace is the product. Three surfaces let an agent reach it, and all three are built on the same eight tools defined in [src/lib/mcp-tools.ts](src/lib/mcp-tools.ts).
@@ -132,6 +142,7 @@ A mainnet settlement test runs with node scripts/prod-settle-test.mjs. It requir
 - The x402 ledger in src/lib/x402.ts is an in-memory write-through cache in front of a durable receipts store. Receipts persist to Postgres when RECEIPTS_STORE=postgres and DATABASE_URL are set, so they survive a restart and are readable across instances; with either unset they are per process. Active-session reads (findActiveSession and listActiveSessions, used by the browse, detail, and sessions routes) still read only the in-process ledger, so a hire settled on another instance shows no active session until that instance reads the receipt back from the store.
 - Hiring supports standard (EOA) wallets only. Smart-account wallets (ERC-4337, e.g. Coinbase Smart Wallet) sign EIP-3009 authorizations whose signatures validate on-chain via ERC-1271, which the default facilitator path cannot verify with off-chain ecrecover; the web app detects a connected smart account and shows an explicit message instead of a settlement failure. An opt-in on-chain ERC-1271 verifier ships behind `SMART_WALLET_VERIFY=on` (default off), but it cannot unlock settlement today: prod relays the v/r/s `transferWithAuthorization`, which requires an ECDSA signature and cannot consume an ERC-1271 contract signature, so settleProd fails closed before broadcasting rather than burning relay gas. Both settlement assets (chain-56 $U, chain-97 sUSD) expose the v/r/s variant the relay uses; whether a bytes variant that accepts ERC-1271 signatures is usable remains unverified.
 - The HireVault contract is live on chain 97 but unaudited. Its deployment caps a deposit at 1 WBNB and 20 USDT, the outside review is open (docs/audit-hirevault-brief.md), and a chain-56 deployment waits on its clearance. Opening a funded hire, executing it, and revoking run from scripts today (`scripts/smoke-hirevault.mjs`, `scripts/vault-executor.mjs`); a site panel is the next build. The junction that would let an Altana session initiate a vault trade, so no operator holds a raw key, is designed and not wired.
+- The Souk Grid Pilot (Tajir) is built and tested (`src/lib/tajir-agent.ts`, `src/app/api/tajir/...`) but not yet registered on chain: `TAJIR_AGENT_TOKEN_IDS` is empty, so its quotes carry no agent id and it does not appear in the catalog. Registration is the remaining step.
 
 ## Standards
 
