@@ -15,6 +15,7 @@ import {
   isJobStepSkill,
   takesJobs,
   sellsByJob,
+  CATEGORIES,
 } from '@agora/core'
 import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
@@ -549,6 +550,19 @@ export function AgentDetailPage() {
         if (d) setDetail(d)
       })
       .catch(() => {})
+    // a hire, settle or attestation changes the viewer's trail for this agent,
+    // so re-read it instead of leaving the stale "3h ago" row on the page
+    if (viewer) {
+      getOngoing(viewer)
+        .then((bundle) => {
+          setAgentItems(
+            hireItems(bundle).filter(
+              (i) => i.chainId === Number(chainId) && i.tokenId === tokenId,
+            ),
+          )
+        })
+        .catch(() => {})
+    }
   }
 
   // the page's own revoke, for the wallet holding a live session here: the same
@@ -681,6 +695,7 @@ export function AgentDetailPage() {
                 {detail.is_endpoint_verified ? <Tag title="The endpoint's domain is verified">Domain verified</Tag> : null}
                 {detail.pcs ? <Tag title="Its own registration says it works with PancakeSwap; not yet checked on-chain">PancakeSwap</Tag> : null}
                 {(detail as { boosted?: boolean }).boosted ? <Tag title="Paid boost: sorted higher on the marketplace">Boosted</Tag> : null}
+                {detail.category ? <Tag title="The shelf category this listing is filed under">{CATEGORIES.find((c) => c.key === detail.category)?.label ?? detail.category}</Tag> : null}
                 {builtWith ? (
                   <Tag href={builtWith.href ?? undefined} title="From the BUILT_WITH record on-chain">
                     Built with {builtWith.label}
@@ -722,7 +737,7 @@ export function AgentDetailPage() {
                   </SoukRow>
                   <SoukRow align="center" gap={12}>
                     <Txt size={12} lead={18} mono tone="data">
-                      {`$${(it.session?.spendCapUsd ?? it.job?.budgetUsd ?? 0).toFixed(2)}`}
+                      {`$${(it.session?.spendCapUsd ?? it.job?.budgetUsd ?? 0).toFixed(2)} cap`}
                     </Txt>
                     <Txt size={12} lead={18} mono tone="muted">{timeAgo(it.at)}</Txt>
                   </SoukRow>
@@ -1012,10 +1027,9 @@ export function AgentDetailPage() {
             score={detail.total_score > 0 ? formatScore(detail.total_score) : null}
             reviews={detail.total_feedbacks}
           />
-          <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} />
-          <HowToReachCard detail={detail} jobSeller={jobSeller} />
-
-          {/* the answer sits under what the agent expects, whichever path produced it */}
+          {/* the answer sits directly under the check panel, so a buyer sees it
+              the moment it lands instead of scrolling past what it does and how
+              to reach it */}
           {runResult && (runResult.output || runResult.task || runResult.job) && (
             <ResultPanel
               result={runResult}
@@ -1027,6 +1041,8 @@ export function AgentDetailPage() {
               }
             />
           )}
+          <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} />
+          <HowToReachCard detail={detail} jobSeller={jobSeller} />
 
           {perfProbe && <PerformanceSection probe={perfProbe} />}
 
@@ -2525,12 +2541,19 @@ function ResultPanel({
   const { output, job, task } = result
   // a hire with a job is rated once the buyer completes it; one without a job ends at delivery
   const rateable = !!rate && !!output && (job ? (job.status === 'Completed' || job.status === 'Submitted') : task?.status === 'delivered')
-  // tinted so the answer, and the rating under it, is the first thing the buyer's eye lands on
+  // drawn in the register form's own language: the plain card, a serif head and a
+  // hairline-led body, so the answer reads as part of the redesign rather than
+  // the pre-redesign green tint
   return (
-    <div className="metal rounded-[14px] border border-souk-data/60 bg-souk-data/[0.07] p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="micro text-souk-slate">Result</h2>
-        <div className="flex flex-wrap items-center gap-4 text-[11px] text-souk-slate">
+    <div className={cx(card('plain', 'lg'))}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="font-serif text-2xl font-medium">Result</h2>
+          <p className="mt-2 max-w-[56ch] text-sm leading-relaxed text-souk-muted">
+            The answer this agent returned for your task.
+          </p>
+        </div>
+        <div className="micro flex flex-wrap items-center gap-4 text-souk-muted">
           {task && <span>task {task.status}</span>}
           {task?.quality && (
             <span>
@@ -2541,13 +2564,17 @@ function ResultPanel({
         </div>
       </div>
       {output ? (
-        <pre className="mt-4 max-h-[420px] overflow-auto whitespace-pre-wrap rounded-[10px] border border-souk-hair bg-souk-surface2 p-4 font-mono text-xs leading-relaxed text-souk-ink">
+        <pre className="mt-5 max-h-[420px] overflow-auto whitespace-pre-wrap rounded-[12px] border border-souk-hair bg-souk-surface1 p-4 font-mono text-xs leading-relaxed text-souk-ink">
           {output}
         </pre>
       ) : (
-        <p className="mt-4 text-sm text-souk-slate">No deliverable yet.</p>
+        <p className="mt-5 text-sm text-souk-muted">No deliverable yet.</p>
       )}
-      {rateable && rate ? <RateAgent {...rate} /> : null}
+      {rateable && rate ? (
+        <div className="mt-5 border-t border-souk-hair pt-5">
+          <RateAgent {...rate} />
+        </div>
+      ) : null}
     </div>
   )
 }

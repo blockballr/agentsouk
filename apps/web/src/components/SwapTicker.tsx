@@ -11,11 +11,11 @@ import {
   quoteSwap,
   readAllowance,
   SWAP_CHAIN_ID,
-  SWAP_SYMBOL,
-  SWAP_TOKEN,
+  SWAP_SYMBOLS,
+  SWAP_TOKENS,
   swapCalldata,
-  type SwapDirection,
   type SwapQuote,
+  type SwapSymbol,
 } from '../lib/swap'
 import { ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
 import { connectWallet, sessionAccount, watchSession } from '../lib/wallet-session'
@@ -59,14 +59,14 @@ async function sendAndConfirm(
 
 export function SwapTicker() {
   const [open, setOpen] = useState(false)
-  const [direction, setDirection] = useState<SwapDirection>('bnb-to-u')
+  const [from, setFrom] = useState<SwapSymbol>('BNB')
+  const [to, setTo] = useState<SwapSymbol>('$U')
   const [amount, setAmount] = useState('')
   const [quote, setQuote] = useState<SwapQuote | null>(null)
   const [quoting, setQuoting] = useState(false)
   const [rate, setRate] = useState<bigint | null>(null)
   const [account, setAccount] = useState<string | null>(null)
-  const [bnbBalance, setBnbBalance] = useState<bigint | null>(null)
-  const [uBalance, setUBalance] = useState<bigint | null>(null)
+  const [balances, setBalances] = useState<Partial<Record<SwapSymbol, bigint | null>>>({})
   const [phase, setPhase] = useState<'idle' | 'connecting' | 'approving' | 'swapping'>('idle')
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -74,25 +74,25 @@ export function SwapTicker() {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const reduceMotion = useReducedMotion()
 
-  const fromSymbol = direction === 'bnb-to-u' ? 'BNB' : SWAP_SYMBOL
-  const toSymbol = direction === 'bnb-to-u' ? SWAP_SYMBOL : 'BNB'
-  const balance = direction === 'bnb-to-u' ? bnbBalance : uBalance
+  const fromToken = SWAP_TOKENS[from]
+  const nativeIn = fromToken.address === null
+  const balance = balances[from] ?? null
   const parsed = parseSwapAmount(amount)
   const insufficient = parsed !== null && balance !== null && parsed > balance
   const busy = phase !== 'idle'
 
   const refreshBalances = useCallback(async (who: string | null) => {
     if (!who) {
-      setBnbBalance(null)
-      setUBalance(null)
+      setBalances({})
       return
     }
-    const [bnb, token] = await Promise.all([
+    const [bnb, wbnb, usdt, u] = await Promise.all([
       readNativeBalance(who as `0x${string}`, SWAP_CHAIN_ID),
-      readErc20Balance(SWAP_TOKEN, who as `0x${string}`, SWAP_CHAIN_ID),
+      readErc20Balance(SWAP_TOKENS.WBNB.address as `0x${string}`, who as `0x${string}`, SWAP_CHAIN_ID),
+      readErc20Balance(SWAP_TOKENS.USDT.address as `0x${string}`, who as `0x${string}`, SWAP_CHAIN_ID),
+      readErc20Balance(SWAP_TOKENS['$U'].address as `0x${string}`, who as `0x${string}`, SWAP_CHAIN_ID),
     ])
-    setBnbBalance(bnb)
-    setUBalance(token)
+    setBalances({ BNB: bnb, WBNB: wbnb, USDT: usdt, '$U': u })
   }, [])
 
   useEffect(() => {
@@ -122,13 +122,13 @@ export function SwapTicker() {
     }
   }, [open])
 
-  // the rate is fetched on mount and whenever the direction flips, so the panel
+  // the rate is fetched on mount and whenever the pair flips, so the panel
   // opens already priced instead of waiting on a fetch after it is open
   useEffect(() => {
     let live = true
     const one = parseSwapAmount('1')
     if (one) {
-      quoteSwap(direction, one)
+      quoteSwap(from, to, one)
         .then((next) => {
           if (live) setRate(next?.amountOut ?? null)
         })
@@ -139,7 +139,7 @@ export function SwapTicker() {
     return () => {
       live = false
     }
-  }, [direction])
+  }, [from, to])
 
   useEffect(() => {
     if (!open) {
@@ -156,7 +156,7 @@ export function SwapTicker() {
     let live = true
     setQuoting(true)
     const timer = window.setTimeout(() => {
-      quoteSwap(direction, value)
+      quoteSwap(from, to, value)
         .then((next) => {
           if (live) setQuote(next)
         })
@@ -171,7 +171,7 @@ export function SwapTicker() {
       live = false
       window.clearTimeout(timer)
     }
-  }, [open, direction, amount])
+  }, [open, from, to, amount])
 
   function changeAmount(next: string) {
     const clean = next.replace(',', '.')
@@ -185,12 +185,34 @@ export function SwapTicker() {
 
   function setMax() {
     const max =
-      direction === 'bnb-to-u' && bnbBalance !== null
-        ? bnbBalance > GAS_BUFFER
-          ? bnbBalance - GAS_BUFFER
+      nativeIn && balance !== null
+        ? balance > GAS_BUFFER
+          ? balance - GAS_BUFFER
           : 0n
-        : uBalance
+        : balance
     if (max !== null) changeAmount(amountLabel(max, 18).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, ''))
+  }
+
+  // picking the token already on the other side flips the pair rather than
+  // leaving the two legs identical
+  function pickFrom(next: SwapSymbol) {
+    if (next === to) setTo(from)
+    setFrom(next)
+    setQuote(null)
+    setRate(null)
+    setError(null)
+    setDone(null)
+    setHash(null)
+  }
+
+  function pickTo(next: SwapSymbol) {
+    if (next === from) setFrom(to)
+    setTo(next)
+    setQuote(null)
+    setRate(null)
+    setError(null)
+    setDone(null)
+    setHash(null)
   }
 
   function flip() {
@@ -198,7 +220,8 @@ export function SwapTicker() {
     // instead of being reinterpreted as 3000 BNB
     const carry = quote !== null && !quoting && parsed !== null && quote.amountIn === parsed
     setAmount(quote && carry ? amountLabel(quote.amountOut, 8) : '')
-    setDirection((current) => (current === 'bnb-to-u' ? 'u-to-bnb' : 'bnb-to-u'))
+    setFrom(to)
+    setTo(from)
     setQuote(null)
     setRate(null)
     setError(null)
@@ -228,7 +251,7 @@ export function SwapTicker() {
       return
     }
     if (insufficient) {
-      setError(`Not enough ${fromSymbol} in this wallet.`)
+      setError(`Not enough ${from} in this wallet.`)
       return
     }
     setPhase('swapping')
@@ -236,20 +259,21 @@ export function SwapTicker() {
       setTargetChain(SWAP_CHAIN_ID)
       await ensureBscChain()
       const provider = await getProvider()
-      if (direction === 'u-to-bnb') {
-        const allowance = await readAllowance(account)
-        if (allowance === null) throw new Error('Could not read the $U approval.')
+      // the native coin is spent as value, not approved; every token leg needs
+      // the router to be allowed to move it
+      if (!nativeIn) {
+        const allowance = await readAllowance(account, from)
+        if (allowance === null) throw new Error(`Could not read the ${from} approval.`)
         if (allowance < parsed) {
           setPhase('approving')
-          await sendAndConfirm(provider, account, {
-            to: SWAP_TOKEN,
-            data: approveSwapCalldata(parsed),
-          })
+          const approval = approveSwapCalldata(from, parsed)
+          await sendAndConfirm(provider, account, { to: approval.to, data: approval.data })
         }
       }
       setPhase('swapping')
       const tx = swapCalldata({
-        direction,
+        from,
+        to,
         amountIn: parsed,
         amountOutMinimum: minimumOut(quote.amountOut),
         fee: quote.fee,
@@ -257,7 +281,7 @@ export function SwapTicker() {
       })
       const swapHash = await sendAndConfirm(provider, account, tx)
       setHash(swapHash)
-      setDone(`${fromSymbol} swapped for ${toSymbol}.`)
+      setDone(`${from} swapped for ${to}.`)
       setAmount('')
       await refreshBalances(account)
     } catch (next) {
@@ -271,12 +295,12 @@ export function SwapTicker() {
     ? phase === 'connecting'
       ? 'Connecting...'
       : phase === 'approving'
-        ? `Approving ${SWAP_SYMBOL}...`
+        ? `Approving ${from}...`
         : 'Swapping...'
     : !account
       ? 'Connect wallet'
       : insufficient
-        ? `Not enough ${fromSymbol}`
+        ? `Not enough ${from}`
         : !parsed || parsed <= 0n
           ? 'Enter an amount'
           : quoting
@@ -284,6 +308,9 @@ export function SwapTicker() {
             : !quote
               ? 'No route found'
               : 'Swap'
+
+  const pickerClass =
+    'mt-1 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-2 py-1.5 text-sm font-semibold text-souk-ink outline-none focus:border-souk-sky'
 
   return (
     <div ref={rootRef} className="relative flex items-center">
@@ -298,7 +325,7 @@ export function SwapTicker() {
         </span>
         <span className="text-souk-muted">Swap</span>
         <span className="font-semibold text-souk-ink">
-          BNB/{SWAP_SYMBOL}
+          {from}/{to}
         </span>
       </button>
 
@@ -326,23 +353,46 @@ export function SwapTicker() {
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={flip}
-            className="mt-3 flex w-full items-center justify-between rounded-[8px] border border-souk-hair bg-souk-surface2 px-3 py-2 text-left"
-          >
-            <span>
+          <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+            <label className="block min-w-0">
               <span className="block text-[10px] uppercase tracking-wide text-souk-muted">You pay</span>
-              <span className="text-sm font-semibold text-souk-ink">{fromSymbol}</span>
-            </span>
-            <span aria-hidden="true" className="text-souk-data">
-              &#8646;
-            </span>
-            <span className="text-right">
+              <select
+                aria-label="Token you pay"
+                value={from}
+                onChange={(event) => pickFrom(event.target.value as SwapSymbol)}
+                className={pickerClass}
+              >
+                {SWAP_SYMBOLS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={flip}
+              aria-label="Flip the pair"
+              className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-full border border-souk-hair text-souk-data transition hover:bg-souk-surface2"
+            >
+              <span aria-hidden="true">&#8646;</span>
+            </button>
+            <label className="block min-w-0">
               <span className="block text-[10px] uppercase tracking-wide text-souk-muted">You receive</span>
-              <span className="text-sm font-semibold text-souk-ink">{toSymbol}</span>
-            </span>
-          </button>
+              <select
+                aria-label="Token you receive"
+                value={to}
+                onChange={(event) => pickTo(event.target.value as SwapSymbol)}
+                className={pickerClass}
+              >
+                {SWAP_SYMBOLS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <div className="mt-2 rounded-[8px] border border-souk-hair bg-souk-surface2 px-3 py-2">
             <div className="flex items-center justify-between text-[10px] uppercase tracking-wide text-souk-muted">
@@ -359,7 +409,7 @@ export function SwapTicker() {
                 placeholder="0.0"
                 className="min-w-0 flex-1 bg-transparent text-lg font-semibold text-souk-ink outline-none placeholder:text-souk-muted"
               />
-              <span className="text-xs font-semibold text-souk-ink">{fromSymbol}</span>
+              <span className="text-xs font-semibold text-souk-ink">{from}</span>
               <button
                 type="button"
                 onClick={setMax}
@@ -379,13 +429,13 @@ export function SwapTicker() {
               <span className="text-lg font-semibold text-souk-ink">
                 {quote ? amountLabel(quote.amountOut) : quoting ? '...' : '--'}
               </span>
-              <span className="text-xs font-semibold text-souk-ink">{toSymbol}</span>
+              <span className="text-xs font-semibold text-souk-ink">{to}</span>
             </div>
           </div>
 
           {rate !== null && (
             <p className="mt-2 text-[10px] text-souk-muted">
-              1 {fromSymbol} &asymp; {amountLabel(rate, 4)} {toSymbol}
+              1 {from} &asymp; {amountLabel(rate, 4)} {to}
             </p>
           )}
 
@@ -411,7 +461,7 @@ export function SwapTicker() {
             </a>
           )}
           <p className="mt-2 text-[10px] leading-4 text-souk-muted">
-            Routed through PancakeSwap v3. Network fee is paid in BNB.
+            BNB, WBNB, USDT and $U, routed through PancakeSwap v3. Network fee is paid in BNB.
           </p>
         </motion.div>
       )}
