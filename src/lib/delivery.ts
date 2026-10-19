@@ -393,22 +393,24 @@ export function extractA2aDeliverable(result: unknown): A2aDeliverable {
   return { text, found: true, state };
 }
 
-async function deliverA2a(
-  endpoint: string,
-  task: string,
-  input?: Record<string, unknown>,
-): Promise<DeliverOutcome> {
-  // the registry's a2a_endpoint usually points at the agent card; the messaging
-  // url lives inside it
+interface A2aResolution {
+  messagingUrl: string;
+  skills: AgentCardSkill[];
+}
+
+// the registry's a2a_endpoint usually points at the agent card; the messaging url
+// and the skills live inside it. An endpoint that is not a card is the messaging
+// url itself. A private address is refused here so the request path never dials
+// the function's own loopback.
+async function resolveA2a(endpoint: string): Promise<A2aResolution | { error: string }> {
   const endpointBlocked = privateEndpointReason(endpoint);
   if (endpointBlocked) {
     return {
-      protocol: "a2a",
-      ok: false,
       error: `${endpointBlocked}. the agent's registry record points there, so the owner needs to publish a public endpoint.`,
     };
   }
   let messagingUrl = endpoint;
+  let skills: AgentCardSkill[] = [];
   try {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 10000);
@@ -418,6 +420,7 @@ async function deliverA2a(
     const card = (await cardRes.json()) as AgentCard;
     const fromCard = card.supportedInterfaces?.[0]?.url ?? card.url;
     if (fromCard) messagingUrl = fromCard;
+    skills = card.skills ?? [];
   } catch {
     // not a card; treat the registered endpoint as the messaging url directly
   }
@@ -425,12 +428,19 @@ async function deliverA2a(
   const blocked = privateEndpointReason(messagingUrl);
   if (blocked) {
     return {
-      protocol: "a2a",
-      ok: false,
       error: `${blocked}. the agent's card names it as the messaging url, so the owner needs to publish a public one.`,
     };
   }
+  return { messagingUrl, skills };
+}
 
+// One message/send to an agent's own endpoint, read the same way a delivery reads
+// it: a gated or job-only seller, a login wall, or the agent's own content.
+async function a2aTalk(
+  messagingUrl: string,
+  task: string,
+  input?: Record<string, unknown>,
+): Promise<DeliverOutcome> {
   const send = await postRpc(messagingUrl, {
     jsonrpc: "2.0",
     id: 1,
@@ -470,6 +480,75 @@ async function deliverA2a(
     return { protocol: "a2a", ok: false, error: extracted.text };
   }
   return { protocol: "a2a", ok: true, kind: "deliverable", text: extracted.text };
+}
+
+async function deliverA2a(
+  endpoint: string,
+  task: string,
+  input?: Record<string, unknown>,
+): Promise<DeliverOutcome> {
+  const resolved = await resolveA2a(endpoint);
+  if ("error" in resolved) return { protocol: "a2a", ok: false, error: resolved.error };
+  return a2aTalk(resolved.messagingUrl, task, input);
+}
+
+// The call a free preview makes, read from the card's own skills: a work skill,
+// never a job-protocol step, driven by its structured example when it has one.
+// A text-only call leaves an agent that reads a data part asking for the values
+// it was never given, which reads as the panel refusing to run.
+export interface PreviewCall {
+  skillId?: string;
+  skillName?: string;
+  task: string;
+  input?: Record<string, unknown>;
+}
+
+export function pickPreviewCall(skills: AgentCardSkill[], wantedSkillId?: string): PreviewCall | null {
+  const isWork = (s: AgentCardSkill) => {
+    const id = (s.id ?? s.name ?? "").toLowerCase();
+    return !id.startsWith("negotiate") && !id.startsWith("notify_funded");
+  };
+  const work = skills.filter(isWork);
+  if (work.length === 0) return null;
+  const wanted = wantedSkillId
+    ? work.find((s) => (s.id ?? s.name ?? "").toLowerCase() === wantedSkillId.toLowerCase())
+    : undefined;
+  const chosen =
+    wanted ??
+    work.find((s) => (s.inputSchema?.examples?.length ?? 0) > 0) ??
+    work.find((s) => (s.examples?.length ?? 0) > 0) ??
+    work[0];
+  const input = chosen.inputSchema?.examples?.[0];
+  const task = chosen.examples?.[0] ?? chosen.description ?? chosen.name ?? chosen.id ?? "preview";
+  return { skillId: chosen.id, skillName: chosen.name, task, input };
+}
+
+export interface PreviewOutcome {
+  ok: boolean;
+  text?: string;
+  error?: string;
+  gated?: boolean;
+  skillId?: string;
+  skillName?: string;
+}
+
+// The preview the marketplace button runs: the same direct call a delivery makes,
+// taken before any payment so a buyer reads the agent's own answer first. It runs
+// server-side because a browser call to a third-party agent is refused by CORS,
+// which is why the panel failed for most listings.
+export async function previewA2a(endpoint: string, wantedSkillId?: string): Promise<PreviewOutcome> {
+  const resolved = await resolveA2a(endpoint);
+  if ("error" in resolved) return { ok: false, error: resolved.error };
+  const call = pickPreviewCall(resolved.skills, wantedSkillId);
+  const outcome = await a2aTalk(resolved.messagingUrl, call?.task ?? "preview", call?.input);
+  return {
+    ok: outcome.ok,
+    text: outcome.text,
+    error: outcome.error,
+    gated: outcome.gated,
+    skillId: call?.skillId,
+    skillName: call?.skillName,
+  };
 }
 
 export interface DeliverOutcome {
