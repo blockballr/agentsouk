@@ -30,7 +30,7 @@ function App() {
         <Route element={<Layout />}>
           {/* The homepage is the about page, and the marketplace lives at /agents.
               /about stays as an alias so the nav link and any shared URL keep working. */}
-          <Route index element={STATION_HOST ? <Navigate to="/station" replace /> : <HomePage />} />
+          <Route index element={STATION_HOST ? <StationPage /> : <HomePage />} />
           <Route path="/about" element={<HomePage />} />
           <Route path="/agents" element={<MarketplacePage />} />
           <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
@@ -41,7 +41,10 @@ function App() {
           <Route path="/vault" element={<VaultHirePage />} />
           <Route path="/vault/:chainId/:tokenId" element={<VaultHirePage />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/station" element={<StationPage />} />
+          <Route
+            path="/station"
+            element={STATION_HOST ? <Navigate to="/" replace /> : <StationPage />}
+          />
           <Route path="/quest" element={<QuestPage />} />
           <Route path="/seller" element={<SellerBoardPage />} />
           <Route path="/seller/stalls" element={<SellerStallsPage />} />
