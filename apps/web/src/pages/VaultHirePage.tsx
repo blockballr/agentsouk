@@ -21,6 +21,8 @@ import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../li
 import { connectWallet } from '../lib/wallet-session'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { explorerAddressUrl } from '../lib/contracts'
+import { ratedHires } from '../lib/rating'
+import { RateAgent } from '../components/RateAgent'
 import { ResultBox } from '../components/ui'
 import {
   Stack,
@@ -109,6 +111,12 @@ export default function VaultHirePage() {
   const [caps, setCaps] = useState<{ capA: string; capB: string } | null>(null)
   const [hires, setHires] = useState<VaultHire[] | null>(null)
   const [hireIds, setHireIds] = useState<bigint[] | null>(null)
+  useEffect(() => {
+    if (hires && hires.some((h) => !h.open)) {
+      setVaultRated(ratedHires().get(`vault:${requestedChain}:${tokenId}`))
+    }
+  }, [hires, requestedChain, tokenId])
+  const [vaultRated, setVaultRated] = useState<number | null | undefined>(undefined)
   const [busy, setBusy] = useState<string | null>(null)
   const [lines, setLines] = useState<string[]>([])
 
@@ -481,6 +489,7 @@ export default function VaultHirePage() {
               </button>
             </Row>
             {hires && hires.length > 0 ? (
+              <>
               <Stack gap={12}>
                 <Rule hair />
                 {hires.map((h, i) => {
@@ -507,6 +516,23 @@ export default function VaultHirePage() {
                   )
                 })}
               </Stack>
+              {hires.some((h) => !h.open) && vaultRated === undefined ? (
+                <div className="mt-3">
+                  <RateAgent
+                    chainId={requestedChain}
+                    tokenId={tokenId}
+                    agentName={prefill?.name ?? 'agent'}
+                    paymentId={`vault:${requestedChain}:${tokenId}`}
+                    onRated={setVaultRated}
+                  />
+                </div>
+              ) : null}
+              {vaultRated !== undefined ? (
+                <Txt size={12} lead={18} tone="muted" className="mt-2">
+                  {vaultRated ? `Rated ${vaultRated} of 5.` : 'Rated.'}
+                </Txt>
+              ) : null}
+              </>
             ) : (
               <Stack pad={[14, 16, 14, 16]} gap={8} radius={14} hair className="items-center">
                 <SoukMark size={30} />
