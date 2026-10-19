@@ -113,6 +113,44 @@ export async function POST(req: NextRequest) {
 // The wallet's recorded kernel jobs; each row's status is re-read from the
 // kernel so the page never has to trust a stale record
 export async function GET(req: NextRequest) {
+  const chainIdParam = req.nextUrl.searchParams.get("chainId");
+  const jobIdParam = req.nextUrl.searchParams.get("jobId");
+  // a single job can be read straight off the chain without a wallet, so a
+  // funded job that lost its marketplace record (or was funded before the
+  // record step existed) can still be recovered by its on-chain id
+  if (chainIdParam && jobIdParam) {
+    const chainId = Number(chainIdParam);
+    const jobId = Number(jobIdParam);
+    if (!Number.isSafeInteger(chainId) || chainId < 1 || !Number.isSafeInteger(jobId) || jobId < 1) {
+      return NextResponse.json({ success: false, error: "invalid chainId or jobId" }, { status: 400 });
+    }
+    const onchain = await kernelJob(chainId, jobId).catch(() => null);
+    if (!onchain) {
+      return NextResponse.json({ success: false, error: "job not found on chain" }, { status: 404 });
+    }
+    const result = await kernelJobResult(chainId, jobId, onchain).catch(() => null);
+    return NextResponse.json({
+      success: true,
+      jobs: [
+        {
+          id: null,
+          onchainJobId: jobId,
+          chainId,
+          tokenId: null,
+          agentName: null,
+          budgetUsd: Number(formatUnits(onchain.budget, 18)),
+          expiredAt: new Date(Number(onchain.expiredAt) * 1000).toISOString(),
+          status: onchain.status,
+          submittedAt: onchain.submittedAt > 0n
+            ? new Date(Number(onchain.submittedAt) * 1000).toISOString()
+            : null,
+          result,
+          updatedAt: null,
+        },
+      ],
+    });
+  }
+
   const wallet = req.nextUrl.searchParams.get("wallet") ?? "";
   if (!/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
     return NextResponse.json({ success: false, error: "wallet required" }, { status: 400 });
