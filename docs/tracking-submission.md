@@ -291,6 +291,25 @@ section 1) does emit onchain events for hires that go through it.
 | Job completion | provider submits a deliverable (Submitted), then the evaluator completes the job (Completed) via POST /api/jobs/[jobId] | GET /api/jobs shows status Submitted or Completed with deliverable and attestation |
 | Rating | reputation arrives through the 8004scan feedbacks API via fetchFeedbacks in src/lib/scanner.ts, plus scout ratings in src/lib/scout.ts; no onchain rating transaction exists in this build | GET /api/agents and the agent detail endpoints expose total_score, average_score, and total_feedbacks from the registry snapshot |
 
+### x402 escrow events (onchain, EIP3009Funder)
+
+Hires that go through the x402 escrow path (EIP3009Funder at the chain's funder
+address) emit these events; topic0 hashes are keccak256 of the signature.
+
+| Quest event | Event signature | topic0 |
+|---|---|---|
+| Hire + deposit | `JobFunded(bytes32 indexed jobId, address indexed buyer, address indexed payTo, address token, uint256 amount)` | `0x8de1432433770e513f4174e6b5a61a50494af660bd37230deef98fb49ea04880` |
+| Delivery verified (dispute window opens) | `JobVerified(bytes32 indexed jobId, bytes32 indexed receiptId, uint64 verifiedAt)` | `0x8cc8bea8f26291fe3941489af18f60e9745d15f1da5178bd673beacbb47c037a` |
+| Release (after dispute window) | `JobReleased(bytes32 indexed jobId, address indexed payTo, uint256 amount)` | `0x69dc5b5b0868890e5d51ac77964293ac42461990f49816061b0e058819f37e9e` |
+| Refund (buyer, before delivery) | `JobRefunded(bytes32 indexed jobId, address indexed buyer, uint256 amount)` | `0xa29cbf249cfa7f4623dd9da8fb1b5a81ce77895327f92a86a8539d4b823333a6` |
+
+### ERC-8183 job events (onchain, kernel commerce contract)
+
+Job sellers settle through the ERC-8183 commerce kernel. The kernel's own
+Open/Funded/Submitted/Completed/Rejected/Expired transitions are on chain and
+readable via `getJob(jobId)`; event signatures follow the ERC-8183 standard and
+are not redefined in this repository.
+
 ### HireVault funded-hire events (onchain)
 
 Hires that go through HireVault emit these events; topic0 hashes are keccak256 of the signature.
