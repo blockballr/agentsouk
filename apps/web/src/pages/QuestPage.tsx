@@ -337,7 +337,7 @@ export function QuestPage() {
               aria-valuenow={done}
             >
               <div
-                className="meter-fill relative h-full rounded-[3px] bg-souk-data transition-[width] duration-700 ease-out motion-reduce:transition-none"
+                className="meter-fill relative h-full overflow-hidden rounded-[3px] bg-souk-data transition-[width] duration-700 ease-out motion-reduce:transition-none"
                 style={{ width: `${(done / 3) * 100}%` }}
               >
                 {done < 3 ? (

@@ -439,7 +439,7 @@ function Meter({ pct, pending }: { pct: number; pending: boolean }) {
       </Row>
       <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-souk-hair">
         <div
-          className={`meter-fill relative h-full rounded-[3px] transition-[width] ease-out motion-reduce:transition-none ${pending ? 'duration-[2200ms]' : 'duration-700'}`}
+          className={`meter-fill relative h-full overflow-hidden rounded-[3px] transition-[width] ease-out motion-reduce:transition-none ${pending ? 'duration-[2200ms]' : 'duration-700'}`}
           style={{
             width: `${pending ? 19 : Math.max(pct, 2)}%`,
             minWidth: 6,
