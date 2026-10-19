@@ -7,6 +7,7 @@ import {
   encodeGetJob,
   encodeJobCalls,
   encodeJobCounter,
+  tryBundledFund,
   jobDescription,
   jobStatusName,
   uintFromWord,
@@ -152,22 +153,33 @@ export default function Jobs8183HirePanel({
       setLines((l) => [...l, `Funding job ${jobId.toString()} for ${formatUnits(budget, 18)} of the kernel's token.`])
 
       const calls = encodeJobCalls(stack, { jobId, provider: quote.providerAddress, expiredAt, budgetRaw: budget, description })
-      for (let i = 0; i < calls.length; i++) {
-        const call = calls[i]
-        setLines((l) => [...l, `Wallet signature ${i + 1} of ${calls.length}: ${call.label}.`])
-        const hash = (await withSendTimeout(
-          provider.request({ method: 'eth_sendTransaction', params: [{ from: account, to: call.to, data: call.data }] }),
-        )) as `0x${string}`
-        const receipt = await waitForTransactionReceipt(() =>
-          provider.request({ method: 'eth_getTransactionReceipt', params: [hash] }) as Promise<TransactionReceipt | null>,
-        )
-        if (!receipt) {
-          throw new Error(`Signature ${i + 1} of ${calls.length} did not confirm. ${hash}`)
+      // Prefer one bundled approval (EIP-5792) when the wallet supports it; the
+      // five calls still run in order on chain, but the buyer approves once.
+      // Fall back to the sequential popups for wallets that do not speak it.
+      const bundled = await tryBundledFund(provider, chainId, account, calls)
+      if (bundled.supported && bundled.ok) {
+        setLines((l) => [...l, `Batched fund: 1 approval for ${calls.length} calls.`])
+        setPhase({ kind: 'funding', done: calls.length })
+      } else if (bundled.supported && !bundled.ok) {
+        throw new Error(bundled.error)
+      } else {
+        for (let i = 0; i < calls.length; i++) {
+          const call = calls[i]
+          setLines((l) => [...l, `Wallet signature ${i + 1} of ${calls.length}: ${call.label}.`])
+          const hash = (await withSendTimeout(
+            provider.request({ method: 'eth_sendTransaction', params: [{ from: account, to: call.to, data: call.data }] }),
+          )) as `0x${string}`
+          const receipt = await waitForTransactionReceipt(() =>
+            provider.request({ method: 'eth_getTransactionReceipt', params: [hash] }) as Promise<TransactionReceipt | null>,
+          )
+          if (!receipt) {
+            throw new Error(`Signature ${i + 1} of ${calls.length} did not confirm. ${hash}`)
+          }
+          if (receipt.status !== '0x1' && receipt.status !== 'success') {
+            throw new Error(`Signature ${i + 1} of ${calls.length} failed: ${call.label}. ${hash}`)
+          }
+          setPhase({ kind: 'funding', done: i + 1 })
         }
-        if (receipt.status !== '0x1' && receipt.status !== 'success') {
-          throw new Error(`Signature ${i + 1} of ${calls.length} failed: ${call.label}. ${hash}`)
-        }
-        setPhase({ kind: 'funding', done: i + 1 })
       }
 
       const jobWord = (await provider.request({ method: 'eth_call', params: [{ to: stack.commerce, data: encodeGetJob(jobId) }, 'latest'] })) as string
@@ -419,13 +431,20 @@ function Meter({ pct, pending }: { pct: number; pending: boolean }) {
       </Row>
       <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-souk-hair">
         <div
-          className={`h-full rounded-[3px] transition-[width] ease-out motion-reduce:transition-none ${pending ? 'duration-[2200ms]' : 'duration-700'}`}
+          className={`meter-fill relative h-full rounded-[3px] transition-[width] ease-out motion-reduce:transition-none ${pending ? 'duration-[2200ms]' : 'duration-700'}`}
           style={{
             width: `${pending ? 19 : Math.max(pct, 2)}%`,
             minWidth: 6,
             backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #44b48b 100%)',
           }}
-        />
+        >
+          {pending ? (
+            <span
+              aria-hidden="true"
+              className="meter-shimmer absolute inset-y-0 left-0 w-[30%] rounded-[3px] bg-gradient-to-r from-transparent via-white/[0.42] to-transparent"
+            />
+          ) : null}
+        </div>
       </div>
     </Stack>
   )
