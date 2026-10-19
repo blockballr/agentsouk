@@ -163,9 +163,12 @@ if (typeof window !== "undefined") {
   window.dispatchEvent(new Event("eip6963:requestProvider"));
 }
 
+// localStorage, not sessionStorage: a tab that opens an agent from the shelf must
+// keep the wallet the buyer already chose, and sessionStorage is per-tab, so a
+// new tab or a full reload drops the choice and reads as a fresh session
 function readStoredRdns(): string | null {
   try {
-    return sessionStorage.getItem(STORAGE_KEY);
+    return localStorage.getItem(STORAGE_KEY);
   } catch {
     return null;
   }
@@ -173,10 +176,10 @@ function readStoredRdns(): string | null {
 
 function storeRdns(rdns: string | null): void {
   try {
-    if (rdns) sessionStorage.setItem(STORAGE_KEY, rdns);
-    else sessionStorage.removeItem(STORAGE_KEY);
+    if (rdns) localStorage.setItem(STORAGE_KEY, rdns);
+    else localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // private mode: choice just does not survive refresh
+    // private mode: choice just does not survive
   }
 }
 
