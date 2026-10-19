@@ -1,13 +1,27 @@
 import { useEffect, useState } from 'react'
-import { watchActiveAccount } from './wallet'
+import { getActiveAccount, watchActiveAccount } from './wallet'
 
-// the wallet's own active account, read from the provider and re-read whenever
-// the wallet reports a change. this reflects who is connected right now, even
-// before a sign-in record exists for that address, so a wallet switch updates
-// every surface that shows the connected account. authorization (which wallet
-// the marketplace acts for) is tracked separately by the session layer.
+// the wallet's own active account. read from the provider on mount and re-read
+// on focus and on a short poll, because wallet extensions do not always emit
+// accountsChanged (or emit it on a provider we are not listening to). this
+// reflects who is connected right now; authorization is tracked separately by
+// the session layer.
 export function useActiveAccount(): string | null {
   const [account, setAccount] = useState<string | null>(null)
-  useEffect(() => watchActiveAccount(setAccount), [])
+  useEffect(() => {
+    const sync = () => {
+      void getActiveAccount().then(setAccount)
+    }
+    sync()
+    const unwatch = watchActiveAccount(setAccount)
+    const onFocus = () => sync()
+    const timer = window.setInterval(sync, 2000)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      unwatch()
+      window.clearInterval(timer)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [])
   return account
 }
