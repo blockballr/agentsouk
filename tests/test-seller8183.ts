@@ -86,6 +86,13 @@ describe("seller8183: the signed quote", () => {
     expect(verified).toBe(true);
   });
 
+  it("quotes a fractional price instead of refusing it", async () => {
+    const res = await quoteEnvelope({ ...liveCfg, priceUsd: 0.01 }, negotiatePart.data);
+    expect(res.ok).toBe(true);
+    const envelope = (res as { ok: true; envelope: QuoteEnvelope }).envelope;
+    expect(envelope.price).toBe(10_000_000_000_000_000n.toString());
+  });
+
   it("refuses a quote whose key does not control the registered wallet", async () => {
     const res = await quoteEnvelope({ ...liveCfg, sellerKey: "0x" + "22".repeat(32) }, negotiatePart.data);
     expect(res.ok).toBe(false);
