@@ -1,0 +1,58 @@
+name: Rebuild the catalogue snapshot
+
+# The committed snapshot (data/agents.json on chain 56) is a cold-start
+# fallback; the live shelf refreshes every 15 minutes via refresh-catalogue.yml.
+# This workflow rebuilds the committed file twice a day so a cold start never
+# serves a snapshot more than ~12 hours old. The rebuild runs the same route a
+# deployment uses, so a local rebuild cannot drift from what ships.
+
+on:
+  schedule:
+    - cron: "0 0,12 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - name: Start the server
+        env:
+          TARGET_CHAIN: "56"
+          INDEX_SECRET: ${{ secrets.INDEX_SECRET }}
+          EIGHT004_API_KEY: ${{ secrets.EIGHT004_API_KEY }}
+        run: |
+          INDEX_SECRET="${INDEX_SECRET}" EIGHT004_API_KEY="${EIGHT004_API_KEY}" TARGET_CHAIN=56 npm run start &
+          echo $! > /tmp/server.pid
+      - name: Wait for the server
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sS http://localhost:3000/api/chain >/dev/null 2>&1; then echo "ready"; break; fi
+            sleep 2
+          done
+      - name: Rebuild the snapshot
+        env:
+          INDEX_SECRET: ${{ secrets.INDEX_SECRET }}
+          EIGHT004_API_KEY: ${{ secrets.EIGHT004_API_KEY }}
+        run: |
+          INDEX_SECRET="${INDEX_SECRET}" EIGHT004_API_KEY="${EIGHT004_API_KEY}" \
+            node scripts/rebuild-index.mjs http://localhost:3000 60 56
+      - name: Stop the server
+        if: always()
+        run: kill $(cat /tmp/server.pid) 2>/dev/null || true
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/agents.json
+          if git diff --cached --quiet; then
+            echo "snapshot unchanged, nothing to commit"
+            exit 0
+          fi
+          git commit -m "chore(snapshot): twice-daily rebuild of data/agents.json"
+          git push

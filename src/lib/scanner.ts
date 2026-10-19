@@ -1174,7 +1174,9 @@ export async function queryAgents(
       error: index.error,
       snapshotTime,
       catalogueRefreshedAt: index.catalogueRefreshedAt,
-      shelved: Array.from(index.agents.values()).filter((a) => a.chain_id === chainId).length,
+      // the curated count the strap shows: classified, executable agents
+      // actually served, not the raw size of the in-memory index
+      shelved: shelf.length,
       catalogueSource: index.catalogueSource,
       shelfMode: shelfStoreMode(),
       lastDurableReadAt: durableReadAt,
