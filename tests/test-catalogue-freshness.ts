@@ -150,59 +150,46 @@ afterEach(() => {
 });
 
 describe("the freshness line", () => {
-  it("uses the snapshot wording when the store has recorded no refresh", () => {
+  it("says nothing when the store has recorded no refresh", () => {
     expect(
-      catalogueFreshnessLabel(
-        null,
-        "2026-09-25T00:00:00Z",
-        Date.parse("2026-09-27T00:00:00Z"),
-      ),
-    ).toBe("snapshot taken 2026-09-25");
+      catalogueFreshnessLabel(null, Date.parse("2026-09-27T00:00:00Z")),
+    ).toBeNull();
   });
 
   it("uses the store's refresh time when it has one", () => {
     const refreshedAt = "2026-09-27T12:00:00Z";
     expect(
-      catalogueFreshnessLabel(
-        refreshedAt,
-        "2026-09-25T00:00:00Z",
-        Date.parse("2026-09-27T12:04:00Z"),
-      ),
+      catalogueFreshnessLabel(refreshedAt, Date.parse("2026-09-27T12:04:00Z")),
     ).toBe("catalogue refreshed 4 minutes ago");
   });
 
   it("reads naturally for one minute, hours and days", () => {
     const now = Date.parse("2026-09-27T12:00:00Z");
-    expect(catalogueFreshnessLabel("2026-09-27T11:59:00Z", null, now)).toBe(
+    expect(catalogueFreshnessLabel("2026-09-27T11:59:00Z", now)).toBe(
       "catalogue refreshed 1 minute ago",
     );
-    expect(catalogueFreshnessLabel("2026-09-27T09:00:00Z", null, now)).toBe(
+    expect(catalogueFreshnessLabel("2026-09-27T09:00:00Z", now)).toBe(
       "catalogue refreshed 3 hours ago",
     );
-    expect(catalogueFreshnessLabel("2026-09-25T12:00:00Z", null, now)).toBe(
+    expect(catalogueFreshnessLabel("2026-09-25T12:00:00Z", now)).toBe(
       "catalogue refreshed 2 days ago",
     );
   });
 
   it("does not claim freshness for a future or unparseable time", () => {
     const now = Date.parse("2026-09-27T12:00:00Z");
-    // a timestamp ahead of now is clock skew, so it falls back rather than claiming
-    expect(
-      catalogueFreshnessLabel("2026-09-27T12:05:00Z", "2026-09-25T00:00:00Z", now),
-    ).toBe("snapshot taken 2026-09-25");
-    expect(
-      catalogueFreshnessLabel("not a date", "2026-09-25T00:00:00Z", now),
-    ).toBe("snapshot taken 2026-09-25");
-    expect(catalogueFreshnessLabel("2026-09-27T12:05:00Z", null, now)).toBeNull();
+    // a timestamp ahead of now is clock skew, so it says nothing rather than claiming
+    expect(catalogueFreshnessLabel("2026-09-27T12:05:00Z", now)).toBeNull();
+    expect(catalogueFreshnessLabel("not a date", now)).toBeNull();
   });
 
-  it("says nothing when there is neither a refresh time nor a snapshot", () => {
-    expect(catalogueFreshnessLabel(null, null, Date.now())).toBeNull();
+  it("says nothing when there is no refresh time", () => {
+    expect(catalogueFreshnessLabel(null, Date.now())).toBeNull();
   });
 });
 
 describe("the state the api reports", () => {
-  it("keeps the snapshot wording while the store has recorded no refresh", async () => {
+  it("says nothing while the store has recorded no refresh", async () => {
     env.state.rows = [];
     env.state.meta = null;
     const { queryAgents } = await freshScanner();
@@ -212,11 +199,8 @@ describe("the state the api reports", () => {
     expect(result.indexStatus.catalogueRefreshedAt).toBeNull();
     expect(result.indexStatus.snapshotTime).toBeTruthy();
     expect(
-      catalogueFreshnessLabel(
-        result.indexStatus.catalogueRefreshedAt,
-        result.indexStatus.snapshotTime,
-      ),
-    ).toBe(`snapshot taken ${result.indexStatus.snapshotTime!.slice(0, 10)}`);
+      catalogueFreshnessLabel(result.indexStatus.catalogueRefreshedAt),
+    ).toBeNull();
   });
 
   it("reports the store as the source and its refresh time when it holds rows", async () => {
@@ -232,7 +216,6 @@ describe("the state the api reports", () => {
     expect(
       catalogueFreshnessLabel(
         result.indexStatus.catalogueRefreshedAt,
-        null,
         Date.parse("2026-09-27T12:04:00Z"),
       ),
     ).toBe("catalogue refreshed 4 minutes ago");

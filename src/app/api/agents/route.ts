@@ -129,6 +129,7 @@ export async function GET(req: NextRequest) {
     // (null when the snapshot never recorded one), and the timestamps are the
     // freshness the server can actually attest
     snapshotTotal: result.indexStatus.snapshotTotal,
+    shelved: result.indexStatus.shelved,
     registryTotal: result.indexStatus.registryTotal,
     counts: result.categoryCounts,
     snapshotTime: result.indexStatus.snapshotTime,

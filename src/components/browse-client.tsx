@@ -37,10 +37,10 @@ interface BrowseResponse {
 }
 
 const SORTS: { key: SortKey; label: string }[] = [
-  { key: "score", label: "Top rated" },
+  { key: "score", label: "Reputation" },
+  { key: "feedback", label: "Most reviewed" },
+  { key: "health", label: "Health" },
   { key: "newest", label: "Newest" },
-  { key: "feedback", label: "Most hires" },
-  { key: "health", label: "Health score" },
 ];
 
 export function BrowseClient({ initialCategory }: { initialCategory?: string }) {
