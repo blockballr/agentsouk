@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { latestQuestProgress, questModeFor, requiredDone } from '../lib/quest'
 import { sessionAccount } from '../lib/wallet-session'
+import { SwapTicker } from './SwapTicker'
 import { ThemeToggle } from './ThemeToggle'
 import { SupportButton } from './SupportButton'
 
-// Persistent network ticker: price + TPS + extensible metrics.
+// Persistent network ticker: swap + price + TPS + extensible metrics.
 // Self-contained polling, no provider needed, so it never flickers on route change.
 
 export interface TickerMetric {
@@ -22,11 +23,18 @@ export interface NetworkTickerProps {
 }
 
 const DEFAULT_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd'
+const FALLBACK_PRICE_URL = 'https://api.coinbase.com/v2/prices/BNB-USD/spot'
 const DEFAULT_RPC_URL = 'https://bsc-dataseed.bnbchain.org'
 
 function readPrice(json: unknown): number | null {
   const v = (json as { binancecoin?: { usd?: number } })?.binancecoin?.usd
   return typeof v === 'number' ? v : null
+}
+
+function readFallbackPrice(json: unknown): number | null {
+  const v = (json as { data?: { amount?: string } })?.data?.amount
+  const n = typeof v === 'string' ? Number(v) : NaN
+  return Number.isFinite(n) ? n : null
 }
 
 export function NetworkTicker({
@@ -70,9 +78,21 @@ export function NetworkTicker({
     async function fetchPrice() {
       try {
         const res = await fetch(priceUrl)
+        if (res.ok) {
+          const p = pricePath(await res.json())
+          if (!cancelled && p !== null) {
+            setPrice(p)
+            return
+          }
+        }
+      } catch {
+        // fall through to the fallback when the default feed is blocked
+      }
+      if (priceUrl !== DEFAULT_PRICE_URL || pricePath !== readPrice) return
+      try {
+        const res = await fetch(FALLBACK_PRICE_URL)
         if (!res.ok) return
-        const json = await res.json()
-        const p = pricePath(json)
+        const p = readFallbackPrice(await res.json())
         if (!cancelled && p !== null) setPrice(p)
       } catch {
         // keep last value
@@ -158,41 +178,12 @@ export function NetworkTicker({
       style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
     >
       <div className="flex items-center gap-4 px-4 py-1.5 text-[0.75rem]">
-        {/* price widget */}
-        <span className="flex items-center gap-1.5">
-          <span className="text-souk-muted">BNB/$U</span>
-          <span className="flex items-center gap-1">
-            <span
-              aria-hidden="true"
-              className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-souk-data/20 text-[9px] font-bold text-souk-data"
-            >
-              B
-            </span>
-            <span className="text-souk-ink font-semibold">
-              {price !== null ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
-            </span>
-          </span>
-        </span>
-
-        <span className="text-souk-muted">|</span>
-
-        {/* tps widget */}
-        <span className="flex items-center gap-1.5">
-          <span className="text-souk-muted">TPS:</span>
-          <span className="text-souk-ink font-semibold">{tps !== null ? tps.toLocaleString() : '-'}</span>
-        </span>
-
-        {/* extensible metrics */}
-        {extraMetrics.map((m, i) => (
-          <span key={i} className="flex items-center gap-1.5">
-            <span className="text-souk-muted">{m.label}:</span>
-            <span className="text-souk-ink font-semibold">{m.value}</span>
-          </span>
-        ))}
+        <SwapTicker />
 
         {questMinimized && (
           <button
             type="button"
+            data-quest-tab
             onClick={() => {
               try { localStorage.removeItem('agentsouk.quest.minimized') } catch {}
               setQuestMinimized(false)
@@ -205,10 +196,42 @@ export function NetworkTicker({
         )}
 
         <span className="ml-auto flex items-center gap-4">
+          {/* price widget */}
+          <span className="flex items-center gap-1.5">
+            <span className="text-souk-muted">BNB/$U</span>
+            <span className="flex items-center gap-1">
+              <span
+                aria-hidden="true"
+                className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-souk-data/20 text-[9px] font-bold text-souk-data"
+              >
+                B
+              </span>
+              <span className="text-souk-ink font-semibold">
+                {price !== null ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+              </span>
+            </span>
+          </span>
+
+          <span className="text-souk-muted">|</span>
+
+          {/* tps widget */}
+          <span className="flex items-center gap-1.5">
+            <span className="text-souk-muted">TPS:</span>
+            <span className="text-souk-ink font-semibold">{tps !== null ? tps.toLocaleString() : '-'}</span>
+          </span>
+
+          {/* extensible metrics */}
+          {extraMetrics.map((m, i) => (
+            <span key={i} className="flex items-center gap-1.5">
+              <span className="text-souk-muted">{m.label}:</span>
+              <span className="text-souk-ink font-semibold">{m.value}</span>
+            </span>
+          ))}
+
           <span className="text-souk-muted">|</span>
           <ThemeToggle />
           <span className="text-souk-muted">|</span>
-          <SupportButton plain />
+          <SupportButton plain iconFirst />
         </span>
       </div>
     </div>
