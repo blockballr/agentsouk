@@ -30,7 +30,7 @@ const AGENT_WALLET = "0x1111111111111111111111111111111111111111";
 const BUYER = "0x4bb30e3b3bc22082c1935fe3be7c07448e69c862";
 const CARD = "https://agent.example/.well-known/agent-card.json";
 const SUSD = "0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53";
-const FLOOR_RAW = "2000000000000000000";
+const FLOOR_RAW = "10000000000000000";
 
 function post(route: (req: NextRequest) => Promise<Response>, path: string, body: unknown) {
   return route(new NextRequest(`http://localhost${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
@@ -97,11 +97,11 @@ function settleAt(amount?: string) {
 
 describe("the terms step price", () => {
   it("holds the marketplace floor against a lower or malformed ask", async () => {
-    for (const ask of [0.01, 0, -5, "abc", null]) {
+    for (const ask of [0.005, 0, -5, "abc", null]) {
       const { status, body } = await askPrice(ask);
       expect(status).toBe(200);
       expect(body.data.paymentRequirements.amount).toBe(FLOOR_RAW);
-      expect(body.data.preview.options[0].amountUsd).toBe(2);
+      expect(body.data.preview.options[0].amountUsd).toBe(0.01);
     }
   });
 
@@ -109,6 +109,7 @@ describe("the terms step price", () => {
     const { status, body } = await askPrice();
     expect(status).toBe(200);
     expect(body.data.paymentRequirements.amount).toBe(FLOOR_RAW);
+    expect(body.data.preview.options[0].amountUsd).toBe(0.01);
   });
 
   it("lets a caller raise the price", async () => {
@@ -121,11 +122,11 @@ describe("the terms step price", () => {
 
 describe("a hand-built requirement", () => {
   it("is refused below the floor, before the relay is asked", async () => {
-    const res = await settleAt("1000000000000000000");
+    const res = await settleAt("5000000000000000");
     expect(res.status).toBe(409);
     const body = await res.json();
     expect(body.refused).toBe(true);
-    expect(body.error).toBe("This payment pays less than the marketplace price of $2, so it cannot settle.");
+    expect(body.error).toBe("This payment pays less than the marketplace price of $0.01, so it cannot settle.");
     expect(relay.settleProd).not.toHaveBeenCalled();
   });
 

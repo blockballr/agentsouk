@@ -17,7 +17,7 @@ import { escrowFunder } from "@/lib/escrow";
 
 export const dynamic = "force-dynamic";
 
-export const DEFAULT_HIRE_PRICE_USD = 2;
+export const DEFAULT_HIRE_PRICE_USD = 0.01;
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
