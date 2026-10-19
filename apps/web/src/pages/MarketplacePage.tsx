@@ -248,12 +248,6 @@ export function MarketplacePage() {
                   ERC-8004 registry ↗
                 </a>
               ) : null}
-              <Link
-                to="/about"
-                className="font-mono text-[11px] leading-4 text-souk-sky transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
-              >
-                Settlement proof →
-              </Link>
             </Row>
           </Row>
 

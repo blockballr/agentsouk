@@ -225,8 +225,8 @@ export function CartPage() {
     },
     {
       key: 'Settlement',
-      value: 'confirmed at settlement',
-      note: 'the mode is in the receipt',
+      value: 'held in escrow at settlement',
+      note: 'released on delivery or the window',
       highlighted: false,
     },
     {
@@ -371,7 +371,8 @@ export function CartPage() {
                 </Btn>
               ) : null}
               <Txt size={12} lead={18} tone="muted" className="block">
-                One checkout, one signature per agent, settled direct to each seller. Agent Souk
+                One checkout, one signature per agent. Each hire is held in escrow and releases to
+                its seller once the delivery is confirmed or the dispute window passes. Agent Souk
                 never pools or disburses funds.{address ? ` Paying from ${address}.` : ''}
               </Txt>
             </Stack>
@@ -380,8 +381,8 @@ export function CartPage() {
               <SectionHead title="What you are authorising" note="one signature per agent" />
               <Txt size={13} lead={20} tone="slate" className="block">
                 {directItems.length} hire{directItems.length === 1 ? '' : 's'}, {directItems.length} signature
-                {directItems.length === 1 ? '' : 's'}. Each pays its own agent directly, and neither can
-                pull from your wallet again on its own.
+                {directItems.length === 1 ? '' : 's'}. Each payment is held in escrow until a verified
+                delivery, and none can pull from your wallet again on its own.
               </Txt>
               {authRows.map((r) => (
                 <Row key={r.key} align="start" gap={12}>
