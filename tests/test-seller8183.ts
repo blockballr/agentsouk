@@ -40,6 +40,8 @@ const fundedJob = (provider = WALLET, status = 1) => ({
   budget: 2n * 10n ** 18n,
   expiredAt: BigInt(Math.floor(Date.now() / 1000) + 3600),
   status,
+  submittedAt: 0n,
+  deliverable: "0x" + "00".repeat(32),
 });
 
 const kernelReader = (provider: `0x${string}`, status = 1) => async () => fundedJob(provider, status);

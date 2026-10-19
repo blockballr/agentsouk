@@ -2,8 +2,9 @@ import "server-only";
 
 import { createPublicClient } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
-import { erc8183Addresses } from "@altananetwork/sdk";
+import { BNB, BNB_TESTNET, erc8183Addresses, getErc8183DeliverableUrl } from "@altananetwork/sdk";
 import { buildA2aParts, postRpc } from "@/lib/delivery";
+import { loadDeliverable } from "@/lib/durable-store";
 import { privateEndpointReason } from "@/lib/endpoint";
 import { rpcTransport } from "@/lib/rpc";
 import { BSC_TESTNET_CHAIN_ID } from "@/lib/types";
@@ -260,6 +261,8 @@ const KERNEL_JOB_ABI = [
           { name: "expiredAt", type: "uint256" },
           { name: "status", type: "uint8" },
           { name: "hook", type: "address" },
+          { name: "submittedAt", type: "uint256" },
+          { name: "deliverable", type: "bytes32" },
         ],
       },
     ],
@@ -274,6 +277,8 @@ export interface KernelJobRead {
   budget: bigint;
   expiredAt: bigint;
   status: number;
+  submittedAt: bigint;
+  deliverable: string;
 }
 
 export async function kernelJob(
@@ -298,6 +303,8 @@ export async function kernelJob(
     expiredAt: bigint;
     status: number;
     hook: string;
+    submittedAt: bigint;
+    deliverable: string;
   };
   return {
     client: String(job.client),
@@ -307,6 +314,87 @@ export async function kernelJob(
     budget: job.budget,
     expiredAt: job.expiredAt,
     status: Number(job.status),
+    submittedAt: job.submittedAt ?? 0n,
+    deliverable: String(job.deliverable ?? "0x"),
+  };
+}
+
+// The seller's result, once the kernel says it was submitted. The house agents
+// keep their manifest in the durable deliverable store; an external seller's
+// manifest is located through the policy's JobInitialised event and fetched
+// from the url it committed to. The UI gets text, not a promise that one exists.
+export interface KernelJobResult {
+  content: string | null;
+  contentType: string | null;
+  url: string | null;
+}
+
+const RESULT_MAX_CHARS = 50_000;
+
+function parseDeliverableManifest(text: string): { content: string; contentType: string } | null {
+  try {
+    const parsed = JSON.parse(text) as {
+      response?: { content?: unknown; content_type?: unknown };
+    };
+    if (typeof parsed.response?.content === "string") {
+      return {
+        content: parsed.response.content.slice(0, RESULT_MAX_CHARS),
+        contentType: typeof parsed.response.content_type === "string" ? parsed.response.content_type : "text/plain",
+      };
+    }
+  } catch {
+    // a third-party seller may serve plain text; that is still the result
+  }
+  const trimmed = text.trim();
+  return trimmed ? { content: trimmed.slice(0, RESULT_MAX_CHARS), contentType: "text/plain" } : null;
+}
+
+async function fetchDeliverableText(url: string): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { accept: "text/plain, application/json" },
+    });
+    if (!res.ok) return null;
+    const finalUrl = res.url || url;
+    if (privateEndpointReason(finalUrl)) return null;
+    const text = await res.text();
+    return text.slice(0, RESULT_MAX_CHARS);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function kernelJobResult(
+  chainId: number,
+  onchainJobId: number,
+  job: KernelJobRead,
+): Promise<KernelJobResult | null> {
+  if (job.status < 2 || job.submittedAt <= 0n) return null;
+  const local = await loadDeliverable(String(onchainJobId)).catch(() => undefined);
+  let raw = local ?? null;
+  let url: string | null = null;
+  if (!raw) {
+    const network = chainId === BSC_TESTNET_CHAIN_ID ? BNB_TESTNET : BNB;
+    url = (await getErc8183DeliverableUrl(network, BigInt(onchainJobId), {
+      scanWindow: 1_000n,
+      maxWindows: 80,
+    }).catch(() => undefined)) ?? null;
+    if (url) {
+      const blocked = privateEndpointReason(url);
+      if (!blocked) raw = await fetchDeliverableText(url);
+    }
+  }
+  if (!raw && !url) return null;
+  const parsed = raw ? parseDeliverableManifest(raw) : null;
+  return {
+    content: parsed?.content ?? null,
+    contentType: parsed?.contentType ?? null,
+    url,
   };
 }
 

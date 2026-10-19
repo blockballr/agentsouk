@@ -187,9 +187,11 @@ describe("kernelJob", () => {
       { type: "uint256" },
       { type: "uint8" },
       { type: "address" },
+      { type: "uint256" },
+      { type: "bytes32" },
     ] as const;
     // the kernel answers getJob as one struct: an outer offset word carries the
-    // nine-field tuple, which is the shape the live chains return
+    // eleven-field tuple, submittedAt and deliverable included
     const fixture = encodeAbiParameters(
       [{ type: "tuple", components: TUPLE }] as const,
       [
@@ -203,6 +205,8 @@ describe("kernelJob", () => {
           1791500000n,
           1,
           "0x0000000000000000000000000000000000000002",
+          0n,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
         ],
       ],
     );
@@ -216,6 +220,7 @@ describe("kernelJob", () => {
     expect(job?.provider.toLowerCase()).toBe("0x26dffa1c42ff523ee70f208a22424a2aea4df928");
     expect(job?.budget).toBe(1000000000000000000n);
     expect(Number(job?.expiredAt)).toBe(1791500000);
+    expect(job?.submittedAt).toBe(0n);
   });
 });
 

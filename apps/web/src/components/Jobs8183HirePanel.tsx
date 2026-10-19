@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { formatUnits } from 'viem'
 import {
   decodeGetJob,
+  encodeBalanceOf,
   encodeDisputeWindow,
   encodeGetJob,
   encodeJobCalls,
@@ -115,6 +116,7 @@ export default function Jobs8183HirePanel({
   async function onFund() {
     if (!account || !quote || !stack) return
     setError(null)
+    setLines([])
     setPhase({ kind: 'funding', done: 0 })
     try {
       const provider = (await getProvider()) as Eip1193Like
@@ -124,6 +126,22 @@ export default function Jobs8183HirePanel({
         throw new Error(`Switch your wallet to this job's chain to fund it.`)
       }
 
+      if (quote.validUntil * 1000 <= Date.now() + 15_000) {
+        throw new Error('This price has expired. Get a fresh quote before funding.')
+      }
+
+      const budget = BigInt(quote.price)
+      const balanceWord = (await provider.request({
+        method: 'eth_call',
+        params: [{ to: stack.paymentToken, data: encodeBalanceOf(account) }, 'latest'],
+      })) as string
+      const balance = uintFromWord(balanceWord)
+      if (balance < budget) {
+        throw new Error(
+          `This wallet holds ${formatUnits(balance, 18)} $U, but the job needs ${formatUnits(budget, 18)} $U. Add $U before funding; nothing was sent.`,
+        )
+      }
+
       const counterWord = (await provider.request({ method: 'eth_call', params: [{ to: stack.commerce, data: encodeJobCounter() }, 'latest'] })) as string
       const jobId = uintFromWord(counterWord) + 1n
       const windowWord = (await provider.request({ method: 'eth_call', params: [{ to: stack.policy, data: encodeDisputeWindow() }, 'latest'] })) as string
@@ -131,18 +149,24 @@ export default function Jobs8183HirePanel({
       const expiredAt = BigInt(Math.floor(Date.now() / 1000)) + disputeWindow + BigInt(FUND_DEADLINE_EXTRA_SECONDS)
       const description = jobDescription(task, quote)
 
-      setLines((l) => [...l, `Funding job ${jobId.toString()} for ${formatUnits(BigInt(quote.price), 18)} of the kernel's token.`])
+      setLines((l) => [...l, `Funding job ${jobId.toString()} for ${formatUnits(budget, 18)} of the kernel's token.`])
 
-      const calls = encodeJobCalls(stack, { jobId, provider: quote.providerAddress, expiredAt, budgetRaw: BigInt(quote.price), description })
+      const calls = encodeJobCalls(stack, { jobId, provider: quote.providerAddress, expiredAt, budgetRaw: budget, description })
       for (let i = 0; i < calls.length; i++) {
         const call = calls[i]
         setLines((l) => [...l, `Wallet signature ${i + 1} of ${calls.length}: ${call.label}.`])
         const hash = (await withSendTimeout(
           provider.request({ method: 'eth_sendTransaction', params: [{ from: account, to: call.to, data: call.data }] }),
         )) as `0x${string}`
-        await waitForTransactionReceipt(() =>
+        const receipt = await waitForTransactionReceipt(() =>
           provider.request({ method: 'eth_getTransactionReceipt', params: [hash] }) as Promise<TransactionReceipt | null>,
         )
+        if (!receipt) {
+          throw new Error(`Signature ${i + 1} of ${calls.length} did not confirm. ${hash}`)
+        }
+        if (receipt.status !== '0x1' && receipt.status !== 'success') {
+          throw new Error(`Signature ${i + 1} of ${calls.length} failed: ${call.label}. ${hash}`)
+        }
         setPhase({ kind: 'funding', done: i + 1 })
       }
 
@@ -150,18 +174,34 @@ export default function Jobs8183HirePanel({
       const job = decodeGetJob(jobWord)
       const state = job ? jobStatusName(job.status) : 'unknown'
       setLines((l) => [...l, `Job ${jobId.toString()} status: ${state}.`])
+      if (!job || job.status !== 1) {
+        throw new Error(`The job is ${state} on chain, not Funded. Nothing is held and nothing was recorded.`)
+      }
+      let recorded = false
+      let acknowledged = false
       try {
         const logged = await recordJobs8183Job({ tokenId, kernelJobId: jobId, client: account, chainId })
         if (!logged.ok) {
-          setLines((l) => [...l, `The marketplace could not record the job: ${logged.error}`])
+          setLines((l) => [...l, `The escrow is funded, but the marketplace could not record the job: ${logged.error}`])
+          setError(`The escrow holds the price, but this job is not in your ongoing view. Keep job ${jobId.toString()} and contact support.`)
         } else {
+          recorded = true
+          acknowledged = logged.notify.ok
           setLines((l) => [...l, logged.notify.ok ? `The seller acknowledged the funded job.` : `No ack back yet: ${logged.notify.reply.slice(0, 120)}`])
           setLines((l) => [...l, `The job now lives in your ongoing view.`])
         }
       } catch {
-        setLines((l) => [...l, `The marketplace could not be reached to record the job; the chain still holds it.`])
+        setLines((l) => [...l, `The escrow is funded, but the marketplace could not be reached to record it.`])
+        setError(`The escrow holds the price, but this job is not in your ongoing view yet. Keep job ${jobId.toString()}.`)
       }
-      setLines((l) => [...l, `The job is funded. The seller starts work; the escrow holds the price.`])
+      if (recorded) {
+        setLines((l) => [
+          ...l,
+          acknowledged
+            ? `The job is funded. The seller starts work; the escrow holds the price.`
+            : `The job is funded and recorded. The seller has not acknowledged yet; the chain still holds the price.`,
+        ])
+      }
       setPhase({ kind: 'funded' })
     } catch (e) {
       setPhase({ kind: 'failed' })
@@ -309,7 +349,7 @@ export default function Jobs8183HirePanel({
                   : phase.kind === 'quoted'
                     ? 'Fund this job'
                     : phase.kind === 'funding'
-                      ? `Signing ${phase.done} of 5..`
+                      ? `Signing ${Math.min(phase.done + 1, 5)} of 5..`
                       : 'Get the price'}
             </Btn>
             <Txt size={12} lead={18} tone="muted">

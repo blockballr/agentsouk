@@ -16,9 +16,10 @@ import {
   takesJobs,
   sellsByJob,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getOngoing, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
+import Jobs8183JobCard from '../components/Jobs8183JobCard'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
 import { FreePreview } from '../components/FreePreview'
 import { escrowLifecycle, hireItems, hireState, type HireItem } from '../lib/hire-state'
@@ -46,7 +47,7 @@ import {
   type HireRequirementsData,
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
-import { Row as SoukRow, Stack, Txt, Dot, Pill, SectionHead, DataTable, Kpi, IconChevron } from '../components/souk'
+import { Btn, Row as SoukRow, Stack, Txt, Dot, Pill, SectionHead, DataTable, Kpi, IconChevron } from '../components/souk'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -278,6 +279,10 @@ export function AgentDetailPage() {
   // this agent's own trail for the viewer, ended failures included, so a failed
   // job reads as a state on the page instead of nothing at all
   const [agentItems, setAgentItems] = useState<HireItem[] | null>(null)
+  // the viewer's recorded ERC-8183 jobs for this listing, so a funded job comes
+  // back as its own status and result instead of a blank fund form
+  const [kernelJobs, setKernelJobs] = useState<Jobs8183Row[]>([])
+  const [showNewKernelJob, setShowNewKernelJob] = useState(false)
   useEffect(() => {
     if (!viewer) {
       setAgentItems(null)
@@ -295,6 +300,29 @@ export function AgentDetailPage() {
       })
       .catch(() => {
         if (!cancelled) setAgentItems(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [viewer, chainId, tokenId])
+
+  useEffect(() => {
+    if (!viewer) {
+      setKernelJobs([])
+      return
+    }
+    let cancelled = false
+    getJobs8183Jobs(viewer)
+      .then((rows) => {
+        if (cancelled) return
+        setKernelJobs(
+          rows.filter(
+            (row) => String(row.chainId) === String(chainId) && String(row.tokenId) === String(tokenId),
+          ),
+        )
+      })
+      .catch(() => {
+        if (!cancelled) setKernelJobs([])
       })
     return () => {
       cancelled = true
@@ -382,6 +410,7 @@ export function AgentDetailPage() {
     // the page stays mounted when search moves it to another agent, so the last one's run goes
     setRunResult(null)
     setClosedPaymentId(null)
+    setShowNewKernelJob(false)
     getAgentDetail(chainId, tokenId)
       .then((d) => {
         if (!cancelled) setDetail(d)
@@ -443,6 +472,17 @@ export function AgentDetailPage() {
   // an agent whose card names a real skill beside negotiate takes both rails, so the
   // job protocol is offered as well rather than hidden by the job-only test
   const takesJobsToo = !jobSeller && takesJobs(detail.skills)
+  // a link from ongoing names the job it came from; otherwise the active one is
+  // the one the buyer wants to see, not a second fund form
+  const addressedKernelJob = searchParams.get('job')
+    ? kernelJobs.find((row) => String(row.onchainJobId) === searchParams.get('job')) ?? null
+    : null
+  const selectedKernelJob =
+    addressedKernelJob ??
+    kernelJobs.find((row) => row.status === 1 || row.status === 2) ??
+    kernelJobs[0] ??
+    null
+  const showingKernelJob = Boolean(selectedKernelJob && !showNewKernelJob)
   // a passport link opens the page ready for its step: the guide strip, and the run panel filled in
   // any agent counts for a hire step, so the guide shows whatever its category
   const quest = questStepFor(searchParams.get('quest'), Number(chainId), tokenId)
@@ -749,7 +789,27 @@ export function AgentDetailPage() {
               />
             </div>
           ) : jobSeller ? (
-            <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
+            showingKernelJob && selectedKernelJob ? (
+              <Jobs8183JobCard
+                job={selectedKernelJob}
+                surface={false}
+                onFundNew={() => setShowNewKernelJob(true)}
+              />
+            ) : (
+              <Stack gap={10}>
+                {selectedKernelJob ? (
+                  <>
+                    <Txt size={12} lead={18} tone="peach">
+                      You already have a job with this agent. This panel would create a second one.
+                    </Txt>
+                    <Btn kind="off" onClick={() => setShowNewKernelJob(false)}>
+                      Back to your job
+                    </Btn>
+                  </>
+                ) : null}
+                <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
+              </Stack>
+            )
           ) : gatedOnly ? (
             /* a gated listing answers only behind its own wall, so a per-call hire
                would pay and reach nothing. the card says how to reach it instead of
@@ -822,20 +882,40 @@ export function AgentDetailPage() {
             <AsideCard>
               <SoukRow justify="between" align="center">
                 <Txt size={18} lead={27} weight="bold" tone="ink">
-                  {mySession ? 'Run a task' : 'Fund job'}
+                  {showingKernelJob ? 'Your job' : 'Fund job'}
                 </Txt>
                 <Pill variant="keep">erc-8183</Pill>
               </SoukRow>
-              <Txt size={12} lead={18} tone="slate">
-                A direct hire above pays per call over x402. A job funds escrow first, and work
-                starts once the job is funded.
-              </Txt>
-              <Jobs8183HirePanel
-                tokenId={detail.token_id}
-                chainId={Number(detail.chain_id)}
-                cards={false}
-                category={detail.category}
-              />
+              {showingKernelJob && selectedKernelJob ? (
+                <Jobs8183JobCard
+                  job={selectedKernelJob}
+                  surface={false}
+                  onFundNew={() => setShowNewKernelJob(true)}
+                />
+              ) : (
+                <>
+                  <Txt size={12} lead={18} tone="slate">
+                    A direct hire above pays per call over x402. A job funds escrow first, and work
+                    starts once the job is funded.
+                  </Txt>
+                  {selectedKernelJob ? (
+                    <>
+                      <Txt size={12} lead={18} tone="peach">
+                        You already have a job with this agent. This panel would create a second one.
+                      </Txt>
+                      <Btn kind="off" onClick={() => setShowNewKernelJob(false)}>
+                        Back to your job
+                      </Btn>
+                    </>
+                  ) : null}
+                  <Jobs8183HirePanel
+                    tokenId={detail.token_id}
+                    chainId={Number(detail.chain_id)}
+                    cards={false}
+                    category={detail.category}
+                  />
+                </>
+              )}
             </AsideCard>
           )}
           {/* the quote is its own card in the design, not a note inside the hire one.
