@@ -5,10 +5,10 @@ export const PANCAKE_V3_FACTORY = '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865' a
 // the funded shape of a hire: the deposit sits in our own vault contract, the
 // named agent trades inside the bounds the contract set at open, and the
 // buyer's withdraw ends the agent's authority in one transaction. vault
-// addresses are per chain; chain 56 already deployed (0xe8e8940145ee165c39b2405755d177818187730d), mirrored from the server-side vault table
+// addresses are per chain; chain 56 redeployed with closeIfGoal (0x07fa0fa60c61cdf0e36dba7a829ffddfdf74396f), mirrored from the server-side vault table
 
 export const VAULT_BY_CHAIN: Record<number, string> = {
-  56: '0xe8e8940145ee165c39b2405755d177818187730d',
+  56: '0x07fa0fa60c61cdf0e36dba7a829ffddfdf74396f',
   97: '0xc742e51f3fe3875a3335700a7d692f40dc8e60b8',
 }
 

@@ -8,7 +8,7 @@ import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID } from "./types";
 // hire inside the bounds the contract set at open.
 export const VAULT_BY_CHAIN: Record<number, string> = {
   [BSC_TESTNET_CHAIN_ID]: "0xc742e51f3fe3875a3335700a7d692f40dc8e60b8",
-  [BSC_CHAIN_ID]: "0xe8e8940145ee165c39b2405755d177818187730d",
+  [BSC_CHAIN_ID]: "0x07fa0fa60c61cdf0e36dba7a829ffddfdf74396f",
 };
 
 export function vaultFor(chainId: number): string | null {
