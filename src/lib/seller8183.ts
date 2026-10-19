@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createPublicClient, createWalletClient, encodeFunctionData, http, keccak256, stringToHex, toBytes } from "viem";
+import { createPublicClient, createWalletClient, encodeFunctionData, http, keccak256, parseUnits, stringToHex, toBytes } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { bsc, bscTestnet } from "viem/chains";
 import {
@@ -194,11 +194,21 @@ export async function quoteEnvelope(
   if (!task) {
     return { ok: false, status: "refused", unsigned_reason: "the negotiate step carries no task_description" };
   }
-  if (!Number.isSafeInteger(cfg.priceUsd) || cfg.priceUsd <= 0) {
+  if (!Number.isFinite(cfg.priceUsd) || cfg.priceUsd <= 0) {
     return { ok: false, status: "refused", unsigned_reason: "the seller's configured price is not a sane number" };
   }
   const terms = negotiateData.terms ?? null;
-  const price = (BigInt(Math.floor(cfg.priceUsd)) * 10n ** 18n).toString();
+  // a sub-unit price is legitimate: 0.01 U is a real quote. floor() would turn
+  // it into zero, so the configured number is scaled in full instead.
+  let price: string;
+  try {
+    // String() switches to exponent notation below 1e-6, which parseUnits does
+    // not read; toFixed(18) keeps those prices in plain decimal form.
+    const priceText = cfg.priceUsd < 1e-6 ? cfg.priceUsd.toFixed(18) : String(cfg.priceUsd);
+    price = parseUnits(priceText, 18).toString();
+  } catch {
+    return { ok: false, status: "refused", unsigned_reason: "the seller's configured price has more than 18 decimals" };
+  }
   const validUntil = Math.floor(Date.now() / 1000) + 1800;
   if (!cfg.sellerKey || !/^0x[0-9a-fA-F]{64}$/.test(cfg.sellerKey)) {
     return {
