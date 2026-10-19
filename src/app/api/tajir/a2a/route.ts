@@ -9,6 +9,7 @@ import { decideGridAgentTask, type GridAgentReply } from "@/lib/reference-grid";
 import { decideGridAgentTaskLive } from "@/lib/reference-grid-live";
 import { sellerConfigFromEnv, sellerHook } from "@/lib/seller8183";
 import { targetChainId } from "@/lib/types";
+import { legacyGate } from "@/lib/legacy-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,8 @@ function taskEnvelope(reply: GridAgentReply): Record<string, unknown> {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const gate = legacyGate(req);
+  if (gate) return gate;
   const raw = await req.text().catch(() => "");
   let request: unknown;
   try {
@@ -176,3 +179,6 @@ export function GET(): NextResponse {
     { status: 405, headers: { ...JSON_HEADERS, allow: "POST, OPTIONS" } },
   );
 }
+
+
+
