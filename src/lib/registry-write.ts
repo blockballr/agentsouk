@@ -146,8 +146,14 @@ export function validateDraft(draft: RegistrationDraft): DraftValidation {
     errors.push("Endpoint must be a reachable https URL.");
   }
 
-  if (draft.endpointKind && !ENDPOINT_KINDS.includes(draft.endpointKind)) {
-    errors.push(`Endpoint kind must be one of: ${ENDPOINT_KINDS.join(", ")}.`);
+  const kinds = draft.endpointKinds ?? (draft.endpointKind ? [draft.endpointKind] : []);
+  if (kinds.length === 0) {
+    // a listing with an endpoint but no protocol is not useful; default to A2A
+  }
+  for (const k of kinds) {
+    if (!ENDPOINT_KINDS.includes(k)) {
+      errors.push(`Endpoint kind must be one of: ${ENDPOINT_KINDS.join(", ")}.`);
+    }
   }
 
   const image = (draft.image ?? "").trim();
@@ -182,7 +188,18 @@ export function buildRegistrationFile(input: {
   const services: RegistrationService[] = [];
   const endpoint = (draft.endpoint ?? "").trim();
   if (endpoint) {
-    services.push({ name: draft.endpointKind ?? "web", endpoint });
+    const kinds =
+      draft.endpointKinds && draft.endpointKinds.length > 0
+        ? draft.endpointKinds
+        : draft.endpointKind
+          ? [draft.endpointKind]
+          : ["web"];
+    // one service per selected protocol, all pointing at the same endpoint;
+    // a listing that speaks A2A and MCP advertises both, so a buyer on either
+    // protocol can reach it
+    for (const kind of kinds) {
+      services.push({ name: kind, endpoint });
+    }
   }
 
   const registrations: RegistrationEntry[] = [];

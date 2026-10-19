@@ -20,6 +20,10 @@ export interface RegistrationDraft {
   // better than silently filing under the form's old yield default
   category: ListableCategory | ''
   endpoint?: string
+  // which protocols the endpoint speaks; a listing may speak more than one, so
+  // this is a list rather than a single choice. endpointKind is kept for the
+  // registrations that were minted before the list existed.
+  endpointKinds?: EndpointKind[]
   endpointKind?: EndpointKind
   image?: string
   x402Support?: boolean
