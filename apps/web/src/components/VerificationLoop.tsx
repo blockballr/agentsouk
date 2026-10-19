@@ -51,29 +51,29 @@ export function VerificationLoop({ checks }: { checks: CheckLine[] }) {
   const pct = checks.length > 0 ? Math.round((settled / checks.length) * 100) : 0
   return (
     <section
-      aria-label="Verification"
+      id="verifier-check"
+      aria-label="Verifier check"
       aria-live="polite"
-      className="rounded-[14px] border border-white/15 bg-souk-indigo p-4"
+      className="scroll-mt-4 rounded-[14px] border border-white/15 bg-souk-indigo p-4"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="micro text-souk-indigo-labels">Verification</p>
+        <p className="micro text-souk-indigo-labels">Verifier check</p>
         <span className="font-mono text-[11px] text-souk-indigo-labels">
-          {settled} of {checks.length}
+          {settled} of {checks.length} ({pct}%)
         </span>
       </div>
 
-      {/* the rail earns its fill the way the job meter does: an empty track until a check
-          actually answers, so the bar never claims a pass it has not been given */}
+      {/* the rail keeps a head at every value, the way the job meter does: even at
+          zero the fill shows a sliver, so the track never reads as a broken control */}
       <div className="mt-3 h-[6px] w-full overflow-hidden rounded-[3px] bg-white/15">
-        {settled > 0 && (
-          <div
-            className="h-full rounded-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
-            style={{
-              width: `${pct}%`,
-              backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #44b48b 100%)',
-            }}
-          />
-        )}
+        <div
+          className="h-full rounded-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
+          style={{
+            width: `${Math.max(pct, 2)}%`,
+            minWidth: 6,
+            backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #44b48b 100%)',
+          }}
+        />
       </div>
 
       {current ? (

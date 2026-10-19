@@ -37,6 +37,12 @@ describe("cors on the api", () => {
     expect(res.headers.get("access-control-max-age")).toBe("86400");
   });
 
+  it("lets the station send its bearer token", async () => {
+    const { proxy } = await load("https://agentsouk.pages.dev");
+    const res = proxy(request("https://station.agentsouk.xyz", "OPTIONS"));
+    expect(res.headers.get("access-control-allow-headers")).toContain("Authorization");
+  });
+
   it("allows a branch preview of the Pages project but not a lookalike", async () => {
     const { proxy } = await load("https://agentsouk.pages.dev");
     const ok = proxy(request("https://ui-uplift.agentsouk.pages.dev"));

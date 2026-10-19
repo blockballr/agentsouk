@@ -473,7 +473,7 @@ function OwnedAgentCard({
   return (
     <Stack surface pad={[20, 22, 20, 22]} gap={10} className="h-[392px] min-w-0 [overflow-wrap:anywhere]">
       <Row align="center" gap={12}>
-        <AgentAvatar size={34} name={agent.name} />
+        <AgentAvatar size={34} name={agent.name} chainId={agent.chainId} tokenId={agent.tokenId} />
         <Stack gap={2} className="min-w-0 flex-1">
           <Link to={agentHref} className="min-w-0 truncate">
             <Txt size={16} lead={24} weight="bold" tone="ink">

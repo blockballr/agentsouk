@@ -537,7 +537,7 @@ function StallCard({
   return (
     <Stack surface pad={[16, 16, 14, 16]} gap={12} className="min-w-0 [overflow-wrap:anywhere]">
       <Row align="center" gap={12} className="min-w-0">
-        <AgentAvatar size={34} name={agent.name} />
+        <AgentAvatar size={34} name={agent.name} chainId={agent.chainId} tokenId={agent.tokenId} />
         <Stack gap={2} className="min-w-0 flex-1">
           <Link to={agentHref} className="min-w-0 truncate">
             <Txt size={17} lead={22} weight="bold" tone="ink">

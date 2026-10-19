@@ -46,7 +46,7 @@ export interface ConfirmResult {
 export async function prepareRegistration(
   draft: RegistrationDraft,
   owner: string,
-  mode: 'job' | 'call' = 'call',
+  mode: 'job' | 'call' | 'both' = 'call',
 ): Promise<PrepareResult> {
   const res = await fetch(`${BASE}/agents/register/prepare`, {
     method: 'POST',

@@ -54,30 +54,18 @@ export async function loadQuestShelf(
     [a.name, a.description, ...(a.skills ?? []).map((s) => `${s.name} ${s.description ?? ""}`)].join(" ");
   const picks: Record<string, QuestShelf> = {};
   for (const category of CATEGORY_KEYS) {
-    // prefer job-capable (escrow) agents; fall back to any delivered agent when
-    // none are job-capable, so a category is never empty on a small shelf
-    const jobCapable = shelf.items.filter((a) => {
-      const check = verifications.get(a.token_id);
-      return (
-        a.category === category &&
-        takesJobs(a.skills) &&
-        (!check || !asksForSecrets(check.detail)) &&
-        classifyExecution(executionText(a)).executes
-      );
-    });
-    const working = (jobCapable.length > 0
-      ? jobCapable
-      : shelf.items.filter((a) => {
-          const check = verifications.get(a.token_id);
-          return (
-            a.category === category &&
-            (check?.status === "delivered" || !check) &&
-            (!check || !asksForSecrets(check.detail)) &&
-            classifyExecution(executionText(a)).executes
-          );
-        }))
-      // prefer job-capable agents (escrow sellers) so the quest surfaces a
-      // hirable escrow agent first, until house agents are seeded
+    // only job-capable (escrow) agents. A category with none stays empty, so the
+    // quest never sends a buyer to a direct-only or x402-only agent
+    const working = shelf.items
+      .filter((a) => {
+        const check = verifications.get(a.token_id);
+        return (
+          a.category === category &&
+          takesJobs(a.skills) &&
+          (!check || !asksForSecrets(check.detail)) &&
+          classifyExecution(executionText(a)).executes
+        );
+      })
       .sort((a, b) => (takesJobs(b.skills) ? 1 : 0) - (takesJobs(a.skills) ? 1 : 0));
     const proven: typeof working = [];
     // without the durable store no job can be read back, so nothing is claimed as confirmed

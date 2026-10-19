@@ -163,6 +163,25 @@
   html {
     scroll-behavior: smooth;
   }
+  /* a six-pixel rail with no track or arrows, the way Magic Eden draws it */
+  html::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background: transparent;
+  }
+  html::-webkit-scrollbar-thumb {
+    background: var(--color-souk-metal0);
+    border-radius: 3px;
+  }
+  html::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    html {
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-souk-metal0) transparent;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;

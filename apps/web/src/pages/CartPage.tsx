@@ -276,7 +276,7 @@ export function CartPage() {
                 return (
                   <Row key={key} align="center" gap={14} className="flex-wrap">
                     <Row align="center" gap={12} grow className="min-w-0">
-                      <AgentAvatar size={40} name={item.name} />
+                      <AgentAvatar size={40} name={item.name} chainId={item.chainId} tokenId={item.tokenId} />
                       <Dot size={10} tone={job ? 'quiet' : dotToneFor(step)} />
                       <Stack gap={3} className="min-w-0">
                         <Txt size={15} lead={20} weight="bold" tone="ink" className="block truncate">

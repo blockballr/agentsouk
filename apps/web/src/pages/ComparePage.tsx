@@ -382,7 +382,7 @@ function Picker({
                   onChange={() => toggle(key)}
                   className="h-4 w-4 accent-souk-data"
                 />
-                <AgentAvatar size={34} name={a.name} imageUrl={a.image_url} />
+                <AgentAvatar size={34} name={a.name} imageUrl={a.image_url} chainId={a.chain_id} tokenId={a.token_id} />
                 <span className="min-w-0 flex-1">
                   <Txt size={15} lead={20} weight="bold" tone="ink" className="block truncate">
                     {a.name}
@@ -634,7 +634,7 @@ function CompareTable({
                           style={{ padding: '16px 14px 14px 14px' }}
                         >
                           <Row align="center" gap={11}>
-                            <AgentAvatar size={34} name={a.name} imageUrl={a.image_url} />
+                            <AgentAvatar size={34} name={a.name} imageUrl={a.image_url} chainId={a.chain_id} tokenId={a.token_id} />
                             <span className="min-w-0">
                               <span className="flex items-center gap-1.5">
                                 <Link
@@ -925,7 +925,7 @@ function ShortlistSearch({
                     aria-label={`Compare ${a.name}`}
                     className="h-3.5 w-3.5 accent-souk-data"
                   />
-                  <AgentAvatar size={28} name={a.name} imageUrl={a.image_url} />
+                  <AgentAvatar size={28} name={a.name} imageUrl={a.image_url} chainId={a.chain_id} tokenId={a.token_id} />
                   <Txt size={14} lead={20} weight="semibold" tone="ink" className="min-w-0 flex-1 block truncate">
                     {a.name}
                   </Txt>

@@ -2,7 +2,8 @@
 // message below is re-verified byte for byte by the server, so the text has to
 // match src/lib/station.ts exactly.
 
-import { getActiveAccount, getProvider } from './wallet'
+import { getProvider } from './wallet'
+import { connectWallet, sessionAccount } from './wallet-session'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 const SITE = 'station.agentsouk.xyz'
@@ -74,7 +75,7 @@ async function sign(message: string, address: string): Promise<string> {
 
 // the wallet signs a nonce that has never been spent, so a replayed sign-in is refused
 export async function stationSignIn(): Promise<StationSession> {
-  const address = await getActiveAccount()
+  const address = (await sessionAccount()) ?? (await connectWallet())
   if (!address) throw new Error('Connect the wallet to sign into the station.')
 
   const asked = await fetch(`${BASE}/station/nonce`, {
@@ -104,8 +105,8 @@ export async function stationSignOut(token: string, everywhere = false): Promise
   }).catch(() => {})
 }
 
-async function authed<T>(token: string, path: string): Promise<T> {
-  const res = await fetch(`${BASE}/station/${path}`, { headers: { authorization: `Bearer ${token}` } })
+async function authed<T>(token: string, path: string, method: 'GET' | 'POST' = 'GET'): Promise<T> {
+  const res = await fetch(`${BASE}/station/${path}`, { method, headers: { authorization: `Bearer ${token}` } })
   const payload = await res.json().catch(() => null)
   if (!res.ok || !payload?.success) throw new Error(payload?.error ?? 'The station could not answer.')
   return payload as T
@@ -151,11 +152,11 @@ export function stationShelfHealth(token: string): Promise<{ success: true; heal
 }
 
 export function stationSweep(token: string): Promise<{ success: true; report: unknown }> {
-  return authed(token, 'sweep')
+  return authed(token, 'sweep', 'POST')
 }
 
 export function stationProbe(token: string, limit = 25, all = false, dry = false): Promise<{ success: boolean; [key: string]: unknown }> {
-  return authed(token, `probe?limit=${limit}${all ? '&all=1' : ''}${dry ? '&dry=1' : ''}`)
+  return authed(token, `probe?limit=${limit}${all ? '&all=1' : ''}${dry ? '&dry=1' : ''}`, 'POST')
 }
 
 // a change is signed against its own nonce and against the target address, so the

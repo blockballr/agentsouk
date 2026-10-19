@@ -95,9 +95,9 @@ export async function POST(req: NextRequest) {
   // the job branch's authority is the card, fetched once here and bounded; a card that does not
   // declare the protocol refuses the branch before any claim exists, and the claim this mints
   // carries no x402 support, because a job seller refuses a direct paid task by construction
-  const mode = body.mode === "job" ? "job" : "call";
+  const mode = body.mode === "job" ? "job" : body.mode === "both" ? "both" : "call";
   let cardCheck: JobCardCheck | undefined;
-  if (mode === "job") {
+  if (mode !== "call") {
     if (!(draft.agentWallet ?? "").trim()) {
       return NextResponse.json(
         {
@@ -115,7 +115,8 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    draft.x402Support = false;
+    // job-only turns the direct rail off; both keeps it on and still takes escrow work
+    draft.x402Support = mode === "both";
   }
 
   const chainId = targetChainId();

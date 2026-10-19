@@ -185,15 +185,16 @@ export function questStepFor(
   return { step, agent: known ?? { tokenId, name: '' } }
 }
 
-// who a hire step offers: up to two agents, never the visitor's own. Agents a job has completed
-// on come first, in the shelf's rotated order, so any listing can be featured once it is proven.
-// Until a category has one, the step offers the working agents whose task we can fill in, and
-// when one of those is working it always keeps a place, so a step can be done in one tap
+// who a hire step offers: one agent, never the visitor's own and never one already hired.
+// Agents a job has completed on come first, in the shelf's rotated order, so any listing can
+// be featured once it is proven. A category with no escrow agent is left empty rather than
+// falling back to a direct-only seller: the card says so instead of sending a buyer elsewhere.
 export function questPicks(
   step: QuestStep,
   chainId: number,
   shelf: QuestShelf | undefined,
   wallet: string | null,
+  exclude: ReadonlySet<string> = new Set(),
 ): QuestAgent[] {
   const pair = step.agents?.[chainId]
   const written = [pair?.primary, pair?.alternate].filter((a): a is QuestAgent => Boolean(a))
@@ -202,16 +203,13 @@ export function questPicks(
   const offer = (list: QuestCandidate[]): QuestAgent[] =>
     list
       .filter((a) => !me || a.owner?.toLowerCase() !== me)
+      .filter((a) => !exclude.has(String(a.tokenId)))
       .map((a) => ({ ...writtenById.get(a.tokenId), tokenId: a.tokenId, name: a.name, owner: a.owner ?? null, imageUrl: a.imageUrl ?? null }))
-  const confirmed = offer(shelf?.confirmed ?? [])
-  const workingWritten = offer(shelf?.working ?? []).filter((a) => writtenById.has(a.tokenId))
   // an unread shelf falls back to the written picks; a read one that offers nothing is believed
-  if (!shelf) return written.slice(0, 2)
-  const picks = (confirmed.length > 0 ? confirmed : workingWritten).slice(0, 2)
-  if (picks.length === 0) return []
-  const filled = [...confirmed, ...workingWritten].find((a) => a.task)
-  if (filled && !picks.some((a) => a.task)) picks[picks.length < 2 ? picks.length : 1] = filled
-  return picks
+  if (!shelf) return written.filter((a) => !exclude.has(String(a.tokenId))).slice(0, 1)
+  const confirmed = offer(shelf.confirmed)
+  const working = offer(shelf.working)
+  return (confirmed.length > 0 ? confirmed : working).slice(0, 1)
 }
 
 // the quest's standing in this browser: a wallet starts it or sets it aside, and anyone,

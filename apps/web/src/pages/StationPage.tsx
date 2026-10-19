@@ -209,7 +209,7 @@ export function StationPage() {
           {`Station · station.agentsouk.xyz · ${members.length} member${members.length === 1 ? '' : 's'}`}
         </Txt>
         <Txt size={34} lead={42} weight="bold" tone="ink">
-          Your team&apos;s own room.
+          Control Room.
         </Txt>
       </Stack>
 
@@ -221,80 +221,74 @@ export function StationPage() {
         </div>
       ) : null}
 
-      {/* sweep is visible to everyone; only operators and owners may run it */}
-      <Stack surface pad={[20, 22, 20, 22]} gap={12} className="mt-6">
-        <SectionHead title="Sweep the shelf" note="RE-READ AND RE-CLASSIFY" />
-        <Txt size={13} lead={20} tone="slate">
-          Re-reads the registry, re-classifies every agent, and captures the skills a listing
-          declares, so job-capable agents carry both badges and sort into the jobs tier. The
-          result shows on the shelf within a minute.
-        </Txt>
-        <Row gap={8} align="center" className="flex-wrap">
-          <Btn
-            kind="primary"
-            disabled={busy || sweepBusy || !signedIn || session?.role === 'viewer'}
-            onClick={() => void onSweep()}
-          >
-            {sweepBusy ? 'Sweeping...' : 'Sweep now'}
-          </Btn>
-          {!signedIn ? (
-            <Txt size={12} lead={18} tone="muted">
-              Sign in to run it.
+      {signedIn && (
+        <>
+          <Stack surface pad={[20, 22, 20, 22]} gap={12} className="mt-6">
+            <SectionHead title="Sweep the shelf" note="RE-READ AND RE-CLASSIFY" />
+            <Txt size={13} lead={20} tone="slate">
+              Re-reads the registry, re-classifies every agent, and captures the skills a listing
+              declares, so job-capable agents carry both badges and sort into the jobs tier. The
+              result shows on the shelf within a minute.
             </Txt>
-          ) : session?.role === 'viewer' ? (
-            <Txt size={12} lead={18} tone="muted">
-              Viewers watch; operators and owners run the sweep.
-            </Txt>
-          ) : null}
-        </Row>
-        {sweepResult && (
-          <Txt size={12} lead={18} tone="data">
-            {sweepResult}
-          </Txt>
-        )}
-      </Stack>
+            <Row gap={8} align="center" className="flex-wrap">
+              <Btn
+                kind="primary"
+                disabled={busy || sweepBusy || session?.role === 'viewer'}
+                onClick={() => void onSweep()}
+              >
+                {sweepBusy ? 'Sweeping...' : 'Sweep now'}
+              </Btn>
+              {session?.role === 'viewer' ? (
+                <Txt size={12} lead={18} tone="muted">
+                  Viewers watch; operators and owners run the sweep.
+                </Txt>
+              ) : null}
+            </Row>
+            {sweepResult && (
+              <Txt size={12} lead={18} tone="data">
+                {sweepResult}
+              </Txt>
+            )}
+          </Stack>
 
-      {/* liveness probe: checks each listing's endpoint and records the reading */}
-      <Stack surface pad={[20, 22, 20, 22]} gap={12} className="mt-6">
-        <SectionHead title="Probe liveness" note="CHECK ENDPOINTS AND RECORD READINGS" />
-        <Txt size={13} lead={20} tone="slate">
-          Probes up to 25 listings whose reading is due, records the delivered / dead / unreachable
-          verdict, and (unless dry) posts a heartbeat to the liveness oracle. Use dry run to refresh
-          the reachability sort without spending gas.
-        </Txt>
-        <Row gap={8} align="center" className="flex-wrap">
-          <Btn
-            kind="primary"
-            disabled={busy || probeBusy || !signedIn || session?.role === 'viewer'}
-            onClick={() => void onProbe()}
-          >
-            {probeBusy ? 'Probing...' : probeDry ? 'Probe (dry)' : 'Probe (live)'}
-          </Btn>
-          <label className="flex items-center gap-2 text-[12px] text-souk-steel">
-            <input
-              type="checkbox"
-              checked={probeDry}
-              onChange={(e) => setProbeDry(e.target.checked)}
-              className="h-3.5 w-3.5"
-            />
-            Dry run (no gas)
-          </label>
-          {!signedIn ? (
-            <Txt size={12} lead={18} tone="muted">
-              Sign in to run it.
+          <Stack surface pad={[20, 22, 20, 22]} gap={12} className="mt-6">
+            <SectionHead title="Probe liveness" note="CHECK ENDPOINTS AND RECORD READINGS" />
+            <Txt size={13} lead={20} tone="slate">
+              Probes up to 25 listings whose reading is due, records the delivered / dead / unreachable
+              verdict, and (unless dry) posts a heartbeat to the liveness oracle. Use dry run to refresh
+              the reachability sort without spending gas.
             </Txt>
-          ) : session?.role === 'viewer' ? (
-            <Txt size={12} lead={18} tone="muted">
-              Viewers watch; operators and owners run the probe.
-            </Txt>
-          ) : null}
-        </Row>
-        {probeResult && (
-          <Txt size={12} lead={18} tone="data">
-            {probeResult}
-          </Txt>
-        )}
-      </Stack>
+            <Row gap={8} align="center" className="flex-wrap">
+              <Btn
+                kind="primary"
+                disabled={busy || probeBusy || session?.role === 'viewer'}
+                onClick={() => void onProbe()}
+              >
+                {probeBusy ? 'Probing...' : probeDry ? 'Probe (dry)' : 'Probe (live)'}
+              </Btn>
+              <label className="flex items-center gap-2 text-[12px] text-souk-steel">
+                <input
+                  type="checkbox"
+                  checked={probeDry}
+                  onChange={(e) => setProbeDry(e.target.checked)}
+                  className="h-3.5 w-3.5"
+                />
+                Dry run (no gas)
+              </label>
+              {session?.role === 'viewer' ? (
+                <Txt size={12} lead={18} tone="muted">
+                  Viewers watch; operators and owners run the probe.
+                </Txt>
+              ) : null}
+            </Row>
+            {probeResult && (
+              <Txt size={12} lead={18} tone="data">
+                {probeResult}
+              </Txt>
+            )}
+          </Stack>
+        </>
+      )}
 
       {!signedIn ? (
         <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-6">
