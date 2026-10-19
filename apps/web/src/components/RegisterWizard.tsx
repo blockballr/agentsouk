@@ -161,9 +161,7 @@ export function RegisterWizard({
   const sentLatch = useRef(false)
   // null until the lister proceeds; each entry updates as its check runs
   const [checks, setChecks] = useState<CheckLine[] | null>(null)
-  // a new picture address earns a fresh try; the browser is what reports a dead image
-  const [imageOk, setImageOk] = useState(true)
-  const [fileNote, setFileNote] = useState<string | null>(null)
+  // image is now a plain https URL; no preview state needed
   // how the listing sells: a call listing takes paid calls, a job listing takes
   // ERC-8183 jobs only, and a both listing declares x402 while also taking jobs
   const [mode, setMode] = useState<'job' | 'call' | 'both'>('call')
@@ -267,34 +265,12 @@ export function RegisterWizard({
     if (endpointReady) setDetailsOpen(true)
   }, [endpointReady])
 
-  // the picture is cosmetic and never blocks: an http or unparsable address is
-  // said out loud, a dead image falls back to the default face on every page,
-  // and the profile's edit route can change it after listing
+  // the picture is cosmetic and never blocks: the registry takes an https URL or
+  // nothing, so an http or unparsable address is said out loud and the listing
+  // falls back to the default face
   const imageRaw = (draft.image ?? '').trim()
-  const imageUsable = /^https:\/\/\S+$/i.test(imageRaw) || /^data:image\//i.test(imageRaw)
-  const imageFault =
-    imageRaw && !imageUsable ? 'Needs a public https address, or a file chosen below.' : null
-  const imagePreview = imageRaw
-  useEffect(() => {
-    setImageOk(true)
-  }, [draft.image])
-
-  // a chosen file rides as a data url: the listing carries its own bytes, so no
-  // hosting step stands between the lister and the picture
-  function chooseImage(file: File | undefined) {
-    if (!file) return
-    if (file.size > 500_000) {
-      setFileNote('That file is over 500 KB; a smaller picture keeps the listing light.')
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = () => {
-      set('image', String(reader.result ?? ''))
-      setFileNote(null)
-    }
-    reader.readAsDataURL(file)
-  }
-
+  const imageUsable = /^https:\/\/\S+$/i.test(imageRaw)
+  const imageFault = imageRaw && !imageUsable ? 'Needs a public https address.' : null
   // the wallet field is refused here in the same shape the route refuses it, so a
   // bad address never reaches the claim it would be minted into; the job branch also
   // requires one, because that wallet is who gets paid when a job releases
@@ -842,58 +818,25 @@ export function RegisterWizard({
               </button>
             </details>
 
-            <div className="mt-4 grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
-              <div className="flex flex-col items-start gap-2">
-                {imagePreview && imageOk ? (
-                  <img
-                    src={imagePreview}
-                    alt=""
-                    onError={() => setImageOk(false)}
-                    className="h-24 w-24 rounded-[14px] border border-souk-hair object-cover"
-                  />
-                ) : (
-                  <div className="grid h-24 w-24 place-items-center rounded-[14px] border border-dashed border-souk-hair text-[11px] text-souk-muted">
-                    No picture
-                  </div>
-                )}
-                <label className={cx(button('secondary', 'sm'), 'inline-flex cursor-pointer items-center')}>
-                  Choose file
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    disabled={busy || step !== 'form'}
-                    onChange={(e) => {
-                      chooseImage(e.target.files?.[0])
-                      e.target.value = ''
-                    }}
-                  />
-                </label>
-              </div>
-              <div className="min-w-0">
-                <label className="block">
-                  <span className="micro text-souk-muted">Profile picture</span>
-                  <input
-                    value={draft.image ?? ''}
-                    onChange={(e) => set('image', e.target.value)}
-                    disabled={busy || step !== 'form'}
-                    className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
-                    placeholder="https://... or choose a file"
-                  />
-                </label>
-                {imageFault && (
-                  <span className="mt-1 block text-xs text-souk-peach">{imageFault}</span>
-                )}
-                {fileNote && <span className="mt-1 block text-xs text-souk-peach">{fileNote}</span>}
-                {imagePreview && !imageOk && (
-                  <span className="mt-2 block rounded-[10px] border border-souk-hair px-3 py-2 text-xs text-souk-muted">
-                    This image did not load. The listing shows the default face until one does.
-                  </span>
-                )}
-                <p className="mt-2 text-xs leading-relaxed text-souk-muted">
-                  A public https address, or a file up to 500 KB.
-                </p>
-              </div>
+            <div className="mt-4">
+              <label className="block">
+                <span className="micro text-souk-muted">Profile picture</span>
+                <input
+                  value={draft.image ?? ''}
+                  onChange={(e) => set('image', e.target.value)}
+                  disabled={busy || step !== 'form'}
+                  className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                  placeholder="https://..."
+                />
+              </label>
+              {imageFault && (
+                <span className="mt-1 block text-xs text-souk-peach">{imageFault}</span>
+              )}
+              <p className="mt-2 text-xs leading-relaxed text-souk-muted">
+                A public https address. The registry requires an https URL, so a file
+                chosen from this device cannot be registered; leave it blank to use the
+                default avatar.
+              </p>
             </div>
 
             <div className="mt-5">
