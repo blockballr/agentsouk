@@ -4,6 +4,7 @@ import { resolveFacilitatorMode } from "@/lib/facilitator-mode";
 import { SettleRequest } from "@/lib/x402";
 import { createHireTask } from "@/lib/tasks";
 import { fundJob, persistJob } from "@/lib/jobs";
+import { resolveAgentName } from "@/lib/agent-name";
 import { fetchAgentDetail } from "@/lib/scanner";
 import { loadDelisted } from "@/lib/delist-store";
 import { isAgentOwner, normalizeAddr } from "@/lib/boost-auth";
@@ -83,21 +84,25 @@ async function hireRefusal(
   // our own probe is not held up by a slow registry: an agent must not be recorded as failing
   // its check because the registry was late
   if (!detail) return isCheck ? null : { error: "This agent could not be read from the registry, so no payment was taken. Please try again." };
-  // the receipt carries the registry's name for the agent, not whatever the caller called it
-  agent.name = detail.name;
+  // the receipt carries the registry's name for the agent, not whatever the caller called it;
+  // a generated first-read label is replaced with the listing name when one is known
+  const name =
+    (await resolveAgentName(agent.chainId, agent.tokenId, detail.name)) ||
+    detail.name;
+  agent.name = name;
   const wallet = detail.agent_wallet ?? detail.owner_address;
   const bound = escrowAgentPayTo ?? payee;
   if (!wallet || normalizeAddr(wallet) !== normalizeAddr(bound)) {
-    return { error: `This payment does not go to ${detail.name}, so it is not a hire of it.` };
+    return { error: `This payment does not go to ${name}, so it is not a hire of it.` };
   }
   if (isCheck) return null;
   if (isAgentOwner(payer, detail)) {
-    return { ownAgent: true, error: `${detail.name} is your own agent, so this wallet cannot hire it. Use Re-check now on your profile to test it.` };
+    return { ownAgent: true, error: `${name} is your own agent, so this wallet cannot hire it. Use Re-check now on your profile to test it.` };
   }
   if (agent.chainId === targetChainId()) {
     const offMarket = await loadDelisted().catch(() => new Set<string>());
     if (offMarket.has(String(detail.token_id))) {
-      return { offMarket: true, error: `${detail.name} is off the market, so it is not taking new hires.` };
+      return { offMarket: true, error: `${name} is off the market, so it is not taking new hires.` };
     }
   }
   return null;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isPlaceholderAgentName } from "@/lib/agent-name";
 import { listPaymentsByClient, receiptsMode } from "@/lib/receipts-store";
 import { queryAgents } from "@/lib/scanner";
 import { CATEGORY_KEYS, type CategoryKey } from "@agora/core";
@@ -54,7 +55,10 @@ export async function GET(req: NextRequest) {
       // chain and token together name one agent, which is what a hire is counted by
       agent: key,
       tokenId: p.agent.tokenId,
-      agentName: p.agent.name,
+      agentName:
+        isPlaceholderAgentName(p.agent.name) && agent?.name
+          ? agent.name
+          : p.agent.name,
       category,
       txHash: p.txHash ?? null,
       mode: p.mode,
