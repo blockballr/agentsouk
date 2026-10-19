@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
           try {
             const captured = await Promise.race([
               captureAgentSkills(a),
-              new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
             ]);
             if (!captured) return;
             const entry = {
@@ -92,11 +92,12 @@ export async function GET(req: NextRequest) {
   // the detail route asks the same durable question, so a revoke recorded
   // elsewhere cannot leave a dead session showing live on the shelf
   const sessions = ranked.map((a) => findActiveSession(a.chain_id, a.token_id));
-  const revoked = await revokedAmong(sessions.flatMap((s) => (s ? [s.paymentId] : [])));
-
-  // search, category and rank above all read the registry record; an owner's edit only
-  // changes what is shown, so it is laid on last
-  const edits = await loadListingEdits();
+  // revoked and edits are independent of each other and of the items mapping, so
+  // read them together instead of one after the other
+  const [revoked, edits] = await Promise.all([
+    revokedAmong(sessions.flatMap((s) => (s ? [s.paymentId] : []))),
+    loadListingEdits(),
+  ]);
 
   const items = ranked.map((a, i) => {
     const verification = verifications.get(a.token_id);
