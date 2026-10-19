@@ -163,12 +163,13 @@ export function StationPage() {
   }
 
   const [probeDry, setProbeDry] = useState(true)
+  const [probeAll, setProbeAll] = useState(false)
   async function onProbe() {
     if (!session?.token) return
     setProbeBusy(true)
     setProbeResult(null)
     try {
-      const out = await stationProbe(session.token, 25, false, probeDry)
+      const out = await stationProbe(session.token, 25, probeAll, probeDry)
       const probed = (out as { probed?: number }).probed ?? 0
       const posted = (out as { oracle?: { posted?: number } }).oracle?.posted ?? 0
       setProbeResult(
@@ -274,6 +275,15 @@ export function StationPage() {
                   className="h-3.5 w-3.5"
                 />
                 Dry run (no gas)
+              </label>
+              <label className="flex items-center gap-2 text-[12px] text-souk-steel">
+                <input
+                  type="checkbox"
+                  checked={probeAll}
+                  onChange={(e) => setProbeAll(e.target.checked)}
+                  className="h-3.5 w-3.5"
+                />
+                Check all (ignore freshness)
               </label>
               {session?.role === 'viewer' ? (
                 <Txt size={12} lead={18} tone="muted">
