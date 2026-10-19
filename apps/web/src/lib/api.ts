@@ -124,6 +124,31 @@ export async function getAgentDetail(
   return body.data ?? null
 }
 
+export interface FreePreviewResult {
+  text: string
+  skillId?: string
+  skillName?: string
+}
+
+// Runs an agent's own advertised skill with no buyer input, through the
+// marketplace, so a third-party endpoint does not need to allow the browser.
+export async function runFreePreview(endpoint: string, skillId?: string): Promise<FreePreviewResult> {
+  const res = await fetch(`${BASE}/preview`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ endpoint, skillId }),
+  })
+  const payload = await res.json().catch(() => null)
+  if (!res.ok || !payload?.success) {
+    throw new Error(payload?.error ?? `preview ${res.status}`)
+  }
+  return {
+    text: payload.data?.text ?? '',
+    skillId: payload.data?.skillId,
+    skillName: payload.data?.skillName,
+  }
+}
+
 export async function getReceipt(paymentId: string): Promise<Receipt | null> {
   const res = await fetch(`${BASE}/receipts/${paymentId}`)
   if (!res.ok) return null
@@ -216,6 +241,8 @@ export interface AgentCardSkill {
     type?: string
     properties?: Record<string, { type?: string; description?: string }>
     required?: string[]
+    // the skill's own worked input, which drives a preview when it has one
+    examples?: Record<string, unknown>[]
   }
 }
 
