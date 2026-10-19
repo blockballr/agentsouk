@@ -19,6 +19,10 @@ export const dynamic = "force-dynamic";
 
 export const DEFAULT_HIRE_PRICE_USD = 0.01;
 
+// per-hire ceiling on the x402 path: a single hire may not exceed this, so a
+// misconfigured or hostile agent cannot drain a buyer's wallet in one go
+export const MAX_HIRE_USD = 2;
+
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
 // the marketplace is the x402 merchant and the agent's receiving wallet is the payTo,
@@ -91,7 +95,9 @@ export async function POST(req: NextRequest) {
   // for a tip or a longer session, but never name a lower one
   const requested = Number(body.amountUsd);
   const priceUsd =
-    Number.isFinite(requested) && requested >= DEFAULT_HIRE_PRICE_USD ? requested : DEFAULT_HIRE_PRICE_USD;
+    Number.isFinite(requested) && requested >= DEFAULT_HIRE_PRICE_USD
+      ? Math.min(requested, MAX_HIRE_USD)
+      : DEFAULT_HIRE_PRICE_USD;
   // the asset is resolved per chain (97 settles in sUSD, 56 in $U), so the advertised
   // EIP-712 domain always matches what the relay will actually broadcast
   const token = settlementAsset(chainId);
