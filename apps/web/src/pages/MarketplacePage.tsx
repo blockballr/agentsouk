@@ -40,7 +40,7 @@ const defaultSorts = [
   {
     key: 'score',
     label: 'Reputation',
-    title: 'Registry reputation leads, then newest, then health. Reachability settles every tie, and job sellers lead each group.',
+    title: 'Registry reputation leads, then most reviewed, then health, then newest. Reachability only settles what those cannot, and job sellers lead each group.',
   },
   { key: 'feedback', label: 'Most reviewed' },
   { key: 'health', label: 'Health' },
