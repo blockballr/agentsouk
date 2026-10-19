@@ -65,7 +65,7 @@ const REVERT_PLAIN_ENGLISH: { test: RegExp; message: string }[] = [
   },
   {
     test: /insufficient funds for gas|exceeds account balance/i,
-    message: 'This wallet does not have enough BNB to pay for the transaction.',
+    message: 'The relay that broadcasts hires is out of BNB on this chain, so the hire cannot be settled right now. Try again later or contact support.',
   },
   {
     // not a bare "network": that also matches our own "switch networks" message
