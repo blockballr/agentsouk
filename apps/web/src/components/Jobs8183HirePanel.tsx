@@ -214,6 +214,14 @@ export default function Jobs8183HirePanel({
             : `The job is funded and recorded. The seller has not acknowledged yet; the chain still holds the price.`,
         ])
       }
+      try {
+        const key = `jobs8183:funded:${chainId}:${tokenId}`
+        const prev = JSON.parse(localStorage.getItem(key) ?? '[]') as number[]
+        if (!prev.includes(Number(jobId))) prev.push(Number(jobId))
+        localStorage.setItem(key, JSON.stringify(prev))
+      } catch {
+        // storage is best effort; the job is still on chain
+      }
       setPhase({ kind: 'funded' })
     } catch (e) {
       setPhase({ kind: 'failed' })
