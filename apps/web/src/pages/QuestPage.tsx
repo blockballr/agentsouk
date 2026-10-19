@@ -337,9 +337,16 @@ export function QuestPage() {
               aria-valuenow={done}
             >
               <div
-                className="h-full rounded-[3px] bg-souk-data"
+                className="meter-fill relative h-full rounded-[3px] bg-souk-data transition-[width] duration-700 ease-out motion-reduce:transition-none"
                 style={{ width: `${(done / 3) * 100}%` }}
-              />
+              >
+                {done < 3 ? (
+                  <span
+                    aria-hidden="true"
+                    className="meter-shimmer absolute inset-y-0 left-0 w-[40%] rounded-[3px] bg-gradient-to-r from-transparent via-white/70 to-transparent"
+                  />
+                ) : null}
+              </div>
             </div>
             <Rule hair />
             {/* the next move lives with the standing it follows from, rather than in a
