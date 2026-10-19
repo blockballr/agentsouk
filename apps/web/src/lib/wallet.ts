@@ -366,6 +366,9 @@ function handleAccountsChanged(accounts: unknown): void {
     emitActiveAccount(null);
     return;
   }
+  // a switch inside the wallet invalidates the stored choice, so the next
+  // connect re-discovers instead of reusing the wallet the user left
+  clearWalletChoice();
   emitActiveAccount(list[0]);
 }
 
