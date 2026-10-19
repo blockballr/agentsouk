@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { watchSession } from './wallet-session'
+import { watchActiveAccount } from './wallet'
 
-// the wallet's signed-in address: the session established by a signature,
-// read once on mount and then watched, so a switch inside the wallet adopts a
-// recorded address or disconnects instead of changing who the page thinks you
-// are
+// the wallet's own active account, read from the provider and re-read whenever
+// the wallet reports a change. this reflects who is connected right now, even
+// before a sign-in record exists for that address, so a wallet switch updates
+// every surface that shows the connected account. authorization (which wallet
+// the marketplace acts for) is tracked separately by the session layer.
 export function useActiveAccount(): string | null {
   const [account, setAccount] = useState<string | null>(null)
-  useEffect(() => watchSession(setAccount), [])
+  useEffect(() => watchActiveAccount(setAccount), [])
   return account
 }
