@@ -61,7 +61,7 @@ describe("parseNegotiationQuote", () => {
   it("refuses a quote priced in a token the kernel does not escrow", () => {
     const result = parseNegotiationQuote(envelope({ currency: "0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53" }), 97, null);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toContain("the kernel does not escrow");
+    if (!result.ok) expect(result.error).toContain("kernel escrows");
   });
 
   it("refuses a quote naming a different provider than the listing", () => {

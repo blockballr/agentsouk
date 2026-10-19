@@ -122,7 +122,9 @@ export function parseNegotiationQuote(
   const currency = typeof envelope.currency === "string" ? envelope.currency : "";
   if (!ADDRESS_RE.test(currency)) return refuse("the quote names no payment token");
   if (currency.toLowerCase() !== stack.paymentToken.toLowerCase()) {
-    return refuse("the quote is priced in a token the kernel does not escrow");
+    return refuse(
+      `the quote is priced in ${currency}, but this kernel escrows ${stack.paymentToken}; the agent's negotiate reply must price in the kernel's token`,
+    );
   }
 
   // a seller that omits the provider pays the listing's own registry wallet

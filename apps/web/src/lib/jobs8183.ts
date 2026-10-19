@@ -122,6 +122,71 @@ export function jobStatusName(status: number): string {
   return JOB_STATUS_NAMES[status] ?? "Unknown"
 }
 
+// ---------------------------------------------------------------------------
+// Bundled funding (EIP-5792): one wallet approval for the whole ERC-8183
+// fund sequence, instead of five separate popups. Wallets that do not speak
+// wallet_sendCalls (or that report no batch capability) return
+// { supported: false } and the caller falls back to the sequential flow.
+export type BundledFundResult =
+  | { supported: false }
+  | { supported: true; ok: true }
+  | { supported: true; ok: false; error: string };
+
+export async function tryBundledFund(
+  provider: Eip1193Like,
+  chainId: number,
+  account: string,
+  calls: { to: string; data: string; label: string }[],
+): Promise<BundledFundResult> {
+  // attempt the batch; a "method not found" answer means unsupported. We do not
+  // gate on wallet_getCapabilities because some wallets skip it entirely.
+  let batchId: string;
+  try {
+    const res = (await provider.request({
+      method: "wallet_sendCalls",
+      params: [
+        {
+          version: "2.0.0",
+          chainId: `0x${chainId.toString(16)}`,
+          from: account,
+          calls: calls.map((c) => ({ to: c.to, data: c.data })),
+        },
+      ],
+    })) as { id?: string } | null;
+    if (!res || typeof res.id !== "string") throw new Error("no batch id returned");
+    batchId = res.id;
+  } catch (e) {
+    const msg = (e as Error)?.message ?? String(e);
+    if (/not (found|supported)|method not found|unsupported|unrecognized/i.test(msg)) {
+      return { supported: false };
+    }
+    return { supported: true, ok: false, error: msg || "bundled fund failed" };
+  }
+
+  // poll for completion
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 2000));
+    let status: { status?: string } | null = null;
+    try {
+      status = (await provider.request({
+        method: "wallet_getCallsStatus",
+        params: [batchId],
+      })) as { status?: string } | null;
+    } catch {
+      continue;
+    }
+    const s = (status?.status ?? "").toLowerCase();
+    if (s === "confirmed" || s === "success" || s === "completed") {
+      return { supported: true, ok: true };
+    }
+    if (s === "failed" || s === "reverted" || s === "rejected") {
+      return { supported: true, ok: false, error: `bundled fund ${s}` };
+    }
+  }
+  return { supported: true, ok: false, error: "bundled fund timed out waiting for confirmation" };
+}
+
 // getJob's return is an outer offset word followed by the 9-field tuple, and
 // the tuple's string field is an inner offset, so the outer word is sliced
 // and the static fields read forward: client at one, provider at two,
