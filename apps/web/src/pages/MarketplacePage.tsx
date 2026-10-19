@@ -68,6 +68,19 @@ const LEGEND: { tone: DotTone; label: string }[] = [
 export function MarketplacePage() {
   const [sp, setSp] = useSearchParams()
   const navigate = useNavigate()
+
+  // persist the marketplace filters so they survive a trip to an agent's detail
+  // page and back: the in-app "back to agents" links drop the query string, and
+  // a fresh mount should reopen on the sort the buyer actually picked
+  useEffect(() => {
+    const stored = sessionStorage.getItem('marketplace:params')
+    if (stored && !sp.toString()) {
+      setSp(new URLSearchParams(stored), { replace: true })
+    }
+  }, [])
+  useEffect(() => {
+    sessionStorage.setItem('marketplace:params', sp.toString())
+  }, [sp])
   const category = sp.get('category') ?? 'all'
   const q = sp.get('q') ?? ''
   // no sort named reads as score, the chain's first metric; reachability is not
