@@ -161,7 +161,9 @@ export function RegisterWizard({
   const sentLatch = useRef(false)
   // null until the lister proceeds; each entry updates as its check runs
   const [checks, setChecks] = useState<CheckLine[] | null>(null)
-  // image is now a plain https URL; no preview state needed
+  // tracks whether the pasted image url actually loads, so a dead link shows
+  // the default face instead of a broken image
+  const [imageOk, setImageOk] = useState(true)
   // how the listing sells: a call listing takes paid calls, a job listing takes
   // ERC-8183 jobs only, and a both listing declares x402 while also taking jobs
   const [mode, setMode] = useState<'job' | 'call' | 'both'>('call')
@@ -818,25 +820,54 @@ export function RegisterWizard({
               </button>
             </details>
 
-            <div className="mt-4">
-              <label className="block">
-                <span className="micro text-souk-muted">Profile picture</span>
-                <input
-                  value={draft.image ?? ''}
-                  onChange={(e) => set('image', e.target.value)}
-                  disabled={busy || step !== 'form'}
-                  className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
-                  placeholder="https://..."
-                />
-              </label>
-              {imageFault && (
-                <span className="mt-1 block text-xs text-souk-peach">{imageFault}</span>
-              )}
-              <p className="mt-2 text-xs leading-relaxed text-souk-muted">
-                A public https address. The registry requires an https URL, so a file
-                chosen from this device cannot be registered; leave it blank to use the
-                default avatar.
-              </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
+              <div className="flex flex-col items-start gap-2">
+                {imageRaw && imageUsable ? (
+                  <img
+                    src={imageRaw}
+                    alt=""
+                    onError={() => setImageOk(false)}
+                    className="h-24 w-24 rounded-[14px] border border-souk-hair object-cover"
+                    style={{ display: imageOk ? 'block' : 'none' }}
+                  />
+                ) : null}
+                {!imageOk && imageRaw ? (
+                  <div className="grid h-24 w-24 place-items-center rounded-[14px] border border-dashed border-souk-hair text-[11px] text-souk-muted">
+                    No picture
+                  </div>
+                ) : null}
+                {!imageRaw ? (
+                  <div className="grid h-24 w-24 place-items-center rounded-[14px] border border-dashed border-souk-hair text-[11px] text-souk-muted">
+                    No picture
+                  </div>
+                ) : null}
+              </div>
+              <div className="min-w-0">
+                <label className="block">
+                  <span className="micro text-souk-muted">Profile picture</span>
+                  <input
+                    value={draft.image ?? ''}
+                    onChange={(e) => {
+                      set('image', e.target.value)
+                      setImageOk(true)
+                    }}
+                    disabled={busy || step !== 'form'}
+                    className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                    placeholder="https://..."
+                  />
+                </label>
+                {imageFault && (
+                  <span className="mt-1 block text-xs text-souk-peach">{imageFault}</span>
+                )}
+                {imageRaw && !imageOk && (
+                  <span className="mt-2 block rounded-[10px] border border-souk-hair px-3 py-2 text-xs text-souk-muted">
+                    This image did not load. The listing shows the default face until one does.
+                  </span>
+                )}
+                <p className="mt-2 text-xs leading-relaxed text-souk-muted">
+                  A public https address. Leave it blank to use the default avatar.
+                </p>
+              </div>
             </div>
 
             <div className="mt-5">
