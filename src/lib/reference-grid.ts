@@ -302,10 +302,22 @@ export function parseGridText(task: string): GridInputFields {
   if (lower !== undefined) out.lowerUsd = lower;
   const upper = labelledNumber(task, "upper(?:\\s*usd|\\s*price|\\s*bound)?");
   if (upper !== undefined) out.upperUsd = upper;
-  const levels = labelledNumber(task, "levels?|rungs?|rung\\s*count");
+  // levels can be written either way ("levels 11" or "11 levels"); a tight gap
+  // keeps "levels and 100 per order" from being read as 100 levels
+  const levels = labelledNumber(task, "levels?|rungs?|rung\\s*count", 3);
   if (levels !== undefined) out.levels = levels;
+  if (out.levels === undefined) {
+    const reversed = /(\d[\d,]*(?:\.\d+)?)\s*(?:levels?|rungs?)\b/i.exec(task);
+    if (reversed) out.levels = toNumber(reversed[1]);
+  }
   const orderSize = labelledNumber(task, "order\\s*size|order\\s*amount|per\\s*order|size");
   if (orderSize !== undefined) out.orderSizeUsd = orderSize;
+  // "100 per order" / "100 per rung" put the number before the label, which the
+  // labelled reader above does not catch, so read it directly here
+  if (out.orderSizeUsd === undefined) {
+    const reversed = /(\d[\d,]*(?:\.\d+)?)\s*per\s*(?:order|rung)\b/i.exec(task);
+    if (reversed) out.orderSizeUsd = toNumber(reversed[1]);
+  }
   const feeBps = labelledNumber(task, "fee\\s*bps|fee\\s*in\\s*bps|round\\s*trip\\s*fee|fees?");
   if (feeBps !== undefined) out.feeBps = feeBps;
   const pair = parsePair(task);

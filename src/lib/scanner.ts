@@ -316,9 +316,14 @@ export function summaryFromRegistration(input: {
   const name = (draft.name ?? "").trim();
   const description = (draft.description ?? "").trim();
   const endpoint = (draft.endpoint ?? "").trim();
-  // a web service is shelved too, but it is browser-invoked, so the marketplace
-  // can never call it; the summary carries it as its own endpoint kind
-  const kind = draft.endpointKind ?? "web";
+  // a listing may speak more than one protocol, so collect every selected kind
+  // (falling back to the legacy single kind, then web) and set each endpoint
+  const kinds =
+    draft.endpointKinds && draft.endpointKinds.length > 0
+      ? draft.endpointKinds
+      : draft.endpointKind
+        ? [draft.endpointKind]
+        : ["web"];
   // The lister picks the shelf in the form, so that choice is what files the
   // agent. The classifier only fills in when the form carried nothing to file it
   // under, and its reading stays in categoryScores so the two remain comparable.
@@ -342,9 +347,9 @@ export function summaryFromRegistration(input: {
     total_feedbacks: 0,
     health_score: null,
     supported_trust_models: [],
-    a2a_endpoint: kind === "A2A" && endpoint ? endpoint : null,
-    mcp_server: kind === "MCP" && endpoint ? endpoint : null,
-    web_endpoint: kind === "web" && endpoint ? endpoint : null,
+    a2a_endpoint: kinds.includes("A2A") && endpoint ? endpoint : null,
+    mcp_server: kinds.includes("MCP") && endpoint ? endpoint : null,
+    web_endpoint: kinds.includes("web") && endpoint ? endpoint : null,
     is_active: true,
     created_at: input.createdAt,
     category,

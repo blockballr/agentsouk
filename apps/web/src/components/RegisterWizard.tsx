@@ -57,7 +57,8 @@ const EMPTY: RegistrationDraft = {
   // instead of filing the listing under yield
   category: '',
   endpoint: '',
-  endpointKind: 'A2A',
+  // a listing may speak more than one protocol, so this is a list
+  endpointKinds: ['A2A'],
   image: '',
   x402Support: true,
 }
@@ -575,7 +576,7 @@ export function RegisterWizard({
       setStep('listed')
       // no probe here: a fresh token is not indexed yet, so an instant probe finds no endpoint
       // and that verdict would stand for twenty hours; the sweep checks it once it is indexed
-      if (draft.endpointKind !== 'web') {
+      if ((draft.endpointKinds ?? []).some((k) => k !== 'web')) {
         mark('sweep', 'waiting', 'The verifier probes it on its next sweep, once the registry has indexed it. You can re-check it any time from your profile.')
       }
       return
@@ -703,19 +704,31 @@ export function RegisterWizard({
           <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <label className="block">
               <span className="micro text-souk-muted">How it is invoked</span>
-              <select
-                value={draft.endpointKind}
-                onChange={(e) => {
-                  set('endpointKind', e.target.value as RegistrationDraft['endpointKind'])
-                  setProbe(null)
-                }}
-                disabled={busy || step !== 'form'}
-                className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
-              >
-                <option value="A2A">A2A</option>
-                <option value="MCP">MCP</option>
-                <option value="web">Web</option>
-              </select>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {(['A2A', 'MCP', 'web'] as const).map((kind) => {
+                  const selected = (draft.endpointKinds ?? []).includes(kind)
+                  return (
+                    <label
+                      key={kind}
+                      className="flex cursor-pointer items-center gap-2 rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2 text-sm text-souk-ink transition hover:border-souk-sky"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        disabled={busy || step !== 'form'}
+                        onChange={() => {
+                          set('endpointKinds', selected
+                            ? (draft.endpointKinds ?? []).filter((k) => k !== kind)
+                            : [...(draft.endpointKinds ?? []), kind])
+                          setProbe(null)
+                        }}
+                        className="h-4 w-4 rounded border-souk-hair text-souk-sky focus:ring-souk-sky"
+                      />
+                      {kind}
+                    </label>
+                  )
+                })}
+              </div>
             </label>
             <button
               type="button"
@@ -732,7 +745,7 @@ export function RegisterWizard({
           </p>
           {probe && <EndpointProbeResult probe={probe} />}
 
-          {draft.endpointKind === 'web' && (
+          {(draft.endpointKinds ?? []).length === 1 && (draft.endpointKinds ?? [])[0] === 'web' && (
             <div className="mt-3 rounded-[10px] border border-press-black/20 bg-souk-surface2 p-3 text-xs leading-relaxed text-souk-ink">
               <p className="micro">Web listings appear, but the marketplace cannot call them</p>
               <p className="mt-1">

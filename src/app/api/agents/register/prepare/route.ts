@@ -43,6 +43,9 @@ export async function POST(req: NextRequest) {
     description: typeof source.description === "string" ? source.description : "",
     category: source.category as RegistrationDraft["category"],
     ...(typeof source.endpoint === "string" ? { endpoint: source.endpoint } : {}),
+    ...(Array.isArray(source.endpointKinds)
+      ? { endpointKinds: source.endpointKinds.filter((k): k is RegistrationDraft["endpointKind"] & string => typeof k === "string") }
+      : {}),
     ...(typeof source.endpointKind === "string" ? { endpointKind: source.endpointKind } : {}),
     ...(typeof source.image === "string" ? { image: source.image } : {}),
     ...(typeof source.agentWallet === "string" ? { agentWallet: source.agentWallet } : {}),
