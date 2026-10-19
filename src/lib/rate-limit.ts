@@ -180,14 +180,46 @@ export async function enforceRateLimit(
   }
 
   const sql = await db();
-  if (!sql) throw new Error("rate limit store is unavailable");
-  if (!(await ensureTable(sql, table))) {
-    throw new Error("rate limit store is unavailable");
+  if (!sql) {
+    // no database configured: count in process memory instead of refusing
+    for (const key of keys) {
+      const result = hitMemory(policy, key);
+      if (!result.allowed) return result;
+      if (result.remaining < tightest.remaining) tightest = result;
+    }
+    return tightest;
+  }
+  // a table that cannot be created or a write that cannot land must not block
+  // the request: fall back to in-process memory rather than refusing
+  try {
+    if (!(await ensureTable(sql, table))) {
+      tableReady.delete(table);
+      for (const key of keys) {
+        const result = hitMemory(policy, key);
+        if (!result.allowed) return result;
+        if (result.remaining < tightest.remaining) tightest = result;
+      }
+      return tightest;
+    }
+  } catch {
+    tableReady.delete(table);
+    for (const key of keys) {
+      const result = hitMemory(policy, key);
+      if (!result.allowed) return result;
+      if (result.remaining < tightest.remaining) tightest = result;
+    }
+    return tightest;
   }
   for (const key of keys) {
-    const result = await hitPostgres(sql, policy, key);
-    if (!result.allowed) return result;
-    if (result.remaining < tightest.remaining) tightest = result;
+    try {
+      const result = await hitPostgres(sql, policy, key);
+      if (!result.allowed) return result;
+      if (result.remaining < tightest.remaining) tightest = result;
+    } catch {
+      const result = hitMemory(policy, key);
+      if (!result.allowed) return result;
+      if (result.remaining < tightest.remaining) tightest = result;
+    }
   }
   return tightest;
 }

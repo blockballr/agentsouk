@@ -152,10 +152,38 @@ export async function enforcePrepareRateLimit(input: {
     return tightest;
   }
   const sql = await db();
-  if (!sql) throw new Error("prepare rate limit store is unavailable");
-  if (!(await ensureTable(sql))) {
+  if (!sql) {
+    // no database configured: count in process memory instead of refusing
+    let tightest: RateLimitVerdict = { allowed: true, remaining: LIMIT, retryAfterSeconds: 0 };
+    for (const key of keys) {
+      const result = hitMemory(key);
+      if (!result.allowed) return result;
+      if (result.remaining < tightest.remaining) tightest = result;
+    }
+    return tightest;
+  }
+  // a table that cannot be created or a write that cannot land must not block
+  // registration: fall back to in-process memory rather than refusing
+  try {
+    if (!(await ensureTable(sql))) {
+      tableReady = null;
+      let tightest: RateLimitVerdict = { allowed: true, remaining: LIMIT, retryAfterSeconds: 0 };
+      for (const key of keys) {
+        const result = hitMemory(key);
+        if (!result.allowed) return result;
+        if (result.remaining < tightest.remaining) tightest = result;
+      }
+      return tightest;
+    }
+  } catch {
     tableReady = null;
-    throw new Error("prepare rate limit store is unavailable");
+    let tightest: RateLimitVerdict = { allowed: true, remaining: LIMIT, retryAfterSeconds: 0 };
+    for (const key of keys) {
+      const result = hitMemory(key);
+      if (!result.allowed) return result;
+      if (result.remaining < tightest.remaining) tightest = result;
+    }
+    return tightest;
   }
   let tightest: RateLimitVerdict = {
     allowed: true,
@@ -163,9 +191,16 @@ export async function enforcePrepareRateLimit(input: {
     retryAfterSeconds: 0,
   };
   for (const key of keys) {
-    const result = await hitPostgres(sql, key);
-    if (!result.allowed) return result;
-    if (result.remaining < tightest.remaining) tightest = result;
+    try {
+      const result = await hitPostgres(sql, key);
+      if (!result.allowed) return result;
+      if (result.remaining < tightest.remaining) tightest = result;
+    } catch {
+      // a write that cannot land falls back to in-process memory for this key
+      const result = hitMemory(key);
+      if (!result.allowed) return result;
+      if (result.remaining < tightest.remaining) tightest = result;
+    }
   }
   return tightest;
 }
