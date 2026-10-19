@@ -100,9 +100,11 @@ export function SwapTicker() {
     return watchSession(setAccount)
   }, [])
 
+  // balances are read as soon as a wallet is known, so the panel opens with
+  // them instead of fetching on first open
   useEffect(() => {
-    if (open) void refreshBalances(account)
-  }, [open, account, refreshBalances])
+    void refreshBalances(account)
+  }, [account, refreshBalances])
 
   useEffect(() => {
     if (!open) return
@@ -120,11 +122,9 @@ export function SwapTicker() {
     }
   }, [open])
 
+  // the rate is fetched on mount and whenever the direction flips, so the panel
+  // opens already priced instead of waiting on a fetch after it is open
   useEffect(() => {
-    if (!open) {
-      setRate(null)
-      return
-    }
     let live = true
     const one = parseSwapAmount('1')
     if (one) {
@@ -139,7 +139,7 @@ export function SwapTicker() {
     return () => {
       live = false
     }
-  }, [open, direction])
+  }, [direction])
 
   useEffect(() => {
     if (!open) {
@@ -310,7 +310,7 @@ export function SwapTicker() {
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4, scale: 0.99 }}
           transition={{ duration: reduceMotion ? 0.08 : 0.14, ease: 'easeOut' }}
           style={{ transformOrigin: 'bottom left' }}
-          className="fixed bottom-[44px] left-3 z-[70] w-[min(92vw,356px)] rounded-[12px] border border-souk-hair bg-souk-surface1 p-4 shadow-2xl"
+          className="fixed bottom-16 left-3 z-[70] w-[min(92vw,356px)] origin-bottom rounded-[14px] bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] p-4 text-souk-ink shadow-lg backdrop-blur-md ring-1 ring-white/10"
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-souk-muted">
