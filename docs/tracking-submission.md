@@ -21,8 +21,7 @@ presents mock, seeded, or stale data as live.
 | Buyer wallet, signs settlement authorizations | 0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713 | derived from PROD_BUYER_KEY, which is never committed; address only is published here |
 | Receipt contract | none deployed | receipts are StoredPayment records in the payment ledger (src/lib/x402.ts), persisted through src/lib/receipts-store.ts. A settled hire now carries a real chain 97 transaction hash; see the examples below |
 | USDT | 0x55d398326f99059fF775485246999027B3197955 | BSC_TOKENS.USDT in src/lib/types.ts, displayed only, not accepted for settlement |
-| HireVault (chain 97) | 0xc742e51f3fe3875a3335700a7d692f40dc8e60b8 | src/app/api/vault/execute/route.ts; VAULT_BY_CHAIN in apps/web/src/lib/vault.ts. Opened/Traded/Closed events |
-| HireVault (chain 56) | 0xe8e8940145ee165c39b2405755d177818187730d | same contract, mainnet deployment; default chain for VaultHirePage |
+
 
 ### Worked example of a settled hire on chain 97
 
@@ -280,9 +279,8 @@ completing a paid job.
 
 ## 2. Event mapping: hire, deposit, job completion, rating
 
-The x402 hire path has no quest-relevant onchain events; each quest event maps
-to an API record as follows. The HireVault funded-hire path (separate, see
-section 1) does emit onchain events for hires that go through it.
+There are no quest-relevant onchain events in this build. Each quest event
+maps to an API record as follows.
 
 | Quest event | Source of truth | How to verify |
 |---|---|---|
@@ -309,16 +307,6 @@ Job sellers settle through the ERC-8183 commerce kernel. The kernel's own
 Open/Funded/Submitted/Completed/Rejected/Expired transitions are on chain and
 readable via `getJob(jobId)`; event signatures follow the ERC-8183 standard and
 are not redefined in this repository.
-
-### HireVault funded-hire events (onchain)
-
-Hires that go through HireVault emit these events; topic0 hashes are keccak256 of the signature.
-
-| Quest event | Event signature | topic0 | Source |
-|---|---|---|---|
-| Hire + deposit | `Opened(uint256 indexed id, address indexed buyer, address indexed agent, address token, uint256 amount, uint64 expiry, uint16 maxSlippageBps)` | `0x238990fbc9a5c4b1a88ef61fc4925e8b3166b4f14b1c0290ad21261056a59a08` | `contracts/src/HireVault.sol` |
-| Job completion (trade) | `Traded(uint256 indexed id, address indexed agent, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)` | `0xc985fc1fe157183a2b0ddab4d33a0fc7099e73e2a2d40f16bf5b989291ddf24c` | same |
-| Revoke / withdraw | `Closed(uint256 indexed id, address indexed buyer, uint256 amountA, uint256 amountB)` | `0x6fb6a8d590ccdf226481f20a995a894898b73dd6b057d2fa73fabd0f6c24227e` | same |
 
 Rating is recorded separately as ERC-8004 feedback on the reputation registry (`REPUTATION_BY_CHAIN`), not in HireVault.
 
