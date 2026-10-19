@@ -11,7 +11,7 @@ import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
 import { targetChainId } from "@/lib/types";
 import { parseUnits } from "@/lib/format";
 import { escrowFunder, escrowTermsFor } from "@/lib/escrow";
-import { DEFAULT_HIRE_PRICE_USD } from "@/app/api/x402/requirements/route";
+import { DEFAULT_HIRE_PRICE_USD, MAX_HIRE_USD } from "@/app/api/x402/requirements/route";
 
 export const dynamic = "force-dynamic";
 
@@ -201,6 +201,17 @@ export async function POST(req: NextRequest) {
           success: false,
           refused: true,
           error: `This payment pays less than the marketplace price of $${DEFAULT_HIRE_PRICE_USD}, so it cannot settle.`,
+        },
+        { status: 409 },
+      );
+    }
+    const ceiling = parseUnits(String(MAX_HIRE_USD), 18);
+    if (signed > ceiling) {
+      return NextResponse.json(
+        {
+          success: false,
+          refused: true,
+          error: `This payment exceeds the marketplace cap of $${MAX_HIRE_USD} per hire, so it cannot settle.`,
         },
         { status: 409 },
       );
