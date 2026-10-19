@@ -53,7 +53,9 @@ const CATEGORY_OPTIONS: { value: RegistrationDraft['category']; label: string }[
 const EMPTY: RegistrationDraft = {
   name: '',
   description: '',
-  category: 'yield',
+  // no silent default: an unchosen category falls back to the classifier
+  // instead of filing the listing under yield
+  category: '',
   endpoint: '',
   endpointKind: 'A2A',
   image: '',
@@ -338,7 +340,7 @@ export function RegisterWizard({
     mark('classifier', 'checking')
     await nextPaint()
     const text = `${draft.name} ${draft.description}`.trim()
-    const shelfTab = categoryDef(draft.category).label
+    const shelfTab = draft.category ? categoryDef(draft.category).label : 'a category you pick'
     if (!text) {
       mark(
         'classifier',
@@ -591,7 +593,7 @@ export function RegisterWizard({
     // the shelf decides separately from the chain, so its verdict is reported here
     // instead of on a profile that will not show the agent at all
     const refused = result.listed === false
-    const shelfTab = categoryDef(draft.category).label
+    const shelfTab = draft.category ? categoryDef(draft.category).label : 'a category you pick'
     return (
       <div
         className={`metal rounded-[14px] border hairline p-8 ${
@@ -770,6 +772,9 @@ export function RegisterWizard({
                   disabled={busy || step !== 'form'}
                   className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
                 >
+                  <option value="" disabled>
+                    Choose a category
+                  </option>
                   {CATEGORY_OPTIONS.map((c) => (
                     <option key={c.value} value={c.value}>
                       {c.label}
@@ -1025,7 +1030,7 @@ export function RegisterWizard({
         {step === 'form' && (
           <button
             type="button"
-            disabled={busy || endpointFault !== null || !detailsOpen}
+            disabled={busy || endpointFault !== null || !detailsOpen || !draft.category}
             onClick={() => void runChecks()}
             className={cx(button('primary', 'xl'), 'w-full')}
           >
@@ -1033,9 +1038,11 @@ export function RegisterWizard({
               ? 'Fix the endpoint before registering'
               : !detailsOpen
                 ? 'Enter an endpoint to continue'
-                : busy
-                  ? 'Preparing'
-                  : 'Continue to registration'}
+                : !draft.category
+                  ? 'Choose a category to continue'
+                  : busy
+                    ? 'Preparing'
+                    : 'Continue to registration'}
           </button>
         )}
 
@@ -1138,7 +1145,7 @@ function EndpointProbeResult({ probe }: { probe: EndpointProbe }) {
 // The shelf files under the category chosen in the form; this reports what search
 // will read, because the text still decides whether buyers reach the listing.
 function CategoryCheck({ draft }: { draft: RegistrationDraft }) {
-  const shelfTab = categoryDef(draft.category).label
+  const shelfTab = draft.category ? categoryDef(draft.category).label : 'a category you pick'
   const text = `${draft.name} ${draft.description}`.trim()
   if (!text) {
     return (

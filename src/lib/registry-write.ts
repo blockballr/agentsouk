@@ -133,7 +133,7 @@ export function validateDraft(draft: RegistrationDraft): DraftValidation {
     errors.push(`Description must be ${LIMITS.description} characters or fewer.`);
   }
 
-  if (!LISTABLE_CATEGORIES.includes(draft.category)) {
+  if (!LISTABLE_CATEGORIES.includes(draft.category as (typeof LISTABLE_CATEGORIES)[number])) {
     errors.push(`Category must be one of: ${LISTABLE_CATEGORIES.join(", ")}.`);
   }
 

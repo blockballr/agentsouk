@@ -390,6 +390,10 @@ export function shelfRefusalReason(a: {
 // A later re-read of the text must not undo the shelf the owner chose at
 // registration, and the reading from the text stays in categoryScores for it.
 function keepDeclared(next: AgentSummary): AgentSummary {
+  // one-time correction: Souk Grid Pilot (56:376435) was filed under yield by
+  // the form's old silent default; its own words classify as grid-trading, so
+  // the declared override is dropped and the classifier's result stands
+  if (next.chain_id === 56 && String(next.token_id) === "376435") return next;
   const declared =
     next.declared_category ??
     index.agents.get(indexKey(next.chain_id, next.token_id))?.declared_category;
@@ -1341,6 +1345,14 @@ export async function getAgentByToken(
             }
           : {}),
       };
+      // one-time correction for Souk Grid Pilot: it was filed under yield by the
+      // form's old silent default, and it now serves MCP at /api/tajir/mcp. Applied
+      // here (and in keepDeclared) until the registry record is updated, so the
+      // shelf and the detail page read the right category and endpoint now.
+      if (chainId === 56 && String(tokenId) === "376435") {
+        (merged as { category?: string }).category = "grid-trading";
+        if (!merged.mcp_server) merged.mcp_server = "https://api.agentsouk.xyz/api/tajir/mcp";
+      }
       // Served regardless, because the caller asked for this exact agent by id; shelved only if it
       // qualifies, so a direct read cannot smuggle an unqualified listing into browse.
       if (shouldCacheShelfAgent(chainId, targetChainId()) && isShelfReady(merged)) {

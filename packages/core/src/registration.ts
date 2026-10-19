@@ -16,7 +16,9 @@ export type EndpointKind = (typeof ENDPOINT_KINDS)[number]
 export interface RegistrationDraft {
   name: string
   description: string
-  category: ListableCategory
+  // '' means "not chosen": the shelf falls back to the classifier, which is
+  // better than silently filing under the form's old yield default
+  category: ListableCategory | ''
   endpoint?: string
   endpointKind?: EndpointKind
   image?: string
