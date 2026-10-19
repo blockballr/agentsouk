@@ -67,7 +67,7 @@ export function VerificationLoop({ checks }: { checks: CheckLine[] }) {
           zero the fill shows a sliver, so the track never reads as a broken control */}
       <div className="mt-3 h-[6px] w-full overflow-hidden rounded-[3px] bg-white/15">
         <div
-          className="meter-fill relative h-full rounded-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
+          className="meter-fill relative h-full overflow-hidden rounded-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
           style={{
             width: `${Math.max(pct, 2)}%`,
             minWidth: 6,
