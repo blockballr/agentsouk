@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveAgentName } from "@/lib/agent-name";
 import { listPaymentsByPayee, receiptsMode } from "@/lib/receipts-store";
 import { settlementAsset } from "@/lib/types";
 import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
@@ -32,7 +33,7 @@ async function hiresForPayee(payee: string) {
   // The durable read is the batch: one query returns every receipt paid to this
   // wallet, so the map below never reaches the store per payment.
   const stored = await listPaymentsByPayee(payee);
-  const hires = stored.map((p) => {
+  const hires = await Promise.all(stored.map(async (p) => {
     // decimals and symbol come from the chain's settlement asset, not the receipt,
     // so older receipts that stored a caller's label still read what was paid
     let decimals: number | null = null;
@@ -49,7 +50,9 @@ async function hiresForPayee(payee: string) {
       paymentId: p.paymentId,
       chainId: p.agent.chainId,
       tokenId: p.agent.tokenId,
-      agentName: p.agent.name,
+      agentName:
+        (await resolveAgentName(p.agent.chainId, p.agent.tokenId, p.agent.name)) ??
+        p.agent.name,
       client: p.client,
       payTo: p.payTo,
       txHash: p.txHash ?? null,
@@ -68,7 +71,7 @@ async function hiresForPayee(payee: string) {
       active: p.activated,
       createdAt: p.createdAt,
     };
-  });
+  }));
 
   return {
     success: true,

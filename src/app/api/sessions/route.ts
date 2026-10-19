@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveAgentName } from "@/lib/agent-name";
 import { listActiveSessions } from "@/lib/x402";
 import { listTasks, listTasksForPayments } from "@/lib/tasks";
 import { getJobByPayment, listJobs, listJobsForClient, type Job } from "@/lib/jobs";
@@ -37,20 +38,23 @@ async function sessionsFromStore(client: string) {
     return [];
   }
   const now = Date.now();
-  return stored
-    .filter((p) => p.activated && new Date(p.session.expiresAt).getTime() > now)
-    .map((p) => ({
-      paymentId: p.paymentId,
-      chainId: p.agent.chainId,
-      tokenId: p.agent.tokenId,
-      agentName: p.agent.name,
-      client: p.client,
-      spendCapUsd: p.session.spendCapUsd,
-      expiresAt: p.session.expiresAt,
-      mode: p.mode,
-      createdAt: p.createdAt,
-    }))
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const open = stored.filter(
+    (p) => p.activated && new Date(p.session.expiresAt).getTime() > now,
+  );
+  const rows = await Promise.all(open.map(async (p) => ({
+    paymentId: p.paymentId,
+    chainId: p.agent.chainId,
+    tokenId: p.agent.tokenId,
+    agentName:
+      (await resolveAgentName(p.agent.chainId, p.agent.tokenId, p.agent.name)) ??
+      p.agent.name,
+    client: p.client,
+    spendCapUsd: p.session.spendCapUsd,
+    expiresAt: p.session.expiresAt,
+    mode: p.mode,
+    createdAt: p.createdAt,
+  })));
+  return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 // GET /api/sessions?client=... joined view for the Ongoing page; with client, only that

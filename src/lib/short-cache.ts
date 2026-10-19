@@ -22,6 +22,8 @@ export const cacheKeys = {
   hires: (wallet: string): string =>
     `${cacheKeys.hiresPrefix}${wallet.toLowerCase()}`,
   categoryMap: (chainId: number): string => `category-map:${chainId}`,
+  agentName: (chainId: number, tokenId: string): string =>
+    `agent-name:${chainId}:${tokenId}`,
 };
 
 export async function cached<T>(
