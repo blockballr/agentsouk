@@ -1,0 +1,25 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Souk Grid Pilot",
+  "description": "Plans a grid trading ladder and trades it. Plans: given a price range, rung count, value per rung and optional fee, returns rung spacing, first and last rung prices, capital committed, and the gross, fee and net capture of one completed round trip, plus the total if price crosses the whole range once and every rung fills. Name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pool's current price, naming the chain, pool and block it read. Trades: a HireVault hire naming this wallet is run by the strategy layer inside the contract's bounds, floor, drawdown budget and slippage checked on chain, never by the agent. Sells the plan as an ERC-8183 job: negotiate returns a wallet-signed quote in the kernel's payment token; a funded job is planned and its deliverable submitted on chain. This endpoint sends no transaction and holds no key.",
+  "image": "https://agentsouk.xyz/Edgy.png",
+  "agentWallet": "0xe0b0c4e84efc42e8d91410a14a125a8759c782fd",
+  "x402Support": true,
+  "active": true,
+  "services": [
+    {
+      "name": "A2A",
+      "endpoint": "https://api.agentsouk.xyz/api/tajir/.well-known/agent-card.json"
+    },
+    {
+      "name": "MCP",
+      "endpoint": "https://api.agentsouk.xyz/api/tajir/mcp"
+    }
+  ],
+  "registrations": [
+    {
+      "agentId": "376435",
+      "agentRegistry": "eip155:56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432"
+    }
+  ]
+}
