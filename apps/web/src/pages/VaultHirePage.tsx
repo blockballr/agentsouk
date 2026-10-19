@@ -57,7 +57,7 @@ interface Prefill {
 // url asked for, because a listing's identity is only true on its own chain.
 async function loadPrefill(chainId: string, tokenId: string): Promise<Prefill> {
   try {
-    const chain = Number(chainId) > 0 ? Number(chainId) : 97
+    const chain = Number(chainId) > 0 ? Number(chainId) : 56
     const res = await fetch(`${API_BASE}/agents/${chain}/${tokenId}`)
     const body = await res.json().catch(() => null)
     const agent = body?.data ?? body
@@ -96,8 +96,8 @@ export default function VaultHirePage() {
   const params = useParams()
   const tokenId = params.tokenId ?? ''
   // the chain the url asked for, so a listing's identity is read from its own chain
-  const requestedChain = Number(params.chainId) > 0 ? Number(params.chainId) : 97
-  const CHAIN = CHAINS[requestedChain] ?? CHAINS[97]
+  const requestedChain = Number(params.chainId) > 0 ? Number(params.chainId) : 56
+  const CHAIN = CHAINS[requestedChain] ?? CHAINS[56]
 
   const [account, setAccount] = useState<string | null>(null)
   const [prefill, setPrefill] = useState<Prefill | null>(null)
@@ -121,7 +121,7 @@ export default function VaultHirePage() {
   }, [])
 
   useEffect(() => {
-    if (tokenId) loadPrefill(params.chainId ?? '97', tokenId).then(setPrefill)
+    if (tokenId) loadPrefill(params.chainId ?? '56', tokenId).then(setPrefill)
   }, [params.chainId, tokenId])
 
   useEffect(() => {
@@ -299,7 +299,7 @@ export default function VaultHirePage() {
                 note={`REGISTRY ${requestedChain} · TOKEN #${tokenId}`}
               />
               <Row align="center" gap={11} className="flex-wrap">
-                <AgentAvatar size={34} name={prefill.name} />
+                <AgentAvatar size={34} name={prefill.name} chainId={requestedChain} tokenId={tokenId} />
                 <Stack gap={2} className="min-w-0">
                   <Txt size={17} lead={22} weight="bold" tone="ink">
                     {prefill.name}
@@ -389,8 +389,8 @@ export default function VaultHirePage() {
                 </Row>
                 <Txt size={12} lead={18} tone="steel">
                   {tokenChoice === 'USDT'
-                    ? 'USDT is the un-minted testnet stable, bought from the vaults own pool first. The open only spends what you approve.'
-                    : 'WBNB is wrapped from the chains tBNB in the signed step below. The open only spends what you approve.'}
+                    ? 'USDT is the BNB Chain stable, bought from the vaults own pool first. The open only spends what you approve.'
+                    : 'WBNB is wrapped from the chains BNB in the signed step below. The open only spends what you approve.'}
                 </Txt>
               </Stack>
               <Stack gap={8} className="min-w-0">
