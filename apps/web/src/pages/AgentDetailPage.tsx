@@ -619,7 +619,7 @@ export function AgentDetailPage() {
             <img
               src={detail.image_url ?? defaultAvatarFor(Number(chainId), detail.token_id)}
               alt=""
-              className="duotone h-20 w-20 shrink-0 rounded-[14px] object-cover sm:h-24 sm:w-24"
+              className="h-20 w-20 shrink-0 rounded-[14px] object-cover sm:h-24 sm:w-24"
               onError={(e) => {
                 // same rule as the card: an image that answers nothing shows its
                 // own default glyph
