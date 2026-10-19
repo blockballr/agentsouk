@@ -3,7 +3,7 @@ import { formatUnits } from "viem";
 import { fetchAgentDetail } from "@/lib/scanner";
 import { loadDelisted } from "@/lib/delist-store";
 import { targetChainId } from "@/lib/types";
-import { erc8183Stack, kernelJob, notifySeller } from "@/lib/jobs8183";
+import { erc8183Stack, kernelJob, kernelJobResult, notifySeller } from "@/lib/jobs8183";
 import { recordOnchainJob, findOnchainJobForClient } from "@/lib/jobs";
 
 export const dynamic = "force-dynamic";
@@ -121,6 +121,9 @@ export async function GET(req: NextRequest) {
   const out = [];
   for (const row of rows) {
     const onchain = await kernelJob(Number(row.chainId), Number(row.onchainJobId)).catch(() => null);
+    const result = onchain
+      ? await kernelJobResult(Number(row.chainId), Number(row.onchainJobId), onchain).catch(() => null)
+      : null;
     out.push({
       id: row.id,
       onchainJobId: row.onchainJobId,
@@ -130,6 +133,10 @@ export async function GET(req: NextRequest) {
       budgetUsd: row.budgetUsd,
       expiredAt: row.expiredAt,
       status: onchain ? onchain.status : null,
+      submittedAt: onchain && onchain.submittedAt > 0n
+        ? new Date(Number(onchain.submittedAt) * 1000).toISOString()
+        : null,
+      result,
       updatedAt: row.updatedAt,
     });
   }

@@ -25,6 +25,7 @@ import {
   type HireState,
 } from '../lib/hire-state'
 import { StopRail } from '../components/Jobs8183HirePanel'
+import Jobs8183JobCard from '../components/Jobs8183JobCard'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
 import { hireErrorText } from '../lib/hire'
 import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
@@ -33,7 +34,6 @@ import { useActiveAccount } from '../lib/use-active-account'
 import { encodeFunctionData, keccak256, toBytes } from 'viem'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { ratedHires } from '../lib/rating'
-import { jobStatusName } from '../lib/jobs8183'
 import { RateAgent } from '../components/RateAgent'
 import { Action, Dialog, LABEL, RatingBoxes, ResultBox, TextSlot } from '../components/ui'
 import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
@@ -463,32 +463,7 @@ export function OngoingPage() {
           </Txt>
           <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {kernelJobs.map((row) => (
-              <Stack key={row.id} surface pad={[16, 16, 16, 16]} gap={10}>
-                <Row justify="between" align="baseline" gap={12}>
-                  <Link to={`/agents/${row.chainId}/${row.tokenId}`} className="min-w-0 truncate">
-                    <Txt size={15} lead={20} weight="bold" tone="ink">
-                      {row.agentName}
-                    </Txt>
-                  </Link>
-                  <Txt size={13} lead={20} mono tone="data">
-                    {row.budgetUsd} $U
-                  </Txt>
-                </Row>
-                <Row justify="between" align="center" gap={12}>
-                  <Txt size={12} lead={18} mono tone="muted">
-                    {formatExpiry(row.expiredAt)}
-                  </Txt>
-                  <Pill variant={JOBS8183_PILL[row.status === null ? 'unreached' : jobStatusName(row.status)] ?? 'off'}>
-                    {row.status === null ? 'unreached' : jobStatusName(row.status)}
-                  </Pill>
-                </Row>
-                <Txt size={12} lead={18} tone="muted">
-                  kernel job{' '}
-                  <Txt size={12} lead={18} mono tone="slate">
-                    {row.onchainJobId}
-                  </Txt>
-                </Txt>
-              </Stack>
+              <Jobs8183JobCard key={row.id} job={row} />
             ))}
           </div>
         </Section>
@@ -551,18 +526,6 @@ export function OngoingPage() {
       )}
     </div>
   )
-}
-
-// kernel job statuses in the design's two marked chips: the ones the buyer still
-// holds earn the data rim, the closed ones rest on the hairline
-const JOBS8183_PILL: Record<string, 'keep' | 'warn' | 'off'> = {
-  Open: 'off',
-  Funded: 'keep',
-  Submitted: 'keep',
-  Completed: 'keep',
-  Rejected: 'off',
-  Expired: 'off',
-  unreached: 'off',
 }
 
 const STATE_DOT: Record<HireGroup, 'good' | 'sky' | 'quiet'> = {
@@ -649,7 +612,7 @@ function HireRow({
     >
       <Row justify="between" align="center" gap={12}>
         <Row align="center" gap={11} className="min-w-0">
-          <AgentAvatar size={34} name={item.agentName} />
+          <AgentAvatar size={34} name={item.agentName} chainId={item.chainId} tokenId={item.tokenId} />
           <Link to={agentHref} className="min-w-0 truncate">
             <Txt size={16} lead={24} weight="bold" tone="ink">
               {item.agentName}
@@ -859,7 +822,7 @@ function OpenTaskCard({ item, at }: { item: HireItem; at: number }) {
     <article className="flex min-w-0 flex-col rounded-[20px] border border-souk-edge bg-souk-surface1 p-[22px] pb-[18px]">
       <Row justify="between" align="center" gap={12} className="flex-wrap">
         <Row align="center" gap={11} className="min-w-0">
-          <AgentAvatar size={34} name={item.agentName} />
+          <AgentAvatar size={34} name={item.agentName} chainId={item.chainId} tokenId={item.tokenId} />
           <Link to={`/agents/${item.chainId}/${item.tokenId}`} className="min-w-0 truncate">
             <Stack gap={2}>
               <Txt size={17} lead={22} weight="bold" tone="ink">{item.agentName}</Txt>

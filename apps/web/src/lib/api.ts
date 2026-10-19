@@ -24,6 +24,9 @@ export interface AgentsResult {
   total: number
   // agents held in the committed snapshot
   snapshotTotal: number | null
+  // agents the catalogue actually serves on this chain: the committed snapshot
+  // plus anything the shared store has added, minus the ones the sweeps removed
+  shelved: number | null
   // agents the registry reports for the served chain, null when the snapshot
   // never recorded one
   registryTotal: number | null
@@ -64,6 +67,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     items?: AgentSummary[]
     total?: number
     snapshotTotal?: number | null
+    shelved?: number | null
     registryTotal?: number | null
     snapshotTime?: string | null
     lastTopUpAt?: number | null
@@ -94,6 +98,10 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     items,
     total: body.total ?? 0,
     snapshotTotal: body.snapshotTotal ?? null,
+    shelved:
+      typeof body.shelved === 'number' && Number.isFinite(body.shelved)
+        ? body.shelved
+        : null,
     registryTotal: body.registryTotal ?? null,
     snapshotTime: typeof body.snapshotTime === 'string' ? body.snapshotTime : null,
     lastTopUpAt:
@@ -765,6 +773,12 @@ export async function recordJobs8183Job(input: {
 }
 
 // The wallet's recorded kernel jobs, status re-read from the kernel per row
+export interface Jobs8183Result {
+  content: string | null
+  contentType: string | null
+  url: string | null
+}
+
 export interface Jobs8183Row {
   id: string
   onchainJobId: number
@@ -774,6 +788,8 @@ export interface Jobs8183Row {
   budgetUsd: number
   expiredAt: string
   status: number | null
+  submittedAt: string | null
+  result: Jobs8183Result | null
   updatedAt: string
 }
 
