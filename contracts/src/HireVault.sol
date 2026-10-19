@@ -125,6 +125,7 @@ contract HireVault {
     error TokenCallFailed();
     error Reentered();
     error DrawdownBreached();
+    error GoalNotMet();
 
     modifier nonReentrant() {
         if (_lock != 1) revert Reentered();
@@ -277,11 +278,19 @@ contract HireVault {
     // Its own scope, because trade() sits a few variables under the compiler's limit and
     // these three locals are what tips it over.
     function _enforceBudget(Hire storage h, address pool) private view {
+        uint256 value0 = _valueInToken0(h, pool);
+        uint256 retained = _mulDiv(h.depositInToken0, minRetainedBps, 10_000);
+        if (value0 + VALUE_SLACK < retained) revert DrawdownBreached();
+    }
+
+    // the hire's current value in token0 units, measured against the reference
+    // price fixed at open. Shared by the drawdown budget and closeIfGoal so the
+    // two cannot disagree about what a hire is worth.
+    function _valueInToken0(Hire storage h, address pool) private view returns (uint256) {
         bool aIsToken0 = IV3Pool(pool).token0() == tokenA;
         uint256 value0 = aIsToken0 ? h.balanceA : _mulDiv(h.balanceA, Q96, uint256(h.refPriceX96));
         value0 += aIsToken0 ? _mulDiv(h.balanceB, Q96, uint256(h.refPriceX96)) : h.balanceB;
-        uint256 retained = _mulDiv(h.depositInToken0, minRetainedBps, 10_000);
-        if (value0 + VALUE_SLACK < retained) revert DrawdownBreached();
+        return value0;
     }
 
     // a token1 deposit converts into token0 units by division; a token0 deposit is native
@@ -302,6 +311,40 @@ contract HireVault {
         if (a > 0) _call(tokenA, abi.encodeWithSignature("transfer(address,uint256)", msg.sender, a));
         if (b > 0) _call(tokenB, abi.encodeWithSignature("transfer(address,uint256)", msg.sender, b));
         emit Closed(id, msg.sender, a, b);
+    }
+
+    // current value of the hire in token0 units, measured against the reference price
+    // fixed at open. Permissionless to read; the same figure the drawdown budget
+    // uses, so a goal set against it cannot be gamed by a price move at close time.
+    function valueInToken0(uint256 id) external view returns (uint256) {
+        Hire storage h = _hires[id];
+        if (!h.open) revert NotOpen();
+        address pool = IV3Factory(factory).getPool(tokenA, tokenB, h.fee);
+        if (pool == address(0)) revert NoPool();
+        return _valueInToken0(h, pool);
+    }
+
+    // close the hire automatically once its value reaches the goal the caller
+    // names, in token0 units. Permissionless, so anyone can trigger it when the
+    // condition is met; the buyer keeps withdraw() for an unconditional exit at
+    // any time, expired or not. The goal is supplied by the caller rather than
+    // stored, so a buyer can set a different goal on every attempt without a
+    // new open.
+    function closeIfGoal(uint256 id, uint256 goalValueInToken0) external nonReentrant {
+        Hire storage h = _hires[id];
+        if (!h.open) revert NotOpen();
+        address pool = IV3Factory(factory).getPool(tokenA, tokenB, h.fee);
+        if (pool == address(0)) revert NoPool();
+        uint256 value = _valueInToken0(h, pool);
+        if (value < goalValueInToken0) revert GoalNotMet();
+        uint256 a = h.balanceA;
+        uint256 b = h.balanceB;
+        h.open = false;
+        h.balanceA = 0;
+        h.balanceB = 0;
+        if (a > 0) _call(tokenA, abi.encodeWithSignature("transfer(address,uint256)", h.buyer, a));
+        if (b > 0) _call(tokenB, abi.encodeWithSignature("transfer(address,uint256)", h.buyer, b));
+        emit Closed(id, h.buyer, a, b);
     }
 
     function hire(uint256 id) external view returns (Hire memory) {

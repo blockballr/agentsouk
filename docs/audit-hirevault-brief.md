@@ -57,7 +57,11 @@ to hold.
    withdraw.
 8. The revoke is the buyer's withdraw: unconditional, not gated on expiry,
    zeroes the hire before any external call, returns both tokens. Closing
-   means trade() refuses forever after (NotOpen).
+   means trade() refuses forever after (NotOpen). A second, permissionless
+   closeIfGoal(id, goalValueInToken0) closes the hire the same way once its
+   measured value reaches the goal, so a buyer can set a target and let anyone
+   trigger the close when it is hit; withdraw() stays available at any time
+   regardless of the goal.
 9. The drawdown budget: a hire's value at the OPEN reference price, expressed
    in token0 units, may never fall below depositInToken0 * minRetainedBps /
    10000, computed post-trade from measured balances. A settle-then-revert
