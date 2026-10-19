@@ -260,3 +260,22 @@
     transform: scale(1.7);
   }
 }
+
+/* the band of light the job progression meter carries: it crosses the fill
+   while the price is being fetched, so the bar reads as loading rather than
+   frozen */
+@media (prefers-reduced-motion: no-preference) {
+  .meter-shimmer {
+    animation: meter-sweep 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes meter-sweep {
+  0%,
+  100% {
+    transform: translateX(-110%);
+  }
+  50% {
+    transform: translateX(110%);
+  }
+}
