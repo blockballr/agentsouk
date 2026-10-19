@@ -25,7 +25,18 @@ const ALLOWED = [
   .map((o) => o.trim())
   .filter(Boolean);
 
+// drop obvious scanners: a user agent that names a crawler or a path that
+// probes well-known endpoints the api does not serve. These are cheap 404s
+// but they still cost a function invocation, so short-circuit them here.
+const BOT_UA = /bot|crawl|spider|scan|slurp|fetcher|httpclient|python-requests|curl|wget/i;
+const PROBE_PATH = /\/\.well-known\/|\/agent\.json|\/agent-provider\.json/i;
+
 export function proxy(req: NextRequest) {
+  const ua = req.headers.get("user-agent") ?? "";
+  const path = req.nextUrl.pathname;
+  if (BOT_UA.test(ua) && PROBE_PATH.test(path)) {
+    return new NextResponse(null, { status: 404 });
+  }
   const origin = req.headers.get("origin") ?? "";
   const allow = ALLOWED.includes("*")
     ? "*"
