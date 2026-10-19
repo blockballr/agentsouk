@@ -828,6 +828,15 @@ export async function getJobs8183Jobs(wallet: string): Promise<Jobs8183Row[]> {
   return body?.jobs ?? []
 }
 
+// Read a single funded job straight off the chain, without a wallet, so a job
+// that lost its marketplace record can still be recovered by its on-chain id.
+export async function getJobs8183Job(chainId: number, jobId: number): Promise<Jobs8183Row | null> {
+  const res = await fetch(`${BASE}/jobs8183/jobs?chainId=${chainId}&jobId=${jobId}`)
+  if (!res.ok) return null
+  const body = (await res.json().catch(() => null)) as { jobs?: Jobs8183Row[] } | null
+  return body?.jobs?.[0] ?? null
+}
+
 // Hires paid to a wallet's agents. The payee is the agent's receiving wallet.
 export async function getHiresByPayee(payee: string): Promise<HiresByPayeeResult> {
   const res = await fetch(`${BASE}/hires/by-payee?payee=${encodeURIComponent(payee)}`)

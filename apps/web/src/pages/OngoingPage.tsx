@@ -586,7 +586,7 @@ function HireRow({
   const agentHref = `/agents/${item.chainId}/${item.tokenId}`
   const asked = task?.taskText ?? task?.tool
   // a hire with a job is rated once the buyer completes it; one without a job ends at delivery
-  const rateable = job ? job.status === 'Completed' : task?.status === 'delivered'
+  const rateable = job ? (job.status === 'Completed' || job.status === 'Submitted') : task?.status === 'delivered'
   // undefined until rated; a number is the rating given, null one saved before ratings were kept
   const [rated, setRated] = useState<number | null | undefined>(() => ratedHires().get(item.key))
   const [dialog, setDialog] = useState<'full' | 'rate' | 'revoke' | null>(null)
