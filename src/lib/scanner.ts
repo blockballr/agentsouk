@@ -250,6 +250,16 @@ export async function fetchAgentDetail(
   data.supported_trust_models = Array.isArray(data.supported_trust_models)
     ? data.supported_trust_models
     : [];
+  // 8004scan does not always copy agentWallet from the card into its own
+  // column. The card is the registry document the owner published, so the
+  // wallet it names answers when the column is empty.
+  if (!data.agent_wallet) {
+    const declared = data.raw_metadata?.offchain_content?.agentWallet;
+    const value = typeof declared === "string" ? declared.trim() : "";
+    if (/^0x[0-9a-fA-F]{40}$/.test(value) && !/^0x0{40}$/i.test(value)) {
+      data.agent_wallet = value;
+    }
+  }
   return data;
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, createWalletClient, isAddress } from "viem";
 import { bsc } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
+import { HOUSE_OPERATOR } from "@/lib/house";
 import { BSC_CHAIN_ID, targetChainId } from "@/lib/types";
 import { registryAddress } from "@/lib/registry-write";
 import { rpcTransport } from "@/lib/rpc";
@@ -14,7 +15,7 @@ export const maxDuration = 60;
 // to manage the token. The recipient is fixed here rather than taken from the
 // request: a leaked secret must not be able to send a listing anywhere else.
 
-const RECIPIENT = "0x84FEDaBd1B83443Ad86796C15619494878B64180";
+const RECIPIENT = HOUSE_OPERATOR;
 
 export async function POST(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;

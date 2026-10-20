@@ -18,7 +18,7 @@ import {
   type VaultHire,
 } from '../lib/vault'
 import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
-import { connectWallet } from '../lib/wallet-session'
+import { useConnectedAccount } from '../lib/use-connected-account'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { explorerAddressUrl } from '../lib/contracts'
 import { ratedHires } from '../lib/rating'
@@ -101,7 +101,7 @@ export default function VaultHirePage() {
   const requestedChain = Number(params.chainId) > 0 ? Number(params.chainId) : 56
   const CHAIN = CHAINS[requestedChain] ?? CHAINS[56]
 
-  const [account, setAccount] = useState<string | null>(null)
+  const account = useConnectedAccount()
   const [prefill, setPrefill] = useState<Prefill | null>(null)
   const [manualAgent, setManualAgent] = useState('')
   const [tokenChoice, setTokenChoice] = useState<'WBNB' | 'USDT'>('WBNB')
@@ -123,10 +123,6 @@ export default function VaultHirePage() {
   const token = tokenChoice === 'WBNB' ? vaultTokenA(requestedChain) : vaultTokenB(requestedChain)
   const vault = vaultFor(requestedChain)
   const agentAddress = prefill?.wallet && prefill.wallet !== '0x0000000000000000000000000000000000000000' ? prefill.wallet : manualAgent
-
-  useEffect(() => {
-    connectWallet().then(setAccount).catch(() => setAccount(null))
-  }, [])
 
   useEffect(() => {
     if (tokenId) loadPrefill(params.chainId ?? '56', tokenId).then(setPrefill)

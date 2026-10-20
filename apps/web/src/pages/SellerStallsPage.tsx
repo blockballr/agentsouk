@@ -18,8 +18,7 @@ import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { jobStatusName } from '../lib/jobs8183'
 import { getProvider } from '../lib/wallet'
-import { connectWallet } from '../lib/wallet-session'
-import { useActiveAccount } from '../lib/use-active-account'
+import { useConnectedAccount } from '../lib/use-connected-account'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 import {
   AgentAvatar,
@@ -137,8 +136,7 @@ function jobsWithin(days: number, list: Jobs8183Row[]): Jobs8183Row[] {
 
 export function SellerStallsPage() {
   // the seller's wallet, watched so a switch inside the wallet re-reads the stalls
-  const account = useActiveAccount()
-  const [connecting, setConnecting] = useState(false)
+  const account = useConnectedAccount()
   const [owned, setOwned] = useState<OwnedAgentsResult | null>(null)
   const [hires, setHires] = useState<PayeeHire[] | null>(null)
   const [hiresSource, setHiresSource] = useState<HiresSource>(null)
@@ -146,15 +144,6 @@ export function SellerStallsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hiresError, setHiresError] = useState<string | null>(null)
-
-  async function connect() {
-    setConnecting(true)
-    try {
-      void connectWallet()
-    } finally {
-      setConnecting(false)
-    }
-  }
 
   const load = useCallback(async () => {
     if (!account) {
@@ -241,9 +230,9 @@ export function SellerStallsPage() {
           <Txt size={13} lead={20} tone="muted">
             A stall belongs to the listing the registry records as yours.
           </Txt>
-          <Btn kind="primary" onClick={connect} disabled={connecting} className="mt-2 w-fit">
-            {connecting ? 'Connecting...' : 'Connect wallet'}
-          </Btn>
+          <Txt size={12} lead={18} tone="steel">
+            Connect from the rail on the left, or the bar above on a narrow screen.
+          </Txt>
         </Stack>
       )}
 

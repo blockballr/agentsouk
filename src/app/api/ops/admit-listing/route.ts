@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, isAddress } from "viem";
 import { bsc } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
+import { HOUSE_OPERATOR } from "@/lib/house";
 import { BSC_CHAIN_ID, targetChainId } from "@/lib/types";
 import { registryAddress } from "@/lib/registry-write";
 import { rpcTransport } from "@/lib/rpc";
@@ -61,9 +62,12 @@ export async function POST(req: NextRequest) {
   if (!owner || !isAddress(owner)) {
     return NextResponse.json({ error: "cannot read the token on chain" }, { status: 502 });
   }
-  if (owner.toLowerCase() !== signer.address.toLowerCase()) {
+  const houseOwned =
+    owner.toLowerCase() === signer.address.toLowerCase() ||
+    owner.toLowerCase() === HOUSE_OPERATOR.toLowerCase();
+  if (!houseOwned) {
     return NextResponse.json(
-      { error: "the house wallet does not own this token, so its summary is not rewritten", owner },
+      { error: "the house does not own this token, so its summary is not rewritten", owner },
       { status: 403 },
     );
   }

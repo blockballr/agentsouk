@@ -17,7 +17,7 @@ import {
   sellsByJob,
   CATEGORIES,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultExecutor, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultExecutor, recordAgentView, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
 import Jobs8183JobCard from '../components/Jobs8183JobCard'
@@ -239,6 +239,15 @@ export function AgentDetailPage() {
   const [detail, setDetail] = useState<DetailWithSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  // one impression per page open, even while the panel below keeps re-reading
+  const viewed = useRef<string | null>(null)
+  useEffect(() => {
+    if (!detail) return
+    const key = `${detail.chain_id}:${detail.token_id}`
+    if (viewed.current === key) return
+    viewed.current = key
+    recordAgentView(Number(detail.chain_id), String(detail.token_id))
+  }, [detail])
   const [perfProbe, setPerfProbe] = useState<PerformanceProbe | null>(null)
   const [liveness, setLiveness] = useState<OnchainLiveness | null>(null)
   // the connected viewer, so owner-only affordances can be hidden from everyone else
@@ -630,20 +639,31 @@ export function AgentDetailPage() {
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_520px] lg:grid-rows-[auto_1fr]">
         <div className="min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1">
           <header className="flex flex-col gap-6 sm:flex-row sm:items-start">
-            <img
-              src={detail.image_url ?? defaultAvatarFor(Number(chainId), detail.token_id)}
-              alt=""
-              className="h-20 w-20 shrink-0 rounded-[14px] object-cover sm:h-24 sm:w-24"
-              onError={(e) => {
-                // same rule as the card: an image that answers nothing shows its
-                // own default glyph
-                const el = e.currentTarget
-                if (!el.dataset.fallback) {
-                  el.dataset.fallback = '1'
-                  el.src = defaultAvatarFor(Number(chainId), detail.token_id)
-                }
-              }}
-            />
+            <div className="relative shrink-0 self-start">
+              <img
+                src={detail.image_url ?? defaultAvatarFor(Number(chainId), detail.token_id)}
+                alt=""
+                className="h-20 w-20 rounded-[14px] object-cover sm:h-24 sm:w-24"
+                onError={(e) => {
+                  // same rule as the card: an image that answers nothing shows its
+                  // own default glyph
+                  const el = e.currentTarget
+                  if (!el.dataset.fallback) {
+                    el.dataset.fallback = '1'
+                    el.src = defaultAvatarFor(Number(chainId), detail.token_id)
+                  }
+                }}
+              />
+              {/* the category is the one fact a buyer checks before reading the
+                  card, so it peels off the avatar rather than waiting in the tag
+                  row. indigo, not glass white: an avatar is any colour at all,
+                  and a pale peel disappeared on the bright ones */}
+              {detail.category ? (
+                <span className="absolute -bottom-2.5 left-1.5 inline-flex max-w-[140px] items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-ink shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
+                  {CATEGORIES.find((c) => c.key === detail.category)?.label ?? detail.category}
+                </span>
+              ) : null}
+            </div>
             <div className="min-w-0 flex-1">
               <Txt size={12} lead={18} mono upper tone="steel">
                 Shelf / BNB Smart Chain {chainId} /{' '}
@@ -858,11 +878,6 @@ export function AgentDetailPage() {
                       Back to your job
                     </Btn>
                   </>
-                ) : null}
-                {!viewer ? (
-                  <Txt size={12} lead={18} tone="muted">
-                    Connect your wallet to see a funded job for this agent, or open one with ?job=&lt;id&gt;.
-                  </Txt>
                 ) : null}
                 <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
               </Stack>

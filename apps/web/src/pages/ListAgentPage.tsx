@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { VerdictTone } from '../lib/verdict'
 import { verdictFor } from '../lib/verdict'
@@ -10,7 +10,8 @@ import {
   mintRequestMessage,
   shortAddress,
 } from '@agora/core'
-import { getProvider, watchActiveAccount } from '../lib/wallet'
+import { getProvider } from '../lib/wallet'
+import { useConnectedAccount } from '../lib/use-connected-account'
 import { connectWallet } from '../lib/wallet-session'
 import { useTargetChain } from '../lib/target-chain'
 import { FAUCET_URL, MINT_PER_CLICK, isTestnet, readNativeBalance } from '../lib/mint'
@@ -24,7 +25,7 @@ import {
 import { getAgentDetail } from '../lib/api'
 import { RegisterWizard, initialChecks, type WizardStep } from '../components/RegisterWizard'
 
-import { VerificationLoop, type CheckLine } from '../components/VerificationLoop'
+import { VerificationLoop, type CheckLine, type GasReadiness } from '../components/VerificationLoop'
 import { QuestStrip } from '../components/QuestStrip'
 import { Dialog } from '../components/ui'
 import {
@@ -97,6 +98,25 @@ export function ListAgentPage() {
       block: 'center',
     })
   }
+
+  // Where the eye should be once the form is sent: the verifier card is the only
+  // thing that answers after the continue, and on a wide screen it sits in the
+  // side rail where a click at the bottom of the form leaves it out of view.
+  const [gasState, setGasState] = useState<GasReadiness | null>(null)
+  const verifierFocused = useRef(false)
+  useEffect(() => {
+    if (wizardStep === 'form') {
+      verifierFocused.current = false
+      return
+    }
+    if (verifierFocused.current) return
+    const card = document.getElementById('verifier-check')
+    if (!card) return
+    verifierFocused.current = true
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    card.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' })
+    card.focus({ preventScroll: true })
+  }, [wizardStep])
 
   // the listing flow is several screens long, so the page opens on the pitch and
   // one action rather than on the wizard
@@ -180,7 +200,7 @@ export function ListAgentPage() {
               routes end at the same registry record and the same checks. */}
           <div id="register-here" className="mt-[30px] scroll-mt-4">
             <SectionHead title="2. List your agent" note="ONE TRANSACTION" />
-            <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_520px]">
+            <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
               <Stack gap={20}>
                 {chain === null ? (
                   <Txt size={13} lead={20} tone="steel" className="block">
@@ -202,8 +222,8 @@ export function ListAgentPage() {
                 )}
               </Stack>
               <Stack gap={20}>
-                {chain !== null && <GasRequirement chainId={chain} />}
-                {loopChecks && <VerificationLoop checks={loopChecks} />}
+                {chain !== null && <GasRequirement chainId={chain} onState={setGasState} />}
+                {loopChecks && <VerificationLoop checks={loopChecks} gas={gasState} />}
               </Stack>
             </div>
           </div>
@@ -246,11 +266,10 @@ const GAS_FLOOR_WEI = 10n ** 15n
 // records them as owner. So the wallet, not the marketplace, pays the gas, and a
 // fresh testnet wallet has none. This states the cost and the ways to cover it
 // before the register button is reached.
-function GasRequirement({ chainId }: { chainId: number }) {
-  const [account, setAccount] = useState<string | null>(null)
+function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas: GasReadiness | null) => void }) {
+  const account = useConnectedAccount()
   const [balance, setBalance] = useState<bigint | null>(null)
   const [reading, setReading] = useState(false)
-  const [connecting, setConnecting] = useState(false)
   const [phase, setPhase] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
   const [gasTxHash, setGasTxHash] = useState<string | null>(null)
@@ -258,6 +277,14 @@ function GasRequirement({ chainId }: { chainId: number }) {
   const testnet = isTestnet(chainId)
   const symbol = testnet ? 'tBNB' : 'BNB'
   const holdsGas = balance !== null && balance >= GAS_FLOOR_WEI
+  // the rail fills to the one registration's cost, so the bar answers "can I pay
+  // for this yet" rather than reporting a balance the lister has to judge
+  const pct =
+    balance === null
+      ? 0
+      : balance >= GAS_FLOOR_WEI
+        ? 100
+        : Number((balance * 100n) / GAS_FLOOR_WEI)
 
   const refresh = useCallback(
     async (who: string | null) => {
@@ -276,29 +303,26 @@ function GasRequirement({ chainId }: { chainId: number }) {
     [chainId],
   )
 
-  // A balance read needs no signature and no session: the wallet's permitted
-  // account is enough, so an already-connected wallet is read straight away
-  // instead of being asked to connect again. The wallet's own account events
-  // keep the figure current when it connects or switches later.
+  // A balance read needs no signature: the address the page is acting for is
+  // enough, and connecting a wallet is the rail's job.
   useEffect(() => {
-    return watchActiveAccount((who) => {
-      setAccount(who)
-      void refresh(who)
-    })
-  }, [refresh])
+    void refresh(account)
+  }, [account, refresh])
 
-  async function connect() {
-    setConnecting(true)
-    setError(null)
-    try {
-      const who = await connectWallet()
-      setAccount(who)
-      await refresh(who)
-    } catch (e) {
-      setError((e as Error).message)
+  // The verifier card carries the readiness next to the checks it is about to
+  // run, so the wallet's ability to pay for the one transaction is never the
+  // thing a lister discovers last.
+  useEffect(() => {
+    if (!account) {
+      onState?.(null)
+      return
     }
-    setConnecting(false)
-  }
+    onState?.({
+      holds: balance !== null && balance >= GAS_FLOOR_WEI,
+      symbol,
+      balance: balance === null ? null : formatNative(balance),
+    })
+  }, [account, balance, onState, symbol])
 
   // Signs the same sponsored-mint message the hire flow uses, so the visitor pays
   // no gas; the server submits it and tops the wallet up to the gas floor.
@@ -309,7 +333,6 @@ function GasRequirement({ chainId }: { chainId: number }) {
     setPhase('sending')
     try {
       const who = account ?? (await connectWallet())
-      setAccount(who)
       const expires = Math.floor(Date.now() / 1000) + 15 * 60
       const nonce = `${expires}-${who.slice(2, 10).toLowerCase()}`
       const fields = {
@@ -356,7 +379,15 @@ function GasRequirement({ chainId }: { chainId: number }) {
   }
 
   return (
-    <Stack surface gap={10} pad={[14, 16, 14, 16]}>
+    <Stack
+      surface
+      gap={10}
+      pad={[14, 16, 14, 16]}
+      style={{
+        backgroundImage:
+          'repeating-linear-gradient(135deg, rgba(17,26,74,0.05) 0 1px, transparent 1px 9px)',
+      }}
+    >
       <Row justify="between" align="center" gap={8}>
         <Txt size={10} lead={14} weight="bold" upper tone="muted">
           Gas to list
@@ -383,10 +414,19 @@ function GasRequirement({ chainId }: { chainId: number }) {
         )}
       </Row>
 
-      {!account && (
-        <Btn kind="off" disabled={connecting} onClick={() => void connect()} className="w-full">
-          {connecting ? 'Connecting' : `Connect to read ${symbol}`}
-        </Btn>
+      <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-souk-hair/50">
+        <div
+          className={`h-full rounded-[3px] transition-[width] duration-500 ease-out motion-reduce:transition-none ${
+            holdsGas ? 'bg-souk-data' : 'bg-souk-peach'
+          }`}
+          style={{ width: `${pct}%`, minWidth: 6 }}
+        />
+      </div>
+
+      {account && !holdsGas && (
+        <Txt size={11} lead={16} tone="steel" className="block">
+          {`${formatNative(GAS_FLOOR_WEI)} ${symbol} covers one registration.`}
+        </Txt>
       )}
 
       {testnet ? (
@@ -402,17 +442,12 @@ function GasRequirement({ chainId }: { chainId: number }) {
                 Faucet
               </Txt>
             </a>
-            {!holdsGas && (
+            {account && !holdsGas && (
               <Btn kind="primary" disabled={phase === 'sending'} onClick={() => void getGas()}>
                 {phase === 'sending' ? 'Sign in wallet' : `Top up ${symbol}`}
               </Btn>
             )}
           </Row>
-          {holdsGas && (
-            <Txt size={11} lead={16} tone="data" className="block">
-              Enough for gas.
-            </Txt>
-          )}
           {phase === 'error' && error && (
             <p role="alert">
               <Txt size={11} lead={16} tone="peach" className="block">
@@ -440,9 +475,19 @@ function GasRequirement({ chainId }: { chainId: number }) {
           )}
         </>
       ) : (
-        <Txt size={11} lead={16} tone="steel" className="block">
-          Keep a little {symbol} in this wallet for gas.
-        </Txt>
+        account &&
+        !holdsGas && (
+          <a
+            href="https://www.binance.com/en/buy-BNB"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-9 w-fit items-center justify-center rounded-[8px] bg-souk-data px-4"
+          >
+            <Txt size={12} lead={18} weight="semibold" tone="canvas">
+              Get BNB
+            </Txt>
+          </a>
+        )
       )}
     </Stack>
   )

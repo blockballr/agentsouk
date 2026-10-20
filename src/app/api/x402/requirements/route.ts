@@ -17,7 +17,7 @@ import { escrowFunder } from "@/lib/escrow";
 
 export const dynamic = "force-dynamic";
 
-export const DEFAULT_HIRE_PRICE_USD = 0.01;
+export const DEFAULT_HIRE_PRICE_USD = 0.02;
 
 // per-hire ceiling on the x402 path: a single hire may not exceed this, so a
 // misconfigured or hostile agent cannot drain a buyer's wallet in one go

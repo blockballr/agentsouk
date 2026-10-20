@@ -29,8 +29,7 @@ import Jobs8183JobCard from '../components/Jobs8183JobCard'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
 import { hireErrorText } from '../lib/hire'
 import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
-import { connectWallet } from '../lib/wallet-session'
-import { useActiveAccount } from '../lib/use-active-account'
+import { useConnectedAccount } from '../lib/use-connected-account'
 import { encodeFunctionData, keccak256, toBytes } from 'viem'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { ratedHires } from '../lib/rating'
@@ -85,8 +84,7 @@ function stopIndexFor(item: HireItem): number {
 export function OngoingPage() {
   // the buyer's wallet, watched so a switch inside the wallet re-reads the board
   // and the escrows that wallet holds
-  const account = useActiveAccount()
-  const [connecting, setConnecting] = useState(false)
+  const account = useConnectedAccount()
   const [data, setData] = useState<OngoingBundle | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [retryingId, setRetryingId] = useState<string | null>(null)
@@ -193,17 +191,6 @@ export function OngoingPage() {
       window.clearInterval(id)
     }
   }, [escrowKey])
-
-  async function onConnect() {
-    setConnecting(true)
-    try {
-      await connectWallet()
-    } catch (e) {
-      setError(hireErrorText(e))
-    } finally {
-      setConnecting(false)
-    }
-  }
 
   async function onRetry(taskId: string) {
     setRetryingId(taskId)
@@ -370,9 +357,9 @@ export function OngoingPage() {
             <Txt size={15} lead={22} tone="ink">
               Connect the wallet you hired with.
             </Txt>
-            <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
-              {connecting ? 'Connecting…' : 'Connect wallet'}
-            </Btn>
+            <Txt size={12} lead={18} tone="steel">
+              Connect from the rail on the left, or the bar above on a narrow screen.
+            </Txt>
           </Stack>
         )}
 

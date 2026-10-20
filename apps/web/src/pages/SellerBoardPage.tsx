@@ -4,6 +4,7 @@ import {
   getAgents,
   getAgentsByOwner,
   getHiresByPayee,
+  getListingViews,
   type OwnedAgentsResult,
   type PayeeHire,
 } from '../lib/api'
@@ -11,8 +12,7 @@ import { chainLabel } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { countByDay } from '../lib/history'
 import { verdictFor } from '../lib/verdict'
-import { connectWallet } from '../lib/wallet-session'
-import { useActiveAccount } from '../lib/use-active-account'
+import { useConnectedAccount } from '../lib/use-connected-account'
 import { Btn, Dot, Kpi, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
 
 type HiresSource = 'postgres' | 'memory' | null
@@ -96,12 +96,12 @@ function catalogueFreshness(cat: Catalogue | null): string | null {
 
 export function SellerBoardPage() {
   // the seller's wallet, watched so a switch inside the wallet re-reads the board
-  const account = useActiveAccount()
-  const [connecting, setConnecting] = useState(false)
+  const account = useConnectedAccount()
   const [owned, setOwned] = useState<OwnedAgentsResult | null>(null)
   const [hires, setHires] = useState<PayeeHire[] | null>(null)
   const [hiresSource, setHiresSource] = useState<HiresSource>(null)
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null)
+  const [views, setViews] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -112,6 +112,7 @@ export function SellerBoardPage() {
       setHires(null)
       setHiresSource(null)
       setCatalogue(null)
+      setViews(null)
       setReady(false)
       return
     }
@@ -124,8 +125,18 @@ export function SellerBoardPage() {
       getHiresByPayee(account),
       getAgents({ limit: 1 }),
     ])
-    if (ownedResult.status === 'fulfilled') setOwned(ownedResult.value)
-    else setOwned(null)
+    if (ownedResult.status === 'fulfilled') {
+      setOwned(ownedResult.value)
+      // impressions are a second read, keyed by the listings that came back, so
+      // a failed count never hides the listings it belongs to
+      const chainId = ownedResult.value.chainId
+      const tokens = ownedResult.value.agents.map((a) => String(a.tokenId))
+      if (chainId === null || tokens.length === 0) setViews(chainId === null ? null : 0)
+      else {
+        const counts = await getListingViews(chainId, tokens, 14).catch(() => null)
+        setViews(counts === null ? null : Object.values(counts).reduce((sum, n) => sum + n, 0))
+      }
+    } else setOwned(null)
     if (hiresResult.status === 'fulfilled') {
       setHires(hiresResult.value.hires)
       setHiresSource(hiresResult.value.source)
@@ -147,17 +158,6 @@ export function SellerBoardPage() {
   useEffect(() => {
     void load()
   }, [load])
-
-  async function onConnect() {
-    setConnecting(true)
-    try {
-      void connectWallet()
-    } catch (e) {
-      setError(hireErrorText(e))
-    } finally {
-      setConnecting(false)
-    }
-  }
 
   const customers = (hires ?? []).filter(isCustomer)
   const now = Date.now()
@@ -199,6 +199,11 @@ export function SellerBoardPage() {
       tone: recent === 0 ? 'white' : 'data',
     },
     {
+      value: views === null ? 'Unavailable' : `${views}`,
+      label: 'Impressions, 14 days',
+      tone: views ? 'data' : 'white',
+    },
+    {
       value: checkedAt ? timeAgo(checkedAt) : 'Unavailable',
       label: 'Since your listings were last checked',
       tone: 'data',
@@ -231,15 +236,15 @@ export function SellerBoardPage() {
           <Txt size={13} lead={20} tone="muted">
             A board is built from that wallet&apos;s own listings and the receipts paid to them.
           </Txt>
-          <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting} className="mt-2 self-start">
-            {connecting ? 'Connecting...' : 'Connect wallet'}
-          </Btn>
+          <Txt size={12} lead={18} tone="steel">
+            Connect from the rail on the left, or the bar above on a narrow screen.
+          </Txt>
         </Stack>
       )}
 
       {account && ready && !loading && (
         <>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
             {kpis.map((k) => (
               <Kpi key={k.label} value={k.value} label={k.label} tone={k.tone} />
             ))}

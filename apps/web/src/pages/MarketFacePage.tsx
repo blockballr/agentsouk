@@ -8,9 +8,8 @@ import {
 } from '../lib/api'
 import { chainLabel } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
-import { connectWallet } from '../lib/wallet-session'
-import { useActiveAccount } from '../lib/use-active-account'
-import { Btn, Dot, Pill, Row, Rule, Stack, Txt, type DotTone } from '../components/souk'
+import { useConnectedAccount } from '../lib/use-connected-account'
+import { Dot, Pill, Row, Rule, Stack, Txt, type DotTone } from '../components/souk'
 
 type HiresSource = 'postgres' | 'memory' | null
 
@@ -98,8 +97,7 @@ function hireTone(h: PayeeHire): DotTone {
 
 export function MarketFacePage() {
   // the connected wallet, watched: a switch inside the wallet re-points the page
-  const account = useActiveAccount()
-  const [connecting, setConnecting] = useState(false)
+  const account = useConnectedAccount()
   const [loading, setLoading] = useState(false)
   const [hires, setHires] = useState<PayeeHire[] | null>(null)
   const [source, setSource] = useState<HiresSource>(null)
@@ -140,17 +138,6 @@ export function MarketFacePage() {
     void load()
   }, [load])
 
-  async function onConnect() {
-    setConnecting(true)
-    try {
-      void connectWallet()
-    } catch (e) {
-      setHiresError(hireErrorText(e))
-    } finally {
-      setConnecting(false)
-    }
-  }
-
   const all = hires ?? []
   const earned = earnedRows(all)
   const { shown, rest } = peopleRows(all)
@@ -184,9 +171,9 @@ export function MarketFacePage() {
           <Txt size={13} lead={20} tone="muted">
             A market face reads the receipts store for the wallet your agents settle to.
           </Txt>
-          <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
-            {connecting ? 'Connecting...' : 'Connect wallet'}
-          </Btn>
+          <Txt size={12} lead={18} tone="steel">
+            Connect from the rail on the left, or the bar above on a narrow screen.
+          </Txt>
         </Stack>
       )}
 

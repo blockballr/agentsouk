@@ -40,24 +40,26 @@ function App() {
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/advantage" element={<AdvantagePage />} />
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/ongoing" element={<OngoingPage />} />
-          {/* the workspace surfaces share one rail, so who you are and where
-              you can go stay put while the view changes underneath */}
+          {/* Everything a wallet manages sits inside one rail: profile, vault,
+              ongoing, quest, studio and docs for now, plus the seller and
+              station consoles. The marketplace and compare stay rail-free. */}
           <Route element={<WorkspaceShell />}>
+            <Route path="/ongoing" element={<OngoingPage />} />
+            <Route path="/quest" element={<QuestPage />} />
             <Route path="/vault" element={<VaultHirePage />} />
             <Route path="/vault/:chainId/:tokenId" element={<VaultHirePage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/studio" element={<StudioPage />} />
             <Route path="/docs" element={<DocsPage />} />
+            <Route path="/list" element={<ListAgentPage />} />
+            <Route path="/seller" element={<SellerBoardPage />} />
+            <Route path="/seller/stalls" element={<SellerStallsPage />} />
+            <Route path="/seller/face" element={<MarketFacePage />} />
+            <Route
+              path="/station"
+              element={STATION_HOST ? <Navigate to="/" replace /> : <StationPage />}
+            />
           </Route>
-          <Route
-            path="/station"
-            element={STATION_HOST ? <Navigate to="/" replace /> : <StationPage />}
-          />
-          <Route path="/quest" element={<QuestPage />} />
-          <Route path="/seller" element={<SellerBoardPage />} />
-          <Route path="/seller/stalls" element={<SellerStallsPage />} />
-          <Route path="/seller/face" element={<MarketFacePage />} />
           {import.meta.env.DEV && (
             <Route
               path="/scout"
@@ -68,7 +70,6 @@ function App() {
               }
             />
           )}
-          <Route path="/list" element={<ListAgentPage />} />
           <Route path="*" element={<MarketplacePage />} />
         </Route>
       </Routes>

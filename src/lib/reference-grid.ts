@@ -62,6 +62,11 @@ export interface GridAgentCard {
   defaultOutputModes: string[];
   skills: GridAgentSkill[];
   supportedInterfaces: { url: string; transport: string }[];
+  // the endpoints this agent speaks, in the ERC-8004 registration shape: a
+  // client that reads only the registry document still finds both surfaces
+  services?: { name: string; endpoint: string }[];
+  // the wallet a hire names and a buyer pays, declared the way ERC-8004 reads it
+  agentWallet?: string;
   // Agent Souk's HireVault, per chain, where a funded trading mandate runs.
   // Published so a buyer on any marketplace can open a vault with this agent.
   vault?: { chainId: number; address: string }[];

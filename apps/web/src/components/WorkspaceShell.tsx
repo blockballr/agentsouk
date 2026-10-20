@@ -15,21 +15,23 @@ type RailItem = { to: string; label: string; note?: string; soon?: boolean; end?
 
 const RAIL: { title: string; items: RailItem[] }[] = [
   {
-    title: 'Marketplace',
+    title: 'Console',
     items: [
       { to: '/profile', label: 'Overview', note: 'your listings and earnings', end: true },
-      { to: '/agents', label: 'Browse agents' },
-      { to: '/ongoing', label: 'Ongoing hires' },
-      { to: '/vault', label: 'Vault' },
+      { to: '/quest', label: 'Set and Earn Quest', note: 'stamps and steps' },
+      { to: '/studio', label: 'Studio', note: 'commissions and dry runs', soon: true },
     ],
   },
   {
-    title: 'Build',
+    title: 'Listings',
     items: [
-      { to: '/studio', label: 'Studio', note: 'commissions and dry runs', soon: true },
-      { to: '/docs', label: 'Docs' },
       { to: '/list', label: 'List an agent' },
+      { to: '/seller', label: 'Seller board' },
     ],
+  },
+  {
+    title: 'Reference',
+    items: [{ to: '/docs', label: 'Docs' }],
   },
 ]
 
@@ -101,11 +103,21 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
       </aside>
 
       <div className="min-w-0 flex-1">
-        <nav className="mb-6 flex gap-2 overflow-x-auto pb-1 md:hidden">
+        <nav className="mb-4 flex gap-2 overflow-x-auto pb-1 md:hidden">
           {RAIL.flatMap((g) => g.items).map((item) => (
             <RailLink key={item.to} item={item} chip />
           ))}
         </nav>
+        {!account && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-souk-hair px-4 py-3 md:hidden">
+            <Txt size={12} lead={18} tone="muted">
+              No wallet connected.
+            </Txt>
+            <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting}>
+              {connecting ? 'Connecting...' : 'Connect wallet'}
+            </Btn>
+          </div>
+        )}
         {children ?? <Outlet />}
       </div>
     </div>

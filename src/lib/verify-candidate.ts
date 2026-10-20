@@ -24,7 +24,6 @@ export interface VerifyVerdict {
   deliverable?: string;
 }
 
-const AMOUNT_USD = 2;
 const A2A_TASK = "report your status in one sentence";
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
@@ -70,7 +69,6 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
     body: JSON.stringify({
       chainId: cand.chainId,
       tokenId: cand.tokenId,
-      amountUsd: AMOUNT_USD,
       client: wallet.address,
       // a check may run on an agent that is off the market; a buyer's hire may not
       purpose: "check",

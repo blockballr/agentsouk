@@ -68,7 +68,7 @@ const html = {
                   color: INK,
                   maxWidth: "1000px",
                 },
-                children: "The open market for agents.",
+                children: "The open market for working agents.",
               },
             },
             {
