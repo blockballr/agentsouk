@@ -262,6 +262,24 @@ const LISTING_GUIDE: Record<WizardStep, { count: string; text: string }> = {
 // tops a wallet up to this amount, so one already at or above it needs no drip.
 const GAS_FLOOR_WEI = 10n ** 15n
 
+// BSC tokens a lister may already hold and want to turn into gas. Each entry is
+// an address PancakeSwap accepts as inputCurrency; the output is always the
+// native gas token.
+const SWAP_TOKENS: { symbol: string; address: string }[] = [
+  { symbol: 'USDT', address: '0x55d398326f99059fF775485246999027B3197955' },
+  { symbol: 'USDC', address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d' },
+  { symbol: 'BUSD', address: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56' },
+  { symbol: 'ETH', address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8' },
+  { symbol: 'CAKE', address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82' },
+]
+
+function pancakeSwapUrl(chainId: number, token: string): string {
+  const base = isTestnet(chainId)
+    ? 'https://testnet.pancakeswap.finance/swap'
+    : 'https://pancakeswap.finance/swap'
+  return `${base}?inputCurrency=${token}&outputCurrency=BNB`
+}
+
 // Registration is the participant's own transaction, which is how the registry
 // records them as owner. So the wallet, not the marketplace, pays the gas, and a
 // fresh testnet wallet has none. This states the cost and the ways to cover it
@@ -274,6 +292,8 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
   const [error, setError] = useState<string | null>(null)
   const [gasTxHash, setGasTxHash] = useState<string | null>(null)
   const [gasNote, setGasNote] = useState<string | null>(null)
+  const [swapOpen, setSwapOpen] = useState(false)
+  const [swapToken, setSwapToken] = useState(SWAP_TOKENS[0].address)
   const testnet = isTestnet(chainId)
   const symbol = testnet ? 'tBNB' : 'BNB'
   const holdsGas = balance !== null && balance >= GAS_FLOOR_WEI
@@ -447,6 +467,9 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
                 {phase === 'sending' ? 'Sign in wallet' : `Top up ${symbol}`}
               </Btn>
             )}
+            <Btn kind="off" onClick={() => setSwapOpen(true)}>
+              Swap
+            </Btn>
           </Row>
           {phase === 'error' && error && (
             <p role="alert">
@@ -477,17 +500,57 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
       ) : (
         account &&
         !holdsGas && (
-          <a
-            href="https://www.binance.com/en/buy-BNB"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-9 w-fit items-center justify-center rounded-[8px] bg-souk-data px-4"
-          >
-            <Txt size={12} lead={18} weight="semibold" tone="canvas">
-              Get BNB
-            </Txt>
-          </a>
+          <Row gap={8} align="center" className="flex-wrap">
+            <a
+              href="https://www.binance.com/en/buy-BNB"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 w-fit items-center justify-center rounded-[8px] bg-souk-data px-4"
+            >
+              <Txt size={12} lead={18} weight="semibold" tone="canvas">
+                Get BNB
+              </Txt>
+            </a>
+            <Btn kind="off" onClick={() => setSwapOpen(true)}>
+              Swap
+            </Btn>
+          </Row>
         )
+      )}
+      {swapOpen && (
+        <Dialog title="Swap to BNB" onClose={() => setSwapOpen(false)}>
+          <Stack gap={12}>
+            <Txt size={12} lead={18} tone="slate">
+              Turn a token you already hold on BSC into BNB for gas. The swap runs on PancakeSwap in a new tab.
+            </Txt>
+            <label className="grid gap-1">
+              <Txt size={10} lead={14} upper tone="labels">
+                Token to swap
+              </Txt>
+              <select
+                value={swapToken}
+                onChange={(e) => setSwapToken(e.target.value)}
+                className="h-9 rounded-[8px] border border-souk-hair bg-souk-surface1 px-3 text-[12px] text-souk-ink"
+              >
+                {SWAP_TOKENS.map((t) => (
+                  <option key={t.address} value={t.address}>
+                    {t.symbol}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <a
+              href={pancakeSwapUrl(chainId, swapToken)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 w-full items-center justify-center rounded-[8px] bg-souk-data px-4"
+            >
+              <Txt size={12} lead={18} weight="semibold" tone="canvas">
+                Swap on PancakeSwap
+              </Txt>
+            </a>
+          </Stack>
+        </Dialog>
       )}
     </Stack>
   )
