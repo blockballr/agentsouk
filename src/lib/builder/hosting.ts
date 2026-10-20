@@ -22,6 +22,7 @@ export interface BuilderHosting {
   owner: string;            // wallet, lowercased
   createosEmail: string | null;
   createosApiKey: string | null;
+  marketplaceOwned: boolean; // true when the principal is marketplace-held
   tier: "free" | "plus" | "pro" | "enterprise" | null;
   trialExpiresAt: string | null;
   buildMinutes: number | null;
@@ -48,6 +49,7 @@ async function ensureTable(): Promise<boolean> {
           owner text primary key,
           createos_email text,
           createos_api_key text,
+          marketplace_owned boolean not null default false,
           tier text,
           trial_expires_at timestamptz,
           build_minutes integer,
@@ -66,13 +68,14 @@ async function ensureTable(): Promise<boolean> {
   return tableReady;
 }
 
-type Row = { owner: string; createos_email: string | null; createos_api_key: string | null; tier: string | null; trial_expires_at: Date | string | null; build_minutes: number | null; credits: number | string | null; agents: string[] | null; created_at: Date | string; updated_at: Date | string };
+type Row = { owner: string; createos_email: string | null; createos_api_key: string | null; marketplace_owned: boolean | null; tier: string | null; trial_expires_at: Date | string | null; build_minutes: number | null; credits: number | string | null; agents: string[] | null; created_at: Date | string; updated_at: Date | string };
 
 function fromRow(row: Row): BuilderHosting {
   return {
     owner: row.owner,
     createosEmail: row.createos_email,
     createosApiKey: row.createos_api_key,
+    marketplaceOwned: row.marketplace_owned ?? false,
     tier: (row.tier as BuilderHosting["tier"]) ?? null,
     trialExpiresAt: row.trial_expires_at ? new Date(row.trial_expires_at).toISOString() : null,
     buildMinutes: row.build_minutes,
@@ -114,6 +117,28 @@ export async function provisionHosting(owner: string, createosEmail: string | nu
   return fromRow(row[0]);
 }
 
+// Marketplace-owned principal: when we can't automate CreateOS signup (or the
+// buyer opts out), the marketplace creates a row with a marketplace-controlled
+// email and marks it marketplace-owned. The actual CreateOS principal is created
+// out of band by an operator; the row is the source of truth for "has hosting".
+export async function provisionMarketplaceOwned(owner: string): Promise<BuilderHosting> {
+  const o = owner.toLowerCase();
+  const email = `builder-${o.slice(2, 10)}@agentsouk.xyz`;
+  if (!(await ensureTable()) || !sql) {
+    throw new Error("hosting store unavailable");
+  }
+  await sql`
+    insert into builder_hosting (owner, createos_email, marketplace_owned, tier, created_at, updated_at)
+    values (${o}, ${email}, true, 'free', now(), now())
+    on conflict (owner) do update set
+      createos_email = coalesce(builder_hosting.createos_email, excluded.createos_email),
+      marketplace_owned = true,
+      updated_at = now()
+  `;
+  const row = (await sql`select * from builder_hosting where owner = ${o} limit 1`) as Row[];
+  if (!row[0]) throw new Error("hosting row not persisted");
+  return fromRow(row[0]);
+}
 export async function linkAgent(owner: string, agentId: string): Promise<void> {
   if (!sql || !(await ensureTable())) return;
   await sql`
