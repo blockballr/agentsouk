@@ -107,6 +107,12 @@ export function SwapTicker() {
   }, [account, refreshBalances])
 
   useEffect(() => {
+    const onOpen = () => setOpen(true)
+    window.addEventListener('agentsouk:open-swap', onOpen)
+    return () => window.removeEventListener('agentsouk:open-swap', onOpen)
+  }, [])
+
+  useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false)

@@ -447,6 +447,9 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
                 {phase === 'sending' ? 'Sign in wallet' : `Top up ${symbol}`}
               </Btn>
             )}
+            <Btn kind="off" onClick={() => window.dispatchEvent(new Event('agentsouk:open-swap'))}>
+              Swap
+            </Btn>
           </Row>
           {phase === 'error' && error && (
             <p role="alert">
@@ -477,16 +480,21 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
       ) : (
         account &&
         !holdsGas && (
-          <a
-            href="https://www.binance.com/en/buy-BNB"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-9 w-fit items-center justify-center rounded-[8px] bg-souk-data px-4"
-          >
-            <Txt size={12} lead={18} weight="semibold" tone="canvas">
-              Get BNB
-            </Txt>
-          </a>
+          <Row gap={8} align="center" className="flex-wrap">
+            <a
+              href="https://www.binance.com/en/buy-BNB"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 w-fit items-center justify-center rounded-[8px] bg-souk-data px-4"
+            >
+              <Txt size={12} lead={18} weight="semibold" tone="canvas">
+                Get BNB
+              </Txt>
+            </a>
+            <Btn kind="off" onClick={() => window.dispatchEvent(new Event('agentsouk:open-swap'))}>
+              Swap
+            </Btn>
+          </Row>
         )
       )}
     </Stack>
