@@ -31,11 +31,10 @@ export async function GET(
   const verifications = await loadVerifications(Number(chainId));
   await hydrateBoostsFromDb();
   const verification = verifications.get(agent.token_id);
-  // the card is the registry document the owner published; its skills are
-  // authoritative. the index's flattened list (often the MCP tool list) only
-  // fills in when the card declares none.
-  const captured = await captureAgentSkills(agent).catch(() => null);
-  const skills = captured?.skills?.length ? captured.skills : (agent.skills ?? undefined);
+  // the shelf's stored list first, then what the agent publishes right now: an
+  // A2A card, or the tools its MCP server lists
+  const captured = agent.skills ? null : await captureAgentSkills(agent).catch(() => null);
+  const skills = agent.skills ?? captured?.skills ?? undefined;
   const accessGated = agent.accessGated ?? captured?.accessGated ?? false;
   // the shelf's category is the tab the listing sits under, which a re-read of its text can miss
   const shelved = (await queryAgents({ limit: 5000, includeHouse: true, includeDelisted: true })).items.find(
