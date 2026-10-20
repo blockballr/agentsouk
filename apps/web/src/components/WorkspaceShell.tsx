@@ -40,6 +40,10 @@ const RAIL: { title: string; items: RailItem[] }[] = [
     title: 'Reference',
     items: [{ to: '/docs', label: 'Docs' }],
   },
+  {
+    title: 'Account',
+    items: [{ to: '/settings', label: 'Settings', note: 'keys and preferences' }],
+  },
 ]
 
 const CHAIN = Number(import.meta.env.VITE_CHAIN_ID ?? 56)
