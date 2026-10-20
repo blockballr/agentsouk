@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { getProvider } from '../lib/wallet'
-import { connectWallet } from '../lib/wallet-session'
 import { Stack, Row, Txt, Btn, Pill, NoteBox, SectionHead } from '../components/souk'
 
 interface BuiltAgent {
@@ -141,9 +140,6 @@ export function SettingsPage() {
             Connect the wallet that owns your built agents to manage their keys.
           </Txt>
         </NoteBox>
-        <Btn kind="primary" onClick={() => void connectWallet()}>
-          Connect wallet
-        </Btn>
       </Stack>
     )
   }
