@@ -447,9 +447,15 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
                 {phase === 'sending' ? 'Sign in wallet' : `Top up ${symbol}`}
               </Btn>
             )}
-            <Btn kind="off" onClick={() => window.dispatchEvent(new Event('agentsouk:open-swap'))}>
-              Swap
-            </Btn>
+<button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('agentsouk:open-swap'))}
+              className="inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-4 hover:text-souk-ink"
+            >
+              <Txt size={12} lead={18} weight="semibold" tone="slate">
+                Swap
+              </Txt>
+            </button>
           </Row>
           {phase === 'error' && error && (
             <p role="alert">
@@ -491,9 +497,15 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
                 Get BNB
               </Txt>
             </a>
-            <Btn kind="off" onClick={() => window.dispatchEvent(new Event('agentsouk:open-swap'))}>
-              Swap
-            </Btn>
+<button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('agentsouk:open-swap'))}
+              className="inline-flex h-9 shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-4 hover:text-souk-ink"
+            >
+              <Txt size={12} lead={18} weight="semibold" tone="slate">
+                Swap
+              </Txt>
+            </button>
           </Row>
         )
       )}
