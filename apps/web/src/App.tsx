@@ -18,6 +18,7 @@ import { SellerStallsPage } from './pages/SellerStallsPage'
 import { MarketFacePage } from './pages/MarketFacePage'
 import { StudioPage } from './pages/StudioPage'
 import { DocsPage } from './pages/DocsPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { WorkspaceShell } from './components/WorkspaceShell'
 import VaultHirePage from './pages/VaultHirePage'
 
@@ -51,6 +52,7 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/studio" element={<StudioPage />} />
             <Route path="/docs" element={<DocsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/list" element={<ListAgentPage />} />
             <Route path="/seller" element={<SellerBoardPage />} />
             <Route path="/seller/stalls" element={<SellerStallsPage />} />
