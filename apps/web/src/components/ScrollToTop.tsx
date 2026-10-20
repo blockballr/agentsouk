@@ -10,7 +10,7 @@ export function ScrollToTop() {
   useLayoutEffect(() => {
     if (pathname === '/list') {
       const focusLookup = () => {
-        const el = document.getElementById('token-lookup') as HTMLInputElement | null
+        const el = document.getElementById('endpoint-input') as HTMLInputElement | null
         if (el) {
           el.scrollIntoView({ behavior: 'auto', block: 'center' })
           el.focus()
@@ -20,7 +20,11 @@ export function ScrollToTop() {
       }
       if (!focusLookup()) {
         const t = window.setTimeout(focusLookup, 120)
-        return () => window.clearTimeout(t)
+        const t2 = window.setTimeout(focusLookup, 400)
+        return () => {
+          window.clearTimeout(t)
+          window.clearTimeout(t2)
+        }
       }
       return
     }
