@@ -32,6 +32,7 @@ const RAIL: { title: string; items: RailItem[] }[] = [
   {
     title: 'Listings',
     items: [
+      { to: '/build', label: 'Build an agent' },
       { to: '/list', label: 'List an agent' },
       { to: '/seller', label: 'Seller board' },
     ],

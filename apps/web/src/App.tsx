@@ -8,6 +8,7 @@ import { AgentDetailPage } from './pages/AgentDetailPage'
 import { ComparePage } from './pages/ComparePage'
 import { AdvantagePage } from './pages/AdvantagePage'
 import { ListAgentPage } from './pages/ListAgentPage'
+import { BuildPage } from './pages/BuildPage'
 import { CartPage } from './pages/CartPage'
 import { OngoingPage } from './pages/OngoingPage'
 import { ProfilePage } from './pages/ProfilePage'
@@ -53,6 +54,7 @@ function App() {
             <Route path="/studio" element={<StudioPage />} />
             <Route path="/docs" element={<DocsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/build" element={<BuildPage />} />
             <Route path="/list" element={<ListAgentPage />} />
             <Route path="/seller" element={<SellerBoardPage />} />
             <Route path="/seller/stalls" element={<SellerStallsPage />} />
