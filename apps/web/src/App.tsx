@@ -16,6 +16,9 @@ import { QuestPage } from './pages/QuestPage'
 import { SellerBoardPage } from './pages/SellerBoardPage'
 import { SellerStallsPage } from './pages/SellerStallsPage'
 import { MarketFacePage } from './pages/MarketFacePage'
+import { StudioPage } from './pages/StudioPage'
+import { DocsPage } from './pages/DocsPage'
+import { WorkspaceShell } from './components/WorkspaceShell'
 import VaultHirePage from './pages/VaultHirePage'
 
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
@@ -38,9 +41,15 @@ function App() {
           <Route path="/advantage" element={<AdvantagePage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/ongoing" element={<OngoingPage />} />
-          <Route path="/vault" element={<VaultHirePage />} />
-          <Route path="/vault/:chainId/:tokenId" element={<VaultHirePage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          {/* the workspace surfaces share one rail, so who you are and where
+              you can go stay put while the view changes underneath */}
+          <Route element={<WorkspaceShell />}>
+            <Route path="/vault" element={<VaultHirePage />} />
+            <Route path="/vault/:chainId/:tokenId" element={<VaultHirePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/studio" element={<StudioPage />} />
+            <Route path="/docs" element={<DocsPage />} />
+          </Route>
           <Route
             path="/station"
             element={STATION_HOST ? <Navigate to="/" replace /> : <StationPage />}

@@ -16,7 +16,7 @@ import { hireErrorText } from '../lib/hire'
 import { checkMarks, checkSummary, countByDay, getCheckHistory, type CheckRecord } from '../lib/history'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 import { changeWallet, connectWallet } from '../lib/wallet-session'
-import { useActiveAccount } from '../lib/use-active-account'
+import { useConnectedAccount } from '../lib/use-connected-account'
 import {
   AgentAvatar,
   Btn,
@@ -93,7 +93,7 @@ function receivedLabel(received: number, source: HiresSource): string {
 
 export function ProfilePage() {
   // the profile's wallet, watched so a switch inside the wallet re-reads the board
-  const account = useActiveAccount()
+  const account = useConnectedAccount()
   const [connecting, setConnecting] = useState(false)
   const [owned, setOwned] = useState<OwnedAgentsResult | null>(null)
   const [hires, setHires] = useState<PayeeHire[] | null>(null)
@@ -276,11 +276,9 @@ export function ProfilePage() {
                     Connect the wallet you listed with.
                   </Txt>
                   <Txt size={13} lead={20} tone="muted">
-                    A listing belongs to the wallet the registry records as its owner.
+                    A listing belongs to the wallet the registry records as its owner. Use the connect button at the
+                    top of this page, or in the rail on wider screens.
                   </Txt>
-                  <Btn kind="primary" onClick={onConnect} disabled={connecting} className="mt-2 self-start">
-                    {connecting ? 'Connecting...' : 'Connect wallet'}
-                  </Btn>
                 </Stack>
               )}
 
