@@ -59,7 +59,8 @@ function init(): Promise<boolean> {
           ),
         ]);
         return true;
-      } catch {
+      } catch (e) {
+        console.error("[shelf] could not create the shelf tables:", e instanceof Error ? e.message : String(e));
         initPromise = null;
         return false;
       }
@@ -92,7 +93,8 @@ function initRegistry(): Promise<boolean> {
           ),
         ]);
         return true;
-      } catch {
+      } catch (e) {
+        console.error("[shelf] could not create registry_totals:", e instanceof Error ? e.message : String(e));
         registryInitPromise = null;
         return false;
       }
@@ -126,7 +128,8 @@ function initCatalogueMeta(): Promise<boolean> {
           ),
         ]);
         return true;
-      } catch {
+      } catch (e) {
+        console.error("[shelf] could not create catalogue_meta:", e instanceof Error ? e.message : String(e));
         catalogueInitPromise = null;
         return false;
       }
@@ -196,8 +199,9 @@ export async function saveShelfAgents(
           updated_at = now()
       `;
     }
-  } catch {
+  } catch (e) {
     // the memory shelf remains the source of truth when the store is unreachable
+    console.error("[shelf] could not save shelf rows:", e instanceof Error ? e.message : String(e));
   }
 }
 
@@ -261,7 +265,8 @@ export async function readShelfAgents(
       })),
       ok: true,
     };
-  } catch {
+  } catch (e) {
+    console.error("[shelf] could not read shelf rows:", e instanceof Error ? e.message : String(e));
     return { rows: [], ok: false };
   }
 }

@@ -84,7 +84,8 @@ async function ensureTables(): Promise<boolean> {
         )
       `;
       return true;
-    } catch {
+    } catch (e) {
+      console.error("[station] could not create the station tables:", e instanceof Error ? e.message : String(e));
       tablesReady = null;
       return false;
     }
