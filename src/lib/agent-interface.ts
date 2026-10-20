@@ -26,17 +26,24 @@ export async function captureAgentSkills(agent: {
   raw_metadata?: { offchain_uri?: string | null } | null;
 }): Promise<AgentInterface | null> {
   // the card lives at the registry document (offchain_uri / agent_url), not
-  // always at the a2a messaging endpoint, so prefer those when present
-  const cardUrl =
-    (typeof agent.agent_url === 'string' && agent.agent_url) ||
-    (typeof agent.raw_metadata?.offchain_uri === 'string' && agent.raw_metadata.offchain_uri) ||
-    agent.a2a_endpoint ||
-    null;
-  const card = cardUrl;
-  if (card && !privateEndpointReason(card)) {
-    const fromCard = await readCard(card);
+  // always at the a2a messaging endpoint, so prefer those when present. When only
+  // a messaging URL is known (our house agents publish /a2a), derive the card
+  // from it so the job-protocol skills are still read.
+  const candidates: (string | null | undefined)[] = [
+    typeof agent.agent_url === 'string' ? agent.agent_url : null,
+    typeof agent.raw_metadata?.offchain_uri === 'string' ? agent.raw_metadata.offchain_uri : null,
+    typeof agent.a2a_endpoint === 'string' ? agent.a2a_endpoint : null,
+  ];
+  // derive a card URL from a messaging URL
+  for (const c of [...candidates]) {
+    if (typeof c === 'string' && /\/a2a$/.test(c)) {
+      candidates.push(c.replace(/\/a2a$/, '/.well-known/agent-card.json'));
+    }
+  }
+  for (const cardUrl of candidates) {
+    if (!cardUrl || privateEndpointReason(cardUrl) !== null) continue;
+    const fromCard = await readCard(cardUrl);
     if (fromCard.skills) return fromCard;
-    // a gated card is shown as gated even when it lists no skills of its own
     if (fromCard.accessGated) return fromCard;
   }
   if (!agent.mcp_server) return null;
