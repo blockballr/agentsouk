@@ -117,6 +117,13 @@ export async function answerBuiltAgent(
 ): Promise<BuiltReply> {
   const skill = pickSkill(blueprint, message);
   if (!skill) return capabilityReply(blueprint);
+  if (skill.id === "negotiate" || skill.id === "notify_funded") {
+    return {
+      state: "input-required",
+      text: "Job selling for built agents is not wired yet: a seller key and provider wallet are required. Use direct (x402) hire mode for now.",
+      artifact: { capability: blueprint.category, skill: skill.id, status: "not-configured" },
+    };
+  }
 
   const run = await runSkill(skill, mergedInput(skill, message), deps);
   const base = { capability: blueprint.category, skill: skill.id };
@@ -160,20 +167,35 @@ function exampleSentence(skill: BlueprintSkill): string {
 
 // the card a registry record points at; the example on each skill is what the agent page
 // offers a buyer as a task that is known to work
-export function builtAgentCard(blueprint: Blueprint, opts: { origin: string; id: string; version?: string }) {
+export function builtAgentCard(blueprint: Blueprint, opts: { origin: string; id: string; version?: string; sellerKeyAddress?: string | null }) {
   const base = `${opts.origin.replace(/\/+$/, "")}/api/built/${opts.id}`;
   const messagingUrl = `${base}/a2a`;
-  return {
-    name: blueprint.name,
-    description: blueprint.description,
-    version: opts.version ?? "1.0.0",
-    url: messagingUrl,
-    protocolVersion: "0.3.0",
-    provider: { organization: "Built on Agent Souk", url: opts.origin.replace(/\/+$/, "") },
-    capabilities: { streaming: false, pushNotifications: false, stateTransitionHistory: false },
-    defaultInputModes: ["text/plain", "application/json"],
-    defaultOutputModes: ["text/plain", "application/json"],
-    skills: blueprint.skills.map((skill) => ({
+  const hireMode = blueprint.hireMode ?? "direct";
+  const jobSkills = (hireMode === "job" || hireMode === "both")
+    ? [
+        {
+          id: "negotiate",
+          name: "Quote an ERC-8183 job",
+          description: `ERC-8183 job selling: answers a negotiate step with a wallet-signed quote priced in the kernel's payment token, naming this listing's registered wallet as provider. The job buys this agent's ${blueprint.category} work; the work itself runs only inside a hire's bounded vault, never from this endpoint.`,
+          tags: [...new Set([blueprint.category, "erc-8183", "job", "negotiate", "quote"])],
+          examples: [`Quote an ERC-8183 job for ${blueprint.name}`],
+          inputModes: ["application/json"],
+          outputModes: ["application/json"],
+          inputSchema: { type: "object", properties: {}, required: [], examples: [{}] },
+        },
+        {
+          id: "notify_funded",
+          name: "Plan for a funded ERC-8183 job",
+          description: `ERC-8183 job selling: on notify_funded the kernel's own row is read back to confirm this listing is the funded job's provider, the work is planned from the job's own description, and the deliverable is submitted on chain for the optimistic dispute window to release.`,
+          tags: [...new Set([blueprint.category, "erc-8183", "job", "notify-f"])],
+          examples: [],
+          inputModes: ["application/json"],
+          outputModes: ["application/json"],
+        },
+      ]
+    : [];
+  const skills = [
+    ...blueprint.skills.map((skill) => ({
       id: skill.id,
       name: skill.name,
       description: skill.description,
@@ -190,6 +212,21 @@ export function builtAgentCard(blueprint: Blueprint, opts: { origin: string; id:
         examples: [skill.example],
       },
     })),
+    ...jobSkills,
+  ];
+  return {
+    name: blueprint.name,
+    description: blueprint.description,
+    version: opts.version ?? "1.0.0",
+    url: messagingUrl,
+    protocolVersion: "0.3.0",
+    provider: { organization: "Built on Agent Souk", url: opts.origin.replace(/\/+$/, "") },
+    capabilities: { streaming: false, pushNotifications: false, stateTransitionHistory: false },
+    defaultInputModes: ["text/plain", "application/json"],
+    defaultOutputModes: ["text/plain", "application/json"],
+    skills,
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
+    ...(opts.sellerKeyAddress ? { agentWallet: opts.sellerKeyAddress } : {}),
+    x402Support: hireMode === "direct" || hireMode === "both",
   };
 }

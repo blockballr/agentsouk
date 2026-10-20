@@ -5,6 +5,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import postgres from "postgres";
 import { validateBlueprint, type Blueprint } from "./blueprint";
+import { generateSellerKey } from "./keys";
 
 let sql: ReturnType<typeof postgres> | null = null;
 if (process.env.DATABASE_URL) {
@@ -19,6 +20,7 @@ export interface BuiltAgent {
   id: string;
   owner: string;
   blueprint: Blueprint;
+  sellerKeyAddress: string | null;
   createdAt: string;
 }
 
@@ -69,11 +71,14 @@ type Row = { id: string; owner: string; blueprint: unknown; created_at: Date | s
 function fromRow(row: Row): BuiltAgent | undefined {
   const check = validateBlueprint(row.blueprint);
   if (!check.ok) return undefined;
-  return { id: row.id, owner: row.owner, blueprint: check.blueprint, createdAt: new Date(row.created_at).toISOString() };
+  return { id: row.id, owner: row.owner, blueprint: check.blueprint, sellerKeyAddress: null, createdAt: new Date(row.created_at).toISOString() };
 }
 
 export async function saveBuiltAgent(owner: string, blueprint: Blueprint): Promise<BuiltAgent> {
-  const built: BuiltAgent = { id: randomBytes(8).toString("hex"), owner: owner.toLowerCase(), blueprint, createdAt: new Date().toISOString() };
+  const needsKey = blueprint.hireMode === "job" || blueprint.hireMode === "both";
+  const id = randomBytes(8).toString("hex");
+  const sellerKeyAddress = needsKey ? await generateSellerKey(owner, id) : null;
+  const built: BuiltAgent = { id, owner: owner.toLowerCase(), blueprint, sellerKeyAddress, createdAt: new Date().toISOString() };
   const db = await store();
   if (db) {
     await db`
@@ -98,7 +103,13 @@ export async function getBuiltAgent(id: string): Promise<BuiltAgent | undefined>
   const db = await store();
   if (db) {
     const rows = (await db`select id, owner, blueprint, created_at from built_agents where id = ${id} limit 1`) as Row[];
-    return rows[0] ? fromRow(rows[0]) : undefined;
+    if (!rows[0]) return undefined;
+    const built = fromRow(rows[0]);
+    if (!built) return undefined;
+    // resolve the seller key address (per-owner key) if one was generated
+    const keyRows = (await db`select address from builder_seller_keys where agent_id = ${id} limit 1`) as { address: string }[];
+    if (keyRows[0]) built.sellerKeyAddress = keyRows[0].address;
+    return built;
   }
   return memory.get(id);
 }

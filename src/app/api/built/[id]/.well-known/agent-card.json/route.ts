@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!built) return NextResponse.json({ error: "No agent is hosted at this address." }, { status: 404, headers: { ...JSON_HEADERS, "cache-control": "no-store" } });
     const origin = pickPublicOrigin([process.env.PUBLIC_API_URL, process.env.BASE_URL]);
     // a blueprint never changes once saved, so its card may be held for a while
-    return NextResponse.json(builtAgentCard(built.blueprint, { origin, id }), {
+    return NextResponse.json(builtAgentCard(built.blueprint, { origin, id, sellerKeyAddress: built.sellerKeyAddress }), {
       headers: { ...JSON_HEADERS, "cache-control": "public, max-age=300" },
     });
   } catch {
