@@ -101,6 +101,11 @@ export async function POST(req: NextRequest) {
     draft,
     createdAt: detail.created_at ?? new Date().toISOString(),
   });
+  // the draft carries one endpoint for every selected protocol, but the card
+  // names a different route per surface. Take the live detail's split so the
+  // shelf does not point both at the A2A URL.
+  if (detail.a2a_endpoint) summary.a2a_endpoint = detail.a2a_endpoint;
+  if (detail.mcp_server) summary.mcp_server = detail.mcp_server;
   const admission = await admitConfirmedAgent(summary);
   return NextResponse.json({ success: admission.admitted, category, endpoint, kinds, ...admission });
 }
