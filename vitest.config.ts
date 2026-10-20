@@ -33,15 +33,9 @@ function aliasesFromTsconfig(configPath: string) {
 
 export default defineConfig({
   resolve: {
-    alias: {
-      ...Object.fromEntries(aliasesFromTsconfig(resolve(root, "tsconfig.json")).map((a) => [a.find, a.replacement])),
-      "server-only": resolve(root, "tests/server-only-stub.ts"),
-    },
+    alias: aliasesFromTsconfig(resolve(root, "tsconfig.json")),
   },
   test: {
     include: ["tests/**/*.test.ts", "tests/**/*.ts"],
-    // the stub stands in for the "server-only" package under the runner; it is
-    // not a suite and the broad include would otherwise collect it as one
-    exclude: ["tests/server-only-stub.ts"],
   },
 });
