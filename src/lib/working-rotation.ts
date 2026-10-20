@@ -9,10 +9,12 @@ import { isTeamWallet } from "./team-wallets";
 const RANK: Record<string, number> = {
   delivered: 5,
   gated: 4,
-  // unmeasured is not known bad: an agent we have not checked sits above the ones we have
-  unchecked: 3,
+  // the shelf's legend orders the states by what they cost a buyer, so reachability
+  // is not "unknown beats known bad": an unchecked listing sits below the ones we
+  // have measured, in the order the legend prints
+  unreachable: 3,
   dead: 2,
-  unreachable: 1,
+  unchecked: 1,
 };
 const DELIVERED = RANK.delivered;
 
