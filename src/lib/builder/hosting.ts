@@ -24,6 +24,7 @@ export interface BuilderHosting {
   tier: "free" | "plus" | "pro" | "enterprise" | null;
   trialExpiresAt: string | null;
   buildMinutes: number | null;
+  credits: number;          // marketplace credits, funded by x402 top-ups
   agents: string[];         // built agent ids linked to this principal
   createdAt: string;
   updatedAt: string;
@@ -48,6 +49,7 @@ async function ensureTable(): Promise<boolean> {
           tier text,
           trial_expires_at timestamptz,
           build_minutes integer,
+          credits numeric not null default 0,
           agents text[] not null default '{}',
           created_at timestamptz not null default now(),
           updated_at timestamptz not null default now()
@@ -62,7 +64,7 @@ async function ensureTable(): Promise<boolean> {
   return tableReady;
 }
 
-type Row = { owner: string; createos_email: string | null; tier: string | null; trial_expires_at: Date | string | null; build_minutes: number | null; agents: string[] | null; created_at: Date | string; updated_at: Date | string };
+type Row = { owner: string; createos_email: string | null; tier: string | null; trial_expires_at: Date | string | null; build_minutes: number | null; credits: number | string | null; agents: string[] | null; created_at: Date | string; updated_at: Date | string };
 
 function fromRow(row: Row): BuilderHosting {
   return {
@@ -71,6 +73,7 @@ function fromRow(row: Row): BuilderHosting {
     tier: (row.tier as BuilderHosting["tier"]) ?? null,
     trialExpiresAt: row.trial_expires_at ? new Date(row.trial_expires_at).toISOString() : null,
     buildMinutes: row.build_minutes,
+    credits: Number(row.credits ?? 0),
     agents: row.agents ?? [],
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
@@ -107,10 +110,28 @@ export async function provisionHosting(owner: string, createosEmail: string | nu
   return fromRow(row[0]);
 }
 
-export async function linkAgent(owner: string, agentId: string): Promise<void> {
-  if (!sql || !(await ensureTable())) return;
+export async function topUpCredits(owner: string, amountUsd: number): Promise<BuilderHosting | null> {
+  if (!sql || !(await ensureTable())) return null;
+  const o = owner.toLowerCase();
+  const existing = await getHosting(o);
+  if (!existing) return null;
   await sql`
-    update builder_hosting set agents = array_append(agents, ${agentId}), updated_at = now()
-    where owner = ${owner.toLowerCase()} and not (${agentId} = any(agents))
+    update builder_hosting set credits = credits + ${amountUsd}, updated_at = now()
+    where owner = ${o}
   `;
+  return getHosting(o);
+}
+
+export async function changePlan(owner: string, tier: BuilderHosting["tier"], costUsd: number): Promise<{ ok: boolean; reason?: string; hosting: BuilderHosting | null }> {
+  const h = await getHosting(owner);
+  if (!h) return { ok: false, reason: "no hosting row", hosting: null };
+  if (h.credits < costUsd) return { ok: false, reason: "insufficient credits", hosting: h };
+  if (!sql || !(await ensureTable())) return { ok: false, reason: "store unavailable", hosting: h };
+  const o = owner.toLowerCase();
+  await sql`
+    update builder_hosting set tier = ${tier}, credits = credits - ${costUsd}, updated_at = now()
+    where owner = ${o}
+  `;
+  const updated = await getHosting(o);
+  return { ok: true, hosting: updated };
 }
