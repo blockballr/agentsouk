@@ -115,6 +115,46 @@ export async function markSent(id: string): Promise<void> {
   if (row) { row.status = "sent"; row.sentAt = new Date().toISOString(); }
 }
 
+// drain the pending rows: send each as an email via Resend when configured, log
+// otherwise. Returns counts. Never throws; a single row's failure is recorded
+// on that row and the drain continues.
+export async function drainPending(limit = 50): Promise<{ sent: number; failed: number; skipped: number }> {
+  const rows = await listPending(limit);
+  let sent = 0, failed = 0, skipped = 0;
+  const team = process.env.NOTIFY_EMAIL ?? null;
+  const key = process.env.RESEND_API_KEY ?? null;
+  for (const row of rows) {
+    const to = team ? [team] : [];
+    const subject = `[builder] ${row.kind} for ${row.owner}`;
+    const text = [
+      `kind: ${row.kind}`,
+      `owner: ${row.owner}`,
+      `created: ${row.createdAt}`,
+      ``,
+      JSON.stringify(row.payload, null, 2),
+    ].join("\n");
+    if (!key || to.length === 0) {
+      console.log("[outbox] drain (no resend/email)", { id: row.id, kind: row.kind, owner: row.owner });
+      await markSent(row.id);
+      skipped += 1;
+      continue;
+    }
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ from: process.env.NOTIFY_FROM ?? "Agent Souk <onboarding@resend.dev>", to, subject, text }),
+      });
+      if (res.ok) { await markSent(row.id); sent += 1; }
+      else { const b = await res.json().catch(() => ({})); await markFailed(row.id, (b as { message?: string }).message ?? `resend ${res.status}`); failed += 1; }
+    } catch (e) {
+      await markFailed(row.id, e instanceof Error ? e.message : String(e));
+      failed += 1;
+    }
+  }
+  return { sent, failed, skipped };
+}
+
 export async function markFailed(id: string, error: string): Promise<void> {
   if (sql && (await ensureTable())) {
     await sql`update notification_outbox set status = 'failed', error = ${error} where id = ${id}`;
