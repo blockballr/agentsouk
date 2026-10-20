@@ -549,7 +549,7 @@ export default function VaultHirePage() {
             title="Honest state"
             copy={`The vault is live on ${CHAIN.label} at ${
               vault ? short(vault) : 'not configured'
-            }, and its open-trade-withdraw loop is proven from scripts and a live smoke. The agent side that trades these hires runs from the executor service; a hire opened by a wallet the team owns does not count toward any quest.`}
+            }, and its open-trade-withdraw loop is proven from scripts and a live smoke. The agent side that trades these hires runs from the executor service.`}
             rows={[
               { label: 'VAULT', value: vault ? short(vault) : 'not configured', mono: true },
               { label: 'CHAIN', value: `${CHAIN.label} ${CHAIN.id}` },
