@@ -124,6 +124,37 @@ export async function getAgentDetail(
   return body.data ?? null
 }
 
+// An impression is one open of a listing page. The call is fire-and-forget and
+// keepalive so a reader who leaves immediately still counts, and the server
+// dedupes a reader to one an hour.
+export function recordAgentView(chainId: number, tokenId: string): void {
+  void fetch(`${BASE}/agents/views`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ chainId, tokenId }),
+    keepalive: true,
+  }).catch(() => {})
+}
+
+// The seller board's own counts. An unreadable count is an empty one, because a
+// missing figure must never read as zero attention.
+export async function getListingViews(
+  chainId: number,
+  tokens: string[],
+  days = 14,
+): Promise<Record<string, number>> {
+  if (tokens.length === 0) return {}
+  const query = new URLSearchParams({
+    chainId: String(chainId),
+    tokens: tokens.slice(0, 50).join(','),
+    days: String(days),
+  })
+  const res = await fetch(`${BASE}/agents/views?${query}`)
+  if (!res.ok) return {}
+  const body = await readJsonBody<{ counts?: Record<string, number> }>(res, 'views')
+  return body.counts ?? {}
+}
+
 export interface FreePreviewResult {
   text: string
   skillId?: string

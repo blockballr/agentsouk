@@ -13,6 +13,15 @@ export interface CheckLine {
   detail?: string
 }
 
+// What the wallet can pay with. The card states it next to the checks because
+// the registration is the lister's own transaction and a short wallet stops the
+// flow at the last step, after every check has already passed.
+export interface GasReadiness {
+  holds: boolean
+  symbol: string
+  balance: string | null
+}
+
 const STATE_LABEL: Record<CheckState, string> = {
   waiting: 'Waiting',
   checking: 'Checking',
@@ -42,7 +51,13 @@ const REQUIREMENT: Record<string, string> = {
 }
 
 /** A progress rail and the one check in flight, with the whole bar readable behind a toggle. */
-export function VerificationLoop({ checks }: { checks: CheckLine[] }) {
+export function VerificationLoop({
+  checks,
+  gas = null,
+}: {
+  checks: CheckLine[]
+  gas?: GasReadiness | null
+}) {
   const [open, setOpen] = useState(false)
   const settled = checks.filter((c) => c.state !== 'waiting' && c.state !== 'checking').length
   // the loop reports one check at a time: the one running, or the one that stopped it
@@ -54,7 +69,8 @@ export function VerificationLoop({ checks }: { checks: CheckLine[] }) {
       id="verifier-check"
       aria-label="Verifier check"
       aria-live="polite"
-      className="scroll-mt-4 rounded-[14px] border border-white/15 bg-souk-indigo p-4"
+      tabIndex={-1}
+      className="scroll-mt-4 rounded-[14px] border border-white/15 bg-souk-indigo p-4 outline-none transition focus-visible:ring-2 focus-visible:ring-souk-data/60"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="micro text-souk-indigo-labels">Verifier check</p>
@@ -62,6 +78,29 @@ export function VerificationLoop({ checks }: { checks: CheckLine[] }) {
           {settled} of {checks.length} ({pct}%)
         </span>
       </div>
+
+      {gas ? (
+        <div
+          className={`mt-3 flex items-center gap-2 rounded-[8px] border px-3 py-2 backdrop-blur-md ${
+            gas.holds
+              ? 'border-souk-data/40 bg-souk-data/15'
+              : 'border-souk-peach/45 bg-souk-peach/15'
+          }`}
+        >
+          <span
+            aria-hidden="true"
+            className={`h-2 w-2 rounded-full ${gas.holds ? 'bg-souk-data' : 'bg-souk-peach'}`}
+          />
+          <span className="micro text-white/70">Gas</span>
+          <span className="ml-auto font-mono text-[11px] text-white">
+            {gas.holds
+              ? `enough ${gas.symbol}`
+              : gas.balance === null
+                ? 'no reading'
+                : `${gas.balance} ${gas.symbol}`}
+          </span>
+        </div>
+      ) : null}
 
       {/* the rail keeps a head at every value, the way the job meter does: even at
           zero the fill shows a sliver, so the track never reads as a broken control */}

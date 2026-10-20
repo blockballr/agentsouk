@@ -15,7 +15,7 @@ import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { checkMarks, checkSummary, countByDay, getCheckHistory, type CheckRecord } from '../lib/history'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
-import { changeWallet, connectWallet } from '../lib/wallet-session'
+import { changeWallet } from '../lib/wallet-session'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import {
   AgentAvatar,
@@ -157,17 +157,6 @@ export function ProfilePage() {
     }
   }
 
-  async function onConnect() {
-    setConnecting(true)
-    try {
-      await connectWallet()
-    } catch (e) {
-      setError(hireErrorText(e))
-    } finally {
-      setConnecting(false)
-    }
-  }
-
   const agents = owned?.agents ?? []
   const offMarket = agents.filter((a) => a.delisted).length
   const answering = agents.filter((a) => !a.delisted && a.verification?.status === 'delivered').length
@@ -221,11 +210,7 @@ export function ProfilePage() {
           <Btn kind="off" onClick={() => void load()} disabled={loading}>
             {loading ? 'Reading...' : 'Refresh'}
           </Btn>
-        ) : (
-          <Btn kind="primary" onClick={onConnect} disabled={connecting}>
-            {connecting ? 'Connecting...' : 'Connect wallet'}
-          </Btn>
-        )}
+        ) : null}
       </Row>
 
           {error && (
@@ -276,8 +261,8 @@ export function ProfilePage() {
                     Connect the wallet you listed with.
                   </Txt>
                   <Txt size={13} lead={20} tone="muted">
-                    A listing belongs to the wallet the registry records as its owner. Use the connect button at the
-                    top of this page, or in the rail on wider screens.
+                    A listing belongs to the wallet the registry records as its owner. Connect from the rail on the
+                    left, or the bar above on a narrow screen.
                   </Txt>
                 </Stack>
               )}

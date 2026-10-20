@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { shortAddress } from '@agora/core'
 import { visitSeed } from '../lib/rotation'
 import { isOperatedByAgentSouk } from '../lib/first-party'
-import { connectWallet, sessionAccount } from '../lib/wallet-session'
+import { useConnectedAccount } from '../lib/use-connected-account'
 import { hireErrorText } from '../lib/hire'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
@@ -51,10 +51,9 @@ export function QuestPage() {
   // hook order between the dev and production bundles
   const target = useTargetChain()
   const chainId = target?.chainId ?? null
-  const [wallet, setWallet] = useState<string | null>(null)
+  const wallet = useConnectedAccount()
   const [progress, setProgress] = useState<QuestProgress | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [connecting, setConnecting] = useState(false)
   const [fresh, setFresh] = useState<StepKey[]>([])
   // who each hire step may offer, in the order the shelf rotated them for this visit: undefined
   // while it is being read, null when it could not be, so a button never changes its target
@@ -69,18 +68,6 @@ export function QuestPage() {
       .catch(() => {
         if (live) setShelf(null)
       })
-    return () => {
-      live = false
-    }
-  }, [])
-
-  useEffect(() => {
-    let live = true
-    sessionAccount()
-      .then((a) => {
-        if (live) setWallet(a)
-      })
-      .catch(() => {})
     return () => {
       live = false
     }
@@ -125,17 +112,6 @@ export function QuestPage() {
     setFresh((f) => [...new Set([...f, ...unseen])])
     writeSeenStamps(wallet, keys)
   }, [wallet, progress])
-
-  async function connect() {
-    setConnecting(true)
-    try {
-      setWallet(await connectWallet())
-    } catch (e) {
-      setError(hireErrorText(e))
-    } finally {
-      setConnecting(false)
-    }
-  }
 
   const stamps = stampsFrom(progress)
   const open = QUEST_STEPS.filter((s) => !stamps[s.key])
@@ -209,7 +185,7 @@ export function QuestPage() {
   // the strip names the one thing to do now, read from the same step content the card below
   // uses, so the strip and the card never disagree about what the next move is
   const strip = next
-    ? stepContent(next, Boolean(stamps[next.key]), picksFor(next), readingFor(next), onlyOursFor(next), chainId, wallet, connect, connecting)
+    ? stepContent(next, Boolean(stamps[next.key]), picksFor(next), readingFor(next), onlyOursFor(next), chainId, wallet)
     : null
   const stripAction = strip?.actions[0] ?? null
 
@@ -518,8 +494,6 @@ function stepContent(
   onlyOurs: boolean,
   chainId: number | null,
   wallet: string | null,
-  onConnect?: () => void,
-  connecting?: boolean,
 ): { title: string; instruction: string; actions: StepAction[] } {
   const title = step.key === 'stall' ? 'List your agent' : step.title
   if (stamped) {
@@ -532,11 +506,9 @@ function stepContent(
     return {
       title,
       instruction: first
-        ? 'Connect the wallet you entered on BNB Chain\'s Set and Earn form.'
-        : 'Connect the wallet you will hire with.',
-      actions: onConnect
-        ? [{ label: connecting ? 'Waiting for your wallet' : 'Connect wallet', onClick: onConnect, disabled: connecting }]
-        : [],
+        ? 'Connect the wallet you entered on BNB Chain\'s Set and Earn form, from the rail on the left.'
+        : 'Connect from the rail on the left to hire.',
+      actions: [],
     }
   }
   if (step.key === 'stall') {
