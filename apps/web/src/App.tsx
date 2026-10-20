@@ -20,6 +20,7 @@ import { MarketFacePage } from './pages/MarketFacePage'
 import { StudioPage } from './pages/StudioPage'
 import { DocsPage } from './pages/DocsPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { ScrollToTop } from './components/ScrollToTop'
 import { WorkspaceShell } from './components/WorkspaceShell'
 import VaultHirePage from './pages/VaultHirePage'
 
@@ -31,6 +32,7 @@ const STATION_HOST = window.location.hostname === 'station.agentsouk.xyz'
 function App() {
   return (
     <MotionConfig reducedMotion="user">
+      <ScrollToTop />
       <Routes>
         <Route element={<Layout />}>
           {/* The homepage is the about page, and the marketplace lives at /agents.
