@@ -265,17 +265,19 @@ export async function fetchAgentDetail(
   // route, so an A2A message or an MCP initialize sent there cannot land.
   const cardUri = data.raw_metadata?.offchain_uri;
   const atCard = (value: string | null) => !value || value === cardUri;
-  const offchain = data.raw_metadata?.offchain_content;
-  const declaredA2a =
-    offchain && typeof offchain === "object" && typeof (offchain as { url?: unknown }).url === "string"
-      ? ((offchain as { url: string }).url).trim()
-      : "";
-  if (atCard(data.a2a_endpoint) && declaredA2a && !privateEndpointReason(declaredA2a)) {
-    data.a2a_endpoint = declaredA2a;
+  // Our house cards live at <origin>/api/<slug>/.well-known/agent-card.json
+  // and serve A2A and MCP at sibling routes, so the real endpoints are
+  // recoverable from the card URI without a network call.
+  const slugMatch = cardUri ? cardUri.match(/\/api\/([^/]+)\/\.well-known\/agent-card\.json$/) : null;
+  const derivedA2a = slugMatch ? cardUri!.replace(/\/\.well-known\/agent-card\.json$/, "/a2a") : null;
+  const derivedMcp = slugMatch ? cardUri!.replace(/\/\.well-known\/agent-card\.json$/, "/mcp") : null;
+  if (atCard(data.a2a_endpoint) && derivedA2a && !privateEndpointReason(derivedA2a)) {
+    data.a2a_endpoint = derivedA2a;
   }
   if (atCard(data.mcp_server)) {
-    let mcp: string | null = null;
-    if (cardUri && !privateEndpointReason(cardUri)) {
+    let mcp: string | null = derivedMcp && !privateEndpointReason(derivedMcp) ? derivedMcp : null;
+    // try the live card first, in case it names a different MCP route
+    if (!mcp && cardUri && !privateEndpointReason(cardUri)) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 3000);
       try {
@@ -295,14 +297,10 @@ export async function fetchAgentDetail(
           }
         }
       } catch {
-        // fall through to the sibling-route derivation
+        // fall through to the derived sibling route
       } finally {
         clearTimeout(timer);
       }
-    }
-    if (!mcp && data.a2a_endpoint && /\/a2a$/.test(data.a2a_endpoint)) {
-      const candidate = data.a2a_endpoint.replace(/\/a2a$/, "/mcp");
-      if (!privateEndpointReason(candidate)) mcp = candidate;
     }
     if (mcp) data.mcp_server = mcp;
   }
