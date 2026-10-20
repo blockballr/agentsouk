@@ -67,6 +67,9 @@ export interface GridAgentCard {
   services?: { name: string; endpoint: string }[];
   // the wallet a hire names and a buyer pays, declared the way ERC-8004 reads it
   agentWallet?: string;
+  // whether a buyer can hire this agent per call over x402, declared the way
+  // ERC-8004 reads it; absent means the registration did not say
+  x402Support?: boolean;
   // Agent Souk's HireVault, per chain, where a funded trading mandate runs.
   // Published so a buyer on any marketplace can open a vault with this agent.
   vault?: { chainId: number; address: string }[];

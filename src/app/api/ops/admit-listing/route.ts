@@ -3,7 +3,7 @@ import { createPublicClient, isAddress } from "viem";
 import { bsc } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { HOUSE_OPERATOR } from "@/lib/house";
-import { BSC_CHAIN_ID, targetChainId } from "@/lib/types";
+import { AgentDetail, BSC_CHAIN_ID, targetChainId } from "@/lib/types";
 import { registryAddress } from "@/lib/registry-write";
 import { rpcTransport } from "@/lib/rpc";
 import { LISTABLE_CATEGORIES, ENDPOINT_KINDS, type RegistrationDraft, type ListableCategory, type EndpointKind } from "@agora/core";
@@ -90,7 +90,9 @@ export async function POST(req: NextRequest) {
     endpoint,
     endpointKinds: kinds.filter((k) => (ENDPOINT_KINDS as readonly string[]).includes(k)),
     ...(detail.image_url ? { image: detail.image_url } : {}),
-    x402Support: detail.x402_supported,
+    x402Support:
+      detail.x402_supported ||
+      (detail as AgentDetail).raw_metadata?.offchain_content?.x402Support === true,
     ...(("agent_wallet" in detail && detail.agent_wallet) ? { agentWallet: detail.agent_wallet } : {}),
   };
   const summary = summaryFromRegistration({

@@ -101,6 +101,7 @@ export function soukGridAgentCard(origin: string): GridAgentCard {
       { name: "MCP", endpoint: soukGridAgentMcpUrl(base) },
     ],
     agentWallet: SOUK_GRID_AGENT_WALLET,
+    x402Support: true,
     // Agent Souk's HireVault, published so a buyer on any marketplace can open
     // a funded trading mandate with this agent. It is read from the same table
     // the executor sweeps rather than typed here: a hire opened at an address
