@@ -22,8 +22,17 @@ export interface AgentInterface {
 export async function captureAgentSkills(agent: {
   mcp_server?: string | null;
   a2a_endpoint?: string | null;
+  agent_url?: string | null;
+  raw_metadata?: { offchain_uri?: string | null } | null;
 }): Promise<AgentInterface | null> {
-  const card = agent.a2a_endpoint;
+  // the card lives at the registry document (offchain_uri / agent_url), not
+  // always at the a2a messaging endpoint, so prefer those when present
+  const cardUrl =
+    (typeof agent.agent_url === 'string' && agent.agent_url) ||
+    (typeof agent.raw_metadata?.offchain_uri === 'string' && agent.raw_metadata.offchain_uri) ||
+    agent.a2a_endpoint ||
+    null;
+  const card = cardUrl;
   if (card && !privateEndpointReason(card)) {
     const fromCard = await readCard(card);
     if (fromCard.skills) return fromCard;
