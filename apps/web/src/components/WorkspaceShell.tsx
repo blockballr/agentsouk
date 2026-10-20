@@ -23,6 +23,13 @@ const RAIL: { title: string; items: RailItem[] }[] = [
     ],
   },
   {
+    title: 'Hires',
+    items: [
+      { to: '/vault', label: 'Vault', note: 'funded hires and trades' },
+      { to: '/ongoing', label: 'Ongoing', note: 'live hires' },
+    ],
+  },
+  {
     title: 'Listings',
     items: [
       { to: '/list', label: 'List an agent' },
