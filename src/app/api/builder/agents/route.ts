@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateBlueprint } from "@/lib/builder/blueprint";
 import { builtAgentAddresses } from "@/lib/builder/hosting";
+import { isRevoked } from "@/lib/builder/keys";
+import { hasExported } from "@/lib/builder/keys";
 import { checkExamples } from "@/lib/builder/run";
 import { liveReader } from "@/lib/builder/sources";
-import { saveBuiltAgent } from "@/lib/builder/store";
+import { saveBuiltAgent, listBuiltByOwner } from "@/lib/builder/store";
 import { enqueue } from "@/lib/builder/outbox";
 import { pickPublicOrigin } from "@/lib/house-agent";
 import { clientIpFrom, enforceRateLimit } from "@/lib/rate-limit";
@@ -13,6 +15,35 @@ import { targetChainId } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 const LIMIT = { table: "rl_builder_save", limit: 20, windowMs: 24 * 60 * 60 * 1000 };
+
+// GET /api/builder/agents?owner=0x...   lists the built agents for a wallet
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const owner = req.nextUrl.searchParams.get("owner") ?? "";
+  if (!/^0x[0-9a-fA-F]{40}$/.test(owner)) return json({ success: false, error: "owner must be a wallet address" }, 400);
+  try {
+    const built = await listBuiltByOwner(owner);
+    const origin = pickPublicOrigin([process.env.PUBLIC_API_URL, process.env.BASE_URL]);
+    const items = await Promise.all(
+      built.map(async (b) => {
+        const revoked = await isRevoked(b.id);
+        const exported = await hasExported(b.id);
+        return {
+          id: b.id,
+          name: b.blueprint.name,
+          category: b.blueprint.category,
+          hireMode: b.blueprint.hireMode ?? "direct",
+          agentWallet: b.sellerKeyAddress,
+          card: builtAgentAddresses(origin, b.id).card,
+          endpoint: builtAgentAddresses(origin, b.id).endpoint,
+          custody: revoked ? "revoked" : exported ? "exported" : b.sellerKeyAddress ? "held" : "none",
+        };
+      }),
+    );
+    return json({ success: true, items });
+  } catch (e) {
+    return json({ success: false, error: e instanceof Error ? e.message : "list failed" }, 503);
+  }
+}
 const NO_STORE = { "cache-control": "no-store" };
 const json = (body: Record<string, unknown>, status = 200) => NextResponse.json(body, { status, headers: NO_STORE });
 
