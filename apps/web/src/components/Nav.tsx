@@ -15,6 +15,7 @@ import { Dot, IconCart, Row, Rule, Stack, Txt } from './souk'
 const links = [
   { to: '/agents', label: 'Marketplace' },
   { to: '/compare', label: 'Compare' },
+  { to: '/build', label: 'Build' },
   { to: '/ongoing', label: 'Ongoing' },
   { to: '/quest', label: 'Quest' },
 ]
