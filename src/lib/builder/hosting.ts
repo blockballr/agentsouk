@@ -21,10 +21,11 @@ import postgres from "postgres";
 export interface BuilderHosting {
   owner: string;            // wallet, lowercased
   createosEmail: string | null;
+  createosApiKey: string | null;
   tier: "free" | "plus" | "pro" | "enterprise" | null;
   trialExpiresAt: string | null;
   buildMinutes: number | null;
-  credits: number;          // marketplace credits, funded by x402 top-ups
+  credits: number;
   agents: string[];         // built agent ids linked to this principal
   createdAt: string;
   updatedAt: string;
@@ -46,6 +47,7 @@ async function ensureTable(): Promise<boolean> {
         create table if not exists builder_hosting (
           owner text primary key,
           createos_email text,
+          createos_api_key text,
           tier text,
           trial_expires_at timestamptz,
           build_minutes integer,
@@ -64,12 +66,13 @@ async function ensureTable(): Promise<boolean> {
   return tableReady;
 }
 
-type Row = { owner: string; createos_email: string | null; tier: string | null; trial_expires_at: Date | string | null; build_minutes: number | null; credits: number | string | null; agents: string[] | null; created_at: Date | string; updated_at: Date | string };
+type Row = { owner: string; createos_email: string | null; createos_api_key: string | null; tier: string | null; trial_expires_at: Date | string | null; build_minutes: number | null; credits: number | string | null; agents: string[] | null; created_at: Date | string; updated_at: Date | string };
 
 function fromRow(row: Row): BuilderHosting {
   return {
     owner: row.owner,
     createosEmail: row.createos_email,
+    createosApiKey: row.createos_api_key,
     tier: (row.tier as BuilderHosting["tier"]) ?? null,
     trialExpiresAt: row.trial_expires_at ? new Date(row.trial_expires_at).toISOString() : null,
     buildMinutes: row.build_minutes,
@@ -91,7 +94,7 @@ export async function getHosting(owner: string): Promise<BuilderHosting | null> 
 // the wallet. Until CreateOS exposes a programmatic signup, the principal is
 // created out of band by an operator and the resulting email is recorded here;
 // the row's existence is what gates "has hosting".
-export async function provisionHosting(owner: string, createosEmail: string | null): Promise<BuilderHosting> {
+export async function provisionHosting(owner: string, createosEmail: string | null, createosApiKey: string | null = null): Promise<BuilderHosting> {
   const o = owner.toLowerCase();
   if (!(await ensureTable()) || !sql) {
     // no database: keep an in-memory answer is not possible across instances,
@@ -99,10 +102,11 @@ export async function provisionHosting(owner: string, createosEmail: string | nu
     throw new Error("hosting store unavailable");
   }
   await sql`
-    insert into builder_hosting (owner, createos_email, tier, created_at, updated_at)
-    values (${o}, ${createosEmail}, 'free', now(), now())
+    insert into builder_hosting (owner, createos_email, createos_api_key, tier, created_at, updated_at)
+    values (${o}, ${createosEmail}, ${createosApiKey}, 'free', now(), now())
     on conflict (owner) do update set
       createos_email = coalesce(excluded.createos_email, builder_hosting.createos_email),
+      createos_api_key = coalesce(excluded.createos_api_key, builder_hosting.createos_api_key),
       updated_at = now()
   `;
   const row = (await sql`select * from builder_hosting where owner = ${o} limit 1`) as Row[];
@@ -110,15 +114,30 @@ export async function provisionHosting(owner: string, createosEmail: string | nu
   return fromRow(row[0]);
 }
 
+export async function linkAgent(owner: string, agentId: string): Promise<void> {
+  if (!sql || !(await ensureTable())) return;
+  await sql`
+    update builder_hosting set agents = array_append(agents, ${agentId}), updated_at = now()
+    where owner = ${owner.toLowerCase()} and not (${agentId} = any(agents))
+  `;
+}
+
+export async function setApiKey(owner: string, apiKey: string): Promise<BuilderHosting | null> {
+  if (!sql || !(await ensureTable())) return null;
+  const o = owner.toLowerCase();
+  await sql`
+    update builder_hosting set createos_api_key = ${apiKey}, updated_at = now()
+    where owner = ${o}
+  `;
+  return getHosting(o);
+}
+
 export async function topUpCredits(owner: string, amountUsd: number): Promise<BuilderHosting | null> {
   if (!sql || !(await ensureTable())) return null;
   const o = owner.toLowerCase();
   const existing = await getHosting(o);
   if (!existing) return null;
-  await sql`
-    update builder_hosting set credits = credits + ${amountUsd}, updated_at = now()
-    where owner = ${o}
-  `;
+  await sql`update builder_hosting set credits = credits + ${amountUsd}, updated_at = now() where owner = ${o}`;
   return getHosting(o);
 }
 
@@ -128,10 +147,6 @@ export async function changePlan(owner: string, tier: BuilderHosting["tier"], co
   if (h.credits < costUsd) return { ok: false, reason: "insufficient credits", hosting: h };
   if (!sql || !(await ensureTable())) return { ok: false, reason: "store unavailable", hosting: h };
   const o = owner.toLowerCase();
-  await sql`
-    update builder_hosting set tier = ${tier}, credits = credits - ${costUsd}, updated_at = now()
-    where owner = ${o}
-  `;
-  const updated = await getHosting(o);
-  return { ok: true, hosting: updated };
+  await sql`update builder_hosting set tier = ${tier}, credits = credits - ${costUsd}, updated_at = now() where owner = ${o}`;
+  return { ok: true, hosting: await getHosting(o) };
 }
