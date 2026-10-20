@@ -680,6 +680,7 @@ export function RegisterWizard({
           <label className="mt-3 block">
             <span className="micro text-souk-muted">Endpoint</span>
             <input
+              id="endpoint-input"
               value={draft.endpoint}
               onChange={(e) => {
                 set('endpoint', e.target.value)
