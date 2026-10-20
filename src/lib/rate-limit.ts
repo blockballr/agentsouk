@@ -77,7 +77,11 @@ function ensureTable(sql: Sql, table: string): Promise<boolean> {
         );
       `);
       return true;
-    } catch {
+    } catch (e) {
+      console.error(
+        `[rate] could not create ${table}:`,
+        e instanceof Error ? e.message : String(e),
+      );
       tableReady.delete(table);
       return false;
     }
@@ -215,7 +219,11 @@ export async function enforceRateLimit(
       const result = await hitPostgres(sql, policy, key);
       if (!result.allowed) return result;
       if (result.remaining < tightest.remaining) tightest = result;
-    } catch {
+    } catch (e) {
+      console.error(
+        `[rate] could not count ${table}:`,
+        e instanceof Error ? e.message : String(e),
+      );
       const result = hitMemory(policy, key);
       if (!result.allowed) return result;
       if (result.remaining < tightest.remaining) tightest = result;

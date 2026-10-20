@@ -83,7 +83,11 @@ async function ensureTable(sql: Sql): Promise<boolean> {
             )
           `;
           return true;
-        } catch {
+        } catch (e) {
+          console.error(
+            "[claims] could not create listing_claims:",
+            e instanceof Error ? e.message : String(e),
+          );
           tableReady = null;
           if (attempt === 0) await new Promise((r) => setTimeout(r, 2000));
         }
