@@ -540,6 +540,57 @@ export async function previewA2a(endpoint: string, wantedSkillId?: string): Prom
   const resolved = await resolveA2a(endpoint);
   if ("error" in resolved) return { ok: false, error: resolved.error };
   const call = pickPreviewCall(resolved.skills, wantedSkillId);
+  // job sellers gate direct calls: try negotiate with a sample task so the
+  // preview shows a real quote instead of failing
+  const skills = resolved.skills;
+  const isJobSeller = skills.some((s) => {
+    const id = (s.id ?? s.name ?? "").toLowerCase();
+    return id.startsWith("negotiate");
+  });
+  const workSkills = skills.filter((s) => {
+    const id = (s.id ?? s.name ?? "").toLowerCase();
+    return !id.startsWith("negotiate") && !id.startsWith("notify_funded");
+  });
+  if (isJobSeller && workSkills.length === 0) {
+    // call negotiate directly, bypassing the job-seller gate, to show a real quote
+    const send = await postRpc(resolved.messagingUrl, {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'message/send',
+      params: {
+        message: {
+          role: 'user',
+          kind: 'message',
+          messageId: `preview-${Date.now()}`,
+          parts: [
+            { kind: 'text', text: 'a quick preview of what this agent can do' },
+            { kind: 'data', data: { skill: 'negotiate', task_description: 'a quick preview of what this agent can do', terms: { deliverables: 'a short answer', quality_standards: 'correct and concise' } } },
+          ],
+        },
+      },
+    })
+    if (send.body?.result) {
+      const extracted = extractA2aDeliverable(send.body.result)
+      if (extracted.text && extracted.text !== 'The agent answered without a usable result.') {
+        return { ok: true, text: extracted.text, skillId: 'negotiate', skillName: 'Negotiate (quote)' }
+      }
+      const result = send.body.result as Record<string, unknown>
+      const task = (isRecord(result.task) ? result.task : result) as Record<string, unknown>
+      const artifacts = Array.isArray(task.artifacts) ? task.artifacts : (Array.isArray(result.artifacts) ? result.artifacts : [])
+      for (const artifact of artifacts) {
+        if (!isRecord(artifact) || !Array.isArray(artifact.parts)) continue
+        for (const part of artifact.parts) {
+          if (isRecord(part) && isRecord(part.data)) {
+            const d = part.data
+            if (d.status === 'quoted' || typeof d.price === 'string' || typeof d.price === 'number') {
+              return { ok: true, text: `Quote: ${d.price} (valid until ${new Date(Number(d.valid_until ?? 0) * 1000).toISOString()})`, skillId: 'negotiate', skillName: 'Negotiate (quote)' }
+            }
+          }
+        }
+      }
+    }
+    return { ok: false, error: 'The agent did not answer.' }
+  }
   const outcome = await a2aTalk(resolved.messagingUrl, call?.task ?? "preview", call?.input);
   return {
     ok: outcome.ok,
