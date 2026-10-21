@@ -1,5 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// The marketing site stays on the apex and serves one page: the homepage.
+// Everything else lives in the app, with docs and the station on their own
+// hosts. The apex keeps /api, because api.agentsouk.xyz is the same deployment
+// and an old link should still reach the API.
+const SITE_HOSTS = new Set(["agentsouk.xyz", "www.agentsouk.xyz"]);
+const APP_ORIGIN = "https://app.agentsouk.xyz";
+const DOCS_ORIGIN = "https://docs.agentsouk.xyz";
+const STATION_ORIGIN = "https://station.agentsouk.xyz";
+
+// files the browser or a crawler asks for by path, and Next's own assets;
+// redirecting these would break the homepage it is meant to keep
+const ASSET_PATH = /^\/(?:_next\/|brand\/|.*\.(?:png|jpe?g|gif|svg|webp|ico|css|js|mjs|json|txt|xml|woff2?|ttf|map)$)/i;
+const API_PATH = /^\/api(?:\/|$)/;
+
+function movedTo(req: NextRequest, origin: string, path: string): NextResponse {
+  return NextResponse.redirect(new URL(path + req.nextUrl.search, origin), 308);
+}
+
 // apps/web is deployed separately and calls /api cross-origin
 // WEB_ORIGIN is a comma-separated allowlist; the wildcard only when unset
 // the response echoes the request origin so credentials stay impossible and
@@ -9,6 +27,7 @@ import { NextRequest, NextResponse } from "next/server";
 const SITE_ORIGINS = [
   "https://agentsouk.xyz",
   "https://www.agentsouk.xyz",
+  "https://app.agentsouk.xyz",
   "https://agentsouk.pages.dev",
   "https://station.agentsouk.xyz",
   "https://docs.agentsouk.xyz",
@@ -19,7 +38,7 @@ const SITE_ORIGINS = [
 const PAGES_PREVIEW = /^https:\/\/[a-z0-9-]+\.agentsouk\.pages\.dev$/;
 
 const ALLOWED = [
-  ...(process.env.WEB_ORIGIN ?? "*").split(","),
+  ...(process.env.WEB_ORIGIN ? process.env.WEB_ORIGIN.split(",") : []),
   ...SITE_ORIGINS,
 ]
   .map((o) => o.trim())
@@ -32,8 +51,23 @@ const BOT_UA = /bot|crawl|spider|scan|slurp|fetcher|httpclient|python-requests|c
 const PROBE_PATH = /\/\.well-known\/|\/agent\.json|\/agent-provider\.json/i;
 
 export function proxy(req: NextRequest) {
-  const ua = req.headers.get("user-agent") ?? "";
+  const host = (req.headers.get("host") ?? "").split(":")[0].toLowerCase();
   const path = req.nextUrl.pathname;
+
+  // the apex is the homepage and nothing else
+  if (SITE_HOSTS.has(host) && path !== "/" && !API_PATH.test(path) && !ASSET_PATH.test(path)) {
+    if (path === "/docs" || path.startsWith("/docs/")) {
+      return movedTo(req, DOCS_ORIGIN, path.slice("/docs".length) || "/");
+    }
+    if (path === "/station" || path.startsWith("/station/")) {
+      return movedTo(req, STATION_ORIGIN, path.slice("/station".length) || "/");
+    }
+    return movedTo(req, APP_ORIGIN, path);
+  }
+
+  if (!API_PATH.test(path)) return NextResponse.next();
+
+  const ua = req.headers.get("user-agent") ?? "";
   if (BOT_UA.test(ua) && PROBE_PATH.test(path)) {
     return new NextResponse(null, { status: 404 });
   }
@@ -65,5 +99,5 @@ export function corsHeaders(allow: string | null): Record<string, string> {
 }
 
 export const config = {
-  matcher: "/api/:path*",
+  matcher: "/((?!_next/static|_next/image).*)",
 };

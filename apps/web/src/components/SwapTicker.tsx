@@ -466,7 +466,7 @@ export function SwapTicker() {
               View transaction
             </a>
           )}
-          <p className="mt-2 text-[10px] leading-4 text-souk-muted">
+          <p className="mt-2 whitespace-normal break-words text-[10px] leading-4 text-souk-muted">
             BNB, WBNB, USDT and $U, routed through PancakeSwap v3. Network fee is paid in BNB.
           </p>
         </motion.div>

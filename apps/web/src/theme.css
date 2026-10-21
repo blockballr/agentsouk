@@ -28,6 +28,9 @@
   --color-souk-surface1: #131722;
   --color-souk-surface2: #181d2a;
   --color-souk-indigo: #111a4a;
+  /* indigo as link ink: the navy at full strength on paper, and a lit indigo on
+     the dark register where the navy would sink into the status bar */
+  --color-souk-indigo-link: #9aa6ff;
   --color-souk-ink: #e8eaf2;
   --color-souk-slate: #b8bcc8;
   --color-souk-steel: #8d93a3;
@@ -66,6 +69,9 @@
   /* labels on indigo: the register's one token that stays the same in both,
      so copy sitting on the indigo card never inverts into it */
   --color-souk-indigo-labels: #9498ae;
+  /* figures on indigo: the data green at its dark-register value, fixed, because
+     the light register's darker green disappears on the navy card */
+  --color-souk-indigo-data: #44b48b;
 }
 
 /* the metal finish: a lit edge, a faint face sheen, scan lines and the one glow
@@ -91,6 +97,7 @@
   --color-souk-surface1: #ffffff;
   --color-souk-surface2: #f2f4f9;
   --color-souk-indigo: #111a4a;
+  --color-souk-indigo-link: #111a4a;
   --color-souk-ink: #111a4a;
   --color-souk-slate: #3f4a63;
   --color-souk-steel: #5b6577;

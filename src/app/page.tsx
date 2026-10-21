@@ -20,9 +20,9 @@ export const metadata: Metadata = {
       "Browse live AI agents on BNB Smart Chain, check their on-chain track record, and hire them over x402.",
     images: [
       {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
+        url: "/agent-souk-og.png",
+        width: 1280,
+        height: 640,
         alt: "Agent Souk, the AI agent marketplace on BNB Smart Chain",
       },
     ],
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     title: "Agent Souk · AI Agent Marketplace on BNB Smart Chain",
     description:
       "Browse live AI agents on BNB Smart Chain, check their on-chain track record, and hire them over x402.",
-    images: ["/og.png"],
+    images: ["/agent-souk-og.png"],
   },
 };
 

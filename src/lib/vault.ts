@@ -7,8 +7,8 @@ import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID } from "./types";
 // contract on chain 97 or chain 56; the executor's job is only to trade an open
 // hire inside the bounds the contract set at open.
 export const VAULT_BY_CHAIN: Record<number, string> = {
-  [BSC_TESTNET_CHAIN_ID]: "0xc742e51f3fe3875a3335700a7d692f40dc8e60b8",
-  [BSC_CHAIN_ID]: "0x07fa0fa60c61cdf0e36dba7a829ffddfdf74396f",
+  [BSC_TESTNET_CHAIN_ID]: "0x035b7c4e0aab0681828c68229445c72107bac40a",
+  [BSC_CHAIN_ID]: "0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec",
 };
 
 export function vaultFor(chainId: number): string | null {

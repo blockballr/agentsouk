@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { loadDelistedRows } from "@/lib/delist-store";
 import { isEmptyEdit } from "@/lib/listing-edit";
 import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
-import { queryAgents } from "@/lib/scanner";
+import { fetchAgentDetail, queryAgents } from "@/lib/scanner";
 import { targetChainId } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
 import { loadStaleTokens } from "@/lib/verifications-store";
@@ -11,6 +11,25 @@ export const dynamic = "force-dynamic";
 
 function sameAddr(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
+}
+
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  async function worker(): Promise<void> {
+    while (next < items.length) {
+      const index = next++;
+      out[index] = await fn(items[index]);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker()),
+  );
+  return out;
 }
 
 export async function GET(req: NextRequest) {
@@ -35,9 +54,20 @@ export async function GET(req: NextRequest) {
   );
   // what the owner has changed about each listing, so the edit form opens with it
   const edits = await loadListingEdits();
-  const agents = catalogue.items
-    .filter((a) => sameAddr(a.owner_address, owner))
-    .map((a) => ({
+  const owned = catalogue.items.filter((a) => sameAddr(a.owner_address, owner));
+  // The list payload carries no receiving wallet. Read the detail record for
+  // the owner's own listings, bounded so a large seller does not fan out a
+  // request per listing at once. A failed detail read leaves the payee null;
+  // the board then reads only the owner wallet rather than guessing a payee.
+  const agents = await mapLimit(owned, 6, async (a) => {
+    let agentWallet: string | null = null;
+    try {
+      const detail = await fetchAgentDetail(a.chain_id, a.token_id);
+      agentWallet = detail?.agent_wallet ?? null;
+    } catch {
+      agentWallet = null;
+    }
+    return {
       chainId: a.chain_id,
       tokenId: a.token_id,
       agentId: a.agent_id,
@@ -45,6 +75,7 @@ export async function GET(req: NextRequest) {
       category: a.category ?? "general",
       contractAddress: a.contract_address,
       ownerAddress: a.owner_address,
+      agentWallet,
       description: a.description ?? null,
       imageUrl: a.image_url ?? null,
       listing: ((e) => (e && !isEmptyEdit(e) ? e : null))(edits.get(editKey(a.chain_id, a.token_id))),
@@ -61,7 +92,8 @@ export async function GET(req: NextRequest) {
             at: delisted.get(a.token_id)?.delistedAt ?? null,
           }
         : null,
-    }));
+    };
+  });
   const categories: Record<string, number> = {};
   for (const a of agents) {
     const key = String(a.category);

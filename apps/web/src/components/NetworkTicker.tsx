@@ -3,7 +3,10 @@ import { latestQuestProgress, questModeFor, requiredDone } from '../lib/quest'
 import { sessionAccount } from '../lib/wallet-session'
 import { SwapTicker } from './SwapTicker'
 import { ThemeToggle } from './ThemeToggle'
+import { LanguagePicker } from './LanguagePicker'
 import { SupportButton } from './SupportButton'
+import { IconDocs } from './souk'
+import { useI18n } from '../lib/i18n'
 
 // Persistent network ticker: swap + price + TPS + extensible metrics.
 // Self-contained polling, no provider needed, so it never flickers on route change.
@@ -45,28 +48,31 @@ export function NetworkTicker({
   extraMetrics = [],
   className = '',
 }: NetworkTickerProps) {
+  const { t } = useI18n()
   const [price, setPrice] = useState<number | null>(null)
   const [tps, setTps] = useState<number | null>(null)
   const [questMinimized, setQuestMinimized] = useState<boolean>(() => {
     try { return localStorage.getItem('agentsouk.quest.minimized') === '1' } catch { return false }
   })
-  const [questLabel, setQuestLabel] = useState<string>('Start Quest')
+  const [quest, setQuest] = useState<{ kind: 'start' } | { kind: 'resume'; done: number | null }>({
+    kind: 'start',
+  })
 
   async function refreshQuestLabel() {
     try {
       const wallet = await sessionAccount().catch(() => null)
-      if (!wallet) { setQuestLabel('Start Quest'); return }
+      if (!wallet) { setQuest({ kind: 'start' }); return }
       const mode = questModeFor(wallet)
       if (mode === 'active' || mode === 'quit') {
         const cached = latestQuestProgress()
         const progress = cached && cached.wallet?.toLowerCase() === wallet.toLowerCase() ? cached : null
         const done = requiredDone(progress)
-        setQuestLabel(done > 0 ? `Resume Quest ${done}/3` : 'Resume Quest')
+        setQuest({ kind: 'resume', done: done > 0 ? done : null })
       } else {
-        setQuestLabel('Start Quest')
+        setQuest({ kind: 'start' })
       }
     } catch {
-      setQuestLabel('Start Quest')
+      setQuest({ kind: 'start' })
     }
   }
   // rolling window of recent blocks for a real TPS reading
@@ -177,7 +183,7 @@ export function NetworkTicker({
       className={`w-full border-t border-souk-hair bg-souk-surface1 ${className}`}
       style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
     >
-      <div className="flex items-center gap-4 px-4 py-1.5 text-[0.75rem]">
+      <div className="flex items-center gap-4 px-4 py-1.5 text-[0.75rem] whitespace-nowrap">
         <SwapTicker />
 
         {questMinimized && (
@@ -191,13 +197,17 @@ export function NetworkTicker({
             }}
             className="rounded-[5px] border border-souk-data/40 px-2 py-1 text-[0.7rem] font-semibold text-souk-data transition hover:bg-souk-data/10"
           >
-            {questLabel}
+            {quest.kind === 'start'
+              ? t('ticker.startQuest')
+              : quest.done
+                ? t('ticker.resumeQuestCount', { done: quest.done })
+                : t('ticker.resumeQuest')}
           </button>
         )}
 
         <span className="ml-auto flex items-center gap-4">
           {/* price widget */}
-          <span className="flex items-center gap-1.5">
+          <span className="hidden items-center gap-1.5 sm:flex">
             <span className="text-souk-muted">BNB/$U</span>
             <span className="flex items-center gap-1">
               <span
@@ -212,26 +222,41 @@ export function NetworkTicker({
             </span>
           </span>
 
-          <span className="text-souk-muted">|</span>
-
           {/* tps widget */}
-          <span className="flex items-center gap-1.5">
+          <span className="hidden items-center gap-1.5 md:flex">
             <span className="text-souk-muted">TPS:</span>
             <span className="text-souk-ink font-semibold">{tps !== null ? tps.toLocaleString() : '-'}</span>
           </span>
 
           {/* extensible metrics */}
-          {extraMetrics.map((m, i) => (
-            <span key={i} className="flex items-center gap-1.5">
-              <span className="text-souk-muted">{m.label}:</span>
-              <span className="text-souk-ink font-semibold">{m.value}</span>
-            </span>
-          ))}
+          <span className="hidden items-center gap-3 lg:flex">
+            {extraMetrics.map((m, i) => (
+              <span key={i} className="flex items-center gap-1.5">
+                <span className="text-souk-muted">{m.label}:</span>
+                <span className="text-souk-ink font-semibold">{m.value}</span>
+              </span>
+            ))}
+          </span>
 
           <span className="text-souk-muted">|</span>
-          <ThemeToggle />
-          <span className="text-souk-muted">|</span>
-          <SupportButton plain iconFirst />
+          <span className="flex items-center gap-2">
+            <LanguagePicker />
+            <ThemeToggle />
+          </span>
+          <span className="hidden text-souk-muted sm:inline">|</span>
+          <a
+            href="https://docs.agentsouk.xyz"
+            target="_blank"
+            rel="noreferrer"
+            className="hidden items-center gap-1.5 sm:flex text-souk-indigo-link transition hover:text-souk-ink"
+          >
+            <IconDocs />
+            {t('ticker.docs')}
+          </a>
+          <span className="hidden text-souk-muted sm:inline">|</span>
+          <span className="hidden sm:flex">
+            <SupportButton plain iconFirst />
+          </span>
         </span>
       </div>
     </div>

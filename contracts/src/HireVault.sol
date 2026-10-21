@@ -335,6 +335,8 @@ contract HireVault {
         if (!h.open) revert NotOpen();
         address pool = IV3Factory(factory).getPool(tokenA, tokenB, h.fee);
         if (pool == address(0)) revert NoPool();
+        // a zero goal would always close the hire, so refuse it
+        if (goalValueInToken0 == 0) revert GoalNotMet();
         uint256 value = _valueInToken0(h, pool);
         if (value < goalValueInToken0) revert GoalNotMet();
         uint256 a = h.balanceA;
