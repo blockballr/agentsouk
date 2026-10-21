@@ -18,17 +18,13 @@ export function FreePreview({ endpoint, skills }: FreePreviewProps) {
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // pick the first work skill (not a job-protocol step) that has an example,
-  // or the negotiate skill for job sellers
+  // A preview only runs a skill the card itself worked out an example for. If an
+  // agent declares inputs but no example, guessing them is worse than showing no
+  // panel: the answer would be the marketplace's invention, not the agent's.
   const previewSkill = skills.find((s) => {
     const id = (s.id ?? s.name ?? '').toLowerCase()
-    return !id.startsWith('negotiate') && !id.startsWith('notify_funded') && (s.examples?.length ?? 0) > 0
-  }) ?? skills.find((s) => {
-    const id = (s.id ?? s.name ?? '').toLowerCase()
-    return !id.startsWith('negotiate') && !id.startsWith('notify_funded')
-  }) ?? skills.find((s) => {
-    const id = (s.id ?? s.name ?? '').toLowerCase()
-    return id.startsWith('negotiate')
+    if (id.startsWith('negotiate') || id.startsWith('notify_funded')) return false
+    return (s.examples?.length ?? 0) > 0 || (s.inputSchema?.examples?.length ?? 0) > 0
   })
 
   if (!previewSkill || !endpoint) return null

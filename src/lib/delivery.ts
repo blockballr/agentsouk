@@ -513,11 +513,13 @@ export function pickPreviewCall(skills: AgentCardSkill[], wantedSkillId?: string
   const wanted = wantedSkillId
     ? work.find((s) => (s.id ?? s.name ?? "").toLowerCase() === wantedSkillId.toLowerCase())
     : undefined;
+  // only a skill the card worked out an example for can be previewed: guessing
+  // an input would present the marketplace's sample as the agent's answer
   const chosen =
     wanted ??
     work.find((s) => (s.inputSchema?.examples?.length ?? 0) > 0) ??
-    work.find((s) => (s.examples?.length ?? 0) > 0) ??
-    work[0];
+    work.find((s) => (s.examples?.length ?? 0) > 0);
+  if (!chosen) return null;
   const input = chosen.inputSchema?.examples?.[0];
   const task = chosen.examples?.[0] ?? chosen.description ?? chosen.name ?? chosen.id ?? "preview";
   return { skillId: chosen.id, skillName: chosen.name, task, input };
