@@ -1,14 +1,15 @@
-// The gate a new browser session passes before the app renders on the app,
-// docs and station hosts. It is a Turnstile check, verified server-side, and
-// the pass is kept in sessionStorage so reloads inside the same session do not
-// ask again. Each host is its own origin, so each asks once. Local development
-// is not gated unless the URL carries ?gate.
+// The gate a new browser session passes before the app renders on the app and
+// station hosts. It is a Turnstile check, verified server-side, and the pass is
+// kept in sessionStorage so reloads inside the same session do not ask again.
+// Docs is deliberately ungated: it is public documentation and agents must be
+// able to read it without running a browser challenge. Local development is not
+// gated unless the URL carries ?gate.
 import { useCallback, useState } from 'react'
 import { TURNSTILE_ENABLED, Turnstile } from './Turnstile'
 import { verifyTurnstile } from '../lib/api'
 
 const PASS_KEY = 'agentsouk.gate.passed'
-const GATE_HOSTS = new Set(['app.agentsouk.xyz', 'docs.agentsouk.xyz', 'station.agentsouk.xyz'])
+const GATE_HOSTS = new Set(['app.agentsouk.xyz', 'station.agentsouk.xyz'])
 
 // storage can throw when a browser blocks it; a blocked store simply means the
 // check runs again rather than the app failing to mount
