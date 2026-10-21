@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     );
   }
   const bearer = /^Bearer\s+(.+)$/i.exec(req.headers.get("authorization") ?? "")?.[1]?.trim();
-  const secret = bearer || req.nextUrl.searchParams.get("secret");
+  const secret = bearer;
   if (!secret || secret !== configured) {
     return NextResponse.json({ success: false, error: "bad secret" }, { status: 401 });
   }

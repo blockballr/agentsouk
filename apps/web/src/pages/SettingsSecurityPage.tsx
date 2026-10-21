@@ -1,10 +1,78 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { NoteBox, Row, SectionHead, Stack, Txt } from '../components/souk'
+import { useActiveAccount } from '../lib/use-active-account'
+import { getProvider } from '../lib/wallet'
+import { NoteBox, SectionHead, Stack, Txt } from '../components/souk'
 
-// Multifactor is off, and it stays off until there is a sign-in service that can
-// verify a code or a passkey. A switch that flips without an enrolment behind it
-// would claim protection the account does not have.
+const API = import.meta.env.VITE_API_URL ?? '/api'
+
 export function SettingsSecurityPage() {
+  const wallet = useActiveAccount()
+  const [enrolled, setEnrolled] = useState(false)
+  const [qr, setQr] = useState<string | null>(null)
+  const [secret, setSecret] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  async function enrol() {
+    if (!wallet) return
+    setBusy(true)
+    setError(null)
+    try {
+      const message = `Enrol MFA for ${wallet.toLowerCase()} at ${Date.now()}`
+      const provider = await getProvider()
+      const signature = await provider.request({
+        method: 'personal_sign',
+        params: [message, wallet],
+      })
+      const res = await fetch(`${API}/mfa/enrol`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet, message, signature }),
+      })
+      const data = await res.json()
+      if (!data?.success) throw new Error(data?.error ?? 'enrol failed')
+      setSecret(data.secret)
+      setQr(data.qrDataUrl)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'enrol failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function verify() {
+    if (!wallet || !code) return
+    setBusy(true)
+    setError(null)
+    try {
+      const message = `Verify MFA for ${wallet.toLowerCase()} at ${Date.now()}`
+      const provider = await getProvider()
+      const signature = await provider.request({
+        method: 'personal_sign',
+        params: [message, wallet],
+      })
+      const res = await fetch(`${API}/mfa/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet, code, message, signature }),
+      })
+      const data = await res.json()
+      if (!data?.success) throw new Error(data?.error ?? 'invalid code')
+      setSuccess(true)
+      setEnrolled(true)
+      setQr(null)
+      setSecret(null)
+      setCode('')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'invalid code')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <Stack gap={20} className="mx-auto max-w-[760px] pt-8">
       <Link
@@ -15,65 +83,75 @@ export function SettingsSecurityPage() {
       </Link>
       <SectionHead title="Security" note="MULTIFACTOR" />
 
-      <NoteBox
-        title="Off, and not enforced yet"
-        copy="Agent Souk signs with the wallet itself. A second factor needs a sign-in service to enrol and verify it, so these controls are shown off until that service is connected. Nothing here is pretending to protect the account."
-      />
+      {!wallet ? (
+        <NoteBox title="Connect a wallet" copy="Connect your wallet to manage multifactor authentication." />
+      ) : (
+        <>
+          <NoteBox
+            title={enrolled ? 'Enabled' : 'Off, not enforced yet'}
+            copy={
+              enrolled
+                ? 'A second factor is enrolled for this wallet. Codes are verified on every sensitive action.'
+                : 'Agent Souk signs with the wallet itself. Enrol an authenticator app to add a second factor.'
+            }
+          />
 
-      <Stack surface radius={16} className="overflow-hidden">
-        <FactorRow
-          title="Authenticator app"
-          copy="A six-digit code from an app such as 1Password or Authy."
-        />
-        <FactorRow
-          title="Passkey"
-          copy="Sign in with your device's biometrics."
-          last
-        />
-      </Stack>
+          {!enrolled && !qr && (
+            <button
+              type="button"
+              onClick={enrol}
+              disabled={busy}
+              className="rounded-[8px] bg-souk-data px-5 py-3 text-souk-canvas transition hover:brightness-95 disabled:opacity-40"
+            >
+              {busy ? 'Enrolling...' : 'Enrol authenticator app'}
+            </button>
+          )}
+
+          {qr && (
+            <Stack gap={12} surface pad={[20, 20, 20, 20]}>
+              <img src={qr} alt="TOTP QR code" className="mx-auto h-48 w-48" />
+              {secret && (
+                <div className="flex items-center gap-2">
+                  <Txt size={11} lead={16} mono tone="muted" className="flex-1 text-center break-all">
+                    {secret}
+                  </Txt>
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(secret)}
+                    className="shrink-0 rounded-[6px] border border-souk-hair px-2 py-1 text-[10px] font-bold uppercase text-souk-steel transition hover:text-souk-ink"
+                  >
+                    Copy
+                  </button>
+                </div>
+              )}
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="6-digit code"
+                className="w-full rounded-[8px] border border-souk-hair bg-souk-surface1 px-4 py-3 text-center font-mono text-lg tracking-widest"
+              />
+              <button
+                type="button"
+                onClick={verify}
+                disabled={busy || code.length !== 6}
+                className="rounded-[8px] bg-souk-data px-5 py-3 text-souk-canvas transition hover:brightness-95 disabled:opacity-40"
+              >
+                {busy ? 'Verifying...' : 'Verify and enable'}
+              </button>
+              {error && <Txt size={12} lead={18} tone="muted">{error}</Txt>}
+            </Stack>
+          )}
+
+          {success && (
+            <Txt size={12} lead={18} tone="ink">
+              Multifactor authentication enabled.
+            </Txt>
+          )}
+        </>
+      )}
     </Stack>
-  )
-}
-
-function FactorRow({
-  title,
-  copy,
-  last,
-}: {
-  title: string
-  copy: string
-  last?: boolean
-}) {
-  return (
-    <Row
-      justify="between"
-      align="center"
-      gap={16}
-      className={`min-h-[72px] px-5 py-3 ${last ? '' : 'border-b border-souk-hair'}`}
-    >
-      <Stack gap={2}>
-        <Txt size={13} lead={20} weight="semibold" tone="ink">
-          {title}
-        </Txt>
-        <Txt size={11} lead={16} tone="muted">
-          {copy}
-        </Txt>
-      </Stack>
-      <Row align="center" gap={8} className="shrink-0">
-        <Txt size={10} lead={14} weight="bold" upper tone="muted">
-          Off
-        </Txt>
-        <span
-          role="switch"
-          aria-checked="false"
-          aria-disabled="true"
-          aria-label={`${title}, off, not available yet`}
-          title="Not available yet"
-          className="relative inline-flex h-[24px] w-[42px] cursor-not-allowed items-center rounded-full border border-souk-hair bg-souk-surface2 px-[3px] opacity-60"
-        >
-          <span className="h-[16px] w-[16px] rounded-full bg-souk-muted" />
-        </span>
-      </Row>
-    </Row>
   )
 }

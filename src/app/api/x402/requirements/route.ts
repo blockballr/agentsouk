@@ -28,7 +28,7 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 // read the price the agent itself asks for, from its published x402 requirements
 // endpoint. returns null when the agent has no such endpoint, the fetch fails, or
 // the response carries no usable amount. token mismatch is handled by the caller.
-async function fetchAgentPrice(
+export async function fetchAgentPrice(
   chainId: number,
   detail: { services: unknown | null },
 ): Promise<{ priceUsd: number; asset: string } | null> {
