@@ -5,7 +5,7 @@ import { QuestNudge } from './QuestNudge'
 
 export function Layout() {
   return (
-    <div className="min-h-screen bg-souk-canvas text-souk-ink pb-9">
+    <div className="min-h-screen bg-souk-canvas text-souk-ink pb-[52px]">
       <Nav />
       <main>
         <Outlet />

@@ -611,7 +611,6 @@ export function HomePage() {
               'Standards: ERC-8004 identity, ERC-8183 jobs and x402 payment',
               'Advantage report and side-by-side comparison',
               'Browse by category across the four job types',
-              'Cart: multi-hire sequential batch checkout',
               'Registry Scout: autonomous discovery, verification, and curation',
               'Auto-update verified snapshot (nightly cron)',
               'EIP-6963 wallet picker',

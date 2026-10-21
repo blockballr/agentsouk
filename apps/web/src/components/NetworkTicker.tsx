@@ -3,6 +3,7 @@ import { latestQuestProgress, questModeFor, requiredDone } from '../lib/quest'
 import { sessionAccount } from '../lib/wallet-session'
 import { SwapTicker } from './SwapTicker'
 import { ThemeToggle } from './ThemeToggle'
+import { LanguagePicker } from './LanguagePicker'
 import { SupportButton } from './SupportButton'
 import { IconDocs } from './souk'
 import { useI18n } from '../lib/i18n'
@@ -182,7 +183,7 @@ export function NetworkTicker({
       className={`w-full border-t border-souk-hair bg-souk-surface1 ${className}`}
       style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
     >
-      <div className="flex items-center gap-4 px-4 py-1.5 text-[0.75rem]">
+      <div className="flex items-center gap-4 px-4 py-1.5 text-[0.75rem] whitespace-nowrap">
         <SwapTicker />
 
         {questMinimized && (
@@ -206,7 +207,7 @@ export function NetworkTicker({
 
         <span className="ml-auto flex items-center gap-4">
           {/* price widget */}
-          <span className="flex items-center gap-1.5">
+          <span className="hidden items-center gap-1.5 sm:flex">
             <span className="text-souk-muted">BNB/$U</span>
             <span className="flex items-center gap-1">
               <span
@@ -221,36 +222,41 @@ export function NetworkTicker({
             </span>
           </span>
 
-          <span className="text-souk-muted">|</span>
-
           {/* tps widget */}
-          <span className="flex items-center gap-1.5">
+          <span className="hidden items-center gap-1.5 md:flex">
             <span className="text-souk-muted">TPS:</span>
             <span className="text-souk-ink font-semibold">{tps !== null ? tps.toLocaleString() : '-'}</span>
           </span>
 
           {/* extensible metrics */}
-          {extraMetrics.map((m, i) => (
-            <span key={i} className="flex items-center gap-1.5">
-              <span className="text-souk-muted">{m.label}:</span>
-              <span className="text-souk-ink font-semibold">{m.value}</span>
-            </span>
-          ))}
+          <span className="hidden items-center gap-3 lg:flex">
+            {extraMetrics.map((m, i) => (
+              <span key={i} className="flex items-center gap-1.5">
+                <span className="text-souk-muted">{m.label}:</span>
+                <span className="text-souk-ink font-semibold">{m.value}</span>
+              </span>
+            ))}
+          </span>
 
           <span className="text-souk-muted">|</span>
-          <ThemeToggle />
-          <span className="text-souk-muted">|</span>
+          <span className="flex items-center gap-2">
+            <LanguagePicker />
+            <ThemeToggle />
+          </span>
+          <span className="hidden text-souk-muted sm:inline">|</span>
           <a
             href="https://docs.agentsouk.xyz"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 text-souk-indigo-link transition hover:text-souk-ink"
+            className="hidden items-center gap-1.5 sm:flex text-souk-indigo-link transition hover:text-souk-ink"
           >
             <IconDocs />
             {t('ticker.docs')}
           </a>
-          <span className="text-souk-muted">|</span>
-          <SupportButton plain iconFirst />
+          <span className="hidden text-souk-muted sm:inline">|</span>
+          <span className="hidden sm:flex">
+            <SupportButton plain iconFirst />
+          </span>
         </span>
       </div>
     </div>

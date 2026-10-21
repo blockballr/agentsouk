@@ -89,7 +89,7 @@ Tokens are in `apps/web/src/theme.css`:
 | Token | Stack | Role in the interface | Weights seen in code |
 |-------|-------|-----------------------|----------------------|
 | `--font-sans` | `"Inter Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif` | Interface and body text. `theme.css` sets `body { font-family: var(--font-sans) }`. | 200 (`font-extralight`, 18px footer and methodology paragraphs), 400 (default body), 550 (the `.micro` label). |
-| `--font-serif` | `"Fraunces Variable", ui-serif, Georgia, "Times New Roman", serif` | Headings, page display type and the wordmark. | 500 (`font-medium` page headings, e.g. `AdvantagePage.tsx`, `CartPage.tsx`), 600 (`font-semibold` on the wordmark in `Wordmark.tsx`). |
+| `--font-serif` | `"Fraunces Variable", ui-serif, Georgia, "Times New Roman", serif` | Headings, page display type and the wordmark. | 500 (`font-medium` page headings, e.g. `AdvantagePage.tsx`, `MarketplacePage.tsx`), 600 (`font-semibold` on the wordmark in `Wordmark.tsx`). |
 | `--font-times` | `"Times", "Times New Roman", serif` | Defined token. No class in `apps/web/src` references `font-times`, so it is currently unused. | None seen. |
 
 `font-mono` (Tailwind's default mono stack, no token in `theme.css`) is used for wallet
