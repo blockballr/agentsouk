@@ -21,6 +21,11 @@ const links = [
   { to: '/quest', key: 'nav.quest' },
 ]
 
+// the docs and station hosts are their own surfaces, so their primary links
+// point at the app origin instead of asking this host to render app routes
+const OFF_APP =
+  window.location.hostname === 'docs.agentsouk.xyz' || window.location.hostname === 'station.agentsouk.xyz'
+
 // the design's top bar item: upper case, and the active one is the only ink in the
 // row with a rule under it. Steel is the resting tone so the current page reads at a
 // glance rather than every item competing. The rule sits in the 5px gap the design
@@ -59,11 +64,17 @@ export function Nav() {
         <div className="flex items-center gap-[44px]">
           <Wordmark />
           <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
-            {links.map((l) => (
-              <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => itemClass(isActive)}>
-                {t(l.key)}
-              </NavLink>
-            ))}
+            {links.map((l) =>
+              OFF_APP ? (
+                <a key={l.to} href={`https://app.agentsouk.xyz${l.to}`} className={itemClass(false)}>
+                  {t(l.key)}
+                </a>
+              ) : (
+                <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => itemClass(isActive)}>
+                  {t(l.key)}
+                </NavLink>
+              ),
+            )}
             {/* the plain text links belong in this one row: a group that also holds
                 the boxed controls is taller, so its text centres against a different
                 box height and the row reads misaligned */}
@@ -112,28 +123,44 @@ export function Nav() {
       {menuOpen && (
         <div className="border-b border-souk-hair bg-souk-canvas lg:hidden">
           <nav aria-label="Mobile" className="mx-auto flex flex-col gap-1 px-4 lg:px-8 py-4">
-            {links.map((l) => (
-              <NavLink
-                key={l.to}
-                to={l.to}
-                end={l.to === '/'}
-                onClick={() => setMenuOpen(false)}
-                className={({ isActive }) =>
-                  `py-3 text-[15px] uppercase ${
-                    isActive ? 'font-semibold text-souk-ink' : 'text-souk-steel'
-                  } focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data`
-                }
-              >
-                {t(l.key)}
-              </NavLink>
-            ))}
+            {links.map((l) =>
+              OFF_APP ? (
+                <a
+                  key={l.to}
+                  href={`https://app.agentsouk.xyz${l.to}`}
+                  className="py-3 text-[15px] uppercase text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
+                >
+                  {t(l.key)}
+                </a>
+              ) : (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  end={l.to === '/'}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `py-3 text-[15px] uppercase ${
+                      isActive ? 'font-semibold text-souk-ink' : 'text-souk-steel'
+                    } focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data`
+                  }
+                >
+                  {t(l.key)}
+                </NavLink>
+              ),
+            )}
             <div className="mt-2 flex items-center gap-6 py-3">
               <ChainTag />
               {/* phones reach the account through the page; the panel is the wide bar's
                   affordance, so the mobile row links straight there */}
-              <NavLink to="/profile" onClick={() => setMenuOpen(false)} className={itemClass(false)}>
-                {t('nav.profile')}
-              </NavLink>
+              {OFF_APP ? (
+                <a href="https://app.agentsouk.xyz/seller" className={itemClass(false)}>
+                  {t('nav.profile')}
+                </a>
+              ) : (
+                <NavLink to="/profile" onClick={() => setMenuOpen(false)} className={itemClass(false)}>
+                  {t('nav.profile')}
+                </NavLink>
+              )}
               <NotificationBell />
             </div>
           </nav>
