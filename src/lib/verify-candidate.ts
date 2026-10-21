@@ -28,10 +28,17 @@ const A2A_TASK = "report your status in one sentence";
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
 // The verifier signs its own EIP-3009 authorizations, so it needs a funded buyer key.
-const RELAY_KEY = process.env.RELAY_PRIVATE_KEY as `0x${string}` | undefined;
-if (!RELAY_KEY) throw new Error("RELAY_PRIVATE_KEY is required");
+// Resolved lazily: throwing at module load breaks the Next.js build when the key is
+// only present at runtime, not while page data is collected.
+let relayWallet: ReturnType<typeof privateKeyToAccount> | null = null;
 
-const wallet = privateKeyToAccount(RELAY_KEY);
+function wallet(): ReturnType<typeof privateKeyToAccount> {
+  if (relayWallet) return relayWallet;
+  const key = process.env.RELAY_PRIVATE_KEY as `0x${string}` | undefined;
+  if (!key) throw new Error("RELAY_PRIVATE_KEY is required");
+  relayWallet = privateKeyToAccount(key);
+  return relayWallet;
+}
 
 export function baseUrl(): string {
   return process.env.VERCEL_URL
@@ -69,7 +76,7 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
     body: JSON.stringify({
       chainId: cand.chainId,
       tokenId: cand.tokenId,
-      client: wallet.address,
+      client: wallet().address,
       // a check may run on an agent that is off the market; a buyer's hire may not
       purpose: "check",
     }),
@@ -99,7 +106,7 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
   const now = Math.floor(Date.now() / 1000);
   const nonce = `0x${randomBytes(32).toString("hex")}` as `0x${string}`;
   const message = {
-    from: wallet.address,
+    from: wallet().address,
     to: payTo,
     value: BigInt(pr.amount),
     validAfter: BigInt(now - 60),
@@ -112,7 +119,7 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
     chainId: BigInt(cand.chainId),
     verifyingContract: asset,
   };
-  const signature = await wallet.signTypedData({
+  const signature = await wallet().signTypedData({
     domain,
     types: {
       EIP712Domain: [
@@ -148,7 +155,7 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
       paymentPayload: {
         x402Version: 2,
         payload: {
-          authorization: { from: wallet.address, to: pr.payTo, value: message.value.toString(), validAfter: message.validAfter.toString(), validBefore: message.validBefore.toString(), nonce, signature },
+          authorization: { from: wallet().address, to: pr.payTo, value: message.value.toString(), validAfter: message.validAfter.toString(), validBefore: message.validBefore.toString(), nonce, signature },
           resource,
         },
         resource,
