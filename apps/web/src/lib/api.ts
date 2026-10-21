@@ -744,6 +744,30 @@ export async function getHiresByWallet(wallet: string): Promise<WalletHire[]> {
 // The pairing a deposit-hire link checks: the wallet the executor trades
 // from. None when the route reports no lane; a non-ok answer throws so the
 // caller can say the pairing could not be read rather than calling it absent.
+export interface WalletActivity {
+  available: boolean
+  wallet: string
+  chainId: number
+  actions: number
+  days: number
+  lastAt: string | null
+  qualified: boolean
+  reason?: string
+}
+
+// The agent's own wallet, read against the chain. Unavailable is said plainly
+// rather than shown as zero, so a missing explorer key never reads as an agent
+// that has never acted.
+export async function getAgentActivity(
+  chainId: string,
+  tokenId: string,
+): Promise<WalletActivity | null> {
+  const res = await fetch(`${BASE}/agents/${chainId}/${tokenId}/activity`)
+  if (!res.ok) return null
+  const body = await readJsonBody<{ success?: boolean; activity?: WalletActivity }>(res, 'activity')
+  return body.activity ?? null
+}
+
 export async function getVaultExecutor(): Promise<{ kind: 'rawkey' | 'altana'; address: string } | null> {
   const res = await fetch(`${BASE}/vault/executor`)
   if (!res.ok) throw new Error(`Vault executor answered ${res.status}.`)

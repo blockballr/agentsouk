@@ -1,47 +1,17 @@
-import { formatUnits, shortAddress, timeAgo } from '@agora/core'
-import { type OwnedAgentsResult, type PayeeHire } from '../lib/api'
+import { shortAddress, timeAgo } from '@agora/core'
+import { type PayeeHire } from '../lib/api'
 import { chainLabel } from '../lib/contracts'
 import { countByDay } from '../lib/history'
 import { verdictFor } from '../lib/verdict'
-import { type Catalogue, useSellerData } from '../lib/seller-data'
+import { useSellerData } from '../lib/seller-data'
 import { EarningsPanel } from '../components/EarningsPanel'
-import { Btn, Dot, Kpi, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
+import { Btn, Dot, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
 
 const DAY = 86_400_000
 
 // a hire paid by a buyer, as opposed to our checks, the lister's own tests or a team wallet
 function isCustomer(h: PayeeHire): boolean {
   return !h.payer || h.payer === 'buyer'
-}
-
-// real settlements only, summed per chain and asset the way the profile page
-// reads them, so a sandbox receipt never counts as money and one chain's
-// decimals never join another's
-function earnedLabel(list: PayeeHire[]): string {
-  const totals = new Map<string, { symbol: string; raw: bigint; decimals: number | null; count: number }>()
-  for (const h of list) {
-    if (h.mode === 'sandbox') continue
-    let raw: bigint
-    try {
-      raw = BigInt(h.amount)
-    } catch {
-      // an unreadable amount is left out rather than guessed
-      continue
-    }
-    const key = `${h.chainId}:${h.symbol}`
-    const entry = totals.get(key) ?? { symbol: h.symbol, raw: BigInt(0), decimals: h.decimals, count: 0 }
-    entry.raw += raw
-    entry.count += 1
-    totals.set(key, entry)
-  }
-  if (totals.size === 0) return 'nothing yet'
-  return [...totals.values()]
-    .map((e) =>
-      e.decimals === null
-        ? `${e.count} ${e.symbol} payments`
-        : `${formatUnits(e.raw, e.decimals)} ${e.symbol}`,
-    )
-    .join(' + ')
 }
 
 // count a window of customer hires by when they settled, dates that will not
@@ -55,44 +25,17 @@ function countWindow(list: PayeeHire[], fromMs: number, toMs: number): number {
   return n
 }
 
-// the newest check any of the wallet's own listings carries: the only sweep
-// clock a client read can prove, since the cron staleness route is secret gated
-function latestCheckedAt(owned: OwnedAgentsResult | null): string | null {
-  let latest: number | null = null
-  for (const a of owned?.agents ?? []) {
-    if (a.delisted || !a.verification) continue
-    const t = Date.parse(a.verification.checkedAt)
-    if (Number.isFinite(t) && (latest === null || t > latest)) latest = t
-  }
-  return latest === null ? null : new Date(latest).toISOString()
-}
-
-// the freshest time the catalogue tool names: the store's refresh when it
-// claims one, else the snapshot or the top-up, so a date is never older than
-// the source the server actually attests
-function catalogueFreshness(cat: Catalogue | null): string | null {
-  const stamps: number[] = []
-  const push = (iso: string | number | null | undefined) => {
-    if (iso === null || iso === undefined) return
-    const t = typeof iso === 'number' ? iso : Date.parse(iso)
-    if (Number.isFinite(t)) stamps.push(t)
-  }
-  push(cat?.indexStatus.catalogueRefreshedAt)
-  push(cat?.snapshotTime)
-  push(cat?.lastTopUpAt)
-  return stamps.length === 0 ? null : new Date(Math.max(...stamps)).toISOString()
-}
-
 export function SellerBoardSection() {
   // the seller's wallet and every read behind the three boards, loaded once by
   // the console and shared here
-  const { account, owned, hires, hiresSource, catalogue, views, loading, ready, error, reload } =
+  const { account, owned, hires, hiresSource, catalogue, loading, ready, error, reload } =
     useSellerData()
 
   const customers = (hires ?? []).filter(isCustomer)
   const now = Date.now()
   const recent = countWindow(customers, now - 14 * DAY, now + DAY)
   const previous = countWindow(customers, now - 28 * DAY, now - 14 * DAY)
+
   // only a failed last check makes the quiet list: delivered and gated listings
   // still answer the board, and off market ones already carry their own flag
   const runners = (owned?.agents ?? [])
@@ -105,44 +48,22 @@ export function SellerBoardSection() {
       Date.parse(b.verification?.checkedAt ?? '') - Date.parse(a.verification?.checkedAt ?? ''),
     )
   const chainId = catalogue?.chainId ?? owned?.chainId ?? null
-  const checkedAt = latestCheckedAt(ready ? owned : null)
-  const catFresh = catalogueFreshness(ready ? catalogue : null)
+  // the chart starts on the day the seller's first listing was minted, whether
+  // that listing came through the wizard or the builder
+  const firstListedAt =
+    (owned?.agents ?? [])
+      .map((a) => a.createdAt)
+      .filter((t): t is string => Boolean(t))
+      .sort((a, b) => Date.parse(a) - Date.parse(b))[0] ?? null
 
   const kicker = [
-    'seller / board',
+    'seller / portfolio',
     account ? `wallet ${shortAddress(account)}` : null,
     chainId ? `${chainLabel(chainId).toUpperCase()} ${chainId}` : null,
   ]
     .filter((part): part is string => Boolean(part))
     .join(' · ')
 
-  const kpis: { value: string; label: string; tone: 'indigo-data' | 'white' }[] = [
-    {
-      value: hires ? earnedLabel(customers) : 'Unavailable',
-      label: 'Earned, settled only',
-      tone: customers.length === 0 ? 'white' : 'indigo-data',
-    },
-    {
-      value: `${recent}`,
-      label: 'Buyer hires, 14 days',
-      tone: recent === 0 ? 'white' : 'indigo-data',
-    },
-    {
-      value: views === null ? 'Unavailable' : `${views}`,
-      label: 'Impressions, 14 days',
-      tone: views ? 'indigo-data' : 'white',
-    },
-    {
-      value: checkedAt ? timeAgo(checkedAt) : 'Unavailable',
-      label: 'Since your listings were last checked',
-      tone: 'indigo-data',
-    },
-    {
-      value: catFresh ? timeAgo(catFresh) : 'Unavailable',
-      label: 'Catalogue refreshed',
-      tone: 'indigo-data',
-    },
-  ]
 
   return (
     <section id="board" className="scroll-mt-24 text-souk-ink">
@@ -152,7 +73,7 @@ export function SellerBoardSection() {
         </Txt>
         <h1 className="m-0">
           <Txt size={34} lead={42} display weight="bold" tone="ink">
-            Your board.
+            Portfolio.
           </Txt>
         </h1>
       </Stack>
@@ -173,11 +94,10 @@ export function SellerBoardSection() {
 
       {account && ready && !loading && (
         <>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
-            {kpis.map((k) => (
-              <Kpi key={k.label} value={k.value} label={k.label} tone={k.tone} />
-            ))}
+          <div className="mt-6">
+            <EarningsPanel hires={hires} chainId={chainId} listedAt={firstListedAt} />
           </div>
+
 
           {hiresSource === 'memory' && (
             <Row
@@ -202,10 +122,6 @@ export function SellerBoardSection() {
               </Btn>
             </Row>
           )}
-
-          <div className="mt-5">
-            <EarningsPanel hires={hires} chainId={chainId} />
-          </div>
 
           <div className="mt-5 flex flex-wrap items-stretch gap-5">
             <Stack surface pad={[16, 16, 14, 16]} gap={10} className="min-w-[620px] flex-[3_1_680px]">
