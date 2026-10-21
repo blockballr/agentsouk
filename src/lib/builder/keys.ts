@@ -133,11 +133,19 @@ export async function builtSellerConfig(agentId: string, name: string, chainId: 
   const key = await loadSellerKey(agentId);
   if (!key) return null;
   const price = Number(process.env.SELLER8183_PRICE_U_BUILT ?? process.env.SELLER8183_PRICE_U ?? 2);
+  const num = (name: string, fallback: number): number => {
+    const n = Number(process.env[`${name}_BUILT`] ?? process.env[name]);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  };
   return {
     chainId,
     providerWallet: key.address,
     sellerKey: key.privateKey,
     priceUsd: Number.isFinite(price) && price > 0 ? price : 2,
+    feeBps: num("SELLER8183_FEE_BPS", 50),
+    minFeeU: num("SELLER8183_MIN_FEE_U", 1),
+    maxFeeU: num("SELLER8183_MAX_FEE_U", 50),
+    minCapitalUsd: num("SELLER8183_MIN_CAPITAL_USD", 50),
     agentId: null,
     agentName: name,
   };
