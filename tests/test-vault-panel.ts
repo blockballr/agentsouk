@@ -17,12 +17,12 @@ import {
 } from '../apps/web/src/lib/vault'
 
 const AGENT = '0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713'
-const VAULT = '0xc742e51f3fe3875a3335700a7d692f40dc8e60b8'
+const VAULT = '0x035b7c4e0aab0681828c68229445c72107bac40a'
 
 describe('the panel contracts the vault actually enforces', () => {
   it('has a vault on chain 56 and chain 97', () => {
     expect(vaultFor(97)).toBe(VAULT)
-    expect(vaultFor(56)).toBe('0xe8e8940145ee165c39b2405755d177818187730d')
+    expect(vaultFor(56)).toBe('0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec')
   })
 
   it('binds the same pair the deployment uses', () => {

@@ -1,0 +1,43 @@
+name: Vault execute
+
+# The executor is asked for through the API's own route, which fails closed and
+# answers to the bearer secret. GitHub Actions runs it because the Vercel Hobby
+# plan allows only daily crons; the repository is public, so the schedule is free.
+# The route stays in dry-run until VAULT_EXECUTE=1 is set on the API.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: vault-execute
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Ask the API to run the vault sweep
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET is not set on this repository"
+            exit 1
+          fi
+          code=$(curl -sS -o report.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --max-time 280 \
+            "https://api.agentsouk.xyz/api/vault/execute")
+          echo "http $code"
+          cat report.json
+          if [ "$code" = "503" ]; then
+            echo "the executor is not configured on this deployment; skipping"
+            exit 0
+          fi
+          if [ "$code" != "200" ]; then
+            echo "the vault sweep did not succeed"
+            exit 1
+          fi

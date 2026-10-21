@@ -31,7 +31,9 @@ export function executorWallet(): { kind: "rawkey" | "altana"; address: string }
     } catch {
       return null;
     }
-    const walletAddress = (session as { wallet?: { address?: string } })?.wallet?.address;
+    const walletAddress =
+      (session as { walletAddress?: string })?.walletAddress ??
+      (session as { wallet?: { address?: string } })?.wallet?.address;
     return typeof walletAddress === "string" && walletAddress
       ? { kind: "altana", address: walletAddress }
       : null;

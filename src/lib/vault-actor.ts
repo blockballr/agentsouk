@@ -1,10 +1,11 @@
 import "server-only";
 
-import { createWalletClient, http } from "viem";
-import { bscTestnet } from "viem/chains";
+import { createWalletClient } from "viem";
+import { bsc, bscTestnet } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
-import { BNB_TESTNET, createClient, signerFromPrivateKey, type Call } from "@altananetwork/sdk";
-import type { HireView } from "./vault";
+import { BNB, BNB_TESTNET, createClient, signerFromPrivateKey, type Call } from "@altananetwork/sdk";
+import { rpcTransport } from "./rpc";
+import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID, targetChainId } from "./types";
 
 // the custody fork. Who may initiate is the other half of the split, and the
 // executor carries it as a deployment choice rather than a code branch, so the
@@ -23,11 +24,15 @@ export interface VaultActor {
   trade(call: Call): Promise<string>;
 }
 
-function rawKeyActor(): VaultActor | null {
+function chainFor(chainId: number) {
+  return chainId === BSC_TESTNET_CHAIN_ID ? bscTestnet : bsc;
+}
+
+function rawKeyActor(chainId: number): VaultActor | null {
   const key = process.env.AGENT_EXECUTOR_KEY as `0x${string}` | undefined;
   if (!key) return null;
   const account = privateKeyToAccount(key);
-  const wallet = createWalletClient({ account, chain: bscTestnet, transport: http() });
+  const wallet = createWalletClient({ account, chain: chainFor(chainId), transport: rpcTransport(chainId) });
   return {
     kind: "rawkey",
     async address() {
@@ -40,11 +45,11 @@ function rawKeyActor(): VaultActor | null {
   };
 }
 
-function altanaActor(): VaultActor | null {
+function altanaActor(chainId: number): VaultActor | null {
   const sessionBlob = process.env.AGENT_ALTANA_SESSION;
   const sessionKey = process.env.AGENT_ALTANA_SESSION_KEY as `0x${string}` | undefined;
   if (!sessionBlob || !sessionKey) return null;
-  const client = createClient({ chains: [BNB_TESTNET] });
+  const client = createClient({ chains: [chainId === BSC_TESTNET_CHAIN_ID ? BNB_TESTNET : BNB] });
   let session: unknown;
   try {
     session = JSON.parse(sessionBlob);
@@ -69,7 +74,7 @@ function altanaActor(): VaultActor | null {
       // execute strips the relay's receipts (only executeWithReceipts keeps
       // them and that is not exported), so the hash comes off the result's
       // transactionHash, falling back to the bundle id the relay reported
-      const result = await client.execute({ session, calls: [call], chainId: 97 } as unknown as Parameters<typeof client.execute>[0]);
+      const result = await client.execute({ session, calls: [call], chainId } as unknown as Parameters<typeof client.execute>[0]);
       const hash = (result as { transactionHash?: string }).transactionHash
         ?? ((result as { receipts?: { hash?: string }[] }).receipts?.[0]?.hash ?? (result as { callsId?: string }).callsId);
       if (!hash) throw new Error("the relay returned no receipt hash for the trade");
@@ -81,14 +86,20 @@ function altanaActor(): VaultActor | null {
 // the fork itself: "altana" is chosen first only when configured, so a tree
 // that loses its session config falls to the raw half loudly rather than
 // pretending the junction still runs. resolve() throws rather than guessing.
-export function resolveActor(preference = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey"): VaultActor {
+export function resolveActor(
+  preference = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey",
+  chainId = targetChainId(),
+): VaultActor {
+  if (chainId !== BSC_CHAIN_ID && chainId !== BSC_TESTNET_CHAIN_ID) {
+    throw new Error(`the executor has no lane on chain ${chainId}`);
+  }
   if (preference === "altana") {
-    const actor = altanaActor();
+    const actor = altanaActor(chainId);
     if (!actor) throw new Error("AGENT_EXECUTOR_ACTOR=altana but AGENT_ALTANA_SESSION and AGENT_ALTANA_SESSION_KEY are not both set");
     return actor;
   }
   if (preference === "rawkey") {
-    const actor = rawKeyActor();
+    const actor = rawKeyActor(chainId);
     if (!actor) throw new Error("AGENT_EXECUTOR_ACTOR=rawkey but AGENT_EXECUTOR_KEY is not set");
     return actor;
   }
