@@ -18,13 +18,17 @@ export function FreePreview({ endpoint, skills }: FreePreviewProps) {
   const [result, setResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // pick the first work skill (not a job-protocol step) that has an example
+  // pick the first work skill (not a job-protocol step) that has an example,
+  // or the negotiate skill for job sellers
   const previewSkill = skills.find((s) => {
     const id = (s.id ?? s.name ?? '').toLowerCase()
     return !id.startsWith('negotiate') && !id.startsWith('notify_funded') && (s.examples?.length ?? 0) > 0
   }) ?? skills.find((s) => {
     const id = (s.id ?? s.name ?? '').toLowerCase()
     return !id.startsWith('negotiate') && !id.startsWith('notify_funded')
+  }) ?? skills.find((s) => {
+    const id = (s.id ?? s.name ?? '').toLowerCase()
+    return id.startsWith('negotiate')
   })
 
   if (!previewSkill || !endpoint) return null
