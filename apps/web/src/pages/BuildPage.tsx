@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { connectWallet } from '../lib/wallet-session'
 import { Stack, Row, Txt, Btn, Pill, NoteBox, SectionHead, Label } from '../components/souk'
+import { Turnstile } from '../components/Turnstile'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -41,6 +42,7 @@ export function BuildPage() {
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null)
   const [answers, setAnswers] = useState<{ skill: string; text: string }[]>([])
   const [composeError, setComposeError] = useState<string | null>(null)
+  const [turnstileToken, setTurnstileToken] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState<SaveResult | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -55,7 +57,7 @@ export function BuildPage() {
       const res = await fetch(`${API_BASE}/builder/compose`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim() }),
+        body: JSON.stringify({ prompt: prompt.trim(), turnstileToken }),
       })
       const body = (await res.json()) as ComposeResult
       if (!body.success || !body.blueprint) {
@@ -116,6 +118,7 @@ export function BuildPage() {
           placeholder="e.g. a grid ladder from 100 to 200, 10 levels, 50 per rung"
           className="w-full rounded-[10px] border border-souk-hair bg-souk-surface1 px-3 py-2 text-[13px] text-souk-ink placeholder:text-souk-muted focus:outline-none focus:ring-2 focus:ring-souk-sky/40"
         />
+        <Turnstile onToken={setTurnstileToken} />
         <Row gap={8} align="center">
           <Btn kind="primary" disabled={composing || !prompt.trim()} onClick={() => void compose()}>
             {composing ? 'Building…' : 'Compose'}
