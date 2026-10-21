@@ -295,6 +295,7 @@ export interface DeliverBody {
   args?: Record<string, unknown>
   task?: string
   input?: Record<string, unknown>
+  wallet?: string
 }
 
 export interface CompareCommentaryAgent {
@@ -362,10 +363,12 @@ export async function readJsonBody<T>(res: Response, what: string): Promise<T> {
 }
 
 export async function deliverTask(body: DeliverBody): Promise<DeliverData & { taskId?: string }> {
+  const wallet = body.wallet ?? (await sessionAccount().catch(() => null))
+  const enriched = wallet ? { ...body, wallet } : body
   const res = await fetch(`${BASE}/x402/deliver`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify(enriched),
   })
   const payload = await readJsonBody<{ success: boolean; data?: DeliverData & { taskId?: string }; error?: string }>(
     res,

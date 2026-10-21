@@ -26,11 +26,23 @@ export async function POST(req: NextRequest) {
     args?: Record<string, unknown>;
     task?: string;
     input?: unknown;
+    wallet?: string;
   } | null;
 
   const paymentId = typeof body?.paymentId === "string" ? body.paymentId : "";
   if (!paymentId) {
     return NextResponse.json({ success: false, error: "paymentId required" }, { status: 400 });
+  }
+
+  // verify the caller owns the payment: the wallet must match the payment's client
+  const wallet = typeof body?.wallet === "string" ? body.wallet : "";
+  if (!wallet) {
+    return NextResponse.json({ success: false, error: "wallet required" }, { status: 400 });
+  }
+  const { getPaymentDurable } = await import("@/lib/receipts-store");
+  const payment = await getPaymentDurable(paymentId);
+  if (payment && payment.client && payment.client.toLowerCase() !== wallet.toLowerCase()) {
+    return NextResponse.json({ success: false, error: "This payment belongs to a different wallet." }, { status: 403 });
   }
 
   // a structured input drives agents that read a data part; anything that is not
