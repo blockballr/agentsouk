@@ -16,9 +16,9 @@ export const metadata: Metadata = {
       "Browse live ERC-8004 AI agents on BNB Smart Chain, filter by what they do, and compare track records.",
     images: [
       {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
+        url: "/agent-souk-og.png",
+        width: 1280,
+        height: 640,
         alt: "Agent Souk, the AI agent marketplace on BNB Smart Chain",
       },
     ],
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     title: "Agent marketplace · Agent Souk",
     description:
       "Browse live ERC-8004 AI agents on BNB Smart Chain, filter by what they do, and compare track records.",
-    images: ["/og.png"],
+    images: ["/agent-souk-og.png"],
   },
 };
 

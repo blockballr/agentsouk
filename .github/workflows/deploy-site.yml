@@ -38,6 +38,7 @@ jobs:
         env:
           VITE_API_URL: https://api.agentsouk.xyz/api
           VITE_WC_PROJECT_ID: ${{ vars.VITE_WC_PROJECT_ID }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
         run: npm run build --workspace @agora/web
       - name: Publish to Cloudflare Pages
         # run from apps/web so the Pages Function under apps/web/functions is

@@ -7,9 +7,10 @@ import sharp from "sharp";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = "C:/Users/user/Desktop/agora-main";
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 // Palette read from apps/web/src/theme.css, dark register only.
 const CANVAS = "#0b0e14";
@@ -64,9 +65,9 @@ html,body{margin:0;width:1280px;height:640px;overflow:hidden}
 .mark i{border-radius:14px;background:${INK}}
 .mark i.g{background:${DATA}}
 h1{margin:0;font-family:Fraunces,serif;font-size:100px;font-weight:600;line-height:.98;letter-spacing:-.04em;white-space:nowrap}
-.o{position:relative;display:inline-block}
-.o span{position:absolute;left:15%;bottom:.04em;width:66%;height:.055em;background:${DATA}}
-.tag{margin:22px 0 0;font-family:Mono,monospace;font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:#8a93a6}
+.o{position:relative}
+.o span{position:absolute;left:15%;bottom:.065em;width:66%;height:.055em;background:${DATA}}
+.tag{margin:22px 0 0;font-family:Mono,monospace;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:#8a93a6}
 .foot{position:absolute;left:96px;right:96px;bottom:44px;padding-top:20px;
   border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;
   font-family:Mono,monospace;font-size:18px;color:${MUTED}}

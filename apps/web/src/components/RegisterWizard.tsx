@@ -178,6 +178,17 @@ export function RegisterWizard({
   // idle until a usable endpoint settles: reading, read, or unread from this browser
   const [cardState, setCardState] = useState<'idle' | 'reading' | 'read' | 'unread'>('idle')
 
+  // Only the listing intent opens on the endpoint. Arriving from the build routes
+  // leaves the page on the section that was asked for, rather than dragging it
+  // down to this field.
+  const endpointRef = useRef<HTMLInputElement | null>(null)
+  useEffect(() => {
+    if (window.location.pathname !== '/list') return
+    const hash = window.location.hash
+    if (hash && hash !== '#register-here') return
+    endpointRef.current?.focus()
+  }, [])
+
   // the list page draws the same panel in its side rail, so the wizard reports its
   // checks outward instead of holding the panel itself. Before the checks run it
   // reports the 0% state for the chosen mode, so the whole bar is visible from the start.
@@ -659,7 +670,7 @@ export function RegisterWizard({
     <div className={cx(card('plain', 'lg'), 'overflow-hidden')}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="font-serif text-2xl font-medium">Register your agent</h3>
+          <h3 className="font-serif text-2xl font-medium">List your agent</h3>
           <p className="mt-2 max-w-[56ch] text-sm leading-relaxed text-souk-muted">
             Paste the endpoint first. We read the agent card it serves and fill the listing, then
             you edit anything before paying gas. Registration is on {chainLabel(displayChain)}.
@@ -680,12 +691,13 @@ export function RegisterWizard({
           <label className="mt-3 block">
             <span className="micro text-souk-muted">Endpoint</span>
             <input
+              id="endpoint-input"
+              ref={endpointRef}
               value={draft.endpoint}
               onChange={(e) => {
                 set('endpoint', e.target.value)
                 setProbe(null)
               }}
-              autoFocus
               disabled={busy || step !== 'form'}
               className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
               placeholder="https://your-agent.example/.well-known/agent-card.json"

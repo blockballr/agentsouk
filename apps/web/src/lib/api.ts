@@ -295,6 +295,7 @@ export interface DeliverBody {
   args?: Record<string, unknown>
   task?: string
   input?: Record<string, unknown>
+  wallet?: string
 }
 
 export interface CompareCommentaryAgent {
@@ -362,10 +363,12 @@ export async function readJsonBody<T>(res: Response, what: string): Promise<T> {
 }
 
 export async function deliverTask(body: DeliverBody): Promise<DeliverData & { taskId?: string }> {
+  const wallet = body.wallet ?? (await sessionAccount().catch(() => null))
+  const enriched = wallet ? { ...body, wallet } : body
   const res = await fetch(`${BASE}/x402/deliver`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify(enriched),
   })
   const payload = await readJsonBody<{ success: boolean; data?: DeliverData & { taskId?: string }; error?: string }>(
     res,
@@ -583,6 +586,8 @@ export interface OwnedAgent {
   category: string
   contractAddress: string
   ownerAddress: string
+  // the listing's receiving wallet; null when the detail read could not name one
+  agentWallet: string | null
   isVerified: boolean
   isActive: boolean
   x402Supported: boolean
@@ -610,7 +615,9 @@ export async function getAgentsByOwner(owner: string): Promise<OwnedAgentsResult
     chainId?: number
     counts?: { agents?: number; categories?: Record<string, number> }
   }>(res, 'owned agents')
-  const agents = body.agents ?? []
+  // an older deploy may not carry the payee column yet; normalize it so the
+  // seller board reads one shape whether or not the API has caught up
+  const agents = (body.agents ?? []).map((a) => ({ ...a, agentWallet: a.agentWallet ?? null }))
   const chain = body.chainId ?? agents[0]?.chainId
   const chainId = typeof chain === 'number' && Number.isFinite(chain) && chain > 0 ? chain : null
   return {
@@ -735,10 +742,11 @@ export async function getHiresByWallet(wallet: string): Promise<WalletHire[]> {
 }
 
 // The pairing a deposit-hire link checks: the wallet the executor trades
-// from. None when the deployment runs no executor lane.
+// from. None when the route reports no lane; a non-ok answer throws so the
+// caller can say the pairing could not be read rather than calling it absent.
 export async function getVaultExecutor(): Promise<{ kind: 'rawkey' | 'altana'; address: string } | null> {
   const res = await fetch(`${BASE}/vault/executor`)
-  if (!res.ok) return null
+  if (!res.ok) throw new Error(`Vault executor answered ${res.status}.`)
   const body = await readJsonBody<{ executor?: { kind: 'rawkey' | 'altana'; address: string } | null }>(res, 'vault executor')
   return body.executor ?? null
 }
@@ -1020,4 +1028,15 @@ export async function activateBoost(body: {
     expiresAt: payload.boost.expiresAt as string,
     days: payload.boost.days as number,
   }
+}
+// verifies a Turnstile token against the API, which holds the secret. The
+// security gate uses this before it lets a new session into the app.
+export async function verifyTurnstile(token: string): Promise<boolean> {
+  const res = await fetch(`${BASE}/verify-turnstile`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+  const payload = await res.json().catch(() => null)
+  return Boolean(payload?.success)
 }

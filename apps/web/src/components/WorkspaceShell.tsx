@@ -5,46 +5,56 @@ import { shortAddress } from '@agora/core'
 import { connectWallet } from '../lib/wallet-session'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { Btn, Txt } from './souk'
+import { useI18n } from '../lib/i18n'
 
 // The workspace frame: one rail down the left, one view on the right. Every
 // surface a wallet owns (profile, vault, studio, docs) lives inside it, so the
 // rail keeps who you are and where you can go in sight rather than repeating a
 // connect button on each page.
 
-type RailItem = { to: string; label: string; note?: string; soon?: boolean; end?: boolean }
+type RailItem = { to: string; key: string; soon?: boolean; end?: boolean; accent?: 'indigo' }
 
 const RAIL: { title: string; items: RailItem[] }[] = [
   {
-    title: 'Console',
+    title: 'rail.console',
     items: [
-      { to: '/profile', label: 'Overview', note: 'your listings and earnings', end: true },
-      { to: '/quest', label: 'Set and Earn Quest', note: 'stamps and steps' },
-      { to: '/studio', label: 'Studio', note: 'commissions and dry runs', soon: true },
+      // the board is the profile, rebuilt: one surface, not a listings page plus a board
+      { to: '/seller', key: 'rail.overview', end: true },
+      { to: '/quest', key: 'rail.quest' },
+      { to: '/studio', key: 'rail.studio', soon: true },
     ],
   },
   {
-    title: 'Hires',
+    title: 'rail.hires',
     items: [
-      { to: '/vault', label: 'Vault', note: 'funded hires and trades' },
-      { to: '/ongoing', label: 'Ongoing', note: 'live hires' },
+      { to: '/vault', key: 'rail.vault' },
+      { to: '/ongoing', key: 'rail.ongoing' },
     ],
   },
   {
-    title: 'Listings',
+    title: 'rail.listings',
     items: [
-      { to: '/list', label: 'List an agent' },
-      { to: '/seller', label: 'Seller board' },
+      { to: '/build', key: 'rail.build' },
+      { to: '/list', key: 'rail.list' },
     ],
   },
   {
-    title: 'Reference',
-    items: [{ to: '/docs', label: 'Docs' }],
+    title: 'rail.reference',
+    items: [{ to: '/docs', key: 'rail.docs', accent: 'indigo' }],
+  },
+  {
+    title: 'rail.account',
+    items: [
+      { to: '/account', key: 'rail.manage' },
+      { to: '/settings', key: 'rail.settings' },
+    ],
   },
 ]
 
 const CHAIN = Number(import.meta.env.VITE_CHAIN_ID ?? 56)
 
 export function WorkspaceShell({ children }: { children?: ReactNode }) {
+  const { t } = useI18n()
   const account = useConnectedAccount()
   const [connecting, setConnecting] = useState(false)
 
@@ -76,7 +86,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
             {RAIL.map((group) => (
               <div key={group.title} className="grid gap-1.5">
                 <Txt size={10} lead={14} mono upper tone="labels" className="px-3">
-                  {group.title}
+                  {t(group.title)}
                 </Txt>
                 {group.items.map((item) => (
                   <RailLink key={item.to} item={item} />
@@ -89,7 +99,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
             {account ? (
               <>
                 <Txt size={10} lead={14} mono upper tone="labels">
-                  connected
+                  {t('rail.connected')}
                 </Txt>
                 <Txt size={12} lead={18} mono tone="slate" className="mt-1 block">
                   {shortAddress(account)}
@@ -98,10 +108,10 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
             ) : (
               <>
                 <Txt size={11} lead={16} tone="muted">
-                  No wallet connected.
+                  {t('rail.noWallet')}
                 </Txt>
                 <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting} className="mt-2 w-full">
-                  {connecting ? 'Connecting...' : 'Connect wallet'}
+                  {connecting ? t('rail.connecting') : t('rail.connect')}
                 </Btn>
               </>
             )}
@@ -118,10 +128,10 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
         {!account && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-souk-hair px-4 py-3 md:hidden">
             <Txt size={12} lead={18} tone="muted">
-              No wallet connected.
+              {t('rail.noWallet')}
             </Txt>
             <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting}>
-              {connecting ? 'Connecting...' : 'Connect wallet'}
+              {connecting ? t('rail.connecting') : t('rail.connect')}
             </Btn>
           </div>
         )}
@@ -132,6 +142,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
 }
 
 function RailLink({ item, chip }: { item: RailItem; chip?: boolean }) {
+  const { t } = useI18n()
   return (
     <NavLink
       to={item.to}
@@ -141,23 +152,24 @@ function RailLink({ item, chip }: { item: RailItem; chip?: boolean }) {
           chip
             ? 'shrink-0 rounded-full border px-3 py-1.5 text-[12px]'
             : 'rounded-xl border px-3 py-2 text-[13px]',
-          isActive
-            ? 'border-souk-hair bg-souk-surface2 text-souk-ink'
-            : 'border-transparent text-souk-slate hover:bg-souk-surface2/60 hover:text-souk-ink',
+          item.accent === 'indigo'
+            ? isActive
+              ? 'border-souk-indigo/40 bg-souk-indigo/15 text-souk-indigo-link'
+              : 'border-transparent text-souk-indigo-link hover:bg-souk-indigo/10'
+            : isActive
+              ? 'border-souk-hair bg-souk-surface2 text-souk-ink'
+              : 'border-transparent text-souk-slate hover:bg-souk-surface2/60 hover:text-souk-ink',
         ].join(' ')
       }
     >
       <span className="flex items-center justify-between gap-2">
-        <span>{item.label}</span>
+        <span>{t(item.key)}</span>
         {item.soon ? (
           <span className="rounded-full border border-souk-hair px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-souk-muted">
-            soon
+            {t('rail.soon')}
           </span>
         ) : null}
       </span>
-      {item.note && !chip ? (
-        <span className="mt-0.5 block text-[11px] leading-4 text-souk-muted">{item.note}</span>
-      ) : null}
     </NavLink>
   )
 }

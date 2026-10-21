@@ -123,21 +123,22 @@ export function IconBell() {
   );
 }
 
-export function IconCart() {
-  return (
-    <svg width="18" height="18" {...strokeProps}>
-      <path d="M2 3h2.6l2.4 12.3a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6L21 7H6" />
-      <circle cx="9.5" cy="20" r="1.4" />
-      <circle cx="17.5" cy="20" r="1.4" />
-    </svg>
-  );
-}
-
 export function IconMonitor() {
   return (
     <svg width="18" height="18" {...strokeProps}>
       <rect x="2.5" y="4" width="19" height="13" rx="2" />
       <path d="M8.5 21h7M12 17v4" />
+    </svg>
+  );
+}
+
+// the docs mark: a page with a folded corner and two ruled lines, at the status
+// bar's own small size rather than the control row's 18
+export function IconDocs() {
+  return (
+    <svg width="13" height="13" {...strokeProps}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 2v6h6M8.5 13h7M8.5 17h4.5" />
     </svg>
   );
 }

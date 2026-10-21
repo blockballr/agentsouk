@@ -99,7 +99,7 @@ export function NotificationBell() {
                   <Link
                     to={r.href ?? '/ongoing'}
                     onClick={() => setOpen(false)}
-                    className="block rounded-[8px] px-3 py-2 hover:bg-souk-surface2"
+                    className="block rounded-[8px] px-3 py-2 hover:bg-white/10"
                   >
                     <div className="flex items-baseline justify-between gap-2">
                       <span className={`text-[13px] font-medium ${r.read ? 'text-souk-indigo-labels' : 'text-white'}`}>{r.title}</span>

@@ -255,7 +255,15 @@ export async function fetchAgentDetail(
   // wallet it names answers when the column is empty.
   if (!data.agent_wallet) {
     const declared = data.raw_metadata?.offchain_content?.agentWallet;
-    const value = typeof declared === "string" ? declared.trim() : "";
+    const onchain = data.raw_metadata?.onchain?.find(
+      (entry) => entry.key === "agentWallet",
+    )?.value;
+    const value =
+      typeof declared === "string"
+        ? declared.trim()
+        : typeof onchain === "string"
+          ? onchain.trim()
+          : "";
     if (/^0x[0-9a-fA-F]{40}$/.test(value) && !/^0x0{40}$/i.test(value)) {
       data.agent_wallet = value;
     }
