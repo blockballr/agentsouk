@@ -27,6 +27,7 @@ import { RegisterWizard, initialChecks, type WizardStep } from '../components/Re
 
 import { VerificationLoop, type CheckLine, type GasReadiness } from '../components/VerificationLoop'
 import { QuestStrip } from '../components/QuestStrip'
+import { Turnstile } from '../components/Turnstile'
 import { Dialog } from '../components/ui'
 import {
   Btn,
@@ -231,11 +232,10 @@ export function ListAgentPage() {
           <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
         </>
       )}
+      <Turnstile onToken={() => {}} />
     </div>
   )
 }
-
-// what the quest guide says at each point of the listing wizard
 const LISTING_GUIDE: Record<WizardStep, { count: string; text: string }> = {
   form: {
     count: 'Registration 1 of 3',
