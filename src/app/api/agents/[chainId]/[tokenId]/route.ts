@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAgentByToken, queryAgents } from "@/lib/scanner";
+import { getAgentByToken, queryAgents, recordShelfSkills } from "@/lib/scanner";
 import { loadVerifications } from "@/lib/verifications";
 import { isPancakeSwapAgent, readsPancakeSwap } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
@@ -41,6 +41,14 @@ export async function GET(
   const shelved = (await queryAgents({ limit: 5000, includeHouse: true, includeDelisted: true })).items.find(
     (a) => a.token_id === agent.token_id,
   );
+  // the card is authoritative, so a listing whose card changed after admission
+  // (for example one that added the ERC-8183 job steps) teaches the shelf here
+  // rather than waiting for the next background refresh
+  const storedSkillIds = (shelved?.skills ?? []).map((s) => s.id ?? s.name).join(",");
+  const liveSkillIds = (skills ?? []).map((s) => s.id ?? s.name).join(",");
+  if (skills?.length && storedSkillIds !== liveSkillIds) {
+    await recordShelfSkills(Number(chainId), tokenId, skills, accessGated).catch(() => {});
+  }
   const categorised = shelved?.category ? { ...agent, category: shelved.category } : agent;
   const data = verification ? { ...categorised, verification } : categorised;
   const withSkills = skills ? { ...data, skills } : data;
