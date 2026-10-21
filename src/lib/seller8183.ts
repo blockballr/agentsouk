@@ -82,8 +82,16 @@ export interface SellerConfig {
   providerWallet: string;
   /** 0x private key whose address must equal providerWallet. */
   sellerKey: string | undefined;
-  /** Price in whole payment-token units, quoted at 18 decimals. */
+  /** Fallback price in whole payment-token units when the instruction names no capital. */
   priceUsd: number;
+  /** Fee as a share of the traded capital, in basis points (50 = 0.5%). */
+  feeBps: number;
+  /** Floor on the fee, in whole payment-token units. */
+  minFeeU: number;
+  /** Ceiling on the fee, in whole payment-token units. */
+  maxFeeU: number;
+  /** The smallest capital the agent will quote, in USD. */
+  minCapitalUsd: number;
   agentId: number | null;
   agentName: string;
 }
@@ -114,14 +122,51 @@ export function sellerConfigFromEnv(
       process.env.SELLER8183_PRICE_USD ??
       2,
   );
+  const num = (name: string, fallback: number): number => {
+    const raw = process.env[`${name}${suffix}`] ?? process.env[name];
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  };
   return {
     chainId,
     providerWallet,
     sellerKey,
     priceUsd: Number.isFinite(price) && price > 0 ? price : 2,
+    // a managed trade is priced as a share of the capital, with a floor that
+    // covers gas and a cap that keeps a large instruction from a large fee
+    feeBps: num("SELLER8183_FEE_BPS", 50),
+    minFeeU: num("SELLER8183_MIN_FEE_U", 1),
+    maxFeeU: num("SELLER8183_MAX_FEE_U", 50),
+    minCapitalUsd: num("SELLER8183_MIN_CAPITAL_USD", 50),
     agentId,
     agentName,
   };
+}
+
+// The capital an instruction names, in USD. An explicit field wins; otherwise
+// the text is read for "capital $500", "amount 500 USDT", "$500" or "500 U".
+// A bare number is not enough: a grid instruction is full of prices and rungs.
+export function capitalFromInstruction(data: Record<string, unknown>, task: string): number | null {
+  for (const key of ["capital_usd", "capitalUsd", "amount_usd", "amountUsd", "capital", "amount"]) {
+    const raw = data[key];
+    const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw.replace(/[$,]/g, "")) : Number.NaN;
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  const labelled = /(?:capital|amount|deposit|trade\s+with|budget)\s*(?:of|is|:|=)?\s*\$?\s*([\d,]+(?:\.\d+)?)/i.exec(task);
+  if (labelled) return Number(labelled[1].replace(/,/g, ""));
+  const dollar = /\$\s*([\d,]+(?:\.\d+)?)/.exec(task);
+  if (dollar) return Number(dollar[1].replace(/,/g, ""));
+  const suffixed = /([\d,]+(?:\.\d+)?)\s*(?:usdt|usd|u)\b/i.exec(task);
+  if (suffixed) return Number(suffixed[1].replace(/,/g, ""));
+  return null;
+}
+
+// Round a fee to six decimals, which is well inside the token's 18 and keeps
+// float noise out of the signed price.
+function feeFor(cfg: SellerConfig, capitalUsd: number): number {
+  const raw = (capitalUsd * cfg.feeBps) / 10_000;
+  const clamped = Math.min(cfg.maxFeeU, Math.max(cfg.minFeeU, raw));
+  return Math.round(clamped * 1e6) / 1e6;
 }
 
 // The materials the seller signs, one deterministic line, so a buyer can
@@ -169,6 +214,10 @@ export interface QuoteEnvelope {
   negotiation_hash: string;
   provider_sig: string;
   agent_id: number | null;
+  // what the fee was computed from, for the buyer's own display; the kernel
+  // only reads price, currency and provider
+  capital_usd?: number | null;
+  fee_usd?: number;
 }
 
 export type QuoteResult =
@@ -198,16 +247,27 @@ export async function quoteEnvelope(
     return { ok: false, status: "refused", unsigned_reason: "the seller's configured price is not a sane number" };
   }
   const terms = negotiateData.terms ?? null;
+  // A managed trade is quoted as a fee on the capital the instruction names.
+  // The capital itself goes to the vault, never here: this escrow is the fee.
+  const capitalUsd = capitalFromInstruction(negotiateData, task);
+  if (capitalUsd !== null && capitalUsd < cfg.minCapitalUsd) {
+    return {
+      ok: false,
+      status: "refused",
+      unsigned_reason: `the minimum trading capital is $${cfg.minCapitalUsd}; this instruction names $${capitalUsd}`,
+    };
+  }
+  const quotedUsd = capitalUsd === null ? cfg.priceUsd : feeFor(cfg, capitalUsd);
   // a sub-unit price is legitimate: 0.01 U is a real quote. floor() would turn
-  // it into zero, so the configured number is scaled in full instead.
+  // it into zero, so the number is scaled in full instead.
   let price: string;
   try {
     // String() switches to exponent notation below 1e-6, which parseUnits does
     // not read; toFixed(18) keeps those prices in plain decimal form.
-    const priceText = cfg.priceUsd < 1e-6 ? cfg.priceUsd.toFixed(18) : String(cfg.priceUsd);
+    const priceText = quotedUsd < 1e-6 ? quotedUsd.toFixed(18) : String(quotedUsd);
     price = parseUnits(priceText, 18).toString();
   } catch {
-    return { ok: false, status: "refused", unsigned_reason: "the seller's configured price has more than 18 decimals" };
+    return { ok: false, status: "refused", unsigned_reason: "the quoted fee has more than 18 decimals" };
   }
   const validUntil = Math.floor(Date.now() / 1000) + 1800;
   if (!cfg.sellerKey || !/^0x[0-9a-fA-F]{64}$/.test(cfg.sellerKey)) {
@@ -246,6 +306,8 @@ export async function quoteEnvelope(
       negotiation_hash: negotiationHash,
       provider_sig: providerSig,
       agent_id: cfg.agentId,
+      capital_usd: capitalUsd,
+      fee_usd: quotedUsd,
     },
   };
 }
