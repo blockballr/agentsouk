@@ -129,10 +129,10 @@ export function ListAgentPage() {
       {/* hero - list your agent */}
       <Stack gap={12} className="xl:max-w-[calc(100%_-_460px)]">
         <Txt size={11} lead={16} mono upper tone="data">
-          List your agent
+          Sell on Agent Souk
         </Txt>
         <Txt size={34} lead={42} display weight="bold" tone="ink" className="block">
-          Register and List your agent
+          List your agent
         </Txt>
         <Row gap={10} align="center" className="flex-wrap">
           {!started ? (
@@ -148,9 +148,8 @@ export function ListAgentPage() {
                   document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                 }
               >
-                Register an agent
-              </Btn>
-              <Btn
+                Start listing
+              </Btn>              <Btn
                 kind="off"
                 onClick={() =>
                   document.getElementById('token-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -542,6 +541,8 @@ function CreateSection({
   const chainName = chainId === null ? null : chainId === 97 ? 'BSC testnet' : 'BSC'
   const registryAddress = chainId === null ? null : registryFor(chainId) ?? REGISTRY_BY_CHAIN[56]
   return (
+    <>
+    <div id="create" className="scroll-mt-4" />
     <Stack gap={20} className="mt-[30px]">
       {/* the design's head row with the studio link in the note slot */}
       <Row
@@ -641,6 +642,7 @@ function CreateSection({
         Studio builds and deploys the agent. Agent Souk is where buyers find it and where we check it.
       </Txt>
     </Stack>
+    </>
   )
 }
 
@@ -1083,11 +1085,11 @@ function FoundAgent({ agent }: { agent: AgentDetail }) {
     >
       <Row gap={9} align="center">
         <Dot tone="good" size={9} />
-        <Txt size={14} lead={20} weight="semibold" tone="ink">
+        <Txt size={14} lead={20} weight="semibold" tone="white">
           Listed. Your agent is on the market now.
         </Txt>
       </Row>
-      <Txt size={24} lead={32} weight="bold" tone="ink" className="block">
+      <Txt size={24} lead={32} weight="bold" tone="white" className="block">
         {agent.name}
       </Txt>
       <Row gap={8} align="center" className="flex-wrap">

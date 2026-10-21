@@ -13,7 +13,8 @@ export type Tone =
   | 'peach'
   | 'white'
   | 'canvas'
-  | 'indigo-labels';
+  | 'indigo-labels'
+  | 'indigo-data';
 
 export const TONE: Record<Tone, string> = {
   ink: 'text-souk-ink',
@@ -29,6 +30,9 @@ export const TONE: Record<Tone, string> = {
   // labels-on-indigo: the register's one token that stays put in both modes, so
   // copy sitting on the indigo card never inverts into it
   'indigo-labels': 'text-souk-indigo-labels',
+  // the fixed green for a figure on indigo, where the light register's green is
+  // too dark to hold contrast on the navy
+  'indigo-data': 'text-souk-indigo-data',
 };
 
 // the design draws two edges: a card's own 8% rim and the 16% hairline between rows.

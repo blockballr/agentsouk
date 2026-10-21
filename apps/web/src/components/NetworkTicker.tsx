@@ -4,6 +4,8 @@ import { sessionAccount } from '../lib/wallet-session'
 import { SwapTicker } from './SwapTicker'
 import { ThemeToggle } from './ThemeToggle'
 import { SupportButton } from './SupportButton'
+import { IconDocs } from './souk'
+import { useI18n } from '../lib/i18n'
 
 // Persistent network ticker: swap + price + TPS + extensible metrics.
 // Self-contained polling, no provider needed, so it never flickers on route change.
@@ -45,28 +47,31 @@ export function NetworkTicker({
   extraMetrics = [],
   className = '',
 }: NetworkTickerProps) {
+  const { t } = useI18n()
   const [price, setPrice] = useState<number | null>(null)
   const [tps, setTps] = useState<number | null>(null)
   const [questMinimized, setQuestMinimized] = useState<boolean>(() => {
     try { return localStorage.getItem('agentsouk.quest.minimized') === '1' } catch { return false }
   })
-  const [questLabel, setQuestLabel] = useState<string>('Start Quest')
+  const [quest, setQuest] = useState<{ kind: 'start' } | { kind: 'resume'; done: number | null }>({
+    kind: 'start',
+  })
 
   async function refreshQuestLabel() {
     try {
       const wallet = await sessionAccount().catch(() => null)
-      if (!wallet) { setQuestLabel('Start Quest'); return }
+      if (!wallet) { setQuest({ kind: 'start' }); return }
       const mode = questModeFor(wallet)
       if (mode === 'active' || mode === 'quit') {
         const cached = latestQuestProgress()
         const progress = cached && cached.wallet?.toLowerCase() === wallet.toLowerCase() ? cached : null
         const done = requiredDone(progress)
-        setQuestLabel(done > 0 ? `Resume Quest ${done}/3` : 'Resume Quest')
+        setQuest({ kind: 'resume', done: done > 0 ? done : null })
       } else {
-        setQuestLabel('Start Quest')
+        setQuest({ kind: 'start' })
       }
     } catch {
-      setQuestLabel('Start Quest')
+      setQuest({ kind: 'start' })
     }
   }
   // rolling window of recent blocks for a real TPS reading
@@ -191,7 +196,11 @@ export function NetworkTicker({
             }}
             className="rounded-[5px] border border-souk-data/40 px-2 py-1 text-[0.7rem] font-semibold text-souk-data transition hover:bg-souk-data/10"
           >
-            {questLabel}
+            {quest.kind === 'start'
+              ? t('ticker.startQuest')
+              : quest.done
+                ? t('ticker.resumeQuestCount', { done: quest.done })
+                : t('ticker.resumeQuest')}
           </button>
         )}
 
@@ -230,6 +239,16 @@ export function NetworkTicker({
 
           <span className="text-souk-muted">|</span>
           <ThemeToggle />
+          <span className="text-souk-muted">|</span>
+          <a
+            href="https://docs.agentsouk.xyz"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 text-souk-indigo-link transition hover:text-souk-ink"
+          >
+            <IconDocs />
+            {t('ticker.docs')}
+          </a>
           <span className="text-souk-muted">|</span>
           <SupportButton plain iconFirst />
         </span>

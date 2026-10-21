@@ -1,22 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
 import { formatUnits, shortAddress, timeAgo } from '@agora/core'
-import {
-  getAgents,
-  getAgentsByOwner,
-  getHiresByPayee,
-  getListingViews,
-  type OwnedAgentsResult,
-  type PayeeHire,
-} from '../lib/api'
+import { type OwnedAgentsResult, type PayeeHire } from '../lib/api'
 import { chainLabel } from '../lib/contracts'
-import { hireErrorText } from '../lib/hire'
 import { countByDay } from '../lib/history'
 import { verdictFor } from '../lib/verdict'
-import { useConnectedAccount } from '../lib/use-connected-account'
+import { type Catalogue, useSellerData } from '../lib/seller-data'
+import { EarningsPanel } from '../components/EarningsPanel'
 import { Btn, Dot, Kpi, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
-
-type HiresSource = 'postgres' | 'memory' | null
-type Catalogue = Awaited<ReturnType<typeof getAgents>>
 
 const DAY = 86_400_000
 
@@ -94,70 +83,11 @@ function catalogueFreshness(cat: Catalogue | null): string | null {
   return stamps.length === 0 ? null : new Date(Math.max(...stamps)).toISOString()
 }
 
-export function SellerBoardPage() {
-  // the seller's wallet, watched so a switch inside the wallet re-reads the board
-  const account = useConnectedAccount()
-  const [owned, setOwned] = useState<OwnedAgentsResult | null>(null)
-  const [hires, setHires] = useState<PayeeHire[] | null>(null)
-  const [hiresSource, setHiresSource] = useState<HiresSource>(null)
-  const [catalogue, setCatalogue] = useState<Catalogue | null>(null)
-  const [views, setViews] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [ready, setReady] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    if (!account) {
-      setOwned(null)
-      setHires(null)
-      setHiresSource(null)
-      setCatalogue(null)
-      setViews(null)
-      setReady(false)
-      return
-    }
-    setLoading(true)
-    setError(null)
-    // three independent reads, so a receipts outage must not hide the listings
-    // and a catalogue outage must not hide the money
-    const [ownedResult, hiresResult, catResult] = await Promise.allSettled([
-      getAgentsByOwner(account),
-      getHiresByPayee(account),
-      getAgents({ limit: 1 }),
-    ])
-    if (ownedResult.status === 'fulfilled') {
-      setOwned(ownedResult.value)
-      // impressions are a second read, keyed by the listings that came back, so
-      // a failed count never hides the listings it belongs to
-      const chainId = ownedResult.value.chainId
-      const tokens = ownedResult.value.agents.map((a) => String(a.tokenId))
-      if (chainId === null || tokens.length === 0) setViews(chainId === null ? null : 0)
-      else {
-        const counts = await getListingViews(chainId, tokens, 14).catch(() => null)
-        setViews(counts === null ? null : Object.values(counts).reduce((sum, n) => sum + n, 0))
-      }
-    } else setOwned(null)
-    if (hiresResult.status === 'fulfilled') {
-      setHires(hiresResult.value.hires)
-      setHiresSource(hiresResult.value.source)
-    } else {
-      setHires(null)
-      setHiresSource(null)
-    }
-    setCatalogue(catResult.status === 'fulfilled' ? catResult.value : null)
-    const failed = ownedResult.status === 'rejected' && hiresResult.status === 'rejected'
-    setError(
-      failed
-        ? hireErrorText(ownedResult.status === 'rejected' ? ownedResult.reason : hiresResult.reason)
-        : null,
-    )
-    setLoading(false)
-    setReady(true)
-  }, [account])
-
-  useEffect(() => {
-    void load()
-  }, [load])
+export function SellerBoardSection() {
+  // the seller's wallet and every read behind the three boards, loaded once by
+  // the console and shared here
+  const { account, owned, hires, hiresSource, catalogue, views, loading, ready, error, reload } =
+    useSellerData()
 
   const customers = (hires ?? []).filter(isCustomer)
   const now = Date.now()
@@ -179,44 +109,43 @@ export function SellerBoardPage() {
   const catFresh = catalogueFreshness(ready ? catalogue : null)
 
   const kicker = [
-    account ? 'SELLER' : 'SELLER BOARD',
-    account ? `WALLET ${shortAddress(account)}` : null,
+    'seller / board',
+    account ? `wallet ${shortAddress(account)}` : null,
     chainId ? `${chainLabel(chainId).toUpperCase()} ${chainId}` : null,
-    'BOARD A',
   ]
     .filter((part): part is string => Boolean(part))
     .join(' · ')
 
-  const kpis: { value: string; label: string; tone: 'data' | 'white' }[] = [
+  const kpis: { value: string; label: string; tone: 'indigo-data' | 'white' }[] = [
     {
       value: hires ? earnedLabel(customers) : 'Unavailable',
       label: 'Earned, settled only',
-      tone: customers.length === 0 ? 'white' : 'data',
+      tone: customers.length === 0 ? 'white' : 'indigo-data',
     },
     {
       value: `${recent}`,
       label: 'Buyer hires, 14 days',
-      tone: recent === 0 ? 'white' : 'data',
+      tone: recent === 0 ? 'white' : 'indigo-data',
     },
     {
       value: views === null ? 'Unavailable' : `${views}`,
       label: 'Impressions, 14 days',
-      tone: views ? 'data' : 'white',
+      tone: views ? 'indigo-data' : 'white',
     },
     {
       value: checkedAt ? timeAgo(checkedAt) : 'Unavailable',
       label: 'Since your listings were last checked',
-      tone: 'data',
+      tone: 'indigo-data',
     },
     {
       value: catFresh ? timeAgo(catFresh) : 'Unavailable',
       label: 'Catalogue refreshed',
-      tone: 'data',
+      tone: 'indigo-data',
     },
   ]
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+    <section id="board" className="scroll-mt-24 text-souk-ink">
       <Stack gap={10} className="max-w-[1280px] xl:max-w-[min(1280px,calc(100%_-_460px))]">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
@@ -263,16 +192,20 @@ export function SellerBoardPage() {
             >
               <Row align="center" gap={10}>
                 <Dot tone="sky" size={8} />
-                <Txt size={13} lead={18} tone="ink" className="min-w-0">
+                <Txt size={13} lead={18} tone="white" className="min-w-0">
                   This server keeps receipts in memory only. Hires still settle, and the
                   earned figure above is behind what the chain has settled.
                 </Txt>
               </Row>
-              <Btn kind="off" onClick={() => void load()} disabled={loading}>
+              <Btn kind="off" onClick={() => void reload()} disabled={loading}>
                 RE-RUN NOW
               </Btn>
             </Row>
           )}
+
+          <div className="mt-5">
+            <EarningsPanel hires={hires} chainId={chainId} />
+          </div>
 
           <div className="mt-5 flex flex-wrap items-stretch gap-5">
             <Stack surface pad={[16, 16, 14, 16]} gap={10} className="min-w-[620px] flex-[3_1_680px]">
@@ -333,16 +266,20 @@ export function SellerBoardPage() {
               <SectionHead title="Hires by day" note="14 DAYS" />
               {hires ? (
                 <>
-                  <Row align="end" gap={8} style={{ height: 96 }}>
+                  <Row align="end" gap={4} style={{ height: 96 }}>
                     {countByDay(customers.map((h) => h.createdAt)).map((d) => {
                       const empty = d.count === 0
                       return (
-                        <span
-                          key={d.day}
-                          title={`${d.day}: ${d.count}`}
-                          className={empty ? 'min-w-0 flex-1 rounded-[3px] bg-souk-surface2' : 'min-w-0 flex-1 rounded-[3px] bg-souk-data'}
-                          style={{ height: Math.min(96, Math.max(6, d.count * 7)), opacity: empty ? undefined : 0.35 + Math.min(0.6, d.count / 20) }}
-                        />
+                        <span key={d.day} className="flex h-full min-w-0 flex-1 items-end justify-center">
+                          <span
+                            title={`${d.day}: ${d.count}`}
+                            className={`w-[7px] rounded-[2px] ${empty ? 'bg-souk-surface2' : 'bg-souk-data'}`}
+                            style={{
+                              height: Math.min(96, Math.max(empty ? 4 : 6, d.count * 7)),
+                              opacity: empty ? undefined : 0.35 + Math.min(0.6, d.count / 20),
+                            }}
+                          />
+                        </span>
                       )
                     })}
                   </Row>
@@ -378,6 +315,6 @@ export function SellerBoardPage() {
           A listing that has gone quiet keeps its hires and loses only its claim to being alive.
         </Txt>
       </Stack>
-    </div>
+    </section>
   )
 }

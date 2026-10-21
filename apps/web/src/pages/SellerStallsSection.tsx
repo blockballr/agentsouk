@@ -1,25 +1,21 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES, formatUnits, shortAddress, timeAgo } from '@agora/core'
 import {
   activateBoost,
-  getAgentsByOwner,
   getBoostStatus,
-  getHiresByPayee,
-  getJobs8183Jobs,
   recheckAgent,
   setListingState,
   type Jobs8183Row,
   type OwnedAgent,
-  type OwnedAgentsResult,
   type PayeeHire,
 } from '../lib/api'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { hireErrorText } from '../lib/hire'
 import { jobStatusName } from '../lib/jobs8183'
 import { getProvider } from '../lib/wallet'
-import { useConnectedAccount } from '../lib/use-connected-account'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
+import { type HiresSource, useSellerData } from '../lib/seller-data'
 import {
   AgentAvatar,
   Btn,
@@ -32,8 +28,6 @@ import {
   type DotTone,
   type PillVariant,
 } from '../components/souk'
-
-type HiresSource = 'postgres' | 'memory' | null
 
 const DAY = 86_400_000
 const VERDICT_TONE: Record<VerdictTone, DotTone> = {
@@ -134,55 +128,19 @@ function jobsWithin(days: number, list: Jobs8183Row[]): Jobs8183Row[] {
   return list.filter((r) => Date.parse(r.updatedAt) >= floor)
 }
 
-export function SellerStallsPage() {
-  // the seller's wallet, watched so a switch inside the wallet re-reads the stalls
-  const account = useConnectedAccount()
-  const [owned, setOwned] = useState<OwnedAgentsResult | null>(null)
-  const [hires, setHires] = useState<PayeeHire[] | null>(null)
-  const [hiresSource, setHiresSource] = useState<HiresSource>(null)
-  const [jobs, setJobs] = useState<Jobs8183Row[] | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [hiresError, setHiresError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    if (!account) {
-      setOwned(null)
-      setHires(null)
-      setHiresSource(null)
-      setJobs(null)
-      return
-    }
-    setLoading(true)
-    setError(null)
-    setHiresError(null)
-    // the reads are independent, so one failing source never hides the listings
-    const [ownedResult, hiresResult, jobsResult] = await Promise.allSettled([
-      getAgentsByOwner(account),
-      getHiresByPayee(account),
-      getJobs8183Jobs(account),
-    ])
-    if (ownedResult.status === 'fulfilled') {
-      setOwned(ownedResult.value)
-    } else {
-      setError(hireErrorText(ownedResult.reason))
-    }
-    if (hiresResult.status === 'fulfilled') {
-      setHires(hiresResult.value.hires)
-      setHiresSource(hiresResult.value.source)
-    } else {
-      setHires(null)
-      setHiresSource(null)
-      setHiresError(hireErrorText(hiresResult.reason))
-    }
-    // escrow rows are a reading, not a commitment: a failed read leaves the column honest
-    setJobs(jobsResult.status === 'fulfilled' ? jobsResult.value : null)
-    setLoading(false)
-  }, [account])
-
-  useEffect(() => {
-    void load()
-  }, [load])
+export function SellerStallsSection() {
+  // the stalls read the same listings and receipts the console loaded once
+  const {
+    account,
+    owned,
+    hires,
+    hiresSource,
+    jobs,
+    loading,
+    ownedError: error,
+    hiresError,
+    reload,
+  } = useSellerData()
 
   const agents = owned?.agents ?? []
   const stalls = agents.filter(isStall)
@@ -210,16 +168,16 @@ export function SellerStallsPage() {
     : 'seller / stalls'
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+    <section id="stalls" className="mt-16 scroll-mt-24 border-t border-souk-hair pt-12 text-souk-ink">
       <Stack gap={10} className="max-w-[1180px] xl:max-w-[min(1180px,calc(100%_-_460px))]">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
-        <h1 className="m-0">
-          <Txt size={34} lead={42} display weight="bold" tone="ink">
+        <h2 className="m-0">
+          <Txt size={28} lead={36} display weight="bold" tone="ink">
             Your stalls.
           </Txt>
-        </h1>
+        </h2>
       </Stack>
 
       {!account && (
@@ -242,7 +200,7 @@ export function SellerStallsPage() {
             <Txt size={11} lead={16} mono tone="labels">
               stalls for <Txt tone="slate">{shortAddress(account)}</Txt>
             </Txt>
-            <Btn kind="off" onClick={() => void load()} disabled={loading}>
+            <Btn kind="off" onClick={() => void reload()} disabled={loading}>
               {loading ? 'Reading...' : 'Refresh'}
             </Btn>
           </Row>
@@ -281,7 +239,7 @@ export function SellerStallsPage() {
                   hiresSource={hiresSource}
                   tokenJobs={jobsByToken.get(`${agent.chainId}:${agent.tokenId}`) ?? []}
                   jobsRead={jobs !== null}
-                  onChanged={() => void load()}
+                  onChanged={() => void reload()}
                 />
               ))}
               <AddStallSlot />
@@ -310,7 +268,7 @@ export function SellerStallsPage() {
           )}
         </>
       )}
-    </div>
+    </section>
   )
 }
 

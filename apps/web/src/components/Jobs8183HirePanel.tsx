@@ -36,15 +36,16 @@ type Phase =
   | { kind: 'idle' }
   | { kind: 'quoting' }
   | { kind: 'quoted' }
-  | { kind: 'funding'; done: number }
+  | { kind: 'funding' }
   | { kind: 'funded' }
   | { kind: 'failed' }
 
 // The buy side of an ERC-8183 job: the buyer's task goes to the negotiate
 // route, the validated quote comes back priced on the shared kernel's own
-// token, and the buyer's wallet signs the five calls that lock the price into
-// the kernel's escrow. Nothing here signs money away from the marketplace;
-// every signature is the buyer's own call on a public contract.
+// token, and the buyer's wallet funds the five calls that lock the price into
+// the kernel's escrow. One approval when the wallet batches, otherwise one per
+// call. Nothing here signs money away from the marketplace; every call is the
+// buyer's own on a public contract.
 // one written task per category, so the card opens with something the seller can
 // actually price
 const DEFAULT_TASK: Record<string, string> = {
@@ -118,7 +119,7 @@ export default function Jobs8183HirePanel({
     if (!account || !quote || !stack) return
     setError(null)
     setLines([])
-    setPhase({ kind: 'funding', done: 0 })
+    setPhase({ kind: 'funding' })
     try {
       const provider = (await getProvider()) as Eip1193Like
       setTargetChain(chainId)
@@ -159,7 +160,7 @@ export default function Jobs8183HirePanel({
       const bundled = await tryBundledFund(provider, chainId, account, calls)
       if (bundled.supported && bundled.ok) {
         setLines((l) => [...l, `Batched fund: 1 approval for ${calls.length} calls.`])
-        setPhase({ kind: 'funding', done: calls.length })
+        setPhase({ kind: 'funding' })
       } else if (bundled.supported && !bundled.ok) {
         throw new Error(bundled.error)
       } else {
@@ -178,7 +179,7 @@ export default function Jobs8183HirePanel({
           if (receipt.status !== '0x1' && receipt.status !== 'success') {
             throw new Error(`Signature ${i + 1} of ${calls.length} failed: ${call.label}. ${hash}`)
           }
-          setPhase({ kind: 'funding', done: i + 1 })
+          setPhase({ kind: 'funding' })
         }
       }
 
@@ -369,13 +370,13 @@ export default function Jobs8183HirePanel({
                   : phase.kind === 'quoted'
                     ? 'Fund this job'
                     : phase.kind === 'funding'
-                      ? `Signing ${Math.min(phase.done + 1, 5)} of 5..`
+                      ? 'Funding the job..'
                       : 'Get the price'}
             </Btn>
             <Txt size={12} lead={18} tone="muted">
               {funded
                 ? 'Delivery is attested by the seller and settles to its own wallet.'
-                : 'The quote is signed by the wallet that registered this listing and holds for 10 minutes.'}
+                : 'One approval on wallets that support batched calls, otherwise five confirmations. The quote is signed by the wallet that registered this listing and holds for 10 minutes.'}
             </Txt>
           </Stack>
         ) : null}
@@ -404,7 +405,7 @@ export default function Jobs8183HirePanel({
         <SpecRow k="Price" v={priceLabel ? `${priceLabel} of the kernel's token` : "signed in $U by the seller's wallet"} />
         <SpecRow k="Terms" v="deliverables and quality standards" />
         <SpecRow k="Holds for" v="10 minutes, then it is worthless" />
-        <SpecRow k="Funds" v="one transaction on BSC mainnet 56" />
+        <SpecRow k="Funds" v="BSC mainnet 56; one batched approval on supporting wallets, otherwise five confirmations" />
     </Stack>
   )
 

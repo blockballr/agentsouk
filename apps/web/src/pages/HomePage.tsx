@@ -399,7 +399,7 @@ export function HomePage() {
                             </a>
                           ) : (
                             <Txt size={12} lead={18} mono tone="steel">
-                              pending cutover
+                              no settlement yet
                             </Txt>
                           )}
                         </td>

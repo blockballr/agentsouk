@@ -367,7 +367,7 @@ export function MarketplacePage() {
             // the register's own alert grammar: one indigo band when something needs attention
             <Row align="center" gap={9} pad={[0, 12, 0, 12]} radius={8} bg="indigo" hair className="h-[34px] w-fit">
               <Dot tone="held" size={8} />
-              <Txt size={12} lead={18} tone="labels">
+              <Txt size={12} lead={18} tone="indigo-labels">
                 The cart holds 8 agents at most. Remove one to add another.
               </Txt>
             </Row>

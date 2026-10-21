@@ -1,3 +1,4 @@
+import { useI18n } from '../lib/i18n'
 import { cx } from './ui'
 
 // the support door where a visitor stalls: the telegram the footer names, carried as a
@@ -13,6 +14,7 @@ export function SupportButton({
   plain?: boolean
   iconFirst?: boolean
 }) {
+  const { t } = useI18n()
   const icon = (
     <svg
       aria-hidden="true"
@@ -34,13 +36,15 @@ export function SupportButton({
       target="_blank"
       rel="noreferrer"
       className={cx(
-        'micro inline-flex min-h-10 items-center justify-center gap-2 rounded-[5px] px-3 py-2 text-souk-peach transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data',
-        plain ? 'hover:text-souk-ink' : 'bg-souk-indigo hover:brightness-110',
+        'micro inline-flex min-h-10 items-center justify-center gap-2 rounded-[5px] px-3 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data',
+        // on the indigo band the peach is the dark-register value in both themes,
+        // so it does not turn brown on the navy in light mode
+        plain ? 'text-souk-peach hover:text-souk-ink' : 'bg-souk-indigo text-[#f2936b] hover:brightness-110',
         className,
       )}
     >
       {iconFirst ? icon : null}
-      Support
+      {t('ticker.support')}
       {iconFirst ? null : icon}
     </a>
   )

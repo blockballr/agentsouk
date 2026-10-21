@@ -1,17 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
 import { formatUnits, shortAddress, timeAgo } from '@agora/core'
-import {
-  getHiresByPayee,
-  getNotifications,
-  type NotificationRow,
-  type PayeeHire,
-} from '../lib/api'
+import { type NotificationRow, type PayeeHire } from '../lib/api'
 import { chainLabel } from '../lib/contracts'
-import { hireErrorText } from '../lib/hire'
-import { useConnectedAccount } from '../lib/use-connected-account'
+import { useSellerData, type HiresSource } from '../lib/seller-data'
 import { Dot, Pill, Row, Rule, Stack, Txt, type DotTone } from '../components/souk'
-
-type HiresSource = 'postgres' | 'memory' | null
 
 // only buyers are market face; our checks, the lister's own tests and team wallets stay out
 function isCustomer(h: PayeeHire): boolean {
@@ -95,48 +86,24 @@ function hireTone(h: PayeeHire): DotTone {
   return h.mode === 'sandbox' ? 'held' : 'good'
 }
 
-export function MarketFacePage() {
-  // the connected wallet, watched: a switch inside the wallet re-points the page
-  const account = useConnectedAccount()
-  const [loading, setLoading] = useState(false)
-  const [hires, setHires] = useState<PayeeHire[] | null>(null)
-  const [source, setSource] = useState<HiresSource>(null)
-  const [hiresError, setHiresError] = useState<string | null>(null)
-  const [feed, setFeed] = useState<NotificationRow[] | null>(null)
-  const [feedError, setFeedError] = useState(false)
+// a builder listing settles to its own wallet, so the row names the wallet that
+// actually received the payment rather than implying the owner wallet did
+function payeeLabel(hire: PayeeHire, account: string | null): string {
+  if (account && hire.payTo.toLowerCase() === account.toLowerCase()) return 'your wallet'
+  return shortAddress(hire.payTo)
+}
 
-  const load = useCallback(async () => {
-    if (!account) {
-      setHires(null)
-      setSource(null)
-      setFeed(null)
-      return
-    }
-    setLoading(true)
-    setHiresError(null)
-    setFeedError(false)
-    // the two reads are independent, so an outage in the bell must not hide the receipts
-    const [payee, bell] = await Promise.allSettled([getHiresByPayee(account), getNotifications(account)])
-    if (payee.status === 'fulfilled') {
-      setHires(payee.value.hires)
-      setSource(payee.value.source)
-    } else {
-      setHires(null)
-      setSource(null)
-      setHiresError(hireErrorText(payee.reason))
-    }
-    if (bell.status === 'fulfilled') {
-      setFeed(bell.value.rows)
-    } else {
-      setFeed(null)
-      setFeedError(true)
-    }
-    setLoading(false)
-  }, [account])
-
-  useEffect(() => {
-    void load()
-  }, [load])
+export function MarketFaceSection() {
+  // money and people come from the same receipts read the console already made
+  const {
+    account,
+    hires,
+    hiresSource: source,
+    hiresError,
+    notifications: feed,
+    feedError,
+    loading,
+  } = useSellerData()
 
   const all = hires ?? []
   const earned = earnedRows(all)
@@ -146,21 +113,24 @@ export function MarketFacePage() {
   const chains = new Set(all.map((h) => h.chainId))
   const chain = chains.size === 1 && all.length > 0 ? chainLabel([...chains][0]) : null
   const kicker = account
-    ? ['profile / market face', shortAddress(account), chain].filter(Boolean).join(' · ')
-    : 'profile / market face'
+    ? ['seller / market face', shortAddress(account), chain].filter(Boolean).join(' · ')
+    : 'seller / market face'
   const read = hires !== null
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
+    <section
+      id="market-face"
+      className="mt-16 scroll-mt-24 border-t border-souk-hair pt-12 text-souk-ink"
+    >
       <header className="flex max-w-[1180px] flex-col gap-2.5 xl:max-w-[min(1180px,calc(100%_-_460px))]">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
-        <h1 className="m-0">
-          <Txt size={34} lead={42} display weight="bold" tone="ink">
+        <h2 className="m-0">
+          <Txt size={28} lead={36} display weight="bold" tone="ink">
             Money and people.
           </Txt>
-        </h1>
+        </h2>
       </header>
 
       {!account && (
@@ -169,7 +139,7 @@ export function MarketFacePage() {
             Connect the wallet you listed with.
           </Txt>
           <Txt size={13} lead={20} tone="muted">
-            A market face reads the receipts store for the wallet your agents settle to.
+            A market face reads the receipts store for the wallets your agents settle to.
           </Txt>
           <Txt size={12} lead={18} tone="steel">
             Connect from the rail on the left, or the bar above on a narrow screen.
@@ -191,7 +161,13 @@ export function MarketFacePage() {
 
           <div className="mt-6 grid gap-5 md:grid-cols-2">
             <EarnedPanel rows={earned} read={read} />
-            <PeoplePanel shown={shown} rest={rest} buyers14={buyers14} source={source} />
+            <PeoplePanel
+              shown={shown}
+              rest={rest}
+              buyers14={buyers14}
+              source={source}
+              account={account}
+            />
           </div>
 
           <FeedCard rows={feed} error={feedError} className="mt-5" />
@@ -207,7 +183,7 @@ export function MarketFacePage() {
       <div className="mt-10">
         <Rule />
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -217,20 +193,20 @@ function EarnedPanel({ rows, read }: { rows: EarnedRow[]; read: boolean }) {
   return (
     <Stack bg="indigo" hair radius={20} pad={[16, 16, 14, 16]} gap={12} className="min-w-0">
       <Row justify="between" align="center" gap={9}>
-        <Txt size={15} lead={22} weight="bold" tone="ink">
+        <Txt size={15} lead={22} weight="bold" tone="white">
           Earned
         </Txt>
-        <Txt size={10} lead={14} weight="bold" upper tone="labels">
+        <Txt size={10} lead={14} weight="bold" upper tone="indigo-labels">
           Settled only
         </Txt>
       </Row>
       {rows.length === 0 ? (
         <Row justify="between" align="center" gap={10}>
-          <Txt size={12} lead={18} tone={read ? 'slate' : 'muted'}>
+          <Txt size={12} lead={18} tone="indigo-labels">
             {read ? 'No settled payment on any asset yet.' : 'Waiting for the receipts store.'}
           </Txt>
           {read ? (
-            <Txt size={15} lead={20} mono tone="muted">
+            <Txt size={15} lead={20} mono tone="indigo-labels">
               nothing yet
             </Txt>
           ) : null}
@@ -240,22 +216,22 @@ function EarnedPanel({ rows, read }: { rows: EarnedRow[]; read: boolean }) {
           <Row key={row.key} justify="between" align="center" gap={10} className="min-w-0">
             <Row align="center" gap={10} className="min-w-0">
               <Pill>{row.asset}</Pill>
-              <Txt size={12} lead={18} tone="slate" className="truncate">
+              <Txt size={12} lead={18} tone="indigo-labels" className="truncate">
                 {row.count === 1 ? '1 settlement' : `${row.count} settlements`}
               </Txt>
             </Row>
             <Row align="center" gap={10} className="shrink-0">
-              <Txt size={15} lead={20} mono tone={row.plain ? 'slate' : 'data'}>
+              <Txt size={15} lead={20} mono tone={row.plain ? 'indigo-labels' : 'indigo-data'}>
                 {row.amount}
               </Txt>
-              <Txt size={11} lead={16} mono tone="labels">
+              <Txt size={11} lead={16} mono tone="indigo-labels">
                 {row.when}
               </Txt>
             </Row>
           </Row>
         ))
       )}
-      <Txt size={12} lead={18} tone="slate">
+      <Txt size={12} lead={18} tone="indigo-labels">
         Sandbox receipts never land here. Every figure is read off a settled payment.
       </Txt>
     </Stack>
@@ -267,11 +243,13 @@ function PeoplePanel({
   rest,
   buyers14,
   source,
+  account,
 }: {
   shown: PayeeHire[]
   rest: number
   buyers14: number
   source: HiresSource
+  account: string | null
 }) {
   return (
     <Stack surface pad={[16, 16, 14, 16]} gap={10} className="min-w-0">
@@ -289,14 +267,19 @@ function PeoplePanel({
         </Txt>
       ) : (
         shown.map((h) => (
-          <Row key={h.paymentId} align="center" gap={10} className="min-h-[34px] min-w-0">
+          <Row key={h.paymentId} align="center" gap={10} className="min-h-[38px] min-w-0">
             <Dot tone={hireTone(h)} size={8} />
             <Txt size={12} lead={18} mono tone="ink" className="w-[150px] shrink-0 truncate">
               {shortAddress(h.client)}
             </Txt>
-            <Txt size={13} lead={18} tone="slate" className="min-w-0 flex-1 truncate">
-              {h.agentName}
-            </Txt>
+            <div className="min-w-0 flex-1">
+              <Txt size={13} lead={18} tone="slate" className="block truncate">
+                {h.agentName}
+              </Txt>
+              <Txt size={10} lead={14} mono tone="labels" className="block truncate">
+                settled to {payeeLabel(h, account)}
+              </Txt>
+            </div>
             <Txt
               size={13}
               lead={18}

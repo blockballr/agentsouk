@@ -142,6 +142,17 @@ export function IconMonitor() {
   );
 }
 
+// the docs mark: a page with a folded corner and two ruled lines, at the status
+// bar's own small size rather than the control row's 18
+export function IconDocs() {
+  return (
+    <svg width="13" height="13" {...strokeProps}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 2v6h6M8.5 13h7M8.5 17h4.5" />
+    </svg>
+  );
+}
+
 // the disclosure's own mark: which way the folded section opens
 export function IconChevron({ className }: { className?: string }) {
   return (

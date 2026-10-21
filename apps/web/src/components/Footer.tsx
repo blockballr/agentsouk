@@ -3,6 +3,7 @@ import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { Label, Row, Stack, Txt } from './souk'
 import { Wordmark } from './Wordmark'
+import { useI18n } from '../lib/i18n'
 
 // No external flag. The columns that used to carry one were re-pointed at internal routes
 // when the about link was dropped, which left the anchor branch unreachable, so it was
@@ -11,36 +12,37 @@ type FooterLink = { to: string; label: string }
 
 const columns: { heading: string; links: FooterLink[] }[] = [
   {
-    heading: 'Market',
+    heading: 'footer.market',
     links: [
-      { to: '/agents', label: 'All agents' },
-      { to: '/agents?category=rebalancing', label: 'Rebalancing' },
-      { to: '/agents?category=health-factor', label: 'Health factor' },
-      { to: '/agents?category=grid-trading', label: 'Grid trading' },
-      { to: '/agents?category=yield', label: 'Yield' },
-      { to: '/compare', label: 'Compare' },
+      { to: '/agents', label: 'footer.allAgents' },
+      { to: '/agents?category=rebalancing', label: 'footer.rebalancing' },
+      { to: '/agents?category=health-factor', label: 'footer.healthFactor' },
+      { to: '/agents?category=grid-trading', label: 'footer.gridTrading' },
+      { to: '/agents?category=yield', label: 'footer.yield' },
+      { to: '/compare', label: 'footer.compare' },
     ],
   },
   {
-    heading: 'Protocol',
+    heading: 'footer.protocol',
     links: [
-      { to: '/agents', label: 'x402 payments' },
-      { to: '/agents', label: 'ERC-8004 registry' },
-      { to: '/agents', label: 'BNB Smart Chain' },
+      { to: '/agents', label: 'footer.x402' },
+      { to: '/agents', label: 'footer.registry' },
+      { to: '/agents', label: 'footer.chain' },
     ],
   },
   {
-    heading: 'Project',
+    heading: 'footer.project',
     links: [
-      { to: '/about', label: 'About' },
-      { to: '/quest', label: 'Souk passport' },
-      { to: '/advantage', label: 'Advantage report' },
-      { to: '/profile', label: 'Your listings' },
+      { to: '/about', label: 'footer.about' },
+      { to: '/quest', label: 'footer.passport' },
+      { to: '/advantage', label: 'footer.advantage' },
+      { to: '/profile', label: 'footer.listings' },
     ],
   },
 ]
 
 export function Footer() {
+  const { t } = useI18n()
   const target = useTargetChain()
   return (
     <footer className="border-t border-souk-edge bg-souk-canvas">
@@ -50,7 +52,7 @@ export function Footer() {
             <Stack gap={8} className="max-w-[420px]">
               <Wordmark />
               <Txt size={15} lead={22} tone="slate">
-                The open market for working agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
+                {t('footer.tagline')}{target ? ` on ${chainLabel(target.chainId)}` : ''}.
               </Txt>
               <Txt size={11} lead={16} mono tone="labels">
                 {/* derived from the chain the server reports, so the network we
@@ -59,12 +61,12 @@ export function Footer() {
                   ? target.chainId === 97
                     ? `${chainLabel(target.chainId)} · chain ${target.chainId} · test settlement`
                     : `${chainLabel(target.chainId)} · chain ${target.chainId}`
-                  : 'Checking the network'}
+                  : t('footer.checking')}
               </Txt>
               {target?.chainId === 97 && (
                 <Txt size={11} lead={16} mono tone="labels">
-                  Mainnet cutover to chain 56 is planned; settlement stays on testnet
-                  for this phase.
+                  This is the chain 97 test deployment; the live market settles on
+                  chain 56.
                 </Txt>
               )}
               <Row justify="between" align="center">
@@ -74,7 +76,7 @@ export function Footer() {
                   rel="noreferrer"
                   className="text-[13px] leading-[18px] text-souk-sky transition hover:text-souk-ink"
                 >
-                  Agent Souk support on Telegram
+                  {t('footer.telegram')}
                 </a>
                 <Txt size={11} lead={16} mono tone="labels">
                   t.me/agentsouk
@@ -82,16 +84,16 @@ export function Footer() {
               </Row>
             </Stack>
             {columns.map((col) => (
-              <nav key={col.heading} aria-label={col.heading} className="w-full lg:w-[418px]">
+              <nav key={col.heading} aria-label={t(col.heading)} className="w-full lg:w-[418px]">
                 <Stack gap={9}>
-                  <Label tone="muted">{col.heading}</Label>
+                  <Label tone="muted">{t(col.heading)}</Label>
                   {col.links.map((l) => (
                     <Link
                       key={l.label}
                       to={l.to}
                       className="text-[14px] leading-[20px] text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
                     >
-                      {l.label}
+                      {t(l.label)}
                     </Link>
                   ))}
                 </Stack>
