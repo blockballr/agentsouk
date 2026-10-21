@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { getProvider } from '../lib/wallet'
 import { Stack, Row, Txt, Btn, Pill, NoteBox, SectionHead } from '../components/souk'
+import { SETTLEMENT_ASSET_BY_CHAIN } from '../lib/contracts'
+import { useTargetChain } from '../lib/target-chain'
 
 interface BuiltAgent {
   id: string
@@ -33,6 +35,14 @@ export function SettingsPage() {
   const [revealed, setRevealed] = useState<Record<string, string>>({})
   const [blurred, setBlurred] = useState<Record<string, boolean>>({})
   const [busy, setBusy] = useState<string | null>(null)
+  const [fundFor, setFundFor] = useState<string | null>(null)
+  const [fundAmount, setFundAmount] = useState('')
+  const [fundToken, setFundToken] = useState<'native' | 'settlement'>('native')
+  const [fundBusy, setFundBusy] = useState(false)
+  const [fundError, setFundError] = useState<string | null>(null)
+  const [fundOk, setFundOk] = useState(false)
+  const target = useTargetChain()
+  const chainId = target?.chainId ?? 56
 
   useEffect(() => {
     if (!account) {
@@ -124,6 +134,45 @@ export function SettingsPage() {
     }
   }
 
+  async function fundAgent(agent: BuiltAgent) {
+    if (!account || !agent.agentWallet) return
+    const amount = fundAmount.trim()
+    if (!amount || !/^\d*\.?\d+$/.test(amount)) {
+      setFundError('Enter a valid amount.')
+      return
+    }
+    setFundBusy(true)
+    setFundError(null)
+    setFundOk(false)
+    try {
+      const provider = await getProvider()
+      const settlement = SETTLEMENT_ASSET_BY_CHAIN[chainId]
+      if (fundToken === 'native') {
+        const wei = BigInt(Math.round(parseFloat(amount) * 1e18))
+        await provider.request({
+          method: 'eth_sendTransaction',
+          params: [{ from: account, to: agent.agentWallet, value: '0x' + wei.toString(16) }],
+        })
+      } else {
+        const decimals = 18
+        const units = BigInt(Math.round(parseFloat(amount) * 10 ** decimals))
+        const toAddr = agent.agentWallet.slice(2).padStart(64, '0')
+        const amtHex = units.toString(16).padStart(64, '0')
+        const data = '0xa9059cbb' + toAddr + amtHex
+        await provider.request({
+          method: 'eth_sendTransaction',
+          params: [{ from: account, to: settlement.address, data }],
+        })
+      }
+      setFundOk(true)
+      setFundAmount('')
+    } catch (e) {
+      setFundError(e instanceof Error ? e.message : 'Transfer failed.')
+    } finally {
+      setFundBusy(false)
+    }
+  }
+
   function copyKey(agentId: string) {
     const key = revealed[agentId]
     if (!key) return
@@ -188,6 +237,69 @@ export function SettingsPage() {
                 <Txt size={11} lead={16} mono tone="muted">
                   {agent.id} · {agent.hireMode} · {agent.agentWallet ?? 'no seller key'}
                 </Txt>
+                {agent.agentWallet && (
+                  <Row gap={6} align="center" className="flex-wrap">
+                    <Btn
+                      kind="off"
+                      onClick={() => void navigator.clipboard?.writeText(agent.agentWallet!)}
+                    >
+                      Copy address
+                    </Btn>
+                    {account && (
+                      <Btn
+                        kind="off"
+                        onClick={() => {
+                          setFundFor(fundFor === agent.id ? null : agent.id)
+                          setFundError(null)
+                          setFundOk(false)
+                          setFundAmount('')
+                        }}
+                      >
+                        {fundFor === agent.id ? 'Close' : 'Fund'}
+                      </Btn>
+                    )}
+                  </Row>
+                )}
+                {fundFor === agent.id && agent.agentWallet && (
+                  <Stack gap={8} className="mt-2 rounded-[8px] border border-souk-hair bg-souk-surface2 p-3">
+                    <Row gap={6} align="center" className="flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setFundToken('native')}
+                        className={`rounded-[6px] px-3 py-1.5 text-[12px] ${fundToken === 'native' ? 'bg-souk-sky text-white' : 'border border-souk-hair text-souk-ink'}`}
+                      >
+                        BNB
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFundToken('settlement')}
+                        className={`rounded-[6px] px-3 py-1.5 text-[12px] ${fundToken === 'settlement' ? 'bg-souk-sky text-white' : 'border border-souk-hair text-souk-ink'}`}
+                      >
+                        {SETTLEMENT_ASSET_BY_CHAIN[chainId]?.symbol ?? 'Token'}
+                      </button>
+                    </Row>
+                    <input
+                      type="text"
+                      value={fundAmount}
+                      onChange={(e) => setFundAmount(e.target.value)}
+                      placeholder="0.0"
+                      className="h-[36px] w-full rounded-[8px] border border-souk-hair bg-souk-surface1 px-3 text-[13px] text-souk-ink"
+                    />
+                    {fundError && (
+                      <Txt size={11} lead={16} tone="peach">
+                        {fundError}
+                      </Txt>
+                    )}
+                    {fundOk && (
+                      <Txt size={11} lead={16} tone="data">
+                        Transfer sent.
+                      </Txt>
+                    )}
+                    <Btn kind="primary" disabled={fundBusy || !fundAmount} onClick={() => void fundAgent(agent)}>
+                      {fundBusy ? 'Sending…' : 'Send'}
+                    </Btn>
+                  </Stack>
+                )}
                 {agent.custody !== 'none' && agent.custody !== 'revoked' && (
                   <>
                     {key ? (
