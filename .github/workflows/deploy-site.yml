@@ -11,7 +11,7 @@ name: Deploy site
 # because a secret is not available to a job-level condition.
 on:
   push:
-    branches: [main, quest-passport, ui-uplift]
+    branches: [main, quest-passport, ui-uplift, soukdio-builder]
     paths:
       - "apps/web/**"
       - "packages/core/**"
