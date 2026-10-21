@@ -15,8 +15,10 @@
     "@tailwindcss/vite": "^4.3.3",
     "@walletconnect/ethereum-provider": "2.24.0",
     "framer-motion": "^13.1.0",
+    "i18next": "^26.5.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-i18next": "^17.1.0",
     "react-router-dom": "^7.18.2",
     "tailwindcss": "^4.3.3",
     "viem": "2.56.3"

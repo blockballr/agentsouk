@@ -616,7 +616,7 @@ export function AgentDetailPage() {
       {!hireInView && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-souk-hair bg-souk-indigo px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
           {quest && questStage && (
-            <p className="micro mb-2 text-souk-slate">
+            <p className="micro mb-2 text-souk-indigo-labels">
               Souk passport · {QUEST_STAGE_COUNT[questStage]}
             </p>
           )}
@@ -659,7 +659,7 @@ export function AgentDetailPage() {
                   row. indigo, not glass white: an avatar is any colour at all,
                   and a pale peel disappeared on the bright ones */}
               {detail.category ? (
-                <span className="absolute -bottom-2.5 left-1.5 inline-flex max-w-[140px] items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-ink shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
+                <span className="absolute -bottom-2.5 left-1.5 inline-flex max-w-[140px] items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
                   {CATEGORIES.find((c) => c.key === detail.category)?.label ?? detail.category}
                 </span>
               ) : null}

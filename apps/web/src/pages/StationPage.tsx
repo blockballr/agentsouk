@@ -514,7 +514,7 @@ export function StationPage() {
           >
             <Row align="center" gap={10}>
               <Dot tone="sky" size={8} />
-              <Txt size={13} lead={18} tone="ink">
+              <Txt size={13} lead={18} tone="white">
                 {session?.expiresAt ? sessionNotice(session.expiresAt) : 'A new signature starts a new session, and the old nonce stops working the moment it lands.'}
               </Txt>
             </Row>
@@ -580,7 +580,7 @@ function ChangeAccess({
               onClick={() => setRole(r)}
               aria-pressed={role === r}
               className={`cursor-pointer rounded-[6px] px-3 py-[7px] text-[13px] leading-[18px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
-                role === r ? 'bg-souk-indigo font-semibold text-souk-ink' : 'text-souk-muted hover:text-souk-ink'
+                role === r ? 'bg-souk-indigo font-semibold text-souk-white' : 'text-souk-muted hover:text-souk-ink'
               }`}
             >
               {r}

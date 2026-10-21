@@ -10,14 +10,16 @@ import { connectWallet, disconnectWallet, signOut } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
+import { useLocalProfile } from '../lib/profile'
+import { useI18n } from '../lib/i18n'
 import { Dot, IconCart, Row, Rule, Stack, Txt } from './souk'
 
 const links = [
-  { to: '/agents', label: 'Marketplace' },
-  { to: '/compare', label: 'Compare' },
-  { to: '/build', label: 'Build' },
-  { to: '/ongoing', label: 'Ongoing' },
-  { to: '/quest', label: 'Quest' },
+  { to: '/agents', key: 'nav.marketplace' },
+  { to: '/compare', key: 'nav.compare' },
+  { to: '/build', key: 'nav.build' },
+  { to: '/ongoing', key: 'nav.ongoing' },
+  { to: '/quest', key: 'nav.quest' },
 ]
 
 // the design's top bar item: upper case, and the active one is the only ink in the
@@ -43,6 +45,7 @@ const profileClass =
   'flex h-[38px] shrink-0 items-center gap-2 rounded-[8px] border border-souk-hair pl-2.5 pr-3.5 text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
 
 export function Nav() {
+  const { t } = useI18n()
   const [menuOpen, setMenuOpen] = useState(false)
   // a declined sign-in surfaces here, where the connect click happened
   const [connectError, setConnectError] = useState<string | null>(null)
@@ -59,7 +62,7 @@ export function Nav() {
           <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => itemClass(isActive)}>
-                {l.label}
+                {t(l.key)}
               </NavLink>
             ))}
             {/* the plain text links belong in this one row: a group that also holds
@@ -99,7 +102,7 @@ export function Nav() {
         </div>
         <button
           type="button"
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-label={menuOpen ? t('nav.menu.close') : t('nav.menu.open')}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((v) => !v)}
           className="flex h-11 w-11 items-center justify-center text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data lg:hidden"
@@ -123,7 +126,7 @@ export function Nav() {
                   } focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data`
                 }
               >
-                {l.label}
+                {t(l.key)}
               </NavLink>
             ))}
             <div className="mt-2 flex items-center gap-6 py-3">
@@ -132,7 +135,7 @@ export function Nav() {
               {/* phones reach the account through the page; the panel is the wide bar's
                   affordance, so the mobile row links straight there */}
               <NavLink to="/profile" onClick={() => setMenuOpen(false)} className={itemClass(false)}>
-                Profile
+                {t('nav.profile')}
               </NavLink>
               <NotificationBell />
             </div>
@@ -144,6 +147,7 @@ export function Nav() {
 }
 
 function ChainTag() {
+  const { t } = useI18n()
   const target = useTargetChain()
   const on = target?.chainId === 56
   const test = Boolean(target) && !on
@@ -151,20 +155,21 @@ function ChainTag() {
   // mainnet and a quester needs to know it before signing anything
   return (
     <span
-      title={target ? `Settling on ${chainLabel(target.chainId)} · chain ${target.chainId}` : 'Reading the chain'}
+      title={target ? `Settling on ${chainLabel(target.chainId)} · chain ${target.chainId}` : t('nav.chain.reading')}
       className="inline-flex shrink-0 items-center gap-2 rounded-[8px] border border-souk-hair px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase leading-[14px] text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
       <Dot tone={on ? 'good' : test ? 'sky' : 'quiet'} size={6} />
-      {target ? (on ? 'Mainnet 56' : `Testnet ${target.chainId}`) : 'Reading chain'}
+      {target ? (on ? t('nav.chain.mainnet', { id: target.chainId }) : t('nav.chain.testnet', { id: target.chainId })) : t('nav.chain.reading')}
     </span>
   )
 }
 
 function CartLink() {
+  const { t } = useI18n()
   const [count, setCount] = useState(() => cartCount())
   useEffect(() => subscribe(() => setCount(cartCount())), [])
   return (
-    <Link to="/cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`} className={controlClass}>
+    <Link to="/cart" aria-label={t(count === 1 ? 'nav.cart.one' : 'nav.cart.many', { count })} className={controlClass}>
       <IconCart />
       {/* the count keeps its place as functionality, in the design's own badge chip and
           in the same corner the outbox count sits when the cart is not empty */}
@@ -200,25 +205,6 @@ function VaultGlyph() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8eaf2" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <circle cx="12" cy="12" r="3.2" />
-    </svg>
-  )
-}
-
-function ClockGlyph() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8eaf2" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="8.5" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  )
-}
-
-function MenuCartGlyph() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8eaf2" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2 3h2.6l2.4 12.3a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6L21 7H6" />
-      <circle cx="9.5" cy="20" r="1.4" />
-      <circle cx="17.5" cy="20" r="1.4" />
     </svg>
   )
 }
@@ -263,8 +249,12 @@ function AccountRow({ label, route, Icon }: { label: string; route: string; Icon
 // the account panel: the same shell the outbox dropdown wears (indigo navy, one rim
 // of white at 16 on every edge, a 20 radius), so the two can never drift apart
 function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: () => void }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement | null>(null)
+  // the picture set in Settings/profile rides the chip and the panel head, so the
+  // same mark a seller chose is the one the bar shows
+  const profile = useLocalProfile(wallet)
   // the panel names the chain the deployment actually serves, read from the server
   // rather than compiled in, so it cannot claim a chain the instance is not on
   const target = useTargetChain()
@@ -282,13 +272,21 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
         type="button"
         aria-haspopup="true"
         aria-expanded={open}
-        aria-label={wallet ? undefined : 'Profile'}
+        aria-label={wallet ? (profile?.username ? `${profile.username}, account menu` : 'Account menu') : t('nav.profile')}
         // the mark carries the chip whether or not a wallet is picked, and the address
         // joins it the moment one is; the panel opens either way, connect included
         onClick={() => setOpen((v) => !v)}
         className={wallet ? profileClass : controlClass}
       >
-        <PersonGlyph />
+        {profile?.avatar ? (
+          <img
+            src={profile.avatar}
+            alt=""
+            className="h-[22px] w-[22px] shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <PersonGlyph />
+        )}
         {wallet ? (
           <Txt size={12} lead={18} mono tone="white">
             {shortAddress(wallet)}
@@ -305,24 +303,32 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
           className="absolute right-0 top-full z-50 mt-2 w-[300px] bg-souk-indigo/85 shadow-lg backdrop-blur-md ring-1 ring-white/10"
         >
           <Row align="center" pad={[0, 8, 8, 8]} gap={10} className="text-souk-indigo-labels">
-            <PersonGlyph />
+            {profile?.avatar ? (
+              <img
+                src={profile.avatar}
+                alt=""
+                className="h-[26px] w-[26px] shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <PersonGlyph />
+            )}
             <Stack gap={2}>
               <Txt size={12} lead={18} mono tone="white">
-                {wallet ? shortAddress(wallet) : 'Not connected'}
+                {profile?.username || (wallet ? shortAddress(wallet) : t('nav.account.notConnected'))}
               </Txt>
               <Txt size={10} lead={14} weight="bold" upper tone="indigo-labels">
                 {wallet
-                  ? `Connected${target ? ` · ${chainLabel(target.chainId)}` : ''}`
-                  : 'Connect to list and hire'}
+                  ? target
+                    ? t('nav.account.connectedTo', { chain: chainLabel(target.chainId) })
+                    : t('nav.account.connected')
+                  : t('nav.account.connectToList')}
               </Txt>
             </Stack>
           </Row>
           <Rule hair />
-          <AccountRow label="Your profile" route="/profile" Icon={PersonGlyph} />
-          <AccountRow label="Your vault" route="/vault" Icon={VaultGlyph} />
-          <AccountRow label="Ongoing hires" route="/ongoing" Icon={ClockGlyph} />
-          <AccountRow label="List agent" route="/list" Icon={PlusGlyph} />
-          <AccountRow label="Cart" route="/cart" Icon={MenuCartGlyph} />
+          <AccountRow label={t('nav.account.profile')} route="/profile" Icon={PersonGlyph} />
+          <AccountRow label={t('nav.account.vault')} route="/vault" Icon={VaultGlyph} />
+          <AccountRow label={t('nav.account.list')} route="/list" Icon={PlusGlyph} />
           <Rule hair />
           {wallet ? (
             <button
@@ -339,7 +345,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
             >
               {/* the one row that never navigates */}
               <PowerGlyph />
-              Disconnect wallet
+              {t('nav.account.disconnect')}
             </button>
           ) : (
             <button
@@ -351,7 +357,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
               className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-data transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
             >
               <PersonGlyph />
-              Connect wallet
+              {t('nav.account.connect')}
             </button>
           )}
         </Stack>

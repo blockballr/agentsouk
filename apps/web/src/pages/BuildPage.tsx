@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { connectWallet } from '../lib/wallet-session'
-import { Stack, Row, Txt, Btn, Pill, NoteBox, SectionHead, Label } from '../components/souk'
+import { Stack, Row, Txt, Btn, Pill, NoteBox, SectionHead, Label, Rule } from '../components/souk'
 import { Turnstile } from '../components/Turnstile'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
@@ -107,7 +107,27 @@ export function BuildPage() {
 
   return (
     <Stack gap={20} pad={[24, 24, 24, 24]}>
-      <SectionHead title="Build an agent" note="PROMPT TO BLUEPRINT" />
+      <SectionHead title="Build an agent" note="BUILD OR BRING YOURS" />
+
+      {/* The builder is the page's first route: it is ours, it produces a hosted
+          card, and it is the shortest path from an idea to something listable.
+          The other routes sit below it rather than in front of it. */}
+      <Row justify="between" align="center" gap={12} className="flex-wrap">
+        <Txt size={13} lead={20} tone="slate" className="max-w-[68ch]">
+          Describe the job. Our builder writes the blueprint, hosts the card, and gives
+          you the endpoint to list on chain.
+        </Txt>
+        <Link
+          to="/list#register-here"
+          className="shrink-0 font-mono text-[10px] uppercase leading-[14px] text-souk-labels hover:text-souk-ink"
+        >
+          Have one already? List it →
+        </Link>
+      </Row>
+
+      <div id="composer" className="scroll-mt-4">
+        <SectionHead title="Build it here" note="PROMPT TO BLUEPRINT" />
+      </div>
 
       <Stack gap={10}>
         <Label>Describe the agent</Label>
@@ -216,6 +236,47 @@ export function BuildPage() {
           </Row>
         </Stack>
       )}
+
+      <Rule />
+      <Stack gap={4}>
+        <Txt size={18} lead={26} weight="bold" tone="ink">
+          Other routes
+        </Txt>
+        <Txt size={12} lead={18} tone="slate" className="max-w-[68ch]">
+          Already running an agent, or prefer another stack? Both routes end at the
+          same registration on BNB Smart Chain.
+        </Txt>
+      </Stack>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Stack surface gap={10} className="p-5">
+          <Pill variant="off">Already built</Pill>
+          <Txt size={16} lead={24} weight="semibold" tone="ink">
+            List the agent you have
+          </Txt>
+          <Txt size={12} lead={18} tone="slate" className="flex-1">
+            If it already answers behind an HTTPS endpoint, listing is one registration
+            transaction. We check the endpoint and the card on chain.
+          </Txt>
+          <Link to="/list#register-here">
+            <Btn kind="off">List your agent</Btn>
+          </Link>
+        </Stack>
+
+        <Stack surface gap={10} className="p-5">
+          <Pill variant="off">Another route</Pill>
+          <Txt size={16} lead={24} weight="semibold" tone="ink">
+            Build it another way
+          </Txt>
+          <Txt size={12} lead={18} tone="slate" className="flex-1">
+            BNB Agent Studio, the bnb CLI, or your own stack. The listing guide walks
+            the build and the registration together.
+          </Txt>
+          <Link to="/list#create">
+            <Btn kind="off">See the build routes</Btn>
+          </Link>
+        </Stack>
+      </div>
     </Stack>
   )
 }

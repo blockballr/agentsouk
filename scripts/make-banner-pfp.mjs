@@ -8,9 +8,10 @@ import sharp from "sharp";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = "C:/Users/user/Desktop/agora-main";
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const CANVAS = "#0b0e14";
 const SURFACE = "#131722";
@@ -54,9 +55,9 @@ html,body{margin:0;width:900px;height:200px;overflow:hidden}
 .mark i{border-radius:7px;background:${INK}}
 .mark i.g{background:${DATA}}
 h1{margin:0;font-family:Fraunces,serif;font-size:46px;font-weight:600;line-height:1;letter-spacing:-.04em;white-space:nowrap}
-.o{position:relative;display:inline-block}
+.o{position:relative}
 .o span{position:absolute;left:15%;bottom:.065em;width:66%;height:.055em;background:${DATA}}
-.tag{margin:9px 0 0;font-family:Mono,monospace;font-size:11px;letter-spacing:.14em;color:${MUTED}}
+.tag{margin:9px 0 0;font-family:Mono,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${MUTED}}
 .big{position:absolute;right:-43px;top:-14px;display:grid;
   grid-template-columns:108px 108px;grid-template-rows:108px 108px;gap:12px}
 .big i{border-radius:20px;background:${INK}}
@@ -65,7 +66,7 @@ h1{margin:0;font-family:Fraunces,serif;font-size:46px;font-weight:600;line-heigh
   <div class="mark"><i></i><i></i><i></i><i class="g"></i></div>
   <div>
     <h1>Agent S<span class="o">o<span></span></span>uk</h1>
-    <p class="tag">THE OPEN MARKET FOR WORKING AGENTS</p>
+    <p class="tag">the open market for working agents</p>
   </div>
   <div class="big"><i></i><i></i><i></i><i class="g"></i></div>
 </div></body></html>`;

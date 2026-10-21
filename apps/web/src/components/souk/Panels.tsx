@@ -95,10 +95,10 @@ export interface KpiSpec {
   value: string;
   label: string;
   // the figure is only coloured when the chain earned it; a zero stays white
-  tone?: 'data' | 'white';
+  tone?: 'indigo-data' | 'white';
 }
 
-export function Kpi({ value, label, tone = 'data' }: KpiSpec) {
+export function Kpi({ value, label, tone = 'indigo-data' }: KpiSpec) {
   return (
     <Stack
       pad={[12, 14, 12, 14]}

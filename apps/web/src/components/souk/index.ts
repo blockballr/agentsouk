@@ -21,6 +21,7 @@ export {
   IconBell,
   IconCart,
   IconMonitor,
+  IconDocs,
   IconChevron,
   IconTrophy,
 } from './Marks';

@@ -5,11 +5,11 @@ export const PANCAKE_V3_FACTORY = '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865' a
 // the funded shape of a hire: the deposit sits in our own vault contract, the
 // named agent trades inside the bounds the contract set at open, and the
 // buyer's withdraw ends the agent's authority in one transaction. vault
-// addresses are per chain; chain 56 redeployed with closeIfGoal (0x07fa0fa60c61cdf0e36dba7a829ffddfdf74396f), mirrored from the server-side vault table
+// addresses are per chain; chain 56 redeployed with closeIfGoal and valueInToken0 (0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec), mirrored from the server-side vault table
 
 export const VAULT_BY_CHAIN: Record<number, string> = {
-  56: '0x07fa0fa60c61cdf0e36dba7a829ffddfdf74396f',
-  97: '0xc742e51f3fe3875a3335700a7d692f40dc8e60b8',
+  56: '0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec',
+  97: '0x035b7c4e0aab0681828c68229445c72107bac40a',
 }
 
 export function vaultFor(chainId: number): string | null {
@@ -24,7 +24,7 @@ export const EXPIRY_PRESETS: { label: string; days: number | null }[] = [
   { label: '7 days', days: 7 },
   { label: '14 days', days: 14 },
   { label: '30 days', days: 30 },
-  { label: 'Until I revoke', days: null },
+  { label: 'Until revoke', days: null },
 ]
 
 const OPEN_ABI = [
