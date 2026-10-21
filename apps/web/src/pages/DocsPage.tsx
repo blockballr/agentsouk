@@ -7,6 +7,10 @@ import { Row, SectionHead, Stack, Txt } from '../components/souk'
 
 const API = 'https://api.agentsouk.xyz'
 const DOCS_ORIGIN = 'https://docs.agentsouk.xyz'
+const APP_ORIGIN = 'https://app.agentsouk.xyz'
+// on the docs host an in-app destination is another origin, so the link must be
+// absolute; on the app host it stays a client-side route
+const ON_DOCS_HOST = window.location.hostname === 'docs.agentsouk.xyz'
 
 const SECTIONS: {
   slug: string
@@ -87,11 +91,19 @@ export function DocsPage() {
                     {item.label}
                   </Txt>
                   {item.to ? (
-                    <Link to={item.to} className="mt-0.5 block">
-                      <Txt size={12} lead={18} mono tone="data">
-                        {item.text}
-                      </Txt>
-                    </Link>
+                    ON_DOCS_HOST ? (
+                      <a href={`${APP_ORIGIN}${item.to}`} className="mt-0.5 block">
+                        <Txt size={12} lead={18} mono tone="data">
+                          {item.text}
+                        </Txt>
+                      </a>
+                    ) : (
+                      <Link to={item.to} className="mt-0.5 block">
+                        <Txt size={12} lead={18} mono tone="data">
+                          {item.text}
+                        </Txt>
+                      </Link>
+                    )
                   ) : (
                     <Txt size={12} lead={18} tone="muted" className="mt-0.5 block break-all">
                       {item.text}

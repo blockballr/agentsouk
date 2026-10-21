@@ -22,26 +22,34 @@ import { SettingsSecurityPage } from './pages/SettingsSecurityPage'
 import { ManageAccountPage } from './pages/ManageAccountPage'
 import { ScrollToTop } from './components/ScrollToTop'
 import { SecurityGate } from './components/SecurityGate'
+import { HostRouter } from './components/HostRouter'
 import { WorkspaceShell } from './components/WorkspaceShell'
 import VaultHirePage from './pages/VaultHirePage'
 
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
 
-// the station and the docs each have their own address; there they open on
-// their own page rather than the market
+// each surface has its own address; there it opens on its own page rather than
+// the market. The apex keeps only the homepage.
 const STATION_HOST = window.location.hostname === 'station.agentsouk.xyz'
 const DOCS_HOST = window.location.hostname === 'docs.agentsouk.xyz'
+const APP_HOST = window.location.hostname === 'app.agentsouk.xyz'
 
 function App() {
   return (
     <MotionConfig reducedMotion="user">
       <ScrollToTop />
+      <HostRouter>
       <SecurityGate>
         <Routes>
           <Route element={<Layout />}>
             {/* The homepage is the about page, and the marketplace lives at /agents.
                 /about stays as an alias so the nav link and any shared URL keep working. */}
-            <Route index element={STATION_HOST ? <StationPage /> : DOCS_HOST ? <DocsPage /> : <HomePage />} />
+            <Route
+              index
+              element={
+                STATION_HOST ? <StationPage /> : DOCS_HOST ? <DocsPage /> : APP_HOST ? <Navigate to="/agents" replace /> : <HomePage />
+              }
+            />
             <Route path="/about" element={<HomePage />} />
             <Route path="/agents" element={<MarketplacePage />} />
             <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
@@ -86,6 +94,7 @@ function App() {
           </Route>
         </Routes>
       </SecurityGate>
+      </HostRouter>
     </MotionConfig>
   )
 }
