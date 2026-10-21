@@ -196,6 +196,9 @@ export interface AgentSummary {
   verification?: Verification;
   pcs?: boolean;
   skills?: AgentCardSkill[];
+  // when the card's skills were last read, so a changed card refreshes the shelf
+  // instead of leaving a stale skill list that hides job capability
+  skillsAt?: string;
   // the card declares its own access: the seller issues the credentials
   accessGated?: boolean;
   // set when a confirmed registration is shelved ahead of the index

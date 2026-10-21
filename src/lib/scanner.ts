@@ -799,7 +799,7 @@ async function loadSnapshot(): Promise<boolean> {
 
 async function captureMissingShelfSkills(chainId: number, limit?: number): Promise<void> {
   let missing = [...index.agents.values()].filter(
-    (a) => a.chain_id === chainId && (!a.skills || a.accessGated === undefined),
+    (a) => a.chain_id === chainId && (skillsAreStale(a) || a.accessGated === undefined),
   );
   if (limit) missing = missing.slice(0, limit);
   if (missing.length === 0) return;
@@ -814,6 +814,7 @@ async function captureMissingShelfSkills(chainId: number, limit?: number): Promi
         const entry = {
           ...s,
           ...(captured.skills ? { skills: captured.skills } : {}),
+          skillsAt: new Date().toISOString(),
           accessGated: captured.accessGated,
         };
         index.agents.set(indexKey(entry.chain_id, entry.token_id), entry);
@@ -848,13 +849,35 @@ export async function admitConfirmedAgent(
   const entry = {
     ...summary,
     ...(captured?.skills ? { skills: captured.skills } : {}),
-    ...(captured ? { accessGated: captured.accessGated } : {}),
+    ...(captured ? { skillsAt: new Date().toISOString(), accessGated: captured.accessGated } : {}),
     admitted_at: new Date().toISOString(),
   };
   await loadSnapshot();
   index.agents.set(indexKey(entry.chain_id, entry.token_id), entry);
   await saveShelfAgents([entry]);
   return { admitted: true };
+}
+
+// Persist the card skills read on a detail view, so a listing whose card changed
+// after admission shows under the right shelf and badge without waiting for the
+// background refresh. Best effort: the view itself never fails on this.
+export async function recordShelfSkills(
+  chainId: number,
+  tokenId: string,
+  skills: AgentSummary["skills"],
+  accessGated?: boolean,
+): Promise<void> {
+  const key = indexKey(chainId, tokenId);
+  const existing = index.agents.get(key);
+  if (!existing || !skills?.length) return;
+  const entry: AgentSummary = {
+    ...existing,
+    skills,
+    skillsAt: new Date().toISOString(),
+    ...(accessGated === undefined ? {} : { accessGated }),
+  };
+  index.agents.set(key, entry);
+  await saveShelfAgents([entry]);
 }
 
 export interface WarmOptions {
@@ -912,6 +935,18 @@ export interface RefreshReport {
 // up. A card fetch or MCP handshake per agent is fine for a handful, but doing it
 // for a whole page would stall the pull behind dead endpoints.
 const CAPTURE_PER_TOPUP = 24;
+
+// A card may change after admission: an agent that adds the ERC-8183 job steps
+// must stop being shelved as a direct-only listing. Re-read the card after this
+// window so the shelf follows the card rather than freezing its first reading.
+const SKILLS_TTL_MS = 6 * 60 * 60 * 1000;
+
+function skillsAreStale(entry: { skills?: unknown[]; skillsAt?: string }): boolean {
+  if (!entry.skills?.length) return true;
+  if (!entry.skillsAt) return true;
+  const at = Date.parse(entry.skillsAt);
+  return !Number.isFinite(at) || Date.now() - at > SKILLS_TTL_MS;
+}
 
 // Reads through to 8004scan because the committed snapshot is frozen at deploy
 // time; a failed pull leaves the snapshot untouched rather than emptying the shelf.
@@ -1002,7 +1037,7 @@ export async function refreshIndexFromLive(
         if (s.chain_id !== chainId || seen.has(key)) return false;
         seen.add(key);
         const stored = index.agents.get(key);
-        return !stored?.skills?.length || stored.accessGated === undefined;
+        return !stored || skillsAreStale(stored) || stored.accessGated === undefined;
       })
       .slice(0, CAPTURE_PER_TOPUP);
     for (const s of toCapture) {
@@ -1011,6 +1046,7 @@ export async function refreshIndexFromLive(
       const entry = {
         ...s,
         ...(captured.skills ? { skills: captured.skills } : {}),
+        skillsAt: new Date().toISOString(),
         accessGated: captured.accessGated,
       };
       index.agents.set(indexKey(s.chain_id, s.token_id), entry);
