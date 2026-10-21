@@ -129,6 +129,35 @@ export function earningsByDay(asset: EarningsAsset): Map<string, number> {
   return byDay
 }
 
+// The monthly P&L calendar reads a day as a small ledger: what it paid, how
+// many settlements landed, how many went forward or back, and how many are
+// still open. A day with a zero net is still a trading day when trades > 0.
+export interface EarningsDayStat {
+  pnl: number
+  trades: number
+  wins: number
+  losses: number
+  open: number
+}
+
+export function earningsDayStats(asset: EarningsAsset): Map<string, EarningsDayStat> {
+  const byDay = new Map<string, EarningsDayStat>()
+  for (const h of asset.hires) {
+    const t = settledAt(h)
+    if (!Number.isFinite(t)) continue
+    const key = dayKey(t)
+    const stat = byDay.get(key) ?? { pnl: 0, trades: 0, wins: 0, losses: 0, open: 0 }
+    const amount = amountOf(h)
+    stat.pnl += amount
+    stat.trades += 1
+    if (amount > 0) stat.wins += 1
+    else if (amount < 0) stat.losses += 1
+    if (h.active) stat.open += 1
+    byDay.set(key, stat)
+  }
+  return byDay
+}
+
 export function totalEarnings(asset: EarningsAsset): number {
   return Number(formatUnits(asset.totalRaw, asset.decimals))
 }

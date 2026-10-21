@@ -2,7 +2,8 @@ import { formatUnits, shortAddress, timeAgo } from '@agora/core'
 import { type NotificationRow, type PayeeHire } from '../lib/api'
 import { chainLabel } from '../lib/contracts'
 import { useSellerData, type HiresSource } from '../lib/seller-data'
-import { Dot, Pill, Row, Rule, Stack, Txt, type DotTone } from '../components/souk'
+import { Dot, Row, Rule, Stack, Txt, type DotTone } from '../components/souk'
+import { SellerStatsStrip } from '../components/SellerStatsStrip'
 
 // only buyers are market face; our checks, the lister's own tests and team wallets stay out
 function isCustomer(h: PayeeHire): boolean {
@@ -16,48 +17,6 @@ function formatHireAmount(hire: PayeeHire): string {
   } catch {
     return hire.amount
   }
-}
-
-interface EarnedRow {
-  key: string
-  asset: string
-  count: number
-  amount: string
-  // a plain phrase when the asset's decimals are unknown, so no raw base units read as money
-  plain: boolean
-  when: string
-}
-
-// settled receipts only, summed per chain and asset, since $U on one chain never earns
-// its way into sUSD on another
-function earnedRows(hires: PayeeHire[]): EarnedRow[] {
-  const totals = new Map<
-    string,
-    { symbol: string; chainId: number; raw: bigint; decimals: number | null; count: number; last: string }
-  >()
-  for (const h of hires) {
-    if (h.mode === 'sandbox') continue
-    const key = `${h.chainId}:${h.symbol}`
-    const entry =
-      totals.get(key) ?? { symbol: h.symbol, chainId: h.chainId, raw: BigInt(0), decimals: h.decimals, count: 0, last: h.createdAt }
-    try {
-      entry.raw += BigInt(h.amount)
-    } catch {
-      // an unreadable amount is skipped rather than guessed at
-    }
-    if (entry.decimals === null && h.decimals !== null) entry.decimals = h.decimals
-    entry.count += 1
-    if (Date.parse(h.createdAt) > Date.parse(entry.last)) entry.last = h.createdAt
-    totals.set(key, entry)
-  }
-  return [...totals.values()].map((e) => ({
-    key: `${e.chainId}:${e.symbol}`,
-    asset: `${chainLabel(e.chainId)} · ${e.symbol}`,
-    count: e.count,
-    amount: e.decimals !== null ? formatUnits(e.raw, e.decimals) : `${e.count} ${e.symbol} payments`,
-    plain: e.decimals === null,
-    when: timeAgo(e.last),
-  }))
 }
 
 const PEOPLE_SHOWN = 8
@@ -106,7 +65,6 @@ export function MarketFaceSection() {
   } = useSellerData()
 
   const all = hires ?? []
-  const earned = earnedRows(all)
   const { shown, rest } = peopleRows(all)
   const buyers14 = buyersInWindow(all)
   // the chain only reads as one when every receipt sits on the same chain
@@ -115,7 +73,6 @@ export function MarketFaceSection() {
   const kicker = account
     ? ['seller / market face', shortAddress(account), chain].filter(Boolean).join(' · ')
     : 'seller / market face'
-  const read = hires !== null
 
   return (
     <section
@@ -128,10 +85,12 @@ export function MarketFaceSection() {
         </Txt>
         <h2 className="m-0">
           <Txt size={28} lead={36} display weight="bold" tone="ink">
-            Money and people.
+            People and hires.
           </Txt>
         </h2>
       </header>
+
+      <SellerStatsStrip />
 
       {!account && (
         <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
@@ -139,7 +98,7 @@ export function MarketFaceSection() {
             Connect the wallet you listed with.
           </Txt>
           <Txt size={13} lead={20} tone="muted">
-            A market face reads the receipts store for the wallets your agents settle to.
+            The buyers your agents settled, and the activity around them.
           </Txt>
           <Txt size={12} lead={18} tone="steel">
             Connect from the rail on the left, or the bar above on a narrow screen.
@@ -159,8 +118,7 @@ export function MarketFaceSection() {
             </div>
           )}
 
-          <div className="mt-6 grid gap-5 md:grid-cols-2">
-            <EarnedPanel rows={earned} read={read} />
+          <div className="mt-6 max-w-[820px]">
             <PeoplePanel
               shown={shown}
               rest={rest}
@@ -172,7 +130,7 @@ export function MarketFaceSection() {
 
           <FeedCard rows={feed} error={feedError} className="mt-5" />
 
-          {loading && !read && (
+          {loading && hires === null && (
             <Txt size={13} lead={20} tone="muted" className="mt-4 block">
               Reading the receipts store...
             </Txt>
@@ -184,57 +142,6 @@ export function MarketFaceSection() {
         <Rule />
       </div>
     </section>
-  )
-}
-
-// the indigo panel, the one surface a figure is allowed to sit on, and the settlement
-// read per asset, never per mood
-function EarnedPanel({ rows, read }: { rows: EarnedRow[]; read: boolean }) {
-  return (
-    <Stack bg="indigo" hair radius={20} pad={[16, 16, 14, 16]} gap={12} className="min-w-0">
-      <Row justify="between" align="center" gap={9}>
-        <Txt size={15} lead={22} weight="bold" tone="white">
-          Earned
-        </Txt>
-        <Txt size={10} lead={14} weight="bold" upper tone="indigo-labels">
-          Settled only
-        </Txt>
-      </Row>
-      {rows.length === 0 ? (
-        <Row justify="between" align="center" gap={10}>
-          <Txt size={12} lead={18} tone="indigo-labels">
-            {read ? 'No settled payment on any asset yet.' : 'Waiting for the receipts store.'}
-          </Txt>
-          {read ? (
-            <Txt size={15} lead={20} mono tone="indigo-labels">
-              nothing yet
-            </Txt>
-          ) : null}
-        </Row>
-      ) : (
-        rows.map((row) => (
-          <Row key={row.key} justify="between" align="center" gap={10} className="min-w-0">
-            <Row align="center" gap={10} className="min-w-0">
-              <Pill>{row.asset}</Pill>
-              <Txt size={12} lead={18} tone="indigo-labels" className="truncate">
-                {row.count === 1 ? '1 settlement' : `${row.count} settlements`}
-              </Txt>
-            </Row>
-            <Row align="center" gap={10} className="shrink-0">
-              <Txt size={15} lead={20} mono tone={row.plain ? 'indigo-labels' : 'indigo-data'}>
-                {row.amount}
-              </Txt>
-              <Txt size={11} lead={16} mono tone="indigo-labels">
-                {row.when}
-              </Txt>
-            </Row>
-          </Row>
-        ))
-      )}
-      <Txt size={12} lead={18} tone="indigo-labels">
-        Sandbox receipts never land here. Every figure is read off a settled payment.
-      </Txt>
-    </Stack>
   )
 }
 

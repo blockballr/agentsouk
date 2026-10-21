@@ -9,9 +9,9 @@ import { SellerDataProvider } from '../lib/seller-data'
 import { useConnectedAccount } from '../lib/use-connected-account'
 
 const BOARDS = [
-  { id: 'board', label: 'Board', note: 'today' },
+  { id: 'board', label: 'Portfolio', note: 'today' },
   { id: 'stalls', label: 'Stalls', note: 'listings' },
-  { id: 'market-face', label: 'Market face', note: 'money and people' },
+  { id: 'market-face', label: 'Market face', note: 'buyers and hires' },
 ] as const
 
 // the last board whose top has passed the sticky nav is the one in view; the
