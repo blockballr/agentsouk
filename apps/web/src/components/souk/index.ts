@@ -19,7 +19,6 @@ export {
   initialsFor,
   IconSearch,
   IconBell,
-  IconCart,
   IconMonitor,
   IconDocs,
   IconChevron,

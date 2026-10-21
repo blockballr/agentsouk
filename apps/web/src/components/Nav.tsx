@@ -5,14 +5,13 @@ import { QuickSearch } from './QuickSearch'
 
 import { NotificationBell } from './NotificationBell'
 import { Wordmark } from './Wordmark'
-import { cartCount, subscribe } from '../lib/cart'
 import { connectWallet, disconnectWallet, signOut } from '../lib/wallet-session'
 import { useActiveAccount } from '../lib/use-active-account'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { useLocalProfile } from '../lib/profile'
 import { useI18n } from '../lib/i18n'
-import { Dot, IconCart, Row, Rule, Stack, Txt } from './souk'
+import { Dot, Row, Rule, Stack, Txt } from './souk'
 
 const links = [
   { to: '/agents', key: 'nav.marketplace' },
@@ -82,7 +81,6 @@ export function Nav() {
         <div className="hidden lg:flex lg:items-center lg:gap-2.5">
           <QuickSearch />
           <NotificationBell />
-          <CartLink />
           <ProfileChip
             wallet={wallet}
             onConnect={() => {
@@ -131,7 +129,6 @@ export function Nav() {
             ))}
             <div className="mt-2 flex items-center gap-6 py-3">
               <ChainTag />
-              <CartLink />
               {/* phones reach the account through the page; the panel is the wide bar's
                   affordance, so the mobile row links straight there */}
               <NavLink to="/profile" onClick={() => setMenuOpen(false)} className={itemClass(false)}>
@@ -164,33 +161,6 @@ function ChainTag() {
   )
 }
 
-function CartLink() {
-  const { t } = useI18n()
-  const [count, setCount] = useState(() => cartCount())
-  useEffect(() => subscribe(() => setCount(cartCount())), [])
-  return (
-    <Link to="/cart" aria-label={t(count === 1 ? 'nav.cart.one' : 'nav.cart.many', { count })} className={controlClass}>
-      <IconCart />
-      {/* the count keeps its place as functionality, in the design's own badge chip and
-          in the same corner the outbox count sits when the cart is not empty */}
-      {count > 0 ? (
-        <span
-          aria-hidden="true"
-          className="absolute right-0 top-0 flex h-[18px] -translate-y-1/3 translate-x-1/3 items-center justify-center rounded-[6px] bg-souk-data px-1.5 font-mono text-[11px] font-bold leading-none text-souk-canvas"
-        >
-          {count}
-        </span>
-      ) : null}
-    </Link>
-  )
-}
-
-// the account panel opens under the profile chip: the design's panel holds the
-// connected head, the product's destinations and the one disconnect row that never
-// navigates
-// the account panel shells above; the old link wrapper is retired in its favour
-
-// the account icons the panel's rows carry, 18px line shapes at the design's strokes
 function PersonGlyph() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

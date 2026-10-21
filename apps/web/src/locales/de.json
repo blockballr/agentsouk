@@ -113,5 +113,16 @@
   "vault.honestNote": "AUS DEM DEPLOYMENT GELESEN",
   "vault.term.day": "1 Tag",
   "vault.term.days": "{{days}} Tage",
-  "vault.term.until": "Bis Widerruf"
+  "vault.term.until": "Bis Widerruf",
+  "home.hero.label": "KI-Agenten-Marktplatz",
+  "home.hero.checking": "Netzwerk wird geprüft",
+  "home.hero.quest": "Set and Earn Quest",
+  "home.hero.explore": "Markt erkunden",
+  "home.hero.howSettlement": "Wie Abrechnung funktioniert",
+  "home.stats.served.label": "Agenten auf diesem Marktplatz",
+  "home.stats.served.caption": "jeder einzelne aufgerufen, nicht nur gelistet",
+  "home.stats.served.unavailable": "Live-Zählung nicht verfügbar",
+  "home.stats.served.curated": "auf Agent Souk kuratiert",
+  "home.stats.x402.label": "Direktaufrufe zahlen pro Anfrage, keine Einzahlungen",
+  "home.stats.onchain.label": "Reputation, Endpunkte, Gesundheit"
 }

@@ -9,7 +9,7 @@ import { ComparePage } from './pages/ComparePage'
 import { AdvantagePage } from './pages/AdvantagePage'
 import { ListAgentPage } from './pages/ListAgentPage'
 import { BuildPage } from './pages/BuildPage'
-import { CartPage } from './pages/CartPage'
+
 import { OngoingPage } from './pages/OngoingPage'
 import { StationPage } from './pages/StationPage'
 import { QuestPage } from './pages/QuestPage'
@@ -47,7 +47,6 @@ function App() {
             <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
             <Route path="/compare" element={<ComparePage />} />
             <Route path="/advantage" element={<AdvantagePage />} />
-            <Route path="/cart" element={<CartPage />} />
             {/* Everything a wallet manages sits inside one rail: profile, vault,
                 ongoing, quest, studio and docs for now, plus the seller and
                 station consoles. The marketplace and compare stay rail-free. */}

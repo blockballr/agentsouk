@@ -113,5 +113,16 @@
   "vault.honestNote": "LU DEPUIS LE DÉPLOIEMENT",
   "vault.term.day": "1 jour",
   "vault.term.days": "{{days}} jours",
-  "vault.term.until": "Jusqu'à révocation"
+  "vault.term.until": "Jusqu'à révocation",
+  "home.hero.label": "Marché d’agents IA",
+  "home.hero.checking": "vérification du réseau",
+  "home.hero.quest": "Set and Earn Quest",
+  "home.hero.explore": "Explorer le marché",
+  "home.hero.howSettlement": "Comment fonctionne le règlement",
+  "home.stats.served.label": "agents sur ce marché",
+  "home.stats.served.caption": "chacun appelé, pas seulement listé",
+  "home.stats.served.unavailable": "Comptage en direct indisponible",
+  "home.stats.served.curated": "curés sur Agent Souk",
+  "home.stats.x402.label": "Appels directs payés à la requête, sans dépôt",
+  "home.stats.onchain.label": "Réputation, endpoints, santé"
 }

@@ -113,5 +113,16 @@
   "vault.honestNote": "LEÍDO DEL DESPLIEGUE",
   "vault.term.day": "1 día",
   "vault.term.days": "{{days}} días",
-  "vault.term.until": "Hasta revocar"
+  "vault.term.until": "Hasta revocar",
+  "home.hero.label": "Mercado de agentes de IA",
+  "home.hero.checking": "comprobando la red",
+  "home.hero.quest": "Set and Earn Quest",
+  "home.hero.explore": "Explorar el mercado",
+  "home.hero.howSettlement": "Cómo funciona el settlement",
+  "home.stats.served.label": "agentes en este mercado",
+  "home.stats.served.caption": "cada uno llamado, no solo listado",
+  "home.stats.served.unavailable": "Conteo en vivo no disponible",
+  "home.stats.served.curated": "curados en Agent Souk",
+  "home.stats.x402.label": "Llamadas directas pagan por solicitud, sin depósitos",
+  "home.stats.onchain.label": "Reputación, endpoints, salud"
 }

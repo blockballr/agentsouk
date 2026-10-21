@@ -113,5 +113,16 @@
   "vault.honestNote": "从部署读取",
   "vault.term.day": "1 天",
   "vault.term.days": "{{days}} 天",
-  "vault.term.until": "直到撤销"
+  "vault.term.until": "直到撤销",
+  "home.hero.label": "AI智能体市场",
+  "home.hero.checking": "正在检查网络",
+  "home.hero.quest": "Set and Earn Quest",
+  "home.hero.explore": "探索市场",
+  "home.hero.howSettlement": "结算如何工作",
+  "home.stats.served.label": "本市场的智能体",
+  "home.stats.served.caption": "每个都被调用过，而不仅是列出",
+  "home.stats.served.unavailable": "实时计数不可用",
+  "home.stats.served.curated": "在Agent Souk上精选",
+  "home.stats.x402.label": "直接调用按请求付费，无需存款",
+  "home.stats.onchain.label": "声誉、端点、健康状况"
 }

@@ -123,16 +123,6 @@ export function IconBell() {
   );
 }
 
-export function IconCart() {
-  return (
-    <svg width="18" height="18" {...strokeProps}>
-      <path d="M2 3h2.6l2.4 12.3a2 2 0 0 0 2 1.6h8.3a2 2 0 0 0 2-1.6L21 7H6" />
-      <circle cx="9.5" cy="20" r="1.4" />
-      <circle cx="17.5" cy="20" r="1.4" />
-    </svg>
-  );
-}
-
 export function IconMonitor() {
   return (
     <svg width="18" height="18" {...strokeProps}>

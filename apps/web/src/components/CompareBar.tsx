@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { sellsByJob } from '@agora/core'
 import { ensureBscChain } from '../lib/wallet'
 import { connectWallet } from '../lib/wallet-session'
 import { hireErrorText, runHire, type HireAgentRef } from '../lib/hire'
-import { getAgentDetail } from '../lib/api'
-import { addToCart, removeFromCart } from '../lib/cart'
-import { categoryOf } from '../lib/compare'
 import { removeFromShortlist } from '../lib/shortlist'
-
-type CartPhase = 'idle' | 'adding' | 'added' | 'full' | 'error' | 'job'
 
 type HireItemPhase = 'pending' | 'requirements' | 'signing' | 'settling' | 'settled' | 'failed'
 
@@ -54,8 +48,6 @@ export function CompareBar({
   const [items, setItems] = useState<HireItemState[]>([])
   const [batchError, setBatchError] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
-  const [cartPhase, setCartPhase] = useState<CartPhase>('idle')
-  const [cartBusy, setCartBusy] = useState(false)
   const reducedMotion = useReducedMotion()
 
   const allSettled = items.length > 0 && items.every((i) => i.phase === 'settled')
@@ -63,41 +55,6 @@ export function CompareBar({
   // one detail fetch per agent (the cart needs the category), then into the
   // existing cart api; full/failed surfaces briefly on the button, and a pure
   // job seller never enters: the server refuses its direct hire anyway
-  async function startAddToCartRefs(refs: HireAgentRef[]) {
-    if (cartBusy || refs.length === 0) return
-    setCartBusy(true)
-    setCartPhase('adding')
-    let full = false
-    let failed = false
-    let skipped = 0
-    for (const r of refs) {
-      try {
-        const d = await getAgentDetail(String(r.chainId), String(r.tokenId))
-        if (!d) {
-          failed = true
-          continue
-        }
-        if (sellsByJob(d.skills)) {
-          skipped += 1
-          continue
-        }
-        const res = addToCart({
-          chainId: d.chain_id,
-          tokenId: Number(d.token_id),
-          name: d.name,
-          category: categoryOf(d),
-        })
-        if (res === 'full') full = true
-      } catch {
-        failed = true
-      }
-    }
-    setCartBusy(false)
-    const phase: CartPhase = failed ? 'error' : full ? 'full' : skipped > 0 && skipped === refs.length ? 'job' : 'added'
-    setCartPhase(phase)
-    window.setTimeout(() => setCartPhase('idle'), 1800)
-  }
-
   function setPhase(key: string, phase: HireItemPhase, error?: string) {
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, phase, error } : i)))
   }
@@ -172,9 +129,8 @@ export function CompareBar({
       // a rejected signature means the user said stop; settled items stay
       if (outcome.cancelled) break
       if (outcome.success) {
-        // direct hire is a completed checkout: drop the agent from cart and
+        // direct hire is a completed checkout: drop the agent from the
         // shortlist so the bar does not keep a hired count around
-        removeFromCart(item.agent.chainId, item.agent.tokenId)
         removeFromShortlist([item.key])
         onHired?.([item.key])
       }
@@ -217,7 +173,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
           }
         >
           <div className="mx-auto max-w-2xl rounded-[14px] bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] backdrop-blur-md ring-1 ring-white/10 px-5 py-3.5 text-souk-ink shadow-lg sm:px-6">
-            {/* one main action per place: compare from the shortlist, add to cart from the table */}
+            {/* one main action per place: compare from the shortlist, hire directly from the table */}
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
               <span className="micro font-mono text-souk-steel">
                 {hire
@@ -242,25 +198,6 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                       className="micro min-h-11 font-mono text-souk-muted underline decoration-souk-steel/50 underline-offset-4 transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-souk-data disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0"
                     >
                       {running ? 'Hiring…' : allSettled ? 'Hired' : 'Hire now'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => startAddToCartRefs(hire.winners)}
-                      disabled={cartBusy || hire.winners.length === 0}
-                      title={hire.winners.length === 0 ? 'Tick Include in hire on an agent in the table' : undefined}
-                      className="micro rounded-[8px] bg-souk-data px-5 py-3 text-souk-canvas transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {cartPhase === 'adding'
-                        ? 'Adding…'
-                        : cartPhase === 'added'
-                          ? '✓ Added'
-                          : cartPhase === 'full'
-                            ? 'Cart full'
-                            : cartPhase === 'error'
-                              ? 'Failed, retry'
-                              : cartPhase === 'job'
-                                ? 'Sells by job'
-                                : `Add ${hire.winners.length} to cart`}
                     </button>
                   </>
                 ) : (

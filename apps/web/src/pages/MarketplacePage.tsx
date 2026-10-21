@@ -8,7 +8,7 @@ import { Tag } from '../components/Tag'
 import { getAgents } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
-import { addToCart, cartKeyOf, getCart, isInCart, removeFromCart, subscribe } from '../lib/cart'
+
 import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../components/souk'
@@ -110,29 +110,6 @@ export function MarketplacePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [shortlist, setShortlist] = useState<string[]>(() => getShortlist())
-  const [cartKeys, setCartKeys] = useState<string[]>(() => getCart().map((c) => cartKeyOf(c.chainId, c.tokenId)))
-  const [cartFull, setCartFull] = useState(false)
-
-  useEffect(() => subscribe(() => {
-    setCartKeys(getCart().map((c) => cartKeyOf(c.chainId, c.tokenId)))
-    setCartFull(false)
-  }), [])
-
-  function handleToggleCart(key: string) {
-    const agent = result?.items.find((a) => `${a.chain_id}/${a.token_id}` === key)
-    if (!agent) return
-    if (isInCart(agent.chain_id, Number(agent.token_id))) {
-      removeFromCart(agent.chain_id, Number(agent.token_id))
-    } else {
-      const res = addToCart({
-        chainId: agent.chain_id,
-        tokenId: Number(agent.token_id),
-        name: agent.name,
-        category: agent.category ?? '',
-      })
-      if (res === 'full') setCartFull(true)
-    }
-  }
 
   function handleToggle(key: string) {
     setShortlist(toggleShortlist(key))
@@ -265,7 +242,7 @@ export function MarketplacePage() {
         </Section>
         </div>
 
-        {/* the controls band: categories, sorts, the cart alert; it carries the full
+        {/* the controls band: categories, sorts; it carries the full
             rhythm on both sides so the shelf's working part is its own island */}
         <Section>
         <Stack gap={16}>
@@ -363,15 +340,7 @@ export function MarketplacePage() {
             </Row>
           </Stack>
 
-          {cartFull ? (
-            // the register's own alert grammar: one indigo band when something needs attention
-            <Row align="center" gap={9} pad={[0, 12, 0, 12]} radius={8} bg="indigo" hair className="h-[34px] w-fit">
-              <Dot tone="held" size={8} />
-              <Txt size={12} lead={18} tone="indigo-labels">
-                The cart holds 8 agents at most. Remove one to add another.
-              </Txt>
-            </Row>
-          ) : null}
+
         </Stack>
         </Section>
 
@@ -405,8 +374,6 @@ export function MarketplacePage() {
               items={visibleItems}
               shortlist={shortlist}
               onToggle={handleToggle}
-              cartKeys={cartKeys}
-              onToggleCart={handleToggleCart}
             />
           ) : (
             <EmptyState
@@ -582,14 +549,10 @@ function AgentGrid({
   items,
   shortlist,
   onToggle,
-  cartKeys,
-  onToggleCart,
 }: {
   items: AgentSummary[]
   shortlist: string[]
   onToggle: (key: string) => void
-  cartKeys: string[]
-  onToggleCart: (key: string) => void
 }) {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -599,8 +562,6 @@ function AgentGrid({
           agent={a}
           checked={shortlist.includes(`${a.chain_id}/${a.token_id}`)}
           onToggle={onToggle}
-          inCart={cartKeys.includes(cartKeyOf(a.chain_id, a.token_id))}
-          onToggleCart={onToggleCart}
         />
       ))}
     </div>
@@ -611,14 +572,10 @@ function AgentCard({
   agent,
   checked,
   onToggle,
-  inCart,
-  onToggleCart,
 }: {
   agent: AgentSummary
   checked: boolean
   onToggle: (key: string) => void
-  inCart: boolean
-  onToggleCart: (key: string) => void
 }) {
   const img = agent.image_url ?? defaultAvatarFor(agent.chain_id, String(agent.token_id))
   const key = `${agent.chain_id}/${agent.token_id}`
@@ -774,26 +731,13 @@ function AgentCard({
             <span className="sr-only">: {agent.name} quotes a job on its page</span>
           </Link>
         ) : (
-          <Btn
-            kind={inCart ? 'keep' : 'off'}
-            className="w-full min-w-0 @[380px]:basis-0 @[380px]:grow"
-            onClick={() => onToggleCart(key)}
-            aria-pressed={inCart}
+          <Link
+            to={`/agents/${agent.chain_id}/${agent.token_id}`}
+            className="inline-flex h-11 w-full min-w-0 shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair bg-souk-surface1 text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data @[380px]:basis-0 @[380px]:grow"
           >
-            <span className="inline-flex items-center gap-2">
-              <svg width="13" height="12" viewBox="0 0 16 14" fill="none" aria-hidden="true">
-                <path
-                  d="M1 1h2l1.6 8.1a1.5 1.5 0 0 0 1.48 1.24h6.16a1.5 1.5 0 0 0 1.47-1.19L15 4H4"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {inCart ? 'In cart' : 'Add to cart'}
-              <span className="sr-only">: {agent.name}</span>
-            </span>
-          </Btn>
+            <span className="text-[14px] font-semibold leading-[20px]">View agent</span>
+            <span className="sr-only">: {agent.name}</span>
+          </Link>
         )}
       </div>
     </Stack>
