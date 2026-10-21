@@ -38,7 +38,7 @@ const SITE_ORIGINS = [
 const PAGES_PREVIEW = /^https:\/\/[a-z0-9-]+\.agentsouk\.pages\.dev$/;
 
 const ALLOWED = [
-  ...(process.env.WEB_ORIGIN ?? "*").split(","),
+  ...(process.env.WEB_ORIGIN ? process.env.WEB_ORIGIN.split(",") : []),
   ...SITE_ORIGINS,
 ]
   .map((o) => o.trim())

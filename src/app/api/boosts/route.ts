@@ -165,6 +165,17 @@ export async function POST(req: NextRequest) {
         { status: 403 },
       );
     }
+    // bind the receipt to this agent so a hire receipt for another agent
+    // cannot be reused to boost this one
+    if (receipt.agent?.chainId !== body.chainId || receipt.agent?.tokenId !== body.tokenId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "This payment is for a different agent, so it cannot boost this one.",
+        },
+        { status: 409 },
+      );
+    }
   }
 
   const agentName = elig.detail?.name ?? `Agent ${tokenId}`;

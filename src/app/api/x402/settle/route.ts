@@ -12,7 +12,7 @@ import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
 import { targetChainId } from "@/lib/types";
 import { parseUnits } from "@/lib/format";
 import { escrowFunder, escrowTermsFor } from "@/lib/escrow";
-import { DEFAULT_HIRE_PRICE_USD, MAX_HIRE_USD } from "@/app/api/x402/requirements/route";
+import { DEFAULT_HIRE_PRICE_USD, MAX_HIRE_USD, fetchAgentPrice } from "@/app/api/x402/requirements/route";
 
 export const dynamic = "force-dynamic";
 
@@ -220,6 +220,25 @@ export async function POST(req: NextRequest) {
         },
         { status: 409 },
       );
+    }
+    // bind the signed amount to the agent's published price: a buyer cannot settle
+    // for less than the agent asks by bypassing the requirements endpoint
+    const agentDetail = await fetchAgentDetail(agent.chainId, agent.tokenId, REGISTRY_READ_MS).catch(() => null);
+    if (agentDetail) {
+      const price = await fetchAgentPrice(agent.chainId, agentDetail).catch(() => null);
+      if (price) {
+        const minPrice = parseUnits(String(price.priceUsd), 18);
+        if (signed < minPrice) {
+          return NextResponse.json(
+            {
+              success: false,
+              refused: true,
+              error: `This payment pays less than the agent's price of $${price.priceUsd}, so it cannot settle.`,
+            },
+            { status: 409 },
+          );
+        }
+      }
     }
 
     const refusal = await hireRefusal(agent, payer, payee, isCheck, terms ? terms.agentPayTo : null);

@@ -93,8 +93,15 @@ function ensureTable(sql: Sql, table: string): Promise<boolean> {
 // The left-most forwarded entry is the client when a proxy wrote the header;
 // with no proxy it is caller controlled, which is why it is a best-effort key.
 export function clientIpFrom(headers: Headers): string {
-  const forwarded = headers.get("x-forwarded-for") ?? headers.get("x-real-ip") ?? "";
-  return forwarded.split(",")[0]?.trim().toLowerCase() || "unknown";
+  // Prefer headers set by a trusted proxy (Cloudflare, Vercel) over the
+  // spoofable X-Forwarded-For / X-Real-Ip, which any client can set.
+  const trusted =
+    headers.get("cf-connecting-ip") ??
+    headers.get("x-vercel-forwarded-for") ??
+    headers.get("x-real-ip") ??
+    headers.get("x-forwarded-for") ??
+    "";
+  return trusted.split(",")[0]?.trim().toLowerCase() || "unknown";
 }
 
 function verdict(

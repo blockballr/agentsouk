@@ -28,10 +28,10 @@ const A2A_TASK = "report your status in one sentence";
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
 // The verifier signs its own EIP-3009 authorizations, so it needs a funded buyer key.
-const ANVIL_TEST_KEY = "0x0000000000000000000000000000000000000000000000000000000000000001";
 const RELAY_KEY = process.env.RELAY_PRIVATE_KEY as `0x${string}` | undefined;
+if (!RELAY_KEY) throw new Error("RELAY_PRIVATE_KEY is required");
 
-const wallet = privateKeyToAccount(RELAY_KEY ?? ANVIL_TEST_KEY);
+const wallet = privateKeyToAccount(RELAY_KEY);
 
 export function baseUrl(): string {
   return process.env.VERCEL_URL

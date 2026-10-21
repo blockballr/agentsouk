@@ -19,7 +19,7 @@ export const maxDuration = 60;
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
-  "access-control-allow-origin": "*",
+  "access-control-allow-origin": process.env.WEB_ORIGIN?.split(",")[0] ?? "https://agentsouk.xyz",
   "access-control-expose-headers": "Mcp-Session-Id, MCP-Protocol-Version",
 };
 
