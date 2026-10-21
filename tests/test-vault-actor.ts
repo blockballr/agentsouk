@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { resolveActor } from "@/lib/vault-actor";
 
+vi.mock("server-only", () => ({}));
+
 // the junction's seam, offline: a granted session is plain JSON, so the actor's
 // config resolution, address read and relay round trip run against a mocked
 // client without touching a chain. the live rehearsal through a real account
@@ -8,6 +10,7 @@ import { resolveActor } from "@/lib/vault-actor";
 const execute = vi.hoisted(() => vi.fn());
 
 vi.mock("@altananetwork/sdk", () => ({
+  BNB: { id: 56 },
   BNB_TESTNET: { id: 97 },
   createClient: () => ({ execute }),
   signerFromPrivateKey: () => ({}),
@@ -57,10 +60,10 @@ describe("the altana junction", () => {
     await expect(actor.address()).rejects.toThrow(/does not carry the wallet address/);
   });
 
-  it("sends the granted session, the call and the chain id to the relay", async () => {
+  it("sends the granted session, the call and the testnet chain id to the relay", async () => {
     grantSession({ wallet: { address: WALLET } });
     execute.mockResolvedValue({ receipts: [{ hash: "0xhash1" }] });
-    const actor = resolveActor("altana");
+    const actor = resolveActor("altana", 97);
     const hash = await actor.trade(CALL);
     expect(hash).toBe("0xhash1");
     expect(execute).toHaveBeenCalledTimes(1);
@@ -70,6 +73,15 @@ describe("the altana junction", () => {
     // json-only session shape refused the execute path before this was added
     expect(arg.session).toEqual({ wallet: { address: WALLET }, signer: {} });
     expect(arg.calls).toEqual([CALL]);
+  });
+
+  it("sends the mainnet chain id when the actor is built for chain 56", async () => {
+    grantSession({ wallet: { address: WALLET } });
+    execute.mockResolvedValue({ receipts: [{ hash: "0xhash56" }] });
+    const actor = resolveActor("altana", 56);
+    const hash = await actor.trade(CALL);
+    expect(hash).toBe("0xhash56");
+    expect(execute.mock.calls[0][0].chainId).toBe(56);
   });
 
   it("refuses a relay answer that carries no receipt hash", async () => {

@@ -1,5 +1,7 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { executorWallet } from "../src/lib/vault-executor";
+
+vi.mock("server-only", () => ({}));
 
 // executorWallet reads the environment the page's pairing then shows with:
 // none means no lane is configured, rawkey and altana name the custody halves

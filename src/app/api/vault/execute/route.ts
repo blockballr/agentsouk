@@ -32,20 +32,26 @@ export function POST(req: NextRequest) {
 
 async function run(req: NextRequest): Promise<NextResponse> {
   const authHeader = req.headers.get("authorization");
-  const secret = process.env.VAULT_SECRET;
-  // fails closed like the verifier: an unset secret has nothing configured here
-  if (!secret) {
+  // the operator's secret runs it by hand; Vercel's cron secret lets the
+  // scheduler run the same sweep without a second header mechanism
+  const secrets = [process.env.VAULT_SECRET, process.env.CRON_SECRET].filter(
+    (secret): secret is string => Boolean(secret),
+  );
+  // fails closed like the verifier: no configured secret means nothing may run here
+  if (secrets.length === 0) {
     return NextResponse.json({ error: "the vault executor is not configured" }, { status: 503 });
   }
-  if (authHeader !== `Bearer ${secret}`) {
+  if (!authHeader || !secrets.includes(authHeader.replace(/^Bearer\s+/i, ""))) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   let actor: VaultActor;
   try {
-    actor = resolveActor();
+    actor = resolveActor(undefined, CHAIN_ID);
   } catch (e) {
-    return NextResponse.json({ success: false, error: (e as Error).message }, { status: 500 });
+    // no actor lane on this deployment is a configuration state, not a failed
+    // sweep: the scheduler can skip it until the key or session is set
+    return NextResponse.json({ success: false, error: (e as Error).message }, { status: 503 });
   }
 
   try {
@@ -61,11 +67,15 @@ async function run(req: NextRequest): Promise<NextResponse> {
       EXECUTE,
     );
     const traded = reports.filter((r) => r.status === "traded");
+    // the address is public chain state; a page or an operator can check that
+    // the sweep looked at the wallet it expected
+    const actorAddress = await actor.address().catch(() => null);
     return NextResponse.json({
       success: true,
       mode: EXECUTE ? "execute" : "dry",
       chainId: CHAIN_ID,
       actorKind: actor.kind,
+      actorAddress,
       executed: EXECUTE,
       reports,
       traded: traded.length,

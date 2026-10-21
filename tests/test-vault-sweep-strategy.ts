@@ -26,7 +26,7 @@ import { acquireLease, saveStrategyState } from "../src/lib/strategy-store";
 
 const AGENT = "0x52DA44aB471455437fc17979c52E501f6b8d0EAF";
 const BUYER = "0x84fedaBd1b83443aD86796C15619494878B64180";
-const VAULT = "0xc742e51f3fe3875a3335700a7d692f40dc8e60b8";
+const VAULT = "0x035b7c4e0aab0681828c68229445c72107bac40a";
 const Q96 = 2n ** 96n;
 const EXPIRY = Math.floor(Date.now() / 1000) + 3600;
 
