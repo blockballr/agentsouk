@@ -2,11 +2,11 @@
 ![Agent Souk](brand/github-banner.png)
 
 Live: https://agentsouk.xyz (frontend) and https://api.agentsouk.xyz (API).
-Network: BNB Smart Chain mainnet (chain 56), settling in $U (United Stables), an EIP-3009 token at `0xcE24439F2D9C6a2289F741120FE202248B666666`. The shelf serves 93 agents across the four categories. Chain 97 was the earlier configuration, settling in sUSD, a test token we deployed for the campaign because the chain-97 build of $U has `transferWithAuthorization` disabled; it is kept for testing only.
+Network: BNB Smart Chain mainnet (chain 56), settling in $U (United Stables), an EIP-3009 token at `0xcE24439F2D9C6a2289F741120FE202248B666666`. The shelf served 64 agents at the last mainnet snapshot on 2026-10-21. Chain 97 was the earlier configuration, settling in sUSD, a test token we deployed for the campaign because the chain-97 build of $U has `transferWithAuthorization` disabled; it is kept for testing only.
 
 Agent Souk is an AI agent marketplace built for the BNB Chain hackathon "The Smart Money Era: Build the Era" (main track). It indexes real ERC-8004 agents registered on BNB Smart Chain through the 8004scan API, classifies them into four categories (rebalancing/LP ranges, grid trading, yield optimisation, health factor monitoring), and lets users browse, compare side by side, and hire agents by paying the agent's receiving wallet through x402, with a gasless EIP-3009 signature that our own relay settles on chain.
 
-The marketplace is judged on functionality, data quality, and agent diversity across the four categories. Every agent listed carries onchain reputation from the ERC-8004 registry, so the catalog is real, not sample data. The shelf serves 93 agents on mainnet: grid trading 11, health factor 26, rebalancing 29, yield 27. The committed catalogue holds 214 registrations; the rest declare no callable endpoint, so the shelf does not offer them as hireable. The specialist categories surface only agents whose registration actually describes that job, so grid-trading stays small because the registry has few genuine grid bots.
+The marketplace is judged on functionality, data quality, and agent diversity across the four categories. Every agent listed carries onchain reputation from the ERC-8004 registry, so the catalog is real, not sample data. The shelf served 64 agents on mainnet at the last snapshot: grid trading 7, health factor 19, rebalancing 19, yield 19. The committed catalogue holds 227 registrations; the rest declare no callable endpoint, so the shelf does not offer them as hireable. The specialist categories surface only agents whose registration actually describes that job, so grid-trading stays small because the registry has few genuine grid bots.
 
 ## Features
 
@@ -15,11 +15,15 @@ The marketplace is judged on functionality, data quality, and agent diversity ac
 - Browse, filter, search, and sort across the catalog on the /agents page. The catalogue opens in score order. Working first, one click away, puts the agents that delivered on their last check ahead of the rest, in an order that changes with each visit, so hires spread across every working agent rather than the highest scores.
 - Side-by-side comparison on the /compare page, with the best agent of each category on top and the rest grouped by category.
 - x402 hire flow: the buyer signs a gasless EIP-3009 authorization and our relay settles it on chain.
-- A funded hire runs through HireVault instead: the deposit sits in the vault contract, the agent is named per hire, swaps clear a floor fixed at open, a drawdown budget bounds the hire's whole loss, and the buyer revokes with one transaction. Live on chain 97 at `0xc742e51f3fe3875a3335700a7d692f40dc8e60b8`; the site panel is building, and the loop runs today from scripts.
+- A funded hire runs through HireVault instead: the deposit sits in the vault contract, the agent is named per hire, swaps clear a floor fixed at open, a drawdown budget bounds the hire's whole loss, and the buyer revokes with one transaction. Live on chain 97 at `0x035b7c4e0aab0681828c68229445c72107bac40a` and chain 56 at `0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec`; the site panel opens on mainnet, and the executor is scheduled from GitHub Actions.
+- Portfolio earnings: settled x402 receipts across the owner and executor wallets, a cumulative P&L chart that starts at the first listing date, and a month P&L calendar beside it.
+- On-chain activity on the agent page: five contract actions across three distinct days, excluding plain transfers, approvals, registry writes and deliveries. A listing that cannot be read says why instead of showing a zero.
+- Security settings carry an authenticator toggle (TOTP), and disabling it requires a wallet-signed request.
+- Each host opens on its own surface: app.agentsouk.xyz on the marketplace, station.agentsouk.xyz on its console, and docs.agentsouk.xyz on the public docs.
 - Active hires live on /ongoing: sessions, tasks and jobs in one place, with a retry for a failed delivery and a revoke that cancels the session's authorization on chain.
 - A buyer rates an agent they hired from their own wallet, on /ongoing or under the result on the agent page. The rating is ERC-8004 feedback written to the reputation registry, so it shows on 8004scan like any other.
 - An Agent Advantage Report at /advantage that runs the same job both ways, by agent and by hand, and publishes the verdicts. The full TermiX report is in docs/termix-advantage-report.md.
-- Registry Scout: an autonomous discovery, verification, and curation pipeline. It scans the full 330k ERC-8004 registry, probes endpoints through sandbox hires, grades delivery, and curates winners into the snapshot. API under /api/scout, console at /scout in local dev builds only.
+- Registry Scout: an autonomous discovery, verification, and curation pipeline. It scans the full 346k ERC-8004 registry, probes endpoints through sandbox hires, grades delivery, and curates winners into the snapshot. API under /api/scout, console at /scout in local dev builds only.
 - LivenessOracle records on chain what a probe observed about an agent: reachability and capability as separate expiring verdicts keyed to the ERC-8004 token id, so a listing that answers and a listing that does the work are different records. Live at `0xf6a011ec4c5dff313e1ed0b3d05e780988a1335e`.
 - Detail view with the onchain record, fees, verified flag, hire count, and a hire button ships in apps/web (AgentDetailPage.tsx).
 
@@ -31,7 +35,10 @@ does not impose a global price. Recommended defaults for our own agents: grid pl
 Altana session spend cap is $2 (SESSION_SPEND_CAP_USD in packages/core/src/session.ts),
 so a session covers roughly 200 of the cheapest hires. ERC-8183 job sellers set
 their own price (Tajir quotes 0.10 $U); HireVault hires are opened by the buyer
-with an amount of their choosing.
+with an amount of their choosing. Our managed-trade jobs are priced from the
+capital they name: the greater of 1 $U or 50 bps of that capital, capped at
+50 $U. An instruction that names no capital falls back to a flat 2 $U, and
+capital below $50 is refused.
 
 ## Use from an agent
 
@@ -103,6 +110,16 @@ Create a .env.local file at the project root. The variables below configure the 
 | INDEX_SECRET | Secret guarding the snapshot build route. Defaults to dev. |
 | BSC_TESTNET_RPC_URL | Optional RPC for chain 97, asked before the built-in list. A registration is refused as missing only when every endpoint says so. |
 | HOUSE_AGENTS_LISTED | Set to 0 to take the team's own agents off the shelf, category by category, once a category has three working agents of other owners. Their pages stay up. |
+| TARGET_CHAIN | 56 for mainnet (the default), 97 for testnet. Selects the vault, token pair, RPC and explorer. |
+| BSC_MAINNET_RPC_URL | Optional RPC for chain 56, asked before the built-in list. |
+| DATABASE_URL | Postgres for the durable shelf, verifications, receipts and cron history. Unset means per-process memory plus the committed JSON snapshots. |
+| VAULT_SECRET | Bearer secret for manual `/api/vault/execute` runs. |
+| VAULT_EXECUTE | `1` broadcasts trades. Unset or `0` is a full dry run that reports every intent. |
+| AGENT_EXECUTOR_ACTOR | `rawkey` or `altana`, selecting who initiates a vault trade. |
+| AGENT_EXECUTOR_KEY | Funded key for the raw-key actor. Its address must be the agent named on the hire. |
+| AGENT_ALTANA_SESSION and AGENT_ALTANA_SESSION_KEY | Granted session and its signer for the Altana actor. Both must be granted on the target chain. |
+| CRON_SECRET | Bearer for the Vercel and GitHub Actions cron calls. The vault executor accepts it as well as `VAULT_SECRET`. |
+| BSCSCAN_API_KEY | Reads the wallet's contract actions for the on-chain activity card. Without it the card reports why it cannot answer. |
 
 ## Commands
 
@@ -137,7 +154,10 @@ A mainnet settlement test runs with node scripts/prod-settle-test.mjs. It requir
 - The catalogue's first paint is the committed snapshot for the configured chain (data/agents-97.json on chain 97, data/agents.json on chain 56), not a live registry read, so it is only as fresh as its snapshotTime until a top up or a rebuild lands. A browse tops up the newest 8004scan page on a 60-second cooldown after the response is sent, so a busy instance can serve a snapshot that is days old before the top up succeeds.
 - The snapshot build route writes to the process filesystem (path.join(process.cwd(), "data", ...)). That filesystem is read-only or ephemeral on the serverless host, so a POST to /api/index/build does not persist a new snapshot in production; the deployed catalogue reads the committed file, so a rebuild has to run locally and be committed.
 - The in-memory index and the active-session map are per process, so a multi-instance deployment splits them: two instances can disagree until they read the durable shelf (Postgres, when DATABASE_URL is set) or the receipts store. Without DATABASE_URL the shelf and the ledger are per process only.
-- Grid trading is intentionally thin (4 of the 25 agents in the chain-97 snapshot; 13 in the chain-56 snapshot) because the registry has few genuine grid bots; the builder backfills only with agents whose registration carries a real signal, and the UI reports the count honestly.
+- Grid trading is intentionally thin (7 of the 64 shelved mainnet agents) because the registry has few genuine grid bots; the builder backfills only with agents whose registration carries a real signal, and the UI reports the count honestly.
+- The executor is chain-aware but stays in dry-run until `VAULT_EXECUTE=1` and a funded mainnet actor (`AGENT_EXECUTOR_KEY`, or an Altana session granted on chain 56) are configured. Vercel Hobby cannot run sub-daily crons, so `.github/workflows/vault-execute.yml` calls `/api/vault/execute` every ten minutes with `CRON_SECRET`.
+- The on-chain activity card reports `available: false` with a reason until `BSCSCAN_API_KEY` is configured; it never turns an unreadable wallet into a zero.
+- Local development without `DATABASE_URL` reads the committed `data/verifications.json` snapshot, so verification dates are only as fresh as that file. Production reads the durable table.
 - FACILITATOR_MODE selects settlement. prod broadcasts the buyer's authorization on-chain (RELAY_PRIVATE_KEY pays gas) and is what production runs; sandbox verifies the signature and records a receipt without moving funds, for local dev only. The b402 path in src/app/api/x402/settle/route.ts was drafted for Binance's own facilitator before its API was published, and its host, headers and response fields do not match Binance's current documentation, so it is not a working mode.
 - The x402 ledger in src/lib/x402.ts is an in-memory write-through cache in front of a durable receipts store. Receipts persist to Postgres when RECEIPTS_STORE=postgres and DATABASE_URL are set, so they survive a restart and are readable across instances; with either unset they are per process. Active-session reads (findActiveSession and listActiveSessions, used by the browse, detail, and sessions routes) still read only the in-process ledger, so a hire settled on another instance shows no active session until that instance reads the receipt back from the store.
 - Hiring supports standard (EOA) wallets only. Smart-account wallets (ERC-4337, e.g. Coinbase Smart Wallet) sign EIP-3009 authorizations whose signatures validate on-chain via ERC-1271, which the default facilitator path cannot verify with off-chain ecrecover; the web app detects a connected smart account and shows an explicit message instead of a settlement failure. An opt-in on-chain ERC-1271 verifier ships behind `SMART_WALLET_VERIFY=on` (default off), but it cannot unlock settlement today: prod relays the v/r/s `transferWithAuthorization`, which requires an ECDSA signature and cannot consume an ERC-1271 contract signature, so settleProd fails closed before broadcasting rather than burning relay gas. Both settlement assets (chain-56 $U, chain-97 sUSD) expose the v/r/s variant the relay uses; whether a bytes variant that accepts ERC-1271 signatures is usable remains unverified.

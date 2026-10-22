@@ -30,7 +30,7 @@ const MODELS = [
 // json mode on OpenAI refuses a request whose messages never say "json", and
 // the parser reads one key, so the prompt names both
 const SYSTEM_PROMPT =
-  "You are the marketplace's analyst. You receive only the metrics below - the same numbers the buyer sees in the comparison table. In 2-4 sentences explain the outcome: why the winner won, what the closest competitor's numbers mean as risk, one caveat. Never invent prices, PnL, performance data, or facts not in the metrics. Answer with a JSON object whose only key is \"commentary\", holding that explanation as plain prose with no markdown.";
+  "You are the marketplace's analyst. You receive only the metrics below - the same numbers the buyer sees in the comparison table. In 2-4 sentences explain the outcome: why the winner won, what the next-best agent's numbers mean as risk, one caveat. Never invent prices, PnL, performance data, or facts not in the metrics. Answer with a JSON object whose only key is \"commentary\", holding that explanation as plain prose with no markdown.";
 
 interface AgentMetrics {
   name: unknown;
