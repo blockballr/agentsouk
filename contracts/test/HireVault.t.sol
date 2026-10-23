@@ -115,6 +115,30 @@ contract MockRouter {
     }
 }
 
+// holds tokenB per hire and gives back exactly what it took, so a test can
+// separate the move from the interest the fork suite proves against a real
+// adapter. max means the whole position, which is what a hire close asks for.
+contract MockVenue {
+    MockToken private immutable token;
+    mapping(address => mapping(uint256 => uint256)) public held;
+
+    constructor(MockToken token_) {
+        token = token_;
+    }
+
+    function supply(uint256 id, uint256 amount) external {
+        token.transferFrom(msg.sender, address(this), amount);
+        held[msg.sender][id] += amount;
+    }
+
+    function withdraw(uint256 id, uint256 amount) external {
+        uint256 balance = held[msg.sender][id];
+        uint256 out = amount == type(uint256).max || amount > balance ? balance : amount;
+        held[msg.sender][id] = balance - out;
+        token.transfer(msg.sender, out);
+    }
+}
+
 /// @notice the hire vault's rules: who may put money in, what the agent may do with it, and that
 /// the buyer always gets all of it back
 contract HireVaultTest {
@@ -124,6 +148,7 @@ contract HireVaultTest {
     address private constant AGENT = address(0xA6E7);
     address private constant STRANGER = address(0x5712);
     uint256 private constant CAP = 100e18;
+    uint256 private constant MIN_DEPOSIT = 1e17;
     uint24 private constant FEE = 500;
 
     MockToken private wbnb;
@@ -143,7 +168,7 @@ contract HireVaultTest {
         factory = new MockFactory();
         factory.setPool(address(pool));
         router = new MockRouter();
-        vault = new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000);
+        vault = new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000, MIN_DEPOSIT);
         // the router pays out of its own stock, as a pool would
         wbnb.mint(address(router), 1000e18);
         usdt.mint(address(router), 1000e18);
@@ -152,10 +177,21 @@ contract HireVaultTest {
     }
 
     function _open(uint256 amount, uint16 slippageBps) private returns (uint256 id) {
+        return _openOn(vault, amount, slippageBps, 2000);
+    }
+
+    function _openOn(HireVault target, uint256 amount, uint16 slippageBps, uint16 maxLossBps) private returns (uint256 id) {
+        vm.prank(BUYER);
+        usdt.approve(address(target), amount);
+        vm.prank(BUYER);
+        id = target.open(AGENT, address(usdt), amount, uint64(block.timestamp + 7 days), slippageBps, FEE, 1000, maxLossBps, address(0));
+    }
+
+    function _openWithVenue(uint256 amount, uint16 slippageBps, address venue) private returns (uint256 id) {
         vm.prank(BUYER);
         usdt.approve(address(vault), amount);
         vm.prank(BUYER);
-        id = vault.open(AGENT, address(usdt), amount, uint64(block.timestamp + 7 days), slippageBps, FEE);
+        id = vault.open(AGENT, address(usdt), amount, uint64(block.timestamp + 7 days), slippageBps, FEE, 1000, 2000, venue);
     }
 
     function testOpenTakesExactlyTheDepositAndRecordsIt() public {
@@ -175,31 +211,50 @@ contract HireVaultTest {
 
         vm.expectRevert(HireVault.NoAgent.selector);
         vm.prank(BUYER);
-        vault.open(address(0), address(usdt), 10e18, soon, 300, FEE);
+        vault.open(address(0), address(usdt), 10e18, soon, 300, FEE, 1000, 2000, address(0));
 
         vm.expectRevert(HireVault.UnknownToken.selector);
         vm.prank(BUYER);
-        vault.open(AGENT, address(0xDEAD), 10e18, soon, 300, FEE);
+        vault.open(AGENT, address(0xDEAD), 10e18, soon, 300, FEE, 1000, 2000, address(0));
 
         vm.expectRevert(HireVault.BadAmount.selector);
         vm.prank(BUYER);
-        vault.open(AGENT, address(usdt), CAP + 1, soon, 300, FEE);
+        vault.open(AGENT, address(usdt), CAP + 1, soon, 300, FEE, 1000, 2000, address(0));
 
         vm.expectRevert(HireVault.BadAmount.selector);
         vm.prank(BUYER);
-        vault.open(AGENT, address(usdt), 0, soon, 300, FEE);
+        vault.open(AGENT, address(usdt), 0, soon, 300, FEE, 1000, 2000, address(0));
 
         vm.expectRevert(HireVault.BadExpiry.selector);
         vm.prank(BUYER);
-        vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp), 300, FEE);
+        vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp), 300, FEE, 1000, 2000, address(0));
 
         vm.expectRevert(HireVault.BadExpiry.selector);
         vm.prank(BUYER);
-        vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp + 91 days), 300, FEE);
+        vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp + 91 days), 300, FEE, 1000, 2000, address(0));
 
         vm.expectRevert(HireVault.BadSlippage.selector);
         vm.prank(BUYER);
-        vault.open(AGENT, address(usdt), 10e18, soon, 1001, FEE);
+        vault.open(AGENT, address(usdt), 10e18, soon, 1001, FEE, 1000, 2000, address(0));
+    }
+
+    function testRefusesADepositBelowTheMinimum() public {
+        // token0 is WBNB in this fixture and one WBNB is about four USDT, so the
+        // 1e17 token0 floor sits near 4e17 USDT. 3e17 is clearly under it.
+        vm.prank(BUYER);
+        usdt.approve(address(vault), 5e17);
+        vm.prank(BUYER);
+        vm.expectRevert(HireVault.BelowMinimum.selector);
+        vault.open(AGENT, address(usdt), 3e17, uint64(block.timestamp + 7 days), 300, FEE, 1000, 2000, address(0));
+
+        vm.prank(BUYER);
+        uint256 id = vault.open(AGENT, address(usdt), 41e16, uint64(block.timestamp + 7 days), 300, FEE, 1000, 2000, address(0));
+        require(id > 0, "the floor deposit was refused");
+    }
+
+    function testRefusesAZeroMinimumAtConstruction() public {
+        vm.expectRevert(HireVault.BadAmount.selector);
+        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000, 0);
     }
 
     function testOpenRefusesATokenThatKeepsACut() public {
@@ -208,7 +263,7 @@ contract HireVaultTest {
         usdt.approve(address(vault), 10e18);
         vm.expectRevert(HireVault.BadAmount.selector);
         vm.prank(BUYER);
-        vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp + 1 days), 300, FEE);
+        vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp + 7 days), 300, FEE, 1000, 2000, address(0));
     }
 
     function _openHire() private returns (uint256 id) {
@@ -216,14 +271,14 @@ contract HireVaultTest {
         vm.prank(BUYER);
         usdt.approve(address(vault), type(uint256).max);
         vm.prank(BUYER);
-        id = vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp + 7 days), 300, FEE);
+        id = vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp + 7 days), 300, FEE, 1000, 2000, address(0));
     }
 
     function testRefQuoteReadsTheStoredPriceBothWays() public view {
         // the reference price as token1 per token0, Q96. Four USDT to one WBNB.
         uint256 ref = 4 * (uint256(1) << 96);
-        require(vault.quoteAtRef(address(pool), address(wbnb), 1e18, ref) == 4e18, "one WBNB is four USDT");
-        require(vault.quoteAtRef(address(pool), address(usdt), 4e18, ref) == 1e18, "four USDT is one WBNB");
+        require(vault.quoteAtRef(address(pool), address(wbnb), 1e18, uint160(ref)) == 4e18, "one WBNB is four USDT");
+        require(vault.quoteAtRef(address(pool), address(usdt), 4e18, uint160(ref)) == 1e18, "four USDT is one WBNB");
     }
 
     // The flaw this replaces: trade used to read slot0, so the agent could move the price
@@ -328,7 +383,7 @@ contract HireVaultTest {
         usdt.approve(address(vault), 10e18);
         vm.expectRevert(HireVault.NoPool.selector);
         vm.prank(BUYER);
-        vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp + 7 days), 300, 3000);
+        vault.open(AGENT, address(usdt), 10e18, uint64(block.timestamp + 7 days), 300, 3000, 1000, 2000, address(0));
     }
 
     function testOneHiresMoneyIsNeverSpentForAnother() public {
@@ -347,43 +402,77 @@ contract HireVaultTest {
     // The one bound slippage cannot give on its own: a swap clears at the floor, so no
     // single trade loses more than the buyer's basis points, but a round-tripping agent
     // loses that much again on the way back. This proves the bleed stops at half.
-    function testRoundTrippingStopsAtTheDrawdownBudget() public {
-        uint256 id = _open(40e18, 1000); // the buyer's widest allowance, 1000 bps
-        // both directions pay 4 percent under the reference price, so every leg clears the
-        // 1000 bps floor while taking 4 percent of the hire's value
+    function testTradingStopsAtTheBuyerMaxLoss() public {
+        uint256 id = _open(40e18, 1000); // slippage 1000 bps, buyer max loss 2000 bps
 
-        // eight full cycles: 0.9216 of the value each, 40 to 20.49, still inside
-        for (uint256 cycle; cycle < 8; ++cycle) {
-            router.setRate(0.24e18); // buying WBNB at 0.24 against a reference of 0.25
+        bool stopped;
+        for (uint256 cycle; cycle < 20 && !stopped; ++cycle) {
+            router.setRate(0.24e18);
             uint256 b = vault.hire(id).balanceB;
-            vm.prank(AGENT);
-            vault.trade(id, address(usdt), b, 0);
-            router.setRate(3.84e18); // selling WBNB at 3.84 against a reference of 4
-            uint256 a = vault.hire(id).balanceA;
-            vm.prank(AGENT);
-            vault.trade(id, address(wbnb), a, 0);
-            require(vault.hire(id).balanceA == 0, "everything converted back");
-        }
+            if (b > 0) {
+                vm.prank(AGENT);
+                try vault.trade(id, address(usdt), b, 0) {} catch (bytes memory r) {
+                    require(
+                        keccak256(r) == keccak256(abi.encodeWithSelector(HireVault.MaxLossBreachedErr.selector)),
+                        "not the buyer cap"
+                    );
+                    stopped = true;
+                    break;
+                }
+            }
 
-        // the ninth cycle's first leg would take the value to about 19.67, under the 20
-        // the budget now sets, and there is no leg this loop has not proven compliant
-        router.setRate(0.24e18);
-        uint256 leftover = vault.hire(id).balanceB;
-        vm.prank(AGENT);
-        try vault.trade(id, address(usdt), leftover, 0) {
-            revert("the bleeding trade should have been refused");
-        } catch (bytes memory r) {
-            require(
-                keccak256(r) == keccak256(abi.encodeWithSelector(HireVault.DrawdownBreached.selector)),
-                "not the drawdown budget"
-            );
-            // the refused swap settled nothing: the hire holds what the eighth cycle left,
-            // within the wei of dust floor division leaves across sixteen legs
-            uint256 closedNumerator = 40e18 * 9216 ** 8;
-            uint256 closed = closedNumerator / 10_000 ** 8;
-            uint256 b2 = vault.hire(id).balanceB;
-            require(b2 + 1e9 >= closed && b2 <= closed + 1e9, "state after the refused trade");
+            router.setRate(3.84e18);
+            uint256 a = vault.hire(id).balanceA;
+            if (a > 0) {
+                vm.prank(AGENT);
+                try vault.trade(id, address(wbnb), a, 0) {} catch (bytes memory r) {
+                    require(
+                        keccak256(r) == keccak256(abi.encodeWithSelector(HireVault.MaxLossBreachedErr.selector)),
+                        "not the buyer cap"
+                    );
+                    stopped = true;
+                    break;
+                }
+            }
         }
+        require(stopped, "the buyer cap never bound");
+    }
+
+    function testDrawdownBudgetBindsWhenTheBuyerCapIsLooser() public {
+        HireVault drawdown = new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 6000, MIN_DEPOSIT);
+        uint256 id = _openOn(drawdown, 40e18, 1000, 5000);
+
+        bool stopped;
+        for (uint256 cycle; cycle < 20 && !stopped; ++cycle) {
+            router.setRate(0.24e18);
+            uint256 b = drawdown.hire(id).balanceB;
+            if (b > 0) {
+                vm.prank(AGENT);
+                try drawdown.trade(id, address(usdt), b, 0) {} catch (bytes memory r) {
+                    require(
+                        keccak256(r) == keccak256(abi.encodeWithSelector(HireVault.DrawdownBreached.selector)),
+                        "not the drawdown budget"
+                    );
+                    stopped = true;
+                    break;
+                }
+            }
+
+            router.setRate(3.84e18);
+            uint256 a = drawdown.hire(id).balanceA;
+            if (a > 0) {
+                vm.prank(AGENT);
+                try drawdown.trade(id, address(wbnb), a, 0) {} catch (bytes memory r) {
+                    require(
+                        keccak256(r) == keccak256(abi.encodeWithSelector(HireVault.DrawdownBreached.selector)),
+                        "not the drawdown budget"
+                    );
+                    stopped = true;
+                    break;
+                }
+            }
+        }
+        require(stopped, "the drawdown budget never bound");
     }
 
     function testAnHonestLadderNeverKnocksTheBudget() public {
@@ -447,17 +536,104 @@ contract HireVaultTest {
         require(usdt.balanceOf(BUYER) == 500e18, "all of it back");
     }
 
+    // the live pairs put USDT in token0, so this fixture is the opposite ordering.
+    // that is the branch where a venue balance is not already token0, and it is
+    // the one a wrong-unit sum breaks silently.
+    function testMovingTheDepositToAVenueDoesNotMoveTheValue() public {
+        MockVenue venue = new MockVenue(usdt);
+        // the buyer names the venue at open, so the agent cannot point the hire
+        // anywhere else afterwards
+        uint256 id = _openWithVenue(40e18, 300, address(venue));
+        usdt.mint(address(venue), 100e18);
+        vm.prank(AGENT);
+        vault.supplyToVenue(id, address(venue), 20e18);
+
+        HireVault.Hire memory h = vault.hire(id);
+        require(h.balanceB == 20e18 && h.deployedB == 20e18, "moved");
+
+        // the suite's pool is pinned at 4 USDT per WBNB, so the 40 USDT deposit is
+        // worth 10 WBNB in token0. A goal just under that must be reachable.
+        // Counting the venue balance in the wrong unit reads 6.25 and refuses.
+        vm.prank(BUYER);
+        vault.closeIfGoal(id, 9_999e15);
+        require(!vault.hire(id).open, "closed");
+        require(usdt.balanceOf(BUYER) == 500e18, "every dollar back");
+    }
+
+    function testOnlyTheBuyerClosesAtTheGoal() public {        uint256 id = _open(40e18, 300);
+
+        vm.prank(STRANGER);
+        vm.expectRevert(HireVault.NotTheBuyer.selector);
+        vault.closeIfGoal(id, 1);
+
+        vm.prank(AGENT);
+        vm.expectRevert(HireVault.NotTheBuyer.selector);
+        vault.closeIfGoal(id, 1);
+
+        vm.prank(BUYER);
+        vm.expectRevert(HireVault.GoalNotMet.selector);
+        vault.closeIfGoal(id, 100e18);
+        require(vault.hire(id).open, "still open");
+    }
+
     function testItWillNotBeBuiltOnAnythingThatIsNotAContract() public {
         vm.expectRevert(HireVault.NotAContract.selector);
-        new HireVault(address(0x1234), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000);
+        new HireVault(address(0x1234), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000, MIN_DEPOSIT);
         vm.expectRevert(HireVault.UnknownToken.selector);
-        new HireVault(address(router), address(factory), address(wbnb), address(wbnb), CAP, CAP, 5000);
+        new HireVault(address(router), address(factory), address(wbnb), address(wbnb), CAP, CAP, 5000, MIN_DEPOSIT);
     }
 
     function testItWillNotBuildWithADisabledOrRidiculousBudget() public {
         vm.expectRevert(HireVault.BadRetained.selector);
-        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 0);
+        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 0, MIN_DEPOSIT);
         vm.expectRevert(HireVault.BadRetained.selector);
-        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 10001);
+        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 10001, MIN_DEPOSIT);
+    }
+
+    // a live queue is what a buyer can run and what the agent's sweep reads. the
+    // contract refuses the seventeenth rather than indexing work nobody executes.
+    function testOneWalletCannotHoldAnUnboundedQueue() public {
+        for (uint256 i = 0; i < 16; i++) _open(1e18, 300);
+
+        vm.prank(BUYER);
+        vm.expectRevert(HireVault.TooManyOpenHires.selector);
+        vault.open(AGENT, address(usdt), 1e18, uint64(block.timestamp + 7 days), 300, FEE, 1000, 2000, address(0));
+    }
+
+    function testClosingAHireFreesAQueueSlot() public {
+        uint256 first;
+        for (uint256 i = 0; i < 16; i++) {
+            uint256 id = _open(1e18, 300);
+            if (i == 0) first = id;
+        }
+
+        vm.prank(BUYER);
+        vault.withdraw(first);
+        _open(1e18, 300);
+        require(vault.hireCount() == 17, "the slot was not freed");
+    }
+
+    function testClosingAtTheGoalFreesAQueueSlotToo() public {
+        uint256 first;
+        for (uint256 i = 0; i < 16; i++) {
+            uint256 id = _open(1e18, 300);
+            if (i == 0) first = id;
+        }
+
+        vm.prank(BUYER);
+        vault.closeIfGoal(first, 1);
+        _open(1e18, 300);
+        require(vault.hireCount() == 17, "the slot was not freed");
+    }
+
+    function testTheQueueCapIsPerWallet() public {
+        for (uint256 i = 0; i < 16; i++) _open(1e18, 300);
+
+        usdt.mint(STRANGER, 10e18);
+        vm.prank(STRANGER);
+        usdt.approve(address(vault), 1e18);
+        vm.prank(STRANGER);
+        uint256 id = vault.open(AGENT, address(usdt), 1e18, uint64(block.timestamp + 7 days), 300, FEE, 1000, 2000, address(0));
+        require(id == 17, "a second wallet was blocked");
     }
 }
