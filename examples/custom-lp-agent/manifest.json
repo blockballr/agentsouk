@@ -1,0 +1,23 @@
+{
+  "name": "WBNB wrapper",
+  "category": "wrapping",
+  "description": "Wraps BNB into WBNB via the WBNB contract on a named venue.",
+  "runtime": "node20",
+  "entrypoint": "server.mjs",
+  "endpoint": "/a2a",
+  "wallet": "agent",
+  "payment": "job",
+  "deliverable": "A WBNB balance increase with the amount and tx hash",
+  "release": "The WBNB balance increased by the wrapped amount and the tx hash matches",
+  "actions": [
+    {
+      "name": "wrap-bnb",
+      "venue": "wbnb-testnet",
+      "contracts": ["0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd"],
+      "functions": ["deposit"],
+      "maxValueUsd": 500
+    }
+  ],
+  "env": ["RPC_URL"],
+  "healthcheck": "/health"
+}

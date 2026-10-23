@@ -76,3 +76,5 @@ next-env.d.ts
 /broadcast/
 
 /scripts/dev-ongoing-states.mjs
+/scripts/.proof-agent-key.txt
+/scripts/proof-report.json
