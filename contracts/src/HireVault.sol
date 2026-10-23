@@ -28,26 +28,18 @@ interface IV3Pool {
 
     function token0() external view returns (address);
 
-    // cumulative ticks at the given secondsAgo, 0 meaning now. A real V3 pool keeps
-    // these, which is what makes a time weighted price available without a feed
     function observe(uint32[] calldata secondsAgo)
         external
         view
         returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s);
 }
 
-// what a buyer hands a trading agent: a deposit the agent may swap between two named tokens on
-// one named router, and nothing else
-// the agent can never move the deposit out, and the buyer can take all of it back at any time
-//
-// the floor is measured against a price fixed at open, never against the pool's price at the
-// moment of the trade. Reading slot0 inside trade let the agent move the price and then trade
-// into the move, so the floor followed the manipulation and stopped constraining anything.
-// The price is stored per hire and the fee tier is bound at open, so the agent chooses
-// neither. It is a time weighted price rather than a spot read, because a spot read taken at
-// open can itself be pushed just before open lands.
-// deposits stay capped and a drawdown budget stops a compliant agent bleeding the hire
-// through a chain of individually-in-bounds swaps; mainnet still waits for an audit
+interface IYieldVenue {
+    function supply(uint256 amount) external;
+    function withdraw(uint256 amount) external;
+    function balanceOf(address account) external view returns (uint256);
+}
+
 contract HireVault {
     struct Hire {
         address buyer;
@@ -57,19 +49,25 @@ contract HireVault {
         bool open;
         uint256 balanceA;
         uint256 balanceB;
-        // token1 per token0 as a Q96 number, fixed at open
         uint160 refPriceX96;
         uint24 fee;
-        // the deposit converted to token0 units at the open price: what the drawdown
-        // budget is measured against, so drift in the market is not what the budget sees
         uint256 depositInToken0;
+        // deployed to a yield venue (buffer): amount of tokenB in the venue
+        uint256 deployedB;
+        // agent performance fee in basis points (e.g. 1000 = 10% of profits)
+        uint16 agentFeeBps;
+        // highest value reached, in token0 units (high-water mark for fee)
+        uint256 highWaterMark;
+        // max loss in basis points (e.g. 2000 = 20% loss allowed before auto-close)
+        uint16 maxLossBps;
+        // the single yield venue this hire has used; zero means none
+        address venue;
     }
 
     address public immutable router;
     address public immutable factory;
     address public immutable tokenA;
     address public immutable tokenB;
-    // the most one deposit may hold of each token
     uint256 public immutable capA;
     uint256 public immutable capB;
 
@@ -77,37 +75,36 @@ contract HireVault {
     uint64 public constant MAX_TERM = 90 days;
     uint256 private constant Q96 = 1 << 96;
 
-    // the share of the deposit, in bps, below which no hire may fall. Slippage bounds one
-    // trade; this bounds the hire's whole life. A floor of 5000 is the default: an agent
-    // that round-trips a hire into the dirt stops at half the deposit, not at zero.
     uint16 public immutable minRetainedBps;
-    // converts and quotes round down, so a pure round trip at the reference price can chip
-    // a few wei off the measured value; this tolerates that without becoming a loss budget
+    // the smallest deposit the vault will take, valued in token0 at the open
+    // price. a dust hire cannot pay for its own round trip and rounds the
+    // deposit used by the floor toward zero, so it is refused at the door.
+    uint256 public immutable minDepositInToken0;
     uint256 private constant VALUE_SLACK = 1_000_000;
-
-    // how far back the reference price is averaged, in seconds. A window is what makes a
-    // single manipulation move the floor by a fraction of it rather than all of it.
     uint32 public constant TWAP_WINDOW = 1800;
+
+    uint16 public constant MAX_AGENT_FEE_BPS = 3000; // 30% max
+    uint16 public constant MAX_LOSS_BPS = 5000; // 50% max loss
+    // a live-hire queue is what a buyer can actually run, and what the agent's
+    // sweep and the hire page read. a wallet holding more than this is a queue
+    // nobody executes, so the contract refuses it rather than indexing it
+    uint256 public constant MAX_OPEN_PER_BUYER = 16;
 
     uint256 public hireCount;
     mapping(uint256 => Hire) private _hires;
     mapping(address => uint256[]) private _byBuyer;
     mapping(address => uint256[]) private _byAgent;
+    // live hires per buyer, so one wallet cannot hold an unbounded queue and
+    // leave every sweep and every page paying for it
+    mapping(address => uint256) private _openByBuyer;
     uint256 private _lock = 1;
 
-    event Opened(
-        uint256 indexed id,
-        address indexed buyer,
-        address indexed agent,
-        address token,
-        uint256 amount,
-        uint64 expiry,
-        uint16 maxSlippageBps
-    );
-    event Traded(
-        uint256 indexed id, address indexed agent, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut
-    );
-    event Closed(uint256 indexed id, address indexed buyer, uint256 amountA, uint256 amountB);
+    event Opened(uint256 indexed id, address indexed buyer, address indexed agent, address token, uint256 amount, uint64 expiry, uint16 maxSlippageBps, uint16 agentFeeBps, uint16 maxLossBps);
+    event Traded(uint256 indexed id, address indexed agent, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut);
+    event Supplied(uint256 indexed id, address indexed venue, uint256 amount);
+    event WithdrawnFromVenue(uint256 indexed id, address indexed venue, uint256 amount);
+    event Closed(uint256 indexed id, address indexed buyer, address indexed agent, uint256 amountA, uint256 amountB, uint256 deployedB, uint256 agentFee);
+    event MaxLossBreached(uint256 indexed id, uint256 value, uint256 floor);
 
     error NotAContract();
     error UnknownToken();
@@ -115,6 +112,8 @@ contract HireVault {
     error BadExpiry();
     error BadSlippage();
     error BadRetained();
+    error BadFee();
+    error BadLoss();
     error NoAgent();
     error NotOpen();
     error NotTheAgent();
@@ -122,10 +121,14 @@ contract HireVault {
     error Expired();
     error NoPool();
     error BelowFloor();
+    error BelowMinimum();
     error TokenCallFailed();
     error Reentered();
     error DrawdownBreached();
     error GoalNotMet();
+    error BadVenue();
+    error MaxLossBreachedErr();
+    error TooManyOpenHires();
 
     modifier nonReentrant() {
         if (_lock != 1) revert Reentered();
@@ -134,23 +137,12 @@ contract HireVault {
         _lock = 1;
     }
 
-    constructor(
-        address router_,
-        address factory_,
-        address tokenA_,
-        address tokenB_,
-        uint256 capA_,
-        uint256 capB_,
-        uint16 minRetainedBps_
-    ) {
-        if (
-            router_.code.length == 0 || factory_.code.length == 0 || tokenA_.code.length == 0
-                || tokenB_.code.length == 0
-        ) revert NotAContract();
+    constructor(address router_, address factory_, address tokenA_, address tokenB_, uint256 capA_, uint256 capB_, uint16 minRetainedBps_, uint256 minDepositInToken0_) {
+        if (router_.code.length == 0 || factory_.code.length == 0 || tokenA_.code.length == 0 || tokenB_.code.length == 0) revert NotAContract();
         if (tokenA_ == tokenB_) revert UnknownToken();
         if (capA_ == 0 || capB_ == 0) revert BadAmount();
-        // zero would disable the budget and reopen the bleed this closes
         if (minRetainedBps_ == 0 || minRetainedBps_ > MAX_SLIPPAGE_BPS * 10) revert BadRetained();
+        if (minDepositInToken0_ == 0) revert BadAmount();
         router = router_;
         factory = factory_;
         tokenA = tokenA_;
@@ -158,13 +150,11 @@ contract HireVault {
         capA = capA_;
         capB = capB_;
         minRetainedBps = minRetainedBps_;
+        minDepositInToken0 = minDepositInToken0_;
     }
 
-    // the buyer approves exactly this amount beforehand, never more
-    function open(address agent, address token, uint256 amount, uint64 expiry, uint16 maxSlippageBps, uint24 fee)
-        external
-        nonReentrant
-        returns (uint256 id)
+    function open(address agent, address token, uint256 amount, uint64 expiry, uint16 maxSlippageBps, uint24 fee, uint16 agentFeeBps_, uint16 maxLossBps_, address venue_)
+        external nonReentrant returns (uint256 id)
     {
         if (agent == address(0)) revert NoAgent();
         bool isA = token == tokenA;
@@ -172,18 +162,23 @@ contract HireVault {
         if (amount == 0 || amount > (isA ? capA : capB)) revert BadAmount();
         if (expiry <= block.timestamp || expiry > block.timestamp + MAX_TERM) revert BadExpiry();
         if (maxSlippageBps > MAX_SLIPPAGE_BPS) revert BadSlippage();
+        if (agentFeeBps_ > MAX_AGENT_FEE_BPS) revert BadFee();
+        if (maxLossBps_ > MAX_LOSS_BPS) revert BadLoss();
+        if (venue_ != address(0) && venue_.code.length == 0) revert BadVenue();
+        if (_openByBuyer[msg.sender] >= MAX_OPEN_PER_BUYER) revert TooManyOpenHires();
 
-        // the price is read here, while the agent has no power over this hire, and it is
-        // averaged over a window so that a price pushed just before this lands moves it
-        // only a little. The fee tier is bound here for the same reason.
         address other = isA ? tokenB : tokenA;
         address pool = IV3Factory(factory).getPool(token, other, fee);
         if (pool == address(0)) revert NoPool();
         uint160 refPriceX96 = _twapPriceX96(pool);
 
+        // value the deposit before taking it, so a dust hire is refused without
+        // moving the buyer's tokens and the guards always have a real floor
+        uint256 depositInToken0 = _depositInToken0(IV3Pool(pool).token0() == token, amount, refPriceX96);
+        if (depositInToken0 < minDepositInToken0) revert BelowMinimum();
+
         uint256 before = _held(token);
         _call(token, abi.encodeWithSignature("transferFrom(address,address,uint256)", msg.sender, address(this), amount));
-        // a token that keeps a cut on transfer would leave the books ahead of the balance
         if (_held(token) - before != amount) revert BadAmount();
 
         id = ++hireCount;
@@ -197,26 +192,21 @@ contract HireVault {
             balanceB: isA ? 0 : amount,
             refPriceX96: refPriceX96,
             fee: fee,
-            // the deposit in token0 units at the open price: the anchor the drawdown
-            // budget is measured against
-            depositInToken0: _depositInToken0(IV3Pool(pool).token0() == token, amount, refPriceX96)
+            depositInToken0: depositInToken0,
+            deployedB: 0,
+            agentFeeBps: agentFeeBps_,
+            highWaterMark: depositInToken0,
+            maxLossBps: maxLossBps_,
+            venue: venue_
         });
         _byBuyer[msg.sender].push(id);
         _byAgent[agent].push(id);
-        emit Opened(id, msg.sender, agent, token, amount, expiry, maxSlippageBps);
+        _openByBuyer[msg.sender] += 1;
+        emit Opened(id, msg.sender, agent, token, amount, expiry, maxSlippageBps, agentFeeBps_, maxLossBps_);
     }
 
-    // the one thing an agent can do: swap part of a deposit for the other token, which stays here
-    // minOut may raise the floor the buyer's slippage limit sets, never lower it
-    //
-    // fee is not a parameter and the pool is not looked up: both were bound at open, and a
-    // caller supplied fee could have pointed the trade at a thin pool of its choosing. The
-    // floor reads h.refPriceX96 rather than the pool, so no price the agent can move
-    // changes what it is measured against.
     function trade(uint256 id, address tokenIn, uint256 amountIn, uint256 minOut)
-        external
-        nonReentrant
-        returns (uint256 amountOut)
+        external nonReentrant returns (uint256 amountOut)
     {
         Hire storage h = _hires[id];
         if (!h.open) revert NotOpen();
@@ -251,7 +241,6 @@ contract HireVault {
         );
         _call(tokenIn, abi.encodeWithSignature("approve(address,uint256)", router, 0));
 
-        // the books follow what actually moved, not what the router reported
         if (inBefore - _held(tokenIn) != amountIn) revert BadAmount();
         amountOut = _held(tokenOut) - outBefore;
         if (amountOut < floor) revert BelowFloor();
@@ -264,58 +253,177 @@ contract HireVault {
             h.balanceA += amountOut;
         }
 
+        // check max loss after trade
+        uint256 value0 = _valueInToken0(h, pool);
+        uint256 maxLossFloor = _mulDiv(h.depositInToken0, 10_000 - h.maxLossBps, 10_000);
+        if (value0 + VALUE_SLACK < maxLossFloor) {
+            emit MaxLossBreached(id, value0, maxLossFloor);
+            revert MaxLossBreachedErr();
+        }
+        // update high-water mark
+        if (value0 > h.highWaterMark) {
+            h.highWaterMark = value0;
+        }
+
         _enforceBudget(h, pool);
         emit Traded(id, msg.sender, tokenIn, tokenOut, amountIn, amountOut);
     }
 
-    // the drawdown budget, the bound slippage cannot give: a swap clears at the floor,
-    // so no single trade loses more than the buyer's bps, but a round-tripping agent
-    // loses that much again on the way back. This refuses the trade that takes the
-    // hire's value past the retained share, so the bleed stops at a number the buyer
-    // can read at open. The pool says which of the pair is token0, so the value
-    // conversion cannot disagree with the floor it is measured beside.
-    //
-    // Its own scope, because trade() sits a few variables under the compiler's limit and
-    // these three locals are what tips it over.
+    // supply tokenB to an external yield venue (Buffer). Moves funds from the
+    // hire's liquid balanceB to the venue. The venue must implement supply(amount).
+    function supplyToVenue(uint256 id, address venue, uint256 amount) external nonReentrant {
+        if (venue == address(0)) revert BadVenue();
+        Hire storage h = _hires[id];
+        if (!h.open) revert NotOpen();
+        if (msg.sender != h.agent) revert NotTheAgent();
+        if (block.timestamp >= h.expiry) revert Expired();
+        if (amount == 0 || amount > h.balanceB) revert BadAmount();
+        // the buyer named the venue at open; the agent cannot point the hire
+        // anywhere else, so a bad venue is the buyer's choice, not the agent's
+        if (h.venue == address(0) || h.venue != venue) revert BadVenue();
+
+        _call(tokenB, abi.encodeWithSignature("approve(address,uint256)", venue, amount));
+        (bool ok,) = venue.call(abi.encodeWithSignature("supply(uint256,uint256)", id, amount));
+        if (!ok) revert TokenCallFailed();
+        _call(tokenB, abi.encodeWithSignature("approve(address,uint256)", venue, 0));
+
+        h.balanceB -= amount;
+        h.deployedB += amount;
+
+        // check max loss after supply
+        address pool = IV3Factory(factory).getPool(tokenA, tokenB, h.fee);
+        if (pool != address(0)) {
+            uint256 value0 = _valueInToken0(h, pool);
+            uint256 maxLossFloor = _mulDiv(h.depositInToken0, 10_000 - h.maxLossBps, 10_000);
+            if (value0 + VALUE_SLACK < maxLossFloor) {
+                emit MaxLossBreached(id, value0, maxLossFloor);
+                revert MaxLossBreachedErr();
+            }
+            if (value0 > h.highWaterMark) {
+                h.highWaterMark = value0;
+            }
+        }
+
+        emit Supplied(id, venue, amount);
+    }
+
+    // withdraw tokenB from an external yield venue back into the hire's balance
+    function withdrawFromVenue(uint256 id, address venue, uint256 amount) external nonReentrant {
+        if (venue == address(0)) revert BadVenue();
+        Hire storage h = _hires[id];
+        if (!h.open) revert NotOpen();
+        if (msg.sender != h.agent) revert NotTheAgent();
+        if (block.timestamp >= h.expiry) revert Expired();
+        if (amount == 0 || amount > h.deployedB) revert BadAmount();
+        if (h.venue != venue) revert BadVenue();
+
+        uint256 heldBefore = _held(tokenB);
+        (bool ok,) = venue.call(abi.encodeWithSignature("withdraw(uint256,uint256)", id, amount));
+        if (!ok) revert TokenCallFailed();
+        uint256 received = _held(tokenB) - heldBefore;
+        if (received < amount) revert BadAmount();
+
+        h.balanceB += received;
+        h.deployedB -= amount;
+
+        // check max loss after withdraw
+        address pool = IV3Factory(factory).getPool(tokenA, tokenB, h.fee);
+        if (pool != address(0)) {
+            uint256 value0 = _valueInToken0(h, pool);
+            uint256 maxLossFloor = _mulDiv(h.depositInToken0, 10_000 - h.maxLossBps, 10_000);
+            if (value0 + VALUE_SLACK < maxLossFloor) {
+                emit MaxLossBreached(id, value0, maxLossFloor);
+                revert MaxLossBreachedErr();
+            }
+            if (value0 > h.highWaterMark) {
+                h.highWaterMark = value0;
+            }
+        }
+
+        emit WithdrawnFromVenue(id, venue, amount);
+    }
+
     function _enforceBudget(Hire storage h, address pool) private view {
         uint256 value0 = _valueInToken0(h, pool);
         uint256 retained = _mulDiv(h.depositInToken0, minRetainedBps, 10_000);
         if (value0 + VALUE_SLACK < retained) revert DrawdownBreached();
     }
 
-    // the hire's current value in token0 units, measured against the reference
-    // price fixed at open. Shared by the drawdown budget and closeIfGoal so the
-    // two cannot disagree about what a hire is worth.
     function _valueInToken0(Hire storage h, address pool) private view returns (uint256) {
         bool aIsToken0 = IV3Pool(pool).token0() == tokenA;
-        uint256 value0 = aIsToken0 ? h.balanceA : _mulDiv(h.balanceA, Q96, uint256(h.refPriceX96));
-        value0 += aIsToken0 ? _mulDiv(h.balanceB, Q96, uint256(h.refPriceX96)) : h.balanceB;
-        return value0;
+        uint256 liquid0 = aIsToken0 ? _mulDiv(h.balanceB, Q96, uint256(h.refPriceX96)) : h.balanceB;
+        uint256 deployed0 = aIsToken0 ? _mulDiv(h.deployedB, Q96, uint256(h.refPriceX96)) : h.deployedB;
+        uint256 heldA = aIsToken0 ? h.balanceA : _mulDiv(h.balanceA, Q96, uint256(h.refPriceX96));
+        return heldA + liquid0 + deployed0;
     }
 
-    // a token1 deposit converts into token0 units by division; a token0 deposit is native
     function _depositInToken0(bool isToken0, uint256 amount, uint160 ref) private pure returns (uint256) {
         return isToken0 ? amount : _mulDiv(amount, Q96, uint256(ref));
     }
 
-    // the revoke: everything held for this hire goes back to the buyer, expired or not
+    function _payAgentFee(Hire storage h, address pool) private returns (uint256 agentFeeTokenB) {
+        if (h.agentFeeBps == 0) return 0;
+        uint256 currentValue = _valueInToken0(h, pool);
+        if (currentValue <= h.highWaterMark) return 0; // no new profit
+        uint256 profit = currentValue - h.highWaterMark;
+        uint256 feeToken0 = _mulDiv(profit, h.agentFeeBps, 10_000);
+        // convert fee to tokenB
+        bool aIsToken0 = IV3Pool(pool).token0() == tokenA;
+        if (aIsToken0) {
+            // token0 is A (WBNB), convert fee from token0 to tokenB (USDT)
+            agentFeeTokenB = _mulDiv(feeToken0, uint256(h.refPriceX96), Q96);
+        } else {
+            // token0 is B (USDT), fee is already in tokenB
+            agentFeeTokenB = feeToken0;
+        }
+        // cap at available balanceB
+        if (agentFeeTokenB > h.balanceB) {
+            agentFeeTokenB = h.balanceB;
+        }
+        if (agentFeeTokenB > 0) {
+            h.balanceB -= agentFeeTokenB;
+            _call(tokenB, abi.encodeWithSignature("transfer(address,uint256)", h.agent, agentFeeTokenB));
+        }
+        // update high-water mark
+        h.highWaterMark = currentValue;
+        return agentFeeTokenB;
+    }
+
+    // pull the whole venue position back before the hire closes, so accrued
+    // interest is part of the payout instead of stranded in the adapter
+    function _pullVenue(uint256 id, Hire storage h) private {
+        if (h.deployedB == 0 || h.venue == address(0)) return;
+        uint256 before = _held(tokenB);
+        // max asks the venue for the whole position, so the interest this hire
+        // earned comes back with the principal instead of staying behind
+        (bool ok,) = h.venue.call(abi.encodeWithSignature("withdraw(uint256,uint256)", id, type(uint256).max));
+        if (!ok) revert TokenCallFailed();
+        uint256 received = _held(tokenB) - before;
+        if (received < h.deployedB) revert BadAmount();
+        h.balanceB += received;
+        h.deployedB = 0;
+    }
+
     function withdraw(uint256 id) external nonReentrant {
         Hire storage h = _hires[id];
         if (!h.open) revert NotOpen();
         if (msg.sender != h.buyer) revert NotTheBuyer();
+        address pool = IV3Factory(factory).getPool(tokenA, tokenB, h.fee);
+        if (pool == address(0)) revert NoPool();
+        uint256 d = h.deployedB;
+        _pullVenue(id, h);
+        uint256 agentFee = _payAgentFee(h, pool);
         uint256 a = h.balanceA;
         uint256 b = h.balanceB;
         h.open = false;
+        _openByBuyer[h.buyer] -= 1;
         h.balanceA = 0;
         h.balanceB = 0;
         if (a > 0) _call(tokenA, abi.encodeWithSignature("transfer(address,uint256)", msg.sender, a));
         if (b > 0) _call(tokenB, abi.encodeWithSignature("transfer(address,uint256)", msg.sender, b));
-        emit Closed(id, msg.sender, a, b);
+        emit Closed(id, msg.sender, h.agent, a, b, d, agentFee);
     }
 
-    // current value of the hire in token0 units, measured against the reference price
-    // fixed at open. Permissionless to read; the same figure the drawdown budget
-    // uses, so a goal set against it cannot be gamed by a price move at close time.
     function valueInToken0(uint256 id) external view returns (uint256) {
         Hire storage h = _hires[id];
         if (!h.open) revert NotOpen();
@@ -324,29 +432,28 @@ contract HireVault {
         return _valueInToken0(h, pool);
     }
 
-    // close the hire automatically once its value reaches the goal the caller
-    // names, in token0 units. Permissionless, so anyone can trigger it when the
-    // condition is met; the buyer keeps withdraw() for an unconditional exit at
-    // any time, expired or not. The goal is supplied by the caller rather than
-    // stored, so a buyer can set a different goal on every attempt without a
-    // new open.
     function closeIfGoal(uint256 id, uint256 goalValueInToken0) external nonReentrant {
         Hire storage h = _hires[id];
         if (!h.open) revert NotOpen();
+        if (msg.sender != h.buyer) revert NotTheBuyer();
         address pool = IV3Factory(factory).getPool(tokenA, tokenB, h.fee);
         if (pool == address(0)) revert NoPool();
-        // a zero goal would always close the hire, so refuse it
         if (goalValueInToken0 == 0) revert GoalNotMet();
+        uint256 d = h.deployedB;
+        _pullVenue(id, h);
         uint256 value = _valueInToken0(h, pool);
         if (value < goalValueInToken0) revert GoalNotMet();
+        uint256 agentFee = _payAgentFee(h, pool);
         uint256 a = h.balanceA;
         uint256 b = h.balanceB;
         h.open = false;
+        _openByBuyer[h.buyer] -= 1;
         h.balanceA = 0;
         h.balanceB = 0;
+        h.deployedB = 0;
         if (a > 0) _call(tokenA, abi.encodeWithSignature("transfer(address,uint256)", h.buyer, a));
         if (b > 0) _call(tokenB, abi.encodeWithSignature("transfer(address,uint256)", h.buyer, b));
-        emit Closed(id, h.buyer, a, b);
+        emit Closed(id, h.buyer, h.agent, a, b, d, agentFee);
     }
 
     function hire(uint256 id) external view returns (Hire memory) {
@@ -361,11 +468,8 @@ contract HireVault {
         return _byAgent[agent];
     }
 
-    // what amountIn is worth in the other token at a price the caller supplies, before fees
-    function quoteAtRef(address pool, address tokenIn, uint256 amountIn, uint256 refPriceX96)
-        public
-        view
-        returns (uint256)
+    function quoteAtRef(address pool, address tokenIn, uint256 amountIn, uint160 refPriceX96)
+        public view returns (uint256)
     {
         if (refPriceX96 == 0) revert NoPool();
         return IV3Pool(pool).token0() == tokenIn
@@ -373,40 +477,21 @@ contract HireVault {
             : _mulDiv(amountIn, Q96, refPriceX96);
     }
 
-    // the time weighted price, as a Q96 token1 per token0 figure
-    //
-    // A spot read can be pushed in the transaction just before open, so the reference price
-    // is averaged over TWAP_WINDOW instead. This is the pool's own accumulated history, not
-    // an external feed, so it needs no oracle and no chain outside this one.
-    //
-    // observe answers with the cumulative tick at each timestamp asked for, so the
-    // difference between now and TWAP_WINDOW ago is that many seconds of ticks. Dividing by
-    // the window gives the average tick, and 1.0001^tick is the price.
-    //
-    // The average tick is negative on any pool priced below one, which is most of them: a
-    // USDT/WBNB pool has token0 as USDT, so one WBNB is a fraction of a USDT and the tick
-    // sits around -22800. Only a cumulative that has not advanced at all means a pool with
-    // no liquidity across the window, and that is the one refusal here. A negative tick is
-    // a price below one, which _priceX96 inverts rather than wrapping.
     function _twapPriceX96(address pool) internal view returns (uint160) {
         uint32[] memory ago = new uint32[](2);
         ago[0] = TWAP_WINDOW;
         ago[1] = 0;
         (int56[] memory ticks,) = IV3Pool(pool).observe(ago);
-        // ticks[0] is the older cumulative, so the difference runs forwards
         int256 delta = int256(ticks[1]) - int256(ticks[0]);
         if (delta == 0) revert NoPool();
         int256 averageTick = delta / int256(uint256(TWAP_WINDOW));
         return uint160(_priceX96(averageTick));
     }
 
-    // 1.0001^tick as a Q96 figure, by squaring. A negative tick inverts rather than
-    // wrapping, which is what the subtraction above implies for a falling price.
     function _priceX96(int256 tick) private pure returns (uint256) {
         if (tick == 0) return Q96;
         bool falling = tick < 0;
         uint256 power = uint256(falling ? -tick : tick);
-        // 1.0001^power scaled by 1e18, then converted to Q96
         uint256 base = 10001;
         uint256 result = 1e18;
         uint256 squared = base * 1e14;
@@ -418,7 +503,6 @@ contract HireVault {
         }
         uint256 priceX96 = _mulDiv(result, Q96, 1e18);
         if (!falling) return priceX96;
-        // 1 / price, so a falling tick does not underflow to zero
         return priceX96 == 0 ? 0 : Q96 * Q96 / priceX96;
     }
 
@@ -428,13 +512,11 @@ contract HireVault {
         amount = abi.decode(ret, (uint256));
     }
 
-    // some tokens return nothing where the standard says a bool
     function _call(address token, bytes memory data) private {
         (bool ok, bytes memory ret) = token.call(data);
         if (!ok || (ret.length != 0 && !abi.decode(ret, (bool)))) revert TokenCallFailed();
     }
 
-    // a * b / denominator with the full 512-bit product, after Remco Bloemen's mulDiv (MIT)
     function _mulDiv(uint256 a, uint256 b, uint256 denominator) private pure returns (uint256 result) {
         unchecked {
             uint256 prod0;
@@ -446,9 +528,7 @@ contract HireVault {
             }
             if (prod1 == 0) {
                 require(denominator > 0);
-                assembly {
-                    result := div(prod0, denominator)
-                }
+                assembly { result := div(prod0, denominator) }
                 return result;
             }
             require(denominator > prod1);

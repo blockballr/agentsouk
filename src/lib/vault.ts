@@ -7,8 +7,8 @@ import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID } from "./types";
 // contract on chain 97 or chain 56; the executor's job is only to trade an open
 // hire inside the bounds the contract set at open.
 export const VAULT_BY_CHAIN: Record<number, string> = {
-  [BSC_TESTNET_CHAIN_ID]: "0x035b7c4e0aab0681828c68229445c72107bac40a",
-  [BSC_CHAIN_ID]: "0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec",
+  [BSC_TESTNET_CHAIN_ID]: process.env.VAULT_ADDRESS_97 ?? "0xe1cd584d0bf2dbba90f84d5ac991984cae8f9d74",
+  [BSC_CHAIN_ID]: process.env.VAULT_ADDRESS_56 ?? "0x028129c230123a46f4305ce0d2b29f8ac5255149",
 };
 
 export function vaultFor(chainId: number): string | null {
@@ -20,6 +20,10 @@ export const VAULT_ABI = [
     { name: "id", type: "uint256" }, { name: "tokenIn", type: "address" },
     { name: "amountIn", type: "uint256" }, { name: "minOut", type: "uint256" }], outputs: [{ type: "uint256" }] },
   { name: "withdraw", type: "function", stateMutability: "nonpayable", inputs: [{ name: "id", type: "uint256" }], outputs: [] },
+  { name: "supplyToVenue", type: "function", stateMutability: "nonpayable", inputs: [
+    { name: "id", type: "uint256" }, { name: "venue", type: "address" }, { name: "amount", type: "uint256" }], outputs: [] },
+  { name: "withdrawFromVenue", type: "function", stateMutability: "nonpayable", inputs: [
+    { name: "id", type: "uint256" }, { name: "venue", type: "address" }, { name: "amount", type: "uint256" }], outputs: [] },
 ] as const;
 
 export const VAULT_READ_ABI = [
@@ -31,6 +35,9 @@ export const VAULT_READ_ABI = [
     { name: "fee", type: "uint24" }, { name: "depositInToken0", type: "uint256" },
   ] },
   { name: "hiresFor", type: "function", stateMutability: "view", inputs: [{ name: "agent", type: "address" }], outputs: [{ name: "", type: "uint256[]" }] },
+  { name: "tokenA", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { name: "tokenB", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { name: "valueInToken0", type: "function", stateMutability: "view", inputs: [{ name: "id", type: "uint256" }], outputs: [{ type: "uint256" }] },
 ] as const;
 
 export interface HireView {

@@ -1,4 +1,4 @@
-import { encodeFunctionData, parseUnits, formatUnits } from 'viem'
+import { decodeFunctionResult, encodeFunctionData, parseUnits, formatUnits } from 'viem'
 
 export const PANCAKE_V3_FACTORY = '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865' as const
 
@@ -8,8 +8,8 @@ export const PANCAKE_V3_FACTORY = '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865' a
 // addresses are per chain; chain 56 redeployed with closeIfGoal and valueInToken0 (0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec), mirrored from the server-side vault table
 
 export const VAULT_BY_CHAIN: Record<number, string> = {
-  56: '0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec',
-  97: '0x035b7c4e0aab0681828c68229445c72107bac40a',
+  56: import.meta.env.VITE_VAULT_ADDRESS_56 ?? '0x028129c230123a46f4305ce0d2b29f8ac5255149',
+  97: import.meta.env.VITE_VAULT_ADDRESS_97 ?? '0xe1cd584d0bf2dbba90f84d5ac991984cae8f9d74',
 }
 
 export function vaultFor(chainId: number): string | null {
@@ -39,6 +39,9 @@ const OPEN_ABI = [
       { name: 'expiry', type: 'uint64' },
       { name: 'maxSlippageBps', type: 'uint16' },
       { name: 'fee', type: 'uint24' },
+      { name: 'agentFeeBps', type: 'uint16' },
+      { name: 'maxLossBps', type: 'uint16' },
+      { name: 'venue', type: 'address' },
     ],
     outputs: [{ type: 'uint256' }],
   },
@@ -85,6 +88,11 @@ const HIRE_ABI = [
     { name: 'refPriceX96', type: 'uint160' },
     { name: 'fee', type: 'uint24' },
     { name: 'depositInToken0', type: 'uint256' },
+    { name: 'deployedB', type: 'uint256' },
+    { name: 'agentFeeBps', type: 'uint16' },
+    { name: 'highWaterMark', type: 'uint256' },
+    { name: 'maxLossBps', type: 'uint16' },
+    { name: 'venue', type: 'address' },
   ] },
 ] as const
 
@@ -125,11 +133,11 @@ export function vaultTokenB(chainId: number): PancakeLike | null {
   return VAULT_TOKENS[chainId]?.B ?? null
 }
 
-export function openCalldata(agent: string, token: string, amount: string, decimals: number, expiry: number, maxSlippageBps: number, fee: number): `0x${string}` {
+export function openCalldata(agent: string, token: string, amount: string, decimals: number, expiry: number, maxSlippageBps: number, fee: number, agentFeeBps: number, maxLossBps: number, venue: string): `0x${string}` {
   return encodeFunctionData({
     abi: OPEN_ABI,
     functionName: 'open',
-    args: [agent as `0x${string}`, token as `0x${string}`, parseUnits(amount, decimals), BigInt(expiry), maxSlippageBps, fee],
+    args: [agent as `0x${string}`, token as `0x${string}`, parseUnits(amount, decimals), BigInt(expiry), maxSlippageBps, fee, agentFeeBps, maxLossBps, venue as `0x${string}`],
   })
 }
 
@@ -191,6 +199,12 @@ export function readHire(raw: readonly unknown[]): VaultHire {
     balanceB: formatUnits(raw[6] as bigint, 18),
     refPriceX96: String(raw[7]),
     fee: Number(raw[8]),
+    depositInToken0: String(raw[9]),
+    deployedB: formatUnits(raw[10] as bigint, 18),
+    agentFeeBps: Number(raw[11]),
+    highWaterMark: String(raw[12]),
+    maxLossBps: Number(raw[13]),
+    venue: String(raw[14]),
   }
 }
 
@@ -204,7 +218,142 @@ export interface VaultHire {
   balanceB: string
   refPriceX96: string
   fee: number
+  depositInToken0: string
+  deployedB: string
+  agentFeeBps: number
+  highWaterMark: string
+  maxLossBps: number
+  venue: string
 }
 
 export const VAULT_ABIS = { hire: HIRE_ABI, hiresOf: HIRES_OF_ABI, caps: CAPS_ABI }
 export const FACTORY = PANCAKE_V3_FACTORY
+
+export const FEE_TIERS = [100, 500, 2500, 10000] as const
+
+export interface FeeChoice {
+  fee: number
+  pool: string
+  liquidity: bigint
+  twapOk: boolean
+  // quote per base from slot0, the same scale the vault's reference price uses
+  price: number | null
+}
+
+const FACTORY_ABI = [
+  {
+    name: 'getPool',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'a', type: 'address' }, { name: 'b', type: 'address' }, { name: 'fee', type: 'uint24' }],
+    outputs: [{ type: 'address' }],
+  },
+] as const
+
+const POOL_ABI = [
+  { name: 'liquidity', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint128' }] },
+  {
+    name: 'slot0',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [
+      { name: 'sqrtPriceX96', type: 'uint160' },
+      { name: 'tick', type: 'int24' },
+      { name: 'observationIndex', type: 'uint16' },
+      { name: 'observationCardinality', type: 'uint16' },
+      { name: 'observationCardinalityNext', type: 'uint16' },
+      { name: 'feeProtocol', type: 'uint32' },
+      { name: 'unlocked', type: 'bool' },
+    ],
+  },
+  {
+    name: 'observe',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'a', type: 'uint32[]' }],
+    outputs: [{ type: 'int56[]' }, { type: 'uint160[]' }],
+  },
+] as const
+
+// the bound pair is 18/18, so the tick ratio needs no decimal adjustment. base
+// is tokenA and quote is tokenB, which is how the vault reads its own price.
+export function quotePerBase(sqrtPriceX96: bigint, baseIsToken0: boolean): number {
+  if (sqrtPriceX96 <= 0n) return 0
+  const Q192 = 1n << 192n
+  const scale = 10n ** 18n
+  const token1PerToken0 = (sqrtPriceX96 * sqrtPriceX96 * scale) / Q192
+  if (token1PerToken0 === 0n) return 0
+  if (baseIsToken0) return Number(token1PerToken0) / 1e18
+  return Number((scale * scale) / token1PerToken0) / 1e18
+}
+
+export async function readFeeTiers(
+  read: (to: string, data: `0x${string}`) => Promise<`0x${string}`>,
+  tokenA: string,
+  tokenB: string,
+): Promise<FeeChoice[]> {
+  const out: FeeChoice[] = []
+  for (const fee of FEE_TIERS) {
+    try {
+      const poolData = await read(
+        FACTORY,
+        encodeFunctionData({ abi: FACTORY_ABI, functionName: 'getPool', args: [tokenA as `0x${string}`, tokenB as `0x${string}`, fee] }),
+      )
+      const pool = decodeFunctionResult({ abi: FACTORY_ABI, functionName: 'getPool', data: poolData }) as string
+      if (!pool || /^0x0{40}$/i.test(pool)) continue
+      const liquidity = decodeFunctionResult({
+        abi: POOL_ABI,
+        functionName: 'liquidity',
+        data: await read(pool, encodeFunctionData({ abi: POOL_ABI, functionName: 'liquidity' })),
+      }) as bigint
+      let twapOk = true
+      try {
+        await read(pool, encodeFunctionData({ abi: POOL_ABI, functionName: 'observe', args: [[1800, 0]] }))
+      } catch {
+        twapOk = false
+      }
+      let price: number | null = null
+      try {
+        const slot = decodeFunctionResult({
+          abi: POOL_ABI,
+          functionName: 'slot0',
+          data: await read(pool, encodeFunctionData({ abi: POOL_ABI, functionName: 'slot0' })),
+        }) as readonly [bigint, number, number, number, number, number, boolean]
+        price = quotePerBase(slot[0], tokenA.toLowerCase() < tokenB.toLowerCase())
+      } catch {
+        price = null
+      }
+      out.push({ fee, pool, liquidity, twapOk, price })
+    } catch {
+      // a tier that does not answer is not offered
+    }
+  }
+  return out
+}
+
+export function pickFeeTier(options: FeeChoice[]): FeeChoice | null {
+  const usable = options.filter((o) => o.twapOk)
+  if (usable.length === 0) return null
+  return usable.reduce((best, o) => (o.liquidity > best.liquidity ? o : best))
+}
+
+export function feeLabel(fee: number): string {
+  return `${(fee / 10000).toFixed(2)}%`
+}
+
+export async function tagHirePolicy(txHash: string): Promise<{ hireId: string; policy: string } | null> {
+  const base = import.meta.env.VITE_API_URL ?? '/api'
+  try {
+    const res = await fetch(`${base}/vault/policy-tag/register`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ txHash }),
+    })
+    if (!res.ok) return null
+    const body = await res.json()
+    return body?.ok ? { hireId: String(body.hireId), policy: String(body.policy) } : null
+  } catch {
+    return null
+  }
+}

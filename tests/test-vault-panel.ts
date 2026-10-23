@@ -17,12 +17,12 @@ import {
 } from '../apps/web/src/lib/vault'
 
 const AGENT = '0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713'
-const VAULT = '0x035b7c4e0aab0681828c68229445c72107bac40a'
+const VAULT = vaultFor(97)!
 
 describe('the panel contracts the vault actually enforces', () => {
   it('has a vault on chain 56 and chain 97', () => {
     expect(vaultFor(97)).toBe(VAULT)
-    expect(vaultFor(56)).toBe('0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec')
+    expect(vaultFor(56)).toBe('0x028129c230123a46f4305ce0d2b29f8ac5255149')
   })
 
   it('binds the same pair the deployment uses', () => {
@@ -30,14 +30,17 @@ describe('the panel contracts the vault actually enforces', () => {
     expect(vaultTokenB(97)?.address).toBe('0x337610d27c682E347C9cD60BD4b3b107C9d34dDd')
   })
 
-  it('encodes the six-argument open and reads it back whole', () => {
+  it('encodes the nine-argument open and reads it back whole', () => {
     const expiry = expiryFor(7)
-    const data = openCalldata(AGENT, vaultTokenB(97)!.address, '0.1', 18, expiry, 500, 500)
+    const venue = '0x00000000000000000000000000000000000000aa'
+    const data = openCalldata(AGENT, vaultTokenB(97)!.address, '0.1', 18, expiry, 500, 500, 1000, 2000, venue)
     const decoded = decodeFunctionData({ abi: [
       { name: 'open', type: 'function', stateMutability: 'nonpayable', inputs: [
         { name: 'agent', type: 'address' }, { name: 'token', type: 'address' },
         { name: 'amount', type: 'uint256' }, { name: 'expiry', type: 'uint64' },
         { name: 'maxSlippageBps', type: 'uint16' }, { name: 'fee', type: 'uint24' },
+        { name: 'agentFeeBps', type: 'uint16' }, { name: 'maxLossBps', type: 'uint16' },
+        { name: 'venue', type: 'address' },
       ], outputs: [{ type: 'uint256' }] },
     ] as const, data })
     expect(String(decoded.args[0]).toLowerCase()).toBe(AGENT.toLowerCase())
@@ -45,6 +48,9 @@ describe('the panel contracts the vault actually enforces', () => {
     expect(decoded.args[3]).toBe(BigInt(expiry))
     expect(decoded.args[4]).toBe(500)
     expect(decoded.args[5]).toBe(500)
+    expect(decoded.args[6]).toBe(1000)
+    expect(decoded.args[7]).toBe(2000)
+    expect(String(decoded.args[8]).toLowerCase()).toBe(venue)
   })
 
   it('keeps every preset expiry inside the vault horizon', () => {
