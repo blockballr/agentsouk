@@ -1,0 +1,53 @@
+import type { AbiEvent, PublicClient } from "viem";
+import { BSC_TESTNET_CHAIN_ID } from "./types";
+
+// a dedicated read endpoint: the shared transport is not required to serve logs
+export function vaultLogEndpoint(chainId: number): string {
+  if (chainId === BSC_TESTNET_CHAIN_ID) {
+    return process.env.VAULT_LOG_RPC_97 ?? "https://bsc-testnet-rpc.publicnode.com";
+  }
+  return process.env.VAULT_LOG_RPC_56 ?? "https://bsc-rpc.publicnode.com";
+}
+
+// Public log endpoints cap the block range, so a scan walks backwards in fixed
+// chunks. The calling route passes how many events it wants and how far back to look.
+export const LOG_CHUNK = 50_000n;
+export const MAX_LOG_CHUNKS = 12;
+
+export interface VaultLog {
+  transactionHash: `0x${string}`;
+  blockNumber: bigint | null;
+  args: Record<string, unknown>;
+}
+
+export async function collectVaultLogs(
+  client: PublicClient,
+  vault: `0x${string}`,
+  event: AbiEvent,
+  head: bigint,
+  options: { args?: Record<string, unknown>; want?: number; maxChunks?: number } = {},
+): Promise<VaultLog[]> {
+  const want = options.want ?? 200;
+  const maxChunks = options.maxChunks ?? MAX_LOG_CHUNKS;
+  const out: VaultLog[] = [];
+  let to = head;
+  for (let i = 0; i < maxChunks && out.length < want; i += 1) {
+    const from = to > LOG_CHUNK ? to - LOG_CHUNK : 0n;
+    try {
+      const logs = await client.getLogs({
+        address: vault,
+        event,
+        args: options.args,
+        fromBlock: from,
+        toBlock: to,
+      } as never);
+      out.unshift(...(logs as unknown as VaultLog[]));
+    } catch {
+      // the node refused the range; stop with what is collected
+      break;
+    }
+    if (from === 0n) break;
+    to = from - 1n;
+  }
+  return out.slice(-want);
+}
