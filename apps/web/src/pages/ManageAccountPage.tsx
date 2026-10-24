@@ -29,6 +29,7 @@ function revokeMessage(agentId: string, owner: string, nonce: string): string {
 export function ManageAccountPage() {
   const account = useConnectedAccount()
   const [agents, setAgents] = useState<BuiltAgent[]>([])
+  const [customAgents, setCustomAgents] = useState<{ id: string; owner: string; endpoint?: string | null; badge?: string; walletAddress?: string | null; manifest?: { name: string; category: string } }[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // revealed key per agent id, held in memory only
@@ -58,6 +59,12 @@ export function ManageAccountPage() {
         else setError(body?.error ?? 'could not load agents')
       })
       .catch(() => setError('could not load agents'))
+    fetch(`${API_BASE}/builder/custom/status?owner=${account}`)
+      .then((r) => r.json())
+      .then((body) => {
+        if (body?.success) setCustomAgents(body.items ?? [])
+      })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [account])
 
@@ -341,6 +348,33 @@ export function ManageAccountPage() {
               </Stack>
             )
           })}
+        </Stack>
+      )}
+
+      {customAgents.length > 0 && (
+        <Stack gap={12} className="mt-6">
+          <Txt size={14} lead={20} weight="semibold" tone="ink">Custom agents</Txt>
+          {customAgents.map((agent) => (
+            <Stack key={agent.id} surface gap={8} pad={[14, 16, 14, 16]}>
+              <Row justify="between" align="center" gap={8}>
+                <Txt size={13} lead={18} weight="semibold" tone="ink">
+                  {agent.manifest?.name ?? 'Custom agent'}
+                </Txt>
+                <Pill variant={agent.badge === 'established' ? 'keep' : 'off'}>
+                  {agent.badge === 'established' ? 'Established' : agent.badge === 'unknown' ? 'Unknown' : 'New'}
+                </Pill>
+              </Row>
+              <Txt size={11} lead={16} mono tone="muted">
+                {agent.id} · {agent.manifest?.category ?? 'custom'}
+              </Txt>
+              {agent.walletAddress && (
+                <Txt size={11} lead={16} mono tone="muted">wallet: {agent.walletAddress}</Txt>
+              )}
+              {agent.endpoint && (
+                <Txt size={11} lead={16} mono tone="muted">endpoint: {agent.endpoint}</Txt>
+              )}
+            </Stack>
+          ))}
         </Stack>
       )}
     </Stack>

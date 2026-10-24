@@ -96,7 +96,7 @@ export function countByDay(dates: readonly string[], days: number, now: number):
 
 // a gated agent answered, so it passes; only no answer at all is a failed check
 export function checkPassed(status: string): boolean {
-  return status === "delivered" || status === "gated";
+  return status === "online" || status === "gated";
 }
 
 export function checksByDay(

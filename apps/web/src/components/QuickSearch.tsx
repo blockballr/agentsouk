@@ -34,7 +34,7 @@ export function QuickSearch({ large }: { large?: boolean }) {
         onClick={() => setOpen(true)}
         aria-label="Search agents"
         title="Search agents  /"
-        className={`flex items-center justify-center rounded-[8px] border border-souk-hair text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+        className={`flex items-center justify-center rounded-none border border-souk-hair text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
           large ? 'h-11 w-11' : 'h-[38px] w-[38px]'
         }`}
       >
@@ -148,10 +148,10 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Search agents"
-        className="relative w-full max-w-xl overflow-hidden rounded-[20px] border border-souk-hair bg-souk-indigo/85 shadow-[0_24px_60px_-16px_rgba(0,0,0,0.6)] backdrop-blur-md ring-1 ring-white/10"
+        className="relative w-full max-w-xl overflow-hidden bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] shadow-lg backdrop-blur-md ring-1 ring-white/10"
       >
         <div className="flex items-center gap-3 border-b border-b-souk-hair px-4">
-          <span className="text-souk-indigo-labels">
+          <span className="text-souk-slate">
             <SearchGlyph />
           </span>
           <input
@@ -167,21 +167,21 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
             onKeyDown={onInputKey}
             placeholder="Search agents by name, skill or tag"
             aria-label="Search agents"
-            className="h-14 w-full bg-transparent text-base text-white placeholder:text-souk-indigo-labels focus:outline-none"
+            className="h-14 w-full bg-transparent text-base text-souk-ink placeholder:text-souk-muted focus:outline-none"
           />
-          <kbd className="micro hidden rounded-[6px] border border-souk-hair px-1.5 py-0.5 font-mono text-[11px] text-souk-indigo-labels sm:inline">
+          <kbd className="micro hidden rounded-[6px] border border-souk-hair px-1.5 py-0.5 font-mono text-[11px] text-souk-slate sm:inline">
             Esc
           </kbd>
         </div>
 
         {q.trim() === '' ? (
-          <p className="px-4 py-5 text-[13px] text-souk-indigo-labels">Type a name, a skill such as health factor, or a tag.</p>
+          <p className="px-4 py-5 text-[13px] text-souk-slate">Type a name, a skill such as health factor, or a tag.</p>
         ) : loading && items.length === 0 ? (
-          <p className="px-4 py-5 text-[13px] text-souk-indigo-labels" role="status">
+          <p className="px-4 py-5 text-[13px] text-souk-slate" role="status">
             Searching…
           </p>
         ) : items.length === 0 ? (
-          <p className="px-4 py-5 text-[13px] text-souk-indigo-labels" role="status">
+          <p className="px-4 py-5 text-[13px] text-souk-slate" role="status">
             Nothing matches &ldquo;{q.trim()}&rdquo;.
           </p>
         ) : (
@@ -201,10 +201,10 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
                   }`}
                 >
                   <span className="min-w-0">
-                    <span className="block truncate text-[15px] font-medium text-white">{a.name}</span>
-                    <span className="block truncate text-[12px] text-souk-indigo-labels">{categoryName(a.category)}</span>
+                    <span className="block truncate text-[15px] font-medium text-souk-ink">{a.name}</span>
+                    <span className="block truncate text-[12px] text-souk-slate">{categoryName(a.category)}</span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-2 font-mono text-[12px] text-souk-indigo-labels">
+                  <span className="flex shrink-0 items-center gap-2 font-mono text-[12px] text-souk-slate">
                     <span aria-hidden="true" className={`h-2 w-2 rounded-full ${VERDICT_DOT[v.tone]}`} />
                     {v.label}
                   </span>
@@ -218,7 +218,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={() => go(`/?q=${encodeURIComponent(q.trim())}`)}
-            className="micro block w-full border-t border-t-souk-hair px-4 py-3 text-left text-souk-indigo-labels transition hover:text-white"
+            className="micro block w-full border-t border-t-souk-hair px-4 py-3 text-left text-souk-slate transition hover:text-souk-ink"
           >
             See every match in the marketplace →
           </button>

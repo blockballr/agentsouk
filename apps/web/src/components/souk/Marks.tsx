@@ -34,13 +34,13 @@ export function SoukMark({ size = 22 }: { size?: number }) {
       <rect x="8" y="8" width="22" height="22" rx="4" fill="currentColor" />
       <rect x="34" y="8" width="22" height="22" rx="4" fill="currentColor" />
       <rect x="8" y="34" width="22" height="22" rx="4" fill="currentColor" />
-      <rect x="34" y="34" width="22" height="22" rx="4" fill="var(--color-souk-data)" />
+      <rect x="34" y="34" width="22" height="22" rx="4" fill="var(--color-souk-logo)" />
     </svg>
   );
 }
 
 export function AgentAvatar({
-  size = 40,
+  size = 56,
   name,
   imageUrl,
   chainId,

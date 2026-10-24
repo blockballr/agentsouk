@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { AgentSummary } from '../core/types'
 import { defaultAvatarFor } from '../lib/default-avatar'
-import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, shortAddress, timeAgo } from '@agora/core'
+import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, takesVault, shortAddress, timeAgo, classifyExecution } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
+import { OnChainBadge } from '../components/OnChainBadge'
 import { Tag } from '../components/Tag'
 import { getAgents } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
@@ -21,8 +22,8 @@ import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../compo
 const jobSorts = [
   {
     key: 'jobs',
-    label: 'Jobs',
-    title: 'Job sellers lead: agents that sell both jobs and x402 ahead of jobs-only, then direct-call x402 agents, then the rest.',
+    label: 'ESCROW',
+    title: 'Escrow sellers lead: agents that sell both jobs and x402 ahead of jobs-only, then direct-call x402 agents, then the rest.',
   },
   {
     key: 'x402',
@@ -30,9 +31,9 @@ const jobSorts = [
     title: 'Direct-call x402 agents lead, then job sellers, then the rest.',
   },
   {
-    key: 'others',
-    label: 'Others',
-    title: 'The rest lead: agents that are neither job sellers nor direct-call x402, then job sellers, then direct-call agents.',
+    key: 'vault',
+    label: 'VAULT',
+    title: 'Funded HireVault agents lead: the agents whose card declares a vault hire, where the deposit stays in the vault and one withdraw returns the balance.',
   },
 ] as const
 
@@ -57,8 +58,8 @@ const VERDICT_TONE: Record<VerdictTone, DotTone> = {
 
 // the states a listing can be in, in the order they cost a buyer
 const LEGEND: { tone: DotTone; label: string }[] = [
-  { tone: 'good', label: 'Online' },
-  { tone: 'good', label: 'Delivered' },
+  { tone: 'verified', label: 'Verified' },
+  { tone: 'online-fixed', label: 'Online' },
   { tone: 'held', label: 'Restricted' },
   { tone: 'bad', label: 'Unreachable' },
   { tone: 'bad', label: 'Unresponsive' },
@@ -86,10 +87,11 @@ export function MarketplacePage() {
   // no sort named reads as score, the chain's first metric; reachability is not
   // a choice here, it settles the ties underneath whichever metric is picked,
   // and job capability leads every one of them
-  const type = (sp.get('type') ?? 'jobs') as 'all' | 'jobs' | 'x402' | 'others'
+  const type = (sp.get('type') ?? 'jobs') as 'all' | 'jobs' | 'x402' | 'vault'
   const metric = (sp.get('metric') ?? 'score') as 'score' | 'newest' | 'feedback' | 'health'
   const pcs = sp.get('pcs') === '1'
   const hide = sp.get('hide') === '1'
+  const verifiedOnly = sp.get('verified') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
   const PAGE_SIZE = 48
 
@@ -160,11 +162,14 @@ export function MarketplacePage() {
 
   const totalPages = result ? Math.max(1, Math.ceil(result.total / PAGE_SIZE)) : 1
   const visibleItems = result
-    ? hide
-      ? result.items.filter(
-          (a) => a.verification?.status !== 'dead' && a.verification?.status !== 'unreachable',
-        )
-      : result.items
+    ? result.items.filter((a) => {
+        if (hide && (a.verification?.status === 'dead' || a.verification?.status === 'unreachable')) return false
+        if (verifiedOnly) {
+          const v = verdictFor(a.chain_id ?? 0, a.verification)
+          if (v.label !== 'Verified') return false
+        }
+        return true
+      })
     : []
 
   // The catalogue's own freshness: the shared store's refresh time when it has
@@ -275,6 +280,16 @@ export function MarketplacePage() {
               >
                 Hide unresponsive
               </Switch>
+              <Switch
+                checked={verifiedOnly}
+                label="Verified only"
+                onChange={() => setParam('verified', verifiedOnly ? '' : '1')}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                  Verified only
+                </span>
+              </Switch>
               {hide && result ? (
                 <Txt size={11} lead={16} mono tone="muted">
                   {`${visibleItems.length} shown`}
@@ -309,7 +324,7 @@ export function MarketplacePage() {
               </Row>
               <Row align="center" gap={6}>
                 <Txt size={10} lead={12} tone="muted" className="uppercase tracking-wide">
-                  Job type
+                  Hire Type
                 </Txt>
                 {jobSorts.map((s) => (
                   <SortButton
@@ -518,7 +533,7 @@ function Switch({
   checked: boolean
   label: string
   onChange: () => void
-  children: string
+  children: ReactNode
 }) {
   return (
     <label className="inline-flex cursor-pointer items-center gap-2">
@@ -605,8 +620,12 @@ function AgentCard({
       pad={[20, 22, 20, 22]}
       // the card answers to its own width, so four-across on a narrow screen
       // stacks its actions instead of squeezing them into a wrap
-      className={checked ? 'ring-1 ring-souk-data @container' : '@container'}
+      className={checked ? 'ring-1 ring-souk-data @container relative' : '@container relative'}
     >
+      <OnChainBadge
+        online={takesVault(agent.skills) || classifyExecution(agent.description ?? '').executes}
+        className="absolute right-3 top-3"
+      />
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         className="flex flex-col gap-3 rounded-[8px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
@@ -616,7 +635,7 @@ function AgentCard({
             src={img}
             alt=""
             loading="lazy"
-            className="h-[34px] w-[34px] shrink-0 rounded-[8px] border border-souk-hair bg-souk-indigo object-cover"
+            className="h-[56px] w-[56px] shrink-0 rounded-[8px] border border-souk-hair bg-souk-indigo object-cover"
             onError={(e) => {
               // a dead image_url falls back to the listing's own default face
               const el = e.currentTarget
@@ -630,7 +649,7 @@ function AgentCard({
             <Txt size={10} lead={14} weight="bold" upper tone="muted">
               {categoryName(agent.category)}
             </Txt>
-            <Txt size={16} lead={24} weight="bold" tone="ink" className="truncate">
+            <Txt size={18} lead={26} weight="bold" tone="ink" className="truncate">
               {agent.name}
             </Txt>
             {firstParty ? (
@@ -649,7 +668,7 @@ function AgentCard({
 
         <span title={verdict.explain} className="inline-flex">
           <Row align="center" gap={8}>
-            <Dot tone={VERDICT_TONE[verdict.tone]} size={9} />
+            <Dot tone={verdict.label === 'Verified' ? 'verified' : verdict.label === 'Online' ? 'online-fixed' : VERDICT_TONE[verdict.tone]} size={9} />
             <Txt size={14} lead={20} tone="slate">
               {verdict.label}
             </Txt>
@@ -759,7 +778,7 @@ function GridSkeleton() {
       {Array.from({ length: 12 }, (_, i) => (
         <Stack key={i} surface gap={12} pad={[20, 22, 20, 22]} className="animate-pulse">
           <Row align="center" gap={11}>
-            <span className="h-[34px] w-[34px] shrink-0 rounded-[8px] bg-souk-surface2" />
+            <span className="h-[56px] w-[56px] shrink-0 rounded-[8px] bg-souk-surface2" />
             <Stack gap={6} className="flex-1">
               <span className="h-3 w-20 rounded-[3px] bg-souk-surface2" />
               <span className="h-4 w-32 rounded-[3px] bg-souk-surface2" />

@@ -205,7 +205,7 @@ export function StationPage() {
   return (
     <div className="min-h-screen bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-10 text-souk-ink xl:pb-28">
       {/* the hero names the room and says what signs it */}
-      <Stack gap={10} pad={[32, 0, 0, 0]} className="xl:max-w-[calc(100%_-_460px)]">
+      <Stack gap={10} pad={[32, 0, 0, 0]} className="w-full">
         <Txt size={11} lead={16} mono upper tone="data">
           {`Station · station.agentsouk.xyz · ${members.length} member${members.length === 1 ? '' : 's'}`}
         </Txt>

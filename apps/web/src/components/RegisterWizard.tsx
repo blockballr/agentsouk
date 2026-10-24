@@ -682,7 +682,7 @@ export function RegisterWizard({
       </div>
 
       <div className="mt-6 space-y-5">
-        <section className="rounded-[12px] border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
+        <section className="border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="micro text-souk-ink">1. The endpoint a buyer calls</p>
             <CardState state={cardState} />
@@ -770,7 +770,7 @@ export function RegisterWizard({
         </section>
 
         {detailsOpen && (
-          <section className="rounded-[12px] border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
+          <section className="border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="micro text-souk-ink">2. What the listing says</p>
               {cardState === 'read' && (

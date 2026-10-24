@@ -34,55 +34,26 @@ export function SecurityGate({ children }: { children: React.ReactNode }) {
   const preview = import.meta.env.DEV && new URLSearchParams(window.location.search).has('gate')
   const gated = TURNSTILE_ENABLED && (GATE_HOSTS.has(window.location.hostname) || preview)
   const [passed, setPassed] = useState(() => !gated || passedThisSession())
-  const [checking, setChecking] = useState(false)
-  const [error, setError] = useState('')
 
-  const onToken = useCallback(
-    async (token: string) => {
-      if (!token) {
-        setError('The check expired. Tick the box to try again.')
-        return
+  const onToken = useCallback(async (token: string) => {
+    if (!token) return
+    try {
+      if (await verifyTurnstile(token)) {
+        rememberPass()
+        setPassed(true)
       }
-      setChecking(true)
-      setError('')
-      try {
-        if (await verifyTurnstile(token)) {
-          rememberPass()
-          setPassed(true)
-        } else {
-          setError('The check did not pass. Tick the box to try again.')
-        }
-      } catch {
-        setError('The check could not be completed. Try again in a moment.')
-      } finally {
-        setChecking(false)
-      }
-    },
-    [],
-  )
+    } catch {
+      // the widget owns the retry state; a failed verification leaves it up
+    }
+  }, [])
 
   if (passed) return <>{children}</>
 
+  // Cloudflare's widget is the whole gate. No heading, card, footer or second
+  // way to reload: the challenge is the interface.
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center gap-5 bg-[#0b0b0c] px-5 text-center">
-      <h1 className="max-w-xl text-balance text-xl font-semibold text-white sm:text-2xl">
-        Quick security check to keep Agent Souk safe
-      </h1>
-      <div className="w-full max-w-[420px] rounded-xl border border-white/15 bg-[#1c1c1f] px-4 py-5 shadow-2xl">
-        <Turnstile theme="dark" className="flex min-h-[65px] items-center justify-center" onToken={onToken} />
-        {checking && <p className="mt-2 text-xs text-white/60">Checking...</p>}
-        {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
-      </div>
-      <p className="max-w-sm text-xs leading-relaxed text-white/40">
-        Protected by Cloudflare. This check runs once per browser session.
-      </p>
-      <button
-        type="button"
-        onClick={() => window.location.reload()}
-        className="text-xs text-white/35 underline underline-offset-4 transition-colors hover:text-white/60"
-      >
-        Reload the check
-      </button>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center">
+      <Turnstile theme="dark" className="" onToken={onToken} />
     </div>
   )
 }

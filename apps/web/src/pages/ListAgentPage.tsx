@@ -127,7 +127,7 @@ export function ListAgentPage() {
   return (
     <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-28">
       {/* hero - list your agent */}
-      <Stack gap={12} className="xl:max-w-[calc(100%_-_460px)]">
+      <Stack gap={12} className="w-full">
         <Txt size={11} lead={16} mono upper tone="data">
           Sell on Agent Souk
         </Txt>
@@ -166,7 +166,7 @@ export function ListAgentPage() {
           {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB.
               the quest card's own indigo surface: white-family copy and white-alpha lines, so it
               reads the same on paper */}
-          <Stack bg="indigo" radius={20} pad={[14, 22, 14, 22]} gap={4} className="mt-6 max-w-[768px] border border-white/15">
+          <Stack bg="indigo" pad={[14, 22, 14, 22]} gap={4} className="mt-6 max-w-[768px] border border-white/15">
             <Txt size={13} lead={20} weight="bold" tone="white">
               Listing for Set and Earn?
             </Txt>
@@ -567,8 +567,11 @@ function CreateSection({
 
       <ol className="grid items-stretch gap-5 md:grid-cols-2">
         <li className="flex h-full">
-          <Stack surface gap={10} pad={[20, 22, 18, 22]} className="w-full">
-            <Txt size={10} lead={14} weight="bold" upper tone="muted">Step 1</Txt>
+          <div className="relative w-full">
+            <span className="absolute -top-2.5 left-2 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
+              Step 1
+            </span>
+            <Stack surface gap={10} pad={[20, 22, 18, 22]} className="w-full h-full">
             <Txt size={18} lead={26} weight="bold" tone="ink" className="block">Install the CLI</Txt>
             <Txt size={13} lead={20} tone="slate" className="block">
               One npm install brings the CLI and the runtime. One more command sets up your editor,
@@ -577,10 +580,14 @@ function CreateSection({
             </Txt>
             <CodeBlock lines={['npm install -g @bnbagent/studio-cli', 'bag skills install']} />
           </Stack>
+          </div>
         </li>
         <li className="flex h-full">
-          <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full">
-            <Txt size={10} lead={14} weight="bold" upper tone="muted">Step 2</Txt>
+          <div className="relative w-full">
+            <span className="absolute -top-2.5 left-2 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
+              Step 2
+            </span>
+            <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full h-full">
             <Txt size={18} lead={26} weight="bold" tone="ink" className="block">Describe your agent</Txt>
             <Txt size={13} lead={20} tone="slate" className="block">
               In Cursor or Claude Code, say what the agent does and ask Studio to deploy it. Studio
@@ -602,13 +609,17 @@ function CreateSection({
               comes configured by default.
             </Txt>
           </Stack>
+          </div>
         </li>
         <li className="flex h-full">
           <PromptGeneratorCard chainId={chainId} onReveal={onRevealChecklist} />
         </li>
         <li className="flex h-full">
-          <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full">
-            <Txt size={10} lead={14} weight="bold" upper tone="muted">Step 4</Txt>
+          <div className="relative w-full">
+            <span className="absolute -top-2.5 left-2 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
+              Step 4
+            </span>
+            <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full">
             <Txt size={18} lead={26} weight="bold" tone="ink" className="block">Note your task interface</Txt>
             <Txt size={13} lead={20} tone="slate" className="block">
               Your agent exposes an MCP server or an A2A endpoint, reachable over HTTPS. That is
@@ -635,6 +646,7 @@ function CreateSection({
               </Btn>
             </Row>
           </Stack>
+          </div>
         </li>
       </ol>
 
@@ -730,8 +742,11 @@ function PromptGeneratorCard({ chainId, onReveal }: { chainId: number | null; on
   }
 
   return (
-    <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full">
-      <Txt size={10} lead={14} weight="bold" upper tone="muted">Step 3</Txt>
+    <div className="relative w-full">
+      <span className="absolute -top-2.5 left-2 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
+        Step 3
+      </span>
+      <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full">
       <Txt size={18} lead={26} weight="bold" tone="ink" className="block">
         Generate your Agent Studio prompt
       </Txt>
@@ -823,6 +838,7 @@ function PromptGeneratorCard({ chainId, onReveal }: { chainId: number | null; on
         </Dialog>
       )}
     </Stack>
+    </div>
   )
 }
 

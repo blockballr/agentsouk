@@ -1,4 +1,4 @@
-// The design's button: 44 tall, radius 8, twenty of side padding, and four kinds.
+// The design's button: 44 tall, square corners, twenty of side padding, and four kinds.
 //
 // primary is the one action on a card, and it is the data colour, not a brand green.
 // keep is a held commitment, the same colour at 40%. off is the resting hairline. warn
@@ -47,7 +47,7 @@ export function Btn({
       disabled={disabled}
       {...rest}
       className={[
-        'inline-flex h-11 shrink-0 items-center justify-center rounded-[8px] border',
+        'inline-flex h-11 shrink-0 items-center justify-center rounded-none border',
         FILL[kind],
         RIM[kind],
         disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
@@ -74,7 +74,7 @@ export function IconBtn({
       title={label}
       aria-label={label}
       {...rest}
-      className="inline-flex h-[38px] w-[38px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-souk-hair"
+      className="inline-flex h-[38px] w-[38px] shrink-0 cursor-pointer items-center justify-center rounded-none border border-souk-hair"
     >
       {children}
     </button>
@@ -83,7 +83,7 @@ export function IconBtn({
 
 export function ProfileChip({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-[38px] items-center rounded-[8px] border border-souk-hair pl-2.5 pr-3.5">
+    <span className="inline-flex h-[38px] items-center rounded-none border border-souk-hair pl-2.5 pr-3.5">
       {children}
     </span>
   );

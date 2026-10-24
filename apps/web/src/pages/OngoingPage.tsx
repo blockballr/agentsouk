@@ -27,6 +27,7 @@ import {
 import { StopRail } from '../components/Jobs8183HirePanel'
 import Jobs8183JobCard from '../components/Jobs8183JobCard'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
+import { ReceiptsList } from '../components/ReceiptsList'
 import { hireErrorText } from '../lib/hire'
 import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
 import { useConnectedAccount } from '../lib/use-connected-account'
@@ -51,8 +52,9 @@ import {
 } from '../components/souk'
 
 // the server holds each wallet's view for five seconds, so a faster poll only
-// re-reads the same answer
-const POLL_MS = 5000
+// re-reads the same answer; thirty seconds keeps the view live without burning
+// a function invocation every five seconds
+const POLL_MS = 30_000
 
 function formatExpiry(iso: string): string {
   const ms = new Date(iso).getTime() - Date.now()
@@ -338,7 +340,7 @@ export function OngoingPage() {
     <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
       {/* the hero owns its own top padding, so the band carries only the lower half of the rhythm */}
       <Section pad="pb-16 md:pb-18">
-        <header className="flex max-w-[1180px] flex-col gap-2.5">
+        <header className="flex w-full flex-col gap-2.5">
           <Txt size={11} lead={16} mono upper tone="data">
             {kicker}
           </Txt>
@@ -383,7 +385,7 @@ export function OngoingPage() {
             </Txt>
             <Link
               to="/agents"
-              className="mt-2 inline-flex h-11 w-fit items-center justify-center rounded-[8px] bg-souk-data px-5"
+              className="mt-2 inline-flex h-11 w-fit items-center justify-center rounded-none bg-souk-data px-5"
             >
               <Txt size={14} lead={20} weight="semibold" tone="canvas">
                 Browse agents
@@ -613,7 +615,7 @@ function HireRow({
             type="button"
             onClick={onRevoke}
             disabled={busy}
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-3 transition hover:border-souk-hair disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-none border border-souk-hair bg-souk-surface1 px-3 transition hover:border-souk-hair disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Txt size={12} lead={18} weight="semibold" tone="slate">
               {revoking ? 'Revoking…' : 'Revoke session'}
@@ -679,11 +681,6 @@ function HireRow({
               Open agent
             </Action>
           ) : null}
-          {item.live && job?.status === 'Funded' && task?.status !== 'running' && !task?.result && (
-            <Action onClick={onReject} disabled={busy} className="w-full">
-              {escrowed ? 'Reject · refunds you' : 'Reject before work'}
-            </Action>
-          )}
           {rateable && rated === undefined && (
             <Action onClick={() => setDialog('rate')} className="w-full">
               Rate agent
@@ -720,6 +717,11 @@ function HireRow({
             <RatingBoxes value={rated} label={rated ? `Rated ${rated} of 5` : 'Rated'} />
           </div>
         )}
+      </div>
+
+      <div className="mt-2">
+        <Txt size={10} lead={14} upper tone="muted" className="mb-1">Execution receipts</Txt>
+        <ReceiptsList agent={item.agentName} chainId={item.chainId} />
       </div>
 
       {dialog === 'full' && shown.full ? (
@@ -806,7 +808,7 @@ function OpenTaskCard({ item, at }: { item: HireItem; at: number }) {
   const left = session ? formatExpiry(session.expiresAt) : null
   const retries = task ? task.maxAttempts - task.attempts : null
   return (
-    <article className="flex min-w-0 flex-col rounded-[20px] border border-souk-edge bg-souk-surface1 p-[22px] pb-[18px]">
+    <article className="flex min-w-0 flex-col rounded-none border border-souk-edge bg-souk-surface1 p-[22px] pb-[18px]">
       <Row justify="between" align="center" gap={12} className="flex-wrap">
         <Row align="center" gap={11} className="min-w-0">
           <AgentAvatar size={34} name={item.agentName} chainId={item.chainId} tokenId={item.tokenId} />
@@ -894,7 +896,7 @@ function EscrowFacts({
     { label: 'Status', value: held ? 'held by the funder' : released ? 'settled' : 'closed', tone: 'ink' },
   ]
   return (
-    <article className="flex min-w-0 flex-col rounded-[20px] border border-souk-edge bg-souk-surface1 p-4 pb-[14px]">
+    <article className="flex min-w-0 flex-col rounded-none border border-souk-edge bg-souk-surface1 p-4 pb-[14px]">
       <Row justify="between" align="center" className="pb-[9px]">
         <Txt size={18} lead={27} weight="bold" tone="ink">The escrow</Txt>
         <Txt size={10} lead={14} mono upper tone="labels">{`chain ${item.chainId}`}</Txt>
@@ -921,7 +923,7 @@ function EscrowFacts({
             disabled={busy || !canAct || move.kind === 'plain' || move.kind === 'refuse'}
             onClick={() => onReject(item)}
           >
-            {busy ? 'Waiting for your wallet' : move.kind === 'reject' ? 'Dispute this delivery' : 'Take the money back'}
+            {busy ? 'Waiting for your wallet' : move.kind === 'reject' ? 'Dispute this delivery' : 'Refund'}
           </Btn>
           {!canAct ? (
             <Txt size={11} lead={16} tone="muted">Only the wallet that paid can move it.</Txt>

@@ -1,5 +1,5 @@
 {
-  "nav.marketplace": "Mercado",
+  "nav.marketplace": "Prateleira de agentes",
   "nav.compare": "Comparar",
   "nav.build": "Construir",
   "nav.ongoing": "Em andamento",
@@ -73,7 +73,7 @@
   "settings.security": "Segurança",
   "settings.note": "A navegação, as configurações e o formulário do cofre mudam com o idioma escolhido. Páginas longas e textos dos agentes ficam no idioma de seus autores. O perfil fica neste navegador por enquanto. A segurança continua desligada até o serviço de acesso ser conectado.",
   "vault.backAgent": "← Voltar ao agente",
-  "vault.backMarket": "← Mercado",
+  "vault.backMarket": "← Prateleira de agentes",
   "vault.hireKicker": "Contratação via cofre",
   "vault.title": "Contrate um agente que negocia um depósito limitado.",
   "vault.deck": "O depósito fica no cofre. O agente o negocia entre WBNB e USDT dentro dos limites definidos na abertura, e um único saque devolve todos os saldos.",
@@ -113,16 +113,5 @@
   "vault.honestNote": "LIDO DO DEPLOYMENT",
   "vault.term.day": "1 dia",
   "vault.term.days": "{{days}} dias",
-  "vault.term.until": "Até revogar",
-  "home.hero.label": "Mercado de agentes de IA",
-  "home.hero.checking": "verificando a rede",
-  "home.hero.quest": "Set and Earn Quest",
-  "home.hero.explore": "Explorar o mercado",
-  "home.hero.howSettlement": "Como funciona o settlement",
-  "home.stats.served.label": "agentes neste mercado",
-  "home.stats.served.caption": "cada um chamado, não apenas listado",
-  "home.stats.served.unavailable": "Contagem ao vivo indisponível",
-  "home.stats.served.curated": "curados no Agent Souk",
-  "home.stats.x402.label": "Chamadas diretas pagam por requisição, sem depósitos",
-  "home.stats.onchain.label": "Reputação, endpoints, saúde"
+  "vault.term.until": "Até revogar"
 }

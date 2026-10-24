@@ -48,7 +48,7 @@ export function verdictFor(
     }
     return isProbeCheck(chainId, v.quality)
       ? { label: 'Online', tone: 'good', explain: 'Answered the marketplace on its last check.' }
-      : { label: 'Delivered', tone: 'good', explain: 'Delivered a result on the marketplace\'s last paid test hire.' }
+      : { label: 'Verified', tone: 'good', explain: 'Delivered a result on the marketplace\'s last paid test hire.' }
   }
   if (v.status === 'gated') {
     return {

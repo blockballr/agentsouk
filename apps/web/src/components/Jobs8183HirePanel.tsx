@@ -416,10 +416,10 @@ export default function Jobs8183HirePanel({
   }
   return (
     <>
-      <Stack bg="surface1" radius={20} hair pad={[20, 22, 20, 22]} className="w-full">
+      <Stack bg="surface1" hair pad={[20, 22, 20, 22]} className="w-full">
         {jobBody}
       </Stack>
-      <Stack bg="surface1" radius={20} hair pad={[20, 22, 20, 22]} className="w-full">
+      <Stack bg="surface1" hair pad={[20, 22, 20, 22]} className="w-full">
         {quoteBody}
       </Stack>
     </>
@@ -444,7 +444,7 @@ function Meter({ pct, pending }: { pct: number; pending: boolean }) {
           style={{
             width: `${pending ? 19 : Math.max(pct, 2)}%`,
             minWidth: 6,
-            backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #44b48b 100%)',
+            backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #c8ced9 100%)',
           }}
         >
           {pending ? (

@@ -14,3 +14,4 @@ export * from "../../../../packages/core/src/registration";
 // back through the same list, so both read it from one module.
 export * from "../../../../packages/core/src/rpc";
 export * from "../../../../packages/core/src/job-seller";
+export * from "../../../../packages/core/src/vault-seller";

@@ -1,20 +1,8 @@
-// the default faces an agent falls back to when it carries no usable image.
-// the pick is keyed on the listing, so an agent keeps its default for its
-// whole life instead of swapping between visits
-const FALLBACKS = [
-  '/inserts/arc.svg',
-  '/inserts/keystone.svg',
-  '/inserts/orbit.svg',
-  '/inserts/vertex.svg',
-  '/inserts/beam.svg',
-  '/inserts/knot.svg',
-] as const
-
+// the default face an agent falls back to when it carries no usable image.
+// uses DiceBear's Bottts style: a deterministic robot avatar keyed on the
+// listing, so an agent keeps its default for its whole life instead of
+// swapping between visits. No API key needed; the public endpoint is free.
 export function defaultAvatarFor(chainId: number, tokenId: string): string {
-  const key = `${chainId}/${tokenId}`
-  let hash = 0
-  for (let i = 0; i < key.length; i++) {
-    hash = (hash * 31 + key.charCodeAt(i)) >>> 0
-  }
-  return FALLBACKS[hash % FALLBACKS.length]
+  const seed = `${chainId}/${tokenId}`;
+  return `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=gradientLinear`;
 }

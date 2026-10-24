@@ -8,21 +8,21 @@ import {
   formatDate,
   formatNumber,
   formatScore,
-  SESSION_HOURS,
-  SESSION_SPEND_CAP_USD,
   shortAddress,
   timeAgo,
   isJobStepSkill,
   takesJobs,
+  takesVault,
   sellsByJob,
   CATEGORIES,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentActivity, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultExecutor, recordAgentView, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row, type WalletActivity } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentActivity, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultAgents, getVaultExecutor, recordAgentView, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row, type VaultAgentLink, type WalletActivity } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
-import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
 import Jobs8183JobCard from '../components/Jobs8183JobCard'
+import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
-import { FreePreview } from '../components/FreePreview'
+import { ReceiptsList } from '../components/ReceiptsList'
+import VaultHirePage from './VaultHirePage'
 import { escrowLifecycle, hireItems, hireState, type HireItem } from '../lib/hire-state'
 import { RateAgent } from '../components/RateAgent'
 import { chainLabel, settlementAssetFor } from '../lib/contracts'
@@ -48,7 +48,7 @@ import {
   type HireRequirementsData,
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
-import { Btn, Row as SoukRow, Stack, Txt, Dot, Pill, SectionHead, DataTable, Kpi, IconChevron } from '../components/souk'
+import { Row as SoukRow, Stack, Txt, Dot, Pill, SectionHead, DataTable, Kpi, IconChevron } from '../components/souk'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -258,6 +258,10 @@ export function AgentDetailPage() {
   // the viewer's live hire for this agent, found through the receipts store rather
   // than the instance's own ledger
   const [durableHire, setDurableHire] = useState<{ paymentId: string } | null>(null)
+  const [showVaultHire, setShowVaultHire] = useState(false)
+  // the sibling vault agents, read once the detail lands so the page can link
+  // sideways without going back to the shelf
+  const [vaultLinks, setVaultLinks] = useState<VaultAgentLink[] | null>(null)
   // a session whose job has closed stays live on the server until it expires, but it is spent
   const [closedPaymentId, setClosedPaymentId] = useState<string | null>(null)
   // the session revoke the owner asked for on this page: busy flag, and the
@@ -275,7 +279,7 @@ export function AgentDetailPage() {
   // action until the panel itself is on screen
   const [hirePanel, setHirePanel] = useState<HTMLElement | null>(null)
   const [hireInView, setHireInView] = useState(false)
-  const [executor, setExecutor] = useState<{ kind: 'rawkey' | 'altana'; address: string } | null>(null)
+  const [executor, setExecutor] = useState<{ kind: 'rawkey' | 'altana'; address: string; executors?: string[] } | null>(null)
   // the on-chain band folds on a phone: the drawing opens it, four boxes stacked
   // push the hire card off the screen
   const [chainOpen, setChainOpen] = useState(false)
@@ -485,6 +489,28 @@ export function AgentDetailPage() {
     }
   }, [chainId, tokenId])
 
+  // the siblings a vault buyer can compare without going back to the shelf. the
+  // gate is the declared skill, so a page for an ordinary listing never asks.
+  // it sits above the loading return because a hook cannot be skipped
+  const declaresVault = takesVault(detail?.skills)
+  useEffect(() => {
+    if (!detail || !declaresVault) {
+      setVaultLinks([])
+      return
+    }
+    let alive = true
+    getVaultAgents(Number(detail.chain_id))
+      .then((list) => {
+        if (alive) setVaultLinks(list)
+      })
+      .catch(() => {
+        if (alive) setVaultLinks([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [detail, declaresVault])
+
   if (loading) {
     return (
       <div className="px-6 py-16" role="status" aria-label="Loading agent">
@@ -612,13 +638,23 @@ export function AgentDetailPage() {
   // the deposit hire rides only a pairing that can actually run: the named
   // agent's wallet must be the wallet the executor trades from, so a card with
   // nothing to hand the vault never offers the option. both chains carry a vault
+  const configuredWallets = (executor?.executors && executor.executors.length ? executor.executors : (executor ? [executor.address] : []))
+    .map((w) => w.toLowerCase())
+  // two ways to be a vault agent: the card declares the vault skill, which any
+  // builder can publish, or the wallet is one of our own executor's. the pairing
+  // line still tells the buyer which of those it is, so a third-party runner is
+  // offered honestly rather than hidden. a chain without a vault offers neither.
   const vaultCapable =
-    firstParty &&
     (Number(detail.chain_id) === 97 || Number(detail.chain_id) === 56) &&
-    !!executor &&
-    !!detail.agent_wallet &&
-    detail.agent_wallet !== '0x0000000000000000000000000000000000000000' &&
-    detail.agent_wallet.toLowerCase() === executor.address.toLowerCase()
+    (declaresVault ||
+      (configuredWallets.length > 0 &&
+        !!detail.agent_wallet &&
+        detail.agent_wallet !== '0x0000000000000000000000000000000000000000' &&
+        configuredWallets.includes(detail.agent_wallet.toLowerCase())))
+
+  // the siblings a vault buyer can compare without going back to the shelf. the
+  // gate is the declared skill, so a page for an ordinary listing never asks
+  const siblings = (vaultLinks ?? []).filter((v) => v.tokenId !== String(detail.token_id))
   // a gated listing answers only behind its own wall, so a per-call hire would pay
   // and reach nothing: the card says how to reach it instead of offering that button
   const gatedOnly = !jobSeller && !mySession && detail.verification?.status === 'gated'
@@ -634,10 +670,14 @@ export function AgentDetailPage() {
           )}
           <button
             type="button"
-            onClick={() => hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            onClick={() =>
+              vaultCapable
+                ? setShowVaultHire(true)
+                : hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
             className={cx(button('primary', 'md'), 'flex w-full focus-visible:outline-souk-data')}
           >
-            {mySession ? 'Run a task in your session' : jobSeller ? 'How this agent is hired' : `Hire ${detail.name}`}
+            {vaultCapable ? 'Hire on Vault' : mySession ? 'Run a task in your session' : jobSeller ? 'How this agent is hired' : `Hire ${detail.name}`}
           </button>
         </div>
       )}
@@ -722,7 +762,7 @@ export function AgentDetailPage() {
                 <Pill>{chainLabel(Number(chainId))}</Pill>
                 {detail.a2a_endpoint ? <Pill>A2A</Pill> : null}
                 {detail.mcp_server ? <Pill>MCP</Pill> : null}
-                {jobSeller ? <Pill variant="keep">ERC-8183</Pill> : <Pill>x402</Pill>}
+                {jobSeller ? <Pill variant="keep">ERC-8183</Pill> : vaultCapable ? <Pill variant="keep">Hire Vault</Pill> : <Pill>x402</Pill>}
                 {detail.is_verified ? <Tag title="Verified on the ERC-8004 registry index">Registry verified</Tag> : null}
                 {detail.is_endpoint_verified ? <Tag title="The endpoint's domain is verified">Domain verified</Tag> : null}
                 {detail.pcs ? <Tag title="Its own registration says it works with PancakeSwap; not yet checked on-chain">PancakeSwap</Tag> : null}
@@ -875,6 +915,7 @@ export function AgentDetailPage() {
 
           {/* the design's right column: the hire card and the quote are two cards
               of the same shell, not one card holding a note */}
+          {(!vaultCapable || mySession) && (
           <AsideCard>
             {/* a job seller's panel carries its own head, so this card adds none:
                 one rail, one head, never the two stacked */}
@@ -883,7 +924,7 @@ export function AgentDetailPage() {
                 <Txt size={18} lead={27} weight="bold" tone="ink">
                   {mySession ? 'Run a task' : gatedOnly ? 'How this agent is hired' : 'Hire this agent'}
                 </Txt>
-                {gatedOnly ? null : <Pill variant="off">x402</Pill>}
+                {gatedOnly ? null : vaultCapable ? <Pill variant="keep">Hire Vault</Pill> : <Pill variant="off">x402</Pill>}
               </SoukRow>
             )}
           {/* A wallet that already holds a live session should land on the run
@@ -908,19 +949,7 @@ export function AgentDetailPage() {
                 onFundNew={() => setShowNewKernelJob(true)}
               />
             ) : (
-              <Stack gap={10}>
-                {selectedKernelJob ? (
-                  <>
-                    <Txt size={12} lead={18} tone="peach">
-                      You already have a job with this agent. This panel would create a second one.
-                    </Txt>
-                    <Btn kind="off" onClick={() => setShowNewKernelJob(false)}>
-                      Back to your job
-                    </Btn>
-                  </>
-                ) : null}
-                <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
-              </Stack>
+              <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
             )
           ) : gatedOnly ? (
             /* a gated listing answers only behind its own wall, so a per-call hire
@@ -957,14 +986,11 @@ export function AgentDetailPage() {
                 skills={detail.skills}
                 guide={questStage ?? undefined}
               />
-              {/* the deposit hire rides the standard panel for the vault's own
-                  chain, only where the pair actually runs: the executor and the
-                  agent's wallet are one wallet, so the option exists only on
-                  the listing the executor lane serves */}
-              {vaultCapable && (
-                <Action to={`/vault/${detail.chain_id}/${detail.token_id}`} variant="quiet" size="sm" className="mt-3 w-full">
-                  Open a funded hire on this vault
-                </Action>
+              {!jobSeller && !takesJobsToo && (
+                <Txt size={12} lead={18} tone="muted" className="mt-3 block">
+                  Hired per call. Escrowed jobs need this agent to publish the
+                  ERC-8183 job protocol.
+                </Txt>
               )}
             </>
           ) : takesJobsToo ? (
@@ -985,12 +1011,32 @@ export function AgentDetailPage() {
             </Stack>
           )}
           </AsideCard>
-          {detail.a2a_endpoint && Array.isArray(detail.skills) && detail.skills.length > 0 && (
-            <FreePreview endpoint={detail.a2a_endpoint} skills={detail.skills} />
+          )}
+          {vaultCapable && (
+            <AsideCard>
+              <SoukRow justify="between" align="center">
+                <Txt size={18} lead={27} weight="bold" tone="ink">
+                  Vault hire
+                </Txt>
+                <Pill variant="good">Vault</Pill>
+              </SoukRow>
+              <Txt size={13} lead={20} tone="slate" className="mt-3 block">
+                Fund a hire and the agent trades it inside the vault. The deposit stays
+                in the contract, the loss is capped, and you withdraw whatever is left.
+              </Txt>
+              <button
+                type="button"
+                onClick={() => setShowVaultHire(true)}
+                className="metal mt-3 w-full rounded-[8px] border border-souk-hair bg-souk-data px-3 py-2 text-[12px] font-semibold text-souk-canvas transition hover:brightness-95"
+                style={{ backgroundImage: 'var(--metal-face)' }}
+              >
+                Hire on Vault
+              </button>
+            </AsideCard>
           )}
           {/* the second rail this agent sells is its own card, the way the drawing
               keeps one rail per card rather than nesting one inside the other */}
-          {!mySession && !jobSeller && takesJobsToo && (
+          {!vaultCapable && !mySession && !jobSeller && takesJobsToo && (
             <AsideCard>
               <SoukRow justify="between" align="center">
                 <Txt size={18} lead={27} weight="bold" tone="ink">
@@ -1005,51 +1051,13 @@ export function AgentDetailPage() {
                   onFundNew={() => setShowNewKernelJob(true)}
                 />
               ) : (
-                <>
-                  <Txt size={12} lead={18} tone="slate">
-                    A direct hire above pays per call over x402. A job funds escrow first, and work
-                    starts once the job is funded.
-                  </Txt>
-                  {selectedKernelJob ? (
-                    <>
-                      <Txt size={12} lead={18} tone="peach">
-                        You already have a job with this agent. This panel would create a second one.
-                      </Txt>
-                      <Btn kind="off" onClick={() => setShowNewKernelJob(false)}>
-                        Back to your job
-                      </Btn>
-                    </>
-                  ) : null}
-                  <Jobs8183HirePanel
-                    tokenId={detail.token_id}
-                    chainId={Number(detail.chain_id)}
-                    cards={false}
-                    category={detail.category}
-                  />
-                </>
+                <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
               )}
             </AsideCard>
           )}
           {/* the quote is its own card in the design, not a note inside the hire one.
               a job seller's panel already draws that card, so only the x402 column
               supplies one here */}
-          {!jobSeller && (
-            <AsideCard>
-              <Txt size={18} lead={27} weight="bold" tone="ink">
-                Signed quote
-              </Txt>
-              <Txt size={13} lead={20} tone="slate">
-                No quote yet.
-              </Txt>
-              <Row label="Pricing" value="Per request" />
-              {/* reflects what the facilitator actually sets on the session, rather
-                  than a second opinion in the markup: this said $10 while production
-                  issued $5, so a live session contradicted the page */}
-              <Row label="Session" value={`${SESSION_HOURS}h, $${SESSION_SPEND_CAP_USD} cap`} />
-              <Row label="Network" value={chainLabel(Number(chainId))} />
-              <Row label="Funds" value="one transaction on BSC mainnet 56" />
-            </AsideCard>
-          )}
           {/* owner-only, so it renders only for an owner */}
           {viewer && isListingOwner(viewer, detail) && (
             <AsideCard>
@@ -1076,7 +1084,9 @@ export function AgentDetailPage() {
             payment={
               jobSeller
                 ? { value: 'By ERC-8183 job', note: 'The settled hire funds the job on the record; delivery attested' }
-                : { value: 'Per call', note: `Paid over x402 in ${asset}, straight to its wallet` }
+                : vaultCapable
+                  ? { value: 'Vault hire', note: 'Fund a bounded deposit; the agent trades it and you withdraw the rest' }
+                  : { value: 'Per call', note: `Paid over x402 in ${asset}, straight to its wallet` }
             }
             network={chainLabel(detail.chain_id)}
             score={detail.total_score > 0 ? formatScore(detail.total_score) : null}
@@ -1096,13 +1106,42 @@ export function AgentDetailPage() {
               }
             />
           )}
-          <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} />
+          <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} vault={vaultCapable} />
           <HowToReachCard detail={detail} jobSeller={jobSeller} />
+
+          {vaultCapable && siblings.length > 0 ? (
+            <Stack surface pad={[18, 20, 18, 20]} gap={10}>
+              <SectionHead title="Other vault agents" note="SAME VAULT" />
+              <Stack gap={2}>
+                {siblings.map((s) => (
+                  <Link
+                    key={s.tokenId}
+                    to={`/agents/${detail.chain_id}/${s.tokenId}`}
+                    className="flex items-center justify-between gap-3 border-t border-souk-hair py-2 first:border-t-0 hover:opacity-70"
+                  >
+                    <Txt size={13} lead={19} weight="semibold" tone="ink">
+                      {s.name ?? `token #${s.tokenId}`}
+                    </Txt>
+                    <Txt size={11} lead={16} mono tone="steel">
+                      {CATEGORIES.find((c) => c.key === s.category)?.label ?? s.category ?? 'vault'}
+                    </Txt>
+                  </Link>
+                ))}
+              </Stack>
+            </Stack>
+          ) : null}
 
           {perfProbe && <PerformanceSection probe={perfProbe} />}
 
         </div>
       </div>
+
+      {detail.agent_wallet && (
+        <Stack gap={8} surface pad={[16, 18, 16, 18]} className="mt-4">
+          <SectionHead title="Execution receipts" note="ON-CHAIN TRACK RECORD" />
+          <ReceiptsList agent={detail.agent_wallet} chainId={Number(detail.chain_id)} />
+        </Stack>
+      )}
 
           {/* the design draws this band across the full run, under both columns,
               opened rather than folded behind a disclosure. the twenty is the chain
@@ -1298,11 +1337,28 @@ export function AgentDetailPage() {
               )}
             </div>
           </Stack>
+      {showVaultHire ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setShowVaultHire(false)}
+        >
+          <div
+            className="relative max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-souk-canvas shadow-2xl souk-modal-scroll"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 sm:p-6">
+              <VaultHirePage
+                chainId={String(detail.chain_id)}
+                tokenId={detail.token_id}
+                onClose={() => setShowVaultHire(false)}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
-
-// the count belongs to the wallet, which several agents can share, so the label says so;
 // staked positions sit in the farm rather than the wallet, so they are named apart
 function positionsLabel(held: number, staked: number): string {
   const n = held + staked
@@ -1379,7 +1435,7 @@ function AsideCard({ children }: { children: ReactNode }) {
   )
 }
 
-function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['skills']>; jobSeller: boolean }) {
+function UsageSection({ skills, jobSeller, vault }: { skills: NonNullable<AgentDetail['skills']>; jobSeller: boolean; vault: boolean }) {
   // the job protocol's own steps are plumbing, so they are named once rather than listed as work
   const work = skills.filter((s) => !isJobStepSkill(s, skills))
   const alsoJobs = work.length > 0 && work.length < skills.length
@@ -1388,7 +1444,7 @@ function UsageSection({ skills, jobSeller }: { skills: NonNullable<AgentDetail['
   if (jobSeller || work.length === 0) return null
   return (
     <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5">
-      <SectionHead title="What it does" note="PER CALL" />
+      <SectionHead title="What it does" note={vault ? 'ON-CHAIN' : 'PER CALL'} />
       <div className="divide-y divide-souk-edge">
         {work.map((s) => (
           <SkillBlock key={s.id ?? s.name ?? 'skill'} skill={s} />

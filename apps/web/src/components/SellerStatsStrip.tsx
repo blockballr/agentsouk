@@ -98,7 +98,7 @@ export function SellerStatsStrip() {
 
   return (
     <div className="mt-6">
-      <div className="overflow-hidden rounded-[10px] border border-souk-hair">
+      <div className="border-y border-souk-hair">
         <div className="grid grid-cols-2 gap-px bg-souk-hair sm:grid-cols-3 xl:grid-cols-5">
           {kpis.map((k) => (
             <div key={k.label} className="flex flex-col gap-1 bg-souk-canvas px-4 py-3">

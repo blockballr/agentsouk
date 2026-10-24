@@ -52,7 +52,7 @@ describe("reading the listing review queue", () => {
     expect((await call({}, "?secret=nope")).status).toBe(401);
   });
 
-  it("returns the queue newest first to a bearer or a query secret", async () => {
+  it("returns the queue newest first to a bearer", async () => {
     process.env.INDEX_SECRET = env.SECRET;
     await recordListingRequest({
       tokenId: "45381",
@@ -78,8 +78,9 @@ describe("reading the listing review queue", () => {
     expect(body.requests[0].createdAt).toBe("2026-09-27T09:00:00.000Z");
     expect(body.requests[1].tokenId).toBe("45381");
 
+    // a secret in the query string ends up in logs and referrers, so the route
+    // does not accept it; only the header can carry it
     const viaQuery = await call({}, `?secret=${env.SECRET}&limit=1`);
-    expect(viaQuery.status).toBe(200);
-    expect((await viaQuery.json()).requests).toHaveLength(1);
+    expect(viaQuery.status).toBe(401);
   });
 });

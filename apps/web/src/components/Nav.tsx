@@ -10,6 +10,8 @@ import { useActiveAccount } from '../lib/use-active-account'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { useLocalProfile } from '../lib/profile'
+import { ThemeToggle } from './ThemeToggle'
+import { useLocation } from 'react-router-dom'
 import { useI18n } from '../lib/i18n'
 import { Dot, Row, Rule, Stack, Txt } from './souk'
 
@@ -41,15 +43,16 @@ const itemClass = (isActive: boolean): string =>
 // rim. the square has to be stated in both axes, or a link sized to its icon collapses
 // to the glyph's width and reads as a sliver beside the real squares
 const controlClass =
-  'relative flex h-[38px] w-[38px] shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
+  'relative flex h-[38px] w-[38px] shrink-0 items-center justify-center gap-2 rounded-none border border-souk-hair text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
 
 // the profile chip: wider than a square, because the design puts the mark and the
 // connected address in it rather than an icon alone
 const profileClass =
-  'flex h-[38px] shrink-0 items-center gap-2 rounded-[8px] border border-souk-hair pl-2.5 pr-3.5 text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
+  'flex h-[38px] shrink-0 items-center gap-2 rounded-none border border-souk-hair pl-2.5 pr-3.5 text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
 
 export function Nav() {
   const { t } = useI18n()
+  const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   // a declined sign-in surfaces here, where the connect click happened
   const [connectError, setConnectError] = useState<string | null>(null)
@@ -59,7 +62,7 @@ export function Nav() {
   const wallet = useActiveAccount()
   return (
     <header className="relative z-10 border-b border-souk-hair bg-souk-canvas">
-      <div className="mx-auto flex h-[62px] items-center justify-between px-4 lg:px-8">
+      <div className="site-frame flex h-[62px] items-center justify-between">
         {/* left: the wordmark and the section links, the design's first cluster */}
         <div className="flex items-center gap-[44px]">
           <Wordmark />
@@ -92,6 +95,7 @@ export function Nav() {
         <div className="hidden lg:flex lg:items-center lg:gap-2.5">
           <QuickSearch />
           <NotificationBell />
+          {location.pathname === '/' && <ThemeToggle />}
           <ProfileChip
             wallet={wallet}
             onConnect={() => {
@@ -122,7 +126,7 @@ export function Nav() {
 
       {menuOpen && (
         <div className="border-b border-souk-hair bg-souk-canvas lg:hidden">
-          <nav aria-label="Mobile" className="mx-auto flex flex-col gap-1 px-4 lg:px-8 py-4">
+          <nav aria-label="Mobile" className="site-frame flex flex-col gap-1 py-4">
             {links.map((l) =>
               OFF_APP ? (
                 <a
@@ -180,7 +184,7 @@ function ChainTag() {
   return (
     <span
       title={target ? `Settling on ${chainLabel(target.chainId)} · chain ${target.chainId}` : t('nav.chain.reading')}
-      className="inline-flex shrink-0 items-center gap-2 rounded-[8px] border border-souk-hair px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase leading-[14px] text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+      className="inline-flex shrink-0 items-center gap-2 rounded-none border border-souk-hair px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase leading-[14px] text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
       <Dot tone={on ? 'good' : test ? 'sky' : 'quiet'} size={6} />
       {target ? (on ? t('nav.chain.mainnet', { id: target.chainId }) : t('nav.chain.testnet', { id: target.chainId })) : t('nav.chain.reading')}
@@ -199,7 +203,7 @@ function PersonGlyph() {
 
 function VaultGlyph() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8eaf2" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <circle cx="12" cy="12" r="3.2" />
     </svg>
@@ -208,7 +212,7 @@ function VaultGlyph() {
 
 function PlusGlyph() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e8eaf2" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12 5v14M5 12h14" />
     </svg>
   )
@@ -228,14 +232,14 @@ function AccountRow({ label, route, Icon }: { label: string; route: string; Icon
   return (
     <Link
       to={route}
-      className="flex h-[40px] items-center gap-2.5 rounded-[8px] px-2 text-souk-indigo-labels transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+      className="flex h-[40px] items-center gap-2.5 rounded-none px-2 text-souk-ink transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
       <Icon />
       <Stack gap={1}>
-        <Txt size={13} lead={18} weight="bold" tone="white">
+        <Txt size={13} lead={18} weight="bold" tone="ink">
           {label}
         </Txt>
-        <Txt size={10} lead={14} mono tone="indigo-labels">
+        <Txt size={10} lead={14} mono tone="ink">
           {route}
         </Txt>
       </Stack>
@@ -285,7 +289,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
           <PersonGlyph />
         )}
         {wallet ? (
-          <Txt size={12} lead={18} mono tone="white">
+          <Txt size={12} lead={18} mono tone="ink">
             {shortAddress(wallet)}
           </Txt>
         ) : null}
@@ -293,11 +297,9 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
 
       {open && (
         <Stack
-          radius={20}
-          hair
           pad={[14, 16, 14, 16]}
           gap={2}
-          className="absolute right-0 top-full z-50 mt-2 w-[300px] bg-souk-indigo/85 shadow-lg backdrop-blur-md ring-1 ring-white/10"
+          className="absolute right-0 top-full z-50 mt-2 w-[300px] overflow-hidden bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] shadow-lg backdrop-blur-md ring-1 ring-white/10"
         >
           <Row align="center" pad={[0, 8, 8, 8]} gap={10} className="text-souk-indigo-labels">
             {profile?.avatar ? (
@@ -310,10 +312,10 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
               <PersonGlyph />
             )}
             <Stack gap={2}>
-              <Txt size={12} lead={18} mono tone="white">
+              <Txt size={12} lead={18} mono tone="ink">
                 {profile?.username || (wallet ? shortAddress(wallet) : t('nav.account.notConnected'))}
               </Txt>
-              <Txt size={10} lead={14} weight="bold" upper tone="indigo-labels">
+              <Txt size={10} lead={14} weight="bold" upper tone="ink">
                 {wallet
                   ? target
                     ? t('nav.account.connectedTo', { chain: chainLabel(target.chainId) })
@@ -338,7 +340,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
                 setOpen(false)
                 window.location.reload()
               }}
-              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-peach transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+              className="flex h-[40px] w-full items-center gap-2.5 rounded-none px-2 text-[13px] font-bold text-souk-peach transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
             >
               {/* the one row that never navigates */}
               <PowerGlyph />
@@ -351,7 +353,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
                 setOpen(false)
                 onConnect()
               }}
-              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-data transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+              className="flex h-[40px] w-full items-center gap-2.5 rounded-none px-2 text-[13px] font-bold text-souk-data transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
             >
               <PersonGlyph />
               {t('nav.account.connect')}

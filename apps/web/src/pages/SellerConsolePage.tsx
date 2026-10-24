@@ -1,5 +1,5 @@
 // The seller console is one scrolled board, the way the design draws it: Board A
-// is the morning view at the top, Board B the stalls, Board C the market face.
+// is the morning view at the top, Board B the agents, Board C the market face.
 // The section nav jumps between them without turning them into separate tools.
 import { useEffect, useState } from 'react'
 import { SellerBoardSection } from './SellerBoardSection'
@@ -10,7 +10,7 @@ import { useConnectedAccount } from '../lib/use-connected-account'
 
 const BOARDS = [
   { id: 'board', label: 'Portfolio', note: 'today' },
-  { id: 'stalls', label: 'Stalls', note: 'listings' },
+  { id: 'agents', label: 'Agents', note: 'listings' },
   { id: 'market-face', label: 'Market face', note: 'buyers and hires' },
 ] as const
 
@@ -57,7 +57,7 @@ function useActiveBoard(): string {
 function BoardNav({ active }: { active: string }) {
   return (
     <nav aria-label="Seller boards" className="sticky top-3 z-20 mb-8 w-fit max-w-full">
-      <div className="flex gap-1 overflow-x-auto rounded-2xl border border-souk-hair bg-souk-canvas/90 p-1 backdrop-blur">
+      <div className="flex gap-1 overflow-x-auto rounded-none border border-souk-hair bg-souk-canvas/90 p-1 backdrop-blur">
         {BOARDS.map((board) => {
           const on = active === board.id
           return (
@@ -65,7 +65,7 @@ function BoardNav({ active }: { active: string }) {
               key={board.id}
               href={`#${board.id}`}
               aria-current={on ? 'location' : undefined}
-              className={`flex shrink-0 items-baseline gap-2 rounded-xl px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+              className={`flex shrink-0 items-baseline gap-2 rounded-none px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
                 on
                   ? 'bg-souk-surface2 text-souk-ink'
                   : 'text-souk-steel hover:text-souk-ink'

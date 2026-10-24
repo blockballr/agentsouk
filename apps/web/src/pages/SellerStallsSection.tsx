@@ -129,7 +129,7 @@ function jobsWithin(days: number, list: Jobs8183Row[]): Jobs8183Row[] {
 }
 
 export function SellerStallsSection() {
-  // the stalls read the same listings and receipts the console loaded once
+  // the agents read the same listings and receipts the console loaded once
   const {
     account,
     owned,
@@ -158,47 +158,33 @@ export function SellerStallsSection() {
 
   const kicker = account
     ? [
-        'seller / stalls',
+        'seller / agents',
         `${stalls.length} of ${agents.length} listings`,
         chainId !== null ? chainLabel(chainId) : null,
         'board b',
       ]
         .filter((part): part is string => Boolean(part))
         .join(' · ')
-    : 'seller / stalls'
+    : 'seller / agents'
 
   return (
-    <section id="stalls" className="mt-16 scroll-mt-24 border-t border-souk-hair pt-12 text-souk-ink">
-      <Stack gap={10} className="max-w-[1180px] xl:max-w-[min(1180px,calc(100%_-_460px))]">
+    <section id="agents" className="mt-16 scroll-mt-24 border-t border-souk-hair pt-12 text-souk-ink">
+      <Stack gap={10} className="w-full">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
         <h2 className="m-0">
           <Txt size={28} lead={36} display weight="bold" tone="ink">
-            Your stalls.
+            Your agents.
           </Txt>
         </h2>
       </Stack>
-
-      {!account && (
-        <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
-          <Txt size={15} lead={22} tone="ink">
-            Connect the wallet you listed with.
-          </Txt>
-          <Txt size={13} lead={20} tone="muted">
-            A stall belongs to the listing the registry records as yours.
-          </Txt>
-          <Txt size={12} lead={18} tone="steel">
-            Connect from the rail on the left, or the bar above on a narrow screen.
-          </Txt>
-        </Stack>
-      )}
 
       {account && (
         <>
           <Row justify="between" align="center" gap={16} className="mt-8 flex-wrap">
             <Txt size={11} lead={16} mono tone="labels">
-              stalls for <Txt tone="slate">{shortAddress(account)}</Txt>
+              agents for <Txt tone="slate">{shortAddress(account)}</Txt>
             </Txt>
             <Btn kind="off" onClick={() => void reload()} disabled={loading}>
               {loading ? 'Reading...' : 'Refresh'}
@@ -206,19 +192,17 @@ export function SellerStallsSection() {
           </Row>
 
           {error && (
-            <div role="alert" className="mt-6">
-              <Stack pad={[14, 16, 14, 16]} radius={14} hair>
-                <Txt size={13} lead={20} tone="peach">
-                  {error}
-                </Txt>
-              </Stack>
+            <div role="alert" className="mt-6 border-l-2 border-souk-peach pl-3">
+              <Txt size={13} lead={20} tone="peach">
+                {error}
+              </Txt>
             </div>
           )}
 
           {owned && !loading && stalls.length === 0 && (
             <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
               <Txt size={15} lead={22} tone="ink">
-                No stalls on the board.
+                No agents on the board.
               </Txt>
               <Txt size={13} lead={20} tone="muted">
                 {agents.length > 0
@@ -272,8 +256,9 @@ export function SellerStallsSection() {
   )
 }
 
-// the design's three stat boxes: a zero is steel, never the green the figures get
-function StatBox({
+// The three figures sit in one divided strip rather than three nested cards. The
+// strip is the card's instrument panel, and silver is the only lit value.
+function StatCell({
   label,
   value,
   tone,
@@ -283,18 +268,23 @@ function StatBox({
   tone: 'data' | 'steel'
 }) {
   return (
-    <Stack bg="surface2" pad={[10, 12, 10, 12]} gap={2} radius={8} className="min-w-0">
-      <Txt size={16} lead={22} mono tone={tone}>
-        {value}
-      </Txt>
-      <Txt size={10} lead={14} weight="bold" upper tone="muted">
+    <div className="min-w-0 px-3 py-2.5">
+      <div className="truncate font-mono text-[9px] uppercase tracking-[0.1em] text-souk-muted">
         {label}
-      </Txt>
-    </Stack>
+      </div>
+      <div
+        className={`mt-1 break-words font-mono text-[13px] leading-[17px] tabular-nums ${
+          tone === 'data' ? 'text-souk-data' : 'text-souk-steel'
+        }`}
+      >
+        {value}
+      </div>
+    </div>
   )
 }
 
-// the card's own action, in the design's small hairline button: same shape profile uses
+// The card's actions are one segmented control: the hairlines come from the grid
+// gap, so the four controls read as a single footer rather than four loose buttons.
 function CardAction({
   variant,
   to,
@@ -304,7 +294,7 @@ function CardAction({
   className,
   children,
 }: {
-  variant?: 'primary'
+  variant?: 'primary' | 'warn'
   to?: string
   href?: string
   onClick?: () => void
@@ -313,35 +303,40 @@ function CardAction({
   children: ReactNode
 }) {
   const primary = variant === 'primary'
+  const warn = variant === 'warn'
+  const tone = primary ? 'canvas' : warn ? 'peach' : 'slate'
   const cls = [
-    'inline-flex h-9 w-full items-center justify-center rounded-[8px] border px-3 text-left transition',
-    primary ? 'border-transparent bg-souk-data text-souk-canvas' : 'border-souk-hair bg-souk-surface1 text-souk-slate',
-    disabled ? 'cursor-not-allowed opacity-40' : primary ? 'hover:opacity-90' : 'hover:border-souk-hair',
+    'inline-flex h-10 w-full items-center justify-center rounded-none px-2.5 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-souk-data',
+    primary
+      ? 'bg-souk-data text-souk-canvas hover:bg-souk-data/90'
+      : warn
+        ? 'bg-souk-surface1 hover:bg-souk-peach/10'
+        : 'bg-souk-surface1 hover:bg-souk-surface2',
+    disabled ? 'cursor-not-allowed opacity-40' : '',
     className ?? '',
   ].join(' ')
+  const label = (
+    <Txt size={11} lead={16} weight="semibold" tone={tone} className="truncate">
+      {children}
+    </Txt>
+  )
   if (to) {
     return (
       <Link to={to} className={cls}>
-        <Txt size={12} lead={18} weight="semibold" tone={primary ? 'canvas' : 'slate'} className="truncate">
-          {children}
-        </Txt>
+        {label}
       </Link>
     )
   }
   if (href) {
     return (
       <a href={href} target="_blank" rel="noreferrer" className={cls}>
-        <Txt size={12} lead={18} weight="semibold" tone="slate" className="truncate">
-          {children}
-        </Txt>
+        {label}
       </a>
     )
   }
   return (
     <button type="button" onClick={onClick} disabled={disabled} className={cls}>
-      <Txt size={12} lead={18} weight="semibold" tone={primary ? 'canvas' : 'slate'} className="truncate">
-        {children}
-      </Txt>
+      {label}
     </button>
   )
 }
@@ -482,96 +477,100 @@ function StallCard({
   const jobsValue = jobsRead ? escrowNote(recentJobs) : 'not read this pass'
 
   return (
-    <Stack surface pad={[16, 16, 14, 16]} gap={12} className="min-w-0 [overflow-wrap:anywhere]">
-      <Row align="center" gap={12} className="min-w-0">
-        <AgentAvatar size={34} name={agent.name} chainId={agent.chainId} tokenId={agent.tokenId} />
-        <Stack gap={2} className="min-w-0 flex-1">
-          <Link to={agentHref} className="min-w-0 truncate">
-            <Txt size={17} lead={22} weight="bold" tone="ink">
-              {agent.name}
+    <div className="min-w-0 overflow-hidden rounded-none border border-souk-edge bg-souk-surface1 text-souk-ink [overflow-wrap:anywhere] transition-colors hover:border-souk-hair">
+      <div className="flex items-start gap-3 px-4 pb-3 pt-4">
+        <AgentAvatar size={40} name={agent.name} chainId={agent.chainId} tokenId={agent.tokenId} />
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <Link to={agentHref} className="min-w-0 truncate">
+              <Txt size={18} lead={24} weight="bold" tone="ink">
+                {agent.name}
+              </Txt>
+            </Link>
+            <Pill variant={pill.variant}>{pill.text}</Pill>
+          </div>
+          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <Txt size={10} lead={14} mono tone="labels" className="truncate">
+              {chainLabel(agent.chainId)} / #{agent.tokenId}
             </Txt>
-          </Link>
-          <Txt size={11} lead={15} mono tone="labels" className="truncate">
-            {chainLabel(agent.chainId)} · #{agent.tokenId}
-          </Txt>
-        </Stack>
-        <Row align="center" gap={8} className="shrink-0">
-          <Pill variant="off">{categoryLabel(agent.category)}</Pill>
-          <Pill variant={pill.variant}>{pill.text}</Pill>
-        </Row>
-      </Row>
+            <span className="h-2.5 w-px bg-souk-hair" aria-hidden="true" />
+            <Txt size={10} lead={14} mono tone="muted" className="truncate">
+              {categoryLabel(agent.category)}
+            </Txt>
+          </div>
+        </div>
+      </div>
 
-      <Row justify="between" align="center" gap={8} className="min-w-0">
-        <span title={offMarket ? undefined : verdict.explain} className="inline-flex min-w-0 items-center gap-2">
-          <Dot tone={VERDICT_TONE[verdict.tone]} size={8} />
-          <Txt size={13} lead={18} tone="slate" className="truncate">
+      <div className="grid grid-cols-3 divide-x divide-souk-hair/60 border-y border-souk-hair/60 bg-souk-surface2/20">
+        <StatCell
+          label="Hires, 14d"
+          value={hiresValue}
+          tone={recentHires.length > 0 ? 'data' : 'steel'}
+        />
+        <StatCell
+          label="Earned"
+          value={earnedValue}
+          tone={earnedValue === 'nothing yet' ? 'steel' : 'data'}
+        />
+        <StatCell
+          label="Escrow jobs, 30d"
+          value={jobsValue}
+          tone={recentJobs.length > 0 ? 'data' : 'steel'}
+        />
+      </div>
+
+      <div className="flex items-start justify-between gap-3 px-4 py-3">
+        <span
+          title={offMarket ? undefined : verdict.explain}
+          className="inline-flex min-w-0 items-center gap-2"
+        >
+          <Dot tone={VERDICT_TONE[verdict.tone]} size={7} />
+          <span className="truncate font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate">
             {verdict.label}
-          </Txt>
+          </span>
         </span>
-        <Txt size={12} lead={18} tone="muted" className="shrink-0">
+        <Txt
+          size={10}
+          lead={15}
+          mono
+          tone={feedback ? 'data' : 'muted'}
+          className="max-w-[58%] text-right"
+        >
           {feedback ?? note}
         </Txt>
-      </Row>
+      </div>
 
-      <Row gap={10} className="min-w-0" style={{ flexWrap: 'wrap' }}>
-        <div className="min-w-[148px] flex-1 basis-[148px]">
-          <StatBox
-            label="Hires, 14d"
-            value={hiresValue}
-            tone={recentHires.length > 0 ? 'data' : 'steel'}
-          />
-        </div>
-        <div className="min-w-[148px] flex-1 basis-[148px]">
-          <StatBox
-            label="Earned"
-            value={earnedValue}
-            tone={earnedValue === 'nothing yet' ? 'steel' : 'data'}
-          />
-        </div>
-        <div className="min-w-[148px] flex-1 basis-[148px]">
-          <StatBox
-            label="Escrow jobs, 30d"
-            value={jobsValue}
-            tone={recentJobs.length > 0 ? 'data' : 'steel'}
-          />
-        </div>
-      </Row>
-
-      <Rule hair />
-      {/* actions pinned to the bottom so they line up across the row of cards */}
-      <div className="mt-auto grid grid-cols-2 gap-2 pt-1">
-        <CardAction onClick={() => void onRecheck()} disabled={rechecking} className="w-full">
+      <div className="grid grid-cols-2 gap-px border-t border-souk-hair/60 bg-souk-hair/60 sm:grid-cols-4">
+        <CardAction variant="primary" onClick={() => void onRecheck()} disabled={rechecking}>
           {rechecking ? 'Probing...' : 'Re-check now'}
         </CardAction>
-        <CardAction onClick={() => void onBoost()} disabled={boosting || Boolean(offMarket)} className="w-full">
+        <CardAction onClick={() => void onBoost()} disabled={boosting || Boolean(offMarket)}>
           {boosting ? 'Reading...' : 'Boost'}
         </CardAction>
         {offMarket ? (
-          <CardAction onClick={() => void onSwitch()} disabled={switching} className="w-full">
+          <CardAction variant="warn" onClick={() => void onSwitch()} disabled={switching}>
             {switching ? 'Relisting...' : 'Relist'}
           </CardAction>
         ) : (
-          <CardAction onClick={() => void onSwitch()} disabled={switching} className="w-full">
+          <CardAction variant="warn" onClick={() => void onSwitch()} disabled={switching}>
             {switching ? 'Unlisting...' : 'Unlist'}
           </CardAction>
         )}
-        <CardAction href={registryUrl} className="w-full">
-          Registry
-        </CardAction>
+        <CardAction href={registryUrl}>Registry</CardAction>
       </div>
-    </Stack>
+    </div>
   )
 }
 
 // the standing invitation the drawing leaves in the last slot of the grid
 function AddStallSlot() {
   return (
-    <Stack pad={[40, 16, 40, 16]} gap={10} radius={20} hair className="items-center text-center">
+    <Stack pad={[40, 16, 40, 16]} gap={10} hair className="items-center text-center">
       <Txt size={13} lead={16} mono className="text-souk-muted">
         Agent Souk
       </Txt>
       <Txt size={15} lead={22} weight="semibold" tone="slate">
-        Another agent, another stall.
+        Another agent, another listing.
       </Txt>
       <Txt size={12} lead={18} tone="muted">
         Registration writes the listing to the contract, and the first check runs within
@@ -579,7 +578,7 @@ function AddStallSlot() {
       </Txt>
       <Link
         to="/list"
-        className="mt-1 inline-flex h-11 w-fit items-center justify-center rounded-[8px] border border-transparent bg-souk-data px-5 text-souk-canvas transition hover:opacity-90"
+        className="mt-1 inline-flex h-11 w-fit items-center justify-center rounded-none border border-transparent bg-souk-data px-5 text-souk-canvas transition hover:opacity-90"
       >
         <Txt size={14} lead={20} weight="semibold" tone="canvas">
           List an agent

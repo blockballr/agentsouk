@@ -6,20 +6,22 @@
   --color-bone-white: #0e1311;
   --color-press-black: #f2f6f1;
   --color-typesetter-ink: #f2f6f1;
-  --color-slate-verdant: #7d8f82;
-  --color-newsprint-gray: #9aa79d;
-  --color-muted-sage: #8f9c92;
-  --color-highlighter-green: #2bee4b;
-  /* text on the green stays near black: the flipping ink read 1.4:1 on it in dark mode */
+  --color-slate-verdant: #8b93a0;
+  --color-newsprint-gray: #9aa39f;
+  --color-muted-sage: #9299a6;
+  --color-highlighter-green: #c8ced9;
+  /* the logo is silver, matching the data surface */
+  --color-souk-logo: #88deeb;
+  /* text on the silver stays near black: the flipping ink read 1.4:1 on it in dark mode */
   --color-on-highlighter: #0b0f0c;
-  /* green as text on the page: the bright value the dark register used */
-  --color-green-ink: #2bee4b;
+  /* silver as text on the page */
+  --color-green-ink: #c8ced9;
   /* a floating bar keeps one dark palette in both themes, so its labels never flip onto a light bar */
-  --color-night: #121613;
+  --color-night: #12161b;
   --color-night-ink: #f2f6f1;
-  --color-night-muted: #c8d2c8;
-  --color-shadow-moss: #3f5c46;
-  --color-echo-green: #1d2a20;
+  --color-night-muted: #c9d1dc;
+  --color-shadow-moss: #424a56;
+  --color-echo-green: #1a1f26;
   --color-switch-knob: #f2f6f1;
 
   /* the figma pass, namespaced so a ported screen can wear the new palette while
@@ -35,7 +37,8 @@
   --color-souk-slate: #b8bcc8;
   --color-souk-steel: #8d93a3;
   --color-souk-muted: #6b7180;
-  --color-souk-data: #44b48b;
+  --color-souk-data: #c8ced9;
+  --color-souk-good: #34d399;
   --color-souk-labels: #9498ae;
   --color-souk-sky: #88deeb;
   --color-souk-peach: #f2936b;
@@ -71,17 +74,17 @@
   --color-souk-indigo-labels: #9498ae;
   /* figures on indigo: the data green at its dark-register value, fixed, because
      the light register's darker green disappears on the navy card */
-  --color-souk-indigo-data: #44b48b;
+  --color-souk-indigo-data: #d5dae4;
 }
 
 /* the metal finish: a lit edge, a faint face sheen, scan lines and the one glow
    the live dots carry. Both registers read these, so the green is the design's
    data green in each rather than the old neon. */
 :root {
-  --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.04) 30%, rgb(255 255 255 / 0) 60%, rgb(68 180 139 / 0.2));
+  --metal-edge: linear-gradient(135deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0.04) 30%, rgb(255 255 255 / 0) 60%, rgb(200 206 217 / 0.2));
   --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.025), rgb(255 255 255 / 0) 35%);
   --metal-scan: rgb(255 255 255 / 0.014);
-  --metal-glow: rgb(68 180 139 / 0.5);
+  --metal-glow: rgb(200 206 217 / 0.5);
 }
 
 /* the light register. Same names, redrawn for paper: the canvas turns to the
@@ -102,7 +105,9 @@
   --color-souk-slate: #3f4a63;
   --color-souk-steel: #5b6577;
   --color-souk-muted: #79808f;
-  --color-souk-data: #0f8f6a;
+  --color-souk-data: #5b6577;
+  --color-souk-good: #0f9d6e;
+  --color-souk-logo: #88deeb;
   --color-souk-labels: #6b7385;
   --color-souk-sky: #0e7490;
   --color-souk-peach: #b45309;
@@ -115,10 +120,10 @@
 
   /* the metal finish answers with the same three weights on paper: a lit edge in
      the navy rather than in white, and no glow on live dots */
-  --metal-edge: linear-gradient(135deg, rgb(17 26 74 / 0.22), rgb(17 26 74 / 0.06) 30%, rgb(17 26 74 / 0) 60%, rgb(15 143 106 / 0.22));
+  --metal-edge: linear-gradient(135deg, rgb(17 26 74 / 0.22), rgb(17 26 74 / 0.06) 30%, rgb(17 26 74 / 0) 60%, rgb(91 101 119 / 0.22));
   --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 35%);
   --metal-scan: rgb(17 26 74 / 0.012);
-  --metal-glow: rgb(15 143 106 / 0.45);
+  --metal-glow: rgb(91 101 119 / 0.45);
 }
 
 [data-theme='light'] body {
@@ -127,8 +132,8 @@
 }
 
 [data-theme='light'] .score-strip {
-  background: #e6f4ee;
-  border: 1px solid rgb(15 143 106 / 0.45);
+  background: #e6e9ef;
+  border: 1px solid rgb(91 101 119 / 0.45);
 }
 
 [data-theme='light'] .input-hairline {
@@ -145,14 +150,14 @@
   --color-slate-verdant: #5b6577;
   --color-newsprint-gray: #6b7385;
   --color-muted-sage: #79808f;
-  --color-highlighter-green: #0f8f6a;
+  --color-highlighter-green: #5b6577;
   --color-on-highlighter: #ffffff;
-  --color-green-ink: #0b6b4f;
+  --color-green-ink: #3f4a63;
   --color-night: #111a4a;
   --color-night-ink: #f7f8fa;
   --color-night-muted: #c9d1e6;
-  --color-shadow-moss: #2f6b52;
-  --color-echo-green: #e6f4ee;
+  --color-shadow-moss: #4b5563;
+  --color-echo-green: #e6e9ef;
   --color-switch-knob: #111a4a;
   --shadow-lg: rgba(17 26 74 / 0.28) 1px 8px 20px 0px;
   --shadow-lg-2: rgba(17 26 74 / 0.18) 1px 8px 20px 0px;
@@ -204,8 +209,42 @@
     text-rendering: optimizeLegibility;
   }
 }
+/* modal scroll rail, same six-pixel rail as the page */
+.souk-modal-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+.souk-modal-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-souk-metal0);
+  border-radius: 3px;
+}
+.souk-modal-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.souk-modal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-souk-metal0) transparent;
+}
 
 @layer utilities {
+  /* The site frame is the single measure every page shares: 90% of the
+     viewport, centred, with no extra max-width competing against it. */
+  .site-frame {
+    width: 90%;
+    margin-inline: auto;
+  }
+  main.site-main {
+    width: 90%;
+    margin-inline: auto;
+  }
+  /* Page roots fill the frame. Inner reading and form measures are kept, so
+     prose and settings stay readable while the page surface is 90% wide. */
+  main.site-main > * {
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
   .micro {
     font-size: 11px;
     font-weight: 550;
@@ -224,8 +263,8 @@
   }
   .score-strip {
     /* the strip's only register now: the dark one the session box lives in */
-    background: #12341c;
-    border: 1px solid rgb(43 234 75 / 0.4);
+    background: #151922;
+    border: 1px solid rgb(200 206 217 / 0.4);
   }
   /* a panel in the metal finish; the edge is drawn over its 1px border, so it needs one */
   .metal {
@@ -281,4 +320,27 @@
   100% {
     transform: translateX(220%);
   }
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes scale-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(136, 222, 235, 0.5); }
+  50% { transform: scale(1.05); box-shadow: 0 0 12px 4px rgba(136, 222, 235, 0.3); }
+}
+.animate-scale-pulse {
+  animation: scale-pulse 1.5s ease-in-out infinite;
 }
