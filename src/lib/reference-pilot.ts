@@ -4,12 +4,13 @@
 // would actually fill.
 
 import { privateEndpointReason } from "./endpoint";
+import { vaultCardSkill } from "./vault-card-skill";
 
 export const PILOT_AGENT_NAME = "Souk Grid Pilot";
-export const PILOT_AGENT_VERSION = "1.0.0";
+export const PILOT_AGENT_VERSION = "1.1.0";
 export const PILOT_AGENT_CATEGORY = "grid-trading";
 export const PILOT_AGENT_DESCRIPTION =
-  "Replays a grid trading ladder against a price path the caller supplies: a lower price, an upper price, a rung count, a value per rung, an optional fee in basis points, and the path itself. It returns the rung spacing, how many distinct rungs the path touched, the round trips completed, the gross and net capture in USD, and the low and high the path reached. The arithmetic is deterministic and uses no market data, so the caller supplies the path and can reproduce every figure.";
+  "Replays a grid ladder against a price path you supply, then runs the same ladder on-chain when a HireVault hire names its wallet. The replay returns rung spacing, touched rungs, completed round trips and net capture; execution swaps through the vault inside the hire's floor, drawdown and slippage bounds. It places no resting orders and holds no key.";
 export const PILOT_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const PILOT_AGENT_CARD_PATH = "/api/reference/pilot/.well-known/agent-card.json";
 export const PILOT_AGENT_MESSAGING_PATH = "/api/reference/pilot/a2a";
@@ -89,49 +90,7 @@ export function pilotAgentCard(origin: string): PilotAgentCard {
     capabilities: { streaming: false, pushNotifications: false, stateTransitionHistory: false },
     defaultInputModes: ["text/plain", "application/json"],
     defaultOutputModes: ["text/plain", "application/json"],
-    skills: [
-      {
-        id: "replay_grid",
-        name: "Grid fill simulation",
-        description:
-          "Replays a grid ladder against a price path and reports the round trips, the gross and net capture in USD, and the extremes the path reached. Read-only deterministic arithmetic with no market data.",
-        tags: ["grid-trading", "grid", "backtest", "simulation", "fills"],
-        examples: [
-          "Replay a grid from 1000 to 2000 with 11 levels and 100 per order over prices 1500 1300 1100 1400 1700",
-          "How many round trips does a grid fill over a given price path",
-        ],
-        inputModes: ["text/plain", "application/json"],
-        outputModes: ["text/plain", "application/json"],
-        inputSchema: {
-          type: "object",
-          properties: {
-            lowerUsd: { type: "number", description: "lower price of the range in USD" },
-            upperUsd: { type: "number", description: "upper price of the range in USD" },
-            levels: { type: "number", description: "number of price rungs, 2 to 200" },
-            orderSizeUsd: { type: "number", description: "value placed at each rung in USD" },
-            feeBps: { type: "number", description: "optional round trip fee in basis points, defaults to 10" },
-            prices: { type: "array", description: "the price path to replay, oldest first" },
-          },
-          required: ["lowerUsd", "upperUsd", "levels", "orderSizeUsd", "prices"],
-          examples: [
-            { lowerUsd: 1000, upperUsd: 2000, levels: 11, orderSizeUsd: 100, feeBps: 10, prices: [1500, 1300, 1100, 1400, 1700] },
-          ],
-        },
-        outputSchema: {
-          type: "object",
-          properties: {
-            spacingUsd: { type: "number", description: "spacing between rungs in USD" },
-            rungsTouched: { type: "number", description: "distinct rungs the path reached" },
-            roundTrips: { type: "number", description: "buy and sell pairs one rung apart" },
-            grossCaptureUsd: { type: "number", description: "capture before the fee" },
-            feeCostUsd: { type: "number", description: "round trip cost applied to each trip" },
-            netCaptureUsd: { type: "number", description: "capture after the fee" },
-            lowReachedUsd: { type: "number", description: "lowest price in the path" },
-            highReachedUsd: { type: "number", description: "highest price in the path" },
-          },
-        },
-      },
-    ],
+    skills: [vaultCardSkill("grid-trading")],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
   };
 }

@@ -17,6 +17,9 @@ import type { AgentCardSkill } from "./types";
 export interface AgentInterface {
   skills: AgentCardSkill[] | null;
   accessGated: boolean;
+  // the agent's own entry price for a vault hire, when it declares one. the
+  // vault floor still applies; this can only raise it.
+  vaultMinDepositUsd: number | null;
 }
 
 export async function captureAgentSkills(agent: {
@@ -47,7 +50,30 @@ export async function captureAgentSkills(agent: {
     if (fromCard.accessGated) return fromCard;
   }
   if (!agent.mcp_server) return null;
-  return { skills: await fetchMcpSkills(agent.mcp_server), accessGated: false };
+  const skills = await fetchMcpSkills(agent.mcp_server);
+  return { skills, accessGated: false, vaultMinDepositUsd: null };
+}
+
+// the card's own vault terms, when it publishes them. top level is the
+// documented place; the skill entry is accepted too so an agent that put its
+// terms beside the capability is not ignored.
+export function cardVaultMinDeposit(card: unknown): number | null {
+  if (!card || typeof card !== "object" || Array.isArray(card)) return null;
+  const body = card as {
+    vault?: { minDepositUsd?: unknown };
+    skills?: { id?: unknown; name?: unknown; minDepositUsd?: unknown }[];
+  };
+  let raw = body.vault?.minDepositUsd;
+  if (raw === undefined && Array.isArray(body.skills)) {
+    const vaultSkill = body.skills.find((s) => {
+      const id = typeof s?.id === "string" ? s.id : typeof s?.name === "string" ? s.name : "";
+      return /^vault[-_]execution$/i.test(id.trim());
+    });
+    raw = vaultSkill?.minDepositUsd;
+  }
+  const value = typeof raw === "number" ? raw : Number(raw);
+  // a card is a claim; a nonsensical entry is ignored rather than shown
+  return Number.isFinite(value) && value > 0 && value <= 1_000_000 ? value : null;
 }
 
 // A card that declares its own access: the seller gates the endpoint behind
@@ -78,13 +104,14 @@ async function readCard(endpoint: string): Promise<AgentInterface> {
       headers: { accept: "application/json" },
       signal: ctl.signal,
     }).finally(() => clearTimeout(timer));
-    if (!res.ok) return { skills: null, accessGated: false };
+    if (!res.ok) return { skills: null, accessGated: false, vaultMinDepositUsd: null };
     const body = (await res.json()) as { skills?: AgentCardSkill[] };
     return {
       skills: body.skills?.length ? body.skills : null,
       accessGated: cardRequiresAccess(body),
+      vaultMinDepositUsd: cardVaultMinDeposit(body),
     };
   } catch {
-    return { skills: null, accessGated: false };
+    return { skills: null, accessGated: false, vaultMinDepositUsd: null };
   }
 }

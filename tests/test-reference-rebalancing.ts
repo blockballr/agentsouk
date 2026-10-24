@@ -62,9 +62,10 @@ describe("agent card", () => {
     expect(card.name).toBe("Souk Drift Guard");
     expect(card.version).toBe(REFERENCE_AGENT_VERSION);
     expect(card.description).toBe(REFERENCE_AGENT_DESCRIPTION);
-    expect(card.description).toContain("rebalance");
+    expect(card.description).toContain("HireVault");
+    // a vault agent sells the funded hire and nothing else
     expect(card.skills).toHaveLength(1);
-    expect(card.skills[0].id).toBe("plan-rebalance");
+    expect(card.skills[0].id).toBe("vault_execution");
 
     const messagingUrl = referenceMessagingUrl(REFERENCE_AGENT_PUBLIC_ORIGIN);
     expect(messagingUrl).toBe(`${REFERENCE_AGENT_PUBLIC_ORIGIN}${REFERENCE_AGENT_MESSAGING_PATH}`);

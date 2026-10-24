@@ -5,12 +5,13 @@
 // when a required value is absent it asks for it rather than guessing.
 
 import { privateEndpointReason } from "./endpoint";
+import { vaultCardSkill } from "./vault-card-skill";
 
 export const REFERENCE_YIELD_NAME = "Souk Yield Lens";
-export const REFERENCE_YIELD_VERSION = "1.0.0";
+export const REFERENCE_YIELD_VERSION = "1.1.0";
 export const REFERENCE_YIELD_CATEGORY = "yield";
 export const REFERENCE_YIELD_DESCRIPTION =
-  "Computes the net yield of a deposit from a principal in USD, a gross annual rate (APY) the caller supplies, an optional compounding frequency and an optional fee in basis points. It returns the effective annual rate after compounding, the net rate after the fee, the fee drag in percentage points and the projected earnings over one year. The arithmetic is deterministic and uses no market data, so the caller supplies the rate and can reproduce every figure.";
+  "Keeps a yield sleeve working on chain. Supplies the stable balance above the hire's liquid floor to the venue the buyer named, Aave V3 USDT on BNB Chain mainnet or the testnet mock, and pulls the position when the reserve is paused, frozen, below the rate floor or short of liquidity. Runs as the Buffer policy through HireVault, with the floor, drawdown budget and slippage checked on chain. The rate is read from the pool, and no return is promised.";
 export const REFERENCE_YIELD_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const REFERENCE_YIELD_CARD_PATH = "/api/reference/yield/.well-known/agent-card.json";
 export const REFERENCE_YIELD_MESSAGING_PATH = "/api/reference/yield/a2a";
@@ -87,41 +88,7 @@ export function referenceYieldCard(origin: string): ReferenceYieldCard {
     capabilities: { streaming: false, pushNotifications: false, stateTransitionHistory: false },
     defaultInputModes: ["text/plain", "application/json"],
     defaultOutputModes: ["text/plain", "application/json"],
-    skills: [
-      {
-        id: "compute_net_yield",
-        name: "Net yield calculation",
-        description:
-          "Computes the effective annual rate, the net rate after a fee, the fee drag in percentage points and the projected one year earnings of a deposit, from a principal in USD and a gross annual rate the caller supplies, with an optional compounding frequency and an optional fee in basis points. Read-only deterministic arithmetic with no market data.",
-        tags: ["yield", "apy", "apr", "compounding", "fees"],
-        examples: [
-          "Compute the net yield for a 10000 USD principal at a gross APY of 12 compounded monthly with a 200 basis point fee",
-          "What are the projected one year earnings after fees for my deposit",
-        ],
-        inputModes: ["text/plain", "application/json"],
-        outputModes: ["text/plain", "application/json"],
-        inputSchema: {
-          type: "object",
-          properties: {
-            principalUsd: { type: "number", description: "principal in USD" },
-            grossApyPercent: { type: "number", description: "gross annual rate in percent" },
-            compoundingPerYear: { type: "number", description: "compounding frequency per year, defaults to 12" },
-            feeBps: { type: "number", description: "fee in basis points, defaults to 200" },
-          },
-          required: ["principalUsd", "grossApyPercent"],
-          examples: [{ principalUsd: 10000, grossApyPercent: 12, compoundingPerYear: 12, feeBps: 200 }],
-        },
-        outputSchema: {
-          type: "object",
-          properties: {
-            effectiveAnnualRatePercent: { type: "number", description: "effective annual rate after compounding" },
-            netRatePercent: { type: "number", description: "net rate after the fee" },
-            feeDragPercent: { type: "number", description: "the fee drag in percentage points" },
-            projectedEarningsUsd: { type: "number", description: "projected one year earnings after fees" },
-          },
-        },
-      },
-    ],
+    skills: [vaultCardSkill("yield")],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
   };
 }

@@ -120,8 +120,9 @@ describe("agent card", () => {
     expect(card.description).toBe(REFERENCE_YIELD_DESCRIPTION);
     // the marketplace classifier files on this word
     expect(card.description.toLowerCase()).toContain("yield");
+    // a vault agent sells the funded hire and nothing else
     expect(card.skills).toHaveLength(1);
-    expect(card.skills[0].id).toBe("compute_net_yield");
+    expect(card.skills[0].id).toBe("vault_execution");
 
     const messagingUrl = referenceYieldMessagingUrl(REFERENCE_YIELD_PUBLIC_ORIGIN);
     expect(messagingUrl).toBe(

@@ -14,12 +14,12 @@ const JSON_HEADERS = {
 
 type RpcId = string | number | null;
 
-// The house seller's config: the listing is token 2504, registered under
-// SELLER8183_PROVIDER_TESTNET on testnet and SELLER8183_PROVIDER on mainnet,
-// priced per task through SELLER8183_PRICE_USD, and signed by
-// SELLER8183_PRIVATE_KEY, which must control that same wallet for a quote to
-// sign and a submit to stand. The chain follows TARGET_CHAIN, so the same
-// card and routes serve the mainnet flip as one env change, not a fork.
+// The house seller's config: the listing is token 2504 on testnet, priced per
+// task through SELLER8183_PRICE_USD, and signed by SELLER8183_PRIVATE_KEY,
+// which must control that same wallet for a quote to sign and a submit to
+// stand. On mainnet the house agent has no listing, so a quote carries no
+// agent id instead of pointing at token 368655, which now belongs to Souk
+// Drift Guard. The chain follows TARGET_CHAIN.
 const SELLER8183 = sellerConfigFromEnv(targetChainId(), houseAgentTokenId(targetChainId()), HOUSE_AGENT_NAME);
 
 function isRecord(value: unknown): value is Record<string, unknown> {

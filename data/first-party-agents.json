@@ -1,0 +1,204 @@
+{
+  "agents": [
+    {
+      "chainId": 97,
+      "tokenId": "2521",
+      "name": "Souk Yield Lens",
+      "claimId": "0c70caf1-a61e-4a92-9924-2d1505f2d3b5",
+      "wallet": "0xdFDeBe20F1EeFA135ed18376B5E2DCB55e618F0a",
+      "policy": "buffer",
+      "vaultOnly": true,
+      "description": "Keeps a yield sleeve working on-chain. Supplies the stable balance above the hire's liquid floor to the configured venue, a mock on testnet, and withdraws when the floor is breached, so the position stays liquid while idle capital earns. Runs as the Buffer policy through HireVault, with the floor, drawdown budget and slippage checked on chain. No mainnet lending rate is claimed.",
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "category": "yield",
+      "minDepositUsd": 25
+    },
+    {
+      "chainId": 97,
+      "tokenId": "2523",
+      "name": "Souk Grid Planner",
+      "claimId": "d4085f15-2010-4541-a6a2-32f9edd3cd31",
+      "wallet": "0xAb27Ca29A0535942091E5AF70C6B18dE7ABbCA07",
+      "policy": "grid",
+      "vaultOnly": true,
+      "description": "Plans and runs a grid ladder on-chain. From a price range, rung count, order size and fee it returns the rung spacing, committed capital, and the gross and net capture of one completed round trip. When a HireVault hire names its wallet, it executes a swap as price crosses a rung, inside the contract's floor, drawdown and slippage bounds. It places no resting orders on PancakeSwap and holds no key.",
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "category": "grid-trading",
+      "minDepositUsd": 10
+    },
+    {
+      "chainId": 97,
+      "tokenId": "2524",
+      "name": "Souk Drift Guard",
+      "claimId": "71a069e1-de52-4628-ad3a-778b86855b90",
+      "wallet": "0xC83DB745Ea5D1edF9362A404d36986207ED5E9E5",
+      "policy": "band",
+      "vaultOnly": true,
+      "description": "Corrects portfolio drift on-chain. Compares the hire's holdings with the target weight and, when drift leaves the band, swaps the overweight side back toward target through HireVault. The trade stays inside the contract's floor, drawdown budget and slippage cap, and the agent refuses when drift is inside the band or the position is unreadable.",
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "category": "rebalancing",
+      "minDepositUsd": 10
+    },
+    {
+      "chainId": 97,
+      "tokenId": "2526",
+      "name": "Souk Grid Pilot",
+      "claimId": "7f7edfb1-cdc7-4bdf-b3f2-f1ac45c8a425",
+      "wallet": "0x348C2a1fE19b034d87Efa69DE56F73F6e286574D",
+      "policy": "grid",
+      "vaultOnly": true,
+      "description": "Replays a grid ladder against a price path you supply, then runs the same ladder on-chain when a HireVault hire names its wallet. The replay returns rung spacing, touched rungs, completed round trips and net capture; execution swaps through the vault inside the hire's floor, drawdown and slippage bounds. It places no resting orders and holds no key.",
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "category": "grid-trading",
+      "minDepositUsd": 10
+    },
+    {
+      "chainId": 97,
+      "tokenId": "2533",
+      "name": "Souk Band Keeper",
+      "claimId": "22e905d4-4976-4dc6-ae13-11bd7f08d7c0",
+      "wallet": "0xE3c5acFb2560ee8Dfe4bF6FAD74520738F7C8e9B",
+      "policy": "band",
+      "vaultOnly": true,
+      "description": "Keeps a two-asset position inside a drift band on-chain. Swaps through HireVault when drift leaves the corridor, returning to the near edge rather than the centre. Named a PancakeSwap pair it also suggests a v3 range: ticks, prices, the deposit split and a prefilled link. It suggests ranges, does not manage a liquidity position, places no resting orders and holds no key.",
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "category": "rebalancing",
+      "minDepositUsd": 10
+    },
+    {
+      "chainId": 56,
+      "tokenId": "368655",
+      "name": "Souk Drift Guard",
+      "description": "Corrects portfolio drift on-chain. Compares the hire's holdings with the target weight and, when drift leaves the band, swaps the overweight side back toward target through HireVault. The trade stays inside the contract's floor, drawdown budget and slippage cap, and the agent refuses when drift is inside the band or the position is unreadable.",
+      "category": "rebalancing",
+      "slug": "drift-guard",
+      "card": "rebalancing",
+      "wallet": "0xC83DB745Ea5D1edF9362A404d36986207ED5E9E5",
+      "policy": "band",
+      "vaultOnly": true,
+      "pending": false,
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "minDepositUsd": 10
+    },
+    {
+      "chainId": 56,
+      "tokenId": "376435",
+      "name": "Souk Grid Pilot",
+      "description": "Plans and runs a grid ladder on chain. From a price range, rung count, value per rung and fee it returns the rung spacing, committed capital, and the gross and net capture of one completed round trip. When a HireVault hire names its wallet, it executes a swap as price crosses a rung, inside the contract's floor, drawdown and slippage bounds. It places no resting orders and holds no key.",
+      "category": "grid-trading",
+      "slug": "grid-pilot",
+      "card": "pilot",
+      "wallet": "0x348C2a1fE19b034d87Efa69DE56F73F6e286574D",
+      "policy": "grid",
+      "vaultOnly": true,
+      "pending": false,
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "minDepositUsd": 10
+    },
+    {
+      "chainId": 56,
+      "tokenId": "",
+      "slug": "band-keeper",
+      "card": "band",
+      "name": "Souk Band Keeper",
+      "wallet": "0xE3c5acFb2560ee8Dfe4bF6FAD74520738F7C8e9B",
+      "policy": "band",
+      "vaultOnly": true,
+      "pending": true,
+      "description": "Keeps a two-asset position inside a drift band on chain. Swaps through HireVault when drift leaves the corridor, returning to the near edge rather than the centre. Named a PancakeSwap pair it also suggests a v3 range: ticks, prices, the deposit split and a prefilled link. It suggests ranges, does not manage a liquidity position, places no resting orders and holds no key.",
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "category": "rebalancing",
+      "minDepositUsd": 10
+    },
+    {
+      "chainId": 56,
+      "tokenId": "",
+      "slug": "yield-lens",
+      "card": "yield",
+      "name": "Souk Yield Lens",
+      "wallet": "0xdFDeBe20F1EeFA135ed18376B5E2DCB55e618F0a",
+      "policy": "buffer",
+      "vaultOnly": true,
+      "pending": true,
+      "description": "Keeps a yield sleeve working on chain. Supplies the stable balance above the hire's liquid floor to the venue the buyer named, Aave V3 USDT on BNB Chain, and pulls the position when the reserve is paused, frozen, below the rate floor or short of liquidity. Runs as the Buffer policy through HireVault, with the floor, drawdown budget and slippage checked on chain. The rate is read from the pool, and no return is promised.",
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "category": "yield",
+      "minDepositUsd": 25
+    },
+    {
+      "chainId": 56,
+      "tokenId": "",
+      "slug": "grid-planner",
+      "card": "grid",
+      "name": "Souk Grid Planner",
+      "wallet": "0xAb27Ca29A0535942091E5AF70C6B18dE7ABbCA07",
+      "policy": "grid",
+      "vaultOnly": true,
+      "pending": true,
+      "description": "Plans and runs a grid ladder on chain. From a price range, rung count, order size and fee it returns the rung spacing, committed capital, and the gross and net capture of one completed round trip. When a HireVault hire names its wallet, it executes a swap as price crosses a rung, inside the contract's floor, drawdown and slippage bounds. It places no resting orders on PancakeSwap and holds no key.",
+      "skills": [
+        {
+          "id": "vault-execution",
+          "name": "Trade a funded vault hire",
+          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+        }
+      ],
+      "category": "grid-trading",
+      "minDepositUsd": 10
+    }
+  ]
+}
