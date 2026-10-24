@@ -89,7 +89,7 @@ describe("counts by day", () => {
   it("read a gated check as passed and only no answer as failed", () => {
     const days = checksByDay(
       [
-        { status: "delivered", checkedAt: "2026-10-05T01:00:00Z" },
+        { status: "online", checkedAt: "2026-10-05T01:00:00Z" },
         { status: "gated", checkedAt: "2026-10-05T02:00:00Z" },
         { status: "dead", checkedAt: "2026-10-05T03:00:00Z" },
         { status: "unreachable", checkedAt: "2026-10-04T03:00:00Z" },

@@ -172,7 +172,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
               : { opacity: 0, y: 32, scale: 0.96, transition: EXIT_TWEEN }
           }
         >
-          <div className="mx-auto max-w-2xl rounded-[14px] bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] backdrop-blur-md ring-1 ring-white/10 px-5 py-3.5 text-souk-ink shadow-lg sm:px-6">
+          <div className="mx-auto max-w-2xl rounded-none bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] backdrop-blur-md ring-1 ring-white/10 px-5 py-3.5 text-souk-ink shadow-lg sm:px-6">
             {/* one main action per place: compare from the shortlist, hire directly from the table */}
             <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
               <span className="micro font-mono text-souk-steel">
@@ -206,7 +206,7 @@ function hireLine(i: HireItemState): { text: string; tone: string } {
                     onClick={onCompare}
                     disabled={count < 2}
                     title={count < 2 ? 'Pick one more agent to compare' : undefined}
-                    className="micro rounded-[8px] bg-souk-data px-5 py-3 text-souk-canvas transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data disabled:cursor-not-allowed disabled:opacity-40"
+                    className="micro rounded-none bg-souk-data px-5 py-3 text-souk-canvas transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {count < 2 ? 'Pick one more' : `Compare ${count}`}
                   </button>

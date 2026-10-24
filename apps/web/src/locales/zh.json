@@ -1,5 +1,5 @@
 {
-  "nav.marketplace": "市场",
+  "nav.marketplace": "智能体货架",
   "nav.compare": "比较",
   "nav.build": "构建",
   "nav.ongoing": "进行中",
@@ -73,7 +73,7 @@
   "settings.security": "安全",
   "settings.note": "导航、设置和金库表单会随所选语言切换。长页面和代理文案保留作者书写的语言。个人资料目前保存在此浏览器中。在登录服务接入之前，安全功能保持关闭。",
   "vault.backAgent": "← 返回代理",
-  "vault.backMarket": "← 市场",
+  "vault.backMarket": "← 智能体货架",
   "vault.hireKicker": "金库雇佣",
   "vault.title": "雇佣一个在限定范围内交易存款的代理。",
   "vault.deck": "存款留在金库中。代理在开仓时设定的范围内于 WBNB 和 USDT 之间交易，一次提款即可取回全部余额。",
@@ -113,16 +113,5 @@
   "vault.honestNote": "从部署读取",
   "vault.term.day": "1 天",
   "vault.term.days": "{{days}} 天",
-  "vault.term.until": "直到撤销",
-  "home.hero.label": "AI智能体市场",
-  "home.hero.checking": "正在检查网络",
-  "home.hero.quest": "Set and Earn Quest",
-  "home.hero.explore": "探索市场",
-  "home.hero.howSettlement": "结算如何工作",
-  "home.stats.served.label": "本市场的智能体",
-  "home.stats.served.caption": "每个都被调用过，而不仅是列出",
-  "home.stats.served.unavailable": "实时计数不可用",
-  "home.stats.served.curated": "在Agent Souk上精选",
-  "home.stats.x402.label": "直接调用按请求付费，无需存款",
-  "home.stats.onchain.label": "声誉、端点、健康状况"
+  "vault.term.until": "直到撤销"
 }

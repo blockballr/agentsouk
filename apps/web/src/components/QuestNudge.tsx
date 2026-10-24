@@ -26,7 +26,7 @@ type MinimizeTarget = { x: number; y: number; scaleX: number; scaleY: number }
 // hangs under the page's first band, measured below; narrower than that the page's own
 // header owns the top, so it stays at the foot and gives way to the compare bar
 const INVITE =
-  'fixed bottom-3 left-3 right-3 rounded-[20px] sm:bottom-6 sm:left-auto sm:right-6 sm:w-[430px] xl:bottom-auto xl:top-[var(--quest-top)] [body:has([data-compare-bar])_&]:hidden xl:[body:has([data-compare-bar])_&]:block'
+  'fixed bottom-3 left-3 right-3 rounded-none sm:bottom-6 sm:left-auto sm:right-6 sm:w-[430px] xl:bottom-auto xl:top-[var(--quest-top)] [body:has([data-compare-bar])_&]:hidden xl:[body:has([data-compare-bar])_&]:block'
 
 // the quest's one spot on the page: an invitation before it is started, then a way back in
 // until it is finished. Never a blocking modal, and kept off agent pages, whose
@@ -235,7 +235,6 @@ export function QuestNudge() {
         >
           <Stack
             hair
-            radius={20}
             pad={[16, 22, 16, 22]}
             gap={8}
             className={cx(
@@ -247,7 +246,7 @@ export function QuestNudge() {
             type="button"
             aria-label="Minimize quest card"
             onClick={minimize}
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-[4px] border border-souk-ink/30 text-[14px] font-bold leading-none text-souk-ink/60 transition hover:bg-souk-ink/10 hover:text-souk-ink"
+            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-none border border-souk-ink/30 text-[14px] font-bold leading-none text-souk-ink/60 transition hover:bg-souk-ink/10 hover:text-souk-ink"
           >
             -
           </button>
@@ -285,7 +284,6 @@ export function QuestNudge() {
       >
         <Stack
           hair
-          radius={20}
           pad={[16, 22, 16, 22]}
           gap={8}
           className={cx(
@@ -297,7 +295,7 @@ export function QuestNudge() {
           type="button"
           aria-label="Minimize quest card"
           onClick={minimize}
-          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-[4px] border border-souk-ink/30 text-[14px] font-bold leading-none text-souk-ink/60 transition hover:bg-souk-ink/10 hover:text-souk-ink"
+          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-none border border-souk-ink/30 text-[14px] font-bold leading-none text-souk-ink/60 transition hover:bg-souk-ink/10 hover:text-souk-ink"
         >
           -
         </button>

@@ -71,7 +71,7 @@ describe("station shelf health", () => {
     });
     verifications.loadVerifications.mockResolvedValue(
       new Map([
-        ["1", { status: "delivered", checkedAt: new Date(now).toISOString(), detail: null }],
+        ["1", { status: "online", checkedAt: new Date(now).toISOString(), detail: null }],
         ["2", { status: "dead", checkedAt: new Date(now - DAY).toISOString(), detail: "no answer" }],
         ["3", { status: "unreachable", checkedAt: new Date(now - DAY).toISOString(), detail: "timeout" }],
       ]),

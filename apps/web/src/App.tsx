@@ -9,6 +9,7 @@ import { ComparePage } from './pages/ComparePage'
 import { AdvantagePage } from './pages/AdvantagePage'
 import { ListAgentPage } from './pages/ListAgentPage'
 import { BuildPage } from './pages/BuildPage'
+import { CustomBuilderPage } from './pages/CustomBuilderPage'
 
 import { OngoingPage } from './pages/OngoingPage'
 import { StationPage } from './pages/StationPage'
@@ -25,6 +26,7 @@ import { SecurityGate } from './components/SecurityGate'
 import { HostRouter } from './components/HostRouter'
 import { WorkspaceShell } from './components/WorkspaceShell'
 import VaultHirePage from './pages/VaultHirePage'
+import { DesignPnlPage } from './pages/DesignPnlPage'
 
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
 
@@ -70,10 +72,11 @@ function App() {
               <Route path="/settings/profile" element={<SettingsProfilePage />} />
               <Route path="/settings/security" element={<SettingsSecurityPage />} />
               <Route path="/account" element={<ManageAccountPage />} />
-              <Route path="/build" element={<BuildPage />} />
+              <Route path="/build" element={<CustomBuilderPage />} />
+            <Route path="/build/strategy" element={<BuildPage />} />
               <Route path="/list" element={<ListAgentPage />} />
               <Route path="/seller" element={<SellerConsolePage />} />
-              <Route path="/seller/stalls" element={<Navigate to="/seller#stalls" replace />} />
+              <Route path="/seller/stalls" element={<Navigate to="/seller#agents" replace />} />
               <Route path="/seller/face" element={<Navigate to="/seller#market-face" replace />} />
               <Route
                 path="/station"
@@ -81,14 +84,17 @@ function App() {
               />
             </Route>
             {import.meta.env.DEV && (
-              <Route
-                path="/scout"
-                element={
-                  <Suspense fallback={null}>
-                    <ScoutPage />
-                  </Suspense>
-                }
-              />
+              <>
+                <Route
+                  path="/scout"
+                  element={
+                    <Suspense fallback={null}>
+                      <ScoutPage />
+                    </Suspense>
+                  }
+                />
+                <Route path="/design/pnl" element={<DesignPnlPage />} />
+              </>
             )}
             <Route path="*" element={STATION_HOST || DOCS_HOST ? <Navigate to="/" replace /> : <MarketplacePage />} />
           </Route>

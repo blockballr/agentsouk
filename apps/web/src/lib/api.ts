@@ -10,7 +10,7 @@ import { listingControlMessage, type ListingAction } from './listing-control'
 export interface AgentsQuery {
   category?: string
   q?: string
-  type?: 'all' | 'jobs' | 'x402' | 'others'
+  type?: 'all' | 'jobs' | 'x402' | 'vault' | 'others'
   metric?: 'score' | 'newest' | 'feedback' | 'health'
   page?: number
   limit?: number
@@ -413,6 +413,24 @@ export async function getTask(taskId: string): Promise<TaskBundle | null> {
   return readJsonBody<TaskBundle>(res, 'task')
 }
 
+export interface VaultAgentLink {
+  tokenId: string
+  wallet: string
+  category: string | null
+  policy: string | null
+  vaultOnly: boolean
+  name: string | null
+}
+
+// the first-party vault agents on a chain, for the sibling links a vault agent's
+// page carries. the API answers with the registry's names, never a local copy
+export async function getVaultAgents(chainId: number): Promise<VaultAgentLink[]> {
+  const res = await fetch(`${BASE}/vault/agents?chain=${chainId}`)
+  if (!res.ok) return []
+  const body = await readJsonBody<{ agents?: VaultAgentLink[] }>(res, 'vault agents')
+  return Array.isArray(body.agents) ? body.agents : []
+}
+
 export async function getTasksByPayment(paymentId: string): Promise<HireTask[]> {
   const res = await fetch(`${BASE}/tasks?paymentId=${encodeURIComponent(paymentId)}`)
   if (!res.ok) return []
@@ -768,11 +786,12 @@ export async function getAgentActivity(
   return body.activity ?? null
 }
 
-export async function getVaultExecutor(): Promise<{ kind: 'rawkey' | 'altana'; address: string } | null> {
+export async function getVaultExecutor(): Promise<{ kind: 'rawkey' | 'altana'; address: string; executors?: string[] } | null> {
   const res = await fetch(`${BASE}/vault/executor`)
   if (!res.ok) throw new Error(`Vault executor answered ${res.status}.`)
-  const body = await readJsonBody<{ executor?: { kind: 'rawkey' | 'altana'; address: string } | null }>(res, 'vault executor')
-  return body.executor ?? null
+  const body = await readJsonBody<{ executor?: { kind: 'rawkey' | 'altana'; address: string } | null; executors?: string[] }>(res, 'vault executor')
+  if (!body.executor) return null
+  return { ...body.executor, executors: body.executors ?? [body.executor.address] }
 }
 
 // The buyer's on-ramp for an ERC-8183 job: the validated quote and the stack

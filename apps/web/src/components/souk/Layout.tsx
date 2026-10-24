@@ -9,13 +9,15 @@
 import type { ReactNode, CSSProperties } from 'react';
 import { EDGE, HAIR, type Pad, padStyle } from './tokens';
 
-export type BgName = 'surface1' | 'surface2' | 'canvas' | 'indigo';
+export type BgName = 'surface1' | 'surface2' | 'canvas' | 'indigo' | 'sky' | 'silver';
 
 export const BG: Record<BgName, string> = {
   surface1: 'bg-souk-surface1',
   surface2: 'bg-souk-surface2',
   canvas: 'bg-souk-canvas',
   indigo: 'bg-souk-indigo',
+  sky: 'bg-souk-sky',
+  silver: 'bg-souk-data',
 };
 
 export type Justify = 'start' | 'center' | 'between' | 'end';
@@ -56,7 +58,7 @@ function frameClass(props: BoxProps): string {
   const { surface, hair, bg, className } = props;
   const parts: string[] = [];
   if (surface) {
-    parts.push('border', 'bg-souk-surface1', EDGE, 'overflow-hidden', 'rounded-[20px]');
+    parts.push('border', 'bg-souk-surface1', EDGE, 'overflow-hidden', 'rounded-none');
   } else {
     if (bg) parts.push(BG[bg]);
     parts.push('border', hair ? HAIR : 'border-transparent');
@@ -68,7 +70,9 @@ function frameClass(props: BoxProps): string {
 function frameStyle(props: BoxProps): CSSProperties {
   const style: CSSProperties = { ...(props.style ?? {}) };
   if (props.gap !== undefined) style.gap = props.gap;
-  if (props.radius !== undefined) style.borderRadius = props.radius;
+  // The card language is square now. A radius is still honoured on a plain
+  // frame, but never on a surface that is meant to read as a card.
+  if (props.radius !== undefined && !props.surface) style.borderRadius = props.radius;
   return { ...style, ...padStyle(props.pad) };
 }
 

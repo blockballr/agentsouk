@@ -12,17 +12,20 @@ const STATION_HOST = 'station.agentsouk.xyz'
 
 function destination(host: string, pathname: string, search: string): string | null {
   if (APEX_HOSTS.has(host)) {
-    if (pathname === '/') return null
-    if (pathname === '/docs' || pathname.startsWith('/docs/')) return `https://${DOCS_HOST}/${search}`
-    if (pathname === '/station' || pathname.startsWith('/station/')) return `https://${STATION_HOST}/${search}`
+    if (pathname === '/' || pathname === '/about') return null
+    if (pathname === '/docs' || pathname.startsWith('/docs/')) {
+      const rest = pathname.replace(/^\/docs/, '') || '/'
+      return `https://${DOCS_HOST}${rest}${search}`
+    }
+    if (pathname === '/station' || pathname.startsWith('/station/')) {
+      const rest = pathname.replace(/^\/station/, '') || '/'
+      return `https://${STATION_HOST}${rest}${search}`
+    }
     return `https://${APP_HOST}${pathname}${search}`
   }
-  if (host === DOCS_HOST || host === STATION_HOST) {
-    return pathname === '/' ? null : `https://${host}/${search}`
-  }
-  if (host === APP_HOST && pathname === '/') {
-    return `https://${APP_HOST}/agents${search}`
-  }
+  // App, docs and station keep their own addresses. The app root is redirected
+  // by the router, and the docs/station wildcards fall back to their own home,
+  // so no same-host navigation needs a full page reload.
   return null
 }
 

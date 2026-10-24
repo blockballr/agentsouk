@@ -83,6 +83,10 @@ const REVERT_PLAIN_ENGLISH: { test: RegExp; message: string }[] = [
   // the funder's own reverts, so a refused escrow action reads as the refusal
   // it is rather than as a failed payment
   {
+    test: /118fd7b8|AlreadyVerified/i,
+    message: 'A result was already verified against this payment. Use "Dispute this delivery" instead of refund.',
+  },
+  {
     test: /f321c1a3|DisputeOpen/i,
     message: 'The dispute window for this escrow has closed, so the money can no longer be disputed.',
   },

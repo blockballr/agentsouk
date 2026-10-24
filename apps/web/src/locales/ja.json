@@ -1,5 +1,5 @@
 {
-  "nav.marketplace": "マーケット",
+  "nav.marketplace": "エージェント棚",
   "nav.compare": "比較",
   "nav.build": "構築",
   "nav.ongoing": "進行中",
@@ -73,7 +73,7 @@
   "settings.security": "セキュリティ",
   "settings.note": "ナビゲーション、設定、保管庫フォームは選択した言語に切り替わります。長いページとエージェントの文章は作者の言語のままです。プロフィールは当面このブラウザに保存されます。サインインサービスが接続されるまでセキュリティはオフです。",
   "vault.backAgent": "← エージェントに戻る",
-  "vault.backMarket": "← マーケット",
+  "vault.backMarket": "← エージェント棚",
   "vault.hireKicker": "保管庫での依頼",
   "vault.title": "範囲を定めた預金を運用するエージェントを依頼します。",
   "vault.deck": "預金は保管庫に残ります。エージェントは開始時に設定した範囲内で WBNB と USDT の間で運用し、1 回の引き出しですべての残高が戻ります。",
@@ -113,16 +113,5 @@
   "vault.honestNote": "デプロイから読み取り",
   "vault.term.day": "1 日",
   "vault.term.days": "{{days}} 日",
-  "vault.term.until": "取り消しまで",
-  "home.hero.label": "AIエージェントマーケットプレイス",
-  "home.hero.checking": "ネットワークを確認中",
-  "home.hero.quest": "Set and Earn Quest",
-  "home.hero.explore": "市場を探索",
-  "home.hero.howSettlement": "決済の仕組み",
-  "home.stats.served.label": "この市場のエージェント",
-  "home.stats.served.caption": "リストだけでなく実際に呼び出し済み",
-  "home.stats.served.unavailable": "ライブカウント利用不可",
-  "home.stats.served.curated": "Agent Soukでキュレーション済み",
-  "home.stats.x402.label": "直接呼び出しはリクエストごとに支払い、預託なし",
-  "home.stats.onchain.label": "評判、エンドポイント、健全性"
+  "vault.term.until": "取り消しまで"
 }

@@ -10,10 +10,11 @@ import type { ReactNode } from 'react';
 import { Txt, type TxtProps } from './Txt';
 import type { Tone } from './tokens';
 
-export type PillVariant = 'keep' | 'warn' | 'off';
+export type PillVariant = 'keep' | 'good' | 'warn' | 'off';
 
 const PILL: Record<PillVariant, { box: string; text: Tone }> = {
   keep: { box: 'border-souk-data/40 bg-souk-surface1', text: 'data' },
+  good: { box: 'border-souk-good/45 bg-souk-surface1', text: 'good' },
   warn: { box: 'border-souk-peach/45 bg-souk-surface1', text: 'peach' },
   off: { box: 'border-souk-hair bg-souk-surface1', text: 'steel' },
 };
@@ -40,15 +41,17 @@ export function Pill({
 
 // the design's five dot tones. each is its own colour rather than a faded version
 // of another, so a verdict reads at a glance instead of by opacity
-export type DotTone = 'good' | 'held' | 'sky' | 'peach' | 'bad' | 'quiet';
+export type DotTone = 'good' | 'held' | 'sky' | 'peach' | 'bad' | 'quiet' | 'verified' | 'online-fixed';
 
 const DOT: Record<DotTone, string> = {
-  good: 'bg-souk-data',
+  good: 'bg-souk-good',
   held: 'bg-souk-peach',
   sky: 'bg-souk-sky',
   peach: 'bg-souk-peach',
   bad: 'border-souk-steel',
   quiet: 'border-souk-steel/50',
+  verified: 'bg-souk-good',
+  'online-fixed': 'bg-sky-500',
 };
 
 export function Dot({ tone = 'good', size = 8 }: { tone?: DotTone; size?: number }) {

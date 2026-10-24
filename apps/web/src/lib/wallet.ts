@@ -601,3 +601,13 @@ export async function signTransferAuthorization(
   }
   return signature;
 }
+
+
+export async function signPersonalMessage(address: string, message: string): Promise<string> {
+  const provider = await getProvider()
+  const signature = (await provider.request({
+    method: 'personal_sign',
+    params: [message, address],
+  })) as string
+  return signature
+}

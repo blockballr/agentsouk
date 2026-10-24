@@ -70,7 +70,7 @@ export function VerificationLoop({
       aria-label="Verifier check"
       aria-live="polite"
       tabIndex={-1}
-      className="scroll-mt-4 rounded-[14px] border border-white/15 bg-souk-indigo p-4 outline-none transition focus-visible:ring-2 focus-visible:ring-souk-data/60"
+      className="scroll-mt-4 border border-white/15 bg-souk-indigo p-4 outline-none transition focus-visible:ring-2 focus-visible:ring-souk-data/60"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="micro text-souk-indigo-labels">Verifier check</p>
@@ -110,7 +110,7 @@ export function VerificationLoop({
           style={{
             width: `${Math.max(pct, 2)}%`,
             minWidth: 6,
-            backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #44b48b 100%)',
+            backgroundImage: 'linear-gradient(90deg, #111a4a 0%, #c8ced9 100%)',
           }}
         >
           {current ? (

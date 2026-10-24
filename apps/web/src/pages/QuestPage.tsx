@@ -44,7 +44,7 @@ import { QuestStamp } from '../components/QuestStamp'
 
 // where a quester enters the campaign; BNB counts only the wallet given on its form
 const BNB_CAMPAIGN = 'https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview'
-const REFRESH_MS = 30_000
+const REFRESH_MS = 60_000
 
 export function QuestPage() {
   // always call the hook: gating the call on import.meta.env.DEV changes the
@@ -248,7 +248,6 @@ export function QuestPage() {
           <Row
             bg="indigo"
             hair
-            radius={8}
             pad={[14, 16, 14, 16]}
             gap={12}
             align="center"
@@ -390,8 +389,7 @@ export function QuestPage() {
         </Section>
 
         <section className="mt-10">
-          <SectionHead title="What the shelf is offering" note="READ FROM /api/quest/picks" />
-          <Stack surface className="mt-5">
+          <Stack surface>
             <div className="overflow-x-auto">
               <div style={{ minWidth: 1200 }}>
                 <DataTable
@@ -580,7 +578,7 @@ function StepCard({
   return (
     <article
       aria-label={`${title}, ${state.toLowerCase()}`}
-      className="relative flex h-full min-w-0 flex-col gap-3 overflow-hidden rounded-[20px] border border-souk-edge bg-souk-surface1 [overflow-wrap:anywhere]"
+      className="relative flex h-full min-w-0 flex-col gap-3 overflow-hidden rounded-none border border-souk-edge bg-souk-surface1 [overflow-wrap:anywhere]"
       style={{ padding: '20px 22px' }}
     >
       <QuestStamp

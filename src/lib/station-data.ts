@@ -111,7 +111,7 @@ export async function stationOverview(now = Date.now()): Promise<StationOverview
   ]);
   const rows = paymentRows(outside);
   const onShelf = catalogue.items.filter((a) => !delisted.has(a.token_id));
-  const answers = (tokenId: string) => verifications.get(tokenId)?.status === "delivered";
+  const answers = (tokenId: string) => verifications.get(tokenId)?.status === "online";
   const buyers = rows.filter((p) => isSettled(p) && payerKind(p) === "buyer");
   const window = (key: WindowFigures["key"], since: number, checksCount: number): WindowFigures => ({
     ...windowFigures(rows, key, since),
@@ -225,7 +225,7 @@ export async function stationShelfHealth(now = Date.now()): Promise<StationShelf
       delisted.push({ ...a, daysOff: a.delisted.at ? daysOff(a.delisted.at) : 0 });
     } else if (a.failingSince) {
       failing.push({ ...a, daysLeft: daysLeft(a.failingSince) });
-    } else if (a.status === "delivered") {
+    } else if (a.status === "online") {
       answering += 1;
     }
   }

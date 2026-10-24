@@ -30,7 +30,6 @@ export function FreePreview({ endpoint, skills }: FreePreviewProps) {
   if (!previewSkill || !endpoint) return null
 
   const skillId = previewSkill.id
-  const skillLabel = previewSkill.name ?? previewSkill.id ?? 'preview'
 
   async function run() {
     setRunning(true)
@@ -47,19 +46,19 @@ export function FreePreview({ endpoint, skills }: FreePreviewProps) {
   }
 
   return (
-    <div className="mt-4 rounded-[10px] border border-souk-hair bg-souk-surface1 p-4">
+    <div className="mt-4 border border-souk-hair bg-souk-surface1 p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[13px] font-semibold text-souk-ink">Free preview</p>
           <p className="text-[11px] text-souk-muted">
-            Runs {skillLabel} directly, before any payment.
+            Runs the published preview before payment.
           </p>
         </div>
         <button
           type="button"
           onClick={run}
           disabled={running}
-          className="rounded-[8px] bg-souk-data px-4 py-2 text-[13px] font-semibold text-souk-canvas transition hover:brightness-95 disabled:opacity-40"
+          className="rounded-none bg-souk-data px-4 py-2 text-[13px] font-semibold text-souk-canvas transition hover:brightness-95 disabled:opacity-40"
         >
           {running ? 'Running...' : 'Run preview'}
         </button>
@@ -68,7 +67,7 @@ export function FreePreview({ endpoint, skills }: FreePreviewProps) {
         <p className="mt-3 text-[12px] text-souk-peach">{error}</p>
       )}
       {result && (
-        <pre className="mt-3 max-h-64 overflow-auto rounded-[8px] bg-souk-canvas p-3 text-[11px] leading-[16px] text-souk-slate whitespace-pre-wrap">
+        <pre className="mt-3 max-h-64 overflow-auto bg-souk-canvas p-3 text-[11px] leading-[16px] text-souk-slate whitespace-pre-wrap">
           {result}
         </pre>
       )}

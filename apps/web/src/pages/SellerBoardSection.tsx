@@ -67,7 +67,7 @@ export function SellerBoardSection() {
 
   return (
     <section id="board" className="scroll-mt-24 text-souk-ink">
-      <Stack gap={10} className="max-w-[1280px] xl:max-w-[min(1280px,calc(100%_-_460px))]">
+      <Stack gap={10} className="w-full">
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
@@ -79,23 +79,28 @@ export function SellerBoardSection() {
       </Stack>
 
       {!account && (
-        <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
-          <Txt size={15} lead={22} tone="ink">
+        <div className="mt-8 max-w-[680px] border-y border-souk-hair py-5">
+          <Txt size={15} lead={22} tone="ink" className="block">
             Connect the wallet you list with.
           </Txt>
-          <Txt size={13} lead={20} tone="muted">
+          <Txt size={13} lead={20} tone="muted" className="mt-1 block">
             A board is built from that wallet&apos;s own listings and the receipts paid to them.
           </Txt>
-          <Txt size={12} lead={18} tone="steel">
+          <Txt size={12} lead={18} tone="steel" className="mt-2 block">
             Connect from the rail on the left, or the bar above on a narrow screen.
           </Txt>
-        </Stack>
+        </div>
       )}
 
       {account && ready && !loading && (
         <>
           <div className="mt-6">
-            <EarningsPanel hires={hires} chainId={chainId} listedAt={firstListedAt} />
+            <EarningsPanel
+              hires={hires}
+              chainId={chainId}
+              listedAt={firstListedAt}
+              agents={owned?.agents ?? []}
+            />
           </div>
 
 
@@ -123,8 +128,8 @@ export function SellerBoardSection() {
             </Row>
           )}
 
-          <div className="mt-5 flex flex-wrap items-stretch gap-5">
-            <Stack surface pad={[16, 16, 14, 16]} gap={10} className="min-w-[620px] flex-[3_1_680px]">
+          <div className="mt-8 grid min-w-0 gap-0 border-y border-souk-hair lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            <section className="min-w-0 py-5 lg:pr-6">
               <SectionHead title="Runners gone quiet" note="ONE ALERT WHEN A LISTING GOES QUIET" />
               {owned
                 ? owned.agents.length === 0
@@ -176,9 +181,9 @@ export function SellerBoardSection() {
                 A quiet runner does not stop hires. It stops the board claiming the listings
                 are alive.
               </Txt>
-            </Stack>
+            </section>
 
-            <Stack surface pad={[16, 16, 14, 16]} gap={12} className="min-w-[520px] flex-[2_1_520px]">
+            <section className="min-w-0 border-t border-souk-hair py-5 lg:border-l lg:border-t-0 lg:pl-6">
               <SectionHead title="Hires by day" note="14 DAYS" />
               {hires ? (
                 <>
@@ -210,18 +215,16 @@ export function SellerBoardSection() {
                   The receipts read could not be reached just now.
                 </Txt>
               )}
-            </Stack>
+            </section>
           </div>
         </>
       )}
 
       {error && (
-        <div role="alert" className="mt-6">
-          <Stack pad={[14, 16, 14, 16]} radius={14} hair>
-            <Txt size={13} lead={20} tone="peach">
-              {error}
-            </Txt>
-          </Stack>
+        <div role="alert" className="mt-6 border-l-2 border-souk-peach pl-3">
+          <Txt size={13} lead={20} tone="peach">
+            {error}
+          </Txt>
         </div>
       )}
 

@@ -1,5 +1,5 @@
 {
-  "nav.marketplace": "Marketplace",
+  "nav.marketplace": "Agent shelf",
   "nav.compare": "Compare",
   "nav.build": "Build",
   "nav.ongoing": "Ongoing",
@@ -73,7 +73,7 @@
   "settings.security": "Security",
   "settings.note": "Navigation, settings and the vault form switch with the language you pick. Long-form pages and agent copy stay in the language their authors wrote them in. Profile is kept on this browser for now. Security stays off until the sign-in service is connected.",
   "vault.backAgent": "← Back to agent",
-  "vault.backMarket": "← Marketplace",
+  "vault.backMarket": "← Agent shelf",
   "vault.hireKicker": "Vault hire",
   "vault.title": "Hire an agent that trades a bounded deposit.",
   "vault.deck": "The deposit stays in the vault. The agent trades it between WBNB and USDT inside the bounds set at open, and one withdraw returns every balance.",

@@ -46,7 +46,7 @@ export function Footer() {
   const target = useTargetChain()
   return (
     <footer className="border-t border-souk-edge bg-souk-canvas">
-      <div className="px-4 lg:px-8 pb-16 pt-8">
+      <div className="w-full pb-16 pt-8">
         <Stack gap={20}>
           <div className="flex flex-col gap-[60px] lg:flex-row">
             <Stack gap={8} className="max-w-[420px]">
@@ -84,7 +84,7 @@ export function Footer() {
               </Row>
             </Stack>
             {columns.map((col) => (
-              <nav key={col.heading} aria-label={t(col.heading)} className="w-full lg:w-[418px]">
+              <nav key={col.heading} aria-label={t(col.heading)} className="w-full min-w-0 lg:flex-1">
                 <Stack gap={9}>
                   <Label tone="muted">{t(col.heading)}</Label>
                   {col.links.map((l) => (

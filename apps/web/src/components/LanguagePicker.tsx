@@ -109,7 +109,7 @@ export function LanguagePicker() {
         title={`${current.code} · ${current.label}`}
         onClick={() => (open ? close() : openAt(selected))}
         onKeyDown={onTriggerKey}
-        className="flex h-[38px] min-w-[38px] items-center justify-center rounded-[8px] border border-souk-hair px-2 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        className="flex h-[38px] min-w-[38px] items-center justify-center rounded-none border border-souk-hair px-2 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         {current.code}
       </button>
@@ -123,7 +123,7 @@ export function LanguagePicker() {
           aria-activedescendant={optionId(LOCALES[active].code)}
           tabIndex={-1}
           onKeyDown={onListKey}
-          className="absolute bottom-full right-0 z-[80] mb-2 w-[220px] overflow-hidden rounded-[10px] border border-souk-hair bg-souk-surface1 py-1 shadow-lg focus:outline-none"
+          className="absolute bottom-full right-0 z-[80] mb-2 w-[220px] overflow-hidden rounded-none border border-souk-hair bg-souk-surface1 py-1 shadow-lg focus:outline-none"
         >
           {LOCALES.map((l, i) => {
             const isSelected = l.code === locale

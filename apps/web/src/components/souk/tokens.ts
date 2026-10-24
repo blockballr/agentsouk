@@ -8,6 +8,7 @@ export type Tone =
   | 'steel'
   | 'muted'
   | 'data'
+  | 'good'
   | 'labels'
   | 'sky'
   | 'peach'
@@ -22,6 +23,7 @@ export const TONE: Record<Tone, string> = {
   steel: 'text-souk-steel',
   muted: 'text-souk-muted',
   data: 'text-souk-data',
+  good: 'text-souk-good',
   labels: 'text-souk-labels',
   sky: 'text-souk-sky',
   peach: 'text-souk-peach',

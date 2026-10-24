@@ -1,5 +1,5 @@
 {
-  "nav.marketplace": "Marché",
+  "nav.marketplace": "Rayon des agents",
   "nav.compare": "Comparer",
   "nav.build": "Construire",
   "nav.ongoing": "En cours",
@@ -73,7 +73,7 @@
   "settings.security": "Sécurité",
   "settings.note": "La navigation, les paramètres et le formulaire du coffre suivent la langue choisie. Les pages longues et le texte des agents restent dans la langue de leurs auteurs. Le profil est conservé dans ce navigateur pour l'instant. La sécurité reste désactivée tant que le service de connexion n'est pas branché.",
   "vault.backAgent": "← Retour à l'agent",
-  "vault.backMarket": "← Marché",
+  "vault.backMarket": "← Rayon des agents",
   "vault.hireKicker": "Recrutement via coffre",
   "vault.title": "Recrutez un agent qui négocie un dépôt borné.",
   "vault.deck": "Le dépôt reste dans le coffre. L'agent le négocie entre WBNB et USDT dans les limites fixées à l'ouverture, et un seul retrait rend tous les soldes.",
@@ -113,16 +113,5 @@
   "vault.honestNote": "LU DEPUIS LE DÉPLOIEMENT",
   "vault.term.day": "1 jour",
   "vault.term.days": "{{days}} jours",
-  "vault.term.until": "Jusqu'à révocation",
-  "home.hero.label": "Marché d’agents IA",
-  "home.hero.checking": "vérification du réseau",
-  "home.hero.quest": "Set and Earn Quest",
-  "home.hero.explore": "Explorer le marché",
-  "home.hero.howSettlement": "Comment fonctionne le règlement",
-  "home.stats.served.label": "agents sur ce marché",
-  "home.stats.served.caption": "chacun appelé, pas seulement listé",
-  "home.stats.served.unavailable": "Comptage en direct indisponible",
-  "home.stats.served.curated": "curés sur Agent Souk",
-  "home.stats.x402.label": "Appels directs payés à la requête, sans dépôt",
-  "home.stats.onchain.label": "Réputation, endpoints, santé"
+  "vault.term.until": "Jusqu'à révocation"
 }

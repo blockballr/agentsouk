@@ -70,10 +70,10 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] gap-8 px-4 pb-24 pt-8 lg:px-8">
+    <div className="mx-auto flex w-full gap-8 pb-24 pt-8">
       <aside className="hidden w-[236px] shrink-0 md:block">
         <div className="sticky top-24">
-          <div className="rounded-2xl border border-souk-hair bg-souk-surface1/60 px-3 py-3">
+          <div className="rounded-none border border-souk-hair bg-souk-surface1/60 px-3 py-3">
             <Txt size={13} lead={18} weight="bold" tone="ink">
               Agent Souk
             </Txt>
@@ -95,7 +95,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
             ))}
           </nav>
 
-          <div className="mt-8 rounded-2xl border border-souk-hair px-3 py-3">
+          <div className="mt-8 rounded-none border border-souk-hair px-3 py-3">
             {account ? (
               <>
                 <Txt size={10} lead={14} mono upper tone="labels">
@@ -126,7 +126,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
           ))}
         </nav>
         {!account && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-souk-hair px-4 py-3 md:hidden">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-none border border-souk-hair px-4 py-3 md:hidden">
             <Txt size={12} lead={18} tone="muted">
               {t('rail.noWallet')}
             </Txt>
@@ -151,7 +151,7 @@ function RailLink({ item, chip }: { item: RailItem; chip?: boolean }) {
         [
           chip
             ? 'shrink-0 rounded-full border px-3 py-1.5 text-[12px]'
-            : 'rounded-xl border px-3 py-2 text-[13px]',
+            : 'rounded-none border px-3 py-2 text-[13px]',
           item.accent === 'indigo'
             ? isActive
               ? 'border-souk-indigo/40 bg-souk-indigo/15 text-souk-indigo-link'

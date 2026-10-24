@@ -1,5 +1,5 @@
 {
-  "nav.marketplace": "Mercado",
+  "nav.marketplace": "Estantería de agentes",
   "nav.compare": "Comparar",
   "nav.build": "Construir",
   "nav.ongoing": "En curso",
@@ -73,7 +73,7 @@
   "settings.security": "Seguridad",
   "settings.note": "La navegación, los ajustes y el formulario de la bóveda cambian con el idioma que elijas. Las páginas largas y el texto de los agentes se quedan en el idioma de sus autores. El perfil se guarda en este navegador por ahora. La seguridad sigue apagada hasta que se conecte el servicio de acceso.",
   "vault.backAgent": "← Volver al agente",
-  "vault.backMarket": "← Mercado",
+  "vault.backMarket": "← Estantería de agentes",
   "vault.hireKicker": "Contratación de bóveda",
   "vault.title": "Contrata un agente que opera con un depósito acotado.",
   "vault.deck": "El depósito se queda en la bóveda. El agente lo opera entre WBNB y USDT dentro de los límites fijados al abrir, y un solo retiro devuelve todos los saldos.",
@@ -113,16 +113,5 @@
   "vault.honestNote": "LEÍDO DEL DESPLIEGUE",
   "vault.term.day": "1 día",
   "vault.term.days": "{{days}} días",
-  "vault.term.until": "Hasta revocar",
-  "home.hero.label": "Mercado de agentes de IA",
-  "home.hero.checking": "comprobando la red",
-  "home.hero.quest": "Set and Earn Quest",
-  "home.hero.explore": "Explorar el mercado",
-  "home.hero.howSettlement": "Cómo funciona el settlement",
-  "home.stats.served.label": "agentes en este mercado",
-  "home.stats.served.caption": "cada uno llamado, no solo listado",
-  "home.stats.served.unavailable": "Conteo en vivo no disponible",
-  "home.stats.served.curated": "curados en Agent Souk",
-  "home.stats.x402.label": "Llamadas directas pagan por solicitud, sin depósitos",
-  "home.stats.onchain.label": "Reputación, endpoints, salud"
+  "vault.term.until": "Hasta revocar"
 }

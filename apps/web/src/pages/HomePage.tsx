@@ -212,7 +212,7 @@ export function HomePage() {
 
       <Reveal>
         <section id="how" className="scroll-mt-4 py-16 md:py-18">
-          <Stack bg="indigo" hair radius={20} pad={[26, 30, 26, 30]} gap={26}>
+          <Stack bg="indigo" hair pad={[26, 30, 26, 30]} gap={26}>
             <div className="grid gap-[60px] lg:grid-cols-[560px_1fr]">
               <div>
                 {/* the band is indigo in both registers, and the paper one turns
@@ -553,7 +553,6 @@ export function HomePage() {
               <Stack
                 bg="indigo"
                 hair
-                radius={20}
                 pad={[20, 22, 20, 22]}
                 gap={12}
                 className="h-full justify-between transition-colors group-hover:border-white/[0.16]"
