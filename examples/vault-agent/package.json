@@ -1,0 +1,18 @@
+{
+  "name": "@agentsouk/vault-agent-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/run.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agentsouk/vault-sdk": "file:../../packages/vault-sdk",
+    "viem": "^2.55.16"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}
