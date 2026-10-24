@@ -106,10 +106,11 @@ describe("agent card", () => {
     expect(card.version).toBe(GRID_AGENT_VERSION);
     expect(card.description).toBe(GRID_AGENT_DESCRIPTION);
     expect(card.description).toContain("grid");
-    expect(card.description).toContain("trading");
+    expect(card.description).toContain("HireVault");
     expect(card.protocolVersion).toBe(GRID_AGENT_PROTOCOL_VERSION);
+    // a vault agent sells the funded hire and nothing else
     expect(card.skills).toHaveLength(1);
-    expect(card.skills[0].id).toBe("plan_grid");
+    expect(card.skills[0].id).toBe("vault_execution");
     expect(card.skills[0].tags).toContain("grid-trading");
 
     const messagingUrl = gridAgentMessagingUrl(GRID_AGENT_PUBLIC_ORIGIN);

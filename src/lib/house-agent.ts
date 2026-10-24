@@ -7,29 +7,27 @@
 import { privateEndpointReason } from "./endpoint";
 
 export const HOUSE_AGENT_NAME = "Souk Health Guard";
-export const HOUSE_AGENT_VERSION = "1.0.0";
+export const HOUSE_AGENT_VERSION = "1.1.0";
 export const HOUSE_AGENT_CATEGORY = "health-factor";
 export const HOUSE_AGENT_DESCRIPTION =
-  "Computes the health factor and liquidation distance of a lending position from the collateral value and debt value the caller supplies, with an optional liquidation threshold. The arithmetic is deterministic and uses no market data, so the caller supplies the valuation and can reproduce every figure.";
+  "Defends a lending position on-chain. Reads the hire's collateral and debt, computes the health factor, and when it reaches the defend band sells collateral to repay debt through HireVault, aiming at the target health factor. Refuses to trade when the position is already liquidatable or the price read is stale. The vault enforces the floor, drawdown budget and slippage on chain, and the hire carries a performance fee capped by the contract.";
 export const HOUSE_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const HOUSE_AGENT_CARD_PATH = "/api/house-agent/.well-known/agent-card.json";
 export const HOUSE_AGENT_MESSAGING_PATH = "/api/house-agent/a2a";
 
-// The house listing's ERC-8004 token id on chain 97, of the registration the
-// tracking submission records; the seller side quotes with it as agent_id.
-// the team-owned house agent's own registry id, per chain: the testnet listing
-// minted 2504, and the mainnet listing minted 368655 when the marketplace
-// registered on chain 56. A quote carries this id, so a chain-blind value would
-// hand the buyer a stranger's agent id.
+// the team-owned house agent's registry id per chain. the testnet listing
+// minted 2504. mainnet token 368655 now belongs to Souk Drift Guard, so the
+// house agent has no mainnet listing and a quote there carries no agent id
+// rather than borrowing another agent's. a quote that named 368655 would send
+// the buyer to the wrong agent.
 export const HOUSE_AGENT_TOKEN_IDS: Record<number, number> = {
   97: 2504,
-  56: 368655,
 };
 
 export const HOUSE_AGENT_TOKEN_ID = 2504;
 
-export function houseAgentTokenId(chainId: number): number {
-  return HOUSE_AGENT_TOKEN_IDS[chainId] ?? HOUSE_AGENT_TOKEN_ID;
+export function houseAgentTokenId(chainId: number): number | null {
+  return HOUSE_AGENT_TOKEN_IDS[chainId] ?? null;
 }
 
 export const DEFAULT_LIQUIDATION_THRESHOLD = 0.8;
@@ -74,13 +72,40 @@ export interface HouseAgentCard {
   supportedInterfaces: { url: string; transport: string }[];
 }
 
+// the route answers the seller-side ERC-8183 steps, so the card has to say so.
+// a card without them is treated as a direct-call agent and is never quoted a job.
+const NEGOTIATE_SKILL: HouseAgentSkill = {
+  id: "negotiate",
+  name: "Quote an ERC-8183 job",
+  description:
+    "ERC-8183 job selling: answers a negotiate step with a wallet-signed quote priced in the kernel's payment token, naming this listing's registered wallet as provider. The job buys this agent's health factor read; the endpoint never repays a loan.",
+  tags: ["erc-8183", "job", "negotiate", "quote"],
+  examples: [],
+  inputModes: ["application/json"],
+  outputModes: ["application/json"],
+};
+
+const NOTIFY_SKILL: HouseAgentSkill = {
+  id: "notify_funded",
+  name: "Answer a funded ERC-8183 job",
+  description:
+    "ERC-8183 job selling: on notify_funded the kernel's own row is read back to confirm this listing is the funded job's provider, the health factor read is produced from the job's own description, and the deliverable is submitted on chain for the optimistic dispute window to release.",
+  tags: ["erc-8183", "job", "notify-f"],
+  examples: [],
+  inputModes: ["application/json"],
+  outputModes: ["application/json"],
+};
+
 // The card must never name a private or loopback address, so a configured
 // origin is used only when it passes the marketplace's own check; otherwise the
 // deployed api origin wins.
 export function pickPublicOrigin(candidates: (string | null | undefined)[]): string {
+  const allowLocal = process.env.ALLOW_LOCALHOST_ORIGIN === "1" || process.env.NODE_ENV === "development";
   for (const candidate of candidates) {
     const trimmed = (candidate ?? "").trim().replace(/\/+$/, "");
-    if (trimmed && privateEndpointReason(trimmed) === null) return trimmed;
+    if (!trimmed) continue;
+    if (allowLocal) return trimmed;
+    if (privateEndpointReason(trimmed) === null) return trimmed;
   }
   return HOUSE_AGENT_PUBLIC_ORIGIN;
 }
@@ -138,31 +163,8 @@ export function houseAgentCard(origin: string): HouseAgentCard {
           },
         },
       },
-      // The seller-side ERC-8183 steps the kernel's flow needs: the
-      // marketplace quotes this listing through negotiate, notifies it on
-      // fund, and the runtime submits the deliverable through notify's work
-      // step. Ids are the protocol's own tokens; the 8183 naming in the
-      // negotiate description is how a job-step skill is told from real work.
-      {
-        id: "negotiate",
-        name: "Quote an ERC-8183 job",
-        description:
-          "ERC-8183 job selling: answers a negotiate step with a wallet-signed quote priced in the kernel's payment token, naming this listing's registered wallet as provider. Work starts only once a job is funded on chain 97's AgenticCommerce kernel.",
-        tags: ["erc-8183", "job", "negotiate", "quote"],
-        examples: [],
-        inputModes: ["application/json"],
-        outputModes: ["application/json"],
-      },
-      {
-        id: "notify_funded",
-        name: "Start work on a funded ERC-8183 job",
-        description:
-          "ERC-8183 job selling: on notify_funded the kernel's own row is read back to confirm this listing is the funded job's provider, the work runs, and the deliverable is submitted on chain for the optimistic dispute window to release.",
-        tags: ["erc-8183", "job", "notify-f"],
-        examples: [],
-        inputModes: ["application/json"],
-        outputModes: ["application/json"],
-      },
+      NEGOTIATE_SKILL,
+      NOTIFY_SKILL,
     ],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
   };

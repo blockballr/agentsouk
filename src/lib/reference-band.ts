@@ -4,12 +4,13 @@
 // suggests a v3 liquidity range around that pool's price.
 
 import { privateEndpointReason } from "./endpoint";
+import { vaultCardSkill } from "./vault-card-skill";
 
 export const BAND_AGENT_NAME = "Souk Band Keeper";
-export const BAND_AGENT_VERSION = "1.1.0";
+export const BAND_AGENT_VERSION = "1.2.0";
 export const BAND_AGENT_CATEGORY = "rebalancing";
 export const BAND_AGENT_DESCRIPTION =
-  "Checks a two-asset position against a drift band around a target weight. From two holding values in USD, the target share of the first asset, and an optional band width, it returns the current weight, the drift, the band edges, whether the weight is inside or outside the band, the distance to the nearest edge, and the USD value to move back to target. That check is deterministic and uses no market data. Named a PancakeSwap pair and a width, it instead reads that pool on the chain this marketplace runs on and suggests a v3 liquidity range: the ticks, the prices at them, how a deposit splits between the two tokens, and a link that opens PancakeSwap with the range set. It never adds liquidity or trades.";
+  "Keeps a two-asset position inside a drift band on-chain. Swaps through HireVault when drift leaves the corridor, returning to the near edge rather than the centre. Named a PancakeSwap pair it also suggests a v3 range: ticks, prices, the deposit split and a prefilled link. It suggests ranges, does not manage a liquidity position, places no resting orders and holds no key.";
 export const BAND_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const BAND_AGENT_CARD_PATH = "/api/reference/band/.well-known/agent-card.json";
 export const BAND_AGENT_MESSAGING_PATH = "/api/reference/band/a2a";
@@ -82,82 +83,7 @@ export function bandAgentCard(origin: string): BandAgentCard {
     capabilities: { streaming: false, pushNotifications: false, stateTransitionHistory: false },
     defaultInputModes: ["text/plain", "application/json"],
     defaultOutputModes: ["text/plain", "application/json"],
-    skills: [
-      {
-        id: "check_band",
-        name: "Drift band check",
-        description:
-          "Checks a two-asset position against a drift band around a target weight and returns the current weight, the drift, the band edges, the status and the USD value to move back to target. Read-only deterministic arithmetic with no market data.",
-        tags: ["rebalancing", "allocation", "band", "drift", "portfolio"],
-        examples: [
-          "Check a band for valueA 700 and valueB 300 with a target of 50 percent and a band of 5 percent",
-          "Is my allocation inside its band or outside it",
-        ],
-        inputModes: ["text/plain", "application/json"],
-        outputModes: ["text/plain", "application/json"],
-        inputSchema: {
-          type: "object",
-          properties: {
-            valueAUsd: { type: "number", description: "value of asset A in USD" },
-            valueBUsd: { type: "number", description: "value of asset B in USD" },
-            targetAPercent: { type: "number", description: "target share of asset A, a percentage from 0 to 100" },
-            bandPercent: { type: "number", description: "band half width in percentage points, defaults to 5" },
-            symbolA: { type: "string", description: "optional label for asset A" },
-            symbolB: { type: "string", description: "optional label for asset B" },
-          },
-          required: ["valueAUsd", "valueBUsd", "targetAPercent"],
-          examples: [{ valueAUsd: 700, valueBUsd: 300, targetAPercent: 50, bandPercent: 5, symbolA: "BNB", symbolB: "USDT" }],
-        },
-        outputSchema: {
-          type: "object",
-          properties: {
-            totalUsd: { type: "number", description: "portfolio total in USD" },
-            currentAPercent: { type: "number", description: "current weight of asset A" },
-            driftAPercent: { type: "number", description: "current weight minus the target, in points" },
-            bandLowerPercent: { type: "number", description: "lower edge of the band" },
-            bandUpperPercent: { type: "number", description: "upper edge of the band" },
-            status: { type: "string", description: "in-band, above-band or below-band" },
-            distanceToEdgePercent: { type: "number", description: "distance to the nearest band edge" },
-            valueToMoveUsd: { type: "number", description: "USD value to move back to target" },
-            fromSymbol: { type: "string", description: "asset to move value from" },
-            toSymbol: { type: "string", description: "asset to move value to" },
-          },
-        },
-      },
-      {
-        id: "suggest_lp_range",
-        name: "PancakeSwap liquidity range",
-        description:
-          "Reads a PancakeSwap v3 pool for a pair such as WBNB/USDT and suggests a liquidity range of the width you ask for, centred on the pool's price: the ticks aligned to the pool's spacing, the prices at those ticks, how an optional deposit splits between the two tokens, and a link that opens PancakeSwap's add-liquidity page with the range set. It names the pool and the block it read. It never adds liquidity or trades.",
-        tags: ["rebalancing", "pancakeswap", "liquidity", "range", "v3"],
-        examples: ["Suggest a PancakeSwap range for WBNB/USDT 10% wide with a deposit of 100"],
-        inputModes: ["text/plain", "application/json"],
-        outputModes: ["text/plain", "application/json"],
-        inputSchema: {
-          type: "object",
-          properties: {
-            pair: { type: "string", description: "a PancakeSwap pair priced in dollars, WBNB/USDT" },
-            widthPct: { type: "number", description: "the range width in percent, centred on the pool price" },
-            depositUsd: { type: "number", description: "optional deposit in USD to split between the two tokens" },
-            feeTier: { type: "number", description: "optional pool fee tier, 100, 500, 2500 or 10000; the deepest pool otherwise" },
-          },
-          required: ["pair", "widthPct"],
-          examples: [{ pair: "WBNB/USDT", widthPct: 10, depositUsd: 100 }],
-        },
-        outputSchema: {
-          type: "object",
-          properties: {
-            tickLower: { type: "number", description: "lower tick, aligned to the pool's spacing" },
-            tickUpper: { type: "number", description: "upper tick, aligned to the pool's spacing" },
-            priceLower: { type: "number", description: "quote per base at the lower tick" },
-            priceUpper: { type: "number", description: "quote per base at the upper tick" },
-            baseAmount: { type: "number", description: "base tokens the deposit takes" },
-            quoteAmount: { type: "number", description: "quote tokens the deposit takes" },
-            link: { type: "string", description: "PancakeSwap add-liquidity page with the range set" },
-          },
-        },
-      },
-    ],
+    skills: [vaultCardSkill("rebalancing")],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
   };
 }

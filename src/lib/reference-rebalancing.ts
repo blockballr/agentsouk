@@ -6,12 +6,13 @@
 // guessing.
 
 import { privateEndpointReason } from "./endpoint";
+import { vaultCardSkill } from "./vault-card-skill";
 
 export const REFERENCE_AGENT_NAME = "Souk Drift Guard";
-export const REFERENCE_AGENT_VERSION = "1.0.0";
+export const REFERENCE_AGENT_VERSION = "1.1.0";
 export const REFERENCE_AGENT_CATEGORY = "rebalancing";
 export const REFERENCE_AGENT_DESCRIPTION =
-  "Plans a portfolio rebalance from the two holding values and the target share the caller supplies, returning the portfolio total, each asset's current and target weight, each drift in percentage points, whether a rebalance is warranted, and the value in USD to move from one label to the other. The arithmetic is deterministic and uses no market data, so the caller supplies every valuation and can reproduce every figure.";
+  "Corrects portfolio drift on-chain. Compares the hire's holdings with the target weight and, when drift leaves the band, swaps the overweight side back toward target through HireVault. The trade stays inside the contract's floor, drawdown budget and slippage cap, and the agent refuses when drift is inside the band or the position is unreadable.";
 export const REFERENCE_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const REFERENCE_AGENT_CARD_PATH = "/api/reference/rebalancing/.well-known/agent-card.json";
 export const REFERENCE_AGENT_MESSAGING_PATH = "/api/reference/rebalancing/a2a";
@@ -84,46 +85,7 @@ export function referenceAgentCard(origin: string): ReferenceAgentCard {
     capabilities: { streaming: false, pushNotifications: false, stateTransitionHistory: false },
     defaultInputModes: ["text/plain", "application/json"],
     defaultOutputModes: ["text/plain", "application/json"],
-    skills: [
-      {
-        id: "plan-rebalance",
-        name: "Rebalance planning",
-        description:
-          "Plans a portfolio rebalance from two holding values in USD and a target share for the first asset, with an optional drift threshold. Returns the portfolio total, current and target weights, each drift in percentage points, whether a rebalance is warranted, and the USD value to move between labels. Read-only deterministic arithmetic with no market data and no price input.",
-        tags: ["rebalancing", "allocation", "drift", "portfolio", "weights"],
-        examples: [
-          "Plan a rebalance for valueA 700 and valueB 300 with a target of 50 percent for A",
-          "Is my portfolio outside its target allocation by more than 5 percent",
-        ],
-        inputModes: ["text/plain", "application/json"],
-        outputModes: ["text/plain", "application/json"],
-        inputSchema: {
-          type: "object",
-          properties: {
-            valueAUsd: { type: "number", description: "value of asset A in USD" },
-            valueBUsd: { type: "number", description: "value of asset B in USD" },
-            targetAPercent: { type: "number", description: "target share of asset A, a percentage from 0 to 100" },
-            thresholdPercent: { type: "number", description: "optional drift threshold in percentage points, defaults to 5" },
-            symbolA: { type: "string", description: "optional label for asset A" },
-            symbolB: { type: "string", description: "optional label for asset B" },
-          },
-          required: ["valueAUsd", "valueBUsd", "targetAPercent"],
-          examples: [{ valueAUsd: 700, valueBUsd: 300, targetAPercent: 50, thresholdPercent: 5, symbolA: "BNB", symbolB: "USDT" }],
-        },
-        outputSchema: {
-          type: "object",
-          properties: {
-            totalUsd: { type: "number", description: "portfolio total in USD" },
-            currentAPercent: { type: "number", description: "current weight of asset A" },
-            driftAPercent: { type: "number", description: "drift of asset A in percentage points" },
-            rebalanceWarranted: { type: "boolean", description: "whether a drift exceeds the threshold" },
-            valueToMoveUsd: { type: "number", description: "USD value to move when a rebalance is warranted" },
-            fromSymbol: { type: "string", description: "asset to move value from" },
-            toSymbol: { type: "string", description: "asset to move value to" },
-          },
-        },
-      },
-    ],
+    skills: [vaultCardSkill("rebalancing")],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
   };
 }

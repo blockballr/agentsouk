@@ -7,7 +7,9 @@ import { findActiveSession } from "@/lib/x402";
 import { revokedAmong } from "@/lib/receipts-store";
 import { hydrateBoostsFromDb, isBoosted } from "@/lib/boosts";
 import { withListingEdit } from "@/lib/listing-edit";
+import { listCustomAgents } from "@/lib/builder/custom";
 import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
+import { firstPartyCategory, firstPartyDescription, firstPartySkills, firstPartyVaultOnly, firstPartyWallet } from "@/lib/first-party-copy";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,7 +20,7 @@ export async function GET(req: NextRequest) {
   const q = sp.get("q") ?? "";
   // no sort named reads as score: the chain's first metric, with reachability
   // settling the ties underneath it and job tiering leading everything
-  const type = sp.get("type") as "all" | "jobs" | "x402" | "others" | null;
+  const type = sp.get("type") as "all" | "jobs" | "x402" | "vault" | null;
   const metric = sp.get("metric") as "score" | "newest" | "feedback" | "health" | null;
   const sort = sp.get("sort") as string | null;
   const page = Math.max(1, Number(sp.get("page") ?? 1) || 1);
@@ -28,6 +30,11 @@ export async function GET(req: NextRequest) {
   const pcs = sp.get("pcs") === "1";
 
   const verifications = await loadVerifications();
+  const customAgents = await listCustomAgents().catch(() => []);
+  const customByToken = new Map<string, (typeof customAgents)[number]>();
+  for (const ca of customAgents) {
+    if (ca.onChainTokenId) customByToken.set(String(ca.onChainTokenId), ca);
+  }
 
   const result = await queryAgents({
     category,
@@ -80,6 +87,17 @@ export async function GET(req: NextRequest) {
     // capture must never break the listing
   }
 
+  result.items = result.items.map((a) => {
+    if (!firstPartyVaultOnly(Number(a.chain_id), a.token_id)) return a;
+    return {
+      ...a,
+      x402_supported: false,
+      description: firstPartyDescription(Number(a.chain_id), a.token_id) ?? a.description,
+      skills: firstPartySkills(Number(a.chain_id), a.token_id) ?? a.skills,
+      category: (firstPartyCategory(Number(a.chain_id), a.token_id) ?? a.category) as typeof a.category,
+    };
+  });
+
   await hydrateBoostsFromDb();
 
   // paid boosts sort first within the page the query already selected
@@ -106,7 +124,9 @@ export async function GET(req: NextRequest) {
       readsPancakeSwap(a.chain_id, a.token_id) || isPancakeSwapAgent(a.name, a.description ?? "")
         ? { ...shown, pcs: true }
         : shown;
-    const withVerification = verification ? { ...withPcs, verification } : withPcs;
+    const custom = customByToken.get(String(a.token_id));
+    const withCustom = custom ? { ...withPcs, isCustom: true, customAgentId: custom.id, customOnline: custom.deployment?.ok === true } : withPcs;
+    const withVerification = verification ? { ...withCustom, verification } : withCustom;
     const found = sessions[i];
     const activeSession = found && !revoked.has(found.paymentId) ? found : undefined;
     const withSession = activeSession
@@ -135,5 +155,5 @@ export async function GET(req: NextRequest) {
     counts: result.categoryCounts,
     snapshotTime: result.indexStatus.snapshotTime,
     lastTopUpAt: result.indexStatus.lastTopUpAt,
-  });
+  }, { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" } });
 }
