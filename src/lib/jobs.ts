@@ -406,3 +406,35 @@ export function attachTask(jobId: string, taskId: string): void {
     void saveJob(job);
   }
 }
+
+
+export interface EscrowStats {
+  count: number;
+  days: number;
+  lastAt: string | null;
+}
+
+export async function escrowStatsForAgent(
+  chainId: number,
+  tokenId: string | null,
+  provider: string | null,
+): Promise<EscrowStats> {
+  const all = await listJobs(500);
+  const completed = all.filter((j) => {
+    if (j.status !== "Completed") return false;
+    if (Number(j.chainId) !== chainId) return false;
+    if (tokenId && j.tokenId !== tokenId) return false;
+    if (provider && j.provider.toLowerCase() !== provider.toLowerCase()) return false;
+    return true;
+  });
+  const daySet = new Set<string>();
+  let lastAt: string | null = null;
+  for (const j of completed) {
+    const iso = j.updatedAt || j.createdAt;
+    if (iso) {
+      daySet.add(iso.slice(0, 10));
+      if (!lastAt || iso > lastAt) lastAt = iso;
+    }
+  }
+  return { count: completed.length, days: daySet.size, lastAt };
+}

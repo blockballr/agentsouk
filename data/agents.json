@@ -5865,7 +5865,7 @@
       "owner_publisher_tier": null,
       "owner_certified_name": null,
       "name": "Souk Health Guard",
-      "description": "Computes the health factor and liquidation distance of a lending position from the collateral value and debt value the caller supplies, with an optional liquidation threshold. The arithmetic is deterministic and uses no market data, so the caller supplies the valuation and can reproduce every figure.",
+      "description": "Defends a lending position on-chain. Reads the hire's collateral and debt, computes the health factor, and when it reaches the defend band sells collateral to repay debt through HireVault, aiming at the target health factor. Refuses to trade when the position is already liquidatable or the price read is stale. The vault enforces the floor, drawdown budget and slippage on chain, and the hire carries a performance fee capped by the contract.",
       "image_url": null,
       "is_verified": false,
       "star_count": 0,

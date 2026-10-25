@@ -43,9 +43,23 @@ export interface HireFacts {
   expiry: number;
   balanceA: bigint;
   balanceB: bigint;
-  refPriceX96: bigint;
+  /**
+   * the hire's stored reference price on the same scale as the price read:
+   * quote per base. the contract stores token1 per token0, which is the inverse
+   * whenever the base is token1, so the runner normalises once and the ladder
+   * never compares two different axes.
+   */
+  refQuotePerBase: number;
   depositInToken0: bigint;
   maxSlippageBps: number;
+}
+
+// the bound pair is 18 decimals on both sides, so the tick ratio needs no decimal
+// adjustment. a future pair with mixed decimals would apply 10^(dec0-dec1) here.
+export function refQuotePerBase(refPriceX96: bigint, baseIsToken0: boolean): number {
+  const raw = Number(refPriceX96) / 2 ** 96;
+  if (!(raw > 0)) return 0;
+  return baseIsToken0 ? raw : 1 / raw;
 }
 
 /** the cache; anything in here that the chain later contradicts loses */
@@ -127,7 +141,7 @@ export function decideHire(input: {
   }
   if (!hire.open) return { action: "stop", reason: "the hire is not open", state: base };
   if (nowSec >= hire.expiry) return { action: "stop", reason: "the hire has expired", state: base };
-  const ref = Number(hire.refPriceX96) / 2 ** 96;
+  const ref = hire.refQuotePerBase;
   if (!(ref > 0)) return { action: "stop", reason: "the hire carries no reference price", state: base };
   if (!(price > 0)) return { action: "stop", reason: "the price read yielded no positive number", state: base };
   // one decision per block at most, whatever fires the run

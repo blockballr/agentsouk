@@ -28,6 +28,8 @@ export type NotificationKind =
   | "topup_needed"
   | "deploy_live"
   | "deploy_failed"
+  | "custom_registered"
+  | "custom_listed"
   | "build_minutes_low"
   | "trial_expiring"
   | "plan_changed";

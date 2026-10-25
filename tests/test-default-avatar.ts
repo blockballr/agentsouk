@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { defaultAvatarFor } from "../apps/web/src/lib/default-avatar";
 
 describe("defaultAvatarFor", () => {
-  it("returns a member of the house glyph set for any agent", () => {
-    expect(defaultAvatarFor(97, "2554")).toMatch(/^\/inserts\/[a-z]+\.svg$/);
-    expect(defaultAvatarFor(56, "1200")).toMatch(/^\/inserts\/[a-z]+\.svg$/);
+  it("returns a deterministic remote glyph for any agent", () => {
+    // the default face is a DiceBear Bottts URL keyed on the listing, so an
+    // agent without an image keeps one face without a hosted asset to maintain
+    expect(defaultAvatarFor(97, "2554")).toMatch(/^https:\/\/api\.dicebear\.com\/9\.x\/bottts\/svg\?/);
+    expect(defaultAvatarFor(56, "1200")).toMatch(/^https:\/\/api\.dicebear\.com\/9\.x\/bottts\/svg\?/);
   });
 
   it("keeps one agent on one default forever, and differs between agents", () => {

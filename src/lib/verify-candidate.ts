@@ -19,7 +19,7 @@ export interface VerifyCandidate {
 export type SweepCandidate = VerifyCandidate;
 
 export interface VerifyVerdict {
-  status: "delivered" | "gated" | "dead" | "unreachable";
+  status: "online" | "gated" | "dead" | "unreachable" | "unresponsive" | "restricted" | "not_checked";
   detail: string;
   deliverable?: string;
 }
@@ -70,13 +70,17 @@ export async function fetchJson(url: string, opts: RequestInit = {}, timeoutMs =
 }
 
 async function settleHire(cand: { chainId: number; tokenId: string; name: string }): Promise<{ ok: true; paymentId: string } | { ok: false; detail: string; gated?: true }> {
+  // the probe runs before any payment, so a verifier without a relay key can
+  // still learn that an agent sells by job and record it honestly
+  const canPay = Boolean(process.env.RELAY_PRIVATE_KEY);
+  const probeClient = canPay ? wallet().address : "0x0000000000000000000000000000000000000000";
   const reqRes = await fetchJson(`${baseUrl()}/api/x402/requirements`, {
     method: "POST",
     headers: JSON_HEADERS,
     body: JSON.stringify({
       chainId: cand.chainId,
       tokenId: cand.tokenId,
-      client: wallet().address,
+      client: probeClient,
       // a check may run on an agent that is off the market; a buyer's hire may not
       purpose: "check",
     }),
@@ -99,6 +103,9 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
   }
   if (reqRes.status !== 200 || !pr) {
     return { ok: false, detail: `requirements failed (${reqRes.status})` };
+  }
+  if (!canPay) {
+    return { ok: false, detail: "the verifier has no relay key, so no hire was paid" };
   }
 
   const asset = getAddress(pr.asset);
@@ -186,7 +193,7 @@ export const SECRET_REQUEST_NOTE = "asked for a wallet secret instead of answeri
 // a reply that only promises never to ask for one is left alone, since this verdict can delist
 export function gradeA2aReply(text: string): VerifyVerdict {
   if (requestsWalletSecret(text)) return { status: "dead", detail: `${SECRET_REQUEST_NOTE}: ${text.slice(0, 240)}` };
-  return { status: "delivered", detail: text.slice(0, 300), deliverable: text };
+  return { status: "online", detail: text.slice(0, 300), deliverable: text };
 }
 
 // One paid probe: settle a hire as the relay buyer, run the agent, grade what
@@ -222,7 +229,7 @@ export async function verifyCandidate(cand: VerifyCandidate): Promise<VerifyVerd
   if (d.protocol === "mcp") {
     const tools = d.tools ?? [];
     if (!tools.length) return { status: "dead", detail: "no tools" };
-    return { status: "delivered", detail: `${tools.length} tools`, deliverable: JSON.stringify(tools) };
+    return { status: "online", detail: `${tools.length} tools`, deliverable: JSON.stringify(tools) };
   }
 
   const send = await deliverJson(hire.paymentId, { task: A2A_TASK });

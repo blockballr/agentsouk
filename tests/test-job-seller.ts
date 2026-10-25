@@ -200,7 +200,7 @@ describe("the scout's liveness probe", () => {
   });
 
   it("keeps the other verdicts as they were", () => {
-    expect(probeToVerification(candidate, { tokenId: "1", ok: true, detail: "a2a card ok", protocol: "a2a" }, 10).status).toBe("delivered");
+    expect(probeToVerification(candidate, { tokenId: "1", ok: true, detail: "a2a card ok", protocol: "a2a" }, 10).status).toBe("online");
     expect(probeToVerification(candidate, { tokenId: "1", ok: false, detail: "a2a 500", protocol: "a2a" }, 10).status).toBe("dead");
     expect(probeToVerification(candidate, { tokenId: "1", ok: false, detail: "no callable endpoint", protocol: null }, 10).status).toBe("unreachable");
   });

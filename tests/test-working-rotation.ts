@@ -1,4 +1,4 @@
-// "Working first" rotates the agents that delivered, so the team's own agents stop holding the
+// "Working first" rotates the agents that online, so the team's own agents stop holding the
 // top of every category, and the house switch takes them off only where others can stand in
 import { describe, expect, it } from "vitest";
 import type { AgentSummary } from "../src/lib/types";
@@ -21,7 +21,7 @@ const gated = agent("4001", 90);
 const dead = agent("4002", 95);
 const unchecked = agent("5001", 99);
 const verifications = new Map<string, { status?: string }>([
-  ...working.map((a) => [a.token_id, { status: "delivered" }] as const),
+  ...working.map((a) => [a.token_id, { status: "online" }] as const),
   ["4001", { status: "gated" }],
   ["4002", { status: "dead" }],
 ]);
@@ -33,10 +33,12 @@ describe("working first", () => {
     expect(order.slice(5)).toEqual(["4001", "4002"]);
   });
 
-  it("puts an unchecked agent above a dead one and below a gated one", () => {
+  it("puts an unchecked agent below a gated one and below a measured dead one", () => {
     const order = workingFirst([dead, gated, unchecked, ...working], verifications, "visit-a").map((a) => a.token_id);
     expect(order.indexOf("5001")).toBeGreaterThan(order.indexOf("4001"));
-    expect(order.indexOf("5001")).toBeLessThan(order.indexOf("4002"));
+    // the legend orders the states by what they cost a buyer, so an unmeasured
+    // listing sits under one we have measured, even when that one is dead
+    expect(order.indexOf("5001")).toBeGreaterThan(order.indexOf("4002"));
   });
 
   it("keeps the order stable across visits now that the rotating draw is gone", () => {
@@ -74,7 +76,7 @@ describe("house agents switch", () => {
   it("counts a category's working agents on their own, not the whole shelf's", () => {
     const yieldHouse = agent("2600", 99, HOUSE, "yield");
     const shelf = [...working, yieldHouse];
-    const v = new Map(verifications).set("2600", { status: "delivered" });
+    const v = new Map(verifications).set("2600", { status: "online" });
     const off = withoutHouseAgents(shelf, v, { HOUSE_AGENTS_LISTED: "0" }).map((a) => a.token_id);
     expect(off).toContain("2600");
     expect(off).not.toContain("2522");

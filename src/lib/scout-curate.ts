@@ -117,14 +117,14 @@ export function shouldAddCandidate(input: {
   categoryCounts: Record<string, number>;
 }): boolean {
   if (input.existingTokenIds.has(input.candidate.token_id)) return false;
-  if (!input.verification || input.verification.status !== "delivered") return false;
+  if (!input.verification || input.verification.status !== "online") return false;
   if (input.candidate.category === "general") return false;
   const key = input.candidate.category;
   return (input.categoryCounts[key] ?? 0) < MAX_PER_CATEGORY;
 }
 
 function scoreFor(verifyStatus: string, responseMs: number): number {
-  if (verifyStatus !== "delivered") return 0;
+  if (verifyStatus !== "online") return 0;
   // faster live endpoints rank a little higher among newcomers
   const speed = responseMs > 0 && responseMs < 4000 ? 8 : responseMs < 10000 ? 4 : 0;
   return 24 + speed;
@@ -195,7 +195,7 @@ export async function autoCurateScout(chainId: number = targetChainId()): Promis
     }
     const verification = verifications.get(String(cand.token_id)) ?? null;
     let skipReason: string | null = null;
-    if (!verification || verification.status !== "delivered") {
+    if (!verification || verification.status !== "online") {
       skipReason = `not delivered (status: ${verification?.status ?? "none"})`;
     } else if (cand.category === "general") {
       skipReason = "classified as general";
@@ -214,7 +214,7 @@ export async function autoCurateScout(chainId: number = targetChainId()): Promis
       skippedReasons.push({ tokenId: String(cand.token_id), name: cand.name ?? "", reason: "detail unavailable" });
       continue;
     }
-    const boost = scoreFor(verification?.status ?? "delivered", verification?.responseMs ?? 0);
+    const boost = scoreFor(verification?.status ?? "online", verification?.responseMs ?? 0);
     const summary = buildAgentSummaryFromDetail(detail, cand.category as CategoryKey, boost);
     const catKey = summary.category ?? "general";
     categoryCounts[catKey] = (categoryCounts[catKey] ?? 0) + 1;

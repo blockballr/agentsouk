@@ -4,7 +4,7 @@
 import type { AgentDetail, Verification } from "./types";
 
 export interface BoostCheck {
-  key: "endpoint" | "x402" | "delivered" | "deliverable" | "active";
+  key: "endpoint" | "x402" | "online" | "deliverable" | "active";
   label: string;
   ok: boolean;
   detail?: string;
@@ -46,10 +46,10 @@ export function evaluateBoostEligibility(input: {
     detail: d?.x402_supported ? undefined : "x402Support is not set on the registration",
   });
 
-  const delivered = v?.status === "delivered";
+  const delivered = v?.status === "online";
   checks.push({
-    key: "delivered",
-    label: "Verifier status delivered",
+    key: "online",
+    label: "Verifier status online",
     ok: delivered,
     detail: delivered
       ? undefined

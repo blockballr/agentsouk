@@ -80,7 +80,7 @@ interface VerificationRow {
 function asVerification(row: VerificationRow, checkedAt: string | null): RecordedVerification | null {
   if (
     row?.tokenId == null ||
-    (row.status !== "delivered" && row.status !== "gated" && row.status !== "dead" && row.status !== "unreachable") ||
+    (row.status !== "online" && row.status !== "gated" && row.status !== "dead" && row.status !== "unreachable" && row.status !== "unresponsive" && row.status !== "restricted" && row.status !== "not_checked") ||
     typeof row.responseMs !== "number" ||
     typeof checkedAt !== "string"
   ) {

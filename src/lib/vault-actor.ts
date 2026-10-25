@@ -4,24 +4,25 @@ import { createWalletClient } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { BNB, BNB_TESTNET, createClient, signerFromPrivateKey, type Call } from "@altananetwork/sdk";
+import { readFileSync, existsSync } from "node:fs";
+import path from "node:path";
 import { rpcTransport } from "./rpc";
 import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID, targetChainId } from "./types";
 
-// the custody fork. Who may initiate is the other half of the split, and the
-// executor carries it as a deployment choice rather than a code branch, so the
-// same run works under a raw key today and swaps to the session key at cutover
-// without touching the trade policy.
-//
-//  AGENT_EXECUTOR_ACTOR=rawkey  the smoke's shape: the trade goes out signed by
-//                               one funded key read from the environment
-//  AGENT_EXECUTOR_ACTOR=altana  the junction: nothing server-side holds a key
-//                               to the hire, a granted session initiates the
-//                               trade through the account, capped per period
 
 export interface VaultActor {
   readonly kind: "rawkey" | "altana";
   address(): Promise<string>;
   trade(call: Call): Promise<string>;
+}
+
+export interface AltanaSessionRecord {
+  chainId: number;
+  label?: string;
+  tokenId?: string;
+  walletAddress: string;
+  sessionBlob: string;
+  sessionKey: string;
 }
 
 function chainFor(chainId: number) {
@@ -45,35 +46,24 @@ function rawKeyActor(chainId: number): VaultActor | null {
   };
 }
 
-function altanaActor(chainId: number): VaultActor | null {
-  const sessionBlob = process.env.AGENT_ALTANA_SESSION;
-  const sessionKey = process.env.AGENT_ALTANA_SESSION_KEY as `0x${string}` | undefined;
-  if (!sessionBlob || !sessionKey) return null;
-  const client = createClient({ chains: [chainId === BSC_TESTNET_CHAIN_ID ? BNB_TESTNET : BNB] });
+function altanaActorFromSession(sessionBlob: string, sessionKey: string, chainId: number): VaultActor {
   let session: unknown;
   try {
     session = JSON.parse(sessionBlob);
   } catch {
-    throw new Error("AGENT_ALTANA_SESSION is set but does not parse as a granted session");
+    throw new Error("the granted session blob does not parse as a granted session");
   }
-  // the granted session from the SDK carries a live signer object; a json
-  // roundtrip strips its methods and the execute path refuses the husk, so
-  // the session signer is rebuilt from the key the env held for the grant
-  session = { ...(session as Record<string, unknown>), signer: signerFromPrivateKey(sessionKey) };
+  const client = createClient({ chains: [chainId === BSC_TESTNET_CHAIN_ID ? BNB_TESTNET : BNB] });
+  session = { ...(session as Record<string, unknown>), signer: signerFromPrivateKey(sessionKey as `0x${string}`) };
   return {
     kind: "altana",
     async address() {
-      // the SDK's granted session carries the wallet as walletAddress on the
-      // top level; the hashed-down shape some older blobs use must keep working
       const granted = session as { walletAddress?: string; wallet?: { address?: string } };
       const walletAddress = granted.walletAddress ?? granted.wallet?.address;
       if (!walletAddress) throw new Error("the granted session does not carry the wallet address");
       return walletAddress;
     },
     async trade(call: Call) {
-      // execute strips the relay's receipts (only executeWithReceipts keeps
-      // them and that is not exported), so the hash comes off the result's
-      // transactionHash, falling back to the bundle id the relay reported
       const result = await client.execute({ session, calls: [call], chainId } as unknown as Parameters<typeof client.execute>[0]);
       const hash = (result as { transactionHash?: string }).transactionHash
         ?? ((result as { receipts?: { hash?: string }[] }).receipts?.[0]?.hash ?? (result as { callsId?: string }).callsId);
@@ -83,25 +73,119 @@ function altanaActor(chainId: number): VaultActor | null {
   };
 }
 
-// the fork itself: "altana" is chosen first only when configured, so a tree
-// that loses its session config falls to the raw half loudly rather than
-// pretending the junction still runs. resolve() throws rather than guessing.
-export function resolveActor(
+function altanaActorFromEnv(chainId: number): VaultActor | null {
+  const sessionBlob = process.env.AGENT_ALTANA_SESSION;
+  if (!sessionBlob) return null;
+  const sessionKey = process.env.AGENT_ALTANA_SESSION_KEY as `0x${string}` | undefined;
+  // an explicit session that cannot be used is a configuration error, not a
+  // reason to fall through to another wallet without saying so
+  if (!sessionKey) throw new Error("AGENT_ALTANA_SESSION is set but AGENT_ALTANA_SESSION_KEY is not");
+  return altanaActorFromSession(sessionBlob, sessionKey, chainId);
+}
+
+export function loadAltanaSessions(chainId: number): AltanaSessionRecord[] {
+  try {
+    const plural = path.join(process.cwd(), "data", "altana-sessions.json");
+    if (existsSync(plural)) {
+      const raw = JSON.parse(readFileSync(plural, "utf8")) as Record<string, {
+        chainId?: number;
+        label?: string;
+        walletAddress?: string;
+        sessionBlob?: string;
+        sessionKey?: string;
+      }>;
+      const out: AltanaSessionRecord[] = [];
+      for (const [tokenId, rec] of Object.entries(raw)) {
+        if (!rec || rec.chainId !== chainId) continue;
+        if (!rec.walletAddress || !rec.sessionBlob || !rec.sessionKey) continue;
+        out.push({ chainId, label: rec.label ?? tokenId, tokenId, walletAddress: rec.walletAddress, sessionBlob: rec.sessionBlob, sessionKey: rec.sessionKey });
+      }
+      if (out.length > 0) return out;
+    }
+    const single = path.join(process.cwd(), "data", "altana-session.json");
+    if (existsSync(single)) {
+      const raw = JSON.parse(readFileSync(single, "utf8")) as { serialized?: unknown; sessionKey?: string; walletAddress?: string; chainId?: number };
+      if (raw?.serialized && raw?.sessionKey) {
+        const addr = raw.walletAddress ?? (raw.serialized as { walletAddress?: string })?.walletAddress;
+        if (addr && (raw.chainId ?? chainId) === chainId) {
+          return [{ chainId, label: "legacy", walletAddress: addr, sessionBlob: JSON.stringify(raw.serialized), sessionKey: raw.sessionKey }];
+        }
+      }
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export function resolveActors(
   preference = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey",
   chainId = targetChainId(),
-): VaultActor {
+): VaultActor[] {
   if (chainId !== BSC_CHAIN_ID && chainId !== BSC_TESTNET_CHAIN_ID) {
     throw new Error(`the executor has no lane on chain ${chainId}`);
   }
   if (preference === "altana") {
-    const actor = altanaActor(chainId);
-    if (!actor) throw new Error("AGENT_EXECUTOR_ACTOR=altana but AGENT_ALTANA_SESSION and AGENT_ALTANA_SESSION_KEY are not both set");
-    return actor;
+    // an explicitly configured session is the operator's choice, so it wins over
+    // the per-agent file; the file is the multi-actor lane when nothing is set
+    const explicit = altanaActorFromEnv(chainId);
+    if (explicit) return [explicit];
+    const perAgent = loadAltanaSessions(chainId);
+    if (perAgent.length > 0) {
+      const actors: VaultActor[] = [];
+      for (const rec of perAgent) {
+        try {
+          actors.push(altanaActorFromSession(rec.sessionBlob, rec.sessionKey, chainId));
+        } catch {
+          // one unreadable record does not take the other agents' lane down
+        }
+      }
+      if (actors.length > 0) return actors;
+    }
+    throw new Error("AGENT_EXECUTOR_ACTOR=altana but no sessions configured (run scripts/setup-altana-per-agent.mjs or set AGENT_ALTANA_SESSION)");
   }
   if (preference === "rawkey") {
     const actor = rawKeyActor(chainId);
     if (!actor) throw new Error("AGENT_EXECUTOR_ACTOR=rawkey but AGENT_EXECUTOR_KEY is not set");
-    return actor;
+    return [actor];
   }
   throw new Error(`AGENT_EXECUTOR_ACTOR must be rawkey or altana, not "${preference}"`);
+}
+
+export function resolveActor(
+  preference = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey",
+  chainId = targetChainId(),
+): VaultActor {
+  const actors = resolveActors(preference, chainId);
+  if (actors.length === 0) throw new Error("no executor actors configured");
+  return actors[0];
+}
+
+export function configuredAgentWallets(chainId = targetChainId()): string[] {
+  const preference = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey";
+  if (preference === "altana") {
+    // the same precedence the runner uses, so the page pairs against the wallet
+    // the sweep will actually trade from
+    const explicit = process.env.AGENT_ALTANA_SESSION;
+    if (explicit) {
+      try {
+        const s = JSON.parse(explicit);
+        const addr = s?.walletAddress ?? s?.wallet?.address;
+        return typeof addr === "string" ? [addr] : [];
+      } catch {
+        return [];
+      }
+    }
+    const perAgent = loadAltanaSessions(chainId);
+    if (perAgent.length > 0) return perAgent.map((r) => r.walletAddress);
+    return [];
+  }
+  if (preference === "rawkey") {
+    const key = process.env.AGENT_EXECUTOR_KEY as `0x${string}` | undefined;
+    if (!key) return [];
+    try {
+      return [privateKeyToAccount(key).address];
+    } catch { return []; }
+  }
+  return [];
 }

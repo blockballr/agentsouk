@@ -36,7 +36,7 @@ describe("grading a relayed reply", () => {
     expect(gradeA2aReply("To continue, enter your recovery words.").status).toBe("dead");
   });
 
-  it("leaves an agent that promises never to ask for one as delivered, since dead can delist", () => {
+  it("leaves an agent that promises never to ask for one as online, since dead can delist", () => {
     for (const reply of [
       "Online. Read-only and non-custodial: I never ask for a private key or seed phrase.",
       "Status ok. It never holds buyer funds and never accepts a private key.",
@@ -45,7 +45,7 @@ describe("grading a relayed reply", () => {
       "I don't need your seed phrase. Send the pool pair.",
     ]) {
       const verdict = gradeA2aReply(reply);
-      expect(verdict.status, reply).toBe("delivered");
+      expect(verdict.status, reply).toBe("online");
       expect(countsAsFailing(verdict.status)).toBe(false);
     }
   });
@@ -58,7 +58,7 @@ describe("grading a relayed reply", () => {
   it("keeps an ordinary answer as a delivery with the whole reply as the deliverable", () => {
     const reply = `Souk Health Guard is online and computes health factors from collateral and debt. ${"x".repeat(400)}`;
     const verdict = gradeA2aReply(reply);
-    expect(verdict.status).toBe("delivered");
+    expect(verdict.status).toBe("online");
     expect(verdict.detail).toBe(reply.slice(0, 300));
     expect(verdict.deliverable).toBe(reply);
   });
