@@ -136,7 +136,7 @@ export interface LivenessReading {
 const GRADE_NAMES: Record<number, string> = {
   [LIVENESS_GRADE.unknown]: "unknown",
   [LIVENESS_GRADE.reachable]: "reachable",
-  [LIVENESS_GRADE.delivered]: "delivered",
+  [LIVENESS_GRADE.delivered]: "online",
   [LIVENESS_GRADE.gated]: "gated",
   [LIVENESS_GRADE.dead]: "dead",
   [LIVENESS_GRADE.unreachable]: "unreachable",

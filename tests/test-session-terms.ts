@@ -25,7 +25,7 @@ describe("session terms", () => {
 
   it("is not hardcoded in the hire panel any more", () => {
     const panel = readFileSync(
-      path.join(process.cwd(), "apps", "web", "src", "pages", "AgentDetailPage.tsx"),
+      path.join(process.cwd(), "src", "components", "hire-flow.tsx"),
       "utf8",
     );
     expect(panel).not.toMatch(/\$10 cap/);

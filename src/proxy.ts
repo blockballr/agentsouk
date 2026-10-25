@@ -48,7 +48,7 @@ const ALLOWED = [
 // probes well-known endpoints the api does not serve. These are cheap 404s
 // but they still cost a function invocation, so short-circuit them here.
 const BOT_UA = /bot|crawl|spider|scan|slurp|fetcher|httpclient|python-requests|curl|wget/i;
-const PROBE_PATH = /\/\.well-known\/|\/agent\.json|\/agent-provider\.json/i;
+const PROBE_PATH = /\/\.well-known\/(?!agent-card\.json)|\/agent\.json|\/agent-provider\.json/i;
 
 export function proxy(req: NextRequest) {
   const host = (req.headers.get("host") ?? "").split(":")[0].toLowerCase();

@@ -70,7 +70,7 @@ contract HireVaultForkTest {
     }
     function testADepositIsTradedBothWaysAndWithdrawn() public {
         vm.skip(block.chainid != 97);
-        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 1e18, 100e18, 5000);
+        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 1e18, 100e18, 5000, 1e18);
 
         vm.deal(BUYER, 1e18);
         vm.prank(BUYER);
@@ -78,7 +78,7 @@ contract HireVaultForkTest {
         vm.prank(BUYER);
         IWrapped(WBNB).approve(address(vault), 0.05e18);
         vm.prank(BUYER);
-        uint256 id = vault.open(AGENT, WBNB, 0.05e18, uint64(block.timestamp + 1 days), 300, FEE);
+        uint256 id = vault.open(AGENT, WBNB, 0.05e18, uint64(block.timestamp + 1 days), 300, FEE, 1000, 2000, address(0));
 
         // sell a fifth of the deposit for USDT, inside the buyer's three percent
         vm.prank(AGENT);
@@ -107,7 +107,7 @@ contract HireVaultForkTest {
     /// protects nothing. A fix that stores a reference price at open makes this revert or hold.
     function testAnAgentSandwichingTheSpotCannotBeatTheStoredFloor() public {
         vm.skip(block.chainid != 97);
-        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 1e18, 100e18, 5000);
+        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 1e18, 100e18, 5000, 1e18);
 
         vm.deal(BUYER, 1e18);
         vm.prank(BUYER);
@@ -117,7 +117,7 @@ contract HireVaultForkTest {
 
         // fifty basis points of slippage the buyer chose
         vm.prank(BUYER);
-        uint256 id = vault.open(AGENT, WBNB, 0.05e18, uint64(block.timestamp + 1 days), 50, FEE);
+        uint256 id = vault.open(AGENT, WBNB, 0.05e18, uint64(block.timestamp + 1 days), 50, FEE, 1000, 2000, address(0));
 
         address pool = IPoolFactory(FACTORY).getPool(WBNB, USDT, FEE);
         uint256 amountIn = 0.005e18;
@@ -125,7 +125,7 @@ contract HireVaultForkTest {
         // what the sale is honestly worth at the price recorded when the hire was opened
         uint256 refPrice = vault.hire(id).refPriceX96;
         require(refPrice > 0, "a reference price was recorded at open");
-        uint256 honestQuote = vault.quoteAtRef(pool, WBNB, amountIn, refPrice);
+        uint256 honestQuote = vault.quoteAtRef(pool, WBNB, amountIn, uint160(refPrice));
         uint256 honestFloor = (honestQuote * (10_000 - 50)) / 10_000;
         require(honestQuote > 0, "the pool has no quote to start from");
 

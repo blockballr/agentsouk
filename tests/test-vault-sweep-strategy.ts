@@ -23,10 +23,14 @@ import type { PublicClient } from "viem";
 import { readPancakePrice } from "../src/lib/pancake-read";
 import { sweepOwnHires } from "../src/lib/vault-executor";
 import { acquireLease, saveStrategyState } from "../src/lib/strategy-store";
+import { setHirePolicy } from "../src/lib/policy-registry";
+import { vaultFor } from "../src/lib/vault";
 
 const AGENT = "0x52DA44aB471455437fc17979c52E501f6b8d0EAF";
 const BUYER = "0x84fedaBd1b83443aD86796C15619494878B64180";
-const VAULT = "0x035b7c4e0aab0681828c68229445c72107bac40a";
+// read from the same table the runner uses, so a redeploy cannot leave the test
+// asserting an address the executor no longer calls
+const VAULT = vaultFor(97)!;
 const Q96 = 2n ** 96n;
 const EXPIRY = Math.floor(Date.now() / 1000) + 3600;
 
@@ -39,7 +43,7 @@ function hireTuple(over: Partial<Record<number, unknown>> = {}): unknown[] {
     true, // open
     110n, // balanceA
     110n, // balanceB
-    600n * Q96, // refPriceX96: rungs 570..630 in steps of 6
+    Q96 / 600n, // refPriceX96 is token1 per token0: WBNB is token1, so this is 1/600 and normalises to 600
     500, // fee
     1n, // depositInToken0
   ];
@@ -72,9 +76,14 @@ function mark(price: number, blockNumber: number) {
   } as never);
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.mocked(readPancakePrice).mockReset();
   mark(590, 200);
+  // the registry fails closed on an untagged hire, so each case names its own
+  // policy the way the open handler does
+  for (const id of ["7", "8", "9", "10", "11", "12", "13", "14"]) {
+    await setHirePolicy(97, id, "grid");
+  }
 });
 
 afterEach(() => {

@@ -50,7 +50,7 @@ describe("scout pipeline helpers", () => {
       discoveredAt: new Date().toISOString(),
     };
     const ok = probeToVerification(cand, { tokenId: "1", ok: true, detail: "mcp initialize ok", protocol: "mcp" }, 100);
-    expect(ok.status).toBe("delivered");
+    expect(ok.status).toBe("online");
     const dead = probeToVerification(cand, { tokenId: "1", ok: false, detail: "mcp 502", protocol: "mcp" }, 100);
     expect(dead.status).toBe("dead");
   });

@@ -18,12 +18,12 @@ vi.mock("next/server", async (importOriginal) => {
 
 vi.mock("../src/lib/scanner", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/lib/scanner")>();
-  return { ...actual, getAgentByToken: vi.fn() };
+  return { ...actual, fetchAgentDetail: vi.fn() };
 });
 
-vi.mock("../src/lib/delivery", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../src/lib/delivery")>();
-  return { ...actual, fetchAgentCardSkills: vi.fn() };
+vi.mock("../src/lib/agent-interface", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/lib/agent-interface")>();
+  return { ...actual, captureAgentSkills: vi.fn() };
 });
 
 vi.mock("../src/lib/delist-store", async (importOriginal) => {
@@ -38,8 +38,9 @@ vi.mock("../src/lib/jobs8183", async (importOriginal) => {
 
 import { NextRequest } from "next/server";
 import { POST as quoteRoute } from "../src/app/api/jobs8183/quote/route";
-import { getAgentByToken, summaryFromRegistration } from "../src/lib/scanner";
-import { fetchAgentCardSkills, type AgentCardSkill } from "../src/lib/delivery";
+import { fetchAgentDetail, summaryFromRegistration } from "../src/lib/scanner";
+import { captureAgentSkills } from "../src/lib/agent-interface";
+import { type AgentCardSkill } from "../src/lib/delivery";
 import { negotiateQuote } from "../src/lib/jobs8183";
 
 const CARD = "https://api.agentsouk.xyz/api/house-agent/.well-known/agent-card.json";
@@ -82,8 +83,8 @@ function request(body: Record<string, unknown>): NextRequest {
 }
 
 beforeEach(() => {
-  vi.mocked(getAgentByToken).mockReset();
-  vi.mocked(fetchAgentCardSkills).mockReset();
+  vi.mocked(fetchAgentDetail).mockReset();
+  vi.mocked(captureAgentSkills).mockReset();
   vi.mocked(negotiateQuote).mockReset();
 });
 
@@ -93,8 +94,8 @@ afterEach(() => {
 
 describe("the quote gate on a listing the index has not caught up with", () => {
   it("reads the card on the admitted endpoint and reaches negotiate", async () => {
-    vi.mocked(getAgentByToken).mockResolvedValue(listing());
-    vi.mocked(fetchAgentCardSkills).mockResolvedValue(DECLARED);
+    vi.mocked(fetchAgentDetail).mockResolvedValue(listing());
+    vi.mocked(captureAgentSkills).mockResolvedValue({ skills: DECLARED } as never);
     vi.mocked(negotiateQuote).mockResolvedValue({
       ok: false,
       error: "the negotiate step was reached",
@@ -108,7 +109,7 @@ describe("the quote gate on a listing the index has not caught up with", () => {
     const body = await res.json();
     expect(body.notAJobSeller).toBeUndefined();
     expect(body.error).toBe("the negotiate step was reached");
-    expect(fetchAgentCardSkills).toHaveBeenCalledWith(CARD, 4000);
+    expect(captureAgentSkills).toHaveBeenCalledWith(expect.objectContaining({ token_id: "9901" }));
     expect(negotiateQuote).toHaveBeenCalledWith(
       97,
       CARD,
@@ -118,8 +119,8 @@ describe("the quote gate on a listing the index has not caught up with", () => {
   });
 
   it("still refuses a card without the protocol", async () => {
-    vi.mocked(getAgentByToken).mockResolvedValue(listing());
-    vi.mocked(fetchAgentCardSkills).mockResolvedValue(FLAT);
+    vi.mocked(fetchAgentDetail).mockResolvedValue(listing());
+    vi.mocked(captureAgentSkills).mockResolvedValue({ skills: FLAT } as never);
 
     const res = await quoteRoute(
       request({ chainId: 97, tokenId: "9901", task: "rebalance the position" }),
@@ -132,7 +133,7 @@ describe("the quote gate on a listing the index has not caught up with", () => {
   });
 
   it("still 404s when the agent does not exist", async () => {
-    vi.mocked(getAgentByToken).mockResolvedValue(null);
+    vi.mocked(fetchAgentDetail).mockResolvedValue(null);
 
     const res = await quoteRoute(
       request({ chainId: 97, tokenId: "9902", task: "rebalance the position" }),

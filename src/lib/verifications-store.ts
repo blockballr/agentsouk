@@ -97,7 +97,7 @@ const BSC_TESTNET_CHAIN_ID = 97;
 // a gated agent answered behind its own login or payment, so it is alive and must
 // not run the delist clock; only no answer at all counts as failing
 export function countsAsFailing(status: Verification["status"]): boolean {
-  return status !== "delivered" && status !== "gated";
+  return status !== "online" && status !== "gated";
 }
 
 export async function upsertVerification(

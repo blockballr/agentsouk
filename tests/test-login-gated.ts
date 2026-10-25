@@ -30,7 +30,7 @@ describe("login-gated endpoints", () => {
   });
 
   it("runs the delist clock only for an agent that gave no answer", () => {
-    expect(countsAsFailing("delivered")).toBe(false);
+    expect(countsAsFailing("online")).toBe(false);
     expect(countsAsFailing("gated")).toBe(false);
     expect(countsAsFailing("dead")).toBe(true);
     expect(countsAsFailing("unreachable")).toBe(true);

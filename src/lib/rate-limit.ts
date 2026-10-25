@@ -34,7 +34,7 @@ const SWEEP_AT = 5000;
 
 const memory = new Map<string, Window>();
 
-let client: Promise<Sql | null> | null = null;
+let client: { url: string; promise: Promise<Sql | null> } | null = null;
 const tableReady = new Map<string, Promise<boolean>>();
 
 const TABLE_RE = /^[a-z_][a-z0-9_]*$/;
@@ -47,10 +47,14 @@ function tableFor(policy: RateLimitPolicy): string {
 }
 
 async function db(): Promise<Sql | null> {
-  if (!client) {
-    client = (async () => {
-      const url = process.env.DATABASE_URL;
-      if (!url) return null;
+  const url = process.env.DATABASE_URL;
+  if (!url) return null;
+  // keyed on the url, so a process that starts before the store is configured
+  // picks it up later and a test cannot reuse a cached null
+  if (client?.url === url) return client.promise;
+  client = {
+    url,
+    promise: (async () => {
       try {
         const mod = (await import("postgres")) as unknown as {
           default: (url: string, opts?: object) => unknown;
@@ -59,9 +63,9 @@ async function db(): Promise<Sql | null> {
       } catch {
         return null;
       }
-    })();
-  }
-  return client;
+    })(),
+  };
+  return client.promise;
 }
 
 function ensureTable(sql: Sql, table: string): Promise<boolean> {
@@ -191,35 +195,17 @@ export async function enforceRateLimit(
   }
 
   const sql = await db();
-  if (!sql) {
-    // no database configured: count in process memory instead of refusing
-    for (const key of keys) {
-      const result = hitMemory(policy, key);
-      if (!result.allowed) return result;
-      if (result.remaining < tightest.remaining) tightest = result;
-    }
-    return tightest;
-  }
-  // a table that cannot be created or a write that cannot land must not block
-  // the request: fall back to in-process memory rather than refusing
+  if (!sql) throw new Error("rate limit store unavailable");
+  // a configured store that cannot be used refuses the call: an uncapped path
+  // is worse than a failed one when the limiter is there to stop abuse
   try {
     if (!(await ensureTable(sql, table))) {
       tableReady.delete(table);
-      for (const key of keys) {
-        const result = hitMemory(policy, key);
-        if (!result.allowed) return result;
-        if (result.remaining < tightest.remaining) tightest = result;
-      }
-      return tightest;
+      throw new Error("rate limit store unavailable");
     }
   } catch {
     tableReady.delete(table);
-    for (const key of keys) {
-      const result = hitMemory(policy, key);
-      if (!result.allowed) return result;
-      if (result.remaining < tightest.remaining) tightest = result;
-    }
-    return tightest;
+    throw new Error("rate limit store unavailable");
   }
   for (const key of keys) {
     try {
@@ -231,9 +217,7 @@ export async function enforceRateLimit(
         `[rate] could not count ${table}:`,
         e instanceof Error ? e.message : String(e),
       );
-      const result = hitMemory(policy, key);
-      if (!result.allowed) return result;
-      if (result.remaining < tightest.remaining) tightest = result;
+      throw new Error("rate limit store unavailable");
     }
   }
   return tightest;

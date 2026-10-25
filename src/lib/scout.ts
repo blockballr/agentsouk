@@ -17,7 +17,7 @@ export interface ScoutVerification {
   tokenId: string;
   name: string;
   category: string;
-  status: "delivered" | "gated" | "dead" | "unreachable";
+  status: "online" | "gated" | "dead" | "unreachable" | "unresponsive" | "restricted" | "not_checked";
   responseMs: number;
   checkedAt: string;
   quality?: { grade: "good" | "partial" | "poor"; reason: string };

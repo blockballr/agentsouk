@@ -1,5 +1,5 @@
 // A free deterministic check is evidence the work happens, so it earns its own
-// word. Only a paid test hire may say Delivered, only a probe may say Online, and
+// word. Only a paid test hire may say Verified, only a probe may say Online, and
 // the line under the dot has to name which check ran.
 import { describe, expect, it } from "vitest";
 
@@ -37,13 +37,13 @@ describe("verdict vocabulary", () => {
     }
   });
 
-  it("keeps Delivered for a paid test hire", () => {
+  it("keeps Verified for a paid test hire", () => {
     const verdict = verdictFor(MAINNET, { status: "delivered" });
-    expect(verdict.label).toBe("Delivered");
+    expect(verdict.label).toBe("Verified");
     expect(verdict.explain).toMatch(/paid test hire/);
   });
 
-  it("reads a testnet probe with nothing scored as Online, never Delivered", () => {
+  it("reads a testnet probe with nothing scored as Online, never Verified", () => {
     const verdict = verdictFor(TESTNET, { status: "delivered" });
     expect(verdict.label).toBe("Online");
     expect(verdict.explain).not.toMatch(/paid test hire/);

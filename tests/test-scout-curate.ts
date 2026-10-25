@@ -6,14 +6,14 @@ describe("scout auto-curate rules", () => {
     expect(
       shouldAddCandidate({
         candidate: { token_id: "1", category: "yield" },
-        verification: { status: "delivered" },
+        verification: { status: "online" },
         existingTokenIds: new Set(["1"]),
         categoryCounts: {},
       }),
     ).toBe(false);
   });
 
-  it("requires delivered verification", () => {
+  it("requires online verification", () => {
     expect(
       shouldAddCandidate({
         candidate: { token_id: "2", category: "yield" },
@@ -24,11 +24,11 @@ describe("scout auto-curate rules", () => {
     ).toBe(false);
   });
 
-  it("adds delivered specialists not yet listed", () => {
+  it("adds online specialists not yet listed", () => {
     expect(
       shouldAddCandidate({
         candidate: { token_id: "3", category: "grid-trading" },
-        verification: { status: "delivered" },
+        verification: { status: "online" },
         existingTokenIds: new Set(["1"]),
         categoryCounts: { "grid-trading": 2 },
       }),
@@ -39,7 +39,7 @@ describe("scout auto-curate rules", () => {
     expect(
       shouldAddCandidate({
         candidate: { token_id: "4", category: "rebalancing" },
-        verification: { status: "delivered" },
+        verification: { status: "online" },
         existingTokenIds: new Set(),
         categoryCounts: { rebalancing: 55 },
       }),

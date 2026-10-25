@@ -179,7 +179,7 @@ export async function runLiveness(req: NextRequest): Promise<NextResponse> {
       oracle.skipped += 1;
     }
 
-    if (verdict.status === "delivered") counts.online += 1;
+    if (verdict.status === "online") counts.online += 1;
     else if (verdict.status === "gated") counts.gated += 1;
     else if (verdict.status === "unreachable") counts.unreachable += 1;
     else counts.dead += 1;

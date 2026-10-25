@@ -9,6 +9,7 @@ import {
   decideHire,
   ladderRungs,
   policyFromEnv,
+  refQuotePerBase,
   type HireFacts,
   type StrategyPolicy,
   type StrategyState,
@@ -25,8 +26,8 @@ function hire(over: Partial<HireFacts> = {}): HireFacts {
     expiry: NOW + 3600,
     balanceA: 110n,
     balanceB: 110n,
-    // ref 600 in Q96: at the default policy the rungs are 570 to 630 in steps of 6
-    refPriceX96: 600n * Q96,
+    // the reference on the same scale as the price read, quote per base
+    refQuotePerBase: 600,
     depositInToken0: 1n,
     maxSlippageBps: 100,
     ...over,
@@ -60,6 +61,30 @@ describe("ladder geometry", () => {
     for (let i = 1; i < rungs.length; i += 1) {
       expect(rungs[i] - rungs[i - 1]).toBeCloseTo(rungs[1] - rungs[0]);
     }
+  });
+});
+
+describe("the price axis", () => {
+  it("normalises token1 per token0 to quote per base when the base is token1", () => {
+    const raw = Q96 / 737n;
+    expect(refQuotePerBase(raw, false)).toBeCloseTo(737, 6);
+    expect(refQuotePerBase(raw, true)).toBeCloseTo(1 / 737, 10);
+  });
+
+  it("holds at the live ordering instead of recentring every pass", () => {
+    // USDT is token0 on both chains, so the stored reference is WBNB per USDT
+    // while the price read is USDT per WBNB. once normalised, a grid sitting at
+    // its reference has no reason to trade.
+    const out = decideHire({
+      hire: hire({ refQuotePerBase: 737 }),
+      policy: POLICY,
+      state: state({ lastPrice: 737 }),
+      price: 737,
+      blockNumber: 200n,
+      nowSec: NOW,
+      kill: false,
+    });
+    expect(out.action).toBe("hold");
   });
 });
 
@@ -102,7 +127,7 @@ describe("stopping", () => {
   });
 
   it("stops when the reference or the price read is not a positive number", () => {
-    expect(base({ hire: hire({ refPriceX96: 0n }) }).action).toBe("stop");
+    expect(base({ hire: hire({ refQuotePerBase: 0 }) }).action).toBe("stop");
     expect(base({ price: 0 }).action).toBe("stop");
   });
 });

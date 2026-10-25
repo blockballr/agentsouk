@@ -1,13 +1,13 @@
 import type { AgentSummary } from "./types";
 import { isTeamWallet } from "./team-wallets";
 
-// "Working first" serves the agents that delivered on their last check in a rotating order,
+// "Working first" serves the agents that answered their last check in a rotating order,
 // so the working agents share the top of each category rather than the highest score
 // keeping it for every visitor; the tiers below keep score order, so a broken agent never
 // moves ahead of a working one
 
 const RANK: Record<string, number> = {
-  delivered: 5,
+  online: 5,
   gated: 4,
   // the shelf's legend orders the states by what they cost a buyer, so reachability
   // is not "unknown beats known bad": an unchecked listing sits below the ones we
@@ -16,7 +16,6 @@ const RANK: Record<string, number> = {
   dead: 2,
   unchecked: 1,
 };
-const DELIVERED = RANK.delivered;
 
 type Verifications = Map<string, { status?: string }> | undefined;
 
@@ -86,7 +85,7 @@ export function withoutHouseAgents(
   if (env.HOUSE_AGENTS_LISTED !== "0") return shelf;
   const working = new Map<string, number>();
   for (const a of shelf) {
-    if (isTeamWallet(a.owner_address) || verifications?.get(a.token_id)?.status !== "delivered") continue;
+    if (isTeamWallet(a.owner_address) || verifications?.get(a.token_id)?.status !== "online") continue;
     const key = a.category ?? "general";
     working.set(key, (working.get(key) ?? 0) + 1);
   }

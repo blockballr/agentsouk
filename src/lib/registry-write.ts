@@ -75,6 +75,7 @@ export interface RegistrationFile {
   description: string;
   image?: string;
   agentWallet?: string;
+  category?: string;
   services: RegistrationService[];
   x402Support: boolean;
   active: boolean;

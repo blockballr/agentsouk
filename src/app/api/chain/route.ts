@@ -13,5 +13,8 @@ export async function GET() {
   } catch {
     // a chain without a configured asset still reports its id
   }
-  return NextResponse.json({ success: true, chainId, settlementSymbol });
+  return NextResponse.json(
+    { success: true, chainId, settlementSymbol },
+    { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } },
+  );
 }

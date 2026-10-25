@@ -6,39 +6,28 @@ import { privateKeyToAccount } from "viem/accounts";
 import { pancakeToken } from "./pancake";
 import { readPancakePrice } from "./pancake-read";
 import { vaultFor, VAULT_READ_ABI, tradeCallFor, type HireView } from "./vault";
-import { decideHire, policyFromEnv, type HireFacts } from "./grid-strategy";
+import { decideHire, policyFromEnv, refQuotePerBase, type HireFacts } from "./grid-strategy";
 import { acquireLease, getStrategyState, releaseLease, saveStrategyState } from "./strategy-store";
+import { getHirePolicy } from "./policy-registry";
+import { writeReceipt } from "./receipt-store";
+import { hireValue0 } from "./vault-value";
 import type { VaultActor } from "./vault-actor";
+import { configuredAgentWallets } from "./vault-actor";
+import { targetChainId } from "./types";
 
 // which wallet the executor trades from, as the page pairing needs it: the raw
 // key's public address or the address a granted session carries. Unset or
 // unparsable env reads as none, so a page can say plainly that no lane runs.
 export function executorWallet(): { kind: "rawkey" | "altana"; address: string } | null {
-  const configured = process.env.AGENT_EXECUTOR_ACTOR;
-  if (configured === "rawkey") {
-    const key = process.env.AGENT_EXECUTOR_KEY as `0x${string}` | undefined;
-    if (!key) return null;
-    try {
-      return { kind: "rawkey", address: privateKeyToAccount(key).address };
-    } catch {
-      return null;
-    }
-  }
-  if (configured === "altana") {
-    let session: unknown;
-    try {
-      session = JSON.parse(process.env.AGENT_ALTANA_SESSION ?? "");
-    } catch {
-      return null;
-    }
-    const walletAddress =
-      (session as { walletAddress?: string })?.walletAddress ??
-      (session as { wallet?: { address?: string } })?.wallet?.address;
-    return typeof walletAddress === "string" && walletAddress
-      ? { kind: "altana", address: walletAddress }
-      : null;
-  }
-  return null;
+  const configured = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey";
+  const kind: "rawkey" | "altana" = configured === "altana" ? "altana" : "rawkey";
+  const addresses = configuredAgentWallets(targetChainId());
+  if (addresses.length === 0) return null;
+  return { kind, address: addresses[0] };
+}
+
+export function executorWallets(): string[] {
+  return configuredAgentWallets(targetChainId());
 }
 
 // the executor half of the split. The actor (raw key today, a granted session
@@ -110,14 +99,14 @@ export async function readHire(
 // runner releases the hire on the clock rather than on its exit
 const LEASE_TTL_MS = 25 * 60 * 1000;
 
-function factsOf(h: HireView): HireFacts {
+function factsOf(h: HireView, baseIsToken0: boolean): HireFacts {
   return {
     id: h.id,
     open: h.open,
     expiry: h.expiry,
     balanceA: h.balanceA,
     balanceB: h.balanceB,
-    refPriceX96: h.refPriceX96,
+    refQuotePerBase: refQuotePerBase(h.refPriceX96, baseIsToken0),
     depositInToken0: h.depositInToken0,
     maxSlippageBps: h.maxSlippageBps,
   };
@@ -140,6 +129,10 @@ export async function sweepOwnHires(
   if (!vault) throw new Error(`no vault deployed on chain ${chainId}`);
   const policy = policyFromEnv(process.env);
   const kill = process.env.VAULT_KILL === "1";
+  // the pair's ordering decides whether the stored tick price is already quote
+  // per base or its inverse. uniswap orders by address, so this is a deployment
+  // fact, read once instead of per hire.
+  const baseIsToken0 = tokenA.address.toLowerCase() < tokenB.address.toLowerCase();
   // one holder name per runner, so two instances can never share a lease
   const holder = `${agent}:${randomUUID()}`;
   const ids = await agentHireIds(client, chainId, agent);
@@ -161,7 +154,18 @@ export async function sweepOwnHires(
     }
     try {
       const hire = await readHire(client, chainId, id);
+      const value0 = await hireValue0(client, vault, id);
       const row = { id: id.toString(), buyer: hire.buyer };
+      const tagged = await getHirePolicy(chainId, id.toString());
+      if (tagged !== "grid") {
+        reports.push({
+          ...row,
+          status: "skipped",
+          reason: tagged ? `hire tagged for ${tagged}, not grid` : "hire has no policy tag",
+          txHash: null,
+        });
+        continue;
+      }
       if (!hire.open || nowSec() >= hire.expiry) {
         reports.push({
           ...row,
@@ -181,7 +185,7 @@ export async function sweepOwnHires(
         continue;
       }
       const outcome = decideHire({
-        hire: factsOf(hire),
+        hire: factsOf(hire, baseIsToken0),
         policy,
         state: await getStrategyState(chainId, id.toString()),
         price: quote.price,
@@ -191,8 +195,29 @@ export async function sweepOwnHires(
       });
       await saveStrategyState(chainId, id.toString(), outcome.state);
 
+      const intents = outcome.action === "trade" ? outcome.intents : [];
+      const trigger = {
+        refPrice: quote.price,
+        quoteBlock: quote.blockNumber,
+        rungPrice: intents[0]?.rungPrice ?? null,
+        rungIndex: intents[0]?.rungIndex ?? null,
+        side: intents[0]?.side ?? null,
+        fee: hire.fee,
+      };
+      const guardrail = {
+        allowed: outcome.action === "trade",
+        action: outcome.action,
+        reason: outcome.reason,
+        kill,
+      };
+      const simulation = {
+        wouldTrade: intents.length > 0,
+        intents: intents.map((i) => ({ rungIndex: i.rungIndex, side: i.side, tokenInSide: i.tokenInSide, amountIn: i.amountIn.toString(), rungPrice: i.rungPrice })),
+      };
+
       if (outcome.action !== "trade" || outcome.intents.length === 0) {
         reports.push({ ...row, status: "skipped", reason: outcome.reason, txHash: null });
+        await writeReceipt({ chainId, hireId: id.toString(), agent, status: "skipped", reason: outcome.reason, txHash: null, blockNumber: quote.blockNumber, before: { balanceA: hire.balanceA.toString(), balanceB: hire.balanceB.toString(), value0: value0?.toString() ?? null }, after: null, trigger, guardrail, simulation, policy: "Grid" });
         continue;
       }
       for (const intent of outcome.intents) {
@@ -210,6 +235,7 @@ export async function sweepOwnHires(
             reason: `dry run: would ${intent.side} ${intent.amountIn} of token ${intent.tokenInSide} at rung ${intent.rungIndex} (${intent.rungPrice})`,
             txHash: null,
           });
+          await writeReceipt({ chainId, hireId: id.toString(), agent, status: "skipped", reason: `dry run: ${intent.side}`, txHash: null, blockNumber: quote.blockNumber, before: { balanceA: hire.balanceA.toString(), balanceB: hire.balanceB.toString(), value0: value0?.toString() ?? null }, after: null, trigger, guardrail: { ...guardrail, allowed: true, dryRun: true }, simulation, policy: "Grid" });
           continue;
         }
         const data = tradeCallFor(
@@ -220,6 +246,8 @@ export async function sweepOwnHires(
         try {
           const txHash = await actor.trade({ to: vault as `0x${string}`, data });
           reports.push({ ...line, status: "traded", reason: null, txHash });
+          const post = await readHire(client, chainId, id);
+          await writeReceipt({ chainId, hireId: id.toString(), agent, status: "traded", reason: null, txHash, blockNumber: quote.blockNumber, before: { balanceA: hire.balanceA.toString(), balanceB: hire.balanceB.toString(), value0: value0?.toString() ?? null }, after: { balanceA: post.balanceA.toString(), balanceB: post.balanceB.toString(), value0: (await hireValue0(client, vault, id))?.toString() ?? null }, trigger, guardrail, simulation, policy: "Grid" });
         } catch (e) {
           // the contract is the last line: one refusal stops this hire's intents
           reports.push({
@@ -228,6 +256,7 @@ export async function sweepOwnHires(
             reason: (e as Error).message.slice(0, 200),
             txHash: null,
           });
+          await writeReceipt({ chainId, hireId: id.toString(), agent, status: "refused", reason: (e as Error).message.slice(0, 200), txHash: null, blockNumber: quote.blockNumber, before: { balanceA: hire.balanceA.toString(), balanceB: hire.balanceB.toString(), value0: value0?.toString() ?? null }, after: null, trigger, guardrail, simulation, policy: "Grid" });
           break;
         }
       }

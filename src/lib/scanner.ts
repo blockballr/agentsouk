@@ -13,9 +13,10 @@ import { classifyAgent, relevanceScore } from "./categories";
 import { isPancakeSwapAgent, readsPancakeSwap } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
+import { firstPartyDescription, firstPartySkills, firstPartyVaultOnly, firstPartyWallet } from "./first-party-copy";
 import { loadDelisted } from "./delist-store";
 import { rotationSeed, withoutHouseAgents, reachabilityCompare, reachabilityRankCompare } from "./working-rotation";
-import { LISTABLE_CATEGORIES, takesJobs, type RegistrationDraft } from "@agora/core";
+import { LISTABLE_CATEGORIES, takesJobs, takesVault, type RegistrationDraft } from "@agora/core";
 import {
   AgentRemovedError,
   classifyLiveReadFailure,
@@ -236,6 +237,13 @@ export async function fetchAgentDetail(
   const body = (await res.json()) as DetailResponse;
   if (!body.success) return null;
   const data = body.data;
+  const canonical = firstPartyDescription(chainId, tokenId);
+  if (canonical) data.description = canonical;
+  const canonicalWallet = firstPartyWallet(chainId, tokenId);
+  if (canonicalWallet) data.agent_wallet = canonicalWallet;
+  if (firstPartyVaultOnly(chainId, tokenId)) data.x402_supported = false;
+  const canonicalSkills = firstPartySkills(chainId, tokenId);
+  if (canonicalSkills) data.skills = canonicalSkills;
   const str = (v: unknown) => (typeof v === "string" ? v : null);
   const hs = data.health_status;
   const overall =
@@ -1108,7 +1116,7 @@ function scheduleShelfTopUp(): void {
 export interface QueryOptions {
   category?: string;
   q?: string;
-  type?: "all" | "jobs" | "x402" | "others";
+  type?: "all" | "jobs" | "x402" | "vault";
   metric?: "score" | "newest" | "feedback" | "health";
   sort?: "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability";
   page?: number;
@@ -1168,11 +1176,9 @@ export async function queryAgents(
     type ??
     (sort === "x402"
       ? "x402"
-      : (sort as string) === "others"
-        ? "others"
-        : (sort as string) === "jobs"
-          ? "jobs"
-          : "all");
+      : (sort as string) === "jobs"
+        ? "jobs"
+        : "all");
   const resolvedMetric =
     metric ?? (["score", "newest", "feedback", "health"].includes(sort ?? "")
       ? (sort as string)
@@ -1237,8 +1243,10 @@ export async function queryAgents(
     items = items.filter((a) => takesJobs(a.skills));
   } else if (resolvedType === "x402") {
     items = items.filter((a) => a.x402_supported && !takesJobs(a.skills));
-  } else if (resolvedType === "others") {
-    items = items.filter((a) => !a.x402_supported && !takesJobs(a.skills));
+  } else if (resolvedType === "vault") {
+    // the skill the card declares, so a listing that never published it is not
+    // offered here on the strength of a vault address alone
+    items = items.filter((a) => takesVault(a.skills));
   }
 
   const categoryCounts: Record<string, number> = {
@@ -1310,7 +1318,7 @@ function sortAgents(
   const group = (a: AgentSummary): number =>
     takesJobs(a.skills) ? 0 : a.x402_supported ? 1 : 2; // 0=jobs 1=x402 2=others
   const typeRank = (selected: string): number =>
-    selected === "x402" ? 1 : selected === "others" ? 2 : 0;
+    selected === "x402" ? 1 : 0;
   const leadGroup = typeRank(type);
   const order = [leadGroup, ...[0, 1, 2].filter((g) => g !== leadGroup)];
   const tier = (a: AgentSummary): number => order.indexOf(group(a));
