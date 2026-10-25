@@ -9,7 +9,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prebuild": "npm run build:sdk",
     "build:web": "npm run build -w @agora/web",
+    "build:sdk": "npm run build -w @agentsouk/vault-sdk",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

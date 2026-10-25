@@ -33,9 +33,13 @@ function aliasesFromTsconfig(configPath: string) {
 
 export default defineConfig({
   resolve: {
-    alias: aliasesFromTsconfig(resolve(root, "tsconfig.json")),
+    alias: [
+      ...aliasesFromTsconfig(resolve(root, "tsconfig.json")),
+      { find: "server-only", replacement: resolve(root, "tests", "server-only-stub.ts") },
+    ],
   },
   test: {
     include: ["tests/**/*.test.ts", "tests/**/*.ts"],
+    exclude: ["tests/server-only-stub.ts"],
   },
 });

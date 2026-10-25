@@ -2,6 +2,11 @@ apps/web/dist
 tests
 docs/superpowers
 .superpowers
+.env
+.env.*
+data/altana-session.json
+data/altana-sessions.json
+data/*.key
 server.*.log
 web-preview.*.log
 tsconfig.tsbuildinfo

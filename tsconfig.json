@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@agora/core": ["./packages/core/src/index.ts"]
+      "@agora/core": ["./packages/core/src/index.ts"],
+      "@agentsouk/vault-sdk": ["./packages/vault-sdk/src/index.ts"]
     }
   },
   "include": [
