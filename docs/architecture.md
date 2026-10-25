@@ -110,17 +110,19 @@ The flow of data through the system:
 flowchart LR
     R[ERC-8004 registry on BSC] --> A[8004scan API]
     A --> S[src/lib/scanner.ts]
-    S --> B[POST /api/index/build]
-    B --> J[data/agents.json]
-    J --> I[in-memory index in scanner.ts]
-    I --> Q[GET /api/agents]
-    I --> D[GET /api/agents/:chainId/:tokenId]
-    Q --> W[Vite app, apps/web]
-    D --> W
-    W --> REQ[POST /api/x402/requirements]
-    REQ --> F[src/lib/facilitator.ts]
-    F --> L[payment ledger in src/lib/x402.ts]
-    L --> RC[GET /api/receipts/:paymentId]
+    S --> J[data/agents.json]
+    J --> I[in-memory index]
+    I --> W[Vite app, apps/web]
+    W --> X[x402 call]
+    X --> F[src/lib/facilitator.ts]
+    W --> E[ERC-8183 job]
+    E --> K[kernel and escrow]
+    W --> V[HireVault]
+    V --> VA[AaveV3VenueAdapter]
+    VA --> RS[Aave V3 reserve]
+    F --> L[payment ledger]
+    V --> T[receipts and track]
+    K --> T
 ```
 
 ### The Frontend Rebuild
@@ -367,17 +369,18 @@ account: caps bound each period, the lifetime exposure is cap times periods
 on the full balance, four simultaneous hires share one pocket, and the
 verification of a completed hire lives inside another platform's stack. The
 vault alone would leave initiation to raw key custody. Together they
-compose, and the junction where they meet is designed and not yet wired: the
-agent's address on the hire being an Altana account whose session key
-initiates trade through the relay, so no operator ever holds a raw key to a
-hire.
+compose. The junction is wired in the executor: AGENT_EXECUTOR_ACTOR selects a
+raw key or an Altana session, and the hire names the agent wallet, which can be
+an Altana account, so the session key initiates the trade through the relay.
 
 The x402 path, for completeness, is the third shape: no delegation and no
 escrow, a direct payment for delivered work, and the daily driver of the
 content agents.
 
 What open binds, before the agent has any power over the hire: the pair and
-the caps are immutable to the deployment (1 WBNB, 20 USDT on chain 97); the
+the caps are immutable to the deployment, and the constructor also fixes a
+minimum deposit and a cap of sixteen open hires per buyer; the venue the
+buyer names is stored at open and cannot change; the
 reference price is read once from the pool's own accumulate over half an hour
 via observe and stored on the hire, so nothing the agent can move changes what
 its floor is measured against; the fee tier is bound the same way, so a trade
@@ -392,8 +395,8 @@ lower it. The books follow measured balances, not router reports, so a
 fee-on-transfer token refuses at open instead of silently shrinking a hire.
 
 The whole-life bound is the drawdown budget. The hire's value at the open
-price may never fall below a retained share of the deposit (5000 bps in this
-deployment), computed after every trade from measured balances; the trade that
+price may never fall below a retained share of the deposit, set in the
+constructor, computed after every trade from measured balances; the trade that
 would cross it reverts with nothing settled. Slippage bounds one swap; the
 budget bounds ten.
 
@@ -401,13 +404,19 @@ The revoke is the buyer's withdraw: unconditional, not gated on expiry,
 zeroing the hire before any external transfer, returning both tokens, after
 which trade refuses forever.
 
-Live on chain 97 at 0xc742e51f3fe3875a3335700a7d692f40dc8e60b8 (deploy
-0x6eafe9a8f8061339becc53847786a1a5b96d78751ebd1e6a2f97f39d06097634), and the
-loop has been executed on the live contract: a 0.10 USDT deposit opened by one
-wallet naming another as agent, traded inside the stored floor at 0.010446
-WBNB out through the real fee-500 pool, and revoked with everything returned.
-The same loop runs again from a fresh deposit with
-scripts/smoke-hirevault.mjs and scripts/smoke-hirevault-continue.mjs.
+The buyer names the venue at open. supplyToVenue accepts only that address,
+and the adapter tracks the position per hire, so one hire cannot withdraw
+another's supply. The buffer runner reads the Aave reserve before a supply,
+refuses entry below three times the position or while the reading is unclear,
+and pulls the position when the reserve is paused, frozen, below the rate floor
+or short of twice the position. A buyer close pulls it too. Every vault action
+writes a receipt, and GET /api/vault/track counts Opened, Traded and Closed per
+agent.
+
+The loop has been executed on testnet and on mainnet: a deposit opened by one
+wallet naming another as agent, a trade inside the stored floor, and a revoke
+that returned both tokens. The contract is unaudited. Addresses and transaction
+hashes are refreshed in the README after each redeploy.
 
 ### The Probe Record
 
@@ -466,14 +475,17 @@ routes under `/api/house-agent` and `/api/reference` are the first-party agents
 the marketplace serves, not a tool surface it offers. The test artifact is
 `scripts/settle-test.mjs`, which signs a real EIP-3009 signature with a
 throwaway wallet, settles it against a running server, and checks the receipt.
+The vault SDK in `packages/vault-sdk` is the client surface for a vault hire:
+ABIs, guard math, calldata and a runner, with a runnable example in
+`examples/vault-agent`.
 
 ### The Next Stage
 
-The migration plan is honest about what is not yet built. The backend has moved
-out of Next.js into a standalone API service that the Vite frontend talks to
-directly, and the payment ledger and the agent index live in Postgres so
-receipts and the catalogue survive restarts. The frontend is deployed and the
-hire path in it signs through a connected wallet, settles through the
+The migration plan is honest about what is not yet built. The API is the
+Next.js app in src, and the Vite app in apps/web talks to it over /api. The
+payment ledger and the agent index can live in Postgres, so receipts and the
+catalogue survive restarts when DATABASE_URL is set. The frontend is deployed
+and the hire path in it signs through a connected wallet, settles through the
 facilitator, and shows the receipt on the detail page.
 
 What remains is the agent index. The catalogue still opens from the committed

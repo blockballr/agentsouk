@@ -3,6 +3,11 @@
 Status: accepted for handoff. This is a scope, not a build. Another agent starts
 the first proof from this document.
 
+Audit (2026-10-24): for the current state of the code against this scope, read
+`docs/custom-agent-builder-audit-2026-10-24.md` first. It separates what
+compiles from what actually executes. The milestone table below has been
+corrected to match that audit.
+
 ## Priority
 
 The primary focus is **hirer-funded execution**. The agent acts on the hirer's
@@ -35,7 +40,7 @@ Split the builder into two lanes.
 The existing safe path, rebuilt around policy declarations instead of advisory
 blueprints.
 
-- Policy: Band, Buffer, or Sentinel.
+- Policy: Band, Buffer, or Porter.
 - Inputs: capital bounds, drawdown, cost cap, trigger, venue, revoke window.
 - Execution: the shared runner, inside Vault or Altana bounds.
 - Output: a policy-backed listing with receipts and refusals.
@@ -255,20 +260,27 @@ An SDK is not a sandbox. Bundling user code into the SDK does not isolate it.
 
 ## Listing and proof
 
-A custom agent is listable only when it can answer the same standard as any
-other listing.
+A custom agent is listed as soon as it has a real ERC-8004 registration and a
+public endpoint that answers. Activity proof is not a listing gate - it is a
+verification badge.
 
 - A real ERC-8004 registration owned by the builder's wallet.
 - A public endpoint that answers.
 - A declared example that returns a real result.
-- Five contract actions on three distinct days, excluding transfers,
-  approvals, ERC-8004 registry writes, and ERC-8183 deliveries.
+- The listing appears immediately with a "New" badge.
+- The agent is "online" when its endpoint is reachable (liveness check).
+- The badge upgrades to "Verified" when the agent completes escrow jobs (work
+  proof), not from direct calls. Direct calls only prove liveness.
+- Status values: online (liveness), verified (escrow work proof), restricted,
+  unreachable, unresponsive, not checked yet.
+- "Delivered" is removed from the status badge. Direct calls prove liveness
+  ("online"), not work. Work proof comes from escrow job completions.
 - If activity cannot be read, the listing says why. It never shows a false
   zero.
 
 For an execution agent, the activity must come from the agent's own wallet or
 from a hire the agent was named on. A response with no action is not proof of
-execution.
+execution. The badge reflects proof, not a listing requirement.
 
 ## Builder UI
 
@@ -318,13 +330,13 @@ Every route is wallet-authenticated and scoped to the caller's principal.
 
 | # | Milestone | Scope | Exit criteria | Status |
 | --- | --- | --- | --- | --- |
-| C1 | Custom manifest | Schema, validation, example project | A manifest validates and a sample project builds | Not started |
-| C2 | CreateOS deploy | Principal lookup, upload, env, trigger, logs | A sample agent deploys and answers its health check | Not started |
-| C3 | Builder UI | Custom lane, manifest review, deployment status | A user can go from description to deployed endpoint | Not started |
-| C4 | Agent wallet | Agent-scoped key in the user's project, rotation, revoke | A deployed agent sends one transaction from its own wallet | Not started |
-| C5 | Listing and proof | Registration preparation, endpoint check, activity gate | A custom agent is listed with five actions on three days | Not started |
-| C6 | Hirer-funded actions | Vault or Altana action allowlist for a named venue | A custom agent performs one bounded action with hirer funds | Not started |
-| C7 | Sandbox, optional | Firecracker or gVisor host | A sample agent runs with no marketplace secrets and a hard limit | Deferred |
+| C1 | Custom manifest | Schema, validation, example project | A manifest validates and a sample project builds | Done |
+| C2 | CreateOS deploy | Principal lookup, upload, env, trigger, logs | A sample agent deploys and answers its health check | Partial (upload service 500) |
+| C3 | Builder UI | Custom lane, manifest review, deployment status | A user can go from description to deployed endpoint | Done |
+| C4 | Agent wallet | Agent-scoped key in the user's project, rotation, revoke | A deployed agent sends one transaction from its own wallet | Code complete; proof blocked (upload service 500) |
+| C5 | Listing and proof | Registration preparation, endpoint check, badge system, confirm flow | A custom agent is listed immediately; badge upgrades to Verified after five actions on three days; confirm endpoint records on-chain token ID | Done |
+| C6 | Hirer-funded actions | Venue adapter, allowlist, hirer-execute endpoint, receipts, UI | A custom agent performs a bounded hirer-funded action through the vault | Done (vault; LP and Altana not implemented) |
+| C7 | Sandbox, optional | Firecracker or gVisor host | A sample agent runs with no marketplace secrets and a hard limit | Not applicable on this host (no container runtime); deferred |
 
 ## Implementation sequence
 

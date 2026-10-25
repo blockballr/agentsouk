@@ -59,7 +59,7 @@ The action is visible on chain: the transaction's `from` is the agent's own
 address, distinct from the deployer and from any marketplace key. This is the
 agent's own wallet acting, not the marketplace's.
 
-## CreateOS deploy (C2) — now complete
+## CreateOS deploy (C2) - now complete
 
 With an updated CreateOS API key, the full deploy pipeline works end to end:
 
