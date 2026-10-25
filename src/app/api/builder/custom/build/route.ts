@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateCustomManifest, buildId } from "@/lib/builder/custom";
+import { verifyWalletAuth } from "@/lib/builder/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +14,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return json({ success: false, ok: false, error: "request body must be a JSON object" }, 400);
   }
-  if (body.owner !== undefined && (typeof body.owner !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(body.owner))) {
+  if (body.owner !== undefined && body.owner !== null && (typeof body.owner !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(body.owner))) {
     return json({ success: false, ok: false, error: "owner must be a wallet address" }, 400);
+  }
+  if (typeof body.owner === "string") {
+    const auth = await verifyWalletAuth(req, body.owner, "build", "");
+    if (!auth.ok) return json({ success: false, ok: false, error: auth.error }, 401);
   }
   const manifestInput = body.manifest !== undefined ? body.manifest : body;
   // if manifest missing and body has owner, still require manifest

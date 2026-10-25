@@ -67,8 +67,8 @@ export interface Blueprint {
   description: string;
   skills: BlueprintSkill[];
   // how a buyer hires this agent: direct (x402 per call), job (ERC-8183 escrow),
-  // or both. Defaults to direct when absent.
-  hireMode?: "direct" | "job" | "both";
+  // both, or vault (funded hire through HireVault). Defaults to direct when absent.
+  hireMode?: "direct" | "job" | "both" | "vault";
 }
 
 export type BlueprintCheck = { ok: true; blueprint: Blueprint } | { ok: false; errors: string[] };
@@ -325,8 +325,13 @@ export function validateBlueprint(raw: unknown): BlueprintCheck {
   if (!category) errors.push(`category: must be one of ${LISTABLE_CATEGORIES.join(", ")}`);
 
   const hireMode = raw.hireMode === undefined ? "direct" : raw.hireMode;
-  if (hireMode !== "direct" && hireMode !== "job" && hireMode !== "both") {
-    errors.push(`hireMode: must be direct, job, or both`);
+  if (hireMode !== "direct" && hireMode !== "job" && hireMode !== "both" && hireMode !== "vault") {
+    errors.push(`hireMode: must be direct, job, both, or vault`);
+  }
+  // the exported vault runner restores a target weight, so a vault build is a
+  // rebalancing strategy. a grid, yield or lending agent needs its own runner.
+  if (hireMode === "vault" && category && category !== "rebalancing") {
+    errors.push("hireMode: a vault agent must be a rebalancing strategy");
   }
 
   const skills: BlueprintSkill[] = [];
@@ -343,5 +348,5 @@ export function validateBlueprint(raw: unknown): BlueprintCheck {
   });
 
   if (errors.length || !category) return { ok: false, errors };
-  return { ok: true, blueprint: { version: BLUEPRINT_VERSION, name, category, description, skills, hireMode: hireMode as "direct" | "job" | "both" } };
+  return { ok: true, blueprint: { version: BLUEPRINT_VERSION, name, category, description, skills, hireMode: hireMode as "direct" | "job" | "both" | "vault" } };
 }

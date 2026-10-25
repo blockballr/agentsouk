@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { connectWallet } from '../lib/wallet-session'
-import { Stack, Row, Txt, Btn, Pill, NoteBox, SectionHead, Label, Rule } from '../components/souk'
+import { Stack, Row, Txt, Btn, Pill, NoteBox, SectionHead, Label } from '../components/souk'
 import { Turnstile } from '../components/Turnstile'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
@@ -107,11 +107,11 @@ export function BuildPage() {
 
   return (
     <Stack gap={20} pad={[24, 24, 24, 24]}>
-      <SectionHead title="Build an agent" note="BUILD OR BRING YOURS" />
+      <Link to="/build" className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.06em] text-souk-labels hover:text-souk-ink">
+        <span aria-hidden="true">←</span> Back to builder
+      </Link>
+      <SectionHead title="Strategy builder" note="POLICY-BACKED AGENTS" />
 
-      {/* The builder is the page's first route: it is ours, it produces a hosted
-          card, and it is the shortest path from an idea to something listable.
-          The other routes sit below it rather than in front of it. */}
       <Row justify="between" align="center" gap={12} className="flex-wrap">
         <Txt size={13} lead={20} tone="slate" className="max-w-[68ch]">
           Describe the job. Our builder writes the blueprint, hosts the card, and gives
@@ -175,7 +175,7 @@ export function BuildPage() {
             </Txt>
             {blueprint.skills.map((s) => (
               <Txt key={s.id} size={12} lead={18} tone="ink">
-                {s.name} — {s.description}
+                {s.name} · {s.description}
               </Txt>
             ))}
           </Stack>
@@ -237,46 +237,27 @@ export function BuildPage() {
         </Stack>
       )}
 
-      <Rule />
-      <Stack gap={4}>
-        <Txt size={18} lead={26} weight="bold" tone="ink">
-          Other routes
-        </Txt>
-        <Txt size={12} lead={18} tone="slate" className="max-w-[68ch]">
-          Already running an agent, or prefer another stack? Both routes end at the
-          same registration on BNB Smart Chain.
-        </Txt>
-      </Stack>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Stack surface gap={10} className="p-5">
-          <Pill variant="off">Already built</Pill>
-          <Txt size={16} lead={24} weight="semibold" tone="ink">
-            List the agent you have
-          </Txt>
-          <Txt size={12} lead={18} tone="slate" className="flex-1">
-            If it already answers behind an HTTPS endpoint, listing is one registration
-            transaction. We check the endpoint and the card on chain.
-          </Txt>
-          <Link to="/list#register-here">
-            <Btn kind="off">List your agent</Btn>
-          </Link>
-        </Stack>
-
-        <Stack surface gap={10} className="p-5">
-          <Pill variant="off">Another route</Pill>
-          <Txt size={16} lead={24} weight="semibold" tone="ink">
-            Build it another way
-          </Txt>
-          <Txt size={12} lead={18} tone="slate" className="flex-1">
-            BNB Agent Studio, the bnb CLI, or your own stack. The listing guide walks
-            the build and the registration together.
-          </Txt>
-          <Link to="/list#create">
-            <Btn kind="off">See the build routes</Btn>
-          </Link>
-        </Stack>
-      </div>
     </Stack>
+  )
+}
+
+export function PeelCard({ peel, title, body, to, button }: { peel: string; title: string; body: string; to: string; button: string }) {
+  return (
+    <div className="relative">
+      <span className="absolute -top-2.5 left-2 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
+        {peel}
+      </span>
+      <Stack surface gap={10} className="p-5 h-full">
+        <Txt size={16} lead={24} weight="semibold" tone="ink">
+          {title}
+        </Txt>
+        <Txt size={12} lead={18} tone="slate" className="flex-1">
+          {body}
+        </Txt>
+        <Link to={to}>
+          <Btn kind="off">{button}</Btn>
+        </Link>
+      </Stack>
+    </div>
   )
 }

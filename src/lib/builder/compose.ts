@@ -30,7 +30,7 @@ const ROUNDS_PER_MODEL = 2;
 // the worked example the model is shown; a test holds it to the same checks as any blueprint
 export const EXAMPLE_BLUEPRINT = {
   version: 1,
-  name: "Loan Safety Check",
+  name: "Souk Loan Safety",
   category: "health-factor",
   description:
     "Works out the health factor of a lending position from the collateral and debt you supply, and how far collateral can fall before liquidation.",

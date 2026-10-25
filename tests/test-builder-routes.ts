@@ -71,7 +71,7 @@ describe("building from a description", () => {
   it("returns the agent with a real answer to each skill's own example", async () => {
     const { status, body } = await compose("Tell me my health factor and how far collateral can fall.");
     expect(status).toBe(200);
-    expect(body.blueprint.name).toBe("Loan Safety Check");
+    expect(body.blueprint.name).toBe("Souk Loan Safety");
     expect(body.answers).toHaveLength(1);
     expect(body.answers[0].text).toContain("Health factor 1.23");
   });
