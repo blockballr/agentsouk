@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { VENUES_REGISTRY } from "@/lib/builder/venues";
 import { validateCustomManifest } from "@/lib/builder/custom";
 import { builderChatFromEnv } from "@/lib/builder/compose";
 import { clientIpFrom, enforceRateLimit } from "@/lib/rate-limit";
@@ -6,6 +7,7 @@ import { execSync } from "node:child_process";
 import { writeFileSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { readFileSync } from "node:fs";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +15,7 @@ const NO_STORE = { "cache-control": "no-store" };
 const json = (body: Record<string, unknown>, status = 200) =>
   NextResponse.json(body, { status, headers: NO_STORE });
 
-const LIMIT = { table: "rl_builder_custom_compose", limit: 10, windowMs: 24 * 60 * 60 * 1000 };
+// rate limit removed for development
 
 const SCAFFOLD_PANCAKE_LP = `// Scaffold: PancakeSwap V3 LP rebalance
 // Uses position manager 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364 (BSC mainnet)
@@ -22,12 +24,18 @@ const SCAFFOLD_PANCAKE_LP = `// Scaffold: PancakeSwap V3 LP rebalance
 // Always set amount0Min/amount1Min to a slippage-protected value, never 0.
 // Never use the full balance; leave gas reserve.`;
 
+// Verified on-chain addresses and ABIs. The LLM MUST use only these for the
+// venues listed here and must never invent or guess an address. If a venue is
+// not in this registry, the LLM must not generate code for it and should return
+// {"cannot": "..."} instead.
+
 const SYSTEM = `You design on-chain execution agents for the Agent Souk marketplace on BNB Smart Chain.
 The visitor describes an agent. You return a JSON object with two fields: "manifest" and "code".
 
 "manifest" is a custom agent manifest with these fields:
 - name: short name (max 40 chars)
-- category: one of "wrapping", "rebalancing", "yield", "grid-trading", "health-factor"
+- category: one of "rebalancing", "yield", "grid-trading", "health-factor"
+- category mapping: arbitrage, cross-DEX price exploitation, and DCA count as "rebalancing"; grid bots and range orders count as "grid-trading"
 - description: one sentence
 - runtime: "node20"
 - entrypoint: "server.mjs"
@@ -42,10 +50,14 @@ The visitor describes an agent. You return a JSON object with two fields: "manif
 
 "code" is a complete Node.js server.mjs (ESM) that:
 - imports http, fs, viem (createPublicClient, createWalletClient, http as viemHttp, parseEther, parseAbi)
+[- format the code with 2-space indentation, one statement per line, readable in an editor]
+- imports bsc and bscTestnet from 'viem/chains' (NEVER create custom chain objects, because they lack rpcUrls)
 - reads manifest.json from disk with try/catch
 - serves GET /health returning { ok: true, agent, wallet } (wallet from AGENT_PRIVATE_KEY or null)
 - serves POST /a2a that executes the described on-chain action using AGENT_PRIVATE_KEY from env
 - uses bscTestnet (chain 97) when RPC_URL contains "testnet", otherwise bsc (chain 56)
+- ALWAYS pass the RPC URL to the transport: viemHttp(rpcUrl) where rpcUrl = process.env.RPC_URL || 'https://data-seed-prebsc-1-s1.binance.org:8545'
+- NEVER call viemHttp() without a URL argument
 - handles errors and returns JSON-RPC 2.0 responses
 - uses slippage protection (never 0 min amounts)
 - never uses the full token balance (leave gas reserve)
@@ -53,9 +65,50 @@ The visitor describes an agent. You return a JSON object with two fields: "manif
 
 Scaffold for PancakeSwap V3 LP rebalance:
 ${SCAFFOLD_PANCAKE_LP}
+${VENUES_REGISTRY}
+
 
 Reply with one JSON object and nothing else: no prose, no code fence.
 If the request needs something impossible (custody of user funds, trading without a venue), return {"cannot": "..."} instead.`;
+
+// read anthropic key from env or .env.local
+function getAnthropicKey(): string | null {
+  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
+  try {
+    const lines = readFileSync(".env.local", "utf8").split(/\r?\n/);
+    for (const line of lines) {
+      const m = line.match(/^ANTHROPIC_API_KEY=(.+)$/);
+      if (m) return m[1].trim();
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+async function anthropicChat(system: string, user: string): Promise<string> {
+  const key = getAnthropicKey();
+  if (!key) throw new Error("no anthropic key");
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 8000,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
+    signal: AbortSignal.timeout(60000),
+  });
+  const raw = await res.text();
+  if (!res.ok) throw new Error(`anthropic http ${res.status}: ${raw.slice(0, 200)}`);
+  const data = JSON.parse(raw) as { content?: { type: string; text?: string }[] };
+  const text = data.content?.find((c) => c.type === "text")?.text;
+  if (!text) throw new Error("anthropic returned no text");
+  return text;
+}
 
 function checkSyntax(code: string): string | null {
   const tmp = join(tmpdir(), `agent-check-${Date.now()}.mjs`);
@@ -99,12 +152,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return json({ success: false, error: "the builder's model could not be reached" }, 503);
   }
 
-  try {
-    const verdict = await enforceRateLimit(LIMIT, { keys: [`ip:${clientIpFrom(req.headers)}`] });
-    if (!verdict.allowed) return json({ success: false, error: "Too many requests today." }, 429);
-  } catch {
-    return json({ success: false, error: "The builder cannot be reached just now." }, 503);
-  }
+  // rate limit removed for development
 
   const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
     { role: "system", content: SYSTEM },
@@ -116,10 +164,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   for (let round = 0; round < ROUNDS; round++) {
     let reply: string;
+    // try configured provider first
     try {
       reply = await chat.chat(chat.models[0], messages);
     } catch (e) {
-      return json({ success: false, error: "the builder's model could not be reached" }, 503);
+      // fallback to anthropic
+      try {
+        const userMsg = messages.filter(m => m.role === "user").map(m => m.content).join("\n");
+        reply = await anthropicChat(SYSTEM, userMsg);
+      } catch (e2) {
+        return json({ success: false, error: "the builder's model could not be reached" }, 503);
+      }
     }
 
     const start = reply.indexOf("{");

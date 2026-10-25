@@ -83,4 +83,5 @@ export const createos = {
   createDomain: (apiKey: string, args: Record<string, unknown>) => createosCall(apiKey, "CreateDomain", args),
   refreshDomain: (apiKey: string, args: Record<string, unknown>) => createosCall(apiKey, "RefreshDomain", args),
   getCurrentUser: (apiKey: string) => createosCall(apiKey, "GetCurrentUser", {}),
+  deleteProject: (apiKey: string, args: Record<string, unknown>) => createosCall(apiKey, "DeleteProject", args),
 };

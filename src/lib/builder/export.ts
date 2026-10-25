@@ -6,6 +6,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { targetChainId } from "../types";
+import { vaultPackageJson, vaultReadme, vaultRunnerSource, vaultSdkFiles, vaultServerSource, vaultStrategySource } from "./vault-export";
 import type { BuiltAgent } from "./store";
 
 export interface ExportedFile {
@@ -97,14 +99,35 @@ server.listen(port, () => console.log(\`built agent listening on :\${port}\`));
 
 export function exportBuiltAgent(built: BuiltAgent, origin: string): ExportResult {
   const id = built.id;
+  const hireMode = built.blueprint.hireMode ?? "direct";
+  const vault = hireMode === "vault";
+  const slug = built.blueprint.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  const normalPackage = JSON.stringify({ name: slug, version: "1.0.0", private: true, type: "module", scripts: { build: "echo no build step", start: "node server.mjs", dev: "node --watch server.mjs" }, engines: { node: ">=20" } }, null, 2) + "\n";
+  const normalReadme = `# ${built.blueprint.name}\n\nExported from Agent Souk. Run with \`npm start\` (Node 20+), or build the Dockerfile.\n\nThe card is served at \`/.well-known/agent-card.json\` and A2A at \`/a2a\`.\n`;
   const files: ExportedFile[] = [
     { path: "blueprint.json", content: JSON.stringify(built.blueprint, null, 2) + "\n" },
-    { path: "package.json", content: JSON.stringify({ name: built.blueprint.name.toLowerCase().replace(/[^a-z0-9-]/g, "-"), version: "1.0.0", private: true, type: "module", scripts: { build: "echo no build step", start: "node server.mjs", dev: "node --watch server.mjs" }, engines: { node: ">=20" } }, null, 2) + "\n" },
-    { path: "server.mjs", content: runtimeSource(id, origin, built.sellerKeyAddress, built.blueprint.hireMode ?? "direct") },
-    { path: "Dockerfile", content: "FROM node:20-alpine\nWORKDIR /app\nCOPY . .\nEXPOSE 3000\nCMD [\"node\", \"server.mjs\"]\n" },
+    { path: "package.json", content: vault ? vaultPackageJson(slug) : normalPackage },
+    {
+      path: "server.mjs",
+      content: vault
+        ? vaultServerSource(built.blueprint.category, origin)
+        : runtimeSource(id, origin, built.sellerKeyAddress, hireMode),
+    },
+    {
+      path: "Dockerfile",
+      content: vault
+        ? "FROM node:20-alpine\nWORKDIR /app\nCOPY . .\nRUN npm install --omit=dev\nEXPOSE 3000\nCMD [\"node\", \"server.mjs\"]\n"
+        : "FROM node:20-alpine\nWORKDIR /app\nCOPY . .\nEXPOSE 3000\nCMD [\"node\", \"server.mjs\"]\n",
+    },
     { path: ".dockerignore", content: "node_modules\n.git\n" },
-    { path: "README.md", content: `# ${built.blueprint.name}\n\nExported from Agent Souk. Run with \`npm start\` (Node 20+), or build the Dockerfile.\n\nThe card is served at \`/.well-known/agent-card.json\` and A2A at \`/a2a\`.\n` },
+    { path: "README.md", content: vault ? vaultReadme(built.blueprint.name) : normalReadme },
   ];
+
+  if (vault) {
+    files.push({ path: "vault.mjs", content: vaultRunnerSource(targetChainId()) });
+    files.push({ path: "strategy.mjs", content: vaultStrategySource() });
+    files.push(...vaultSdkFiles());
+  }
 
   // ship the builder's runtime so the exported agent actually executes its blueprint
   // instead of serving a stub. paths are relative to the repo root.
@@ -152,6 +175,8 @@ export function exportBuiltAgent(built: BuiltAgent, origin: string): ExportResul
   }
   return {
     files,
-    note: "GitHub export: the files above form a standalone repo. Push them to a repo you control (or one we create for you) and CreateOS's GitHub import builds it. Full block execution in the exported runtime is the next step; today the runtime serves the card and a stub A2A reply.",
+    note: vault
+      ? "Vault export: the repo serves the card and A2A, and runs one bounded pass over open hires with the SDK shipped inside it. It is a dry run until VAULT_EXECUTE=1. strategy.mjs is the edge to replace."
+      : "GitHub export: the files above form a standalone repo. Push them to a repo you control (or one we create for you) and CreateOS's GitHub import builds it. The exported runtime serves the card and answers A2A from the blueprint.",
   };
 }

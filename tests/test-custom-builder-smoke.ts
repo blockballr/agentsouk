@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
+// the smoke test exercises the route bodies, not the wallet signature; the gate
+// itself has its own test
+vi.mock("../src/lib/builder/auth", () => ({
+  verifyWalletAuth: async () => ({ ok: true }),
+}));
 import { NextRequest } from "next/server";
 import { POST as validateRoute } from "../src/app/api/builder/custom/validate/route";
 import { POST as buildRoute } from "../src/app/api/builder/custom/build/route";
@@ -53,9 +58,11 @@ describe("custom builder smoke", () => {
     const b = await res.json();
     expect(b.buildId || b.id).toBeTruthy();
   });
-  it("deploy no hosting -> 503", async () => {
+  it("deploy is archived -> 410", async () => {
     const res = await deployRoute(post("/api/builder/custom/deploy", { owner: OWNER, manifest: MANIFEST }));
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(410);
+    const body = await res.json();
+    expect(body.code).toBe("DEPLOY_ARCHIVED");
   });
   it("status missing params -> 400", async () => {
     const res = await statusRoute(new NextRequest("https://api.agentsouk.xyz/api/builder/custom/status"));

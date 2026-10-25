@@ -115,6 +115,19 @@ export async function answerBuiltAgent(
   message: BuiltMessage,
   deps: { read?: DataReader } = {},
 ): Promise<BuiltReply> {
+  if ((blueprint.hireMode ?? "direct") === "vault") {
+    return {
+      state: "completed",
+      text: `${blueprint.name} acts only through a funded HireVault hire on BNB Chain. The buyer opens the hire, names this agent's wallet and the venue, and the contract holds the deposit inside the floor, drawdown and slippage bounds set at open. This endpoint sells no per-call work and takes no x402 payment.`,
+      artifact: {
+        capability: blueprint.category,
+        status: "ok",
+        hire: "vault",
+        readOnly: true,
+        skills: blueprint.skills.map((s) => s.id),
+      },
+    };
+  }
   const skill = pickSkill(blueprint, message);
   if (!skill) return capabilityReply(blueprint);
   if (skill.id === "negotiate" || skill.id === "notify_funded") {
@@ -194,26 +207,43 @@ export function builtAgentCard(blueprint: Blueprint, opts: { origin: string; id:
         },
       ]
     : [];
-  const skills = [
-    ...blueprint.skills.map((skill) => ({
-      id: skill.id,
-      name: skill.name,
-      description: skill.description,
-      tags: [...new Set([blueprint.category, ...skill.steps.map((s) => s.block)])],
-      examples: [exampleSentence(skill)],
-      inputModes: ["text/plain", "application/json"],
-      outputModes: ["text/plain", "application/json"],
-      inputSchema: {
-        type: "object",
-        properties: Object.fromEntries(
-          skill.inputs.map((i) => [i.id, { type: i.type === "number" ? "number" : "string", description: i.description }]),
-        ),
-        required: skill.inputs.filter((i) => i.required).map((i) => i.id),
-        examples: [skill.example],
-      },
-    })),
-    ...jobSkills,
-  ];
+  const vaultSkills = hireMode === "vault"
+    ? [
+        {
+          id: "vault-execution",
+          name: "Trade a funded vault hire",
+          description: `Runs this agent's ${blueprint.category} strategy inside a HireVault hire. The buyer funds the hire, the deposit stays in the contract, the agent acts only inside the floor, drawdown and slippage bounds set at open, and the buyer withdraws whatever is left.`,
+          tags: [...new Set([blueprint.category, "vault", "execution", "hire"])],
+          examples: [`Run this agent inside a funded HireVault hire`],
+          inputModes: ["text/plain", "application/json"],
+          outputModes: ["text/plain", "application/json"],
+        },
+      ]
+    : [];
+  // a vault agent sells the hire, not a per-call answer, so its card carries the
+  // vault skill alone and never advertises x402
+  const skills = hireMode === "vault"
+    ? vaultSkills
+    : [
+        ...blueprint.skills.map((skill) => ({
+          id: skill.id,
+          name: skill.name,
+          description: skill.description,
+          tags: [...new Set([blueprint.category, ...skill.steps.map((s) => s.block)])],
+          examples: [exampleSentence(skill)],
+          inputModes: ["text/plain", "application/json"],
+          outputModes: ["text/plain", "application/json"],
+          inputSchema: {
+            type: "object",
+            properties: Object.fromEntries(
+              skill.inputs.map((i) => [i.id, { type: i.type === "number" ? "number" : "string", description: i.description }]),
+            ),
+            required: skill.inputs.filter((i) => i.required).map((i) => i.id),
+            examples: [skill.example],
+          },
+        })),
+        ...jobSkills,
+      ];
   return {
     name: blueprint.name,
     description: blueprint.description,
