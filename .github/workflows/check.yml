@@ -28,7 +28,7 @@ jobs:
         run: |
           state="${{ job.status == 'success' && 'success' || 'failure' }}"
           curl -sS -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Authorization: Bearer ${{ github.token }}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
             -d "{\"state\":\"$state\",\"description\":\"Text hygiene $state\",\"context\":\"text-hygiene\"}"
