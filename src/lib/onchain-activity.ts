@@ -20,9 +20,10 @@ export interface WalletActivity {
   reason?: string;
 }
 
+// Etherscan V2 unified API: one endpoint for every EVM chain, selected by chainid.
 const SCAN: Record<number, string> = {
-  56: "https://api.bscscan.com/api",
-  97: "https://api-testnet.bscscan.com/api",
+  56: "https://api.etherscan.io/v2/api?chainid=56",
+  97: "https://api.etherscan.io/v2/api?chainid=97",
 };
 
 // Methods that are bookkeeping rather than the agent's job.
@@ -81,9 +82,15 @@ export async function readWalletActivity(
 
   let txs: ScanTx[] = [];
   try {
-    const url = `${api}?module=account&action=txlist&address=${wallet}&startblock=0&endblock=99999999&page=1&offset=200&sort=desc&apikey=${apiKey}`;
+    const url = `${api}&module=account&action=txlist&address=${wallet}&startblock=0&endblock=99999999&page=1&offset=200&sort=desc&apikey=${apiKey}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    const body = (await res.json()) as { status?: string; result?: ScanTx[] | string; message?: string };
+    const text = await res.text();
+    let body: { status?: string; result?: ScanTx[] | string; message?: string };
+    try {
+      body = JSON.parse(text) as { status?: string; result?: ScanTx[] | string; message?: string };
+    } catch {
+      return empty(wallet, chainId, `explorer returned a non-JSON answer (${res.status})`);
+    }
     if (body.status !== "1" || !Array.isArray(body.result)) {
       return empty(wallet, chainId, typeof body.result === "string" ? body.result : body.message ?? "explorer read failed");
     }
