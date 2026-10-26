@@ -43,14 +43,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const head = await client.getBlockNumber();
     const args = { agent: agent as Address };
+    const errors: string[] = [];
     const [opens, trades, closes] = await Promise.all([
-      collectVaultLogs(client, vault as Address, OPENED, head, { args, want: 500 }),
-      collectVaultLogs(client, vault as Address, TRADED, head, { args, want: 500 }),
-      collectVaultLogs(client, vault as Address, CLOSED, head, { args, want: 500 }),
+      collectVaultLogs(client, vault as Address, OPENED, head, { args, want: 500, errors }),
+      collectVaultLogs(client, vault as Address, TRADED, head, { args, want: 500, errors }),
+      collectVaultLogs(client, vault as Address, CLOSED, head, { args, want: 500, errors }),
     ]);
     const closedIds = new Set(closes.map((log) => String(log.args.id)));
     const openHires = opens.filter((log) => !closedIds.has(String(log.args.id))).length;
     const blocks = [...opens, ...trades, ...closes].map((log) => Number(log.blockNumber ?? 0n));
+    const diag = req.nextUrl.searchParams.get("diag") === "1";
 
     return NextResponse.json(
       {
@@ -64,6 +66,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         closedHires: closes.length,
         trades: trades.length,
         lastBlock: blocks.length ? Math.max(...blocks) : null,
+        ...(diag ? { endpoint: new URL(vaultLogEndpoint(chainId)).host, errors } : {}),
       },
       { headers: { "cache-control": "public, s-maxage=300, stale-while-revalidate=600" } },
     );

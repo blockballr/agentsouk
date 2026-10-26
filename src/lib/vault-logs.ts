@@ -26,7 +26,7 @@ export async function collectVaultLogs(
   vault: `0x${string}`,
   event: AbiEvent,
   head: bigint,
-  options: { args?: Record<string, unknown>; want?: number; maxChunks?: number } = {},
+  options: { args?: Record<string, unknown>; want?: number; maxChunks?: number; errors?: string[] } = {},
 ): Promise<VaultLog[]> {
   const want = options.want ?? 200;
   const maxChunks = options.maxChunks ?? MAX_LOG_CHUNKS;
@@ -50,7 +50,8 @@ export async function collectVaultLogs(
       chunks += 1;
       if (from === 0n) break;
       to = from - 1n;
-    } catch {
+    } catch (e) {
+      options.errors?.push(`${from}-${to}: ${(e as Error).message.slice(0, 120)}`);
       if (chunk > 500n) {
         chunk /= 2n;
         continue;
