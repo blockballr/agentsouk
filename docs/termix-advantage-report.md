@@ -192,3 +192,34 @@ The shopper verifier probed 40 agent endpoints: 18 delivered, 1 gated, 12 dead,
 and 9 unreachable. Dead and unreachable registrations are shown as such on the
 listing, never padded, so a buyer can tell a working agent from an abandoned
 one before hiring.
+
+## Vault and escrow (mainnet go-live)
+
+HireVault and its Aave V3 venue adapter are live on BNB Smart Chain mainnet,
+so a funded hire can now run against a real yield venue instead of the testnet
+mock.
+
+- HireVault (chain 56): `0x028129c230123a46f4305ce0d2b29f8ac5255149`
+- AaveV3VenueAdapter (chain 56): `0x1928578a29abab83520209cdd3a9b00c74c26e0f`
+- EIP3009Funder (escrow, chain 56): `0xd7052516ae58188271c4c85fa4cd69a18c6e7f8b`
+- ReceiptLedger (escrow, chain 56): `0xbe3147d4a187ff9b394233943aa3fcc44bbcc184`
+- Escrow relay (chain 56): `0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4`
+
+Buyer-named venue: the buyer picks the venue at `open` and the agent cannot
+redirect funds. Minimum deposit is 10 USDT (`minDepositInToken0`) and a buyer
+may hold at most 16 open hires (`MAX_OPEN_PER_BUYER`).
+
+Five first-party vault agents are registered on chain 56: drift-guard (368655),
+grid-pilot (376435), band-keeper (391002), yield-lens (391003) and grid-planner
+(391004). All are vault-only: no per-call skills, no x402, selling through the
+vault hire rail.
+
+The venue guard runs in the buffer runner and refuses to supply when the reserve
+is paused, frozen, below the rate floor or short of liquidity, pulling the
+position in that case. Fork tests cover the vault and the Aave adapter against a
+live reserve frozen through Aave's own ACL.
+
+Catalogue coverage is published at `/api/catalogue/coverage` and as
+`data/coverage.json`: 2490 fetched, 1573 after dedupe, 240 selected across
+rebalancing (60), grid-trading (30), yield (60), health-factor (60) and general
+(30), against a registry total of 358547.
