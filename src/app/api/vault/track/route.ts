@@ -6,6 +6,7 @@ import { targetChainId, BSC_TESTNET_CHAIN_ID } from "@/lib/types";
 import { collectVaultLogs, vaultLogEndpoint } from "@/lib/vault-logs";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const OPENED = parseAbiItem(
   "event Opened(uint256 indexed id, address indexed buyer, address indexed agent, address token, uint256 amount, uint64 expiry, uint16 maxSlippageBps, uint16 agentFeeBps, uint16 maxLossBps)",
