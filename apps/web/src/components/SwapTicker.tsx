@@ -190,13 +190,15 @@ export function SwapTicker() {
   }
 
   function setMax() {
+    if (balance === null) return
     const max =
-      nativeIn && balance !== null
-        ? balance > GAS_BUFFER
-          ? balance - GAS_BUFFER
-          : 0n
+      nativeIn && balance > GAS_BUFFER
+        ? balance - GAS_BUFFER
         : balance
-    if (max !== null) changeAmount(amountLabel(max, 18).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, ''))
+    const text = formatUnits(max, fromToken.decimals)
+    // trim trailing zeros but keep at least one decimal place for clarity
+    const trimmed = text.replace(/(\.\d*?[1-9])0+$/, '$1').replace(/\.$/, '')
+    changeAmount(trimmed === text ? text : trimmed)
   }
 
   // picking the token already on the other side flips the pair rather than
