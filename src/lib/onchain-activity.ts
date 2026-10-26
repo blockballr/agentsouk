@@ -6,7 +6,7 @@ import "server-only";
 // deliveries, so this reads the wallet's transactions and keeps only the
 // calls that look like work.
 //
-// Moralis deep-index is the practical source: an EVM RPC has no
+// Ankr advanced API is the practical source: an EVM RPC has no
 // "transactions by address" method. The key stays server-side.
 
 export interface WalletActivity {
@@ -20,11 +20,12 @@ export interface WalletActivity {
   reason?: string;
 }
 
-// Moralis deep-index API: free tier covers BSC (chain 56) and its testnet (97).
-// Auth is the X-API-Key header; the chain is selected by the `chain` query param.
-const MORALIS_CHAIN: Record<number, string> = {
+// Ankr advanced API: free tier (200M credits/month) covers BSC (56) and its
+// testnet (97). Auth is the API key in the URL path; the chain is selected
+// per request via the `blockchain` param.
+const ANKR_CHAIN: Record<number, string> = {
   56: "bsc",
-  97: "bsc testnet",
+  97: "bsc_testnet",
 };
 
 // Methods that are bookkeeping rather than the agent's job.
@@ -61,8 +62,9 @@ function looksLikeWork(tx: ScanTx): boolean {
   if (tx.isError === "1") return false;
   const input = tx.input ?? "";
   if (!input || input === "0x") return false;
-  const method = tx.methodId ?? input.slice(0, 10);
+  const method = (tx.methodId ?? input.slice(0, 10)).toLowerCase();
   if (APPROVAL.test(method) || TRANSFER.test(method)) return false;
+  if (method.includes("transfer") || method.includes("approve")) return false;
   const to = (tx.to ?? "").toLowerCase();
   if (REGISTRY.has(to) || DELIVERY.has(to)) return false;
   return true;
@@ -76,35 +78,58 @@ export async function readWalletActivity(
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
-  const moralisChain = MORALIS_CHAIN[chainId];
-  if (!moralisChain) return empty(wallet, chainId, `no explorer is configured for chain ${chainId}`);
-  const apiKey = process.env.MORALIS_API_KEY;
-  if (!apiKey) return empty(wallet, chainId, "MORALIS_API_KEY is not configured");
+  const ankrChain = ANKR_CHAIN[chainId];
+  if (!ankrChain) return empty(wallet, chainId, `no explorer is configured for chain ${chainId}`);
+  const apiKey = process.env.ANKR_API_KEY;
+  if (!apiKey) return empty(wallet, chainId, "ANKR_API_KEY is not configured");
 
   let txs: ScanTx[] = [];
   try {
-    const url = `https://deep-index.moralis.io/api/v2.2/${wallet}?chain=${moralisChain}&order=DESC&limit=100`;
+    const url = `https://rpc.ankr.com/multichain/${apiKey}`;
+    const body = {
+      jsonrpc: "2.0",
+      method: "ankr_getTransactionsByAddress",
+      params: { address: wallet, blockchain: [ankrChain], pageSize: 200 },
+      id: 1,
+    };
     const res = await fetch(url, {
-      headers: { "X-API-Key": apiKey, accept: "application/json" },
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(8000),
     });
     const text = await res.text();
-    let body: { result?: Array<{ block_timestamp?: string; to_address?: string; input?: string; receipt_status?: string }> };
+    let parsed: { result?: { transactions?: Array<{ timestamp?: string | number; to?: string; to_address?: string; input?: string; isError?: string; status?: number | string; method?: string }> }; error?: { message?: string } };
     try {
-      body = JSON.parse(text) as { result?: Array<{ block_timestamp?: string; to_address?: string; input?: string; receipt_status?: string }> };
+      parsed = JSON.parse(text) as { result?: { transactions?: Array<{ timestamp?: string | number; to?: string; to_address?: string; input?: string; isError?: string; status?: number | string; method?: string }> }; error?: { message?: string } };
     } catch {
       return empty(wallet, chainId, `explorer returned a non-JSON answer (${res.status})`);
     }
-    if (!Array.isArray(body.result)) {
-      return empty(wallet, chainId, "explorer read failed");
+    if (parsed.error) {
+      return empty(wallet, chainId, parsed.error.message ?? "explorer read failed");
     }
-    txs = body.result.map((t) => ({
-      timeStamp: t.block_timestamp ? String(Math.floor(new Date(t.block_timestamp).getTime() / 1000)) : undefined,
-      to: t.to_address ?? undefined,
-      input: t.input ?? undefined,
-      isError: t.receipt_status === "0" ? "1" : "0",
-      methodId: (t.input ?? "").slice(0, 10) || undefined,
-    }));
+    const list = parsed.result?.transactions;
+    if (!Array.isArray(list)) {
+      txs = [];
+    } else {
+      txs = list.map((t) => {
+        const tsRaw = t.timestamp;
+        const ts = typeof tsRaw === "number" ? tsRaw : (typeof tsRaw === "string" ? (tsRaw.startsWith("0x") ? parseInt(tsRaw, 16) : (Number.isFinite(Number(tsRaw)) ? Number(tsRaw) : Math.floor(new Date(tsRaw).getTime() / 1000))) : NaN);
+        const input = t.input ?? "";
+        const status = t.status;
+        const failed = status === "0x0" || status === 0 || status === "0" || status === "0x0";
+        const isError = t.isError === "1" || failed ? "1" : "0";
+        const to = (t.to ?? t.to_address ?? "").toLowerCase();
+        const method = t.method ?? input.slice(0, 10);
+        return {
+          timeStamp: Number.isFinite(ts) ? String(ts) : undefined,
+          to: to || undefined,
+          input: input || undefined,
+          isError,
+          methodId: method || undefined,
+        };
+      });
+    }
   } catch (e) {
     return empty(wallet, chainId, e instanceof Error ? e.message : "explorer read failed");
   }
