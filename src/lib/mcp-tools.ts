@@ -264,6 +264,20 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     annotations: { readOnlyHint: true, idempotentHint: true },
   },
   {
+    name: "vault_describe",
+    title: "Describe the vault",
+    description:
+      "Describe the HireVault on a chain: its address, the bound token pair, the minimum deposit, the cap on open hires per buyer, and the venues a hire can name. Read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chainId: { type: "integer", description: "Chain id. Defaults to the chain this deployment serves." },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+  },
+  {
     name: "vault_venues",
     title: "List vault venues",
     description:

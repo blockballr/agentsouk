@@ -218,6 +218,19 @@ async function listHires(req: NextRequest, args: Record<string, unknown>): Promi
   return toolJson(body);
 }
 
+async function vaultDescribe(req: NextRequest, args: Record<string, unknown>): Promise<ToolText> {
+  const chainId = asNumber(args.chainId);
+  const chainQs = chainId !== undefined ? `?chain=${chainId}` : "";
+  const [vaultRes, venuesRes] = await Promise.all([
+    apiJson(req, `/api/vault${chainQs}`, { method: "GET" }),
+    apiJson(req, `/api/vault/venues${chainQs}`, { method: "GET" }),
+  ]);
+  if (vaultRes.status !== 200) return toolText(apiError(vaultRes.body, vaultRes.status), true);
+  const out: Record<string, unknown> = { vault: vaultRes.body };
+  if (venuesRes.status === 200) out.venues = venuesRes.body.venues;
+  return toolJson(out);
+}
+
 async function vaultVenues(req: NextRequest, args: Record<string, unknown>): Promise<ToolText> {
   const chainId = asNumber(args.chainId);
   const qs = chainId !== undefined ? `?chain=${chainId}` : "";
@@ -436,6 +449,8 @@ function runTool(
       return getTaskTool(req, args);
     case "list_hires":
       return listHires(req, args);
+    case "vault_describe":
+      return vaultDescribe(req, args);
     case "vault_venues":
       return vaultVenues(req, args);
     case "vault_track":
