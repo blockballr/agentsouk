@@ -813,6 +813,7 @@ export async function getJobs8183Quote(input: {
         negotiationHash: string
         providerSig: string
         agentId: string | null
+        envelope?: Record<string, unknown>
       }
       stack: { commerce: string; router: string; policy: string; paymentToken: string }
     }
@@ -853,6 +854,7 @@ type Jobs8183QuotePayload = {
   negotiationHash: string
   providerSig: string
   agentId: string | null
+  envelope?: Record<string, unknown>
 }
 
 type Jobs8183StackShape = { commerce: string; router: string; policy: string; paymentToken: string }

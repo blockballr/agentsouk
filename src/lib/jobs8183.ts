@@ -21,6 +21,9 @@ export interface NegotiationQuote {
   validUntil: number;
   negotiationHash: string;
   providerSig: string;
+  // the seller's whole signed envelope, verbatim. a rebuilt subset loses the
+  // request hash the seller verifies, so the on-chain description carries this.
+  envelope: Record<string, unknown>;
   agentId: string | null;
 }
 
@@ -151,7 +154,7 @@ export function parseNegotiationQuote(
   const agentId = envelope.agent_id === undefined ? null : String(envelope.agent_id);
   return {
     ok: true,
-    quote: { price, currency, providerAddress, validUntil, negotiationHash, providerSig, agentId },
+    quote: { price, currency, providerAddress, validUntil, negotiationHash, providerSig, agentId, envelope },
   };
 }
 

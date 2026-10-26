@@ -76,6 +76,13 @@ describe("the composed job description anchors the signed quote", () => {
     expect(text).toContain(QUOTE.providerSig);
     expect(new TextEncoder().encode(text).length).toBeLessThanOrEqual(4096);
   });
+
+  it("anchors the seller's whole envelope when the quote carries one", () => {
+    const envelope = { request_hash: `0x${"ef".repeat(32)}`, negotiation_hash: QUOTE.negotiationHash, provider_sig: QUOTE.providerSig };
+    const text = jobDescription("plan a grid ladder", { ...QUOTE, envelope });
+    expect(text).toContain(JSON.stringify(envelope));
+    expect(text).not.toContain('"status":"quoted"');
+  });
 });
 
 describe("the reads the fund step sits on", () => {

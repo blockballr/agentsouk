@@ -20,6 +20,8 @@ export interface NegotiationQuoteView {
   negotiationHash: string
   providerSig: string
   agentId: string | null
+  /** the seller's signed envelope, verbatim, for the on-chain anchor */
+  envelope?: Record<string, unknown>
 }
 
 const COMMERCE_ABI = [
@@ -48,15 +50,19 @@ const TOKEN_ABI = [
 // kernel caps the field at 4096 bytes, so an over-long task is cut and the
 // proof never is
 export function jobDescription(task: string, quote: NegotiationQuoteView): string {
-  const proof = JSON.stringify({
-    status: "quoted",
-    price: quote.price,
-    currency: quote.currency,
-    provider_address: quote.providerAddress,
-    valid_until: quote.validUntil,
-    negotiation_hash: quote.negotiationHash,
-    provider_sig: quote.providerSig,
-  })
+  // the seller signs its whole envelope, request hash included; a rebuilt
+  // subset fails its check, so anchor what it actually signed when we have it
+  const proof = quote.envelope
+    ? JSON.stringify(quote.envelope)
+    : JSON.stringify({
+        status: "quoted",
+        price: quote.price,
+        currency: quote.currency,
+        provider_address: quote.providerAddress,
+        valid_until: quote.validUntil,
+        negotiation_hash: quote.negotiationHash,
+        provider_sig: quote.providerSig,
+      })
   const budget = 4096 - new TextEncoder().encode(proof).length - 20
   const taskBytes = new TextEncoder().encode(task).length
   return taskBytes <= budget ? `${task}\n\nsigned quote: ${proof}` : `${task.slice(0, Math.max(0, budget - 24))}\n[task cut to fit]\n\nsigned quote: ${proof}`

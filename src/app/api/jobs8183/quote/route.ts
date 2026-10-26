@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
               negotiationHash: result.quote.negotiationHash,
               providerSig: result.quote.providerSig,
               agentId: result.quote.agentId,
+              envelope: result.quote.envelope,
             },
           }
         : { error: result.error }),
