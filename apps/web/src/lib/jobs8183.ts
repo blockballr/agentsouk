@@ -45,35 +45,56 @@ const TOKEN_ABI = [
   { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
 ] as const
 
+// The stock-analyst family of sellers verifies a canonical quote envelope:
+// sorted keys, response terms, and the notify-context marker. A rebuilt subset
+// or the raw negotiate reply fails its check, so mirror that builder exactly.
+export const NOTIFY_CONTEXT_REQUIRED = "uomp_notify_context_required_v1"
+
+function sanitizeQuoteText(s: string): string {
+  return s.replace(/\[/g, "(").replace(/\]/g, ")").replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "")
+}
+
+function sortQuoteKeys(v: unknown): unknown {
+  if (v === null || typeof v !== "object" || Array.isArray(v)) return v
+  const obj = v as Record<string, unknown>
+  const sorted: Record<string, unknown> = {}
+  for (const k of Object.keys(obj).sort()) sorted[k] = sortQuoteKeys(obj[k])
+  return sorted
+}
+
+function canonicalAnchor(anchor: Record<string, unknown>, task: string): string {
+  const request = (anchor.request ?? {}) as Record<string, unknown>
+  const response = (anchor.response ?? {}) as Record<string, unknown>
+  const agreed = (response.terms ?? {}) as Record<string, unknown>
+  const content: Record<string, unknown> = {
+    version: 1,
+    negotiated_at: response.negotiated_at ?? anchor.negotiated_at ?? Math.floor(Date.now() / 1000),
+    task: sanitizeQuoteText(String(request.task_description ?? task)),
+    terms: {
+      deliverables: sanitizeQuoteText(String(agreed.deliverables ?? "")),
+      quality_standards: sanitizeQuoteText(String(agreed.quality_standards ?? "")),
+      success_criteria: sanitizeQuoteText(String(agreed.success_criteria ?? "")),
+    },
+    price: agreed.price,
+    currency: agreed.currency,
+  }
+  if (response.quote_expires_at != null) content.quote_expires_at = response.quote_expires_at
+  if (anchor.chain_id != null) content.chain_id = anchor.chain_id
+  if (anchor.verifying_contract) content.verifying_contract = anchor.verifying_contract
+  content.negotiation_hash = anchor.negotiation_hash ?? response.negotiation_hash ?? ""
+  content.provider_sig = anchor.provider_sig ?? response.provider_sig ?? ""
+  return JSON.stringify(sortQuoteKeys(content))
+}
+
 // the job description anchors the signed quote the buyer is funding against:
 // the task for the seller to read, then the quote's proof verbatim. The
 // kernel caps the field at 4096 bytes, so an over-long task is cut and the
 // proof never is
 export function jobDescription(task: string, quote: NegotiationQuoteView): string {
-  // a seller that returns a hashed request/response envelope expects the job
-  // description to BE the canonical envelope it verifies, not the raw reply
   const anchor = quote.envelope
   if (anchor && anchor.request_hash && anchor.response_hash) {
-    const request = (anchor.request ?? {}) as Record<string, unknown>
-    const response = (anchor.response ?? {}) as Record<string, unknown>
-    const terms = (request.terms ?? {}) as Record<string, unknown>
-    const agreed = (response.terms ?? {}) as Record<string, unknown>
-    return JSON.stringify({
-      version: 1,
-      negotiated_at: response.negotiated_at,
-      task: request.task_description ?? task,
-      terms,
-      price: agreed.price,
-      currency: agreed.currency,
-      quote_expires_at: response.quote_expires_at,
-      chain_id: anchor.chain_id,
-      verifying_contract: anchor.verifying_contract,
-      negotiation_hash: anchor.negotiation_hash,
-      provider_sig: anchor.provider_sig,
-    })
+    return canonicalAnchor(anchor, task)
   }
-  // the seller signs its whole envelope, request hash included; a rebuilt
-  // subset fails its check, so anchor what it actually signed when we have it
   const proof = anchor
     ? JSON.stringify(anchor)
     : JSON.stringify({

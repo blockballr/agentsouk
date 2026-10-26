@@ -78,10 +78,19 @@ describe("the composed job description anchors the signed quote", () => {
   });
 
   it("anchors a hashed envelope as the canonical quote the seller verifies", () => {
+    const marker = "uomp_notify_context_required_v1";
     const envelope = {
-      request: { task_description: '{"type":"stock_report","ticker":"NVDA"}', terms: { deliverables: "a report" } },
+      request: {
+        task_description: '{"type":"stock_report","ticker":"NVDA"}',
+        terms: { deliverables: "a report", quality_standards: "numbers by code", success_criteria: marker },
+      },
       request_hash: `0x${"ef".repeat(32)}`,
-      response: { accepted: true, terms: { price: "100", currency: QUOTE.currency }, quote_expires_at: 1791400000, negotiated_at: 1791300000 },
+      response: {
+        accepted: true,
+        terms: { price: "100", currency: QUOTE.currency, deliverables: "a report", quality_standards: "numbers by code", success_criteria: marker },
+        quote_expires_at: 1791400000,
+        negotiated_at: 1791300000,
+      },
       response_hash: `0x${"12".repeat(32)}`,
       negotiation_hash: QUOTE.negotiationHash,
       provider_sig: QUOTE.providerSig,
@@ -91,6 +100,7 @@ describe("the composed job description anchors the signed quote", () => {
     const text = jobDescription("plan a grid ladder", { ...QUOTE, envelope });
     const parsed = JSON.parse(text);
     expect(parsed.task).toBe('{"type":"stock_report","ticker":"NVDA"}');
+    expect(parsed.terms.success_criteria).toBe(marker);
     expect(parsed.price).toBe("100");
     expect(parsed.negotiation_hash).toBe(QUOTE.negotiationHash);
     expect(parsed.provider_sig).toBe(QUOTE.providerSig);

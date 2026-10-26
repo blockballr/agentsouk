@@ -216,6 +216,7 @@ export async function negotiateQuote(
               terms: {
                 deliverables: "the task's answer as the job's deliverable",
                 quality_standards: "the deliverable matches the task's ask",
+                success_criteria: "uomp_notify_context_required_v1",
               },
             },
           },
