@@ -78,6 +78,8 @@ next-env.d.ts
 /scripts/dev-ongoing-states.mjs
 /scripts/.proof-agent-key.txt
 /scripts/proof-report.json
+/scripts/probe-*.mjs
+/scripts/chain97-*.json
 
 data/altana-session.json
 data/altana-sessions.json
