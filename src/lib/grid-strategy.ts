@@ -9,16 +9,25 @@
 // WBNB), which is the same number for the bound pair's ordering and decimals, so
 // a crossing is a comparison and never a currency conversion.
 
+export type SpacingMode = "geometric" | "arithmetic";
+
 export interface StrategyPolicy {
   /** the band's width around the reference price, in percent */
   widthPct: number;
   /** rungs in the band, endpoints included */
   levels: number;
+  /** how rungs are spaced: geometric (closer near center) or arithmetic (even) */
+  spacing: SpacingMode;
+  /** weight center rungs more heavily (probability of being hit is higher) */
+  centerWeighted: boolean;
+  /** widen the band when price has drifted far from the reference price */
+  volatilityAdjusted: boolean;
 }
 
 // the agent card's own example shape: ten percent wide in eleven rungs
 export const DEFAULT_STRATEGY_WIDTH_PCT = 10;
 export const DEFAULT_STRATEGY_LEVELS = 11;
+export const DEFAULT_STRATEGY_SPACING: SpacingMode = "geometric";
 /** the planner's own bounds, so the policy never outranks them */
 export const MIN_STRATEGY_LEVELS = 2;
 export const MAX_STRATEGY_LEVELS = 200;
@@ -26,6 +35,10 @@ export const MAX_STRATEGY_LEVELS = 200;
 export function policyFromEnv(env: Record<string, string | undefined>): StrategyPolicy {
   const width = Number(env.GRID_STRATEGY_WIDTH_PCT ?? "");
   const levels = Number(env.GRID_STRATEGY_LEVELS ?? "");
+  const spacingRaw = (env.GRID_STRATEGY_SPACING ?? "").toLowerCase();
+  const spacing: SpacingMode = spacingRaw === "geometric" ? "geometric" : DEFAULT_STRATEGY_SPACING;
+  const centerWeighted = env.GRID_STRATEGY_CENTER_WEIGHTED === "1";
+  const volatilityAdjusted = env.GRID_STRATEGY_VOLATILITY_ADJUSTED === "1";
   return {
     widthPct:
       Number.isFinite(width) && width > 0 && width <= 100 ? width : DEFAULT_STRATEGY_WIDTH_PCT,
@@ -33,6 +46,9 @@ export function policyFromEnv(env: Record<string, string | undefined>): Strategy
       Number.isInteger(levels) && levels >= MIN_STRATEGY_LEVELS && levels <= MAX_STRATEGY_LEVELS
         ? levels
         : DEFAULT_STRATEGY_LEVELS,
+    spacing,
+    centerWeighted,
+    volatilityAdjusted,
   };
 }
 
@@ -86,24 +102,48 @@ export type StrategyOutcome =
   | { action: "hold"; reason: string; state: StrategyState }
   | { action: "trade"; reason: string; intents: StrategyIntent[]; state: StrategyState };
 
-// The ladder is derived, never stored: rung i sits at
-//   rung_i = ref * (1 + width * (i / (levels - 1) - 1/2))
+// The ladder is derived, never stored. Two spacing modes:
+//   geometric: rung_i = ref * (1 + width * (i / (levels - 1) - 1/2))
+//   arithmetic: rungs are evenly spaced between ref*(1-width/2) and ref*(1+width/2)
 // in quote per base, the units refPriceX96 itself carries. Geometry is float
 // arithmetic on purpose; every trade it sizes is bounded on chain regardless.
 export function ladderRungs(ref: number, policy: StrategyPolicy): number[] {
   const rungs: number[] = [];
+  const low = ref * (1 - policy.widthPct / 100);
+  const high = ref * (1 + policy.widthPct / 100);
   for (let i = 0; i < policy.levels; i += 1) {
-    rungs.push(ref * (1 + (policy.widthPct / 100) * (i / (policy.levels - 1) - 0.5)));
+    if (policy.spacing === "arithmetic") {
+      const t = policy.levels === 1 ? 0.5 : i / (policy.levels - 1);
+      rungs.push(low + (high - low) * t);
+    } else {
+      rungs.push(ref * (1 + (policy.widthPct / 100) * (i / (policy.levels - 1) - 0.5)));
+    }
   }
   return rungs;
 }
 
 const MAX_CROSSED_KEYS = 400;
 
-// the plan's size at one rung: that side of the deposit, divided across the
-// ladder. It is bounded again by what the hire still holds when the intent runs.
-function perRungSize(sideBalance: bigint, levels: number): bigint {
-  return sideBalance / BigInt(levels);
+// the plan's size at one rung. equal mode divides the side balance across all
+// rungs; center-weighted mode gives more size to rungs near the reference price,
+// since those are hit more often and carry more expected capture.
+function rungWeight(i: number, levels: number, centerWeighted: boolean): number {
+  if (!centerWeighted || levels <= 1) return 1;
+  const center = (levels - 1) / 2;
+  const dist = Math.abs(i - center) / center;
+  // center rungs: weight 1.5, edge rungs: weight 0.5
+  return 1.5 - dist;
+}
+
+function perRungSize(sideBalance: bigint, levels: number, i: number, centerWeighted: boolean): bigint {
+  if (!centerWeighted) return sideBalance / BigInt(levels);
+  // compute total weight to normalize
+  let totalWeight = 0;
+  for (let j = 0; j < levels; j++) totalWeight += rungWeight(j, levels, true);
+  const w = rungWeight(i, levels, true);
+  const numerator = sideBalance * BigInt(Math.round(w * 1000));
+  const denominator = BigInt(Math.round(totalWeight * 1000));
+  return numerator / denominator;
 }
 
 function sideBalanceOf(hire: HireFacts, side: "buyA" | "sellA"): bigint {
@@ -149,12 +189,18 @@ export function decideHire(input: {
     return { action: "hold", reason: `block ${blockNumber} was already decided`, state: base };
   }
 
-  const rungs = ladderRungs(ref, policy);
+  // volatility proxy: if price has drifted far from the reference, widen the band
+  // so the ladder recentres less often and avoids bleeding in a trend
+  const drift = ref > 0 ? Math.abs(price - ref) / ref : 0;
+  const effectivePolicy = policy.volatilityAdjusted && drift > 0.05
+    ? { ...policy, widthPct: Math.min(100, policy.widthPct * 1.5) }
+    : policy;
+  const rungs = ladderRungs(ref, effectivePolicy);
   const low = rungs[0];
   const high = rungs[rungs.length - 1];
 
   if (price < low || price > high) {
-    return recentre({ hire, policy, base, price, blockNumber, low, high });
+    return recentre({ hire, policy: effectivePolicy, base, price, blockNumber, low, high });
   }
 
   const prev = base.lastPrice;
@@ -174,12 +220,12 @@ export function decideHire(input: {
   });
 
   const plan = sideBalanceOf(hire, side);
-  const size = perRungSize(plan, policy.levels);
   let remaining = plan;
   const intents: StrategyIntent[] = [];
   for (const i of crossed) {
     const key = intentKey(base.generation, i, side);
     if (base.crossed.includes(key)) continue;
+    const size = perRungSize(plan, policy.levels, i, policy.centerWeighted);
     const amount = size < remaining ? size : remaining;
     if (amount <= 0n) break;
     remaining -= amount;
@@ -207,7 +253,7 @@ export function decideHire(input: {
     const reason =
       crossed.length === 0
         ? `no rung between ${prev} and ${price} was crossed`
-        : size === 0n
+        : plan === 0n
           ? `rungs were crossed but the ${side} side of the deposit holds nothing`
           : `the rungs between ${prev} and ${price} were already acted at generation ${base.generation}`;
     return { action: "hold", reason, state: next };
@@ -239,12 +285,12 @@ function recentre(input: {
   const recentred = ladderRungs(price, policy);
   const side: "buyA" | "sellA" = price > high ? "buyA" : "sellA";
   const plan = sideBalanceOf(hire, side);
-  const size = perRungSize(plan, policy.levels);
 
   let rungIndex = 0;
   recentred.forEach((rung, i) => {
     if (Math.abs(rung - price) < Math.abs(recentred[rungIndex] - price)) rungIndex = i;
   });
+  const size = perRungSize(plan, policy.levels, rungIndex, policy.centerWeighted);
 
   const intents: StrategyIntent[] = [];
   if (size > 0n) {

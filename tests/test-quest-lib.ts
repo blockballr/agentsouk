@@ -118,7 +118,7 @@ describe("quest picks", () => {
 
   it("falls back to the written picks only when the shelf cannot be read", () => {
     expect(questPicks(health, 97, undefined, null).map((p) => p.tokenId)).toEqual(["2504"]);
-    expect(questPicks(health, 56, undefined, null)).toEqual([]);
+    expect(questPicks(health, 56, undefined, null).map((p) => p.tokenId)).toEqual(["368655"]);
     // a shelf that was read and offers nothing is believed, so no dead agent is suggested
     expect(questPicks(health, 97, { confirmed: [], working: [] }, null)).toEqual([]);
   });

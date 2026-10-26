@@ -42,11 +42,20 @@ export function ReceiptsList({ agent, hireId, chainId = 97 }: { agent?: string; 
     if (chainId) params.set('chainId', String(chainId))
     if (hireId) params.set('hireId', hireId)
     if (agent) params.set('agent', agent)
-    fetch(`${API_BASE}/vault/receipts?${params}`)
-      .then((r) => r.json())
-      .then((b) => { if (b?.success) setReceipts(b.receipts ?? []) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    const url = `${API_BASE}/vault/receipts?${params}`
+    const load = () => {
+      fetch(url)
+        .then((r) => r.json())
+        .then((b) => { if (b?.success) setReceipts(b.receipts ?? []) })
+        .catch(() => {})
+        .finally(() => setLoading(false))
+    }
+    load()
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'hidden') return
+      load()
+    }, 30_000)
+    return () => window.clearInterval(id)
   }, [agent, hireId, chainId])
 
   async function replay(id: string) {

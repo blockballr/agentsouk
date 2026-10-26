@@ -32,38 +32,38 @@ function grantSession(session: unknown) {
 }
 
 describe("the altana junction", () => {
-  it("resolves when the session and its key are both configured", () => {
+  it("resolves when the session and its key are both configured", async () => {
     grantSession({ wallet: { address: WALLET } });
-    expect(resolveActor("altana").kind).toBe("altana");
+    await expect(resolveActor("altana")).resolves.toMatchObject({ kind: "altana" });
   });
 
-  it("refuses a session blob that does not parse", () => {
+  it("refuses a session blob that does not parse", async () => {
     grantSession("not json at all");
-    expect(() => resolveActor("altana")).toThrow(/does not parse as a granted session/);
+    await expect(resolveActor("altana")).rejects.toThrow(/does not parse as a granted session/);
   });
 
   it("reads the acting address from the session, not from anywhere else", async () => {
     grantSession({ wallet: { address: WALLET } });
-    const actor = resolveActor("altana");
+    const actor = await resolveActor("altana");
     await expect(actor.address()).resolves.toBe(WALLET);
   });
 
   it("takes the wallet address where a live grantSession puts it", async () => {
     grantSession({ walletAddress: WALLET });
-    const actor = resolveActor("altana");
+    const actor = await resolveActor("altana");
     await expect(actor.address()).resolves.toBe(WALLET);
   });
 
   it("refuses a session that carries no wallet address", async () => {
     grantSession({ wallet: {} });
-    const actor = resolveActor("altana");
+    const actor = await resolveActor("altana");
     await expect(actor.address()).rejects.toThrow(/does not carry the wallet address/);
   });
 
   it("sends the granted session, the call and the testnet chain id to the relay", async () => {
     grantSession({ wallet: { address: WALLET } });
     execute.mockResolvedValue({ receipts: [{ hash: "0xhash1" }] });
-    const actor = resolveActor("altana", 97);
+    const actor = await resolveActor("altana", 97);
     const hash = await actor.trade(CALL);
     expect(hash).toBe("0xhash1");
     expect(execute).toHaveBeenCalledTimes(1);
@@ -78,7 +78,7 @@ describe("the altana junction", () => {
   it("sends the mainnet chain id when the actor is built for chain 56", async () => {
     grantSession({ wallet: { address: WALLET } });
     execute.mockResolvedValue({ receipts: [{ hash: "0xhash56" }] });
-    const actor = resolveActor("altana", 56);
+    const actor = await resolveActor("altana", 56);
     const hash = await actor.trade(CALL);
     expect(hash).toBe("0xhash56");
     expect(execute.mock.calls[0][0].chainId).toBe(56);
@@ -87,7 +87,9 @@ describe("the altana junction", () => {
   it("refuses a relay answer that carries no receipt hash", async () => {
     grantSession({ wallet: { address: WALLET } });
     execute.mockResolvedValue({ receipts: [] });
-    const actor = resolveActor("altana");
+    const actor = await resolveActor("altana");
     await expect(actor.trade(CALL)).rejects.toThrow(/no receipt hash/);
   });
 });
+
+

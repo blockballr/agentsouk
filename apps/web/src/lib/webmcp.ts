@@ -517,6 +517,137 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
       return jsonResult(parsed)
     }),
   },
+  {
+    name: 'vault_describe',
+    title: 'Describe the vault',
+    description:
+      'Describe the HireVault on a chain: its address, the bound token pair, the minimum deposit, the cap on open hires per buyer, and the venues a hire can name. Read-only.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        chainId: { type: 'integer', description: 'Chain id. Defaults to the chain this deployment serves.' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+    execute: withError(async (args) => {
+      const chainId = asNumber(args.chainId)
+      const qs = chainId !== undefined ? `?chain=${chainId}` : ''
+      const [vaultRes, venuesRes] = await Promise.all([
+        fetch(`${BASE}/vault${qs}`),
+        fetch(`${BASE}/vault/venues${qs}`),
+      ])
+      const vault = await vaultRes.json().catch(() => null)
+      const venues = await venuesRes.json().catch(() => null)
+      if (!vaultRes.ok) return errorResult(vault?.error ?? `vault returned ${vaultRes.status}`)
+      return jsonResult({ vault, venues: venues?.venues ?? [] })
+    }),
+  },
+  {
+    name: 'vault_venues',
+    title: 'List vault venues',
+    description:
+      'List the yield venues a HireVault hire can name on a chain, with the adapter address, protocol, status, rate and note. Read-only.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        chainId: { type: 'integer', description: 'Chain id. Defaults to the chain this deployment serves.' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+    execute: withError(async (args) => {
+      const chainId = asNumber(args.chainId)
+      const qs = chainId !== undefined ? `?chain=${chainId}` : ''
+      const res = await fetch(`${BASE}/vault/venues${qs}`)
+      const body = await res.json().catch(() => null)
+      if (!res.ok) return errorResult(body?.error ?? `venues returned ${res.status}`)
+      return jsonResult(body)
+    }),
+  },
+  {
+    name: 'vault_track',
+    title: 'Vault track record for an agent',
+    description:
+      "Count what the vault itself recorded for one agent: hires opened, still open, closed, and trades sent, derived from the vault's own events. Read-only.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        agent: { type: 'string', description: "The agent's wallet address (0x followed by 40 hex characters)." },
+        chainId: { type: 'integer', description: 'Chain id. Defaults to the chain this deployment serves.' },
+      },
+      required: ['agent'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+    execute: withError(async (args) => {
+      const agent = asString(args.agent)
+      if (!agent) return errorResult('agent is required.')
+      const chainId = asNumber(args.chainId)
+      const qs = new URLSearchParams({ agent })
+      if (chainId !== undefined) qs.set('chain', String(chainId))
+      const res = await fetch(`${BASE}/vault/track?${qs}`)
+      const body = await res.json().catch(() => null)
+      if (!res.ok) return errorResult(body?.error ?? `track returned ${res.status}`)
+      return jsonResult(body)
+    }),
+  },
+  {
+    name: 'vault_position',
+    title: 'Open vault hires for a buyer',
+    description:
+      'Read the open HireVault hires for one buyer wallet, including balances, floor, bounds and the agent. Read-only.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        buyer: { type: 'string', description: 'The buyer wallet address, 0x followed by 40 hex characters.' },
+        chainId: { type: 'integer', description: 'Chain id. Defaults to the chain this deployment serves.' },
+      },
+      required: ['buyer'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+    execute: withError(async (args) => {
+      const buyer = asString(args.buyer)
+      if (!buyer) return errorResult('buyer is required.')
+      const chainId = asNumber(args.chainId)
+      const qs = new URLSearchParams({ buyer })
+      if (chainId !== undefined) qs.set('chainId', String(chainId))
+      const res = await fetch(`${BASE}/vault/positions?${qs}`)
+      const body = await res.json().catch(() => null)
+      if (!res.ok) return errorResult(body?.error ?? `positions returned ${res.status}`)
+      return jsonResult(body)
+    }),
+  },
+  {
+    name: 'vault_receipts',
+    title: 'Vault trade receipts',
+    description:
+      'List the trade receipts for a hire id or for an agent wallet. Read-only.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        hireId: { type: 'string', description: 'A hire id.' },
+        agent: { type: 'string', description: 'An agent wallet address.' },
+        chainId: { type: 'integer', description: 'Chain id. Defaults to the chain this deployment serves.' },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+    execute: withError(async (args) => {
+      const hireId = asString(args.hireId)
+      const agent = asString(args.agent)
+      const chainId = asNumber(args.chainId)
+      const qs = new URLSearchParams()
+      if (hireId) qs.set('hireId', hireId)
+      if (agent) qs.set('agent', agent)
+      if (chainId !== undefined) qs.set('chainId', String(chainId))
+      const res = await fetch(`${BASE}/vault/receipts?${qs}`)
+      const body = await res.json().catch(() => null)
+      if (!res.ok) return errorResult(body?.error ?? `receipts returned ${res.status}`)
+      return jsonResult(body)
+    }),
+  },
 ]
 
 // One registration per model context. The spec rejects a duplicate name, so a

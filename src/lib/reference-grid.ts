@@ -14,7 +14,7 @@ export const GRID_AGENT_VERSION = "1.2.0";
 export const GRID_AGENT_CATEGORY = "grid-trading";
 export const GRID_AGENT_PROTOCOL_VERSION = "0.3.0";
 export const GRID_AGENT_DESCRIPTION =
-  "Trades a grid on chain: from a price range, rung count, order size and fee it computes the rung spacing, committed capital, and the gross and net capture of one completed round trip, then executes a swap on PancakeSwap as price crosses a rung inside the contract's floor, drawdown and slippage bounds. It places no resting orders on PancakeSwap and holds no key. Hired as an escrow job, it also reads the live on-chain price and submits the plan with that evidence.";
+  "Trades a grid on chain inside HireVault: from a price range, rung count, order size and fee it computes the rung spacing, committed capital, and the gross and net capture of one completed round trip, then executes a swap on PancakeSwap as price crosses a rung inside the contract's floor, drawdown and slippage bounds. It places no resting orders on PancakeSwap and holds no key. Hired as an escrow job, it also reads the live on-chain price and submits the plan with that evidence.";
 export const GRID_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const GRID_AGENT_CARD_PATH = "/api/reference/grid/.well-known/agent-card.json";
 export const GRID_AGENT_MESSAGING_PATH = "/api/reference/grid/a2a";

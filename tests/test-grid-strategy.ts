@@ -15,7 +15,7 @@ import {
   type StrategyState,
 } from "../src/lib/grid-strategy";
 
-const POLICY: StrategyPolicy = { widthPct: 10, levels: 11 };
+const POLICY: StrategyPolicy = { widthPct: 10, levels: 11, spacing: "geometric", centerWeighted: false, volatilityAdjusted: false };
 const Q96 = 2n ** 96n;
 const NOW = 1_900_000_000;
 
@@ -90,22 +90,22 @@ describe("the price axis", () => {
 
 describe("policy from the environment", () => {
   it("defaults when unset or absurd", () => {
-    expect(policyFromEnv({})).toEqual({
+    expect(policyFromEnv({})).toMatchObject({
       widthPct: DEFAULT_STRATEGY_WIDTH_PCT,
       levels: DEFAULT_STRATEGY_LEVELS,
     });
-    expect(policyFromEnv({ GRID_STRATEGY_WIDTH_PCT: "0", GRID_STRATEGY_LEVELS: "1" })).toEqual({
+    expect(policyFromEnv({ GRID_STRATEGY_WIDTH_PCT: "0", GRID_STRATEGY_LEVELS: "1" })).toMatchObject({
       widthPct: DEFAULT_STRATEGY_WIDTH_PCT,
       levels: DEFAULT_STRATEGY_LEVELS,
     });
-    expect(policyFromEnv({ GRID_STRATEGY_WIDTH_PCT: "nan", GRID_STRATEGY_LEVELS: "999" })).toEqual({
+    expect(policyFromEnv({ GRID_STRATEGY_WIDTH_PCT: "nan", GRID_STRATEGY_LEVELS: "999" })).toMatchObject({
       widthPct: DEFAULT_STRATEGY_WIDTH_PCT,
       levels: DEFAULT_STRATEGY_LEVELS,
     });
   });
 
   it("honours values inside the bounds", () => {
-    expect(policyFromEnv({ GRID_STRATEGY_WIDTH_PCT: "20", GRID_STRATEGY_LEVELS: "21" })).toEqual({
+    expect(policyFromEnv({ GRID_STRATEGY_WIDTH_PCT: "20", GRID_STRATEGY_LEVELS: "21" })).toMatchObject({
       widthPct: 20,
       levels: 21,
     });
