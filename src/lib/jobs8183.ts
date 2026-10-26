@@ -61,7 +61,9 @@ export function erc8183Stack(chainId: number): {
 
 // a seller answers the negotiate step in one of two shapes, and the nested one is
 // flattened to the flat envelope's keys so neither of them can skip a check
-function quoteEnvelope(result: unknown): Record<string, unknown> | null {
+function quoteEnvelope(
+  result: unknown,
+): { fields: Record<string, unknown>; raw: Record<string, unknown> } | null {
   const r = result as Record<string, unknown> | null;
   if (!r || typeof r !== "object") return null;
   const parts = Array.isArray(r.parts) ? r.parts : [];
@@ -74,17 +76,22 @@ function quoteEnvelope(result: unknown): Record<string, unknown> | null {
     // an explicit accepted flag travels as quoted, so a refusal reaches its reason
     const accepted = response.accepted;
     return {
-      ...d,
-      status: accepted === undefined ? (d.status as string | undefined) : "quoted",
-      accepted,
-      price: terms.price ?? d.price,
-      currency: terms.currency ?? d.currency,
-      provider_address: d.provider_address ?? response.provider_address,
-      unsigned_reason: d.unsigned_reason ?? response.unsigned_reason,
-      valid_until: response.quote_expires_at ?? d.valid_until,
+      // the seller signed this exact object; the anchor must carry it without
+      // the flattened convenience fields added below
+      raw: { ...d },
+      fields: {
+        ...d,
+        status: accepted === undefined ? (d.status as string | undefined) : "quoted",
+        accepted,
+        price: terms.price ?? d.price,
+        currency: terms.currency ?? d.currency,
+        provider_address: d.provider_address ?? response.provider_address,
+        unsigned_reason: d.unsigned_reason ?? response.unsigned_reason,
+        valid_until: response.quote_expires_at ?? d.valid_until,
+      },
     };
   }
-  return r;
+  return { fields: r, raw: r };
 }
 
 export function parseNegotiationQuote(
@@ -94,10 +101,11 @@ export function parseNegotiationQuote(
 ): NegotiationResult {
   const stack = erc8183Stack(chainId);
   if (!stack) return refuse(`the ERC-8183 stack is not deployed on chain ${chainId}`);
-  const envelope = quoteEnvelope(result);
-  if (!envelope) {
+  const parsed = quoteEnvelope(result);
+  if (!parsed) {
     return refuse("the negotiate reply is not an object");
   }
+  const envelope = parsed.fields;
   const status = envelope.status;
   if (status !== "quoted") {
     const reason = typeof envelope.unsigned_reason === "string" ? `: ${envelope.unsigned_reason.slice(0, 200)}` : "";
@@ -154,7 +162,7 @@ export function parseNegotiationQuote(
   const agentId = envelope.agent_id === undefined ? null : String(envelope.agent_id);
   return {
     ok: true,
-    quote: { price, currency, providerAddress, validUntil, negotiationHash, providerSig, agentId, envelope },
+    quote: { price, currency, providerAddress, validUntil, negotiationHash, providerSig, agentId, envelope: parsed.raw },
   };
 }
 
