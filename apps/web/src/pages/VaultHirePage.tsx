@@ -196,7 +196,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   const [amount, setAmount] = useState('0.1')
   const [expiryIndex, setExpiryIndex] = useState(0)
   const [slippage, setSlippage] = useState(5) // percentage (5% = 500 bps)
-  const [agentFeeBps] = useState(1000) // 10% default, set by the agent
+  const [agentFeeBps] = useState(0) // 0%: our fee is waived; the standard 5% is shown cancelled out below
   const [maxLossBps, setMaxLossBps] = useState(2000) // 20% default
   const [feeOptions, setFeeOptions] = useState<FeeChoice[]>([])
   const [feeOverride, setFeeOverride] = useState<'auto' | number>('auto')
@@ -828,10 +828,11 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
               <Label tone="muted">Agent fee (% of profit)</Label>
               <div className="relative">
                 <input
-                  value={agentFeeBps / 100}
+                  value={5}
                   readOnly
-                  className="h-11 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 pr-8 font-mono text-[13px] leading-[20px] text-souk-steel outline-none"
+                  className="h-11 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 pr-8 font-mono text-[13px] leading-[20px] text-souk-steel outline-none line-through opacity-60"
                 />
+                <span className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 font-mono text-[11px] text-souk-data">0%</span>
                 <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 font-mono text-[11px] uppercase tracking-[0.08em] text-souk-steel">
                   %
                 </span>
