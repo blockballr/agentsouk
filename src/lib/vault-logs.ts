@@ -31,8 +31,12 @@ export async function collectVaultLogs(
   const maxChunks = options.maxChunks ?? MAX_LOG_CHUNKS;
   const out: VaultLog[] = [];
   let to = head;
-  for (let i = 0; i < maxChunks && out.length < want; i += 1) {
-    const from = to > LOG_CHUNK ? to - LOG_CHUNK : 0n;
+  // providers cap eth_getLogs ranges differently (BlockPI at 5k, others wider),
+  // so a refused range halves the window instead of ending the scan
+  let chunk = LOG_CHUNK;
+  let chunks = 0;
+  while (chunks < maxChunks && out.length < want) {
+    const from = to > chunk ? to - chunk : 0n;
     try {
       const logs = await client.getLogs({
         address: vault,
@@ -42,12 +46,16 @@ export async function collectVaultLogs(
         toBlock: to,
       } as never);
       out.unshift(...(logs as unknown as VaultLog[]));
+      chunks += 1;
+      if (from === 0n) break;
+      to = from - 1n;
     } catch {
-      // the node refused the range; stop with what is collected
+      if (chunk > 2_000n) {
+        chunk /= 2n;
+        continue;
+      }
       break;
     }
-    if (from === 0n) break;
-    to = from - 1n;
   }
   return out.slice(-want);
 }

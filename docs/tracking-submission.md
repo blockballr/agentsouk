@@ -9,7 +9,11 @@ history. Nothing below presents mock, seeded, or stale data as live.
 ## Mainnet proof, October 2026
 
 This is the evidence a judge can click today. Three rails, one catalogue, and
-one working hire in each of the four quest categories.
+one working hire in each of the four categories. Every transaction here is
+product proof from a wallet the team operates, not a quest completion. The
+tracking addendum treats team wallet activity as never a buyer's hire, a quest
+step, or an agent's track record, so the quest section stays empty until real
+users complete the five steps during acquisition.
 
 ### Wallets
 
@@ -94,6 +98,10 @@ attestation is `giveFeedback` on the ERC-8004 reputation registry at
 
 ### Limits stated plainly
 
+- Every wallet in the proof above is a declared team wallet. That proves the
+  product works; it does not count as a quest completion, and this document
+  will not present it as one. The quest completions section will name only
+  wallets the team does not control, added as real users finish the five steps.
 - The escrow releases are not in yet; the policy forbids release before the
   seven day dispute window, so the release transaction is due Nov 3.
 - The vault hire is closed, so its PnL is realised, not a live position.
