@@ -30,10 +30,14 @@ function chainFor(chainId: number) {
   return chainId === BSC_TESTNET_CHAIN_ID ? bscTestnet : bsc;
 }
 
-function rawKeyActor(chainId: number): VaultActor | null {
-  const key = process.env.AGENT_EXECUTOR_KEY as `0x${string}` | undefined;
-  if (!key) return null;
-  const account = privateKeyToAccount(key);
+function rawKeyActor(chainId: number, key: string): VaultActor | null {
+  const k = key.startsWith("0x") ? key : `0x${key}`;
+  let account;
+  try {
+    account = privateKeyToAccount(k as `0x${string}`);
+  } catch {
+    return null;
+  }
   const wallet = createWalletClient({ account, chain: chainFor(chainId), transport: rpcTransport(chainId) });
   return {
     kind: "rawkey",
@@ -45,6 +49,22 @@ function rawKeyActor(chainId: number): VaultActor | null {
       return hash;
     },
   };
+}
+
+// Collect every raw key the deployment provides: a single AGENT_EXECUTOR_KEY,
+// or a comma-separated AGENT_EXECUTOR_KEYS list for per-agent isolation.
+function rawKeys(): string[] {
+  const list: string[] = [];
+  const single = process.env.AGENT_EXECUTOR_KEY;
+  if (single) list.push(single);
+  const multi = process.env.AGENT_EXECUTOR_KEYS;
+  if (multi) {
+    for (const k of multi.split(",")) {
+      const t = k.trim();
+      if (t) list.push(t);
+    }
+  }
+  return list;
 }
 
 function altanaActorFromSession(sessionBlob: string, sessionKey: string, chainId: number): VaultActor {
@@ -153,9 +173,15 @@ export async function resolveActors(
     throw new Error("AGENT_EXECUTOR_ACTOR=altana but no sessions configured (run scripts/setup-altana-per-agent.mjs or set AGENT_ALTANA_SESSION)");
   }
   if (preference === "rawkey") {
-    const actor = rawKeyActor(chainId);
-    if (!actor) throw new Error("AGENT_EXECUTOR_ACTOR=rawkey but AGENT_EXECUTOR_KEY is not set");
-    return [actor];
+    const keys = rawKeys();
+    if (keys.length === 0) throw new Error("AGENT_EXECUTOR_ACTOR=rawkey but AGENT_EXECUTOR_KEY(S) is not set");
+    const actors: VaultActor[] = [];
+    for (const k of keys) {
+      const a = rawKeyActor(chainId, k);
+      if (a) actors.push(a);
+    }
+    if (actors.length === 0) throw new Error("no valid raw keys configured");
+    return actors;
   }
   throw new Error(`AGENT_EXECUTOR_ACTOR must be rawkey or altana, not "${preference}"`);
 }
@@ -189,11 +215,17 @@ export async function configuredAgentWallets(chainId = targetChainId()): Promise
     return [];
   }
   if (preference === "rawkey") {
-    const key = process.env.AGENT_EXECUTOR_KEY as `0x${string}` | undefined;
-    if (!key) return [];
-    try {
-      return [privateKeyToAccount(key).address];
-    } catch { return []; }
+    const keys = rawKeys();
+    const out: string[] = [];
+    for (const k of keys) {
+      try {
+        const kk = k.startsWith("0x") ? k : `0x${k}`;
+        out.push(privateKeyToAccount(kk as `0x${string}`).address);
+      } catch {
+        // skip invalid keys
+      }
+    }
+    return out;
   }
   return [];
 }
