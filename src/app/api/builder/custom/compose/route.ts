@@ -40,8 +40,9 @@ The visitor describes an agent. You return a JSON object with two fields: "manif
 - runtime: "node20"
 - entrypoint: "server.mjs"
 - endpoint: "/a2a"
-- wallet: "agent"
-- payment: "job" or "x402"
+- wallet: "agent" or "vault"
+- payment: "job", "x402" or "vault"
+- use payment "vault" and wallet "vault" only when the agent trades inside a funded HireVault hire (rebalancing, grid, yield or health-factor strategy). a vault build gets one vault-execution card, x402Support false, and a bounded runner. the vault runner only implements rebalancing today; grid, yield and health-factor vault builds need their own runner.
 - deliverable: what the hirer receives
 - release: what counts as delivery
 - actions: array of { name, venue, contracts: string[], functions: string[], maxValueUsd: number }

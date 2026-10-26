@@ -382,7 +382,7 @@ export function CustomBuilderPage() {
             ['Download agent files', caps.lanes?.deployManual, caps.lanes?.deployManual?.enabled ? 'Works' : 'Unavailable'],
             ['Agent-funded', caps.lanes?.agentFunded, caps.lanes?.agentFunded?.enabled ? 'Works' : (caps.lanes?.agentFunded?.reason ?? 'Unavailable')],
             ['Hirer-funded', caps.lanes?.hirerFunded, 'Vault lane'],
-            ['Vault SDK', caps.lanes?.vaultSdk, 'In export'],
+            ['Vault SDK', caps.lanes?.vaultSdk, 'Bundled in export'],
             ['Registration', caps.lanes?.registration, `Chain ${caps.chainId}`],
           ].map(([label, lane, chip]) => (
             <Row key={label as string} gap={8} align="center">
@@ -398,7 +398,7 @@ export function CustomBuilderPage() {
       <Stack gap={6} surface pad={[12, 14, 12, 14]}>
         <Txt size={12} lead={16} weight="semibold" tone="ink">Vault lane and SDK</Txt>
         <Txt size={12} lead={18} tone="slate">
-          Set payment to vault and wallet to vault in the manifest, with category rebalancing. That build gets one vault-execution card, x402Support false, the compiled @agentsouk/vault-sdk, and a bounded runner that dry-runs until VAULT_EXECUTE=1. Job and x402 builds keep the runtime they already have.
+          Set payment to "vault" and wallet to "vault" in the manifest, with category rebalancing. A vault build ships one vault-execution card (x402Support false), the compiled @agentsouk/vault-sdk, a strategy.mjs you replace with your own edge, and a runner that dry-runs until VAULT_EXECUTE=1. Job and x402 builds keep the runtime they already have. The capability panel's "Vault SDK: In export" means the SDK is bundled into the downloaded repo so it runs without an unpublished dependency.
         </Txt>
       </Stack>
       <Stack gap={10} surface pad={[16, 18, 16, 18]}>
