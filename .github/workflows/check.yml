@@ -4,6 +4,10 @@ name: Text hygiene
 # back. It once grew a tracked file to 8 MB of noise, and the local pre-commit
 # gate only protects commits that go through it, so this runs on every push and
 # pull request to catch anything that skips the gate.
+permissions:
+  contents: read
+  statuses: write
+
 on:
   push:
     branches: [main]
@@ -19,3 +23,12 @@ jobs:
           node-version: 22
       - name: Check for mojibake in tracked text files
         run: node scripts/check-text.mjs
+      - name: Report commit status
+        if: always()
+        run: |
+          state="${{ job.status == 'success' && 'success' || 'failure' }}"
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -d "{\"state\":\"$state\",\"description\":\"Text hygiene $state\",\"context\":\"text-hygiene\"}"

@@ -8,6 +8,7 @@ name: Rebuild the catalogue snapshot
 
 permissions:
   contents: write
+  statuses: write
 
 on:
   schedule:
@@ -59,3 +60,12 @@ jobs:
           fi
           git commit -m "chore(snapshot): twice-daily rebuild of data/agents.json"
           git push
+      - name: Report commit status
+        if: always()
+        run: |
+          state="${{ job.status == 'success' && 'success' || 'failure' }}"
+          curl -sS -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+            -d "{\"state\":\"$state\",\"description\":\"Catalogue snapshot rebuild $state\",\"context\":\"rebuild-snapshot\"}"
