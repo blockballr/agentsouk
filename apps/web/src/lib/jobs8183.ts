@@ -3,7 +3,7 @@
 // plain viem so the browser bundle carries no SDK, and pinned byte-for-byte
 // against the SDK's own builder in the tests, because a drifting encoding
 // would fund against the wrong job.
-import { encodeFunctionData } from "viem"
+import { encodeFunctionData, getAddress } from "viem"
 
 export interface Jobs8183Stack {
   commerce: string
@@ -66,21 +66,30 @@ function canonicalAnchor(anchor: Record<string, unknown>, task: string): string 
   const request = (anchor.request ?? {}) as Record<string, unknown>
   const response = (anchor.response ?? {}) as Record<string, unknown>
   const agreed = (response.terms ?? {}) as Record<string, unknown>
+  const terms: Record<string, unknown> = {
+    deliverables: sanitizeQuoteText(String(agreed.deliverables ?? "")),
+    quality_standards: sanitizeQuoteText(String(agreed.quality_standards ?? "")),
+  }
+  // the seller only signs this key when it is present; an empty one changes the hash
+  const criteria = agreed.success_criteria
+  if (criteria) {
+    terms.success_criteria = Array.isArray(criteria)
+      ? criteria.map((c) => sanitizeQuoteText(String(c)))
+      : [sanitizeQuoteText(String(criteria))]
+  }
   const content: Record<string, unknown> = {
     version: 1,
     negotiated_at: response.negotiated_at ?? anchor.negotiated_at ?? Math.floor(Date.now() / 1000),
     task: sanitizeQuoteText(String(request.task_description ?? task)),
-    terms: {
-      deliverables: sanitizeQuoteText(String(agreed.deliverables ?? "")),
-      quality_standards: sanitizeQuoteText(String(agreed.quality_standards ?? "")),
-      success_criteria: sanitizeQuoteText(String(agreed.success_criteria ?? "")),
-    },
+    terms,
     price: agreed.price,
     currency: agreed.currency,
   }
   if (response.quote_expires_at != null) content.quote_expires_at = response.quote_expires_at
   if (anchor.chain_id != null) content.chain_id = anchor.chain_id
-  if (anchor.verifying_contract) content.verifying_contract = anchor.verifying_contract
+  if (anchor.verifying_contract) {
+    content.verifying_contract = getAddress(String(anchor.verifying_contract))
+  }
   content.negotiation_hash = anchor.negotiation_hash ?? response.negotiation_hash ?? ""
   content.provider_sig = anchor.provider_sig ?? response.provider_sig ?? ""
   return JSON.stringify(sortQuoteKeys(content))
