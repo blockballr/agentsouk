@@ -2,9 +2,9 @@ import "server-only";
 
 // The on-chain half of a listing: an agent that only answers is a directory
 // entry; an agent that acts is a worker. The brief counts the wallet's own
-// contract calls, not plain transfers, approvals, registry writes or job
-// deliveries, so this reads the wallet's transactions and keeps only the
-// calls that look like work.
+// contract calls, excluding plain transfers, approvals and registry writes.
+// Job submissions (ERC-8183 deliveries) and other contract calls count as work,
+// since those are the agent acting on chain.
 //
 // Ankr advanced API is the practical source: an EVM RPC has no
 // "transactions by address" method. The key stays server-side.
@@ -31,16 +31,12 @@ const ANKR_CHAIN: Record<number, string> = {
 // Methods that are bookkeeping rather than the agent's job.
 const APPROVAL = /^0x095ea7b3/i;
 const TRANSFER = /^0xa9059cbb/i;
+// Registry writes (registration) are bookkeeping, not work. Job submissions
+// (the agent delivering against an ERC-8183 job) ARE the agent acting, so the
+// commerce contract is deliberately NOT excluded here.
 const REGISTRY = new Set([
   "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432", // ERC-8004 mainnet
   "0x8004a818bfb912233c491871b3d84c89a494bd9e", // ERC-8004 testnet
-]);
-// ERC-8183 deliveries and the marketplace's own rails are not "acting".
-const DELIVERY = new Set([
-  "0xea4daa3100a767e86fded867729ae7446476eba6", // AgenticCommerce mainnet
-  "0xa206c0517b6371c6638cd9e4a42cc9f02a33b0de", // AgenticCommerce testnet
-  "0x51895229e12f9876011789b04f8698af06ccd6da", // EvaluatorRouter mainnet
-  "0xd7d36d66d2f1b608a0f943f722d27e3744f66f25", // EvaluatorRouter testnet
 ]);
 
 interface ScanTx {
@@ -66,7 +62,7 @@ function looksLikeWork(tx: ScanTx): boolean {
   if (APPROVAL.test(method) || TRANSFER.test(method)) return false;
   if (method.includes("transfer") || method.includes("approve")) return false;
   const to = (tx.to ?? "").toLowerCase();
-  if (REGISTRY.has(to) || DELIVERY.has(to)) return false;
+  if (REGISTRY.has(to)) return false;
   return true;
 }
 
