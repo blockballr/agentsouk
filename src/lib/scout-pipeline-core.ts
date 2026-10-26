@@ -124,7 +124,7 @@ export function probeToVerification(
   // a card or endpoint behind its own login answered, so it is alive; gated keeps the delist clock off
   const status = probe.ok
     ? "online"
-    : /^(a2a|mcp) (401|403)$/.test(probe.detail)
+    : /402/.test(probe.detail) || /^(a2a|mcp) (401|403)$/.test(probe.detail)
       ? "gated"
       : probe.detail.includes("no callable")
         ? "unreachable"

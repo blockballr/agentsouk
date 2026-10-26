@@ -76,11 +76,29 @@ export async function GET(
     ...(row.category ? { category: row.category } : {}),
     ...(row.skills?.length
       ? {
-          skills: row.skills.map((s) => ({
-            id: s.id,
-            name: s.name,
-            description: s.description,
-          })),
+          skills: [
+            ...row.skills.map((s) => ({
+              id: s.id,
+              name: s.name,
+              description: s.description,
+            })),
+            ...(row.vaultOnly === true
+              ? [
+                  {
+                    id: "negotiate",
+                    name: "Negotiate an ERC-8183 job",
+                    description:
+                      "ERC-8183 job selling: answers a negotiate step with a wallet-signed quote priced in the kernel's payment token, naming this listing's registered wallet as provider.",
+                  },
+                  {
+                    id: "notify_funded",
+                    name: "Work a funded ERC-8183 job",
+                    description:
+                      "ERC-8183 job selling: on notify_funded the kernel's own row is read back to confirm this listing is the funded job's provider, the work is planned, and the deliverable is submitted on chain for the optimistic dispute window to release.",
+                  },
+                ]
+              : []),
+          ],
         }
       : {}),
     services: [{ name: "A2A", endpoint }],

@@ -5,6 +5,8 @@ import {
   decideReferenceTask,
   type ReferenceAgentReply,
 } from "@/lib/reference-rebalancing";
+import { sellerConfigFromEnv, sellerHook } from "@/lib/seller8183";
+import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,8 @@ const JSON_HEADERS = {
 };
 
 type RpcId = string | number | null;
+
+const SELLER8183 = sellerConfigFromEnv(targetChainId(), null, "Souk Rebalance", "_REBALANCING");
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -113,6 +117,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const message = readMessage(request.params);
   if (!message) {
     return rpcError(id, -32602, "Invalid params: message/send requires params.message.parts");
+  }
+
+  const rawParts =
+    isRecord(request.params) && isRecord(request.params.message) && Array.isArray(request.params.message.parts)
+      ? request.params.message.parts
+      : [];
+  const seller = await sellerHook(SELLER8183, rawParts, (task) => ({ text: "rebalance plan" }));
+  if (seller.kind !== "none") {
+    return NextResponse.json(
+      { jsonrpc: "2.0", id, result: seller.envelope },
+      { headers: JSON_HEADERS },
+    );
   }
 
   const reply = decideReferenceTask(message.task, message.input);

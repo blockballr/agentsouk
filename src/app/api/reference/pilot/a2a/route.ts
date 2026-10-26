@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { PILOT_AGENT_CATEGORY, decidePilotTask, type PilotAgentReply } from "@/lib/reference-pilot";
+import { sellerConfigFromEnv, sellerHook } from "@/lib/seller8183";
+import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +13,8 @@ const JSON_HEADERS = {
 };
 
 type RpcId = string | number | null;
+
+const SELLER8183 = sellerConfigFromEnv(targetChainId(), null, "Souk Grid Pilot", "_PILOT");
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -106,6 +110,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const message = readMessage(request.params);
   if (!message) {
     return rpcError(id, -32602, "Invalid params: message/send requires params.message.parts");
+  }
+
+  const rawParts =
+    isRecord(request.params) && isRecord(request.params.message) && Array.isArray(request.params.message.parts)
+      ? request.params.message.parts
+      : [];
+  const seller = await sellerHook(SELLER8183, rawParts, (task) => ({ text: "pilot plan" }));
+  if (seller.kind !== "none") {
+    return NextResponse.json(
+      { jsonrpc: "2.0", id, result: seller.envelope },
+      { headers: JSON_HEADERS },
+    );
   }
 
   const reply = decidePilotTask(message.task, message.input);

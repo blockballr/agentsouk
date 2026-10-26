@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { GRID_AGENT_CATEGORY, type GridAgentReply } from "@/lib/reference-grid";
 import { decideGridAgentTaskLive } from "@/lib/reference-grid-live";
+import { sellerConfigFromEnv, sellerHook } from "@/lib/seller8183";
+import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,8 @@ const JSON_HEADERS = {
 };
 
 type RpcId = string | number | null;
+
+const SELLER8183 = sellerConfigFromEnv(targetChainId(), null, "Souk Grid Planner", "_GRID");
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -113,6 +117,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // a named PancakeSwap pair reads the pool first; any other request is the plain planner
+  const rawParts =
+    isRecord(request.params) && isRecord(request.params.message) && Array.isArray(request.params.message.parts)
+      ? request.params.message.parts
+      : [];
+  const seller = await sellerHook(SELLER8183, rawParts, (task) => ({ text: "grid plan" }));
+  if (seller.kind !== "none") {
+    return NextResponse.json(
+      { jsonrpc: "2.0", id, result: seller.envelope },
+      { headers: JSON_HEADERS },
+    );
+  }
+
   const reply = await decideGridAgentTaskLive(message.task, message.input);
   return NextResponse.json(
     { jsonrpc: "2.0", id, result: { task: taskEnvelope(reply) } },
