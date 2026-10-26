@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import type { Jobs8183Row } from '../lib/api'
 import { jobStatusName } from '../lib/jobs8183'
 import { Btn, Pill, Row, Stack, Txt } from './souk'
+import { EscrowRating } from './EscrowRating'
 
 const STEPS = ['Funded', 'Submitted', 'Settled'] as const
 const PREVIEW_CHARS = 700
@@ -165,6 +166,15 @@ export default function Jobs8183JobCard({
         <Txt size={12} lead={18} tone="muted">
           No result yet. The seller has not submitted a deliverable.
         </Txt>
+      ) : null}
+
+      {job.status === 3 && job.tokenId ? (
+        <EscrowRating
+          chainId={job.chainId}
+          tokenId={job.tokenId}
+          paymentId={`job:${job.chainId}:${job.onchainJobId}`}
+          agentName={job.agentName}
+        />
       ) : null}
 
       <Row justify="between" align="center" gap={12} className="flex-wrap">

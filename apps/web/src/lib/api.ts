@@ -1083,3 +1083,48 @@ export async function verifyTurnstile(token: string): Promise<boolean> {
   const payload = await res.json().catch(() => null)
   return Boolean(payload?.success)
 }
+
+export interface EscrowRating {
+  id: string
+  chainId: number
+  tokenId: string
+  paymentId: string
+  rater: string
+  score: number
+  comment: string
+  verifierScore: number
+  createdAt: string
+}
+
+export interface EscrowRatingSummary {
+  count: number
+  average: number
+  verifierAverage: number
+}
+
+export async function getRatings(chainId: number, tokenId: string): Promise<{ ratings: EscrowRating[]; summary: EscrowRatingSummary }> {
+  const res = await fetch(`${BASE}/ratings?chainId=${chainId}&tokenId=${encodeURIComponent(tokenId)}`)
+  const payload = await res.json().catch(() => null)
+  if (!res.ok || !payload?.success) throw new Error(payload?.error ?? `ratings ${res.status}`)
+  return { ratings: payload.ratings ?? [], summary: payload.summary ?? { count: 0, average: 0, verifierAverage: 0 } }
+}
+
+export async function submitEscrowRating(input: {
+  chainId: number
+  tokenId: string
+  paymentId: string
+  score: number
+  comment: string
+  verifierScore: number
+  rater: string
+  signature: string
+}): Promise<{ rating: EscrowRating; summary: EscrowRatingSummary }> {
+  const res = await fetch(`${BASE}/ratings`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  const payload = await res.json().catch(() => null)
+  if (!res.ok || !payload?.success) throw new Error(payload?.error ?? `rating ${res.status}`)
+  return { rating: payload.rating, summary: payload.summary }
+}
