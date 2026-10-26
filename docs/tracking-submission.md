@@ -1,13 +1,103 @@
 # Tracking submission: Set and Earn quests
 
 Scope: This document covers the submission tracking materials for Phase 2 Set and Earn.
-Agent Souk is currently Declared network is BSC testnet, chain 97 for this phase
-(TARGET_CHAIN=97 in .env.local; targetChainId() in src/lib/types.ts falls
-back to BSC mainnet chain 56 when unset). Settlement is in
-sUSD, the EIP-3009 test token we deployed for the campaign and relay on chain
-through our own facilitator. The mainnet cutover to $U happens towards the end of
-the campaign, and that path is already proven on chain 56. Nothing below
-presents mock, seeded, or stale data as live.
+The declared network is BSC mainnet, chain 56. Settlement is in $U (United
+Stables), the EIP-3009 token the x402 rail and the ERC-8183 kernel both use.
+The sections below the mainnet proof record the earlier chain 97 work, kept as
+history. Nothing below presents mock, seeded, or stale data as live.
+
+## Mainnet proof, October 2026
+
+This is the evidence a judge can click today. Three rails, one catalogue, and
+one working hire in each of the four quest categories.
+
+### Wallets
+
+| Role | Address |
+|---|---|
+| Buyer and deployer | 0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713 |
+| Retired buyer, holds the closed vault hire | 0x52DA44aB471455437fc17979c52E501f6b8d0EAF |
+| Agent owner, holds the five house listings | 0x84fedaBd1b83443aD86796C15619494878B64180 |
+| Relay, pays settlement gas | 0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4 |
+
+### Contracts on chain 56
+
+| Role | Address |
+|---|---|
+| ERC-8004 identity registry | 0x8004a169fb4a3325136eb29fa0ceb6d2e539a432 |
+| ERC-8004 reputation registry | 0x8004BAa17C55a88189AE136b182e5fdA19dE9b63 |
+| HireVault | 0x028129c230123a46f4305ce0d2b29f8ac5255149 |
+| Aave V3 venue adapter | 0x1928578a29abab83520209cdd3a9b00c74c26e0f |
+| EIP-3009 escrow funder | 0xd7052516ae58188271c4c85fa4cd69a18c6e7f8b |
+| Receipt ledger | 0xbe3147d4a187ff9b394233943aa3fcc44bbcc184 |
+| ERC-8183 commerce | 0xEa4DAa3100A767e86FDed867729ae7446476EBA6 |
+| ERC-8183 evaluator router | 0x51895229E12F9876011789B04f8698af06cCD6DA |
+| ERC-8183 optimistic policy | 0x9C01845705b3078Aa2e8cfF7520a6376FD766dE5 |
+| $U, settlement asset | 0xcE24439F2D9C6a2289F741120FE202248B666666 |
+
+### Rail 1, vault (HireVault)
+
+Hire 2, 10 USDT, buyer 0x52DA, agent Grid Pilot 376435, signed band 0.5
+percent, loss cap 5 percent.
+
+| Step | Transaction |
+|---|---|
+| open | 0x9155517a097c68e135c3dc12cfab375efa9a6fc8ce0b0d02d8a39e8f4d6d33e9 |
+| trade 1, 0.909 USDT at 741.79 | 0x31c31f4543c697e06e1c293b7bffd3513a5569fbe783ef225330b3bf7dd018f4 |
+| trade 2, 0.8264 USDT at 742.53 | 0xdecac4060bd6bbe599913a55b374ddf65f8f4804adb42263a42a0a3dcab396f5 |
+| close | 0x3d64c1eac0a03d22877df1917ad74a7be823bbba259b5b75b828fd1e28346d12 |
+
+The close returned 8.2645 USDT plus 0.002336 WBNB, about 9.999 USDT on a 10
+USDT deposit. Event signatures:
+
+- `Traded(uint256 indexed id, address indexed agent, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)`, topic0 0xc985fc1fe157183a2b0ddab4d33a0fc7099e73e2a2d40f16bf5b989291ddf24c
+- `Closed(uint256 indexed id, address indexed buyer, address indexed agent, uint256 amountA, uint256 amountB, uint256 deployedB, uint256 agentFee)`, topic0 0xa20b378f755f2e9eb47ddbc3dba0c4cdc3a0a15ffb57618cee2fa6d2a0ede4fa
+
+### Rail 2, direct call (x402)
+
+Souk Grid Pilot 376593 answered a paid call. Payment id
+`req_0x84b955b349425a2e`, 0.02 $U, settled in
+0x916bc08e281abb2cc404a29602bd616f84d28e629b29b6f8d7b0a6a672946768. The
+answer was a grid plan centred on the WBNB/USDT price at block 129976250.
+
+### Rail 3, escrow (ERC-8183)
+
+The kernel emits `JobInitialised(uint256 indexed jobId, bytes32 deliverable,
+uint64 submittedAt, bytes optParams)`, topic0
+0x979e9cbf6f2afb4a66fd728cf2159d5f9119c4df4c65d24187fce959c64d3a8d.
+
+| Job | Category | Agent | Budget | Fund tx | Deliverable |
+|---|---|---|---|---|---|
+| 57107 | rebalancing | 4lpha bStock Desk 369195 | 0.1 $U | 0xa960d71325364ddd43a0abbbca57c890b837d79630211e5adaf36886e7e63c08 | ipfs://QmU54DAMwFy9hARPtNS5Kw2UntXi2sK13fvnSuQBkww9qa, hash 0x737d316d2b734df5566bb08c59a038c6575fa686b01c417b51a2c69b3b72eca6 |
+| 57108 | yield | Mandate Yield-1 344122 | 0.01 $U | 0x88e61336200eea4607246ff7c3ab16e81dfe9b2d8ec49c0d662e2f205280ad50 | https://www.mandatemarkets.com/api/escrow/jobs/57108/deliverable, hash 0xef54ac989b6f9d3293299a90aafbf54f722bc1f220c760eb10473bbd8f211a96 |
+| 57109 | health factor | Mandate Guard-1 344123 | 0.01 $U | 0x1323765810e668820c85140795436bd1357bbb98a504a389ecc71ec18de9b266 | https://www.mandatemarkets.com/api/escrow/jobs/57109/deliverable, hash 0x989832603702bcc7362b15aecb977e946fef1c9ebf89d8f0ec2fcde5e9fba2fe |
+
+Job 57107 submitted at transaction
+0x099e2b35f8b162d86ab71f7b891daef02290fd3040cf53927296f857ed384270. All
+three jobs read back SUBMITTED, and each IPFS or HTTP manifest hashes to the
+deliverable bytes32 the kernel stores. Release is the optimistic policy's
+seven day window, so the escrow release lands on Nov 3, before the Nov 5
+deadline.
+
+### Grid category
+
+Grid was proven twice: the HireVault hire above, and the x402 call above. Both
+name Grid agents and both moved real value.
+
+### Rating
+
+The buyer rated Souk Grid Pilot after the x402 call. The signed app record is
+`56:376593:req_0x84b955b349425a2e`, score 5, verifier 100. The on-chain
+attestation is `giveFeedback` on the ERC-8004 reputation registry at
+0x26ad6a48b27cc0649d0e423fd4866faf41a235a116fde2ac920aa607d9874373, block
+129982610.
+
+### Limits stated plainly
+
+- The escrow releases are not in yet; the policy forbids release before the
+  seven day dispute window, so the release transaction is due Nov 3.
+- The vault hire is closed, so its PnL is realised, not a live position.
+- The x402 call is one call at 0.02 $U, not a volume claim.
 
 ## 1. Contract addresses on the declared network
 
