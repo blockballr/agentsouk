@@ -6,6 +6,9 @@ name: Rebuild the catalogue snapshot
 # serves a snapshot more than ~12 hours old. The rebuild runs the same route a
 # deployment uses, so a local rebuild cannot drift from what ships.
 
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: "0 0,12 * * *"
