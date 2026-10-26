@@ -1,0 +1,21 @@
+{
+  "chainId": 56,
+  "snapshotTime": "2026-10-26T08:17:57.973Z",
+  "funnel": {
+    "fetched": 2490,
+    "upstreamTotal": 358547,
+    "deduped": 1573,
+    "selected": 240,
+    "registryTotal": 358547,
+    "declarers": 131,
+    "endpointsRecovered": 131,
+    "seededApplied": 0
+  },
+  "counts": {
+    "rebalancing": 60,
+    "grid-trading": 30,
+    "yield": 60,
+    "health-factor": 60,
+    "general": 30
+  }
+}

@@ -49,11 +49,13 @@ jobs:
       - name: Stop the server
         if: always()
         run: kill $(cat /tmp/server.pid) 2>/dev/null || true
+      - name: Write coverage report
+        run: node scripts/write-coverage.mjs 56
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/agents.json
+          git add data/agents.json data/coverage.json
           if git diff --cached --quiet; then
             echo "snapshot unchanged, nothing to commit"
             exit 0

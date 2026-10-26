@@ -489,6 +489,10 @@ interface IndexState {
   // the committed snapshot's own size, and the registry total it recorded, if any
   snapshotTotal: number | null;
   snapshotRegistryTotal: number | null;
+  // the committed snapshot's build-time funnel (fetched, deduped, declarers, ...)
+  snapshotSource: SnapshotSource | null;
+  // the committed snapshot's per-category counts
+  snapshotCounts: Record<string, number> | null;
   // the registry total the shared store last reported for this chain; null until
   // one has been observed anywhere, never a per-process live figure
   storedRegistryTotal: number | null;
@@ -513,6 +517,8 @@ const index: IndexState = {
   lastWarmAt: null,
   snapshotTotal: null,
   snapshotRegistryTotal: null,
+  snapshotSource: null,
+  snapshotCounts: null,
   storedRegistryTotal: null,
   liveUpstreamTotal: null,
   catalogueRefreshedAt: null,
@@ -531,6 +537,9 @@ interface SnapshotSource {
   // The registry total recorded at build time, when the writer knew it. This is the
   // only denominator a fresh instance and a topped-up one can agree on.
   registryTotal?: number | null;
+  declarers?: number;
+  endpointsRecovered?: number;
+  seededApplied?: number;
 }
 
 interface SnapshotFile {
@@ -606,6 +615,63 @@ export function invalidateSnapshot(): void {
   durableReadAt = null;
   durableVersion = null;
   registryTotalLoaded = false;
+}
+
+// Publishes the catalogue's coverage and funnel counts: what the indexer fetched,
+// how many survived dedupe, how many were selected, and the per-category split.
+// Read from the committed snapshot plus the shared store, so it is auditable
+// without re-running the build.
+export interface CatalogueCoverage {
+  snapshotTime: string | null;
+  catalogueSource: CatalogueSource;
+  catalogueRefreshedAt: string | null;
+  funnel: {
+    fetched: number | null;
+    upstreamTotal: number | null;
+    deduped: number | null;
+    selected: number | null;
+    registryTotal: number | null;
+    declarers: number | null;
+    endpointsRecovered: number | null;
+    seededApplied: number | null;
+  };
+  counts: Record<string, number> | null;
+  shelved: number;
+  shelfMode: ShelfStoreMode;
+}
+
+export async function getCatalogueCoverage(): Promise<CatalogueCoverage> {
+  await loadSnapshot();
+  await mergeDurableShelf();
+  await mergeRegistryTotal();
+  const held = Array.from(index.agents.values()).filter(
+    (a) => a.chain_id === targetChainId(),
+  ).length;
+  const shelfCounts = resolveShelfCounts({
+    snapshotAgents: index.snapshotTotal,
+    storedRegistryTotal: index.storedRegistryTotal,
+    snapshotRegistryTotal: index.snapshotRegistryTotal,
+    liveUpstreamTotal: index.liveUpstreamTotal,
+  });
+  const src = index.snapshotSource;
+  return {
+    snapshotTime,
+    catalogueSource: index.catalogueSource,
+    catalogueRefreshedAt: index.catalogueRefreshedAt,
+    funnel: {
+      fetched: src?.fetched ?? null,
+      upstreamTotal: src?.upstreamTotal ?? null,
+      deduped: src?.deduped ?? null,
+      selected: index.snapshotTotal,
+      registryTotal: shelfCounts.registryTotal,
+      declarers: src?.declarers ?? null,
+      endpointsRecovered: src?.endpointsRecovered ?? null,
+      seededApplied: src?.seededApplied ?? null,
+    },
+    counts: index.snapshotCounts,
+    shelved: held,
+    shelfMode: shelfStoreMode(),
+  };
 }
 
 // A store read reports whether it actually ran, so an unavailable database's
@@ -784,6 +850,8 @@ async function loadSnapshot(): Promise<boolean> {
     // carry its shelf size there, so it is not a registry total.
     index.snapshotTotal = snap.agents.length;
     index.snapshotRegistryTotal = positiveCount(snap.source.registryTotal);
+    index.snapshotSource = snap.source;
+    index.snapshotCounts = snap.counts ?? null;
     index.totalFetched = snap.agents.length;
     index.lastWarmAt = Date.now();
     snapshotTime = snap.snapshotTime;
