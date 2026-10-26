@@ -422,11 +422,18 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
       const found: VaultHire[] = []
       for (const id of decoded) {
         const hireData = await readBytes(provider, vault, encodeFunctionData({ abi: [{ name: 'hire', type: 'function', stateMutability: 'view', inputs: [{ name: 'id', type: 'uint256' }], outputs: [] }] as const, functionName: 'hire', args: [id] }))
-        const hire = decodeFunctionResult({ abi: [{ name: 'hire', type: 'function', stateMutability: 'view', inputs: [], outputs: [
-          { type: 'address' }, { type: 'address' }, { type: 'uint64' }, { type: 'uint16' }, { type: 'bool' },
-          { type: 'uint256' }, { type: 'uint256' }, { type: 'uint160' }, { type: 'uint24' }, { type: 'uint256' },
-          { type: 'uint256' }, { type: 'uint16' }, { type: 'uint256' }, { type: 'uint16' },
-        ] }] as const, functionName: 'hire', data: hireData }) as readonly unknown[]
+        // a closed or unknown hire returns no data; skip it instead of crashing the whole read
+        if (!hireData || hireData === '0x' || hireData.length <= 2) continue
+        let hire: readonly unknown[]
+        try {
+          hire = decodeFunctionResult({ abi: [{ name: 'hire', type: 'function', stateMutability: 'view', inputs: [], outputs: [
+            { type: 'address' }, { type: 'address' }, { type: 'uint64' }, { type: 'uint16' }, { type: 'bool' },
+            { type: 'uint256' }, { type: 'uint256' }, { type: 'uint160' }, { type: 'uint24' }, { type: 'uint256' },
+            { type: 'uint256' }, { type: 'uint16' }, { type: 'uint256' }, { type: 'uint16' },
+          ] }] as const, functionName: 'hire', data: hireData }) as readonly unknown[]
+        } catch {
+          continue
+        }
         found.push({
           buyer: String(hire[0]),
           agent: String(hire[1]),
@@ -618,7 +625,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   // one, there is no shelf link that would land on the same list, so the whole
   // short list stays on the page instead of being cut behind a dead link
   const canSeeAll = targetChain?.chainId === requestedChain
-  const vaultAgentsShown = canSeeAll ? otherVaultAgents.slice(0, 3) : otherVaultAgents
+  const vaultAgentsShown = canSeeAll ? otherVaultAgents.slice(0, 4) : otherVaultAgents.slice(0, 4)
   const openCount = (hires ?? []).filter((h) => h.open).length
   const atQueueCap = maxOpen !== null && openCount >= maxOpen
 
@@ -1347,7 +1354,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             Open an agent to read its strategy and fund a hire from its card. Every hire moves
             through this same vault, and the buyer names the agent's wallet at open.
           </Txt>
-          <Stack gap={2}>
+          <div className="grid gap-4 md:grid-cols-2">
             {vaultAgentsShown.map((a) => (
               <Link
                 key={a.tokenId}
@@ -1377,7 +1384,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 </Row>
               </Link>
             ))}
-          </Stack>
+          </div>
           {canSeeAll && otherVaultAgents.length > vaultAgentsShown.length ? (
             <Link
               to="/agents?type=vault"
