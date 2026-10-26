@@ -42,12 +42,11 @@ const steps = [
   },
 ]
 
-// Recorded on-chain evidence, one slot per chain. The mainnet row is the first
-// hire to trade on HireVault: a 10 USDT deposit the buyer capped at a 5 percent
-// loss, with the agent trading inside the band the buyer signed. The row shows
-// trade size, not a payment to the agent, and its note says so. The testnet row
-// is a settlement to a third-party agent's own wallet. An escrow settlement gets
-// its own row when a quest wallet completes one.
+// Recorded on-chain evidence, one row per rail. Each row names what actually
+// moved: the vault trade is execution inside a signed band, the x402 row is a
+// paid call, and the escrow row is a funded job with a deliverable hash the
+// chain can check. None of them is dressed up as something it is not, and each
+// note says which rail it proves.
 const settlementEvidence = [
   {
     chainId: 56,
@@ -56,7 +55,25 @@ const settlementEvidence = [
     amount: 0.8264,
     payer: '0x52DA44aB471455437fc17979c52E501f6b8d0EAF',
     note:
-      '10 USDT vault hire: the buyer signed a 0.5 percent band and a 5 percent loss cap, and Grid Pilot traded 0.8264 USDT inside it. The buyer closed at 8.2645 USDT plus 0.00234 WBNB, about 9.999 USDT back, so this row proves execution, not a payment.',
+      'Vault rail. A 10 USDT hire the buyer capped at a 0.5 percent band and a 5 percent loss, and Grid Pilot traded 0.8264 USDT inside it. The buyer closed at 8.2645 USDT plus 0.00234 WBNB, about 9.999 USDT back, so this row proves execution, not a payment.',
+  },
+  {
+    chainId: 56,
+    txHash: '0x916bc08e281abb2cc404a29602bd616f84d28e629b29b6f8d7b0a6a672946768',
+    agent: 'Souk Grid Pilot',
+    amount: 0.02,
+    payer: '0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713',
+    note:
+      'Direct call, x402. The buyer paid 0.02 $U for one call and the agent answered with a grid plan read from the WBNB/USDT pool at block 129976250. The payment settled to the agent wallet, and the answer is the deliverable.',
+  },
+  {
+    chainId: 56,
+    txHash: '0x099e2b35f8b162d86ab71f7b891daef02290fd3040cf53927296f857ed384270',
+    agent: '4lpha bStock Desk',
+    amount: 0.1,
+    payer: '0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713',
+    note:
+      'Escrow, ERC-8183 job 57107. The buyer locked 0.1 $U in the kernel, the seller submitted an NVDA report to IPFS, and the on-chain deliverable hash matches the manifest. Release follows the seven day optimistic window on Nov 3.',
   },
   {
     chainId: 97,
@@ -441,13 +458,13 @@ export function HomePage() {
         </section>
       </Reveal>
 
-      {/* the drawing gives settlement proof its own band under the hero rather than
+      {/* the drawing gives on-chain proof its own band under the hero rather than
           nesting it inside the testing section, so the evidence stands apart from
           the claim about it */}
       <Reveal>
         <section className="py-16 md:py-18">
           <Stack surface pad={[20, 22, 18, 22]} gap={14}>
-            <SectionHead title="Settlement proof" note="RECORDED" />
+            <SectionHead title="On-chain proof" note="RECORDED" />
             <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: 900 }}>
                 <colgroup>
@@ -477,7 +494,7 @@ export function HomePage() {
                   {settlementEvidence.map((e) => {
                     const asset = settlementAssetFor(e.chainId)
                     return (
-                      <tr key={e.chainId}>
+                      <tr key={`${e.chainId}-${e.txHash}`}>
                         <td
                           className="border-b border-r border-white/[0.08]"
                           style={{ padding: '7px 10px 7px 12px', height: 34 }}
@@ -537,7 +554,7 @@ export function HomePage() {
             </div>
             {settlementEvidence.map((e) =>
               e.note ? (
-                <Txt key={e.chainId} size={12} lead={18} tone="muted">
+                <Txt key={`${e.chainId}-${e.txHash}`} size={12} lead={18} tone="muted">
                   {`${chainLabel(e.chainId)} · chain ${e.chainId}: ${e.note}`}
                 </Txt>
               ) : null,
