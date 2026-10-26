@@ -218,6 +218,49 @@ async function listHires(req: NextRequest, args: Record<string, unknown>): Promi
   return toolJson(body);
 }
 
+async function vaultVenues(req: NextRequest, args: Record<string, unknown>): Promise<ToolText> {
+  const chainId = asNumber(args.chainId);
+  const qs = chainId !== undefined ? `?chain=${chainId}` : "";
+  const { status, body } = await apiJson(req, `/api/vault/venues${qs}`, { method: "GET" });
+  if (status !== 200) return toolText(apiError(body, status), true);
+  return toolJson(body);
+}
+
+async function vaultTrack(req: NextRequest, args: Record<string, unknown>): Promise<ToolText> {
+  const agent = asString(args.agent);
+  if (!agent) return toolText("agent is required.", true);
+  const chainId = asNumber(args.chainId);
+  const qs = new URLSearchParams({ agent });
+  if (chainId !== undefined) qs.set("chain", String(chainId));
+  const { status, body } = await apiJson(req, `/api/vault/track?${qs.toString()}`, { method: "GET" });
+  if (status !== 200) return toolText(apiError(body, status), true);
+  return toolJson(body);
+}
+
+async function vaultPosition(req: NextRequest, args: Record<string, unknown>): Promise<ToolText> {
+  const buyer = asString(args.buyer);
+  if (!buyer) return toolText("buyer is required.", true);
+  const chainId = asNumber(args.chainId);
+  const qs = new URLSearchParams({ buyer });
+  if (chainId !== undefined) qs.set("chainId", String(chainId));
+  const { status, body } = await apiJson(req, `/api/vault/positions?${qs.toString()}`, { method: "GET" });
+  if (status !== 200) return toolText(apiError(body, status), true);
+  return toolJson(body);
+}
+
+async function vaultReceipts(req: NextRequest, args: Record<string, unknown>): Promise<ToolText> {
+  const hireId = asString(args.hireId);
+  const agent = asString(args.agent);
+  const chainId = asNumber(args.chainId);
+  const qs = new URLSearchParams();
+  if (hireId) qs.set("hireId", hireId);
+  if (agent) qs.set("agent", agent);
+  if (chainId !== undefined) qs.set("chainId", String(chainId));
+  const { status, body } = await apiJson(req, `/api/vault/receipts?${qs.toString()}`, { method: "GET" });
+  if (status !== 200) return toolText(apiError(body, status), true);
+  return toolJson(body);
+}
+
 async function getHireRequirements(
   req: NextRequest,
   args: Record<string, unknown>,
@@ -393,6 +436,14 @@ function runTool(
       return getTaskTool(req, args);
     case "list_hires":
       return listHires(req, args);
+    case "vault_venues":
+      return vaultVenues(req, args);
+    case "vault_track":
+      return vaultTrack(req, args);
+    case "vault_position":
+      return vaultPosition(req, args);
+    case "vault_receipts":
+      return vaultReceipts(req, args);
     default:
       return Promise.resolve(toolText(`Unknown tool: ${name}`, true));
   }

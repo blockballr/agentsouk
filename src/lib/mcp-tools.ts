@@ -263,6 +263,68 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     },
     annotations: { readOnlyHint: true, idempotentHint: true },
   },
+  {
+    name: "vault_venues",
+    title: "List vault venues",
+    description:
+      "List the yield venues a HireVault hire can name on a chain, with the adapter address, protocol, status, rate and note. Read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        chainId: { type: "integer", description: "Chain id. Defaults to the chain this deployment serves." },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+  },
+  {
+    name: "vault_track",
+    title: "Vault track record for an agent",
+    description:
+      "Count what the vault itself recorded for one agent: hires opened, still open, closed, and trades sent, derived from the vault's own events. Read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        agent: { type: "string", description: "The agent's wallet address (0x followed by 40 hex characters)." },
+        chainId: { type: "integer", description: "Chain id. Defaults to the chain this deployment serves." },
+      },
+      required: ["agent"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+  },
+  {
+    name: "vault_position",
+    title: "Open vault hires for a buyer",
+    description:
+      "Read the open HireVault hires for one buyer wallet, including balances, floor, bounds and the agent. Read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        buyer: { type: "string", description: "The buyer wallet address, 0x followed by 40 hex characters." },
+        chainId: { type: "integer", description: "Chain id. Defaults to the chain this deployment serves." },
+      },
+      required: ["buyer"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+  },
+  {
+    name: "vault_receipts",
+    title: "Vault trade receipts",
+    description:
+      "List the trade receipts for a hire id or for an agent wallet. Read-only.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        hireId: { type: "string", description: "A hire id." },
+        agent: { type: "string", description: "An agent wallet address." },
+        chainId: { type: "integer", description: "Chain id. Defaults to the chain this deployment serves." },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+  },
 ];
 
 export type McpToolName = (typeof MCP_TOOLS)[number]["name"];
