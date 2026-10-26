@@ -96,6 +96,48 @@ attestation is `giveFeedback` on the ERC-8004 reputation registry at
 0x26ad6a48b27cc0649d0e423fd4866faf41a235a116fde2ac920aa607d9874373, block
 129982610.
 
+### API fallback, check without reading events
+
+Every claim above also has a read endpoint, so a judge does not have to decode
+logs. These are live on `https://api.agentsouk.xyz` and return JSON with no key.
+
+| What | Call |
+|---|---|
+| One wallet's quest progress | `GET /api/quest/progress?wallet=0x...` |
+| Vault counts for one agent | `GET /api/vault/track?chain=56&agent=0x...` |
+| Vault receipts, with tx hashes | `GET /api/vault/receipts?agent=0x...` |
+| One escrow job | `GET /api/jobs8183/jobs?chainId=56&jobId=57107` |
+| Every escrow job for a wallet | `GET /api/jobs8183/jobs?wallet=0x...` |
+| One x402 receipt | `GET /api/receipts/req_0x84b955b349425a2e` |
+| One listing and its registry fields | `GET /api/agents/56/376593` |
+| Category coverage and funnel | `GET /api/catalogue/coverage` |
+
+Examples from the proof above:
+
+```bash
+curl "https://api.agentsouk.xyz/api/vault/track?chain=56&agent=0x5d328e476F9D81Bb52DBAA37895804775e49731f"
+# {"success":true,"hires":2,"openHires":0,"closedHires":2,"trades":2,"lastBlock":129975758}
+
+curl "https://api.agentsouk.xyz/api/jobs8183/jobs?chainId=56&jobId=57107"
+# {"success":true,"jobs":[{"onchainJobId":57107,"status":2,"budgetUsd":0.1,
+#   "result":{"url":"ipfs://QmU54DAMwFy9hARPtNS5Kw2UntXi2sK13fvnSuQBkww9qa"}}]}
+
+curl "https://api.agentsouk.xyz/api/receipts/req_0x84b955b349425a2e"
+# {"mode":"prod","amount":"20000000000000000","txHash":"0x916bc08e...","activated":true}
+```
+
+`/api/quest/progress` is the one to hand a quest user. It reports
+`completed: true` only for a wallet that hired in all four categories and
+listed one agent. It excludes declared team wallets, self-hires and the
+verifier sweep by design, so a team wallet reads `team: true` and zero
+progress. That is the intended answer, not a bug. The same response carries
+the per-category booleans, the hires, and the listings, so a user can see
+exactly which step is still missing.
+
+The `diag=1` flag on `/api/vault/track` adds the log endpoint host and the
+scan errors. It exists because public log endpoints prune old ranges and a
+silent zero is worse than a named failure.
+
 ### Limits stated plainly
 
 - Every wallet in the proof above is a declared team wallet. That proves the
