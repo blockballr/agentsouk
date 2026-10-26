@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Footer } from '../components/Footer'
-import { CATEGORIES } from '@agora/core'
+import { CATEGORIES, takesVault } from '@agora/core'
 import { chainLabel, explorerTxBase, settlementAssetFor } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { AnimatedNumber } from '../components/AnimatedNumber'
+import { defaultAvatarFor } from '../lib/default-avatar'
 import { ArcTile, OrbitTile } from '../components/tiles'
 import { Reveal } from '../components/Reveal'
 import { SPRING_STIFF, SPRING_SMOOTH } from '../lib/motion'
-import { Stack, Row, Txt, Pill, Dot, SectionHead, Btn, Rule, Label } from '../components/souk'
+import { Stack, Row, Txt, Pill, Dot, SectionHead, Btn, Label } from '../components/souk'
 
 // Home page entrance: the nav shell never re-animates, the hero cascades on mount,
 // and below-fold sections reveal once on scroll.
@@ -87,7 +88,7 @@ export function HomePage() {
   const [stage, setStage] = useState(0)
   const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number> | null>(null)
-  const [featured, setFeatured] = useState<Record<string, { name: string; tokenId: string; chainId: number; description: string | null } | null>>({})
+  const [featured, setFeatured] = useState<Record<string, any>>({})
   const target = useTargetChain()
   const settlementSymbol = target?.settlementSymbol ?? null
 
@@ -120,17 +121,7 @@ export function HomePage() {
         .then((r) => r.json())
         .then((d) => {
           const a = Array.isArray(d?.items) ? d.items[0] : null
-          if (a) {
-            setFeatured((prev) => ({
-              ...prev,
-              [c.key]: {
-                name: a.name ?? a.agent_name ?? 'Agent',
-                tokenId: String(a.token_id ?? a.tokenId ?? ''),
-                chainId: Number(a.chain_id ?? a.chainId ?? 97),
-                description: a.description ?? null,
-              },
-            }))
-          }
+          if (a) setFeatured((prev) => ({ ...prev, [c.key]: a }))
         })
         .catch(() => {})
     })
@@ -246,31 +237,52 @@ export function HomePage() {
                 viewport={{ once: true, margin: '0px 0px -60px 0px' }}
                 transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
               >
-                <Link to={a ? `/agents/${a.chainId}/${a.tokenId}` : `/agents?category=${c.key}`} className="group block h-full">
+                <Link to={a ? `/agents/${a.chain_id}/${a.token_id}` : `/agents?category=${c.key}`} className="group block h-full">
                   <Stack
                     surface
-                    pad={[20, 22, 18, 22]}
-                    gap={11}
+                    gap={12}
+                    pad={[20, 22, 20, 22]}
                     className="h-full transition-colors group-hover:border-white/[0.16]"
                   >
-                    <Txt size={10} lead={14} weight="bold" upper tone="muted">
-                      {c.short}
-                    </Txt>
-                    <Txt size={22} lead={28} weight="bold" tone="ink">
-                      {c.label}
-                    </Txt>
-                    <Txt size={13} lead={20} tone="slate">
-                      {a?.description ?? c.blurb}
-                    </Txt>
                     {a ? (
-                      <Txt size={11} lead={16} weight="bold" tone="ink">
-                        {a.name}
-                      </Txt>
-                    ) : null}
-                    <Rule />
-                    <Txt size={10} lead={14} mono tone="labels">
-                      {a ? `/agents/${a.chainId}/${a.tokenId}` : `/agents?category=${c.key}`}
-                    </Txt>
+                      <>
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={a.image_url ?? defaultAvatarFor(a.chain_id, String(a.token_id))}
+                            alt=""
+                            loading="lazy"
+                            className="h-[48px] w-[48px] shrink-0 rounded-[8px] border border-souk-hair bg-souk-indigo object-cover"
+                            onError={(e) => {
+                              const el = e.currentTarget
+                              if (!el.dataset.fallback) {
+                                el.dataset.fallback = '1'
+                                el.src = defaultAvatarFor(a.chain_id, String(a.token_id))
+                              }
+                            }}
+                          />
+                          <Stack gap={1} className="min-w-0 flex-1">
+                            <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                              {c.short}
+                            </Txt>
+                            <Txt size={16} lead={22} weight="bold" tone="ink" className="truncate">
+                              {a.name ?? a.agent_name ?? 'Agent'}
+                            </Txt>
+                          </Stack>
+                        </div>
+                        <Txt size={13} lead={20} tone="slate" className="line-clamp-2">
+                          {a.description || c.blurb}
+                        </Txt>
+                        <Txt size={10} lead={14} mono tone="labels">
+                          {a.x402_supported ? 'x402' : ''}{a.x402_supported && takesVault(a.skills ?? []) ? ' · ' : ''}{takesVault(a.skills ?? []) ? 'vault' : ''}
+                        </Txt>
+                      </>
+                    ) : (
+                      <>
+                        <Txt size={10} lead={14} weight="bold" upper tone="muted">{c.short}</Txt>
+                        <Txt size={22} lead={28} weight="bold" tone="ink">{c.label}</Txt>
+                        <Txt size={13} lead={20} tone="slate">{c.blurb}</Txt>
+                      </>
+                    )}
                   </Stack>
                 </Link>
               </motion.div>
