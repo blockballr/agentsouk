@@ -902,8 +902,8 @@ export function AgentDetailPage() {
                   <Row label="Last action" value={activity.lastAt ? timeAgo(activity.lastAt) : 'none'} />
                 </div>
                 <p className="micro mt-3 text-souk-muted">
-                  The listing standard asks for 5 actions on 3 days. Transfers, approvals, registry
-                  writes and deliveries are excluded.
+                  The listing standard asks for 5 actions on 3 days. Transfers, approvals and registry
+                  writes are excluded; job deliveries count.
                 </p>
               </>
             ) : (
@@ -1405,7 +1405,7 @@ function ProofStrip({
         ]}
       />
       <SoukRow align="center" gap={8}>
-        <Dot tone={verdict.tone === 'none' ? 'quiet' : verdict.tone} size={8} />
+        <Dot tone={verdict.label === 'Verified' ? 'verified' : verdict.label === 'Online' ? 'online-fixed' : (verdict.tone === 'none' ? 'quiet' : verdict.tone)} size={8} />
         <Txt size={12} lead={18} tone="slate">
           {verdict.explain}
         </Txt>
