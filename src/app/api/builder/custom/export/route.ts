@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateCustomManifest, getCustomAgent } from "@/lib/builder/custom";
 import { verifyWalletAuth } from "@/lib/builder/auth";
 import { targetChainId } from "@/lib/types";
-import { vaultCardSkill, vaultEnvExample, vaultPackageJson, vaultReadme, vaultRunnerSource, vaultSdkFiles, vaultServerSource, vaultStrategySource } from "@/lib/builder/vault-export";
+import { vaultCardSkill, vaultEnvExample, vaultPackageJson, vaultReadme, vaultRunnerSource, vaultServerSource, vaultStrategySource } from "@/lib/builder/vault-export";
 
 export const dynamic = "force-dynamic";
 
@@ -231,7 +231,6 @@ server.listen(port, () => console.log("custom agent listening on :" + port));
     if (manifest.payment === "vault") {
       files.push({ path: "vault.mjs", content: vaultRunnerSource(targetChainId()) });
       files.push({ path: "strategy.mjs", content: vaultStrategySource() });
-      files.push(...vaultSdkFiles());
     }
 
     files.push({

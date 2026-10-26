@@ -21,7 +21,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
       deployManual: { enabled: true, needs: [], via: "download" },
       agentFunded: { enabled: false, reason: "requires a deployed agent" },
       hirerFunded: { enabled: true, vaultOnly: true },
-      vaultSdk: { enabled: true, package: "@agentsouk/vault-sdk", bundled: true },
+      vaultSdk: { enabled: true, package: "@agentsouk/vault-sdk", bundled: false },
       registration: { enabled: true, chainId },
     },
     registrationRoutes: [

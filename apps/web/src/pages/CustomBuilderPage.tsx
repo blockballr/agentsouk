@@ -382,7 +382,7 @@ export function CustomBuilderPage() {
             ['Download agent files', caps.lanes?.deployManual, caps.lanes?.deployManual?.enabled ? 'Works' : 'Unavailable'],
             ['Agent-funded', caps.lanes?.agentFunded, caps.lanes?.agentFunded?.enabled ? 'Works' : (caps.lanes?.agentFunded?.reason ?? 'Unavailable')],
             ['Hirer-funded', caps.lanes?.hirerFunded, 'Vault lane'],
-            ['Vault SDK', caps.lanes?.vaultSdk, 'Bundled in export'],
+            ['Vault SDK', caps.lanes?.vaultSdk, 'From npm'],
             ['Registration', caps.lanes?.registration, `Chain ${caps.chainId}`],
           ].map(([label, lane, chip]) => (
             <Row key={label as string} gap={8} align="center">

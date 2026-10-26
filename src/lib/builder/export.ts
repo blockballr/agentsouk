@@ -7,7 +7,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { targetChainId } from "../types";
-import { vaultPackageJson, vaultReadme, vaultRunnerSource, vaultSdkFiles, vaultServerSource, vaultStrategySource } from "./vault-export";
+import { vaultPackageJson, vaultReadme, vaultRunnerSource, vaultServerSource, vaultStrategySource } from "./vault-export";
 import type { BuiltAgent } from "./store";
 
 export interface ExportedFile {
@@ -126,7 +126,6 @@ export function exportBuiltAgent(built: BuiltAgent, origin: string): ExportResul
   if (vault) {
     files.push({ path: "vault.mjs", content: vaultRunnerSource(targetChainId()) });
     files.push({ path: "strategy.mjs", content: vaultStrategySource() });
-    files.push(...vaultSdkFiles());
   }
 
   // ship the builder's runtime so the exported agent actually executes its blueprint

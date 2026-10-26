@@ -125,9 +125,10 @@ describe("the export keeps both runtimes", () => {
     const paths = out.files.map((f) => f.path);
     expect(paths).toContain("vault.mjs");
     expect(paths).toContain("strategy.mjs");
-    expect(paths).toContain("vault-sdk/index.js");
+    expect(paths).not.toContain("vault-sdk/index.js");
     const pkg = JSON.parse(out.files.find((f) => f.path === "package.json")!.content);
     expect(pkg.dependencies.viem).toBeTruthy();
+    expect(pkg.dependencies["@agentsouk/vault-sdk"]).toBeTruthy();
     expect(pkg.scripts.run).toContain("vault.mjs");
     const server = out.files.find((f) => f.path === "server.mjs")!.content;
     expect(server).toContain('x402Support: false');
@@ -195,7 +196,7 @@ describe("the custom export branches without touching the job path", () => {
     const paths = body.files.map((f: { path: string }) => f.path);
     expect(paths).toContain("vault.mjs");
     expect(paths).toContain("strategy.mjs");
-    expect(paths).toContain("vault-sdk/index.js");
+    expect(paths).not.toContain("vault-sdk/index.js");
     const server = body.files.find((f: { path: string }) => f.path === "server.mjs").content;
     expect(server).toContain("vault-execution");
     expect(server).toContain("sells no per-call work");

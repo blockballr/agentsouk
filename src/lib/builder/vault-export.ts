@@ -2,7 +2,6 @@
 // job or direct seller never gets a vault card, a vault runner or an SDK copy.
 
 import fs from "node:fs";
-import path from "node:path";
 
 export interface VaultFile {
   path: string;
@@ -116,7 +115,7 @@ export function vaultRunnerSource(chainId: number): string {
   return `import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { bsc, bscTestnet } from "viem/chains";
-import { runVaultAgent } from "./vault-sdk/index.js";
+import { runVaultAgent } from "@agentsouk/vault-sdk";
 import { strategy } from "./strategy.mjs";
 
 const chainId = Number(process.env.CHAIN_ID || "${chainId}");
@@ -150,7 +149,7 @@ console.log(JSON.stringify({ agent: account.address, dryRun: process.env.VAULT_E
 export function vaultStrategySource(): string {
   return `// the edge lives here. this default rebalances to equal weight when drift
 // leaves REBALANCE_BAND_BPS (default 500, or 5%) of the hire's value.
-import { toValue0, fromValue0, minOutToKeepFloor } from "./vault-sdk/index.js";
+import { toValue0, fromValue0, minOutToKeepFloor } from "@agentsouk/vault-sdk";
 
 const BPS = 10_000n;
 
@@ -192,23 +191,6 @@ export function strategy({ config, hire, value, floor }) {
 `;
 }
 
-// the SDK dist is compiled by the prebuild step and copied into the export, so
-// the downloaded repo runs without an unpublished package dependency.
-export function vaultSdkFiles(): VaultFile[] {
-  const dir = path.join(process.cwd(), "packages", "vault-sdk", "dist");
-  const out: VaultFile[] = [
-    {
-      path: "vault-sdk/package.json",
-      content: JSON.stringify({ name: "@agentsouk/vault-sdk", version: "0.1.0", type: "module", main: "./index.js", types: "./index.d.ts" }, null, 2) + "\n",
-    },
-  ];
-  for (const name of fs.readdirSync(dir)) {
-    if (!name.endsWith(".js") && !name.endsWith(".d.ts")) continue;
-    out.push({ path: `vault-sdk/${name}`, content: fs.readFileSync(path.join(dir, name), "utf8") });
-  }
-  return out;
-}
-
 export function vaultPackageJson(slug: string): string {
   return JSON.stringify(
     {
@@ -223,7 +205,7 @@ export function vaultPackageJson(slug: string): string {
         "run:dry": "VAULT_EXECUTE=0 node vault.mjs",
         dev: "node --watch server.mjs",
       },
-      dependencies: { viem: "^2.55.16" },
+      dependencies: { viem: "^2.55.16", "@agentsouk/vault-sdk": "^0.1.0" },
       engines: { node: ">=20" },
     },
     null,
@@ -257,7 +239,7 @@ AGENT_PRIVATE_KEY=0x... npm run run:dry
 
 \`strategy.mjs\` is the edge. The default restores equal weight when drift leaves \`REBALANCE_BAND_BPS\` (default 500). Replace it with your own decision, and size with \`minOutToKeepFloor\` so a trade that would breach the floor reverts on chain.
 
-The \`vault-sdk/\` folder is the compiled \`@agentsouk/vault-sdk\`, shipped here so the repo runs without an unpublished dependency.
+The agent depends on the published \`@agentsouk/vault-sdk\` package, installed from npm.
 `;
 }
 
