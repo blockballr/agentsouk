@@ -117,6 +117,7 @@ export function HomePage() {
         }
       })
       .catch(() => {})
+  }, [])
 
   // lazy-load GSAP and animate the category cards once they're in the DOM
   useEffect(() => {
@@ -155,6 +156,8 @@ export function HomePage() {
   }, [])
 
   // one top agent per category, so the shelf opens with a real listing in each lane
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_URL ?? '/api'
     CATEGORIES.forEach((c) => {
       fetch(`${base}/agents?category=${c.key}&type=all&limit=1&metric=relevance`)
         .then((r) => r.json())
