@@ -42,21 +42,21 @@ const steps = [
   },
 ]
 
-// Recorded settlement evidence, one slot per chain. The testnet hire below was
-// authorised by our agent-owner wallet, a declared team wallet, and paid a third-party
-// agent's own wallet, so it proves settlement to a wallet we do not control; that row's
-// note says so. The mainnet slot stays pending until a real transaction exists, never a
-// placeholder hash, and the hire it waits for is an escrow hire made through this
-// marketplace by a quest participant. When one lands it replaces the pending row, and the
-// note describes what actually happened.
+// Recorded on-chain evidence, one slot per chain. The mainnet row is the first
+// hire to trade on HireVault: a 10 USDT deposit the buyer capped at a 5 percent
+// loss, with the agent trading inside the band the buyer signed. The row shows
+// trade size, not a payment to the agent, and its note says so. The testnet row
+// is a settlement to a third-party agent's own wallet. An escrow settlement gets
+// its own row when a quest wallet completes one.
 const settlementEvidence = [
   {
     chainId: 56,
-    txHash: null,
-    agent: null,
-    amount: null,
-    payer: null,
-    note: 'pending',
+    txHash: '0xdecac4060bd6bbe599913a55b374ddf65f8f4804adb42263a42a0a3dcab396f5',
+    agent: 'Grid Pilot',
+    amount: 0.8264,
+    payer: '0x52DA44aB471455437fc17979c52E501f6b8d0EAF',
+    note:
+      '10 USDT vault hire: the buyer signed a 0.5 percent band and a 5 percent loss cap, and Grid Pilot traded 0.8264 USDT inside it. The deposit stays in the vault until the buyer closes, so this row proves execution, not a payment.',
   },
   {
     chainId: 97,
