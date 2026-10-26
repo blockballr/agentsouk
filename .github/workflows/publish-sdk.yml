@@ -1,0 +1,42 @@
+name: Publish @agentsouk/vault-sdk
+
+# Publishes the vault SDK to npm via trusted publishing (OIDC), so no long-lived
+# token or 2FA OTP is needed. Before the first run, add this workflow as a
+# trusted publisher on npmjs.com: package settings -> Trusted Publishers ->
+# GitHub Actions, organization blockballr, repository agentsouk, workflow
+# publish-sdk.yml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (must match packages/vault-sdk/package.json)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+      - name: Verify npm version supports trusted publishing
+        run: npm --version
+      - name: Install and build the SDK
+        run: |
+          npm ci
+          npm run build -w @agentsouk/vault-sdk
+      - name: Publish
+        working-directory: packages/vault-sdk
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            npm version "${{ github.event.inputs.version }}" --no-git-tag-version
+          fi
+          npm publish --provenance --access public
