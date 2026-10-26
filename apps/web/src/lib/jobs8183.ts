@@ -51,10 +51,26 @@ const TOKEN_ABI = [
 // proof never is
 export function jobDescription(task: string, quote: NegotiationQuoteView): string {
   // a seller that returns a hashed request/response envelope expects the job
-  // description to BE that envelope, not a task with the envelope appended.
+  // description to BE the canonical envelope it verifies, not the raw reply
   const anchor = quote.envelope
   if (anchor && anchor.request_hash && anchor.response_hash) {
-    return JSON.stringify(anchor)
+    const request = (anchor.request ?? {}) as Record<string, unknown>
+    const response = (anchor.response ?? {}) as Record<string, unknown>
+    const terms = (request.terms ?? {}) as Record<string, unknown>
+    const agreed = (response.terms ?? {}) as Record<string, unknown>
+    return JSON.stringify({
+      version: 1,
+      negotiated_at: response.negotiated_at,
+      task: request.task_description ?? task,
+      terms,
+      price: agreed.price,
+      currency: agreed.currency,
+      quote_expires_at: response.quote_expires_at,
+      chain_id: anchor.chain_id,
+      verifying_contract: anchor.verifying_contract,
+      negotiation_hash: anchor.negotiation_hash,
+      provider_sig: anchor.provider_sig,
+    })
   }
   // the seller signs its whole envelope, request hash included; a rebuilt
   // subset fails its check, so anchor what it actually signed when we have it

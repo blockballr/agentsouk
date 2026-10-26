@@ -77,15 +77,25 @@ describe("the composed job description anchors the signed quote", () => {
     expect(new TextEncoder().encode(text).length).toBeLessThanOrEqual(4096);
   });
 
-  it("anchors a hashed envelope as the whole description", () => {
+  it("anchors a hashed envelope as the canonical quote the seller verifies", () => {
     const envelope = {
+      request: { task_description: '{"type":"stock_report","ticker":"NVDA"}', terms: { deliverables: "a report" } },
       request_hash: `0x${"ef".repeat(32)}`,
+      response: { accepted: true, terms: { price: "100", currency: QUOTE.currency }, quote_expires_at: 1791400000, negotiated_at: 1791300000 },
       response_hash: `0x${"12".repeat(32)}`,
       negotiation_hash: QUOTE.negotiationHash,
       provider_sig: QUOTE.providerSig,
+      chain_id: 97,
+      verifying_contract: "0xEa4DAa3100A767e86FDed867729ae7446476EBA6",
     };
     const text = jobDescription("plan a grid ladder", { ...QUOTE, envelope });
-    expect(text).toBe(JSON.stringify(envelope));
+    const parsed = JSON.parse(text);
+    expect(parsed.task).toBe('{"type":"stock_report","ticker":"NVDA"}');
+    expect(parsed.price).toBe("100");
+    expect(parsed.negotiation_hash).toBe(QUOTE.negotiationHash);
+    expect(parsed.provider_sig).toBe(QUOTE.providerSig);
+    expect(parsed.chain_id).toBe(97);
+    expect(text).not.toContain("request_hash");
     expect(text).not.toContain("plan a grid ladder");
   });
 
