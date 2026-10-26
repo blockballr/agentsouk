@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "snapshotTime": "2026-10-26T07:58:36.937Z",
+  "snapshotTime": "2026-10-26T08:13:31.605Z",
   "source": {
     "fetched": 2490,
-    "upstreamTotal": 358508,
-    "deduped": 1577,
-    "registryTotal": 358508,
+    "upstreamTotal": 358543,
+    "deduped": 1574,
+    "registryTotal": 358543,
     "declarers": 131,
     "endpointsRecovered": 131,
     "seededApplied": 0
