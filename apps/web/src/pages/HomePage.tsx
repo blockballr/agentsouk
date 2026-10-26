@@ -87,6 +87,7 @@ export function HomePage() {
   const [stage, setStage] = useState(0)
   const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number> | null>(null)
+  const [featured, setFeatured] = useState<Record<string, { name: string; tokenId: string; chainId: number; description: string | null } | null>>({})
   const target = useTargetChain()
   const settlementSymbol = target?.settlementSymbol ?? null
 
@@ -113,6 +114,26 @@ export function HomePage() {
         }
       })
       .catch(() => {})
+    // one top agent per category, so the shelf opens with a real listing in each lane
+    CATEGORIES.forEach((c) => {
+      fetch(`${base}/agents?category=${c.key}&type=all&limit=1&metric=relevance`)
+        .then((r) => r.json())
+        .then((d) => {
+          const a = Array.isArray(d?.items) ? d.items[0] : null
+          if (a) {
+            setFeatured((prev) => ({
+              ...prev,
+              [c.key]: {
+                name: a.name ?? a.agent_name ?? 'Agent',
+                tokenId: String(a.token_id ?? a.tokenId ?? ''),
+                chainId: Number(a.chain_id ?? a.chainId ?? 97),
+                description: a.description ?? null,
+              },
+            }))
+          }
+        })
+        .catch(() => {})
+    })
   }, [])
 
   // derived from the same response as the count, never a literal
@@ -211,6 +232,55 @@ export function HomePage() {
       </section>
 
       <Reveal>
+        <section className="py-16 md:py-18">
+          <SectionHead title="Four kinds of work, all on the ledger." note="BROWSE BY JOB" />
+          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {CATEGORIES.map((c, i) => {
+              const a = featured[c.key]
+              return (
+              <motion.div
+                key={c.key}
+                className="h-full"
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
+                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
+              >
+                <Link to={a ? `/agents/${a.chainId}/${a.tokenId}` : `/agents?category=${c.key}`} className="group block h-full">
+                  <Stack
+                    surface
+                    pad={[20, 22, 18, 22]}
+                    gap={11}
+                    className="h-full transition-colors group-hover:border-white/[0.16]"
+                  >
+                    <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                      {c.short}
+                    </Txt>
+                    <Txt size={22} lead={28} weight="bold" tone="ink">
+                      {c.label}
+                    </Txt>
+                    <Txt size={13} lead={20} tone="slate">
+                      {a?.description ?? c.blurb}
+                    </Txt>
+                    {a ? (
+                      <Txt size={11} lead={16} weight="bold" tone="ink">
+                        {a.name}
+                      </Txt>
+                    ) : null}
+                    <Rule />
+                    <Txt size={10} lead={14} mono tone="labels">
+                      {a ? `/agents/${a.chainId}/${a.tokenId}` : `/agents?category=${c.key}`}
+                    </Txt>
+                  </Stack>
+                </Link>
+              </motion.div>
+              )
+            })}
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
         <section id="how" className="scroll-mt-4 py-16 md:py-18">
           <Stack bg="indigo" hair pad={[26, 30, 26, 30]} gap={26}>
             <div className="grid gap-[60px] lg:grid-cols-[560px_1fr]">
@@ -232,13 +302,15 @@ export function HomePage() {
                   means the registered endpoint answered when we called it.
                 </p>
                 <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
-                  Hires settle two ways. On a job, the price is agreed first: a wallet-signed
+                  Hires settle three ways. On a job, the price is agreed first: a wallet-signed
                   quote in $U, the buyer funds it into the ERC-8183 escrow, the work is delivered
                   on chain, and payment releases after the dispute window. On a direct call, the
                   buyer signs one
                   {settlementSymbol ? ` ${settlementSymbol}` : ''} authorization with x402: our
                   relay pays the gas and the agent is paid in its own wallet, under a cap the
-                  buyer can revoke. No custodian holds funds in either lane.
+                  buyer can revoke. On a vault hire, the buyer funds a mandate into HireVault;
+                  the agent trades inside bounds the buyer set at open, and the buyer withdraws
+                  what is left. No custodian holds funds in any lane.
                 </p>
                 <Row align="center" gap={8} className="mt-3 flex-wrap">
                   <Pill variant="keep">x402</Pill>
@@ -257,47 +329,6 @@ export function HomePage() {
               </div>
             </div>
           </Stack>
-        </section>
-      </Reveal>
-
-      <Reveal>
-        <section className="py-16 md:py-18">
-          <SectionHead title="Four kinds of work, all on the ledger." note="BROWSE BY JOB" />
-          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {CATEGORIES.map((c, i) => (
-              <motion.div
-                key={c.key}
-                className="h-full"
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
-                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
-              >
-                <Link to={`/agents?category=${c.key}`} className="group block h-full">
-                  <Stack
-                    surface
-                    pad={[20, 22, 18, 22]}
-                    gap={11}
-                    className="h-full transition-colors group-hover:border-white/[0.16]"
-                  >
-                    <Txt size={10} lead={14} weight="bold" upper tone="muted">
-                      {c.short}
-                    </Txt>
-                    <Txt size={22} lead={28} weight="bold" tone="ink">
-                      {c.label}
-                    </Txt>
-                    <Txt size={13} lead={20} tone="slate">
-                      {c.blurb}
-                    </Txt>
-                    <Rule />
-                    <Txt size={10} lead={14} mono tone="labels">
-                      /agents?category={c.key}
-                    </Txt>
-                  </Stack>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
         </section>
       </Reveal>
 
@@ -597,6 +628,7 @@ export function HomePage() {
           <div className="mt-12 space-y-3">
             {[
               'Four first-party reference agents (health factor, yield, grid, drift)',
+              'HireVault: funded mandates with buyer-set bounds, a venue adapter for Aave V3 USDT on BSC, and a runnable SDK for builders',
               'Agent-facing surfaces: an MCP server, a skill and WebMCP, so an agent can hire another agent',
               'Reachability-first market sort, with a stale badge for endpoints that stopped answering',
               'Declared interface on each agent (what it expects and returns), captured at admission',
