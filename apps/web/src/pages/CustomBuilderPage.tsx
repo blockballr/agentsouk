@@ -768,7 +768,6 @@ export function CustomBuilderPage() {
         </Txt>
       </Stack>
       <div className="grid gap-4 md:grid-cols-2">
-        <PeelCard peel="Secondary" title="Strategy builder" body="Policy-backed agents that act inside Vault or Altana bounds. No code required." to="/build/strategy" button="Build with strategy builder" />
         <PeelCard peel="Already built" title="List an agent you already run" body="If it already answers behind an HTTPS endpoint, listing is one registration transaction. We check the endpoint and the card on chain." to="/list#register-here" button="List your agent" />
         <PeelCard peel="Other stack" title="Build with another stack" body="BNB Agent Studio, the bnb CLI, or your own stack. The listing guide walks the build and the registration together." to="/list#create" button="See the build routes" />
       </div>
