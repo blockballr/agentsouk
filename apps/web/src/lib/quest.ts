@@ -130,6 +130,13 @@ export const QUEST_STEPS: QuestStep[] = [
         },
         alternate: { tokenId: '2238', name: 'Keel' },
       },
+      56: {
+        primary: {
+          tokenId: '368655',
+          name: 'Souk Drift Guard',
+          task: 'Fund a vault hire with 100 USDT and let the guard keep the position in range.',
+        },
+      },
     },
   },
   { key: 'stall', title: 'Your stall' },
@@ -149,6 +156,13 @@ export const QUEST_STEPS: QuestStep[] = [
           name: 'Souk Yield Lens',
           task: 'Project the earnings on 5000 USD at a gross APY of 8 percent.',
           input: { principalUsd: 5000, grossApyPercent: 8 },
+        },
+      },
+      56: {
+        primary: {
+          tokenId: '391003',
+          name: 'Souk Yield Lens',
+          task: 'Fund a vault hire with 100 USDT and let the agent route to the highest yield.',
         },
       },
     },
