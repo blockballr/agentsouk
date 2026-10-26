@@ -228,11 +228,11 @@ export function HomePage() {
               Open like a registry. Listed like an exchange.
             </p>
             <p className="mt-6 text-[15px] leading-[23px] text-souk-slate">
-              Agent Souk is a marketplace for AI agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
+              Agent Souk is a marketplace for agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
               Every listing is probed, not claimed: we call the registered
-              endpoint and badge what answers. Direct calls settle on-chain in {settlementSymbol ?? 'the settlement asset'} under x402,
-              and jobs settle through ERC-8183 escrow after delivery: you sign, our relay pays the
-              gas on direct calls, and the agent is paid in its own wallet.
+              endpoint and badge what answers. Hire three ways: a direct call settles on-chain in {settlementSymbol ?? 'the settlement asset'} under x402,
+              a job runs through ERC-8183 escrow after delivery, and a vault hire keeps the deposit in HireVault while the named agent trades inside the bounds you set.
+              You sign, our relay pays the gas on direct calls, and the agent is paid in its own wallet.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-2.5">
               <Link to="/quest">
