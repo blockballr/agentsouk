@@ -15,6 +15,7 @@ import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
 import { firstPartyDescription, firstPartySkills, firstPartyVaultOnly, firstPartyWallet } from "./first-party-copy";
 import { loadDelisted } from "./delist-store";
+import { loadVerifications } from "./verifications";
 import { rotationSeed, withoutHouseAgents, reachabilityCompare, reachabilityRankCompare } from "./working-rotation";
 import { LISTABLE_CATEGORIES, takesJobs, takesVault, type RegistrationDraft } from "@agora/core";
 import {
@@ -1194,7 +1195,7 @@ export interface QueryOptions {
   ensureWarm?: boolean;
   maxWarmPages?: number;
   pcs?: boolean;
-  verifications?: Map<string, { status?: string }>;
+  verifications?: Map<string, { status?: string; quotable?: boolean }>;
   // the visitor's rotation seed for "Working first"; absent, the order turns over hourly
   seed?: string | null;
   // the verifier's sweep sees the team's agents even while the shelf hides them
@@ -1282,8 +1283,14 @@ export async function queryAgents(
       (opts.includeDelisted || !delisted.has(a.token_id)),
   );
   // the shelf sells work a hire can execute, so an entry the marketplace cannot
-  // call is not served even when an earlier pass admitted it
-  const executable = onChain.filter(canExecute);
+  // call is not served even when an earlier pass admitted it. an agent the
+  // liveness sweep found unquotable is not hireable, so it stays off the shelf
+  // even if the snapshot admitted it before the sweep ran.
+  const verificationsMap = opts.verifications ?? (await loadVerifications().catch(() => null));
+  const executable = onChain.filter(canExecute).filter((a) => {
+    const v = verificationsMap?.get(String(a.token_id));
+    return v?.quotable !== false;
+  });
   const shelf = opts.includeHouse ? executable : withoutHouseAgents(executable, verifications);
   let items = shelf;
 

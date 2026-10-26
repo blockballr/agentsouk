@@ -75,6 +75,7 @@ interface VerificationRow {
   quality?: Verification["quality"];
   concurrency?: Verification["concurrency"];
   detail?: string;
+  quotable?: boolean;
 }
 
 function asVerification(row: VerificationRow, checkedAt: string | null): RecordedVerification | null {
@@ -112,6 +113,9 @@ function asVerification(row: VerificationRow, checkedAt: string | null): Recorde
   }
   if (typeof row.detail === "string") {
     verification.detail = row.detail;
+  }
+  if (typeof row.quotable === "boolean") {
+    verification.quotable = row.quotable;
   }
   return verification;
 }
