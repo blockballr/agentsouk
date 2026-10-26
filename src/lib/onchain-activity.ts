@@ -6,7 +6,7 @@ import "server-only";
 // deliveries, so this reads the wallet's transactions and keeps only the
 // calls that look like work.
 //
-// BscScan's account API is the practical source: an EVM RPC has no
+// Moralis deep-index is the practical source: an EVM RPC has no
 // "transactions by address" method. The key stays server-side.
 
 export interface WalletActivity {
@@ -20,10 +20,11 @@ export interface WalletActivity {
   reason?: string;
 }
 
-// Etherscan V2 unified API: one endpoint for every EVM chain, selected by chainid.
-const SCAN: Record<number, string> = {
-  56: "https://api.etherscan.io/v2/api?chainid=56",
-  97: "https://api.etherscan.io/v2/api?chainid=97",
+// Moralis deep-index API: free tier covers BSC (chain 56) and its testnet (97).
+// Auth is the X-API-Key header; the chain is selected by the `chain` query param.
+const MORALIS_CHAIN: Record<number, string> = {
+  56: "bsc",
+  97: "bsc testnet",
 };
 
 // Methods that are bookkeeping rather than the agent's job.
@@ -75,33 +76,35 @@ export async function readWalletActivity(
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
-  const api = SCAN[chainId];
-  if (!api) return empty(wallet, chainId, `no explorer is configured for chain ${chainId}`);
-  const apiKey = process.env.BSCSCAN_API_KEY;
-  if (!apiKey) return empty(wallet, chainId, "BSCSCAN_API_KEY is not configured");
+  const moralisChain = MORALIS_CHAIN[chainId];
+  if (!moralisChain) return empty(wallet, chainId, `no explorer is configured for chain ${chainId}`);
+  const apiKey = process.env.MORALIS_API_KEY;
+  if (!apiKey) return empty(wallet, chainId, "MORALIS_API_KEY is not configured");
 
   let txs: ScanTx[] = [];
   try {
-    const url = `${api}&module=account&action=txlist&address=${wallet}&startblock=0&endblock=99999999&page=1&offset=200&sort=desc&apikey=${apiKey}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const url = `https://deep-index.moralis.io/api/v2.2/${wallet}?chain=${moralisChain}&order=DESC&limit=100`;
+    const res = await fetch(url, {
+      headers: { "X-API-Key": apiKey, accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
+    });
     const text = await res.text();
-    let body: { status?: string; result?: ScanTx[] | string; message?: string };
+    let body: { result?: Array<{ block_timestamp?: string; to_address?: string; input?: string; receipt_status?: string }> };
     try {
-      body = JSON.parse(text) as { status?: string; result?: ScanTx[] | string; message?: string };
+      body = JSON.parse(text) as { result?: Array<{ block_timestamp?: string; to_address?: string; input?: string; receipt_status?: string }> };
     } catch {
       return empty(wallet, chainId, `explorer returned a non-JSON answer (${res.status})`);
     }
-    if (body.status === "0" && typeof body.result === "string" && /no transactions/i.test(body.result)) {
-      txs = [];
-    } else if (body.status !== "1" || !Array.isArray(body.result)) {
-      const msg = typeof body.result === "string" ? body.result : body.message ?? "explorer read failed";
-      const hint = /free api access/i.test(msg)
-        ? " (the configured Etherscan key does not cover BSC on its current plan; use a BSC-capable key)"
-        : "";
-      return empty(wallet, chainId, msg + hint);
-    } else {
-      txs = body.result;
+    if (!Array.isArray(body.result)) {
+      return empty(wallet, chainId, "explorer read failed");
     }
+    txs = body.result.map((t) => ({
+      timeStamp: t.block_timestamp ? String(Math.floor(new Date(t.block_timestamp).getTime() / 1000)) : undefined,
+      to: t.to_address ?? undefined,
+      input: t.input ?? undefined,
+      isError: t.receipt_status === "0" ? "1" : "0",
+      methodId: (t.input ?? "").slice(0, 10) || undefined,
+    }));
   } catch (e) {
     return empty(wallet, chainId, e instanceof Error ? e.message : "explorer read failed");
   }
