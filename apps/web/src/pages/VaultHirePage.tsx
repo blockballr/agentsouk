@@ -828,7 +828,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
               <Label tone="muted">Agent fee (% of profit)</Label>
               <div className="relative">
                 <input
-                  value={5}
+                  value={3}
                   readOnly
                   className="h-11 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 pr-8 font-mono text-[13px] leading-[20px] text-souk-steel outline-none line-through opacity-60"
                 />
