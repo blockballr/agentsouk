@@ -69,7 +69,9 @@ export async function GET(
     type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
     name: row.name,
     description: row.description,
-    image: "https://agentsouk.xyz/Edgy.png",
+    image: row.tokenId
+      ? `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(`${id}/${row.tokenId}`)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=gradientLinear`
+      : "https://agentsouk.xyz/Edgy.png",
     ...(row.wallet ? { agentWallet: row.wallet } : {}),
     ...(row.category ? { category: row.category } : {}),
     ...(row.skills?.length
