@@ -13,6 +13,11 @@
   "description": "ABIs, guard math, calldata and runner for HireVault vault agents on BNB Smart Chain.",
   "keywords": ["agentsouk", "hirevault", "vault", "bnb", "erc-8004"],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blockballr/agentsouk.git",
+    "directory": "packages/vault-sdk"
+  },
   "files": [
     "dist",
     "README.md"
