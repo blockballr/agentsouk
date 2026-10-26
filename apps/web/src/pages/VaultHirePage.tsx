@@ -785,7 +785,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                   minimum {requiredMin} USDT{tokenChoice === 'WBNB' ? ' of value at the open price' : ''}
                 </Txt>
               ) : null}
-              {gasNote ? (
+              {gasNote && agentPolicy === 'buffer' ? (
                 <Txt size={10} lead={14} mono tone="peach">
                   {yieldUsd != null && gasUsd != null && gasShare != null
                     ? `~${usd(yieldUsd)} yield in ${costDays === 1 ? '1 day' : `${costDays} days`}; gas ~${usd(gasUsd)} (${Math.round(gasShare * 100)}% of it${gasEstimate?.source === 'recent' ? ', recent average' : ''}).`
