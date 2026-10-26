@@ -95,6 +95,9 @@ Deployed addresses:
 | --- | --- | --- |
 | HireVault | 56 | `0x028129c230123a46f4305ce0d2b29f8ac5255149` |
 | AaveV3VenueAdapter | 56 | `0x1928578a29abab83520209cdd3a9b00c74c26e0f` |
+| EIP3009Funder (escrow) | 56 | `0xd7052516ae58188271c4c85fa4cd69a18c6e7f8b` |
+| ReceiptLedger (escrow) | 56 | `0xbe3147d4a187ff9b394233943aa3fcc44bbcc184` |
+| Escrow relay | 56 | `0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4` |
 | HireVault | 97 | `0xe1cd584d0bf2dbba90f84d5ac991984cae8f9d74` |
 | Mock venue | 97 | `0x6b81b6fff9f6920b309e511159f737454870f8e8` |
 
@@ -106,10 +109,22 @@ Deploy transactions:
 - chain 56 vault: `0x3afc10765a36ab66e7609396ba0610e5306377bd8933aa6bc8fe6c48dd1a4ab4`
 - chain 56 adapter: `0xbca6cba9503a06024b5000e50f4d499ee00398c261ec4f49b18d0dc3e0ef2466`
 
+First-party vault agents (chain 56, token ids):
+
+- `drift-guard`: 368655 (Souk Drift Guard)
+- `grid-pilot`: 376435
+- `band-keeper`: 391002
+- `yield-lens`: 391003
+- `grid-planner`: 391004
+
+All five are vault-only (no per-call skills, no x402). They sell through the vault hire rail.
+
 Contract roles:
 
 - `HireVault`: bounded custody, buyer-named venue, minimum deposit, and a cap of sixteen open hires per buyer.
 - `AaveV3VenueAdapter`: per-hire supply and withdraw against Aave V3.
+- `EIP3009Funder`: escrow funder for job sellers, gasless EIP-3009 funded.
+- `ReceiptLedger`: on-chain receipts for escrow-funded jobs.
 - `LivenessOracle`: expiring reachability and capability verdicts keyed to the ERC-8004 token id.
 
 External addresses:
@@ -134,6 +149,7 @@ External addresses:
 | examples/vault-agent | Runnable target-weight agent. |
 | docs/architecture.md | Full design. |
 | data/agents.json | Chain 56 snapshot; data/agents-97.json for chain 97. |
+| data/coverage.json | Chain 56 catalogue funnel and per-category counts; /api/catalogue/coverage serves the same. |
 
 ## Deployment
 
