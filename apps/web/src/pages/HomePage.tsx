@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Footer } from '../components/Footer'
@@ -23,7 +23,7 @@ const TIMING = {
 
 const stats = [
   { value: 'served', label: 'agents on this marketplace', caption: 'each one called, not just listed' },
-  { value: 'x402', label: 'direct calls pay per request, no deposits' },
+  { value: 'x402', label: 'Funded Hire, Escrow, X402' },
   { value: 'on-chain', label: 'reputation, endpoints, health' },
 ]
 
@@ -89,6 +89,8 @@ export function HomePage() {
   const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number> | null>(null)
   const [featured, setFeatured] = useState<Record<string, any>>({})
+  const categoriesRef = useRef<HTMLElement>(null)
+  const builtListRef = useRef<HTMLDivElement>(null)
   const target = useTargetChain()
   const settlementSymbol = target?.settlementSymbol ?? null
 
@@ -115,7 +117,52 @@ export function HomePage() {
         }
       })
       .catch(() => {})
-    // one top agent per category, so the shelf opens with a real listing in each lane
+
+  // lazy-load GSAP and animate the category cards once they're in the DOM
+  useEffect(() => {
+    let cancelled = false
+    const el = categoriesRef.current
+    if (!el) return
+    import('gsap').then(({ default: gsap }) => {
+      if (cancelled) return
+      const cards = el.querySelectorAll('[data-cat-card]')
+      gsap.fromTo(
+        cards,
+        { opacity: 0, y: 24 },
+        { opacity: 1, y: 0, duration: 0.6, stagger: 0.12, ease: 'power2.out', delay: 0.1 },
+      )
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [featured])
+
+  // lazy-load GSAP and animate the built list items (tick draws in, text fades)
+  useEffect(() => {
+    const el = builtListRef.current
+    if (!el) return
+    let cancelled = false
+    Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([gsapMod, stMod]) => {
+      if (cancelled) return
+      const gsap = gsapMod.default
+      const ScrollTrigger = stMod.default
+      gsap.registerPlugin(ScrollTrigger)
+      const items = el.querySelectorAll(':scope > div')
+      gsap.fromTo(
+        items,
+        { opacity: 0, x: -12 },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.4,
+          stagger: 0.04,
+          ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 80%' },
+        },
+      )
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  // one top agent per category, so the shelf opens with a real listing in each lane
     CATEGORIES.forEach((c) => {
       fetch(`${base}/agents?category=${c.key}&type=all&limit=1&metric=relevance`)
         .then((r) => r.json())
@@ -189,21 +236,21 @@ export function HomePage() {
             </div>
           </motion.div>
 
-          <motion.dl
-            className="grid max-w-md grid-cols-1 gap-8 self-end sm:grid-cols-3 lg:grid-cols-1"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: stage >= 4 ? 1 : 0, y: stage >= 4 ? 0 : 16 }}
-            transition={SPRING_STIFF}
-          >
-            {stats.map((s) => (
-              <div key={s.label}>
+          <dl className="grid max-w-md grid-cols-1 gap-8 self-end sm:grid-cols-3 lg:grid-cols-1">
+            {stats.map((s, i) => (
+              <motion.div
+                key={s.label}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: stage >= 4 ? 1 : 0, y: stage >= 4 ? 0 : 16 }}
+                transition={{ ...SPRING_STIFF, delay: 0.1 * i }}
+              >
                 <dt className="font-mono text-[10px] uppercase leading-[14px] text-souk-labels">{s.label}</dt>
                 <dd className="mt-2 font-mono text-[clamp(28px,3vw,44px)] font-bold leading-none tracking-[-0.02em] text-souk-data">
                   {s.value === 'served' ? (
                     curatedAgents === null ? (
                       <span aria-label="count pending">...</span>
                     ) : (
-                      <AnimatedNumber value={curatedAgents} delay={520} />
+                      <AnimatedNumber value={curatedAgents} delay={520 + i * 100} />
                     )
                   ) : (
                     s.value
@@ -216,14 +263,14 @@ export function HomePage() {
                       : `${curatedAgents.toLocaleString('en-US')} curated on Agent Souk`}
                   </dd>
                 ) : null}
-              </div>
+              </motion.div>
             ))}
-          </motion.dl>
+          </dl>
         </div>
       </section>
 
       <Reveal>
-        <section className="py-16 md:py-18">
+        <section ref={categoriesRef} className="py-16 md:py-18">
           <SectionHead title="Four kinds of work, all on the ledger." note="BROWSE BY JOB" />
           <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {CATEGORIES.map((c, i) => {
@@ -231,6 +278,7 @@ export function HomePage() {
               return (
               <motion.div
                 key={c.key}
+                data-cat-card
                 className="h-full"
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -603,7 +651,7 @@ export function HomePage() {
                 <Txt size={20} lead={26} weight="bold" tone="white">
                   List your agent
                 </Txt>
-                <Txt size={10} lead={14} weight="bold" upper tone="indigo-labels" className="transition group-hover:text-white">
+                <Txt size={10} lead={14} weight="bold" upper tone="indigo-labels" className="transition group-hover:text-white inline-block group-hover:translate-x-1">
                   Start the wizard →
                 </Txt>
               </Stack>
@@ -637,7 +685,7 @@ export function HomePage() {
               half removes the blur, the handles and the claim about a roadmap nobody
               published. If the unfinished work should be visible again, it belongs in the
               addendum, in plain text, with no third-party names in it. */}
-          <div className="mt-12 space-y-3">
+          <div ref={builtListRef} className="mt-12 space-y-3" data-built-list>
             {[
               'Four first-party reference agents (health factor, yield, grid, drift)',
               'HireVault: funded mandates with buyer-set bounds, a venue adapter for Aave V3 USDT on BSC, and a runnable SDK for builders',

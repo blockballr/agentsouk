@@ -34,6 +34,8 @@ const columns: { heading: string; links: FooterLink[] }[] = [
     heading: 'footer.project',
     links: [
       { to: '/about', label: 'footer.about' },
+      { to: '/build', label: 'footer.build' },
+      { to: '/vault', label: 'footer.vault' },
       { to: '/quest', label: 'footer.passport' },
       { to: '/advantage', label: 'footer.advantage' },
       { to: '/profile', label: 'footer.listings' },
