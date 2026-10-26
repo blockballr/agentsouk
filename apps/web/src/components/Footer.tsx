@@ -1,5 +1,12 @@
 import { Link } from 'react-router-dom'
-import { chainLabel } from '../lib/contracts'
+import {
+  ESCROW_FUNDER_BY_CHAIN,
+  RECEIPT_LEDGER_BY_CHAIN,
+  VAULT_BY_CHAIN,
+  VENUE_ADAPTER_BY_CHAIN,
+  chainLabel,
+  explorerAddressUrl,
+} from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { Label, Row, Stack, Txt } from './souk'
 import { Wordmark } from './Wordmark'
@@ -71,6 +78,29 @@ export function Footer() {
                   chain 56.
                 </Txt>
               )}
+              {target ? (
+                <div className="grid gap-1">
+                  <Label tone="muted">{t('footer.contracts')}</Label>
+                  {[
+                    ['HireVault', VAULT_BY_CHAIN[target.chainId]],
+                    ['Aave adapter', VENUE_ADAPTER_BY_CHAIN[target.chainId]],
+                    ['Escrow funder', ESCROW_FUNDER_BY_CHAIN[target.chainId]],
+                    ['Receipt ledger', RECEIPT_LEDGER_BY_CHAIN[target.chainId]],
+                  ]
+                    .filter(([, address]) => Boolean(address))
+                    .map(([label, address]) => (
+                      <a
+                        key={label}
+                        href={explorerAddressUrl(target.chainId, String(address))}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono text-[10px] leading-[15px] text-souk-labels transition hover:text-souk-ink"
+                      >
+                        {label} {String(address)}
+                      </a>
+                    ))}
+                </div>
+              ) : null}
               <Row justify="between" align="center">
                 <a
                   href="https://t.me/agentsouk"

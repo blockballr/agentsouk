@@ -672,6 +672,11 @@ function AgentCard({
             <Txt size={14} lead={20} tone="slate">
               {verdict.label}
             </Txt>
+            {agent.verification?.checkedAt ? (
+              <Txt size={11} lead={16} tone="muted">
+                {timeAgo(agent.verification.checkedAt)}
+              </Txt>
+            ) : null}
           </Row>
         </span>
 
@@ -680,6 +685,7 @@ function AgentCard({
         </Txt>
 
         <Row align="center" gap={6} className="flex-wrap">
+          <Tag title="The ERC-8004 registry id this listing reads from">#{agent.token_id}</Tag>
           {takesJobs(agent.skills) ? (
             <Tag title="Takes work as an ERC-8183 job: it quotes a price, the money is funded on chain and held in escrow, and it is paid on delivery">Executes jobs</Tag>
           ) : null}

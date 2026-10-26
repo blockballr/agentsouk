@@ -28,6 +28,7 @@
   "ticker.resumeQuestCount": "Resume Quest {{done}}/3",
   "footer.market": "Market",
   "footer.protocol": "Protocol",
+  "footer.contracts": "Contracts",
   "footer.project": "Project",
   "footer.allAgents": "All agents",
   "footer.rebalancing": "Rebalancing",

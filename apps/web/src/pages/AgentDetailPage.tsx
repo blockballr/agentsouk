@@ -913,6 +913,78 @@ export function AgentDetailPage() {
             )}
           </AsideCard>
 
+          <AsideCard>
+            <p className="micro text-souk-ink">On-chain evidence</p>
+            <div className="mt-3 space-y-2 text-xs">
+              <Row
+                label="Registry"
+                value={
+                  <a
+                    href={`${explorer}/address/${detail.contract_address}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono underline-offset-2 hover:underline"
+                  >
+                    {shortAddress(detail.contract_address)}
+                  </a>
+                }
+              />
+              <Row label="Token id" value={`#${detail.token_id}`} />
+              <Row
+                label="Owner"
+                value={
+                  <a
+                    href={`${explorer}/address/${detail.owner_address}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono underline-offset-2 hover:underline"
+                  >
+                    {shortAddress(detail.owner_address)}
+                  </a>
+                }
+              />
+              <Row
+                label="Agent wallet"
+                value={
+                  detail.agent_wallet ? (
+                    <a
+                      href={`${explorer}/address/${detail.agent_wallet}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono underline-offset-2 hover:underline"
+                    >
+                      {shortAddress(detail.agent_wallet)}
+                    </a>
+                  ) : (
+                    'none declared'
+                  )
+                }
+              />
+              <Row
+                label="Created"
+                value={
+                  detail.created_tx_hash ? (
+                    <a
+                      href={`${explorerTxBase(Number(chainId))}/${detail.created_tx_hash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono underline-offset-2 hover:underline"
+                    >
+                      {shortAddress(detail.created_tx_hash)}
+                    </a>
+                  ) : (
+                    'no tx recorded'
+                  )
+                }
+              />
+              <Row label="Listed" value={formatDate(detail.created_at)} />
+              <Row label="Last check" value={detail.verification?.checkedAt ? timeAgo(detail.verification.checkedAt) : 'not checked'} />
+            </div>
+            <p className="micro mt-3 text-souk-muted">
+              Every figure here is read from BNB Chain; the links open the record on BscScan.
+            </p>
+          </AsideCard>
+
           {/* the design's right column: the hire card and the quote are two cards
               of the same shell, not one card holding a note */}
           {(!vaultCapable || mySession) && (
@@ -2703,7 +2775,7 @@ function ResultPanel({
 }
 
 // the design's spec row: a bold upper label at a fixed 96, the value beside it
-function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function Row({ label, value, mono }: { label: string; value: ReactNode; mono?: boolean }) {
   return (
     <div className="flex items-baseline gap-3">
       <span className="micro w-[96px] shrink-0 font-bold text-souk-muted">{label}</span>
