@@ -184,7 +184,9 @@ export function checkSlippage(bps: number): string | null {
 export function checkAmount(amount: string, cap: string | null): string | null {
   const n = Number(amount)
   if (!Number.isFinite(n) || n <= 0) return 'The deposit must be a positive number.'
-  if (cap !== null && n > Number(cap)) return `The deposit is over this vault's cap of ${cap}.`
+  // a cap of 0 (unset or unread) is not a real limit; the contract itself
+  // enforces the real cap, so the client must not block on a missing read.
+  if (cap !== null && Number(cap) > 0 && n > Number(cap)) return `The deposit is over this vault's cap of ${cap}.`
   return null
 }
 
