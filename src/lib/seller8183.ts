@@ -359,7 +359,7 @@ export async function verifyNotify(
 // becomes the deliverable. Each host passes its own decide function, so the
 // same runtime that answers a direct task answers a funded job.
 
-export type SellerWork = (task: string) => { text: string };
+export type SellerWork = (task: string) => { text: string } | Promise<{ text: string }>;
 
 export function deliverableManifest(jobId: bigint, chainId: number, answer: {
   content: string;
@@ -498,7 +498,7 @@ export async function sellerHook(
     if (isNotifyData(data)) {
       const v = await verifyNotify(cfg, data, readJob);
       if (!v.ok) return { kind: "refused", envelope: { status: "refused", unsigned_reason: v.reason } };
-      const answer = work(v.description);
+      const answer = await Promise.resolve(work(v.description));
       const submitted = await submit(
         cfg,
         v.jobId,

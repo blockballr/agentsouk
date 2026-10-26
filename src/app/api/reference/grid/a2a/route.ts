@@ -121,7 +121,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     isRecord(request.params) && isRecord(request.params.message) && Array.isArray(request.params.message.parts)
       ? request.params.message.parts
       : [];
-  const seller = await sellerHook(SELLER8183, rawParts, (task) => ({ text: "grid plan" }));
+  const seller = await sellerHook(SELLER8183, rawParts, async (task) => {
+    // on-chain action: read the live PancakeSwap price for the bound pair
+    const { readPancakePrice } = await import("@/lib/pancake-read");
+    let priceNote = "price unavailable";
+    try {
+      const quote = await readPancakePrice(targetChainId(), "WBNB", "USDT");
+      if ("price" in quote) priceNote = `live WBNB/USDT price: ${quote.price}`;
+      else priceNote = `price read failed: ${(quote as { error: string }).error}`;
+    } catch (e) {
+      priceNote = `price read failed: ${(e as Error).message}`;
+    }
+    return { text: `grid plan for: ${task}\n${priceNote}` };
+  });
   if (seller.kind !== "none") {
     return NextResponse.json(
       { jsonrpc: "2.0", id, result: seller.envelope },
