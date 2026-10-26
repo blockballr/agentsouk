@@ -1006,7 +1006,9 @@ export async function refreshIndexFromLive(
         if (
           !isShelfReady(summary) &&
           (raw.supported_protocols ?? []).includes("A2A") &&
-          !index.agents.has(indexKey(summary.chain_id, summary.token_id)) &&
+          ( !index.agents.has(indexKey(summary.chain_id, summary.token_id)) ||
+            !isShelfReady(index.agents.get(indexKey(summary.chain_id, summary.token_id))!)
+          ) &&
           hydrated < ENDPOINT_HYDRATE_PER_TOPUP
         ) {
           const detail = await fetchAgentDetail(
