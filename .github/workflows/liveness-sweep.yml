@@ -25,7 +25,7 @@ jobs:
           code=$(curl -sS -o report.json -w '%{http_code}' \
             -H "Authorization: Bearer $CRON_SECRET" \
             --max-time 280 \
-            "https://api.agentsouk.xyz/api/cron/liveness?limit=50&all=1")
+            "https://api.agentsouk.xyz/api/cron/liveness?limit=25")
           echo "http $code"
           cat report.json
           if [ "$code" != "200" ]; then
