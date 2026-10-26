@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { signPersonalMessage } from '../lib/wallet'
+import { rateAgent } from '../lib/rating'
 import { getRatings, submitEscrowRating, type EscrowRating as RatingRow, type EscrowRatingSummary } from '../lib/api'
 import { Btn, Stack, Txt } from './souk'
 
@@ -72,6 +73,13 @@ export function EscrowRating({
       })
       setRatings((prev) => [...prev, r.rating])
       setSummary(r.summary)
+      // also attest on chain (ERC-8004 reputation registry); best effort, the
+      // durable rating above is the source of truth for the marketplace
+      try {
+        await rateAgent(chainId, tokenId, stars)
+      } catch {
+        // on-chain feedback may fail (self-feedback, gas); the durable rating stands
+      }
       setPhase('done')
     } catch (e) {
       setError((e as Error).message)
