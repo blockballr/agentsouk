@@ -155,19 +155,35 @@ export function HomePage() {
     return () => { cancelled = true }
   }, [])
 
-  // one top agent per category, so the shelf opens with a real listing in each lane
+  // one vault agent per category, so the shelf opens with our own agents in each lane
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL ?? '/api'
-    CATEGORIES.forEach((c) => {
-      fetch(`${base}/agents?category=${c.key}&type=all&limit=1&metric=relevance`)
-        .then((r) => r.json())
-        .then((d) => {
-          const a = Array.isArray(d?.items) ? d.items[0] : null
-          if (a) setFeatured((prev) => ({ ...prev, [c.key]: a }))
-        })
-        .catch(() => {})
-    })
-  }, [])
+    fetch(`${base}/vault/agents?chain=${target?.chainId ?? 56}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const agents = Array.isArray(d?.agents) ? d.agents : []
+        // pick the first vault agent per category
+        const byCategory: Record<string, any> = {}
+        for (const a of agents) {
+          if (!byCategory[a.category ?? ''] && a.category) {
+            byCategory[a.category] = a
+          }
+        }
+        // fetch full agent detail for each so the card has description, image, x402 etc.
+        for (const c of CATEGORIES) {
+          const va = byCategory[c.key]
+          if (!va) continue
+          fetch(`${base}/agents/${va.chainId ?? target?.chainId ?? 56}/${va.tokenId}`)
+            .then((r) => r.json())
+            .then((d) => {
+              const a = d?.data ?? d
+              if (a) setFeatured((prev) => ({ ...prev, [c.key]: a }))
+            })
+            .catch(() => {})
+        }
+      })
+      .catch(() => {})
+  }, [target?.chainId])
 
   // derived from the same response as the count, never a literal
   const categoryBreakdown = categoryCounts
