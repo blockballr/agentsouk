@@ -151,6 +151,49 @@ export async function receiptById(id: string): Promise<Receipt | null> {
   return receipts.get(id) ?? null;
 }
 
+// the reconciliation pass reads the newest rows for the chain it is auditing
+export async function recentReceipts(chainId: number, limit = 200): Promise<Receipt[]> {
+  const db = (await ensureTable().then((ok) => (ok ? sql : null)));
+  if (db) {
+    try {
+      const rows = await db`
+        select * from execution_receipt where chain_id = ${chainId}
+        order by created_at desc limit ${limit}
+      `;
+      return (rows as any[]).map(rowToReceipt);
+    } catch {
+      // fall through
+    }
+  }
+  return [...receipts.values()]
+    .filter((r) => r.chainId === chainId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit);
+}
+
+// a receipt whose transaction the chain cannot show is not a trade. keep the
+// row for the audit trail, but stand it down rather than let the site claim it.
+export async function refuteReceipt(id: string, reason: string): Promise<void> {
+  const db = (await ensureTable().then((ok) => (ok ? sql : null)));
+  if (db) {
+    try {
+      await db`
+        update execution_receipt
+        set status = 'refused', reason = ${reason}, after_state = null
+        where id = ${id}
+      `;
+    } catch {
+      // the memory row still stands corrected below
+    }
+  }
+  const mem = receipts.get(id);
+  if (mem) {
+    mem.status = "refused";
+    mem.reason = reason;
+    mem.after = null;
+  }
+}
+
 function rowToReceipt(row: any): Receipt {
   return {
     id: row.id,

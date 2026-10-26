@@ -51,11 +51,23 @@ function hireTuple(over: Partial<Record<number, unknown>> = {}): unknown[] {
   return row;
 }
 
-function fakeClient(ids: bigint[], tuple: unknown[]): PublicClient {
+function fakeClient(ids: bigint[], tuple: unknown[], moves = false): PublicClient {
+  let reads = 0;
   return {
-    readContract: vi.fn(async (args: { functionName: string }) =>
-      args.functionName === "hiresFor" ? ids : tuple,
-    ),
+    readContract: vi.fn(async (args: { functionName: string }) => {
+      if (args.functionName === "hiresFor") return ids;
+      if (moves && args.functionName === "hire") {
+        reads += 1;
+        // a landed trade shows a different balance on the next read, which is
+        // the executor's own proof that the transaction moved the hire
+        if (reads > 1) {
+          const next = [...tuple];
+          next[5] = (tuple[5] as bigint) + BigInt(reads);
+          return next;
+        }
+      }
+      return tuple;
+    }),
   } as unknown as PublicClient;
 }
 
@@ -153,7 +165,7 @@ describe("the sweep on one open hire", () => {
     });
     const { actor, trade } = fakeActor();
 
-    const reports = await sweepOwnHires(fakeClient([10n], hireTuple()), 97, actor, 5, () => false, true);
+    const reports = await sweepOwnHires(fakeClient([10n], hireTuple(), true), 97, actor, 5, () => false, true);
 
     expect(reports.filter((r) => r.status === "traded")).toHaveLength(5);
     expect(trade).toHaveBeenCalledTimes(5);

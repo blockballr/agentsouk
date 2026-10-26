@@ -86,9 +86,18 @@ function altanaActorFromSession(sessionBlob: string, sessionKey: string, chainId
     },
     async trade(call: Call) {
       const result = await client.execute({ session, calls: [call], chainId } as unknown as Parameters<typeof client.execute>[0]);
-      const hash = (result as { transactionHash?: string }).transactionHash
-        ?? ((result as { receipts?: { hash?: string }[] }).receipts?.[0]?.hash ?? (result as { callsId?: string }).callsId);
-      if (!hash) throw new Error("the relay returned no receipt hash for the trade");
+      const status = (result as { status?: string }).status;
+      // callsId is the relay's bundle handle, not a transaction. reading it as
+      // one turned a failed bundle into a receipt for a trade that never landed.
+      const hash =
+        (result as { transactionHash?: string }).transactionHash
+        ?? (result as { receipts?: { transactionHash?: string }[] }).receipts?.[0]?.transactionHash;
+      if (status === "FAILED") throw new Error(`the relay returned FAILED for the trade${hash ? ` (${hash})` : ""}`);
+      if (!hash) {
+        throw new Error(
+          `the relay returned no transaction hash for the trade (status ${status ?? "unknown"}); a callsId is not a tx`,
+        );
+      }
       return hash;
     },
   };

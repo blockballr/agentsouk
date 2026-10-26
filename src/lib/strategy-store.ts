@@ -109,6 +109,19 @@ export async function saveStrategyState(
   }
 }
 
+// a failed trade must not leave the rung it tried to fill marked as filled
+export async function clearStrategyState(chainId: number, hireId: string): Promise<void> {
+  const k = key(chainId, hireId);
+  states.delete(k);
+  if (sql && (await ensureTables())) {
+    try {
+      await sql`delete from strategy_state where chain_id = ${chainId} and hire_id = ${hireId}`;
+    } catch {
+      // the memory row is gone; the durable one is retried on the next pass
+    }
+  }
+}
+
 // a lease is advisory between runners of the same fleet: the vault's on-chain
 // refusal is the last line either way, and a stale lease expires on its clock
 export async function acquireLease(

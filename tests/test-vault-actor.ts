@@ -17,6 +17,8 @@ vi.mock("@altananetwork/sdk", () => ({
 }));
 
 const WALLET = "0x1111111111111111111111111111111111111111";
+const TX = `0x${"1".repeat(64)}`;
+const TX56 = `0x${"2".repeat(64)}`;
 const CALL = { to: "0xc742e51f3fe3875a3335700a7d692f40dc8e60b8", data: "0xdeadbeef", value: 0n } as const;
 
 const savedEnv = { ...process.env };
@@ -62,10 +64,10 @@ describe("the altana junction", () => {
 
   it("sends the granted session, the call and the testnet chain id to the relay", async () => {
     grantSession({ wallet: { address: WALLET } });
-    execute.mockResolvedValue({ receipts: [{ hash: "0xhash1" }] });
+    execute.mockResolvedValue({ status: "CONFIRMED", transactionHash: TX });
     const actor = await resolveActor("altana", 97);
     const hash = await actor.trade(CALL);
-    expect(hash).toBe("0xhash1");
+    expect(hash).toBe(TX);
     expect(execute).toHaveBeenCalledTimes(1);
     const arg = execute.mock.calls[0][0];
     expect(arg.chainId).toBe(97);
@@ -75,20 +77,34 @@ describe("the altana junction", () => {
     expect(arg.calls).toEqual([CALL]);
   });
 
+  it("reads the hash from a relay receipt when the result carries one", async () => {
+    grantSession({ wallet: { address: WALLET } });
+    execute.mockResolvedValue({ status: "CONFIRMED", receipts: [{ transactionHash: TX }] });
+    const actor = await resolveActor("altana");
+    await expect(actor.trade(CALL)).resolves.toBe(TX);
+  });
+
   it("sends the mainnet chain id when the actor is built for chain 56", async () => {
     grantSession({ wallet: { address: WALLET } });
-    execute.mockResolvedValue({ receipts: [{ hash: "0xhash56" }] });
+    execute.mockResolvedValue({ status: "CONFIRMED", transactionHash: TX56 });
     const actor = await resolveActor("altana", 56);
     const hash = await actor.trade(CALL);
-    expect(hash).toBe("0xhash56");
+    expect(hash).toBe(TX56);
     expect(execute.mock.calls[0][0].chainId).toBe(56);
   });
 
-  it("refuses a relay answer that carries no receipt hash", async () => {
+  it("refuses a relay answer that carries a callsId but no transaction hash", async () => {
     grantSession({ wallet: { address: WALLET } });
-    execute.mockResolvedValue({ receipts: [] });
+    execute.mockResolvedValue({ status: "PENDING", callsId: TX });
     const actor = await resolveActor("altana");
-    await expect(actor.trade(CALL)).rejects.toThrow(/no receipt hash/);
+    await expect(actor.trade(CALL)).rejects.toThrow(/no transaction hash/);
+  });
+
+  it("refuses a relay answer marked FAILED", async () => {
+    grantSession({ wallet: { address: WALLET } });
+    execute.mockResolvedValue({ status: "FAILED", callsId: TX });
+    const actor = await resolveActor("altana");
+    await expect(actor.trade(CALL)).rejects.toThrow(/FAILED/);
   });
 });
 

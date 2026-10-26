@@ -7,7 +7,7 @@ import { pancakeToken } from "./pancake";
 import { readPancakePrice } from "./pancake-read";
 import { vaultFor, VAULT_READ_ABI, tradeCallFor, type HireView } from "./vault";
 import { decideHire, policyFromEnv, refQuotePerBase, type HireFacts } from "./grid-strategy";
-import { acquireLease, getStrategyState, releaseLease, saveStrategyState } from "./strategy-store";
+import { acquireLease, clearStrategyState, getStrategyState, releaseLease, saveStrategyState } from "./strategy-store";
 import { getHirePolicy } from "./policy-registry";
 import { writeReceipt } from "./receipt-store";
 import { hireValue0 } from "./vault-value";
@@ -245,8 +245,22 @@ export async function sweepOwnHires(
         );
         try {
           const txHash = await actor.trade({ to: vault as `0x${string}`, data });
+          // public BSC endpoints can serve a stale read for a few seconds after
+          // the receipt lands, so give the hire three tries to show the move
+          let post = await readHire(client, chainId, id);
+          for (let i = 0; i < 2 && post.balanceA === hire.balanceA && post.balanceB === hire.balanceB; i++) {
+            await new Promise((r) => setTimeout(r, 4000));
+            post = await readHire(client, chainId, id);
+          }
+          const moved =
+            post.balanceA !== hire.balanceA || post.balanceB !== hire.balanceB;
+          if (!moved) {
+            await clearStrategyState(chainId, id.toString());
+            throw new Error(
+              `the trade returned ${txHash} but the hire's balances did not change; refusing to record it as traded`,
+            );
+          }
           reports.push({ ...line, status: "traded", reason: null, txHash });
-          const post = await readHire(client, chainId, id);
           await writeReceipt({ chainId, hireId: id.toString(), agent, status: "traded", reason: null, txHash, blockNumber: quote.blockNumber, before: { balanceA: hire.balanceA.toString(), balanceB: hire.balanceB.toString(), value0: value0?.toString() ?? null }, after: { balanceA: post.balanceA.toString(), balanceB: post.balanceB.toString(), value0: (await hireValue0(client, vault, id))?.toString() ?? null }, trigger, guardrail, simulation, policy: "Grid" });
         } catch (e) {
           // the contract is the last line: one refusal stops this hire's intents
