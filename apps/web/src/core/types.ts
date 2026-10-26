@@ -66,7 +66,7 @@ export const CATEGORIES: CategoryDef[] = [
 
 export const CATEGORY_KEYS: CategoryKey[] = CATEGORIES.map((c) => c.key);
 
-export type VerificationStatus = "delivered" | "gated" | "dead" | "unreachable";
+export type VerificationStatus = "delivered" | "gated" | "dead" | "unreachable" | "online" | "restricted" | "not_checked" | "unresponsive";
 
 export interface Verification {
   status: VerificationStatus;

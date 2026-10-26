@@ -27,6 +27,9 @@ export function verdictFor(
   if (!v) {
     return { label: 'Not checked yet', tone: 'none', explain: 'The marketplace has not checked this agent yet.' }
   }
+  if (v.status === 'online') {
+    return { label: 'Online', tone: 'good', explain: 'Answered the marketplace on its last check.' }
+  }
   if (v.status === 'delivered') {
     // a deterministic check costs nothing: the sweep asked a task with a knowable
     // answer and scored what came back, so a correct answer is evidence the work
@@ -49,6 +52,12 @@ export function verdictFor(
     return isProbeCheck(chainId, v.quality)
       ? { label: 'Online', tone: 'good', explain: 'Answered the marketplace on its last check.' }
       : { label: 'Verified', tone: 'good', explain: 'Delivered a result on the marketplace\'s last paid test hire.' }
+  }
+  if (v.status === 'restricted') {
+    return { label: 'Restricted', tone: 'held', explain: 'Answers only through its own access gate.' }
+  }
+  if (v.status === 'not_checked') {
+    return { label: 'Not checked yet', tone: 'none', explain: 'The marketplace has not checked this agent yet.' }
   }
   if (v.status === 'gated') {
     return {
