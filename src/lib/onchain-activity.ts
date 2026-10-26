@@ -20,11 +20,10 @@ export interface WalletActivity {
   reason?: string;
 }
 
-// BscScan's own API still serves BSC (56) and its testnet (97) on the free
-// tier; Etherscan V2's free tier does not cover BSC, so BscScan is used here.
+// Etherscan V2 unified API: one endpoint for every EVM chain, selected by chainid.
 const SCAN: Record<number, string> = {
-  56: "https://api.bscscan.com/api",
-  97: "https://api-testnet.bscscan.com/api",
+  56: "https://api.etherscan.io/v2/api?chainid=56",
+  97: "https://api.etherscan.io/v2/api?chainid=97",
 };
 
 // Methods that are bookkeeping rather than the agent's job.
@@ -83,7 +82,7 @@ export async function readWalletActivity(
 
   let txs: ScanTx[] = [];
   try {
-    const url = `${api}?module=account&action=txlist&address=${wallet}&startblock=0&endblock=99999999&page=1&offset=200&sort=desc&apikey=${apiKey}`;
+    const url = `${api}&module=account&action=txlist&address=${wallet}&startblock=0&endblock=99999999&page=1&offset=200&sort=desc&apikey=${apiKey}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     const text = await res.text();
     let body: { status?: string; result?: ScanTx[] | string; message?: string };
@@ -95,7 +94,11 @@ export async function readWalletActivity(
     if (body.status === "0" && typeof body.result === "string" && /no transactions/i.test(body.result)) {
       txs = [];
     } else if (body.status !== "1" || !Array.isArray(body.result)) {
-      return empty(wallet, chainId, typeof body.result === "string" ? body.result : body.message ?? "explorer read failed");
+      const msg = typeof body.result === "string" ? body.result : body.message ?? "explorer read failed";
+      const hint = /free api access/i.test(msg)
+        ? " (the configured Etherscan key does not cover BSC on its current plan; use a BSC-capable key)"
+        : "";
+      return empty(wallet, chainId, msg + hint);
     } else {
       txs = body.result;
     }
