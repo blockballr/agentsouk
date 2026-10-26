@@ -56,7 +56,7 @@ const settlementEvidence = [
     amount: 0.8264,
     payer: '0x52DA44aB471455437fc17979c52E501f6b8d0EAF',
     note:
-      '10 USDT vault hire: the buyer signed a 0.5 percent band and a 5 percent loss cap, and Grid Pilot traded 0.8264 USDT inside it. The deposit stays in the vault until the buyer closes, so this row proves execution, not a payment.',
+      '10 USDT vault hire: the buyer signed a 0.5 percent band and a 5 percent loss cap, and Grid Pilot traded 0.8264 USDT inside it. The buyer closed at 8.2645 USDT plus 0.00234 WBNB, about 9.999 USDT back, so this row proves execution, not a payment.',
   },
   {
     chainId: 97,
