@@ -12,7 +12,7 @@ export function vaultLogEndpoint(chainId: number): string {
 // Public log endpoints cap the block range. BlockPI allows 5k, so 4k is the
 // safe default; a provider with a smaller cap still halves its way down.
 export const LOG_CHUNK = 4_000n;
-export const MAX_LOG_CHUNKS = 12;
+export const MAX_LOG_CHUNKS = 24;
 
 export interface VaultLog {
   transactionHash: `0x${string}`;
@@ -50,7 +50,7 @@ export async function collectVaultLogs(
       if (from === 0n) break;
       to = from - 1n;
     } catch {
-      if (chunk > 2_000n) {
+      if (chunk > 500n) {
         chunk /= 2n;
         continue;
       }

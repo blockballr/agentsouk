@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, http, parseAbiItem, type Address } from "viem";
+import { createPublicClient, parseAbiItem, type Address } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 import { vaultFor } from "@/lib/vault";
+import { rpcTransport } from "@/lib/rpc";
 import { targetChainId, BSC_TESTNET_CHAIN_ID } from "@/lib/types";
-import { collectVaultLogs, vaultLogEndpoint } from "@/lib/vault-logs";
+import { collectVaultLogs } from "@/lib/vault-logs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const client = createPublicClient({
     chain: chainId === BSC_TESTNET_CHAIN_ID ? bscTestnet : bsc,
-    transport: http(vaultLogEndpoint(chainId), { timeout: 20_000 }),
+    transport: rpcTransport(chainId),
   });
 
   try {
