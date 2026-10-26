@@ -82,3 +82,12 @@ next-env.d.ts
 data/altana-session.json
 data/altana-sessions.json
 
+# helper scripts with secrets
+/scripts/assign-agent-wallets.mjs
+/scripts/fund-agent-wallets.mjs
+/scripts/update-agent-wallets.mjs
+/scripts/sync-altana-to-db.mjs
+/scripts/write-coverage.mjs
+/scripts/test-db.mjs
+/scripts/check-sessions.mjs
+
