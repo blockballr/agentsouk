@@ -486,6 +486,17 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
     refresh()
   }, [account])
 
+  // live P&L: an open hire's value moves with the pool, so the panel re-reads on
+  // a fixed cadence while the buyer is looking, without waiting for an action.
+  useEffect(() => {
+    if (!account || !vault) return
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'hidden') return
+      refresh()
+    }, 60_000)
+    return () => window.clearInterval(id)
+  }, [account, vault])
+
   async function ensureChain() {
     setTargetChain(requestedChain)
     const chain = await ensureBscChain()
@@ -1058,6 +1069,49 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                         </Row>
                         <Pill variant={h.open ? 'keep' : 'off'}>{h.open ? 'open' : 'closed'}</Pill>
                       </Row>
+                      {h.open && position && position.pnlKind === 'unrealized' && position.value != null && position.deposit > 0 ? (() => {
+                        const pnl = position.pnl ?? 0
+                        const pct = (pnl / position.deposit) * 100
+                        const losing = pnl < 0
+                        const lossShare = losing ? Math.abs(pct) / Math.max(1, h.maxLossBps / 100) : 0
+                        const nearLimit = lossShare >= 0.5
+                        return (
+                          <div
+                            className={`rounded-[8px] border p-3 ${losing ? 'border-souk-peach/50 bg-souk-peach/5' : 'border-souk-data/40 bg-souk-data/5'}`}
+                            role="status"
+                          >
+                            <Row justify="between" align="center" gap={8}>
+                              <Txt size={13} lead={18} weight="bold" tone={losing ? 'peach' : 'ink'}>
+                                {losing ? 'Losing' : 'Earning'} {pct >= 0 ? '+' : ''}{pct.toFixed(2)}%
+                              </Txt>
+                              <Txt size={13} lead={18} mono tone={losing ? 'peach' : 'ink'}>
+                                {pnl >= 0 ? '+' : ''}{pnl.toFixed(4)} USDT
+                              </Txt>
+                            </Row>
+                            <Txt size={11} lead={16} tone="slate">
+                              position value {position.value.toFixed(4)} USDT of {position.deposit.toFixed(4)} deposited.
+                              {' '}{priceNote ? `${priceNote}. ` : ''}Reads live from the pool; refreshes every minute.
+                            </Txt>
+                            {nearLimit ? (
+                              <div className="mt-2 rounded-[6px] border border-souk-peach/60 bg-souk-peach/10 p-2">
+                                <Txt size={11} lead={16} weight="bold" tone="peach">
+                                  {lossShare >= 1
+                                    ? 'The drawdown budget is spent. The guard refuses further trades until value recovers; closing now returns what is left.'
+                                    : `This hire has used ${(lossShare * 100).toFixed(0)}% of its ${h.maxLossBps / 100}% drawdown budget. Closing now keeps what is left; waiting risks reaching the limit.`}
+                                </Txt>
+                                <Btn
+                                  kind="warn"
+                                  onClick={() => withdrawHire(id)}
+                                  disabled={busy !== null}
+                                  className="mt-2 w-full"
+                                >
+                                  {busy === `withdraw ${id}` ? t('vault.closing') : 'Cut loss and close now'}
+                                </Btn>
+                              </div>
+                            ) : null}
+                          </div>
+                        )
+                      })() : null}
                       <div className="grid grid-cols-2 gap-2">
                         <Stack gap={1}>
                           <Label tone="muted">WBNB</Label>
