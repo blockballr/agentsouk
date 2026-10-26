@@ -33,7 +33,6 @@ import { ratedHires } from '../lib/rating'
 import { getVaultExecutor } from '../lib/api'
 import { useI18n } from '../lib/i18n'
 import { RateAgent } from '../components/RateAgent'
-import { VaultVisualizer } from '../components/VaultVisualizer'
 import { ResultBox } from '../components/ui'
 import {
   Stack,
@@ -1113,23 +1112,6 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                           </div>
                         )
                       })() : null}
-                      {h.open ? (
-                        <VaultVisualizer
-                          state={{
-                            labelA: 'WBNB',
-                            labelB: 'USDT',
-                            balanceA: Number(h.balanceA) || 0,
-                            balanceB: Number(h.balanceB) || 0,
-                            valueUsd: Number(position?.value ?? 0),
-                            floorUsd: Number(position?.deposit ?? 0) * 0.95,
-                            maxLossBps: h.maxLossBps,
-                            maxSlippageBps: h.maxSlippageBps,
-                            drawdownUsedBps: 0,
-                            price: 0,
-                            trades: [],
-                          }}
-                        />
-                      ) : null}
                       <div className="grid grid-cols-2 gap-2">
                         <Stack gap={1}>
                           <Label tone="muted">WBNB</Label>

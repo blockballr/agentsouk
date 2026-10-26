@@ -6,7 +6,7 @@ import { findActiveSession } from "@/lib/x402";
 import { sessionRevoked } from "@/lib/receipts-store";
 import { getBoost, hydrateBoostsFromDb } from "@/lib/boosts";
 import { captureAgentSkills } from "@/lib/agent-interface";
-import { firstPartyCategory, firstPartyMinDeposit, firstPartySkills } from "@/lib/first-party-copy";
+import { firstPartyCategory, firstPartyImage, firstPartyMinDeposit, firstPartySkills } from "@/lib/first-party-copy";
 import type { AgentSummary } from "@agora/core";
 import { readPancakePositions } from "@/lib/pancake-positions";
 import { withListingEdit } from "@/lib/listing-edit";
@@ -53,12 +53,14 @@ export async function GET(
     await recordShelfSkills(Number(chainId), tokenId, skills, accessGated).catch(() => {});
   }
   const canonicalCategory = firstPartyCategory(Number(chainId), tokenId);
+  const canonicalImage = firstPartyImage(Number(chainId), tokenId);
   const categorised = canonicalCategory
     ? { ...agent, category: canonicalCategory as AgentSummary["category"] }
     : shelved?.category
       ? { ...agent, category: shelved.category }
       : agent;
-  const data = verification ? { ...categorised, verification } : categorised;
+  const withImage = canonicalImage ? { ...categorised, image_url: canonicalImage } : categorised;
+  const data = verification ? { ...withImage, verification } : withImage;
   const withSkills = skills ? { ...data, skills } : data;
   const withAccess = accessGated ? { ...withSkills, accessGated: true } : withSkills;
   const withPcs =

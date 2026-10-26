@@ -26,7 +26,6 @@ import { SecurityGate } from './components/SecurityGate'
 import { HostRouter } from './components/HostRouter'
 import { WorkspaceShell } from './components/WorkspaceShell'
 import VaultHirePage from './pages/VaultHirePage'
-import VaultVisualizerPreview from './pages/VaultVisualizerPreview'
 import { DesignPnlPage } from './pages/DesignPnlPage'
 
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
@@ -65,7 +64,6 @@ function App() {
               <Route path="/ongoing" element={<OngoingPage />} />
               <Route path="/quest" element={<QuestPage />} />
               <Route path="/vault" element={<VaultHirePage />} />
-            <Route path="/vault-visualizer-preview" element={<VaultVisualizerPreview />} />
               <Route path="/vault/:chainId/:tokenId" element={<VaultHirePage />} />
               <Route path="/profile" element={<Navigate to="/seller" replace />} />
               <Route path="/studio" element={<StudioPage />} />

@@ -135,8 +135,8 @@ export function sellerConfigFromEnv(
     // a managed trade is priced as a share of the capital, with a floor that
     // covers gas and a cap that keeps a large instruction from a large fee
     feeBps: num("SELLER8183_FEE_BPS", 50),
-    minFeeU: num("SELLER8183_MIN_FEE_U", 1),
-    maxFeeU: num("SELLER8183_MAX_FEE_U", 50),
+    minFeeU: num("SELLER8183_MIN_FEE_U", 0.01),
+    maxFeeU: num("SELLER8183_MAX_FEE_U", 0.05),
     minCapitalUsd: num("SELLER8183_MIN_CAPITAL_USD", 50),
     agentId,
     agentName,

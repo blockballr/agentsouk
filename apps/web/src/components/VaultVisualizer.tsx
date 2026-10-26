@@ -138,26 +138,26 @@ export function VaultVisualizer({ state }: { state?: VaultVisualizerState }) {
 
       {/* drawdown fuel gauge */}
       <div className="mt-4 flex items-center gap-3">
-        <div className="relative h-16 w-16">
+        <div className="relative h-20 w-20 shrink-0">
           <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
-            <circle cx="32" cy="32" r="26" fill="none" stroke="currentColor" strokeWidth="6" className="text-souk-hair" />
+            <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" strokeWidth="5" className="text-souk-hair" />
             <motion.circle
               cx="32"
               cy="32"
-              r="26"
+              r="24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="6"
+              strokeWidth="5"
               strokeLinecap="round"
               className={drawdownPct > 80 ? 'text-souk-warn' : 'text-souk-data'}
               initial={{ strokeDasharray: '0 200' }}
-              animate={{ strokeDasharray: `${(drawdownPct / 100) * 163} 200` }}
+              animate={{ strokeDasharray: `${(drawdownPct / 100) * 150} 200` }}
               transition={{ duration: 1.2, ease: 'easeOut' }}
             />
           </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[11px] font-bold text-souk-ink">{drawdownPct.toFixed(0)}%</span>
-            <span className="text-[8px] uppercase tracking-[0.06em] text-souk-muted">drawdown</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+            <span className="text-[13px] font-bold text-souk-ink">{drawdownPct.toFixed(0)}%</span>
+            <span className="mt-0.5 text-[7px] uppercase tracking-[0.06em] text-souk-muted">drawdown</span>
           </div>
         </div>
         <div className="flex-1 text-[11px] text-souk-muted">

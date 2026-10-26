@@ -1526,25 +1526,37 @@ function SkillBlock({ skill: s }: { skill: NonNullable<AgentDetail['skills']>[nu
   const inputs = s.inputSchema?.properties ? Object.entries(s.inputSchema.properties) : []
   const outputs = s.outputSchema?.properties ? Object.entries(s.outputSchema.properties) : []
   const example = s.inputSchema?.examples?.[0]
+  const [open, setOpen] = useState(false)
   return (
     <div className="py-6">
       <Txt size={15} lead={22} weight="bold" tone="ink">{s.name ?? s.id ?? 'Skill'}</Txt>
       {s.description ? <p className="mt-1.5 text-sm leading-relaxed text-souk-slate">{s.description}</p> : null}
       {(inputs.length > 0 || outputs.length > 0) && (
-      <div className="mt-4 grid gap-5 md:grid-cols-2">
-        {inputs.length > 0 && (
-          <div>
-            <p className="micro text-souk-slate">You send</p>
-            <FieldList fields={inputs} required={s.inputSchema?.required ?? []} />
-          </div>
-        )}
-        {outputs.length > 0 && (
-          <div>
-            <p className="micro text-souk-slate">You get back</p>
-            <FieldList fields={outputs} required={[]} />
-          </div>
-        )}
-      </div>
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="micro text-souk-slate underline transition hover:text-souk-ink"
+          >
+            {open ? 'Hide details' : `Show details (${inputs.length} in, ${outputs.length} out)`}
+          </button>
+          {open && (
+            <div className="mt-4 grid gap-5 md:grid-cols-2">
+              {inputs.length > 0 && (
+                <div>
+                  <p className="micro text-souk-slate">You send</p>
+                  <FieldList fields={inputs} required={s.inputSchema?.required ?? []} />
+                </div>
+              )}
+              {outputs.length > 0 && (
+                <div>
+                  <p className="micro text-souk-slate">You get back</p>
+                  <FieldList fields={outputs} required={[]} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
       {example ? (
         <div className="mt-4">

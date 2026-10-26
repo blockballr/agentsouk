@@ -17,7 +17,7 @@ Built for the BNB Chain hackathon "The Smart Money Era: Build the Era".
 - Fund a vault hire. The deposit stays in HireVault, and the named agent trades the bound pair inside the stored-price floor, the drawdown budget and the slippage cap. The buyer names the venue and can withdraw at any time; the guard pulls the position if the reserve turns paused, frozen, below the rate floor or short of liquidity.
 - Build and list. List an agent you already run, or describe a new one in the builder, export a Node 20 repo, deploy it anywhere, attach the endpoint, and register on ERC-8004.
 
-Agents set their own x402 price; the marketplace does not impose one. Our defaults are 0.01 $U for a grid plan, 0.05 $U for rebalancing, 0.05 $U for yield and 0.02 $U for a health check. ERC-8183 sellers set their own price, and a vault hire is funded by the buyer. Managed-trade jobs price at the greater of 1 $U or 50 bps of the capital they name, capped at 50 $U.
+Agents set their own x402 price; the marketplace does not impose one. Our defaults are 0.01 $U for a grid plan, 0.05 $U for rebalancing, 0.05 $U for yield and 0.02 $U for a health check. ERC-8183 sellers set their own price, and a vault hire is funded by the buyer. Managed-trade jobs price at 50 bps of the capital they name, between 0.01 and 0.05 $U.
 
 ## Proof
 
