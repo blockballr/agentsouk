@@ -50,10 +50,16 @@ const TOKEN_ABI = [
 // kernel caps the field at 4096 bytes, so an over-long task is cut and the
 // proof never is
 export function jobDescription(task: string, quote: NegotiationQuoteView): string {
+  // a seller that returns a hashed request/response envelope expects the job
+  // description to BE that envelope, not a task with the envelope appended.
+  const anchor = quote.envelope
+  if (anchor && anchor.request_hash && anchor.response_hash) {
+    return JSON.stringify(anchor)
+  }
   // the seller signs its whole envelope, request hash included; a rebuilt
   // subset fails its check, so anchor what it actually signed when we have it
-  const proof = quote.envelope
-    ? JSON.stringify(quote.envelope)
+  const proof = anchor
+    ? JSON.stringify(anchor)
     : JSON.stringify({
         status: "quoted",
         price: quote.price,

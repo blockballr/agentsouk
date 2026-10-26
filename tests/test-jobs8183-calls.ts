@@ -77,11 +77,24 @@ describe("the composed job description anchors the signed quote", () => {
     expect(new TextEncoder().encode(text).length).toBeLessThanOrEqual(4096);
   });
 
-  it("anchors the seller's whole envelope when the quote carries one", () => {
-    const envelope = { request_hash: `0x${"ef".repeat(32)}`, negotiation_hash: QUOTE.negotiationHash, provider_sig: QUOTE.providerSig };
+  it("anchors a hashed envelope as the whole description", () => {
+    const envelope = {
+      request_hash: `0x${"ef".repeat(32)}`,
+      response_hash: `0x${"12".repeat(32)}`,
+      negotiation_hash: QUOTE.negotiationHash,
+      provider_sig: QUOTE.providerSig,
+    };
     const text = jobDescription("plan a grid ladder", { ...QUOTE, envelope });
+    expect(text).toBe(JSON.stringify(envelope));
+    expect(text).not.toContain("plan a grid ladder");
+  });
+
+  it("keeps the task and the proof for an envelope without hashes", () => {
+    const envelope = { status: "quoted", negotiation_hash: QUOTE.negotiationHash, provider_sig: QUOTE.providerSig };
+    const text = jobDescription("plan a grid ladder", { ...QUOTE, envelope });
+    expect(text).toContain("plan a grid ladder");
     expect(text).toContain(JSON.stringify(envelope));
-    expect(text).not.toContain('"status":"quoted"');
+    expect(text).not.toContain('"status":"quoted","price"');
   });
 });
 
