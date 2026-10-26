@@ -139,14 +139,14 @@
     },
     {
       "chainId": 56,
-      "tokenId": "",
+      "tokenId": "391002",
       "slug": "band-keeper",
       "card": "band",
       "name": "Souk Band Keeper",
       "wallet": "0xE3c5acFb2560ee8Dfe4bF6FAD74520738F7C8e9B",
       "policy": "band",
       "vaultOnly": true,
-      "pending": true,
+      "pending": false,
       "description": "Keeps a two-asset position inside a drift band on chain. Swaps through HireVault when drift leaves the corridor, returning to the near edge rather than the centre. Named a PancakeSwap pair it also suggests a v3 range: ticks, prices, the deposit split and a prefilled link. It suggests ranges, does not manage a liquidity position, places no resting orders and holds no key.",
       "skills": [
         {
@@ -160,14 +160,14 @@
     },
     {
       "chainId": 56,
-      "tokenId": "",
+      "tokenId": "391003",
       "slug": "yield-lens",
       "card": "yield",
       "name": "Souk Yield Lens",
       "wallet": "0xdFDeBe20F1EeFA135ed18376B5E2DCB55e618F0a",
       "policy": "buffer",
       "vaultOnly": true,
-      "pending": true,
+      "pending": false,
       "description": "Keeps a yield sleeve working on chain. Supplies the stable balance above the hire's liquid floor to the venue the buyer named, Aave V3 USDT on BNB Chain, and pulls the position when the reserve is paused, frozen, below the rate floor or short of liquidity. Runs as the Buffer policy through HireVault, with the floor, drawdown budget and slippage checked on chain. The rate is read from the pool, and no return is promised.",
       "skills": [
         {
@@ -181,14 +181,14 @@
     },
     {
       "chainId": 56,
-      "tokenId": "",
+      "tokenId": "391004",
       "slug": "grid-planner",
       "card": "grid",
       "name": "Souk Grid Planner",
       "wallet": "0xAb27Ca29A0535942091E5AF70C6B18dE7ABbCA07",
       "policy": "grid",
       "vaultOnly": true,
-      "pending": true,
+      "pending": false,
       "description": "Plans and runs a grid ladder on chain. From a price range, rung count, order size and fee it returns the rung spacing, committed capital, and the gross and net capture of one completed round trip. When a HireVault hire names its wallet, it executes a swap as price crosses a rung, inside the contract's floor, drawdown and slippage bounds. It places no resting orders on PancakeSwap and holds no key.",
       "skills": [
         {
