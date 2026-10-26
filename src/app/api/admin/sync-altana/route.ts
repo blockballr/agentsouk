@@ -8,10 +8,12 @@ export const dynamic = "force-dynamic";
 // persists the sessions to the production database. one-time setup helper.
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) return NextResponse.json({ error: "not configured" }, { status: 503 });
-  if (req.headers.get("authorization") !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const syncToken = process.env.SYNC_TOKEN;
+  const auth = req.headers.get("authorization") ?? "";
+  const ok =
+    (cronSecret && auth === `Bearer ${cronSecret}`) ||
+    (syncToken && auth === `Bearer ${syncToken}`);
+  if (!ok) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = (await req.json().catch(() => null)) as { sessions?: Record<string, Record<string, unknown>> } | null;
   if (!body?.sessions) return NextResponse.json({ error: "sessions required" }, { status: 400 });
 
