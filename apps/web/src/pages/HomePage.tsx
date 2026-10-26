@@ -126,11 +126,7 @@ export function HomePage() {
     import('gsap').then(({ default: gsap }) => {
       if (cancelled) return
       const cards = el.querySelectorAll('[data-cat-card]')
-      gsap.fromTo(
-        cards,
-        { opacity: 0, y: 24 },
-        { opacity: 1, y: 0, duration: 0.6, stagger: 0.12, ease: 'power2.out', delay: 0.1 },
-      )
+      gsap.from(cards, { opacity: 0, y: 24, duration: 0.6, stagger: 0.12, ease: 'power2.out', delay: 0.1 })
     }).catch(() => {})
     return () => { cancelled = true }
   }, [featured])
@@ -146,18 +142,14 @@ export function HomePage() {
       const ScrollTrigger = stMod.default
       gsap.registerPlugin(ScrollTrigger)
       const items = el.querySelectorAll(':scope > div')
-      gsap.fromTo(
-        items,
-        { opacity: 0, x: -12 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 0.4,
-          stagger: 0.04,
-          ease: 'power2.out',
-          scrollTrigger: { trigger: el, start: 'top 80%' },
-        },
-      )
+      gsap.from(items, {
+        opacity: 0,
+        x: -12,
+        duration: 0.4,
+        stagger: 0.04,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: el, start: 'top 80%' },
+      })
     }).catch(() => {})
     return () => { cancelled = true }
   }, [])
