@@ -20,7 +20,7 @@ import {
 import { ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
 import { connectWallet, sessionAccount, watchSession } from '../lib/wallet-session'
 
-const GAS_BUFFER = 5_000_000_000_000_000n
+const GAS_BUFFER = 500_000_000_000_000n
 
 function amountLabel(value: bigint | null, places = 6): string {
   if (value === null) return '--'
