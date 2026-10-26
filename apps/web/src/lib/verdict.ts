@@ -28,7 +28,7 @@ export function verdictFor(
     return { label: 'Not checked yet', tone: 'none', explain: 'The marketplace has not checked this agent yet.' }
   }
   if (v.status === 'online') {
-    return { label: 'Online', tone: 'good', explain: 'Answered the marketplace on its last check.' }
+    return { label: 'Online', tone: 'good', explain: 'Responded to the last reachability probe.' }
   }
   if (v.status === 'delivered') {
     // a deterministic check costs nothing: the sweep asked a task with a knowable
@@ -50,7 +50,7 @@ export function verdictFor(
           }
     }
     return isProbeCheck(chainId, v.quality)
-      ? { label: 'Online', tone: 'good', explain: 'Answered the marketplace on its last check.' }
+      ? { label: 'Online', tone: 'good', explain: 'Responded to the last reachability probe.' }
       : { label: 'Verified', tone: 'good', explain: 'Delivered a result on the marketplace\'s last paid test hire.' }
   }
   if (v.status === 'restricted') {
