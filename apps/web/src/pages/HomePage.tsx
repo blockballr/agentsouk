@@ -56,7 +56,7 @@ const settlementEvidence = [
     agent: null,
     amount: null,
     payer: null,
-    note: 'awaiting the first escrow hire through this marketplace, by a quest participant',
+    note: 'pending',
   },
   {
     chainId: 97,
@@ -510,7 +510,7 @@ export function HomePage() {
                           style={{ padding: '7px 10px 7px 12px', height: 34 }}
                         >
                           <Txt size={12} lead={18} tone={e.agent ? 'ink' : 'muted'}>
-                            {e.agent ?? 'awaiting the first escrow hire'}
+                            {e.agent ?? 'pending'}
                           </Txt>
                         </td>
                         <td
