@@ -417,6 +417,11 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
     const provider = await getProvider()
     try {
       const idsData = await readBytes(provider, vault, encodeFunctionData({ abi: [{ name: 'hiresOf', type: 'function', stateMutability: 'view', inputs: [{ name: 'buyer', type: 'address' }], outputs: [{ name: '', type: 'uint256[]' }] }] as const, functionName: 'hiresOf', args: [account as `0x${string}`] }))
+      if (!idsData || idsData === '0x' || idsData.length <= 2) {
+        setHireIds([])
+        setHires([])
+        return
+      }
       const decoded = decodeFunctionResult({ abi: [{ name: 'hiresOf', type: 'function', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'uint256[]' }] }] as const, functionName: 'hiresOf', data: idsData }) as bigint[]
       setHireIds(decoded)
       const found: VaultHire[] = []
