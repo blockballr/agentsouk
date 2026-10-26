@@ -8,6 +8,7 @@ import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { rpcTransport } from "./rpc";
 import { BSC_CHAIN_ID, BSC_TESTNET_CHAIN_ID, targetChainId } from "./types";
+import { loadAltanaSessionsFromDb, saveAltanaSession } from "./altana-store";
 
 
 export interface VaultActor {
@@ -83,7 +84,14 @@ function altanaActorFromEnv(chainId: number): VaultActor | null {
   return altanaActorFromSession(sessionBlob, sessionKey, chainId);
 }
 
-export function loadAltanaSessions(chainId: number): AltanaSessionRecord[] {
+export async function loadAltanaSessions(chainId: number): Promise<AltanaSessionRecord[]> {
+  // DB first (production); file fallback (local dev).
+  try {
+    const fromDb = await loadAltanaSessionsFromDb(chainId);
+    if (fromDb.length > 0) return fromDb;
+  } catch {
+    // fall through to file
+  }
   try {
     const plural = path.join(process.cwd(), "data", "altana-sessions.json");
     if (existsSync(plural)) {
@@ -118,10 +126,10 @@ export function loadAltanaSessions(chainId: number): AltanaSessionRecord[] {
   }
 }
 
-export function resolveActors(
+export async function resolveActors(
   preference = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey",
   chainId = targetChainId(),
-): VaultActor[] {
+): Promise<VaultActor[]> {
   if (chainId !== BSC_CHAIN_ID && chainId !== BSC_TESTNET_CHAIN_ID) {
     throw new Error(`the executor has no lane on chain ${chainId}`);
   }
@@ -130,7 +138,7 @@ export function resolveActors(
     // the per-agent file; the file is the multi-actor lane when nothing is set
     const explicit = altanaActorFromEnv(chainId);
     if (explicit) return [explicit];
-    const perAgent = loadAltanaSessions(chainId);
+    const perAgent = await loadAltanaSessions(chainId);
     if (perAgent.length > 0) {
       const actors: VaultActor[] = [];
       for (const rec of perAgent) {
@@ -152,16 +160,16 @@ export function resolveActors(
   throw new Error(`AGENT_EXECUTOR_ACTOR must be rawkey or altana, not "${preference}"`);
 }
 
-export function resolveActor(
+export async function resolveActor(
   preference = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey",
   chainId = targetChainId(),
-): VaultActor {
-  const actors = resolveActors(preference, chainId);
+): Promise<VaultActor> {
+  const actors = await resolveActors(preference, chainId);
   if (actors.length === 0) throw new Error("no executor actors configured");
   return actors[0];
 }
 
-export function configuredAgentWallets(chainId = targetChainId()): string[] {
+export async function configuredAgentWallets(chainId = targetChainId()): Promise<string[]> {
   const preference = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey";
   if (preference === "altana") {
     // the same precedence the runner uses, so the page pairs against the wallet
@@ -176,7 +184,7 @@ export function configuredAgentWallets(chainId = targetChainId()): string[] {
         return [];
       }
     }
-    const perAgent = loadAltanaSessions(chainId);
+    const perAgent = await loadAltanaSessions(chainId);
     if (perAgent.length > 0) return perAgent.map((r) => r.walletAddress);
     return [];
   }

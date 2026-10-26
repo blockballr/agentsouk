@@ -49,7 +49,7 @@ async function run(req: NextRequest): Promise<NextResponse> {
 
   let actors: VaultActor[];
   try {
-    actors = resolveActors(undefined, CHAIN_ID);
+    actors = await resolveActors(undefined, CHAIN_ID);
   } catch (e) {
     // no actor lane on this deployment is a configuration state, not a failed
     // sweep: the scheduler can skip it until the key or session is set

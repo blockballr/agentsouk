@@ -18,15 +18,15 @@ import { targetChainId } from "./types";
 // which wallet the executor trades from, as the page pairing needs it: the raw
 // key's public address or the address a granted session carries. Unset or
 // unparsable env reads as none, so a page can say plainly that no lane runs.
-export function executorWallet(): { kind: "rawkey" | "altana"; address: string } | null {
+export async function executorWallet(): Promise<{ kind: "rawkey" | "altana"; address: string } | null> {
   const configured = process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey";
   const kind: "rawkey" | "altana" = configured === "altana" ? "altana" : "rawkey";
-  const addresses = configuredAgentWallets(targetChainId());
+  const addresses = await configuredAgentWallets(targetChainId());
   if (addresses.length === 0) return null;
   return { kind, address: addresses[0] };
 }
 
-export function executorWallets(): string[] {
+export async function executorWallets(): Promise<string[]> {
   return configuredAgentWallets(targetChainId());
 }
 

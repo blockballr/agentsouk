@@ -57,7 +57,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     unread.blockNumber = e instanceof Error ? e.message.slice(0, 160) : "rpc did not answer";
   }
 
-  const sessions = loadAltanaSessions(chainId);
+  const sessions = await loadAltanaSessions(chainId);
   const wallets = sessions.map((s) => ({ wallet: s.walletAddress, label: s.label ?? "agent" }));
   if (wallets.length === 0) {
     const raw = process.env.AGENT_EXECUTOR_KEY;

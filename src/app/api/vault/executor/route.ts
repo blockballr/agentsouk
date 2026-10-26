@@ -8,8 +8,8 @@ export const dynamic = "force-dynamic";
 // GET /api/vault/executor
 export async function GET() {
   return NextResponse.json({
-    executor: executorWallet(),
-    executors: executorWallets(),
+    executor: await executorWallet(),
+    executors: await executorWallets(),
     vault: vaultFor(targetChainId()),
   });
 }

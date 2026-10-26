@@ -114,7 +114,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const minOut = params?.minOut ? BigInt(params.minOut) : 0n;
 
   // read the hire and verify it is open, not expired, and names this executor as agent
-  const actor = resolveActor(process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey", chainId);
+  const actor = await resolveActor(process.env.AGENT_EXECUTOR_ACTOR ?? "rawkey", chainId);
   const executorAddress = (await actor.address()).toLowerCase();
 
   const publicClient = createPublicClient({ chain: chainFor(chainId), transport: rpcTransport(chainId) });
