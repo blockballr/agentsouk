@@ -9,9 +9,10 @@ export function vaultLogEndpoint(chainId: number): string {
   return process.env.VAULT_LOG_RPC_56 ?? "https://bsc-rpc.publicnode.com";
 }
 
-// Public log endpoints cap the block range. BlockPI allows 5k, so 4k is the
-// safe default; a provider with a smaller cap still halves its way down.
-export const LOG_CHUNK = 4_000n;
+// Public log endpoints cap the block range. 3k clears BlockPI's per-call limit
+// with room for its off-by-one, and a provider with a smaller cap still halves
+// its way down.
+export const LOG_CHUNK = 3_000n;
 export const MAX_LOG_CHUNKS = 24;
 
 export interface VaultLog {
