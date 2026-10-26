@@ -6,6 +6,8 @@ import { fetchAgentsPage, fetchAgentDetail, searchAgents } from "./scanner";
 import { scoutDirFor, targetChainId } from "./types";
 import type { CategoryKey } from "./types";
 import type { ScoutCandidate, ScoutLog } from "./scout";
+import { takesJobs } from "@agora/core";
+import { negotiateQuote } from "./jobs8183";
 import {
   SCOUT_KEYWORDS,
   hasCallableEndpoint,
@@ -258,7 +260,43 @@ export async function probeCandidateEndpoint(candidate: ScoutCandidate): Promise
       if (!res.ok) {
         return { tokenId: candidate.token_id, ok: false, detail: `a2a ${res.status}`, protocol: "a2a" };
       }
-      return { tokenId: candidate.token_id, ok: true, detail: "a2a card ok", protocol: "a2a" };
+      // parse the card to see whether this seller takes ERC-8183 jobs; if it does,
+      // check that it can actually produce a quote for a basic task, so a broken
+      // seller is not left on the shelf to fail at hire time
+      let card: { skills?: { id?: string; name?: string; description?: string }[] } | null = null;
+      try {
+        card = (await res.clone().json()) as { skills?: { id?: string; name?: string; description?: string }[] };
+      } catch {
+        card = null;
+      }
+      const takesJob = Boolean(card?.skills && takesJobs(card.skills as never));
+      if (!takesJob) {
+        return { tokenId: candidate.token_id, ok: true, detail: "a2a card ok", protocol: "a2a", quotable: true };
+      }
+      const stack = (await import("./jobs8183")).erc8183Stack(candidate.chain_id);
+      if (!stack) {
+        return { tokenId: candidate.token_id, ok: true, detail: "a2a card ok", protocol: "a2a", quotable: true };
+      }
+      try {
+        const result = await (await import("./jobs8183")).negotiateQuote(
+          candidate.chain_id,
+          a2a,
+          "Plan a grid ladder for 10000 USDT between 250 and 320.",
+          null,
+        );
+        if (!result.ok) {
+          return {
+            tokenId: candidate.token_id,
+            ok: true,
+            detail: "a2a card ok",
+            protocol: "a2a",
+            quotable: false,
+          };
+        }
+        return { tokenId: candidate.token_id, ok: true, detail: "a2a card ok", protocol: "a2a", quotable: true };
+      } catch {
+        return { tokenId: candidate.token_id, ok: true, detail: "a2a card ok", protocol: "a2a", quotable: false };
+      }
     }
   } catch (e) {
     return {

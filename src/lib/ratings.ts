@@ -1,9 +1,11 @@
 // richer ratings for job sellers: a score, a comment and the verifier score
 // that the delivery earned, keyed to the payment that funded the job.
+// durable-backed when postgres is configured, in-memory otherwise.
 
 import "server-only";
 
 import { getAddress, verifyMessage } from "viem";
+import { durableMode, loadRatings as loadDurableRatings, saveRating as saveDurableRating } from "./durable-store";
 
 export interface Rating {
   id: string;
@@ -18,28 +20,31 @@ export interface Rating {
 }
 
 const ratings = new Map<string, Rating[]>();
+const loaded = new Set<string>();
 
-export function ratingKey(chainId: number, tokenId: string): string {
+function ratingKey(chainId: number, tokenId: string): string {
   return `${chainId}:${tokenId}`;
 }
 
-export function addRating(r: Rating): Rating {
-  const key = ratingKey(r.chainId, r.tokenId);
-  const list = ratings.get(key) ?? [];
-  if (list.some((x) => x.paymentId === r.paymentId)) {
-    throw new Error("this payment has already been rated");
+async function ensureLoaded(chainId: number, tokenId: string): Promise<void> {
+  const key = ratingKey(chainId, tokenId);
+  if (loaded.has(key)) return;
+  loaded.add(key);
+  if (durableMode() === "postgres") {
+    const durable = await loadDurableRatings(chainId, tokenId).catch(() => []);
+    if (durable.length > 0) {
+      ratings.set(key, durable);
+    }
   }
-  list.push(r);
-  ratings.set(key, list);
-  return r;
 }
 
-export function ratingsFor(chainId: number, tokenId: string): Rating[] {
+export async function ratingsFor(chainId: number, tokenId: string): Promise<Rating[]> {
+  await ensureLoaded(chainId, tokenId);
   return [...(ratings.get(ratingKey(chainId, tokenId)) ?? [])];
 }
 
-export function ratingSummary(chainId: number, tokenId: string): { count: number; average: number; verifierAverage: number } {
-  const list = ratingsFor(chainId, tokenId);
+export async function ratingSummary(chainId: number, tokenId: string): Promise<{ count: number; average: number; verifierAverage: number }> {
+  const list = await ratingsFor(chainId, tokenId);
   if (list.length === 0) return { count: 0, average: 0, verifierAverage: 0 };
   const score = list.reduce((a, r) => a + r.score, 0) / list.length;
   const v = list.reduce((a, r) => a + r.verifierScore, 0) / list.length;
@@ -85,4 +90,22 @@ export async function verifyRatingSignature(input: {
   } catch {
     return false;
   }
+}
+
+export async function addRating(r: Rating): Promise<Rating> {
+  const key = ratingKey(r.chainId, r.tokenId);
+  await ensureLoaded(r.chainId, r.tokenId);
+  const list = ratings.get(key) ?? [];
+  if (list.some((x) => x.paymentId === r.paymentId)) {
+    throw new Error("this payment has already been rated");
+  }
+  list.push(r);
+  ratings.set(key, list);
+  await saveDurableRating(r).catch(() => {});
+  return r;
+}
+
+export async function hasRated(chainId: number, tokenId: string, paymentId: string): Promise<boolean> {
+  const list = await ratingsFor(chainId, tokenId);
+  return list.some((x) => x.paymentId === paymentId);
 }

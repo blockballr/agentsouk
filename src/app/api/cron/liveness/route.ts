@@ -160,6 +160,9 @@ export async function runLiveness(req: NextRequest): Promise<NextResponse> {
       verdict.status,
       verdict.responseMs,
       quality ? { grade: quality.grade, reason: quality.reason, model: "deterministic" } : undefined,
+      probe.detail,
+      undefined,
+      probe.quotable,
     );
 
     let heartbeat: { ok: boolean; skipped?: boolean; hash?: string } = { ok: false, skipped: true };

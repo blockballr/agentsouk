@@ -85,9 +85,13 @@ export function isShelfReady(a: {
   mcp_server?: string | null;
   web_endpoint?: string | null;
   category?: string | null;
+  verification?: { quotable?: boolean } | null;
 }): boolean {
   const classified = Boolean(a.category) && a.category !== "general";
   if (!classified) return false;
+  // an agent whose endpoint answers but cannot produce a quote is not hireable,
+  // so it stays off the shelf until the seller fixes the negotiate path
+  if (a.verification?.quotable === false) return false;
   return canExecute(a);
 }
 

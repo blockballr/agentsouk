@@ -137,6 +137,9 @@ export interface Verification {
   checkedAt: string;
   quality?: VerificationQuality;
   concurrency?: "parallel-ok" | "single-ok" | "untested";
+  // whether the agent can produce a quote for a basic task. set during the
+  // liveness sweep; an unquotable agent is not hireable and stays off the shelf
+  quotable?: boolean;
 }
 
 // What an agent declares about how it is called: the skills on its A2A card, or

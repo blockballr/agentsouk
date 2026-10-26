@@ -52,6 +52,9 @@ async function ensureTable(): Promise<boolean> {
           // the chain a verdict was read on, so one token id registered on two
           // chains cannot show the other chain's check on its page
           await sql!`alter table verifications add column if not exists chain_id integer not null default 0`;
+          // whether a job seller can actually produce a quote for a basic task;
+          // an unquotable agent is not hireable and stays off the shelf
+          await sql!`alter table verifications add column if not exists quotable boolean`;
           // every row written before the store recorded a chain came from the
           // testnet sweeps, which ran for the whole life of the table: they are
           // testnet rows, not mainnet ones. today's chainless rows are kept
@@ -109,8 +112,9 @@ export async function upsertVerification(
   quality?: Verification["quality"],
   detail?: string,
   concurrency?: Verification["concurrency"],
+  quotable?: boolean,
 ): Promise<boolean> {
-  const written = await writeVerification(tokenId, name, category, status, responseMs, quality, detail, concurrency);
+  const written = await writeVerification(tokenId, name, category, status, responseMs, quality, detail, concurrency, quotable);
   // the check happened whether or not its latest-result row could be written, so it gets its
   // history line either way; after the verdict, which nothing here may hold up
   await recordCheck(tokenId, status, Number.isFinite(responseMs) ? Math.round(responseMs) : null);
@@ -126,12 +130,13 @@ async function writeVerification(
   quality?: Verification["quality"],
   detail?: string,
   concurrency?: Verification["concurrency"],
+  quotable?: boolean,
 ): Promise<boolean> {
   if (!(await ensureTable()) || !sql) return false;
   try {
     await sql`
-      insert into verifications (token_id, name, category, status, response_ms, checked_at, quality, concurrency, detail, failing_since, chain_id)
-      values (${tokenId}, ${name}, ${category}, ${status}, ${responseMs}, now(), ${quality ? JSON.stringify(quality) : null}::jsonb, ${concurrency ?? null}, ${detail ?? null}, ${countsAsFailing(status) ? new Date() : null}, ${targetChainId()})
+      insert into verifications (token_id, name, category, status, response_ms, checked_at, quality, concurrency, detail, failing_since, chain_id, quotable)
+      values (${tokenId}, ${name}, ${category}, ${status}, ${responseMs}, now(), ${quality ? JSON.stringify(quality) : null}::jsonb, ${concurrency ?? null}, ${detail ?? null}, ${countsAsFailing(status) ? new Date() : null}, ${targetChainId()}, ${quotable ?? null})
       on conflict (token_id, chain_id) do update set
         name = excluded.name,
         category = excluded.category,
@@ -145,7 +150,8 @@ async function writeVerification(
           when excluded.failing_since is null then null
           when verifications.failing_since is null then now()
           else verifications.failing_since
-        end
+        end,
+        quotable = excluded.quotable
     `;
     return true;
   } catch (e) {
@@ -202,6 +208,9 @@ export async function loadVerificationsFromDb(
       }
       if (typeof r.detail === "string") {
         v.detail = r.detail;
+      }
+      if (typeof r.quotable === "boolean") {
+        v.quotable = r.quotable;
       }
       // the failure clock travels with the row: a listing that is failing has to
       // be re-probed on a short backoff, and that is the only way a repaired

@@ -103,6 +103,9 @@ export type EndpointProbe = {
   detail: string;
   protocol?: "mcp" | "a2a" | null;
   tools?: number;
+  // whether an A2A job seller can actually produce a quote for a basic task.
+  // undefined for non-job agents and for probes that never reached the card.
+  quotable?: boolean;
 };
 
 export function probeToVerification(
@@ -116,6 +119,7 @@ export function probeToVerification(
   status: "online" | "gated" | "dead" | "unreachable" | "unresponsive" | "restricted" | "not_checked";
   responseMs: number;
   checkedAt: string;
+  quotable?: boolean;
 } {
   // a card or endpoint behind its own login answered, so it is alive; gated keeps the delist clock off
   const status = probe.ok
@@ -132,6 +136,7 @@ export function probeToVerification(
     status,
     responseMs,
     checkedAt: new Date().toISOString(),
+    quotable: probe.quotable,
   };
 }
 

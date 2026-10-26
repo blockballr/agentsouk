@@ -23,8 +23,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!/^\d{1,78}$/.test(tokenId)) {
     return json({ success: false, error: "tokenId required" }, 400);
   }
-  const list = ratingsFor(chainId, tokenId);
-  const summary = ratingSummary(chainId, tokenId);
+  const list = await ratingsFor(chainId, tokenId);
+  const summary = await ratingSummary(chainId, tokenId);
   return json({ success: true, ok: true, chainId, tokenId, ratings: list, summary });
 }
 
@@ -74,9 +74,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     createdAt: new Date().toISOString(),
   };
   try {
-    addRating(rating);
+    await addRating(rating);
   } catch (e) {
     return json({ success: false, error: (e as Error).message }, 409);
   }
-  return json({ success: true, ok: true, rating, summary: ratingSummary(chainId, tokenId) }, 201);
+  return json({ success: true, ok: true, rating, summary: await ratingSummary(chainId, tokenId) }, 201);
 }

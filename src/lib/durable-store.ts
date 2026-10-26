@@ -6,6 +6,7 @@ import postgres from "postgres";
 import type { HireTask } from "./tasks";
 import type { Job } from "./jobs";
 import type { Notification } from "./notifications";
+import type { Rating } from "./ratings";
 
 const sql =
   process.env.DATABASE_URL && process.env.RECEIPTS_STORE === "postgres"
@@ -67,6 +68,22 @@ async function init(): Promise<boolean> {
         `;
         await sql!`
           create index if not exists jobs_payment_idx on jobs (payment_id)
+        `;
+        await sql!`
+          create table if not exists ratings (
+            id text primary key,
+            chain_id integer not null,
+            token_id text not null,
+            payment_id text not null,
+            rater text not null,
+            score integer not null,
+            comment text not null default '',
+            verifier_score integer not null default 0,
+            created_at timestamptz not null default now()
+          )
+        `;
+        await sql!`
+          create index if not exists ratings_agent_idx on ratings (chain_id, token_id)
         `;
         await sql!`
           create index if not exists jobs_client_idx on jobs (client)
@@ -258,6 +275,80 @@ export async function loadJobs(limit = 100): Promise<Job[]> {
     return rows.map((r) => r.payload as Job);
   } catch {
     return [];
+  }
+}
+
+export async function saveRating(rating: Rating): Promise<void> {
+  if (!(await init()) || !sql) return;
+  try {
+    await sql`
+      insert into ratings (id, chain_id, token_id, payment_id, rater, score, comment, verifier_score, created_at)
+      values (
+        ${rating.id},
+        ${rating.chainId},
+        ${rating.tokenId},
+        ${rating.paymentId},
+        ${rating.rater},
+        ${rating.score},
+        ${rating.comment},
+        ${rating.verifierScore},
+        ${rating.createdAt}
+      )
+      on conflict (id) do nothing
+    `;
+  } catch {
+  }
+}
+
+export async function loadRatings(chainId: number, tokenId: string): Promise<Rating[]> {
+  if (!(await init()) || !sql) return [];
+  try {
+    const rows = await sql`
+      select id, chain_id, token_id, payment_id, rater, score, comment, verifier_score, created_at
+      from ratings
+      where chain_id = ${chainId} and token_id = ${tokenId}
+      order by created_at desc
+    `;
+    return rows.map((r) => ({
+      id: String(r.id),
+      chainId: Number(r.chain_id),
+      tokenId: String(r.token_id),
+      paymentId: String(r.payment_id),
+      rater: String(r.rater),
+      score: Number(r.score),
+      comment: String(r.comment ?? ""),
+      verifierScore: Number(r.verifier_score ?? 0),
+      createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function loadRatingByPayment(paymentId: string): Promise<Rating | undefined> {
+  if (!(await init()) || !sql) return undefined;
+  try {
+    const rows = await sql`
+      select id, chain_id, token_id, payment_id, rater, score, comment, verifier_score, created_at
+      from ratings
+      where payment_id = ${paymentId}
+      limit 1
+    `;
+    const r = rows[0];
+    if (!r) return undefined;
+    return {
+      id: String(r.id),
+      chainId: Number(r.chain_id),
+      tokenId: String(r.token_id),
+      paymentId: String(r.payment_id),
+      rater: String(r.rater),
+      score: Number(r.score),
+      comment: String(r.comment ?? ""),
+      verifierScore: Number(r.verifier_score ?? 0),
+      createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
+    };
+  } catch {
+    return undefined;
   }
 }
 
