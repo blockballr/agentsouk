@@ -5,6 +5,7 @@
 
 import { takesJobs } from "@agora/core";
 import { privateEndpointReason } from "./endpoint";
+import { erc8183Stack, negotiateQuote } from "./jobs8183";
 
 export type JobCardState = "verified" | "unverified" | "unreachable";
 
@@ -14,6 +15,7 @@ export interface JobCardCheck {
 }
 
 const FETCH_TIMEOUT_MS = 4000;
+const NEGOTIATE_TIMEOUT_MS = 8000;
 
 interface CardSkill {
   id?: string;
@@ -21,11 +23,23 @@ interface CardSkill {
   description?: string;
 }
 
+export interface JobCardCheckInput {
+  endpoint: string;
+  chainId?: number;
+  tokenId?: string;
+  expectedProvider?: string | null;
+  // a task to quote against; defaults to a generic one-liner so a seller that
+  // only answers a specific shape is caught here rather than at hire time
+  task?: string;
+}
+
 // timeoutMs is a parameter only so a test can prove the bound without waiting on it
 export async function jobCardCheck(
-  endpoint: string,
+  input: string | JobCardCheckInput,
   timeoutMs = FETCH_TIMEOUT_MS,
 ): Promise<JobCardCheck> {
+  const cfg = typeof input === "string" ? { endpoint: input } : input;
+  const endpoint = (cfg.endpoint ?? "").trim();
   const refused = privateEndpointReason(endpoint);
   if (refused) {
     return {
@@ -36,6 +50,7 @@ export async function jobCardCheck(
 
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  let card: { skills?: CardSkill[] } | null = null;
   try {
     const res = await fetch(endpoint, {
       headers: { accept: "application/json" },
@@ -48,7 +63,7 @@ export async function jobCardCheck(
         detail: `Unverified: the endpoint answered with HTTP ${res.status} instead of an agent card, so the job protocol could not be confirmed. Nothing was sent.`,
       };
     }
-    const card = (await res.json().catch(() => null)) as { skills?: CardSkill[] } | null;
+    card = (await res.json().catch(() => null)) as { skills?: CardSkill[] } | null;
     if (!card || !Array.isArray(card.skills) || card.skills.length === 0) {
       return {
         state: "unverified",
@@ -63,11 +78,6 @@ export async function jobCardCheck(
           "Unverified: the card declares skills but no ERC-8183 job protocol (no notify_funded step, and no negotiate step naming 8183), so this agent does not sell by job. Register by call instead, or add the protocol to the card first. Nothing was sent.",
       };
     }
-    return {
-      state: "verified",
-      detail:
-        "Fetched at prepare: the card declares the ERC-8183 job protocol. One check at this moment; the shelf re-reads the card on every visit.",
-    };
   } catch {
     if (ctl.signal.aborted) {
       const seconds = Math.max(1, Math.round(timeoutMs / 1000));
@@ -86,4 +96,40 @@ export async function jobCardCheck(
   } finally {
     clearTimeout(timer);
   }
+
+  // the card declares the protocol; now check that the seller can actually
+  // produce a quote for a basic task. An agent that crashes on a generic
+  // task is not hireable, so it is refused here rather than at hire time.
+  if (cfg.chainId && cfg.expectedProvider) {
+    const stack = erc8183Stack(cfg.chainId);
+    if (stack) {
+      const task = cfg.task ?? "Plan a grid ladder for 10000 USDT between 250 and 320.";
+      try {
+        const result = await Promise.race([
+          negotiateQuote(cfg.chainId, endpoint, task, cfg.expectedProvider),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("negotiate timed out")), NEGOTIATE_TIMEOUT_MS),
+          ),
+        ]);
+        if (!result.ok) {
+          return {
+            state: "unverified",
+            detail: `Unverified: the card declares the job protocol but the seller could not produce a quote for a basic task (${result.error ?? "negotiate failed"}). Nothing was sent; fix the seller's task handling first.`,
+          };
+        }
+      } catch {
+        return {
+          state: "unverified",
+          detail:
+            "Unverified: the seller's endpoint did not answer the negotiate call, so the job protocol could not be confirmed end to end. Nothing was sent; try again later.",
+        };
+      }
+    }
+  }
+
+  return {
+    state: "verified",
+    detail:
+      "Fetched at prepare: the card declares the ERC-8183 job protocol and the seller produced a quote for a basic task. One check at this moment; the shelf re-reads the card on every visit.",
+  };
 }

@@ -98,6 +98,7 @@ export async function POST(req: NextRequest) {
   // the job branch's authority is the card, fetched once here and bounded; a card that does not
   // declare the protocol refuses the branch before any claim exists, and the claim this mints
   // carries no x402 support, because a job seller refuses a direct paid task by construction
+  const chainId = targetChainId();
   const mode = body.mode === "job" ? "job" : body.mode === "both" ? "both" : "call";
   let cardCheck: JobCardCheck | undefined;
   if (mode !== "call") {
@@ -111,7 +112,11 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    cardCheck = await jobCardCheck((draft.endpoint ?? "").trim());
+    cardCheck = await jobCardCheck({
+      endpoint: (draft.endpoint ?? "").trim(),
+      chainId,
+      expectedProvider: draft.agentWallet ?? null,
+    });
     if (cardCheck.state !== "verified") {
       return NextResponse.json(
         { success: false, error: cardCheck.detail, cardCheck },
@@ -122,7 +127,6 @@ export async function POST(req: NextRequest) {
     draft.x402Support = mode === "both";
   }
 
-  const chainId = targetChainId();
   let registry: Address;
   try {
     registry = registryAddress(chainId);
