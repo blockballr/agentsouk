@@ -1,7 +1,6 @@
 {
   "name": "@agentsouk/vault-sdk",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,10 +10,16 @@
       "import": "./dist/index.js"
     }
   },
+  "description": "ABIs, guard math, calldata and runner for HireVault vault agents on BNB Smart Chain.",
+  "keywords": ["agentsouk", "hirevault", "vault", "bnb", "erc-8004"],
+  "license": "MIT",
   "files": [
     "dist",
     "README.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
