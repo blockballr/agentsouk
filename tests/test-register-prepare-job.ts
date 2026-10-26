@@ -11,6 +11,11 @@ vi.hoisted(() => {
 
 vi.mock("server-only", () => ({}));
 
+vi.mock("../src/lib/jobs8183", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/lib/jobs8183")>();
+  return { ...actual, negotiateQuote: vi.fn(async () => ({ ok: true, quote: {} })) };
+});
+
 import { NextRequest } from "next/server";
 import { POST as prepareRoute } from "../src/app/api/agents/register/prepare/route";
 import { GET as claimRoute } from "../src/app/api/agents/register/[claimId]/route";
