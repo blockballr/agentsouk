@@ -2,15 +2,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { AgentSummary } from '../core/types'
 import { defaultAvatarFor } from '../lib/default-avatar'
-import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, takesVault, shortAddress, timeAgo, classifyExecution } from '@agora/core'
+import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, takesVault, shortAddress, timeAgo } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
-import { OnChainBadge } from '../components/OnChainBadge'
-import { Tag } from '../components/Tag'
 import { getAgents, prefetchAgent } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
-import { OPERATED_BY_LABEL, OPERATED_BY_TITLE, isOperatedByAgentSouk } from '../lib/first-party'
+import { OPERATED_BY_LABEL, isOperatedByAgentSouk } from '../lib/first-party'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../components/souk'
 
@@ -112,6 +110,8 @@ export function MarketplacePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [shortlist, setShortlist] = useState<string[]>(() => getShortlist())
+  const [showFilters, setShowFilters] = useState(false)
+  const [showLegend, setShowLegend] = useState(false)
 
   function handleToggle(key: string) {
     setShortlist(toggleShortlist(key))
@@ -207,12 +207,12 @@ export function MarketplacePage() {
         <Section pad="pt-11 pb-16 md:pb-18">
         <Stack gap={10}>
           <Row justify="between" align="center" gap={16} className="flex-wrap">
-            <Txt size={11} lead={16} mono upper tone="data">
+            <Txt size={11} lead={16} mono upper tone="data" className="line-clamp-2 sm:line-clamp-none">
               {strap}
             </Txt>
             {/* the proof lives on /about, but a reviewer who lands here must still
                 see the chain and asset the market actually settles in */}
-            <Row align="center" gap={16} className="flex-wrap">
+            <Row align="center" gap={16} className="hidden flex-wrap sm:flex">
               {chainId !== null ? (
                 <Txt size={11} lead={16} mono tone="steel">
                   hires settle in {settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}
@@ -247,20 +247,113 @@ export function MarketplacePage() {
         </Section>
         </div>
 
-        {/* the controls band: categories, sorts; it carries the full
-            rhythm on both sides so the shelf's working part is its own island */}
-        <Section>
-        <Stack gap={16}>
-          <Row align="center" gap={24} className="flex-wrap">
-            <Tab active={category === 'all'} onClick={() => setParam('category', 'all')}>
-              All
-            </Tab>
-            {CATEGORIES.map((c) => (
-              <Tab key={c.key} active={category === c.key} onClick={() => setParam('category', c.key)}>
-                {c.label}
+        {/* the control band: two rows, sticky. categories first, then find, rail,
+            order and the count together; the toggles and the state key fold away
+            until asked for, so the shelf is not four rows of chrome before a card */}
+        <Section pad="py-0">
+        <div className="sticky top-0 z-20 -mx-8 border-y border-souk-hair bg-souk-canvas/90 px-8 backdrop-blur-[14px]">
+          <Row align="center" gap={16} className="border-b border-souk-hair py-3">
+            <div className="-mx-1 flex min-w-0 flex-1 items-center gap-6 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <Tab active={category === 'all'} onClick={() => setParam('category', 'all')}>
+                All
               </Tab>
-            ))}
-            <Row align="center" gap={20} className="flex-wrap">
+              {CATEGORIES.map((c) => (
+                <Tab key={c.key} active={category === c.key} onClick={() => setParam('category', c.key)}>
+                  {c.label}
+                </Tab>
+              ))}
+            </div>
+            <Row align="center" gap={16} className="shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowFilters((v) => !v)}
+                aria-expanded={showFilters}
+                className="cursor-pointer border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate transition hover:text-souk-ink"
+              >
+                Filters{pcs || hide || verifiedOnly ? ' ·' : ''}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowLegend((v) => !v)}
+                aria-expanded={showLegend}
+                title="The five states, in the order they cost you"
+                className="grid h-6 w-6 cursor-pointer place-items-center border border-souk-hair font-mono text-[10px] text-souk-muted transition hover:text-souk-ink"
+              >
+                ?
+              </button>
+            </Row>
+          </Row>
+
+          <Row align="center" gap={12} className="flex-wrap py-3">
+            <label className="flex h-10 w-full min-w-0 basis-full items-center gap-2 border border-souk-hair bg-souk-surface1 px-3 sm:w-auto sm:max-w-[320px] sm:flex-1">
+              <span className="sr-only">Search agents</span>
+              <input
+                id="search"
+                type="search"
+                value={q}
+                onChange={(e) => setParam('q', e.target.value)}
+                placeholder="Search agents, skills, endpoints"
+                className="w-full bg-transparent text-[13px] leading-5 text-souk-ink placeholder:text-souk-muted focus-visible:outline-none"
+              />
+            </label>
+            <Row align="center" gap={4} className="hidden sm:flex">
+              {jobSorts.map((s) => (
+                <SortButton
+                  key={s.key}
+                  active={type === s.key}
+                  title={'title' in s ? s.title : undefined}
+                  onClick={() => setParam('type', s.key)}
+                >
+                  {s.label}
+                </SortButton>
+              ))}
+            </Row>
+            <select
+              aria-label="Hire type"
+              value={type}
+              onChange={(e) => setParam('type', e.target.value)}
+              className="h-9 min-w-0 flex-1 border border-souk-hair bg-souk-surface1 px-2 font-mono text-[10px] uppercase tracking-[0.06em] text-souk-slate sm:hidden"
+            >
+              {jobSorts.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <Txt size={12} lead={16} mono tone="steel" className="hidden sm:block">
+              {result ? `${visibleItems.length} hireable now` : 'reading the shelf'}
+            </Txt>
+            <Row align="center" gap={4} className="ml-auto hidden flex-wrap sm:flex">
+              <Txt size={10} lead={12} tone="muted" className="uppercase tracking-wide">
+                Sort
+              </Txt>
+              {defaultSorts.map((s) => (
+                <SortButton
+                  key={s.key}
+                  active={metric === s.key}
+                  title={'title' in s ? s.title : undefined}
+                  onClick={() => setParam('metric', s.key)}
+                >
+                  {s.label}
+                </SortButton>
+              ))}
+            </Row>
+            <select
+              aria-label="Sort agents"
+              value={metric}
+              onChange={(e) => setParam('metric', e.target.value)}
+              className="h-9 min-w-0 flex-1 border border-souk-hair bg-souk-surface1 px-2 font-mono text-[10px] uppercase tracking-[0.06em] text-souk-slate sm:hidden"
+            >
+              {defaultSorts.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </Row>
+
+          {showFilters ? (
+            <Row align="center" gap={20} className="flex-wrap border-t border-souk-hair py-3">
               <Switch
                 checked={pcs}
                 label="Show only agents that say they work with PancakeSwap"
@@ -268,11 +361,6 @@ export function MarketplacePage() {
               >
                 PancakeSwap
               </Switch>
-              {pcs && result ? (
-                <Txt size={11} lead={16} mono tone="muted">
-                  {`${result.total} pancakeswap`}
-                </Txt>
-              ) : null}
               <Switch
                 checked={hide}
                 label="Hide unresponsive agents"
@@ -290,95 +378,38 @@ export function MarketplacePage() {
                   Verified only
                 </span>
               </Switch>
-              {hide && result ? (
-                <Txt size={11} lead={16} mono tone="muted">
-                  {`${visibleItems.length} shown`}
-                </Txt>
-              ) : null}
-            </Row>
-          </Row>
-
-          {/* the sort row reads from the right: the search the hero used to hold sits
-              ahead of the sorts, so one row carries find and order together */}
-          <Stack gap={8} className="items-end">
-            <Row align="center" justify="end" gap={12} className="flex-wrap">
-              <Row
-                align="center"
-                pad={[0, 6, 0, 14]}
-                radius={8}
-                bg="surface2"
-                hair
-                className="h-10 w-full sm:w-[300px]"
+              <button
+                type="button"
+                onClick={() => setSp(new URLSearchParams(), { replace: true })}
+                className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.08em] text-souk-muted transition hover:text-souk-ink"
               >
-                <label className="sr-only" htmlFor="search">
-                  Search agents
-                </label>
-                <input
-                  id="search"
-                  type="search"
-                  value={q}
-                  onChange={(e) => setParam('q', e.target.value)}
-                  placeholder="Search agents, skills, endpoints"
-                  className="w-full bg-transparent text-[13px] leading-5 text-souk-ink placeholder:text-souk-muted focus-visible:outline-none"
-                />
-              </Row>
-              <Row align="center" gap={6}>
-                <Txt size={10} lead={12} tone="muted" className="uppercase tracking-wide">
-                  Hire Type
-                </Txt>
-                {jobSorts.map((s) => (
-                  <SortButton
-                    key={s.key}
-                    active={type === s.key}
-                    title={'title' in s ? s.title : undefined}
-                    onClick={() => setParam('type', s.key)}
-                  >
-                    {s.label}
-                  </SortButton>
-                ))}
-              </Row>
+                Clear
+              </button>
             </Row>
-            <Row align="center" justify="end" gap={6}>
-              <Txt size={10} lead={12} tone="muted" className="uppercase tracking-wide">
-                Metric
+          ) : null}
+
+          {showLegend ? (
+            <Row align="center" gap={20} className="flex-wrap border-t border-souk-hair py-3">
+              <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                The five states, in the order they cost you
               </Txt>
-              {defaultSorts.map((s) => (
-                <SortButton
-                  key={s.key}
-                  active={metric === s.key}
-                  title={'title' in s ? s.title : undefined}
-                  onClick={() => setParam('metric', s.key)}
-                >
-                  {s.label}
-                </SortButton>
+              {LEGEND.map((k) => (
+                <Row key={k.label} align="center" gap={7}>
+                  <Dot tone={k.tone} size={8} />
+                  <Txt size={11} lead={16} tone="slate">
+                    {k.label}
+                  </Txt>
+                </Row>
               ))}
             </Row>
-          </Stack>
-
-
-        </Stack>
+          ) : null}
+        </div>
         </Section>
 
-        {/* the grid band: the legend sits above the cards as their key, and the
-            pagination closes the same band rather than starting a new one */}
-        <Section>
+        {/* the grid band: the state key folded into the control bar above, so the
+            cards start directly under it and the pagination closes the same band */}
+        <Section pad="pt-6 pb-16">
         <Stack gap={24}>
-        <Stack gap={10}>
-          <Txt size={10} lead={14} weight="bold" upper tone="muted">
-            The five states, in the order they cost you
-          </Txt>
-          <Row align="center" gap={20} className="flex-wrap">
-            {LEGEND.map((k) => (
-              <Row key={k.label} align="center" gap={7}>
-                <Dot tone={k.tone} size={8} />
-                <Txt size={12} lead={16} tone="slate">
-                  {k.label}
-                </Txt>
-              </Row>
-            ))}
-          </Row>
-        </Stack>
-
         <Stack>
           {error ? (
             <ErrorState onRetry={() => setSp(new URLSearchParams(sp))} />
@@ -597,14 +628,9 @@ function AgentCard({
   const verdict = verdictFor(agent.chain_id, agent.verification)
   const firstParty = isOperatedByAgentSouk(agent.owner_address)
   const boosted = (agent as { boosted?: boolean }).boosted
-  // the server refuses a direct hire to a pure job seller before anyone signs,
-  // so the card refuses to add one to the cart instead of letting checkout fail;
-  // a dual-lane agent still carries the cart because its x402 call is buyable
   const jobOnly = sellsByJob(agent.skills)
-  // indexer figures are mostly zero on a young chain, so they show only when they say something
   const score = agent.total_score > 0 ? formatScore(agent.total_score) : null
   const reviews = agent.total_feedbacks
-  // the design's meta line: how long the last check took and when it ran
   const when = agent.verification
     ? [
         agent.verification.responseMs > 0 ? `${agent.verification.responseMs}ms` : null,
@@ -613,33 +639,41 @@ function AgentCard({
         .filter((part): part is string => Boolean(part))
         .join(' · ')
     : null
+  const rail = takesVault(agent.skills) ? 'Vault' : takesJobs(agent.skills) ? 'ERC-8183' : agent.x402_supported ? 'x402' : 'Listing'
+  const declared = (agent.skills ?? [])
+    .map((s) => (s as { price?: unknown }).price)
+    .find((p): p is string => typeof p === 'string' && p.trim().length > 0)
+  const price = declared ? declared.split(/\s+or\s+|,/)[0].trim() : takesJobs(agent.skills) ? 'Quote at hire' : 'Price at hire'
+  const priceLabel = price.length > 26 ? `${price.slice(0, 25)}...` : price
   return (
-    <Stack
-      surface
-      gap={12}
-      pad={[20, 22, 20, 22]}
-      // the card answers to its own width, so four-across on a narrow screen
-      // stacks its actions instead of squeezing them into a wrap
-      className={checked ? 'ring-1 ring-souk-data @container relative' : '@container relative'}
+    <article
+      className={`relative flex flex-col gap-3 border border-souk-hair bg-souk-surface1 p-4 ${
+        checked ? 'ring-1 ring-souk-data' : ''
+      }`}
     >
-      <OnChainBadge
-        online={takesVault(agent.skills) || classifyExecution(agent.description ?? '').executes}
-        className="absolute right-3 top-3"
-      />
+      <button
+        type="button"
+        onClick={() => onToggle(key)}
+        aria-pressed={checked}
+        aria-label={`Compare: ${agent.name}`}
+        className="absolute right-3 top-3 grid h-4 w-4 cursor-pointer place-items-center border border-souk-steel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+      >
+        {checked ? <span className="h-2 w-2 bg-souk-data" /> : null}
+      </button>
+
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         onMouseEnter={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
         onFocus={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
-        className="flex flex-col gap-3 rounded-[8px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        className="flex flex-col gap-3 pr-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
-        <Row align="center" gap={11}>
+        <div className="flex items-start gap-3">
           <img
             src={img}
             alt=""
             loading="lazy"
-            className="h-[56px] w-[56px] shrink-0 rounded-[8px] border border-souk-hair bg-souk-indigo object-cover"
+            className="h-[46px] w-[46px] shrink-0 rounded-[8px] border border-souk-hair bg-souk-indigo object-cover"
             onError={(e) => {
-              // a dead image_url falls back to the listing's own default face
               const el = e.currentTarget
               if (!el.dataset.fallback) {
                 el.dataset.fallback = '1'
@@ -647,127 +681,71 @@ function AgentCard({
               }
             }}
           />
-          <Stack gap={2} className="min-w-0 flex-1">
-            <Txt size={10} lead={14} weight="bold" upper tone="muted">
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-souk-muted">
               {categoryName(agent.category)}
-            </Txt>
-            <Txt size={18} lead={26} weight="bold" tone="ink" className="truncate">
+            </div>
+            <div className="truncate font-[Fraunces_Variable,Georgia,serif] text-[19px] font-semibold leading-[26px] tracking-[-0.01em] text-souk-ink">
               {agent.name}
-            </Txt>
-            {firstParty ? (
-              <span title={OPERATED_BY_TITLE} className="truncate">
-                <Txt size={11} lead={16} tone="slate">
-                  {OPERATED_BY_LABEL}
-                </Txt>
-              </span>
-            ) : (
-              <Txt size={11} lead={16} tone="steel" className="truncate">
-                by <span className="font-mono">{shortAddress(agent.owner_address)}</span>
-              </Txt>
-            )}
-          </Stack>
-        </Row>
+            </div>
+            <div className="truncate font-mono text-[10.5px] leading-4 text-souk-muted">
+              {firstParty ? OPERATED_BY_LABEL : shortAddress(agent.owner_address)}
+              {boosted ? ' · boosted' : ''}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="truncate font-mono text-[13px] text-souk-ink" title={price}>
+            {priceLabel}
+          </span>
+          <span className="shrink-0 border border-souk-hair px-2 py-0.5 text-[9.5px] uppercase tracking-[0.08em] text-souk-data">
+            {rail}
+          </span>
+        </div>
 
         <span title={verdict.explain} className="inline-flex">
-          <Row align="center" gap={8}>
-            <Dot tone={verdict.label === 'Verified' ? 'verified' : verdict.label === 'Online' ? 'online-fixed' : VERDICT_TONE[verdict.tone]} size={9} />
-            <Txt size={14} lead={20} tone="slate">
+          <Row align="center" gap={7}>
+            <Dot
+              tone={verdict.label === 'Verified' ? 'verified' : verdict.label === 'Online' ? 'online-fixed' : VERDICT_TONE[verdict.tone]}
+              size={7}
+            />
+            <Txt size={11} lead={16} tone="slate">
               {verdict.label}
             </Txt>
-            {agent.verification?.checkedAt ? (
+            {when ? (
               <Txt size={11} lead={16} tone="muted">
-                {timeAgo(agent.verification.checkedAt)}
+                {`· ${when}`}
               </Txt>
             ) : null}
           </Row>
         </span>
 
-        <Txt size={13} lead={20} tone="slate" className="line-clamp-2">
+        <p className="line-clamp-2 text-[12.5px] leading-[1.5] text-souk-slate">
           {agent.description || 'No description on-chain.'}
-        </Txt>
+        </p>
 
-        <Row align="center" gap={6} className="flex-wrap">
-          <Tag title="The ERC-8004 registry id this listing reads from">#{agent.token_id}</Tag>
-          {takesJobs(agent.skills) ? (
-            <Tag title="Takes work as an ERC-8183 job: it quotes a price, the money is funded on chain and held in escrow, and it is paid on delivery">Executes jobs</Tag>
-          ) : null}
-          {agent.x402_supported ? <Tag title="Takes payment per call over x402">x402</Tag> : null}
-          {agent.pcs ? <Tag title="Says it works with PancakeSwap">PancakeSwap</Tag> : null}
-          {boosted ? <Tag title="Paid boost">Boosted</Tag> : null}
-          {score ? <Tag title="8004scan total score">Score {score}</Tag> : null}
-          {reviews > 0 ? (
-            <Tag title="On-chain feedback entries">
-              {formatNumber(reviews)} review{reviews === 1 ? '' : 's'}
-            </Tag>
-          ) : null}
-        </Row>
-
-        <Rule />
-
-        <Row
-          justify="between"
-          align="center"
-          gap={8}
-          className="flex-col items-start @[380px]:flex-row @[380px]:items-center"
-        >
-          {/* both halves of the listing's identity: the shelf is a card grid with no
-              table above it, so a token id alone would not say which chain it is on */}
-          <Txt size={11} lead={16} mono tone="steel">
-            {`BNB ${agent.chain_id} · #${agent.token_id}`}
-          </Txt>
-          {when ? (
-            <Txt size={11} lead={16} mono tone="muted">
-              {when}
-            </Txt>
-          ) : null}
-        </Row>
+        <div className="flex items-center gap-3 border-t border-souk-hair pt-2 font-mono text-[10px] text-souk-muted">
+          <span className="text-souk-data">{`#${agent.token_id}`}</span>
+          {score ? <span>{`score ${score}`}</span> : null}
+          {reviews > 0 ? <span>{`${formatNumber(reviews)} review${reviews === 1 ? '' : 's'}`}</span> : null}
+          <span className="ml-auto">{`BNB ${agent.chain_id}`}</span>
+        </div>
       </Link>
 
-      <div className="flex flex-col gap-2.5 @[380px]:flex-row">
-        <Btn
-          kind={checked ? 'keep' : 'off'}
-          className="w-full min-w-0 @[380px]:basis-0 @[380px]:grow"
-          onClick={() => onToggle(key)}
-          aria-pressed={checked}
-        >
-          <span className="inline-flex items-center gap-2">
-            <span
-              aria-hidden="true"
-              className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border ${
-                checked ? 'border-souk-data bg-souk-data/40' : 'border-souk-steel'
-              }`}
-            >
-              {checked ? (
-                <svg width="9" height="7" viewBox="0 0 14 10" fill="none">
-                  <path d="M1 5l4 4 8-8" stroke="currentColor" strokeWidth="2.5" />
-                </svg>
-              ) : null}
-            </span>
-            Compare
-            {/* the name follows the visible words, so a voice command still matches them */}
-            <span className="sr-only">: {agent.name}</span>
-          </span>
-        </Btn>
-        {jobOnly ? (
-          <Link
-            to={`/agents/${agent.chain_id}/${agent.token_id}`}
-            title="This agent sells by ERC-8183 job: it quotes a price, the job is funded in escrow, and it is paid on delivery. Get the quote on its page."
-            className="inline-flex h-11 w-full min-w-0 shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair bg-souk-surface1 text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data @[380px]:basis-0 @[380px]:grow"
-          >
-            <span className="text-[14px] font-semibold leading-[20px]">Get price</span>
-            <span className="sr-only">: {agent.name} quotes a job on its page</span>
-          </Link>
-        ) : (
-          <Link
-            to={`/agents/${agent.chain_id}/${agent.token_id}`}
-            className="inline-flex h-11 w-full min-w-0 shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair bg-souk-surface1 text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data @[380px]:basis-0 @[380px]:grow"
-          >
-            <span className="text-[14px] font-semibold leading-[20px]">View agent</span>
-            <span className="sr-only">: {agent.name}</span>
-          </Link>
-        )}
-      </div>
-    </Stack>
+      <Link
+        to={`/agents/${agent.chain_id}/${agent.token_id}`}
+        title={
+          jobOnly
+            ? 'This agent sells by ERC-8183 job: it quotes a price, the job is funded in escrow, and it is paid on delivery.'
+            : undefined
+        }
+        className="metal mt-auto flex h-9 items-center justify-center border border-souk-hair bg-[#c3c9d4] text-[12px] font-semibold text-[#0b0e14] transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data" style={{ backgroundImage: 'var(--metal-face)' }}
+      >
+        Hire
+        <span className="sr-only">: {agent.name}</span>
+      </Link>
+    </article>
   )
 }
 

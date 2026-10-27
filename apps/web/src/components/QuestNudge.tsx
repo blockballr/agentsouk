@@ -198,7 +198,7 @@ export function QuestNudge() {
   const mode = questModeFor(wallet)
   // the way back in belongs to the wallet that started; anyone else is still invited
   const started = wallet !== null && (mode === 'active' || mode === 'quit')
-  const hidden = pathname.startsWith('/quest') || pathname.startsWith('/agents/')
+  const hidden = pathname.startsWith('/quest') || pathname.startsWith('/agents')
 
   // a started quest shows how far it has got, read again as the visitor moves between pages,
   // at most every half minute, so a fresh hire shows without a reload
