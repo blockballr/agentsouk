@@ -1,0 +1,47 @@
+name: Move docs domain
+
+# Moves docs.agentsouk.xyz from whichever Pages project currently holds it to
+# agentsouk-docs. Lists projects, finds the owner, detaches, then attaches.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move the domain
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          API="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects"
+          AUTH="Authorization: Bearer $CF_TOKEN"
+
+          echo "projects:"
+          curl -sS -H "$AUTH" "$API" | jq -r '.result[] | "  \(.name)"'
+
+          owner=""
+          for project in $(curl -sS -H "$AUTH" "$API" | jq -r '.result[].name'); do
+            has=$(curl -sS -H "$AUTH" "$API/$project/domains" \
+              | jq -r '[.result[]?.name] | index("docs.agentsouk.xyz") // empty')
+            if [ -n "$has" ]; then
+              echo "domain currently on: $project"
+              owner="$project"
+            fi
+          done
+
+          if [ -n "$owner" ] && [ "$owner" != "agentsouk-docs" ]; then
+            echo "detaching from $owner"
+            curl -sS -X DELETE -H "$AUTH" "$API/$owner/domains/docs.agentsouk.xyz" \
+              | jq -c '{success, errors}'
+          fi
+
+          echo "attaching to agentsouk-docs"
+          curl -sS -X POST -H "$AUTH" -H "Content-Type: application/json" \
+            --data '{"name":"docs.agentsouk.xyz"}' \
+            "$API/agentsouk-docs/domains" | jq -c '{success, errors}'
+
+          echo "agentsouk-docs domains:"
+          curl -sS -H "$AUTH" "$API/agentsouk-docs/domains" \
+            | jq -r '.result[] | "  \(.name) status=\(.status)"'
