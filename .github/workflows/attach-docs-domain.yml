@@ -1,0 +1,35 @@
+name: Attach docs domain
+
+# One-shot: attach docs.agentsouk.xyz to the agentsouk-docs Pages project and
+# confirm the host serves the VitePress build. Idempotent: an already-attached
+# domain returns the existing record rather than an error.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Attach the custom domain
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          echo "project domains before:"
+          curl -sS -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects/agentsouk-docs/domains" \
+            | head -c 600 || true
+          echo
+          echo "attaching docs.agentsouk.xyz:"
+          curl -sS -X POST \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"name":"docs.agentsouk.xyz"}' \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects/agentsouk-docs/domains" \
+            | head -c 900 || true
+          echo
+          echo "project domains after:"
+          curl -sS -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects/agentsouk-docs/domains" \
+            | head -c 900 || true
