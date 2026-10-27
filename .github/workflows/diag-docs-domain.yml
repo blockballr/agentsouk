@@ -1,7 +1,8 @@
 name: Diag docs domain
 
-# Read-only diagnostic: zones visible to the token, Pages domain detail for
-# docs.agentsouk.xyz, and the zone DNS records for the host.
+# Read-only diagnostic: DNS records in the zone for docs.agentsouk.xyz and
+# any record that could be catching the host, using the zone_tag reported by
+# the Pages domain detail.
 on:
   workflow_dispatch: {}
 
@@ -9,29 +10,20 @@ jobs:
   diag:
     runs-on: ubuntu-latest
     steps:
-      - name: Zones, Pages domain detail, DNS records
+      - name: Zone DNS records for docs host
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           AUTH="Authorization: Bearer $CF_TOKEN"
-          BASE="https://api.cloudflare.com/client/v4"
+          ZONE="25bbb0d097145477d0d6ad8277dd14c8"
 
-          echo "zones visible to this token:"
-          curl -sS -H "$AUTH" "$BASE/zones?per_page=50" \
-            | jq -r '.result[]? | "  \(.id) name=\(.name) status=\(.status)"'
-
-          echo "pages domain detail on agentsouk-docs:"
+          echo "dns records named docs.agentsouk.xyz:"
           curl -sS -H "$AUTH" \
-            "$BASE/accounts/$CF_ACCOUNT/pages/projects/agentsouk-docs/domains/docs.agentsouk.xyz" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE/dns_records?name=docs.agentsouk.xyz&per_page=100" \
             | jq -c '{success, errors, result}'
 
-          ZONE=$(curl -sS -H "$AUTH" "$BASE/zones?name=agentsouk.xyz" | jq -r '.result[0].id // empty')
-          echo "zone id: ${ZONE:-not found}"
-
-          if [ -n "$ZONE" ]; then
-            echo "dns records for docs.agentsouk.xyz:"
-            curl -sS -H "$AUTH" "$BASE/zones/$ZONE/dns_records?name=docs.agentsouk.xyz&per_page=100" \
-              | jq -r '.result[]? | "  \(.id) type=\(.type) content=\(.content) proxied=\(.proxied)"'
-          fi
+          echo "all records that could catch the host (docs or wildcard):"
+          curl -sS -H "$AUTH" \
+            "https://api.cloudflare.com/client/v4/zones/$ZONE/dns_records?per_page=100" \
+            | jq -c '{success, errors, result: [.result[]? | select(.name == "docs.agentsouk.xyz" or (.name | startswith("*"))) | {id, name, type, content, proxied}]}'
