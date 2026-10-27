@@ -46,6 +46,15 @@ import { QuestStamp } from '../components/QuestStamp'
 const BNB_CAMPAIGN = 'https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview'
 const REFRESH_MS = 60_000
 
+// a declared price can run to a paragraph, so the card names its first clause and
+// nothing else. A listing that only quotes says so rather than borrowing a number
+function priceLine(price?: string | null): string {
+  const text = (price ?? '').trim()
+  if (!text) return 'quote at hire'
+  const first = text.split(/\s+or\s+|,|;/)[0].trim()
+  return first.length > 26 ? `${first.slice(0, 25)}...` : first
+}
+
 export function QuestPage() {
   // always call the hook: gating the call on import.meta.env.DEV changes the
   // hook order between the dev and production bundles
@@ -194,9 +203,9 @@ export function QuestPage() {
         const pair = step.agents?.[97]
         if (!pair) return []
         return [
-          { key: `${step.key}-primary`, stepTitle: step.title, name: pair.primary.name, tokenId: pair.primary.tokenId, slot: 'primary', task: pair.primary.task, category: step.category ?? 'general', chainId: 97, imageUrl: undefined },
+          { key: `${step.key}-primary`, stepTitle: step.title, name: pair.primary.name, tokenId: pair.primary.tokenId, slot: 'primary', task: pair.primary.task, category: step.category ?? 'general', chainId: 97, imageUrl: undefined, price: pair.primary.price ?? null },
           ...(pair.alternate
-            ? [{ key: `${step.key}-alternate`, stepTitle: step.title, name: pair.alternate.name, tokenId: pair.alternate.tokenId, slot: 'alternate', task: pair.alternate.task, category: step.category ?? 'general', chainId: 97, imageUrl: undefined }]
+            ? [{ key: `${step.key}-alternate`, stepTitle: step.title, name: pair.alternate.name, tokenId: pair.alternate.tokenId, slot: 'alternate', task: pair.alternate.task, category: step.category ?? 'general', chainId: 97, imageUrl: undefined, price: pair.alternate.price ?? null }]
             : []),
         ]
       })
@@ -213,6 +222,7 @@ export function QuestPage() {
         category: cat,
         chainId: chainId ?? 97,
         imageUrl: a.imageUrl,
+        price: a.price ?? null,
       })))
     : []
   const otherPicks = [...shelfPicks, ...writtenPicks.filter((w) => !shelfPicks.some((s) => s.tokenId === w.tokenId))]
@@ -432,7 +442,12 @@ export function QuestPage() {
                               <Txt size={11} lead={15} mono tone="labels">{`token ${w.tokenId} · ${w.slot}`}</Txt>
                             </Stack>
                           </Row>
-                          <Pill variant="off">{w.stepTitle}</Pill>
+                          <Stack gap={3} className="shrink-0 text-right">
+                            {/* the seller's own words for its price; a listing that only quotes
+                                does not get a number printed next to it */}
+                            <Txt size={11} lead={14} mono tone="data">{priceLine(w.price)}</Txt>
+                            <Txt size={11} lead={14} weight="bold" upper tone="ink">Hire</Txt>
+                          </Stack>
                         </Row>
                         {w.task ? (
                           <Txt size={12} lead={18} tone="steel" className="mt-2 block pl-[45px]">

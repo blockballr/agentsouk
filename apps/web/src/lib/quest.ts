@@ -78,6 +78,8 @@ export interface QuestAgent {
   // the registry owner, when the pick came from the live shelf
   owner?: string | null
   imageUrl?: string | null
+  // the price the seller declares, as written; null means it only quotes at hire
+  price?: string | null
 }
 
 // an agent the server offers for a step
@@ -86,6 +88,7 @@ export interface QuestCandidate {
   name: string
   owner?: string | null
   imageUrl?: string | null
+  price?: string | null
 }
 
 // what a step may offer in one category, in the order the shelf rotated them for this visit:
@@ -218,7 +221,7 @@ export function questPicks(
     list
       .filter((a) => !me || a.owner?.toLowerCase() !== me)
       .filter((a) => !exclude.has(String(a.tokenId)))
-      .map((a) => ({ ...writtenById.get(a.tokenId), tokenId: a.tokenId, name: a.name, owner: a.owner ?? null, imageUrl: a.imageUrl ?? null }))
+      .map((a) => ({ ...writtenById.get(a.tokenId), tokenId: a.tokenId, name: a.name, owner: a.owner ?? null, imageUrl: a.imageUrl ?? null, price: a.price ?? writtenById.get(a.tokenId)?.price ?? null }))
   // an unread shelf falls back to the written picks; a read one that offers nothing is believed
   if (!shelf) return written.filter((a) => !exclude.has(String(a.tokenId))).slice(0, 1)
   const confirmed = offer(shelf.confirmed)

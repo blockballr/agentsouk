@@ -2,6 +2,7 @@ import "server-only";
 import { CATEGORY_KEYS, classifyExecution, takesJobs } from "@agora/core";
 import { durableMode, loadJobsByToken } from "./durable-store";
 import { asksForSecrets, hasConfirmedCompletion } from "./quest-eligibility";
+import { answeringPick, declaredPrice } from "./quest-pick-health";
 import { queryAgents } from "./scanner";
 import { isVerifierPayment } from "./team-wallets";
 import { targetChainId } from "./types";
@@ -12,6 +13,9 @@ export interface QuestShelfAgent {
   name: string;
   owner: string;
   imageUrl?: string | null;
+  // what the seller declares it charges, verbatim, or null when the price only
+  // exists as a signed quote. never a number this server invented
+  price?: string | null;
 }
 
 // what a quest step may offer in one category, both in the order the shelf rotated them for
@@ -54,15 +58,20 @@ export async function loadQuestShelf(
     [a.name, a.description, ...(a.skills ?? []).map((s) => `${s.name} ${s.description ?? ""}`)].join(" ");
   const picks: Record<string, QuestShelf> = {};
   for (const category of CATEGORY_KEYS) {
-    // only job-capable (escrow) agents. A category with none stays empty, so the
-    // quest never sends a buyer to a direct-only or x402-only agent
+    // only job-capable (escrow) agents that answered their last check. A category with
+    // none stays empty, so the quest never sends a buyer to a direct-only, x402-only or
+    // unreachable agent, and never to one that has to answer a quote request it ignores
     const working = shelf.items
       .filter((a) => {
-        const check = verifications.get(a.token_id);
+        // the sweep's own row first, then the verdict the catalogue row carries, so a
+        // cold or empty store does not read as "every listing is dead"
+        const check = verifications.get(a.token_id) ?? a.verification;
+        const detail = check && "detail" in check ? (check as { detail?: string }).detail : undefined;
         return (
           a.category === category &&
           takesJobs(a.skills) &&
-          (!check || !asksForSecrets(check.detail)) &&
+          answeringPick(check) &&
+          (!detail || !asksForSecrets(detail)) &&
           classifyExecution(executionText(a)).executes
         );
       })
@@ -79,6 +88,7 @@ export async function loadQuestShelf(
       name: a.name,
       owner: a.owner_address,
       imageUrl: a.image_url,
+      price: declaredPrice(a.skills),
     });
     picks[category] = { confirmed: proven.slice(0, 3).map(shape), working: working.slice(0, 12).map(shape) };
   }
