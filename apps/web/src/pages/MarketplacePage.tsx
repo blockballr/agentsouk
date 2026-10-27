@@ -360,7 +360,12 @@ export function MarketplacePage() {
               ))}
             </select>
             <Txt size={12} lead={16} mono tone="steel" className="hidden sm:block">
-              {result ? `${visibleItems.length} hireable now` : 'reading the shelf'}
+              {result
+                ? `${visibleItems.filter((a) => {
+                    const v = verdictFor(a.chain_id, a.verification)
+                    return v.label === 'Verified' || v.label === 'Online'
+                  }).length} hireable of ${visibleItems.length}`
+                : 'reading the shelf'}
             </Txt>
             <Row align="center" gap={4} className="ml-auto hidden flex-wrap sm:flex">
               <Txt size={10} lead={12} tone="muted" className="uppercase tracking-wide">

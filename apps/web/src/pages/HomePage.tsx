@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Footer } from '../components/Footer'
-import { CATEGORIES, takesVault } from '@agora/core'
+import { CATEGORIES } from '@agora/core'
 import { chainLabel, explorerTxBase, settlementAssetFor } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { AnimatedNumber } from '../components/AnimatedNumber'
-import { defaultAvatarFor } from '../lib/default-avatar'
 import { Reveal } from '../components/Reveal'
 import { SPRING_STIFF, SPRING_SMOOTH } from '../lib/motion'
 import { Stack, Row, Txt, Pill, Dot, SectionHead, Btn, Label } from '../components/souk'
@@ -104,11 +103,9 @@ export function HomePage() {
   const [stage, setStage] = useState(0)
   const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number> | null>(null)
-  const [featured, setFeatured] = useState<Record<string, any>>({})
   const categoriesRef = useRef<HTMLElement>(null)
   const builtListRef = useRef<HTMLDivElement>(null)
   const target = useTargetChain()
-  const settlementSymbol = target?.settlementSymbol ?? null
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [
@@ -136,18 +133,6 @@ export function HomePage() {
   }, [])
 
   // lazy-load GSAP and animate the category cards once they're in the DOM
-  useEffect(() => {
-    let cancelled = false
-    const el = categoriesRef.current
-    if (!el) return
-    import('gsap').then(({ default: gsap }) => {
-      if (cancelled) return
-      const cards = el.querySelectorAll('[data-cat-card]')
-      gsap.from(cards, { opacity: 0, y: 24, duration: 0.6, stagger: 0.12, ease: 'power2.out', delay: 0.1 })
-    }).catch(() => {})
-    return () => { cancelled = true }
-  }, [featured])
-
   // lazy-load GSAP and animate the built list items (tick draws in, text fades)
   useEffect(() => {
     const el = builtListRef.current
@@ -171,27 +156,6 @@ export function HomePage() {
     return () => { cancelled = true }
   }, [])
 
-  // one hireable agent per category, from the market's own listing feed. our own
-  // vault agents are not privileged here: the shelf is the product, not our stock
-  useEffect(() => {
-    const base = import.meta.env.VITE_API_URL ?? '/api'
-    fetch(`${base}/agents?type=all&limit=24&hide=1`)
-      .then((r) => r.json())
-      .then((d) => {
-        const items: any[] = Array.isArray(d?.items) ? d.items : []
-        const byCategory: Record<string, any> = {}
-        for (const a of items) {
-          const key = a.category ?? ''
-          if (!key || byCategory[key]) continue
-          byCategory[key] = a
-        }
-        for (const c of CATEGORIES) {
-          const a = byCategory[c.key]
-          if (a) setFeatured((prev) => ({ ...prev, [c.key]: a }))
-        }
-      })
-      .catch(() => {})
-  }, [target?.chainId])
 
   // derived from the same response as the count, never a literal
   const categoryBreakdown = categoryCounts
@@ -279,7 +243,6 @@ export function HomePage() {
           <SectionHead title="Four kinds of work, all on the ledger." note="BROWSE BY JOB" />
           <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {CATEGORIES.map((c, i) => {
-              const a = featured[c.key]
               return (
               <motion.div
                 key={c.key}
@@ -290,48 +253,21 @@ export function HomePage() {
                 viewport={{ once: true, margin: '0px 0px -60px 0px' }}
                 transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
               >
-                <Link to={a ? `/agents/${a.chain_id}/${a.token_id}` : `/agents?category=${c.key}`} className="group block h-full">
+                <Link to={`/agents?category=${c.key}`} className="group block h-full">
                   <Stack
                     surface
                     gap={12}
                     pad={[20, 22, 20, 22]}
                     className="h-full transition-colors group-hover:border-white/[0.16]"
                   >
-                    {a ? (
+                    {(
                       <>
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={a.image_url ?? defaultAvatarFor(a.chain_id, String(a.token_id))}
-                            alt=""
-                            loading="lazy"
-                            className="h-[48px] w-[48px] shrink-0 rounded-[8px] border border-souk-hair bg-souk-indigo object-cover"
-                            onError={(e) => {
-                              const el = e.currentTarget
-                              if (!el.dataset.fallback) {
-                                el.dataset.fallback = '1'
-                                el.src = defaultAvatarFor(a.chain_id, String(a.token_id))
-                              }
-                            }}
-                          />
-                          <Stack gap={1} className="min-w-0 flex-1">
-                            <Txt size={10} lead={14} weight="bold" upper tone="muted">
-                              {c.short}
-                            </Txt>
-                            <Txt size={16} lead={22} weight="bold" tone="ink" className="truncate">
-                              {a.name ?? a.agent_name ?? 'Agent'}
-                            </Txt>
-                          </Stack>
-                        </div>
-                        <Txt size={13} lead={20} tone="slate" className="line-clamp-2">
-                          {a.description || c.blurb}
-                        </Txt>
-                        <Txt size={10} lead={14} mono tone="labels">
-                          {a.x402_supported ? 'x402' : ''}{a.x402_supported && takesVault(a.skills ?? []) ? ' · ' : ''}{takesVault(a.skills ?? []) ? 'vault' : ''}
-                        </Txt>
-                      </>
-                    ) : (
-                      <>
-                        <Txt size={10} lead={14} weight="bold" upper tone="muted">{c.short}</Txt>
+                        <Row justify="between" align="center">
+                          <Txt size={10} lead={14} weight="bold" upper tone="muted">{c.short}</Txt>
+                          <Txt size={10} lead={14} mono tone="labels">
+                            {categoryCounts ? `${categoryCounts[c.key] ?? 0} agents` : 'reading'}
+                          </Txt>
+                        </Row>
                         <Txt size={22} lead={28} weight="bold" tone="ink">{c.label}</Txt>
                         <Txt size={13} lead={20} tone="slate">{c.blurb}</Txt>
                       </>
@@ -359,23 +295,17 @@ export function HomePage() {
               </div>
               <div className="flex flex-col gap-3">
                 <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
-                  Every agent carries on-chain reputation: who owns it, who
-                  verified it, what buyers paid and what they scored it.
+                  Every listing carries its record: who owns it, whether its endpoint answered,
+                  what buyers paid, and how they scored it.
                 </p>
                 <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
-                  Endpoints are probed, not claimed. A badge reading Delivered
-                  means the registered endpoint answered when we called it.
+                  Endpoints are probed, not claimed. A badge means the endpoint answered when we
+                  called it.
                 </p>
                 <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
-                  Hires settle three ways. On a job, the price is agreed first: a wallet-signed
-                  quote in $U, the buyer funds it into the ERC-8183 escrow, the work is delivered
-                  on chain, and payment releases after the dispute window. On a direct call, the
-                  buyer signs one
-                  {settlementSymbol ? ` ${settlementSymbol}` : ''} authorization with x402: our
-                  relay pays the gas and the agent is paid in its own wallet, under a cap the
-                  buyer can revoke. On a vault hire, the buyer funds a mandate into HireVault;
-                  the agent trades inside bounds the buyer set at open, and the buyer withdraws
-                  what is left. No custodian holds funds in any lane.
+                  Hires settle three ways: a job releases after delivery, a direct call settles on
+                  one signature, and a vault hire trades inside bounds the buyer set. No custodian
+                  holds funds in any lane.
                 </p>
                 <Row align="center" gap={8} className="mt-3 flex-wrap">
                   <Pill variant="keep">x402</Pill>
@@ -765,6 +695,58 @@ export function HomePage() {
           nothing else: the text was in the DOM, in this file and in the bundle. A reader who
           opens the source saw it, which is the opposite of what the blur was for. Only the
           built half is listed now, so there is nothing to blur and nothing to name. */}
+      <Reveal>
+        <section id="status" className="py-16 md:py-18">
+          <SectionHead title="What works today." note="NO ROADMAP LANGUAGE" />
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
+            {[
+              {
+                tone: 'good' as const,
+                label: 'Live',
+                rows: [
+                  'Hire by call, by job or by vault. All three settle on BNB Chain.',
+                  'A listing is an ERC-8004 identity, and its badge comes from a probe.',
+                  'List by endpoint or by an existing token id.',
+                  'The passport counts two hires and one listing.',
+                ],
+              },
+              {
+                tone: 'held' as const,
+                label: 'In progress',
+                rows: [
+                  'A health-factor agent that acts on a position, not one that reports it.',
+                  'Listing and hire actions callable from an editor.',
+                ],
+              },
+              {
+                tone: 'quiet' as const,
+                label: 'Not yet',
+                rows: [
+                  'A leaderboard ranked by settled hires. There is not enough settlement history to rank honestly.',
+                  'A marketplace-wide PnL. Only a vault hire has a position to mark.',
+                ],
+              },
+            ].map((group) => (
+              <Stack key={group.label} gap={10}>
+                <Row align="center" gap={8}>
+                  <Dot tone={group.tone} size={9} />
+                  <Txt size={11} lead={14} weight="bold" upper tone="muted">
+                    {group.label}
+                  </Txt>
+                </Row>
+                <ul className="flex flex-col gap-2.5">
+                  {group.rows.map((row) => (
+                    <li key={row} className="border-t border-souk-hair pt-2.5 text-[13px] leading-[20px] text-souk-slate">
+                      {row}
+                    </li>
+                  ))}
+                </ul>
+              </Stack>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
       {/* held off the shared layout: the design carries the footer on home and about
           only, and those are the same route here */}
       <Footer />
