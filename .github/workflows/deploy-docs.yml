@@ -1,0 +1,52 @@
+name: Deploy docs
+
+# Publishes the VitePress site to Cloudflare Pages on every push that touches
+# it. The Pages project is `agentsouk-docs`; the custom domain docs.agentsouk.xyz
+# is attached to that project in the Cloudflare dashboard, not here.
+#
+# Inert until the repository variable DOCS_CI is set to "on". It reuses
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID, the same pair the site deploy
+# uses, so nothing new needs storing.
+permissions:
+  contents: read
+  statuses: write
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs-site/**"
+      - ".github/workflows/deploy-docs.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: true
+
+jobs:
+  pages:
+    if: ${{ vars.DOCS_CI == 'on' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        working-directory: docs-site
+        run: npm install --no-audit --no-fund
+
+      - name: Build
+        working-directory: docs-site
+        run: npm run build
+
+      - name: Publish
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy .vitepress/dist --project-name=agentsouk-docs --branch=main
+          workingDirectory: docs-site
