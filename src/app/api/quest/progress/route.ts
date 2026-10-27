@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createPublicClient } from "viem";
+import { bsc, bscTestnet } from "viem/chains";
 import { isPlaceholderAgentName } from "@/lib/agent-name";
 import { listPaymentsByClient, receiptsMode } from "@/lib/receipts-store";
 import { queryAgents } from "@/lib/scanner";
@@ -7,9 +9,35 @@ import { isTeamWallet, isVerifierPayment } from "@/lib/team-wallets";
 import { REQUIRED_HIRES, questAwards } from "@/lib/quest-points";
 import { issuePassport } from "@/lib/passport-store";
 import { serialLabel } from "@/lib/passport-serial";
+import { rpcTransport } from "@/lib/rpc";
+import { vaultFor } from "@/lib/vault";
+import { readHire } from "@/lib/vault-executor";
+import { firstPartyBadges } from "@/lib/first-party-copy";
+import { BSC_TESTNET_CHAIN_ID, targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
+
+const HIRES_OF_ABI = [
+  {
+    name: "hiresOf",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "buyer", type: "address" }],
+    outputs: [{ type: "uint256[]" }],
+  },
+] as const;
+
+type QuestHire = {
+  paymentId: string;
+  agent: string;
+  tokenId: string;
+  agentName: string;
+  category: string | null;
+  txHash: string | null;
+  mode: string;
+  createdAt: string | null;
+};
 
 // One wallet's passport: the agents it has hired here, what it has listed, and whether
 // that finishes it. Two different agents hired and one listed is a finished passport.
@@ -36,7 +64,7 @@ export async function GET(req: NextRequest) {
   const categories: Record<string, boolean> = {};
   for (const key of CATEGORY_KEYS) categories[key] = false;
 
-  const hires = [];
+  const hires: QuestHire[] = [];
   for (const p of payments) {
     // a revoked hire still counts: the payment settled, and revoking is part of the quest
     // the team's own activity and the verifier sweep are never a wallet's quest progress
@@ -65,6 +93,55 @@ export async function GET(req: NextRequest) {
       createdAt: p.createdAt,
     });
     if (category && CATEGORY_KEYS.includes(category as CategoryKey)) categories[category] = true;
+  }
+
+  // a vault hire never touches the x402 or ERC-8183 payment tables: the vault
+  // keeps its own buyer list, so the quest reads it from the contract and maps
+  // the agent wallet back to its listing. a closed hire still counts.
+  const vaultChainId = targetChainId();
+  const vault = vaultFor(vaultChainId);
+  if (!isTeam && vault) {
+    try {
+      const client = createPublicClient({
+        chain: vaultChainId === BSC_TESTNET_CHAIN_ID ? bscTestnet : bsc,
+        transport: rpcTransport(vaultChainId),
+      });
+      const byWallet = new Map(firstPartyBadges(vaultChainId).map((b) => [b.wallet.toLowerCase(), b]));
+      const ids = (await client.readContract({
+        address: vault as `0x${string}`,
+        abi: HIRES_OF_ABI,
+        functionName: "hiresOf",
+        args: [wallet as `0x${string}`],
+      })) as readonly bigint[];
+      // read in parallel so a wallet with a long history does not serialise the
+      // round trip, and let one failed read cost that hire only
+      const views = await Promise.allSettled(ids.map((id) => readHire(client, vaultChainId, id)));
+      for (let i = 0; i < ids.length; i += 1) {
+        const view = views[i];
+        if (view.status !== "fulfilled") continue;
+        const hire = view.value;
+        const id = ids[i];
+        // a wallet cannot hire its own agent wallet
+        if (hire.agent.toLowerCase() === w) continue;
+        const badge = byWallet.get(hire.agent.toLowerCase());
+        if (!badge) continue;
+        const category = badge.category;
+        hires.push({
+          paymentId: `vault:${vaultChainId}:${id}`,
+          agent: `${vaultChainId}:${badge.tokenId}`,
+          tokenId: badge.tokenId,
+          agentName: badge.name ?? "vault agent",
+          category,
+          txHash: null,
+          mode: "prod",
+          createdAt: null,
+        });
+        if (category && CATEGORY_KEYS.includes(category as CategoryKey)) categories[category] = true;
+      }
+    } catch {
+      // a chain read that fails leaves the payment hires intact; it never turns
+      // a real vault hire into a zero without saying so
+    }
   }
 
   const listings = catalogue.items
