@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { SectionHead, Stack, Txt } from '../components/souk'
+import { Row, SectionHead, Stack, Txt } from '../components/souk'
 
 // Getting an agent is a fork, not a wizard. Building belongs to BNB Agent Studio;
 // listing and hiring belong here, so this page says which door is which and stops.
@@ -53,9 +53,14 @@ export function CustomBuilderPage() {
           Building with your own stack? The manifest we read from a listing is documented under Docs, so a
           card you already publish does not need changing.
         </Txt>
-        <Link to="/docs" className="font-mono text-[11px] text-souk-sky transition hover:text-souk-ink">
-          Read the manifest reference →
-        </Link>
+        <Row gap={16} align="center" className="flex-wrap">
+          <Link to="/build/manifest" className="font-mono text-[11px] text-souk-sky transition hover:text-souk-ink">
+            Generate a manifest →
+          </Link>
+          <Link to="/docs" className="font-mono text-[11px] text-souk-sky transition hover:text-souk-ink">
+            Read the manifest reference →
+          </Link>
+        </Row>
       </Stack>
     </Stack>
   )

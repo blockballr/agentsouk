@@ -17,6 +17,7 @@ const ComparePage = lazy(() => import('./pages/ComparePage').then((m) => ({ defa
 const AdvantagePage = lazy(() => import('./pages/AdvantagePage').then((m) => ({ default: m.AdvantagePage })))
 const ListAgentPage = lazy(() => import('./pages/ListAgentPage').then((m) => ({ default: m.ListAgentPage })))
 const BuildPage = lazy(() => import('./pages/BuildPage').then((m) => ({ default: m.BuildPage })))
+const ManifestBuilderPage = lazy(() => import('./pages/ManifestBuilderPage').then((m) => ({ default: m.ManifestBuilderPage })))
 const CustomBuilderPage = lazy(() => import('./pages/CustomBuilderPage').then((m) => ({ default: m.CustomBuilderPage })))
 const OngoingPage = lazy(() => import('./pages/OngoingPage').then((m) => ({ default: m.OngoingPage })))
 const StationPage = lazy(() => import('./pages/StationPage').then((m) => ({ default: m.StationPage })))
@@ -76,6 +77,7 @@ function App() {
               <Route path="/settings/security" element={<SettingsSecurityPage />} />
               <Route path="/account" element={<ManageAccountPage />} />
               <Route path="/build" element={<CustomBuilderPage />} />
+              <Route path="/build/manifest" element={<ManifestBuilderPage />} />
             <Route path="/build/strategy" element={<BuildPage />} />
               <Route path="/list" element={<ListAgentPage />} />
               <Route path="/seller" element={<SellerConsolePage />} />

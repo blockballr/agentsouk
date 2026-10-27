@@ -120,3 +120,5 @@ data/altana-sessions.json
 
 # brag renders and working files
 /brag-output/
+brag-output/
+brag-output-*/

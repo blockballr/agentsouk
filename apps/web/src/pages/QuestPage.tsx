@@ -33,7 +33,6 @@ import {
   Dot,
   SectionHead,
   NoteBox,
-  DataTable,
   Btn,
   Rule,
   Label,
@@ -141,55 +140,6 @@ export function QuestPage() {
     Boolean(step.category) && (shelf === undefined || chainId === null)
   const onlyOursFor = (step: QuestStep): boolean =>
     Boolean(step.category && shelf?.[step.category]?.working.length && shelf[step.category].working.every((a) => isOperatedByAgentSouk(a.owner)))
-
-  // the shelf table reads the same payload the cards do, plus any category the server
-  // carries that no step points at, which is said in words rather than as a step
-  const countFor = (category: string, list: 'confirmed' | 'working'): string => {
-    if (shelf === undefined) return 'reading'
-    if (shelf === null) return 'unknown'
-    return String(shelf[category]?.[list].length ?? 0)
-  }
-  const totalFor = (category: string): string => {
-    if (shelf === undefined) return 'reading'
-    if (shelf === null) return 'unknown'
-    const s = shelf[category]
-    return `${(s?.confirmed.length ?? 0) + (s?.working.length ?? 0)} agents`
-  }
-  const pickRows = [
-    ...QUEST_STEPS.filter((s) => s.category).map((step) => {
-      const category = step.category as string
-      const picks = chainId !== null && shelf !== undefined ? picksFor(step) : []
-      const offers = readingFor(step)
-        ? 'Reading which agents are answering right now.'
-        : picks.length > 0
-          ? picks.map((a) => a.name).join(' · ')
-          : 'Points at the shelf.'
-      return {
-        cells: [
-          { text: step.title, weight: 'semibold' as const, tone: 'ink' as const },
-          { text: category, mono: true, tone: 'slate' as const },
-          { text: countFor(category, 'confirmed'), mono: true, tone: 'steel' as const },
-          { text: countFor(category, 'working'), mono: true, tone: 'steel' as const },
-          { text: totalFor(category), mono: true, tone: 'steel' as const },
-          { text: offers, tone: 'steel' as const },
-        ],
-      }
-    }),
-    ...(shelf
-      ? Object.keys(shelf)
-          .filter((category) => !QUEST_STEPS.some((s) => s.category === category))
-          .map((category) => ({
-            cells: [
-              { text: 'no step', tone: 'muted' as const },
-              { text: category, mono: true, tone: 'slate' as const },
-              { text: countFor(category, 'confirmed'), mono: true, tone: 'steel' as const },
-              { text: countFor(category, 'working'), mono: true, tone: 'steel' as const },
-              { text: totalFor(category), mono: true, tone: 'steel' as const },
-              { text: 'Nothing points here today.', tone: 'steel' as const },
-            ],
-          }))
-      : []),
-  ]
 
   // the strip names the one thing to do now, read from the same step content the card below
   // uses, so the strip and the card never disagree about what the next move is
@@ -418,20 +368,7 @@ export function QuestPage() {
         <section className="mt-10">
           <Stack surface>
             <div className="overflow-x-auto">
-              <div style={{ minWidth: 1200 }}>
-                <DataTable
-                  cols={[220, 250, 190, 190, 250, 756]}
-                  header={[
-                    'STEP',
-                    'CATEGORY',
-                    'CONFIRMED',
-                    'ANSWERING',
-                    target ? `SHELF ON ${chainLabel(target.chainId)} ${target.chainId}` : 'SHELF',
-                    'WHAT THE STEP OFFERS',
-                  ]}
-                  rows={pickRows}
-                />
-              </div>
+
             </div>
           </Stack>
         </section>
@@ -562,7 +499,7 @@ function stepContent(
           ? 'Only our own agents answer here today. One signature settles the hire.'
           : 'One signature settles the hire.',
       actions: picks.map((a) => ({
-        label: `Hire ${a.name}`,
+        label: 'Hire',
         to: `/agents/${chainId}/${a.tokenId}?quest=${step.key}`,
       })),
     }

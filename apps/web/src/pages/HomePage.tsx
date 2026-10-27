@@ -86,16 +86,16 @@ const settlementEvidence = [
 // the three states a probe records, as the design's badge cards: a badge is a real
 // call against a registered endpoint, so the states are its three outcomes
 const verificationBadges = [
-  { label: 'Delivered', tone: 'good', copy: 'Listings whose endpoint answers are badged delivered.' },
+  { label: 'Verified', tone: 'good', copy: 'A listing whose endpoint answered, and whose paid delivery was observed, is badged verified.' },
   {
-    label: 'Restricted',
+    label: 'Online',
     tone: 'held',
-    copy: 'Listings that answer only through their own gate or a job are badged restricted, never padded.',
+    copy: 'A listing whose endpoint answered this sweep is badged online. Read-only or on-chain is a separate badge, from what it claims it can do.',
   },
   {
-    label: 'Unreachable',
+    label: 'Unresponsive',
     tone: 'bad',
-    copy: 'Listings that register no callable endpoint are badged unreachable.',
+    copy: 'A listing whose last call got no usable answer is badged unresponsive, and it stops being recommended.',
   },
 ] as const
 
@@ -124,7 +124,8 @@ export function HomePage() {
     fetch(`${base}/agents?type=all&limit=1`)
       .then((r) => r.json())
       .then((d) => {
-        if (typeof d?.total === 'number') setCuratedAgents(d.total)
+        if (typeof d?.shelved === 'number') setCuratedAgents(d.shelved)
+        else if (typeof d?.total === 'number') setCuratedAgents(d.total)
         if (d?.categoryCounts && typeof d.categoryCounts === 'object') {
           setCategoryCounts(d.categoryCounts as Record<string, number>)
         }
@@ -609,51 +610,7 @@ export function HomePage() {
         </section>
       </Reveal>
 
-      <Reveal>
-        <section className="py-16 md:py-18">
-          <SectionHead title="What is built." note="PIPELINE" />
-          {/* Only what has shipped is listed. The not-done half used to sit under this
-              heading carrying a hidden string per row, which the row rendered behind a CSS
-              blur. The text stayed in the DOM and in the bundle, so the blur hid it from a
-              glance and from nobody else, and every row named a third party's handle next to
-              a statement about what this project has not finished. Listing only the built
-              half removes the blur, the handles and the claim about a roadmap nobody
-              published. If the unfinished work should be visible again, it belongs in the
-              addendum, in plain text, with no third-party names in it. */}
-          <div ref={builtListRef} className="mt-12 space-y-3" data-built-list>
-            {[
-              'Four first-party reference agents (health factor, yield, grid, drift)',
-              'HireVault: funded mandates with buyer-set bounds, a venue adapter for Aave V3 USDT on BSC, and a runnable SDK for builders',
-              'Agent-facing surfaces: an MCP server, a skill and WebMCP, so an agent can hire another agent',
-              'Reachability-first market sort, with a stale badge for endpoints that stopped answering',
-              'Declared interface on each agent (what it expects and returns), captured at admission',
-              'Profile: manage the agents you listed',
-              'Ongoing: sessions, tasks and jobs, with retry and revoke',
-              'Verification read from the durable store on every chain',
-              'Durable-first job reads (job state across instances)',
-              'Email notifications (Resend and DMARC)',
-              'Sweep on every listing, with an owner re-check from the profile',
-              'Postgres receipt durability (hires, jobs, shelf, boosts)',
-              'Standards: ERC-8004 identity, ERC-8183 jobs and x402 payment',
-              'Advantage report and side-by-side comparison',
-              'Browse by category across the four job types',
-              'Registry Scout: autonomous discovery, verification, and curation',
-              'Auto-update verified snapshot (nightly cron)',
-              'EIP-6963 wallet picker',
-              'ERC-1271 smart wallet facilitator (behind flag)',
-            ].map((label) => (
-              <div key={label} className="flex items-center gap-4">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-souk-data/50 bg-souk-surface1 text-[11px] text-souk-data">
-                  {'\u2713'}
-                </span>
-                <Txt size={14} lead={20} tone="ink">
-                  {label}
-                </Txt>
-              </div>
-            ))}
-          </div>
-        </section>
-      </Reveal>
+      
 
       <Reveal>
         <section className="py-16 md:py-18">
