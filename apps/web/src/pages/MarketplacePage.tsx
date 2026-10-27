@@ -5,7 +5,7 @@ import { defaultAvatarFor } from '../lib/default-avatar'
 import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, takesVault, shortAddress, timeAgo, classifyExecution } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
 import { OnChainBadge } from '../components/OnChainBadge'
-import { getAgents, prefetchAgent } from '../lib/api'
+import { getAgents, getRecentHires, prefetchAgent, type RecentHire } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
@@ -112,6 +112,7 @@ export function MarketplacePage() {
   const [error, setError] = useState<string | null>(null)
   const [shortlist, setShortlist] = useState<string[]>(() => getShortlist())
   const [showFilters, setShowFilters] = useState(false)
+  const [hires, setHires] = useState<RecentHire[] | null>(null)
   const [showLegend, setShowLegend] = useState(false)
 
   function handleToggle(key: string) {
@@ -122,6 +123,21 @@ export function MarketplacePage() {
     setShortlist([])
     persistShortlist([])
   }
+
+  // the shelf says what can be hired; this reads what was, once, and never blocks the grid
+  useEffect(() => {
+    let live = true
+    getRecentHires(5)
+      .then((rows) => {
+        if (live) setHires(rows)
+      })
+      .catch(() => {
+        if (live) setHires([])
+      })
+    return () => {
+      live = false
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -199,13 +215,22 @@ export function MarketplacePage() {
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
       <div className="px-8 pb-[240px] xl:pb-16">
-        {/* the register's masthead wash, driven by the theme's own variable: deep-sea
-            in the dark register, the drawn sky wash on paper. the 3px rail and the
-            hairline gloss separate a masthead from the page it opens */}
-        <div className="-mx-8 mb-8 rounded-b-[20px] border-b-[3px] border-souk-canvas bg-[linear-gradient(117deg,var(--mast-wash),transparent_70%)] px-8 shadow-[0_3px_0_-1px_var(--color-souk-hair)]">
-        {/* the hero band keeps its own top padding and carries the lower half of the
-            rhythm, so the shelf opens right under the bar and still breathes below */}
-        <Section pad="pt-11 pb-16 md:pb-18">
+        {/* the register's masthead: a dot grid with a few lit nodes, over the theme's
+            own wash. it reads as a network without an illustration */}
+        <div
+          className="relative -mx-8 mb-8 overflow-hidden rounded-b-[20px] border-b-[3px] border-souk-canvas px-8 shadow-[0_3px_0_-1px_var(--color-souk-hair)]"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--color-souk-data) 16%, transparent) 1px, transparent 0), linear-gradient(117deg, var(--mast-wash), transparent 70%)',
+            backgroundSize: '22px 22px, auto',
+          }}
+        >
+          <span aria-hidden="true" className="pointer-events-none absolute left-[18%] top-[68%] hidden h-1.5 w-1.5 rounded-full bg-souk-sky shadow-[0_0_12px_2px_rgba(136,222,235,0.55)] md:block" />
+          <span aria-hidden="true" className="pointer-events-none absolute left-[42%] top-[82%] hidden h-1.5 w-1.5 rounded-full bg-souk-sky shadow-[0_0_12px_2px_rgba(136,222,235,0.45)] md:block" />
+          <span aria-hidden="true" className="pointer-events-none absolute left-[63%] top-[62%] hidden h-1.5 w-1.5 rounded-full bg-souk-sky shadow-[0_0_12px_2px_rgba(136,222,235,0.35)] md:block" />
+          <span aria-hidden="true" className="pointer-events-none absolute left-[86%] top-[76%] hidden h-1.5 w-1.5 rounded-full bg-souk-muted/60 md:block" />
+        <Section pad="pt-11 pb-12 md:pb-14">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-end">
         <Stack gap={10}>
           <Row justify="between" align="center" gap={16} className="flex-wrap">
             <Txt size={11} lead={16} mono upper tone="data" className="line-clamp-2 sm:line-clamp-none">
@@ -244,7 +269,20 @@ export function MarketplacePage() {
               </Txt>
             ) : null}
           </Row>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {['ERC-8004', 'ERC-8183', 'x402', 'PancakeSwap'].map((rail) => (
+              <span
+                key={rail}
+                className="border border-souk-hair px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-muted"
+              >
+                {rail}
+              </span>
+            ))}
+          </div>
         </Stack>
+        <HireFeed hires={hires} />
+        </div>
         </Section>
         </div>
 
@@ -817,4 +855,44 @@ function EmptyState({ onReset }: { onReset: () => void }) {
       </Btn>
     </Stack>
   )
+}
+
+// the market's own last settlements, told as a log rather than a claim. one line
+// per hire, with the money in the settled colour so the proof reads first
+function HireFeed({ hires }: { hires: RecentHire[] | null }) {
+  const rows = hires ?? []
+  if (hires !== null && rows.length === 0) return null
+  return (
+    <div className="border border-souk-hair bg-souk-surface1/50">
+      <div className="flex items-center justify-between border-b border-souk-hair px-3 py-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-souk-muted">on the ledger</span>
+        <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-souk-good">
+          <span className="h-1.5 w-1.5 rounded-full bg-souk-good" />
+          live
+        </span>
+      </div>
+      {hires === null ? (
+        <p className="px-3 py-3 font-mono text-[11px] text-souk-muted">reading the ledger</p>
+      ) : (
+        <ul>
+          {rows.map((row) => (
+            <li
+              key={`${row.at}-${row.txHash ?? row.tokenId}`}
+              className="flex items-center gap-3 border-b border-souk-hair/60 px-3 py-2 font-mono text-[11px] last:border-b-0"
+            >
+              <span className="text-souk-muted">{clockOf(row.at)}</span>
+              <span className="min-w-0 flex-1 truncate text-souk-slate">{row.agentName}</span>
+              <span className="whitespace-nowrap text-souk-good">{`+${row.amount} ${row.symbol}`}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function clockOf(iso: string): string {
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return '--:--'
+  return `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`
 }

@@ -1136,3 +1136,22 @@ export async function submitEscrowRating(input: {
   if (!res.ok || !payload?.success) throw new Error(payload?.error ?? `rating ${res.status}`)
   return { rating: payload.rating, summary: payload.summary }
 }
+
+// the market's own recent settlements, for the shelf's evidence band
+export interface RecentHire {
+  at: string
+  agentName: string
+  tokenId: string
+  chainId: number
+  rail: string
+  amount: string
+  symbol: string
+  txHash: string | null
+}
+
+export async function getRecentHires(limit = 6): Promise<RecentHire[]> {
+  const res = await fetch(`${BASE}/hires/recent?limit=${limit}`)
+  if (!res.ok) throw new Error(`recent hires ${res.status}`)
+  const body = (await res.json()) as { items?: RecentHire[] }
+  return body.items ?? []
+}
