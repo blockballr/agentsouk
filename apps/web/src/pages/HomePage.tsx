@@ -203,6 +203,9 @@ export function HomePage() {
               <Link to="/quest">
                 <Btn>Set and Earn</Btn>
               </Link>
+              <a href="https://docs.agentsouk.xyz">
+                <Btn>Docs</Btn>
+              </a>
             </div>
           </motion.div>
 
