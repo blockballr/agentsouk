@@ -1,7 +1,7 @@
 name: Diag docs domain
 
-# Read-only diagnostic: Pages domain status on both projects plus the zone
-# DNS records for docs.agentsouk.xyz.
+# Read-only diagnostic: zones visible to the token, Pages domain detail for
+# docs.agentsouk.xyz, and the zone DNS records for the host.
 on:
   workflow_dispatch: {}
 
@@ -9,7 +9,7 @@ jobs:
   diag:
     runs-on: ubuntu-latest
     steps:
-      - name: Pages domains and zone DNS
+      - name: Zones, Pages domain detail, DNS records
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -18,20 +18,20 @@ jobs:
           AUTH="Authorization: Bearer $CF_TOKEN"
           BASE="https://api.cloudflare.com/client/v4"
 
-          for project in agentsouk-docs agentsouk; do
-            echo "pages project: $project"
-            curl -sS -H "$AUTH" "$BASE/accounts/$CF_ACCOUNT/pages/projects/$project/domains" \
-              | jq -r '.result[] | "  \(.name) status=\(.status) cert=\(.certificate_status // "n/a")"' || true
-          done
+          echo "zones visible to this token:"
+          curl -sS -H "$AUTH" "$BASE/zones?per_page=50" \
+            | jq -r '.result[]? | "  \(.id) name=\(.name) status=\(.status)"'
 
-          echo "zone:"
-          ZONE=$(curl -sS -H "$AUTH" "$BASE/zones?name=agentsouk.xyz" | jq -r '.result[0].id')
-          echo "  id=$ZONE"
+          echo "pages domain detail on agentsouk-docs:"
+          curl -sS -H "$AUTH" \
+            "$BASE/accounts/$CF_ACCOUNT/pages/projects/agentsouk-docs/domains/docs.agentsouk.xyz" \
+            | jq -c '{success, errors, result}'
 
-          echo "dns records for docs.agentsouk.xyz:"
-          curl -sS -H "$AUTH" "$BASE/zones/$ZONE/dns_records?name=docs.agentsouk.xyz" \
-            | jq -r '.result[] | "  \(.id) type=\(.type) content=\(.content) proxied=\(.proxied)"'
+          ZONE=$(curl -sS -H "$AUTH" "$BASE/zones?name=agentsouk.xyz" | jq -r '.result[0].id // empty')
+          echo "zone id: ${ZONE:-not found}"
 
-          echo "all dns records mentioning docs:"
-          curl -sS -H "$AUTH" "$BASE/zones/$ZONE/dns_records?per_page=100" \
-            | jq -r '.result[] | select(.name | startswith("docs")) | "  \(.id) \(.name) type=\(.type) content=\(.content) proxied=\(.proxied)"'
+          if [ -n "$ZONE" ]; then
+            echo "dns records for docs.agentsouk.xyz:"
+            curl -sS -H "$AUTH" "$BASE/zones/$ZONE/dns_records?name=docs.agentsouk.xyz&per_page=100" \
+              | jq -r '.result[]? | "  \(.id) type=\(.type) content=\(.content) proxied=\(.proxied)"'
+          fi
