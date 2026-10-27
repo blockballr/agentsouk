@@ -250,10 +250,21 @@ export function QuestPage() {
           <h1 className="font-serif text-[34px] font-bold leading-[42px] text-souk-ink">Set and Earn Quest.</h1>
           <p className="max-w-[1180px] text-[15px] leading-[23px] text-souk-slate">
             Set and Earn needs 3 different agents across at least 2 shortlisted marketplaces, plus one
-            agent of your own listed. This page tracks the Agent Souk side: your hires here and your
-            listing. A passport stamp needs two hires here, but one hire here and two elsewhere also
-            counts for the campaign.
+            qualifying agent of your own. Mainnet and testnet hires both count; a token approval alone
+            does not — the hire has to record on chain. This page tracks the Agent Souk side.
           </p>
+          <div className="max-w-[1180px] border border-souk-hair bg-souk-surface1 p-4">
+            <Txt size={10} lead={14} weight="bold" upper tone="muted">The built agent has to meet four things</Txt>
+            <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-[20px] text-souk-slate">
+              <li>· Owned by your campaign wallet: registered under ERC-8004 on chain 56 or 97, and listed on a shortlisted marketplace.</li>
+              <li>· An agent card at its own registered domain saying what it does and its category, kept answering.</li>
+              <li>· 3 completed hires from 3 different wallets you neither own nor fund.</li>
+              <li>· 5 on-chain actions across at least 3 separate days, in its category.</li>
+            </ul>
+            <Txt size={11} lead={16} mono tone="muted" className="mt-2 block">
+              Team wallets of shortlisted marketplaces are not eligible for the campaign.
+            </Txt>
+          </div>
         </Stack>
 
         {/* the reminder comes first: a hire from any other wallet is not counted by the campaign */}
@@ -303,10 +314,13 @@ export function QuestPage() {
         <Section pad="pt-3 pb-4 md:pt-4 md:pb-6">
           <Stack surface pad={[20, 22, 20, 22]} gap={14}>
             <SectionHead title="Your standing" note="SETTLED HIRES AND LISTINGS ONLY" />
+            <Txt size={12} lead={18} tone="muted">
+              This is the Agent Souk passport: our own completion marker, not a campaign requirement. The campaign counts hires and your built agent, on any shortlisted marketplace.
+            </Txt>
             <Row gap={10}>
               <Stack pad={[10, 12, 10, 12]} gap={2} bg="surface2" radius={8} className="min-w-0 flex-1">
                 <Txt size={16} lead={22} mono tone="steel">{`${done} of 3`}</Txt>
-                <Label tone="muted">To finish</Label>
+                <Label tone="muted">Stamps</Label>
               </Stack>
               <Stack pad={[10, 12, 10, 12]} gap={2} bg="surface2" radius={8} className="min-w-0 flex-1">
                 <Txt size={16} lead={22} mono tone="steel" className="truncate">
@@ -534,7 +548,7 @@ function stepContent(
   if (step.key === 'stall') {
     return {
       title,
-      instruction: 'List one agent of your own. Its hires pay your wallet directly.',
+      instruction: 'List an agent your campaign wallet owns. It needs 3 completed hires from wallets that are not yours and 5 actions across 3 days.',
       actions: [{ label: 'List your agent', to: '/list?quest=stall' }],
     }
   }

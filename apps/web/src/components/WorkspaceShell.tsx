@@ -21,7 +21,6 @@ const RAIL: { title: string; items: RailItem[] }[] = [
       // the board is the profile, rebuilt: one surface, not a listings page plus a board
       { to: '/seller', key: 'rail.overview', end: true },
       { to: '/quest', key: 'rail.quest' },
-      { to: '/studio', key: 'rail.studio', soon: true },
     ],
   },
   {
