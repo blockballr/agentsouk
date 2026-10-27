@@ -28,6 +28,10 @@ type MinimizeTarget = { x: number; y: number; scaleX: number; scaleY: number }
 const INVITE =
   'fixed bottom-3 left-3 right-3 rounded-none sm:bottom-6 sm:left-auto sm:right-6 sm:w-[430px] xl:bottom-auto xl:top-[var(--quest-top)] [body:has([data-compare-bar])_&]:hidden xl:[body:has([data-compare-bar])_&]:block'
 
+// the shelf carries a sticky filter band at the top, so its card sits at the foot
+const INVITE_SHELF =
+  'fixed bottom-24 left-3 right-3 rounded-none sm:bottom-28 sm:left-auto sm:right-6 sm:w-[380px] [body:has([data-compare-bar])_&]:hidden sm:[body:has([data-compare-bar])_&]:block'
+
 // the quest's one spot on the page: an invitation before it is started, then a way back in
 // until it is finished. Never a blocking modal, and kept off agent pages, whose
 // phone hire bar owns the bottom of the screen
@@ -198,7 +202,8 @@ export function QuestNudge() {
   const mode = questModeFor(wallet)
   // the way back in belongs to the wallet that started; anyone else is still invited
   const started = wallet !== null && (mode === 'active' || mode === 'quit')
-  const hidden = pathname.startsWith('/quest') || pathname.startsWith('/agents')
+  const hidden = pathname.startsWith('/quest') || pathname.startsWith('/agents/')
+  const onShelf = pathname === '/agents'
 
   // a started quest shows how far it has got, read again as the visitor moves between pages,
   // at most every half minute, so a fresh hire shows without a reload
@@ -223,7 +228,7 @@ export function QuestNudge() {
     return (
       <aside
         aria-label="Set and Earn Quest"
-        className={cx(INVITE, minimizing ? 'z-[60]' : 'z-40')}
+        className={cx(onShelf ? INVITE_SHELF : INVITE, minimizing ? 'z-[60]' : 'z-40')}
         style={{ '--quest-top': `${band}px` } as CSSProperties}
       >
         <motion.div
@@ -272,7 +277,7 @@ export function QuestNudge() {
   return (
     <aside
       aria-label="Set and Earn Quest"
-      className={cx(INVITE, minimizing ? 'z-[60]' : 'z-40')}
+      className={cx(onShelf ? INVITE_SHELF : INVITE, minimizing ? 'z-[60]' : 'z-40')}
       style={{ '--quest-top': `${band}px` } as CSSProperties}
     >
       <motion.div

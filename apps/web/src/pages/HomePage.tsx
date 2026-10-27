@@ -7,7 +7,6 @@ import { chainLabel, explorerTxBase, settlementAssetFor } from '../lib/contracts
 import { useTargetChain } from '../lib/target-chain'
 import { AnimatedNumber } from '../components/AnimatedNumber'
 import { defaultAvatarFor } from '../lib/default-avatar'
-import { ArcTile, OrbitTile } from '../components/tiles'
 import { Reveal } from '../components/Reveal'
 import { SPRING_STIFF, SPRING_SMOOTH } from '../lib/motion'
 import { Stack, Row, Txt, Pill, Dot, SectionHead, Btn, Label } from '../components/souk'
@@ -23,8 +22,8 @@ const TIMING = {
 
 const stats = [
   { value: 'served', label: 'agents on this marketplace', caption: 'each one called, not just listed' },
-  { value: 'x402', label: 'Funded Hire, Escrow, X402' },
-  { value: 'on-chain', label: 'reputation, endpoints, health' },
+  { value: '3', label: 'ways to hire' },
+  { value: '4', label: 'kinds of work' },
 ]
 
 const steps = [
@@ -172,31 +171,23 @@ export function HomePage() {
     return () => { cancelled = true }
   }, [])
 
-  // one vault agent per category, so the shelf opens with our own agents in each lane
+  // one hireable agent per category, from the market's own listing feed. our own
+  // vault agents are not privileged here: the shelf is the product, not our stock
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL ?? '/api'
-    fetch(`${base}/vault/agents?chain=${target?.chainId ?? 56}`)
+    fetch(`${base}/agents?type=all&limit=24&hide=1`)
       .then((r) => r.json())
       .then((d) => {
-        const agents = Array.isArray(d?.agents) ? d.agents : []
-        // pick the first vault agent per category
+        const items: any[] = Array.isArray(d?.items) ? d.items : []
         const byCategory: Record<string, any> = {}
-        for (const a of agents) {
-          if (!byCategory[a.category ?? ''] && a.category) {
-            byCategory[a.category] = a
-          }
+        for (const a of items) {
+          const key = a.category ?? ''
+          if (!key || byCategory[key]) continue
+          byCategory[key] = a
         }
-        // fetch full agent detail for each so the card has description, image, x402 etc.
         for (const c of CATEGORIES) {
-          const va = byCategory[c.key]
-          if (!va) continue
-          fetch(`${base}/agents/${va.chainId ?? target?.chainId ?? 56}/${va.tokenId}`)
-            .then((r) => r.json())
-            .then((d) => {
-              const a = d?.data ?? d
-              if (a) setFeatured((prev) => ({ ...prev, [c.key]: a }))
-            })
-            .catch(() => {})
+          const a = byCategory[c.key]
+          if (a) setFeatured((prev) => ({ ...prev, [c.key]: a }))
         }
       })
       .catch(() => {})
@@ -220,18 +211,14 @@ export function HomePage() {
         </motion.p>
 
         <motion.h1
-          className="mt-3 max-w-[1320px] font-serif text-[clamp(40px,4.8vw,96px)] font-bold leading-[1.05] tracking-[-0.03em] text-souk-ink"
+          className="mt-3 max-w-[1100px] font-serif text-[clamp(40px,5.2vw,104px)] font-bold leading-[1.02] tracking-[-0.035em] text-souk-ink"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: stage >= 2 ? 1 : 0, y: stage >= 2 ? 0 : 20 }}
           transition={{ ...SPRING_SMOOTH, delay: 0.04 }}
         >
           Shop by job.
-          <ArcTile delay={0.15} />
           <br />
-          Hire in
-          <br />
-          one signature.
-          <OrbitTile delay={0.3} />
+          Hire in <span className="text-souk-sky">one signature.</span>
         </motion.h1>
 
         <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_auto]">
@@ -241,26 +228,16 @@ export function HomePage() {
             animate={{ opacity: stage >= 3 ? 1 : 0, y: stage >= 3 ? 0 : 16 }}
             transition={SPRING_STIFF}
           >
-            <p className="text-[21px] font-semibold leading-[30px] tracking-[-0.01em] text-souk-ink">
-              Open like a registry. Listed like an exchange.
+            <p className="text-[17px] leading-[26px] text-souk-slate">
+              Every listing is called before it is shown, and every hire leaves a receipt.
             </p>
-            <p className="mt-6 text-[15px] leading-[23px] text-souk-slate">
-              Agent Souk is a marketplace for agents{target ? ` on ${chainLabel(target.chainId)}` : ''}.
-              Every listing is probed, not claimed: we call the registered
-              endpoint and badge what answers. Hire three ways: a direct call settles on-chain in {settlementSymbol ?? 'the settlement asset'} under x402,
-              a job runs through ERC-8183 escrow after delivery, and a vault hire keeps the deposit in HireVault while the named agent trades inside the bounds you set.
-              You sign, our relay pays the gas on direct calls, and the agent is paid in its own wallet.
-            </p>
-            <div className="mt-10 flex flex-wrap items-center gap-2.5">
-              <Link to="/quest">
-                <Btn kind="primary">Set and Earn Quest</Btn>
-              </Link>
+            <div className="mt-9 flex flex-wrap items-center gap-2.5">
               <Link to="/agents">
-                <Btn>Explore the market</Btn>
+                <Btn kind="primary">Explore the market</Btn>
               </Link>
-              <a href="#how">
-                <Btn>How settlement works</Btn>
-              </a>
+              <Link to="/quest">
+                <Btn>Set and Earn</Btn>
+              </Link>
             </div>
           </motion.div>
 

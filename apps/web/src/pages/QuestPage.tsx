@@ -432,7 +432,11 @@ export function QuestPage() {
                   <Txt size={12} lead={18} tone="steel">No agent on the shelf yet.</Txt>
                 ) : (
                   picks.map((w) => (
-                    <Link key={w.key} to={`/agents/${w.chainId ?? 97}/${w.tokenId}`} className="block transition hover:opacity-80">
+                    <Link
+                      key={w.key}
+                      to={`/agents/${w.chainId ?? 97}/${w.tokenId}?quest=${QUEST_STEPS.find((s) => s.category === w.category)?.key ?? 'first'}`}
+                      className="block transition hover:opacity-80"
+                    >
                       <div>
                         <Row gap={12} align="center" justify="between">
                           <Row gap={11} align="center" className="min-w-0">

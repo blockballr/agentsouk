@@ -580,17 +580,21 @@ export function AgentDetailPage() {
   // visitor to pay twice, and a job-only seller has no hire button to point at
   const sessionKnown = viewerKnown && (!viewer || hireLookedUp)
   const questStage: QuestStage | null =
-    !quest || jobSeller || !sessionKnown
+    !quest || !sessionKnown
       ? null
       : closedPaymentId || jobClosed(runResult?.job?.status)
         ? 'done'
         : completionOffer(runResult?.job?.status) === 'complete'
           ? 'complete'
-          : runResult?.output && !runResult.job
-            ? 'done'
-            : mySession || runResult
-              ? 'run'
+          : jobSeller
+            ? runResult?.job
+              ? 'complete'
               : 'hire'
+            : runResult?.output && !runResult.job
+              ? 'done'
+              : mySession || runResult
+                ? 'run'
+                : 'hire'
 
   function refreshDetail() {
     getAgentDetail(chainId, tokenId)
@@ -937,7 +941,7 @@ export function AgentDetailPage() {
         >
           {quest && questStage && (
             <AsideCard>
-              <QuestGuide stage={questStage} step={quest.step} agentName={detail.name} hasTask={Boolean(quest.agent.task)} />
+              <QuestGuide stage={questStage} step={quest.step} agentName={detail.name} hasTask={Boolean(quest.agent.task)} jobSeller={jobSeller} />
             </AsideCard>
           )}
           {ownSession && mySession && (
@@ -1949,14 +1953,18 @@ function QuestGuide({
   step,
   agentName,
   hasTask,
+  jobSeller,
 }: {
   stage: QuestStage
   step: QuestStep
   agentName: string
   hasTask: boolean
+  jobSeller?: boolean
 }) {
   const text: Record<QuestStage, string> = {
-    hire: `Press Hire ${agentName} and sign the payment in your wallet. If your balance is short, the panel offers test tokens first.`,
+    hire: jobSeller
+      ? `Press Get the price on ${agentName}, then fund the job from your wallet.`
+      : `Press Hire ${agentName} and sign the payment in your wallet. If your balance is short, the panel offers test tokens first.`,
     run: hasTask
       ? 'You hold a session with this agent. Press Load capabilities, then run the task that is already filled in.'
       : 'You hold a session with this agent. Press Load capabilities, then describe a task and run it.',
