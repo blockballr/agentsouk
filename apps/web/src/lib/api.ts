@@ -50,6 +50,12 @@ export interface IndexStatus {
   catalogueSource: 'store' | 'snapshot'
 }
 
+// warm the detail route while the pointer is on the card, so the click lands on
+// a response the function has already built instead of a cold start
+export function prefetchAgent(chainId: number | string, tokenId: string): void {
+  void fetch(`${BASE}/agents/${chainId}/${tokenId}`, { headers: { accept: 'application/json' } }).catch(() => {})
+}
+
 export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> {
   const sp = new URLSearchParams()
   if (query.category && query.category !== 'all') sp.set('category', query.category)

@@ -6,7 +6,7 @@ import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, takesVaul
 import { CompareBar } from '../components/CompareBar'
 import { OnChainBadge } from '../components/OnChainBadge'
 import { Tag } from '../components/Tag'
-import { getAgents } from '../lib/api'
+import { getAgents, prefetchAgent } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
@@ -628,6 +628,8 @@ function AgentCard({
       />
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
+        onMouseEnter={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
+        onFocus={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
         className="flex flex-col gap-3 rounded-[8px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         <Row align="center" gap={11}>

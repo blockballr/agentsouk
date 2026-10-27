@@ -1,0 +1,21 @@
+name: Warm API
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: warm-api
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the two read paths a visitor waits on
+        run: |
+          curl -fsS --max-time 30 "https://api.agentsouk.xyz/api/agents?chainId=56" > /dev/null
+          curl -fsS --max-time 30 "https://api.agentsouk.xyz/api/agents/56/376593" > /dev/null

@@ -3,31 +3,34 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { HomePage } from './pages/HomePage'
-import { MarketplacePage } from './pages/MarketplacePage'
-import { AgentDetailPage } from './pages/AgentDetailPage'
-import { ComparePage } from './pages/ComparePage'
-import { AdvantagePage } from './pages/AdvantagePage'
-import { ListAgentPage } from './pages/ListAgentPage'
-import { BuildPage } from './pages/BuildPage'
-import { CustomBuilderPage } from './pages/CustomBuilderPage'
-
-import { OngoingPage } from './pages/OngoingPage'
-import { StationPage } from './pages/StationPage'
-import { QuestPage } from './pages/QuestPage'
-import { SellerConsolePage } from './pages/SellerConsolePage'
-import { StudioPage } from './pages/StudioPage'
-import { DocsPage, DocsTocPage } from './pages/DocsPage'
-import { SettingsPage } from './pages/SettingsPage'
-import { SettingsProfilePage } from './pages/SettingsProfilePage'
-import { SettingsSecurityPage } from './pages/SettingsSecurityPage'
-import { ManageAccountPage } from './pages/ManageAccountPage'
 import { ScrollToTop } from './components/ScrollToTop'
 import { SecurityGate } from './components/SecurityGate'
 import { HostRouter } from './components/HostRouter'
 import { WorkspaceShell } from './components/WorkspaceShell'
-import VaultHirePage from './pages/VaultHirePage'
-import { DesignPnlPage } from './pages/DesignPnlPage'
 
+// every surface except the landing page is split out: the shelf and the agent
+// detail are the pages a visitor waits on, so they must not carry the builder,
+// the consoles and the settings screens in the same first chunk
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage').then((m) => ({ default: m.MarketplacePage })))
+const AgentDetailPage = lazy(() => import('./pages/AgentDetailPage').then((m) => ({ default: m.AgentDetailPage })))
+const ComparePage = lazy(() => import('./pages/ComparePage').then((m) => ({ default: m.ComparePage })))
+const AdvantagePage = lazy(() => import('./pages/AdvantagePage').then((m) => ({ default: m.AdvantagePage })))
+const ListAgentPage = lazy(() => import('./pages/ListAgentPage').then((m) => ({ default: m.ListAgentPage })))
+const BuildPage = lazy(() => import('./pages/BuildPage').then((m) => ({ default: m.BuildPage })))
+const CustomBuilderPage = lazy(() => import('./pages/CustomBuilderPage').then((m) => ({ default: m.CustomBuilderPage })))
+const OngoingPage = lazy(() => import('./pages/OngoingPage').then((m) => ({ default: m.OngoingPage })))
+const StationPage = lazy(() => import('./pages/StationPage').then((m) => ({ default: m.StationPage })))
+const QuestPage = lazy(() => import('./pages/QuestPage').then((m) => ({ default: m.QuestPage })))
+const SellerConsolePage = lazy(() => import('./pages/SellerConsolePage').then((m) => ({ default: m.SellerConsolePage })))
+const StudioPage = lazy(() => import('./pages/StudioPage').then((m) => ({ default: m.StudioPage })))
+const DocsPage = lazy(() => import('./pages/DocsPage').then((m) => ({ default: m.DocsPage })))
+const DocsTocPage = lazy(() => import('./pages/DocsPage').then((m) => ({ default: m.DocsTocPage })))
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const SettingsProfilePage = lazy(() => import('./pages/SettingsProfilePage').then((m) => ({ default: m.SettingsProfilePage })))
+const SettingsSecurityPage = lazy(() => import('./pages/SettingsSecurityPage').then((m) => ({ default: m.SettingsSecurityPage })))
+const ManageAccountPage = lazy(() => import('./pages/ManageAccountPage').then((m) => ({ default: m.ManageAccountPage })))
+const VaultHirePage = lazy(() => import('./pages/VaultHirePage'))
+const DesignPnlPage = lazy(() => import('./pages/DesignPnlPage').then((m) => ({ default: m.DesignPnlPage })))
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
 
 // each surface has its own address; there it opens on its own page rather than
