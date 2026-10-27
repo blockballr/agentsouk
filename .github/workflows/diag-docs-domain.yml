@@ -1,0 +1,37 @@
+name: Diag docs domain
+
+# Read-only diagnostic: Pages domain status on both projects plus the zone
+# DNS records for docs.agentsouk.xyz.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pages domains and zone DNS
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer $CF_TOKEN"
+          BASE="https://api.cloudflare.com/client/v4"
+
+          for project in agentsouk-docs agentsouk; do
+            echo "pages project: $project"
+            curl -sS -H "$AUTH" "$BASE/accounts/$CF_ACCOUNT/pages/projects/$project/domains" \
+              | jq -r '.result[] | "  \(.name) status=\(.status) cert=\(.certificate_status // "n/a")"' || true
+          done
+
+          echo "zone:"
+          ZONE=$(curl -sS -H "$AUTH" "$BASE/zones?name=agentsouk.xyz" | jq -r '.result[0].id')
+          echo "  id=$ZONE"
+
+          echo "dns records for docs.agentsouk.xyz:"
+          curl -sS -H "$AUTH" "$BASE/zones/$ZONE/dns_records?name=docs.agentsouk.xyz" \
+            | jq -r '.result[] | "  \(.id) type=\(.type) content=\(.content) proxied=\(.proxied)"'
+
+          echo "all dns records mentioning docs:"
+          curl -sS -H "$AUTH" "$BASE/zones/$ZONE/dns_records?per_page=100" \
+            | jq -r '.result[] | select(.name | startswith("docs")) | "  \(.id) \(.name) type=\(.type) content=\(.content) proxied=\(.proxied)"'
