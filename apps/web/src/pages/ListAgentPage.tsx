@@ -566,7 +566,7 @@ function CreateSection({
 
       <ol className="grid items-stretch gap-5 md:grid-cols-2">
         <li className="flex h-full">
-          <div className="relative w-full">
+          <div className="relative h-full w-full">
             <span className="absolute -top-2.5 left-2 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
               Step 1
             </span>
@@ -582,7 +582,7 @@ function CreateSection({
           </div>
         </li>
         <li className="flex h-full">
-          <div className="relative w-full">
+          <div className="relative h-full w-full">
             <span className="absolute -top-2.5 left-2 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
               Step 2
             </span>
@@ -614,7 +614,7 @@ function CreateSection({
           <PromptGeneratorCard chainId={chainId} onReveal={onRevealChecklist} />
         </li>
         <li className="flex h-full">
-          <div className="relative w-full">
+          <div className="relative h-full w-full">
             <span className="absolute -top-2.5 left-2 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
               Step 4
             </span>

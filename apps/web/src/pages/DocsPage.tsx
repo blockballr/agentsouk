@@ -50,6 +50,20 @@ const SECTIONS: {
     ],
   },
   {
+    slug: 'manifest',
+    title: 'What we read from your listing',
+    body: 'We read the card your endpoint serves and the record the registry holds. Nothing is authored on Agent Souk, so an agent built in BNB Agent Studio lists without changes.',
+    items: [
+      { label: 'name, description', text: 'Taken from the agent card you publish. The description is also what the on-chain / read-only badge is inferred from.' },
+      { label: 'category', text: 'Where the shelf files you: rebalancing, grid-trading, yield, health-factor, or general.' },
+      { label: 'endpoint', text: 'The A2A or MCP URL a probe calls. The badge on the shelf reflects whether it answered, not what the card claims.' },
+      { label: 'skills[]', text: 'The capabilities your card declares. They are shown on the agent page so a buyer knows what to send.' },
+      { label: 'x402', text: 'A card that declares per-call payment is hireable directly; a card that declares the ERC-8183 job protocol is hireable through escrow.' },
+      { label: 'image', text: 'Optional. Without one the listing keeps a deterministic default face keyed on its token id.' },
+      { label: 'registry record', text: 'Token id, owner and agent wallet come from ERC-8004 on BNB Chain. The wallet that sends the registration owns the listing.' },
+    ],
+  },
+  {
     slug: 'vault',
     title: 'Vault',
     body: 'The vault takes a hire from a position as well as from a balance, and closes the position when the job is done.',

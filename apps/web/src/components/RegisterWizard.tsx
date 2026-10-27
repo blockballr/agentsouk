@@ -20,6 +20,7 @@ import {
   type TransactionReceipt,
 } from '../lib/register'
 import type { CheckLine, CheckState } from './VerificationLoop'
+import { Btn } from './souk'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import {
   chainIdToHex,
@@ -152,6 +153,9 @@ export function RegisterWizard({
     onStep?.(step)
   }, [step, onStep])
   const [draft, setDraft] = useState<RegistrationDraft>(EMPTY)
+  const [importId, setImportId] = useState('')
+  const [importErr, setImportErr] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
   const [errors, setErrors] = useState<string[]>([])
   const [prepared, setPrepared] = useState<PrepareResult | null>(null)
   const [result, setResult] = useState<ConfirmResult | null>(null)
@@ -169,7 +173,7 @@ export function RegisterWizard({
   const [imageOk, setImageOk] = useState(true)
   // how the listing sells: a call listing takes paid calls, a job listing takes
   // ERC-8183 jobs only, and a both listing declares x402 while also taking jobs
-  const [mode, setMode] = useState<'job' | 'call' | 'both'>('call')
+  const [mode, setMode] = useState<'job' | 'call' | 'both'>('job')
 
   // the endpoint is the first thing the lister gives us, and the rest of the form
   // only appears once it is usable. The flag latches so a correction does not
@@ -273,6 +277,34 @@ export function RegisterWizard({
   // a deterministic address or scheme fault is refused before the transaction; the browser probe
   // never blocks, because a cross-origin block is not proof the endpoint is down
   const endpointFault = endpointRefusal(draft.endpoint ?? '')
+
+  // a listing that already exists on chain carries the endpoint we should read, so a
+  // lister who registered elsewhere pastes the id instead of hunting the URL down
+  async function importToken() {
+    const id = importId.trim().replace(/^#/, '')
+    if (!/^\d+$/.test(id)) {
+      setImportErr('A token id is digits only.')
+      return
+    }
+    setImporting(true)
+    setImportErr(null)
+    try {
+      const base = import.meta.env.VITE_API_URL ?? '/api'
+      const res = await fetch(`${base}/agents/${chainId}/${id}`)
+      const body = (await res.json()) as Record<string, unknown>
+      const agent = ((body?.data ?? body) ?? {}) as Record<string, unknown>
+      const url = String(agent.a2a_endpoint ?? agent.agent_url ?? agent.mcp_server ?? '').trim()
+      if (!url) {
+        setImportErr('That listing has no callable endpoint.')
+        return
+      }
+      set('endpoint', url)
+    } catch {
+      setImportErr('Could not read that token.')
+    } finally {
+      setImporting(false)
+    }
+  }
 
   // once the endpoint is a usable https URL the details open, prefilled from the
   // card it serves; the endpoint itself stays the first field and stays editable
@@ -682,6 +714,24 @@ export function RegisterWizard({
       </div>
 
       <div className="mt-6 space-y-5">
+        <ol className="grid gap-2 sm:grid-cols-3">
+          {[
+            ['1', 'Paste the endpoint', 'or an existing token id'],
+            ['2', 'Confirm the card', 'name, words, category'],
+            ['3', 'Register on chain', 'one transaction'],
+          ].map(([n, label, detail]) => (
+            <li key={n} className="flex items-center gap-3 border border-souk-hair bg-souk-surface1 px-3 py-2">
+              <span className="grid h-5 w-5 shrink-0 place-items-center border border-souk-hair font-mono text-[10px] text-souk-data">
+                {n}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[12px] font-semibold leading-4 text-souk-ink">{label}</span>
+                <span className="block font-mono text-[10px] leading-4 text-souk-muted">{detail}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+
         <section className="border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="micro text-souk-ink">1. The endpoint a buyer calls</p>
@@ -712,6 +762,24 @@ export function RegisterWizard({
               </span>
             )}
           </label>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-souk-hair pt-3">
+            <span className="micro text-souk-muted">Already on chain?</span>
+            <input
+              value={importId}
+              onChange={(e) => {
+                setImportId(e.target.value)
+                setImportErr(null)
+              }}
+              inputMode="numeric"
+              placeholder="ERC-8004 token id"
+              className="h-9 w-[170px] border border-souk-hair bg-souk-surface2 px-2.5 font-mono text-xs text-souk-ink outline-none focus:border-souk-sky"
+            />
+            <Btn kind="off" disabled={importing || importId.trim().length === 0} onClick={() => void importToken()}>
+              {importing ? 'Reading…' : 'Use its endpoint'}
+            </Btn>
+            {importErr ? <span className="text-xs text-souk-peach">{importErr}</span> : null}
+          </div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <label className="block">
@@ -906,6 +974,29 @@ export function RegisterWizard({
                 <button
                   type="button"
                   disabled={busy || step !== 'form'}
+                  onClick={() => chooseMode('job')}
+                  aria-pressed={mode === 'job'}
+                  className={cx(
+                    'rounded-[10px] border p-3 text-left transition',
+                    mode === 'job'
+                      ? 'border-souk-sky bg-souk-sky/5'
+                      : 'border-souk-hair bg-souk-surface2 hover:border-souk-sky/60',
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="block text-sm font-medium text-souk-ink">By job (ERC-8183)</span>
+                    <span className="border border-souk-sky/50 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.08em] text-souk-sky">
+                      Recommended
+                    </span>
+                  </span>
+                  <span className="mt-1 block text-xs leading-relaxed text-souk-muted">
+                    Quotes a price, takes work only through a funded job in escrow, and is paid on
+                    delivery.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  disabled={busy || step !== 'form'}
                   onClick={() => chooseMode('call')}
                   aria-pressed={mode === 'call'}
                   className={cx(
@@ -919,24 +1010,6 @@ export function RegisterWizard({
                   <span className="mt-1 block text-xs leading-relaxed text-souk-muted">
                     Buyers call the endpoint directly, with x402 machine payment when the
                     registration says so.
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  disabled={busy || step !== 'form'}
-                  onClick={() => chooseMode('job')}
-                  aria-pressed={mode === 'job'}
-                  className={cx(
-                    'rounded-[10px] border p-3 text-left transition',
-                    mode === 'job'
-                      ? 'border-souk-sky bg-souk-sky/5'
-                      : 'border-souk-hair bg-souk-surface2 hover:border-souk-sky/60',
-                  )}
-                >
-                  <span className="block text-sm font-medium text-souk-ink">By job (ERC-8183)</span>
-                  <span className="mt-1 block text-xs leading-relaxed text-souk-muted">
-                    Quotes a price, takes work only through a funded job in escrow, and is paid on
-                    delivery.
                   </span>
                 </button>
                 <button
