@@ -1,0 +1,48 @@
+name: Fix docs domain DNS
+
+# Points the docs.agentsouk.xyz DNS record at agentsouk-docs.pages.dev so the
+# Pages domain verification passes. Only touches records named exactly
+# docs.agentsouk.xyz. Idempotent.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repoint the docs CNAME
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE: "25bbb0d097145477d0d6ad8277dd14c8"
+          HOST: "docs.agentsouk.xyz"
+          TARGET: "agentsouk-docs.pages.dev"
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer $CF_TOKEN"
+          API="https://api.cloudflare.com/client/v4/zones/$ZONE/dns_records"
+
+          echo "existing records for $HOST:"
+          LIST=$(curl -sS -H "$AUTH" "$API?name=$HOST&per_page=100")
+          echo "$LIST" | jq -c '{success, errors, result: [.result[]? | {id, name, type, content, proxied}]}'
+
+          if [ "$(echo "$LIST" | jq -r '.success')" != "true" ]; then
+            echo "FATAL: token cannot list DNS records for this zone; no change made"
+            exit 1
+          fi
+
+          for id in $(echo "$LIST" | jq -r '.result[]?.id // empty'); do
+            type=$(echo "$LIST" | jq -r ".result[] | select(.id==\"$id\") | .type")
+            content=$(echo "$LIST" | jq -r ".result[] | select(.id==\"$id\") | .content")
+            proxied=$(echo "$LIST" | jq -r ".result[] | select(.id==\"$id\") | .proxied")
+            if [ "$type" = "CNAME" ] && [ "$content" = "$TARGET" ] && [ "$proxied" = "true" ]; then
+              echo "record $id already correct, leaving it"
+            else
+              echo "removing wrong record $id type=$type content=$content proxied=$proxied"
+              curl -sS -X DELETE -H "$AUTH" "$API/$id" | jq -c '{success, errors}'
+            fi
+          done
+
+          echo "ensuring proxied CNAME $HOST -> $TARGET"
+          curl -sS -X POST -H "$AUTH" -H "Content-Type: application/json" \
+            --data "{\"type\":\"CNAME\",\"name\":\"$HOST\",\"content\":\"$TARGET\",\"proxied\":true,\"ttl\":1}" \
+            "$API" | jq -c '{success, errors, result: (.result | if . == null then null else {id, type, name, content, proxied} end)}'
