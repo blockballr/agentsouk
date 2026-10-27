@@ -640,7 +640,6 @@ function AgentCard({
         .filter((part): part is string => Boolean(part))
         .join(' · ')
     : null
-  const rail = takesVault(agent.skills) ? 'Vault' : takesJobs(agent.skills) ? 'ERC-8183' : agent.x402_supported ? 'x402' : 'Listing'
   const declared = (agent.skills ?? [])
     .map((s) => (s as { price?: unknown }).price)
     .find((p): p is string => typeof p === 'string' && p.trim().length > 0)
@@ -652,25 +651,11 @@ function AgentCard({
         checked ? 'ring-1 ring-souk-data' : ''
       }`}
     >
-      <button
-        type="button"
-        onClick={() => onToggle(key)}
-        aria-pressed={checked}
-        aria-label={`Compare: ${agent.name}`}
-        className="absolute right-3 top-3 grid h-4 w-4 cursor-pointer place-items-center border border-souk-steel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
-      >
-        {checked ? <span className="h-2 w-2 bg-souk-data" /> : null}
-      </button>
-      <OnChainBadge
-        online={takesVault(agent.skills) || classifyExecution(agent.description ?? '').executes}
-        className="absolute right-9 top-3"
-      />
-
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         onMouseEnter={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
         onFocus={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
-        className="flex flex-col gap-3 pr-6 sm:pr-24 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        className="flex flex-col gap-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         <div className="flex items-start gap-3">
           <img
@@ -687,7 +672,7 @@ function AgentCard({
             }}
           />
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-souk-muted">
+            <div className="truncate text-[10px] font-bold uppercase tracking-[0.1em] text-souk-muted">
               {categoryName(agent.category)}
             </div>
             <div className="truncate font-[Fraunces_Variable,Georgia,serif] text-[19px] font-semibold leading-[26px] tracking-[-0.01em] text-souk-ink">
@@ -701,12 +686,13 @@ function AgentCard({
         </div>
 
         <div className="flex items-baseline justify-between gap-3">
-          <span className="truncate font-mono text-[13px] text-souk-ink" title={price}>
+          <span className="whitespace-nowrap font-mono text-[13px] text-souk-ink" title={price}>
             {priceLabel}
           </span>
-          <span className="shrink-0 border border-souk-hair px-2 py-0.5 text-[9.5px] uppercase tracking-[0.08em] text-souk-data">
-            {rail}
-          </span>
+          <OnChainBadge
+            online={takesVault(agent.skills) || classifyExecution(agent.description ?? '').executes}
+            className="shrink-0"
+          />
         </div>
 
         <span title={verdict.explain} className="inline-flex">
@@ -730,14 +716,30 @@ function AgentCard({
           {agent.description || 'No description on-chain.'}
         </p>
 
-        <div className="flex items-center gap-3 border-t border-souk-hair pt-2 font-mono text-[10px] text-souk-muted">
-          <span className="text-souk-data">{`#${agent.token_id}`}</span>
-          {score ? <span>{`score ${score}`}</span> : null}
-          {reviews > 0 ? <span>{`${formatNumber(reviews)} review${reviews === 1 ? '' : 's'}`}</span> : null}
-          <span className="ml-auto">{`BNB ${agent.chain_id}`}</span>
-        </div>
       </Link>
 
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-souk-hair pt-2 font-mono text-[10px] text-souk-muted">
+        <span className="whitespace-nowrap text-souk-data">{`#${agent.token_id}`}</span>
+        {score ? <span>{`score ${score}`}</span> : null}
+        {reviews > 0 ? <span>{`${formatNumber(reviews)} review${reviews === 1 ? '' : 's'}`}</span> : null}
+        <button
+          type="button"
+          onClick={() => onToggle(key)}
+          aria-pressed={checked}
+          aria-label={`Compare: ${agent.name}`}
+          className="ml-auto inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-[10px] uppercase tracking-[0.06em] text-souk-muted transition hover:text-souk-data focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        >
+          <span
+            aria-hidden="true"
+            className={`grid h-3 w-3 place-items-center border ${
+              checked ? 'border-souk-data bg-souk-data/30' : 'border-souk-steel'
+            }`}
+          >
+            {checked ? <span className="h-1.5 w-1.5 bg-souk-data" /> : null}
+          </span>
+          Compare
+        </button>
+      </div>
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         title={
