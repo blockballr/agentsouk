@@ -48,8 +48,38 @@ export function reloadOnceForStaleChunk(): boolean {
 }
 
 // Vite raises this when a dynamic import or a module preload cannot be fetched.
+// A missing chunk also surfaces as a rejected import (Safari, Firefox) or as a
+// failed <script> load, and neither raises Vite's event, so all three are caught.
+const MISSING_CHUNK =
+  /dynamically imported module|Importing a module script failed|error loading dynamically imported module|ChunkLoadError/i
+
 export function watchStaleChunks(): void {
   window.addEventListener('vite:preloadError', (event) => {
     if (reloadOnceForStaleChunk()) event.preventDefault()
   })
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason: unknown = event.reason
+    const text =
+      typeof reason === 'string'
+        ? reason
+        : reason instanceof Error
+          ? reason.message
+          : ''
+    if (!MISSING_CHUNK.test(text)) return
+    if (reloadOnceForStaleChunk()) event.preventDefault()
+  })
+
+  // a script tag that fails to load is a missing entry or vendor chunk: capture
+  // phase, because resource errors do not bubble
+  window.addEventListener(
+    'error',
+    (event) => {
+      const target = event.target as HTMLScriptElement | null
+      if (!target || target.tagName !== 'SCRIPT') return
+      if (!(target.src ?? '').includes('/assets/')) return
+      reloadOnceForStaleChunk()
+    },
+    true,
+  )
 }
