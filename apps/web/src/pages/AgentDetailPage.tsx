@@ -283,6 +283,7 @@ export function AgentDetailPage() {
   // the on-chain band folds on a phone: the drawing opens it, four boxes stacked
   // push the hire card off the screen
   const [chainOpen, setChainOpen] = useState(false)
+  const [descOpen, setDescOpen] = useState(false)
 
   // the viewer's wallet, watched rather than read once: a switch inside the
   // wallet re-points the session controls at the new account
@@ -660,9 +661,16 @@ export function AgentDetailPage() {
   const gatedOnly = !jobSeller && !mySession && detail.verification?.status === 'gated'
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-14">
+    <div className="relative mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-14">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[560px]"
+        style={{
+          background:
+            'radial-gradient(900px 600px at 78% 8%, rgba(136,222,235,0.10), transparent 60%), radial-gradient(700px 500px at 20% 0%, rgba(2,50,71,0.6), transparent 65%)',
+        }}
+      />
       {!hireInView && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-souk-hair bg-souk-indigo px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
+        <div className="fixed inset-x-0 bottom-[52px] z-40 border-t border-souk-hair bg-souk-indigo px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] lg:hidden">
           {quest && questStage && (
             <p className="micro mb-2 text-souk-indigo-labels">
               Souk passport · {QUEST_STAGE_COUNT[questStage]}
@@ -695,7 +703,7 @@ export function AgentDetailPage() {
               <img
                 src={detail.image_url ?? defaultAvatarFor(Number(chainId), detail.token_id)}
                 alt=""
-                className="h-20 w-20 rounded-[14px] object-cover sm:h-24 sm:w-24"
+                className="h-24 w-24 rounded-[12px] object-cover sm:h-28 sm:w-28"
                 onError={(e) => {
                   // same rule as the card: an image that answers nothing shows its
                   // own default glyph
@@ -724,7 +732,7 @@ export function AgentDetailPage() {
                 </a>
               </Txt>
               <SoukRow align="center" gap={12}>
-                <Txt size={30} lead={38} weight="bold" tone="ink">
+                <Txt display size={44} lead={50} weight="bold" tone="ink" className="tracking-[-0.02em]">
                   {detail.name}
                 </Txt>
                 {/* only a reading the chain earned is coloured: an unchecked listing
@@ -755,9 +763,18 @@ export function AgentDetailPage() {
                     listing with no quote has no price to name */}
                 Listed {formatDate(detail.created_at)}
               </Txt>
-              <p className="mt-4 max-w-3xl text-[17px] leading-snug text-souk-slate">
+              <p className={cx('mt-4 max-w-2xl text-[16px] leading-relaxed text-souk-slate', !descOpen && 'line-clamp-3')}>
                 {detail.description || 'No description on-chain.'}
               </p>
+              {(detail.description?.length ?? 0) > 220 ? (
+                <button
+                  type="button"
+                  onClick={() => setDescOpen((v) => !v)}
+                  className="micro mt-2 text-souk-data underline-offset-2 transition hover:text-souk-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                >
+                  {descOpen ? 'Show less' : 'Read more'}
+                </button>
+              ) : null}
               <SoukRow align="center" gap={8} className="mt-4 flex-wrap">
                 <Pill>{chainLabel(Number(chainId))}</Pill>
                 {detail.a2a_endpoint ? <Pill>A2A</Pill> : null}
@@ -822,7 +839,7 @@ export function AgentDetailPage() {
 
         <aside
           ref={setHirePanel}
-          className="h-fit scroll-mt-4 space-y-5 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-start-2"
+          className="flex h-fit scroll-mt-4 flex-col gap-5 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-start-2"
         >
           {quest && questStage && (
             <AsideCard>
@@ -987,8 +1004,9 @@ export function AgentDetailPage() {
 
           {/* the design's right column: the hire card and the quote are two cards
               of the same shell, not one card holding a note */}
-          {(!vaultCapable || mySession) && (
-          <AsideCard>
+          {(!vaultCapable || mySession) &&
+            !(takesJobsToo && !jobSeller && !mySession && !detail.x402_supported && !gatedOnly) && (
+          <GlassCard className="order-first">
             {/* a job seller's panel carries its own head, so this card adds none:
                 one rail, one head, never the two stacked */}
             {(!jobSeller || mySession) && (
@@ -1082,10 +1100,10 @@ export function AgentDetailPage() {
               </Txt>
             </Stack>
           )}
-          </AsideCard>
+          </GlassCard>
           )}
           {vaultCapable && (
-            <AsideCard>
+            <GlassCard className="order-first">
               <SoukRow justify="between" align="center">
                 <Txt size={18} lead={27} weight="bold" tone="ink">
                   Vault hire
@@ -1104,18 +1122,12 @@ export function AgentDetailPage() {
               >
                 Hire on Vault
               </button>
-            </AsideCard>
+            </GlassCard>
           )}
           {/* the second rail this agent sells is its own card, the way the drawing
               keeps one rail per card rather than nesting one inside the other */}
           {!vaultCapable && !mySession && !jobSeller && takesJobsToo && (
-            <AsideCard>
-              <SoukRow justify="between" align="center">
-                <Txt size={18} lead={27} weight="bold" tone="ink">
-                  {showingKernelJob ? 'Your job' : 'Fund job'}
-                </Txt>
-                <Pill variant="keep">erc-8183</Pill>
-              </SoukRow>
+            <GlassCard className="order-first">
               {showingKernelJob && selectedKernelJob ? (
                 <Jobs8183JobCard
                   job={selectedKernelJob}
@@ -1125,7 +1137,7 @@ export function AgentDetailPage() {
               ) : (
                 <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
               )}
-            </AsideCard>
+            </GlassCard>
           )}
           {/* the quote is its own card in the design, not a note inside the hire one.
               a job seller's panel already draws that card, so only the x402 column
@@ -1504,6 +1516,27 @@ function AsideCard({ children }: { children: ReactNode }) {
     <Stack surface pad={[20, 22, 20, 22]} gap={14}>
       {children}
     </Stack>
+  )
+}
+
+// the one floating surface on the page: the same glass the swap and compare
+// panels use, with a stronger blur because the hire card sits over the mast
+// wash. Every other panel stays metal, so the action reads before the ledger.
+function GlassCard({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cx(
+        'relative overflow-hidden border border-souk-hair p-5 backdrop-blur-[18px]',
+        className,
+      )}
+      style={{
+        background:
+          'linear-gradient(117deg, var(--mast-wash), color-mix(in srgb, var(--color-souk-surface1) 82%, transparent))',
+        boxShadow: 'var(--shadow-lg-2), inset 0 1px 0 rgba(255,255,255,0.10)',
+      }}
+    >
+      {children}
+    </div>
   )
 }
 
