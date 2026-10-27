@@ -239,7 +239,10 @@ export function QuestPage() {
           </Txt>
           <h1 className="font-serif text-[34px] font-bold leading-[42px] text-souk-ink">Set and Earn Quest.</h1>
           <p className="max-w-[1180px] text-[15px] leading-[23px] text-souk-slate">
-            Hire an agent, list one of your own, then hire a second. That finishes your passport.
+            Set and Earn needs 3 different agents across at least 2 shortlisted marketplaces, plus one
+            agent of your own listed. This page tracks the Agent Souk side: your hires here and your
+            listing. A passport stamp needs two hires here, but one hire here and two elsewhere also
+            counts for the campaign.
           </p>
         </Stack>
 

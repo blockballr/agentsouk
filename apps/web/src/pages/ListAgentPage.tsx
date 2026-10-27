@@ -194,12 +194,10 @@ export function ListAgentPage() {
             />
           )}
 
-          <CreateSection chainId={chain} onRevealChecklist={revealChecklist} />
-
           {/* the same registration the Studio path makes, sent from the browser. Both
               routes end at the same registry record and the same checks. */}
           <div id="register-here" className="mt-[30px] scroll-mt-4">
-            <SectionHead title="2. List your agent" note="ONE TRANSACTION" />
+            <SectionHead title="1. List your agent" note="ONE TRANSACTION" />
             <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
               <Stack gap={20}>
                 {chain === null ? (
@@ -227,6 +225,7 @@ export function ListAgentPage() {
               </Stack>
             </div>
           </div>
+          <CreateSection chainId={chain} onRevealChecklist={revealChecklist} />
           <LookupSection chainId={chain} onFound={setFoundTokenId} />
           <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
         </>
@@ -238,7 +237,7 @@ export function ListAgentPage() {
 const LISTING_GUIDE: Record<WizardStep, { count: string; text: string }> = {
   form: {
     count: 'Registration 1 of 3',
-    text: 'List one agent of your own. Build it with Agent Studio as shown below, or register an agent you already run with the form on this page.',
+    text: 'List one agent of your own. If you already run an agent, paste its endpoint in the form below. If you need to build one, the BNB Agent Studio guide sits under the form.',
   },
   prepared: {
     count: 'Registration 2 of 3',
@@ -553,7 +552,7 @@ function CreateSection({
         className="flex-wrap border-b border-b-souk-hair"
       >
         <Txt size={18} lead={27} weight="bold" tone="ink">
-          1. Create and register with BNB Agent Studio
+          Optional: build one with BNB Agent Studio
         </Txt>
         <a
           href="https://www.bnbchain.org/en/bnb-agent-studio"
