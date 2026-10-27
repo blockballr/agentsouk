@@ -43,6 +43,14 @@ jobs:
         working-directory: docs-site
         run: npm run build
 
+      - name: Ensure the project exists
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create agentsouk-docs --production-branch=main
+        continue-on-error: true
+
       - name: Publish
         uses: cloudflare/wrangler-action@v3
         with:
