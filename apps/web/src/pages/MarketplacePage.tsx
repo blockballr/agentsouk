@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { AgentSummary } from '../core/types'
 import { defaultAvatarFor } from '../lib/default-avatar'
-import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, takesVault, shortAddress, timeAgo } from '@agora/core'
+import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, takesVault, shortAddress, timeAgo, classifyExecution } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
+import { OnChainBadge } from '../components/OnChainBadge'
 import { getAgents, prefetchAgent } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
@@ -660,12 +661,16 @@ function AgentCard({
       >
         {checked ? <span className="h-2 w-2 bg-souk-data" /> : null}
       </button>
+      <OnChainBadge
+        online={takesVault(agent.skills) || classifyExecution(agent.description ?? '').executes}
+        className="absolute right-9 top-3"
+      />
 
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         onMouseEnter={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
         onFocus={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
-        className="flex flex-col gap-3 pr-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        className="flex flex-col gap-3 pr-6 sm:pr-24 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         <div className="flex items-start gap-3">
           <img
