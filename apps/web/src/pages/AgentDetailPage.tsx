@@ -663,10 +663,16 @@ export function AgentDetailPage() {
   return (
     <div className="relative mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-14">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[560px]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[620px]"
         style={{
           background:
             'radial-gradient(900px 600px at 78% 8%, rgba(136,222,235,0.10), transparent 60%), radial-gradient(700px 500px at 20% 0%, rgba(2,50,71,0.6), transparent 65%)',
+          maskImage:
+            'linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%), linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%)',
+          maskComposite: 'intersect',
+          WebkitMaskImage:
+            'linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%), linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%)',
+          WebkitMaskComposite: 'source-in',
         }}
       />
       {!hireInView && (
@@ -703,7 +709,7 @@ export function AgentDetailPage() {
               <img
                 src={detail.image_url ?? defaultAvatarFor(Number(chainId), detail.token_id)}
                 alt=""
-                className="h-24 w-24 rounded-[12px] object-cover sm:h-28 sm:w-28"
+                className="h-[92px] w-[92px] rounded-[10px] object-cover"
                 onError={(e) => {
                   // same rule as the card: an image that answers nothing shows its
                   // own default glyph
@@ -714,56 +720,15 @@ export function AgentDetailPage() {
                   }
                 }}
               />
-              {/* the category is the one fact a buyer checks before reading the
-                  card, so it peels off the avatar rather than waiting in the tag
-                  row. indigo, not glass white: an avatar is any colour at all,
-                  and a pale peel disappeared on the bright ones */}
-              {detail.category ? (
-                <span className="absolute -bottom-2.5 left-1.5 inline-flex max-w-[140px] items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
-                  {CATEGORIES.find((c) => c.key === detail.category)?.label ?? detail.category}
-                </span>
-              ) : null}
             </div>
             <div className="min-w-0 flex-1">
-              <Txt size={12} lead={18} mono upper tone="steel">
-                Shelf / BNB Smart Chain {chainId} /{' '}
-                <a href={bscScan} target="_blank" rel="noreferrer" className="hover:text-souk-ink">
-                  Token #{detail.token_id}
-                </a>
+              <Txt size={11} lead={14} weight="bold" upper tone="muted" className="tracking-[0.08em]">
+                {CATEGORIES.find((c) => c.key === detail.category)?.label ?? detail.category ?? 'Agent'}
               </Txt>
-              <SoukRow align="center" gap={12}>
-                <Txt display size={44} lead={50} weight="bold" tone="ink" className="tracking-[-0.02em]">
-                  {detail.name}
-                </Txt>
-                {/* only a reading the chain earned is coloured: an unchecked listing
-                    reads as its own outline rather than borrowing a verdict */}
-                <Dot
-                  tone={
-                    detail.verification?.status === 'delivered'
-                      ? 'good'
-                      : detail.verification?.status === 'gated'
-                        ? 'held'
-                        : detail.verification?.status
-                          ? 'bad'
-                          : 'quiet'
-                  }
-                  size={11}
-                />
-                <Txt size={14} lead={20} tone="slate">
-                  {statusFor(detail).value}
-                </Txt>
-              </SoukRow>
-              <Txt size={12} lead={18} mono upper tone="steel">
-                <a href={ownerScan} target="_blank" rel="noreferrer" className="hover:text-souk-ink">
-                  {firstParty ? OPERATED_BY_LABEL : `Seller ${shortAddress(detail.owner_address)}`}
-                </a>
-                {' · '}
-                {/* the token is named in the shelf line above, so it is not named
-                    again here: the drawing fills this slot with a price, and a
-                    listing with no quote has no price to name */}
-                Listed {formatDate(detail.created_at)}
+              <Txt display size={46} lead={50} weight="semibold" tone="ink" className="mt-1 block tracking-[-0.02em]">
+                {detail.name}
               </Txt>
-              <p className={cx('mt-4 max-w-2xl text-[16px] leading-relaxed text-souk-slate', !descOpen && 'line-clamp-3')}>
+              <p className={cx('mt-2 max-w-[52ch] text-[15px] leading-[1.55] text-souk-slate', !descOpen && 'line-clamp-2')}>
                 {detail.description || 'No description on-chain.'}
               </p>
               {(detail.description?.length ?? 0) > 220 ? (
@@ -775,6 +740,30 @@ export function AgentDetailPage() {
                   {descOpen ? 'Show less' : 'Read more'}
                 </button>
               ) : null}
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] leading-[18px] text-souk-slate">
+                <Dot
+                  tone={
+                    detail.verification?.status === 'delivered'
+                      ? 'good'
+                      : detail.verification?.status === 'gated'
+                        ? 'held'
+                        : detail.verification?.status
+                          ? 'bad'
+                          : 'quiet'
+                  }
+                  size={7}
+                />
+                <span>{statusFor(detail).value}</span>
+                {detail.verification?.checkedAt ? (
+                  <span className="text-souk-muted">checked {timeAgo(detail.verification.checkedAt)}</span>
+                ) : null}
+              </div>
+              <Txt size={11} lead={16} mono upper tone="steel" className="mt-3 block">
+                <a href={ownerScan} target="_blank" rel="noreferrer" className="hover:text-souk-ink">
+                  {firstParty ? OPERATED_BY_LABEL : `Seller ${shortAddress(detail.owner_address)}`}
+                </a>
+                {' · '}Listed {formatDate(detail.created_at)}
+              </Txt>
               <SoukRow align="center" gap={8} className="mt-4 flex-wrap">
                 <Pill>{chainLabel(Number(chainId))}</Pill>
                 {detail.a2a_endpoint ? <Pill>A2A</Pill> : null}
@@ -801,6 +790,111 @@ export function AgentDetailPage() {
               </SoukRow>
             </div>
           </header>
+
+        <div className="mt-6 grid gap-2.5 sm:grid-cols-3">
+          {[
+            { k: 'Registry', v: `#${detail.token_id}`, href: bscScan },
+            {
+              k: 'Agent wallet',
+              v: detail.agent_wallet ? shortAddress(detail.agent_wallet) : 'none declared',
+              href: detail.agent_wallet ? `${explorer}/address/${detail.agent_wallet}` : null,
+            },
+            {
+              k: 'Last check',
+              v: detail.verification?.checkedAt ? timeAgo(detail.verification.checkedAt) : 'not checked',
+              href: null,
+            },
+          ].map((f) => (
+            <div key={f.k} className="border border-souk-hair bg-souk-surface1 px-3.5 py-3">
+              <div className="text-[10px] uppercase tracking-[0.06em] text-souk-muted">{f.k}</div>
+              <div className="mt-1.5 truncate font-mono text-[12px] text-souk-data">
+                {f.href ? (
+                  <a href={f.href} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
+                    {f.v}
+                  </a>
+                ) : (
+                  f.v
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-5">
+          <AsideCard>
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="micro text-souk-ink">On-chain evidence</p>
+              <p className="micro text-souk-muted">BNB chain {chainId}</p>
+            </div>
+            <div className="mt-3 space-y-2 text-xs">
+              <Row
+                label="Registry"
+                value={
+                  <a
+                    href={`${explorer}/address/${detail.contract_address}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono underline-offset-2 hover:underline"
+                  >
+                    {shortAddress(detail.contract_address)}
+                  </a>
+                }
+              />
+              <Row label="Token id" value={`#${detail.token_id}`} />
+              <Row
+                label="Owner"
+                value={
+                  <a
+                    href={`${explorer}/address/${detail.owner_address}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono underline-offset-2 hover:underline"
+                  >
+                    {shortAddress(detail.owner_address)}
+                  </a>
+                }
+              />
+              <Row
+                label="Agent wallet"
+                value={
+                  detail.agent_wallet ? (
+                    <a
+                      href={`${explorer}/address/${detail.agent_wallet}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono underline-offset-2 hover:underline"
+                    >
+                      {shortAddress(detail.agent_wallet)}
+                    </a>
+                  ) : (
+                    'none declared'
+                  )
+                }
+              />
+              <Row
+                label="Created"
+                value={
+                  detail.created_tx_hash ? (
+                    <a
+                      href={`${explorerTxBase(Number(chainId))}/${detail.created_tx_hash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono underline-offset-2 hover:underline"
+                    >
+                      {shortAddress(detail.created_tx_hash)}
+                    </a>
+                  ) : (
+                    'no tx recorded'
+                  )
+                }
+              />
+            </div>
+            <p className="micro mt-3 text-souk-muted">
+              Every figure here is read from BNB Chain; the links open the record on BscScan.
+            </p>
+          </AsideCard>
+        </div>
+
 
         {/* the viewer's own trail with this agent, ended failures included: the
             page used to show only a live session, so a job that failed read as
@@ -930,77 +1024,6 @@ export function AgentDetailPage() {
             )}
           </AsideCard>
 
-          <AsideCard>
-            <p className="micro text-souk-ink">On-chain evidence</p>
-            <div className="mt-3 space-y-2 text-xs">
-              <Row
-                label="Registry"
-                value={
-                  <a
-                    href={`${explorer}/address/${detail.contract_address}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono underline-offset-2 hover:underline"
-                  >
-                    {shortAddress(detail.contract_address)}
-                  </a>
-                }
-              />
-              <Row label="Token id" value={`#${detail.token_id}`} />
-              <Row
-                label="Owner"
-                value={
-                  <a
-                    href={`${explorer}/address/${detail.owner_address}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono underline-offset-2 hover:underline"
-                  >
-                    {shortAddress(detail.owner_address)}
-                  </a>
-                }
-              />
-              <Row
-                label="Agent wallet"
-                value={
-                  detail.agent_wallet ? (
-                    <a
-                      href={`${explorer}/address/${detail.agent_wallet}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-mono underline-offset-2 hover:underline"
-                    >
-                      {shortAddress(detail.agent_wallet)}
-                    </a>
-                  ) : (
-                    'none declared'
-                  )
-                }
-              />
-              <Row
-                label="Created"
-                value={
-                  detail.created_tx_hash ? (
-                    <a
-                      href={`${explorerTxBase(Number(chainId))}/${detail.created_tx_hash}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-mono underline-offset-2 hover:underline"
-                    >
-                      {shortAddress(detail.created_tx_hash)}
-                    </a>
-                  ) : (
-                    'no tx recorded'
-                  )
-                }
-              />
-              <Row label="Listed" value={formatDate(detail.created_at)} />
-              <Row label="Last check" value={detail.verification?.checkedAt ? timeAgo(detail.verification.checkedAt) : 'not checked'} />
-            </div>
-            <p className="micro mt-3 text-souk-muted">
-              Every figure here is read from BNB Chain; the links open the record on BscScan.
-            </p>
-          </AsideCard>
 
           {/* the design's right column: the hire card and the quote are two cards
               of the same shell, not one card holding a note */}
@@ -1117,8 +1140,7 @@ export function AgentDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowVaultHire(true)}
-                className="metal mt-3 w-full rounded-[8px] border border-souk-hair bg-souk-data px-3 py-2 text-[12px] font-semibold text-souk-canvas transition hover:brightness-95"
-                style={{ backgroundImage: 'var(--metal-face)' }}
+                className="mt-3 w-full rounded-[6px] border border-souk-hair bg-souk-sky px-3 py-2 text-[12px] font-semibold text-souk-canvas transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               >
                 Hire on Vault
               </button>
