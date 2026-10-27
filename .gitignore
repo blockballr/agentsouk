@@ -117,3 +117,6 @@ data/altana-sessions.json
 /scripts/test-db.mjs
 /scripts/check-sessions.mjs
 
+
+# brag renders and working files
+/brag-output/
