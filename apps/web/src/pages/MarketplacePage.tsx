@@ -671,7 +671,6 @@ function AgentCard({
   const key = `${agent.chain_id}/${agent.token_id}`
   const verdict = verdictFor(agent.chain_id, agent.verification)
   const firstParty = isOperatedByAgentSouk(agent.owner_address)
-  const boosted = (agent as { boosted?: boolean }).boosted
   const jobOnly = sellsByJob(agent.skills)
   const score = agent.total_score > 0 ? formatScore(agent.total_score) : null
   const reviews = agent.total_feedbacks
@@ -723,7 +722,6 @@ function AgentCard({
             </div>
             <div className="truncate font-mono text-[10.5px] leading-4 text-souk-muted">
               {firstParty ? OPERATED_BY_LABEL : shortAddress(agent.owner_address)}
-              {boosted ? ' · boosted' : ''}
             </div>
           </div>
         </div>
