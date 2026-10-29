@@ -224,7 +224,9 @@ export function questPicks(
       .map((a) => ({ ...writtenById.get(a.tokenId), tokenId: a.tokenId, name: a.name, owner: a.owner ?? null, imageUrl: a.imageUrl ?? null, price: a.price ?? writtenById.get(a.tokenId)?.price ?? null }))
   // an unread shelf falls back to the written picks; a read one that offers nothing is believed
   if (!shelf) return written.filter((a) => !exclude.has(String(a.tokenId))).slice(0, 1)
-  const confirmed = offer(shelf.confirmed)  return confirmed.slice(0, 1)
+  const confirmed = offer(shelf.confirmed)
+  const working = offer(shelf.working)
+  return (confirmed.length ? confirmed : working).slice(0, 1)
 }
 
 // the quest's standing in this browser: a wallet starts it or sets it aside, and anyone,
