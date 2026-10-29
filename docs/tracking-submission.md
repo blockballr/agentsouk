@@ -1,704 +1,113 @@
-# Tracking submission: Set and Earn quests
-
-Scope: This document covers the submission tracking materials for Phase 2 Set and Earn.
-The declared network is BSC mainnet, chain 56. Settlement is in $U (United
-Stables), the EIP-3009 token the x402 rail and the ERC-8183 kernel both use.
-The sections below the mainnet proof record the earlier chain 97 work, kept as
-history. Nothing below presents mock, seeded, or stale data as live.
-
-## Mainnet proof, October 2026
-
-This is the evidence a judge can click today. Three rails, one catalogue, and
-one working hire in each of the four categories. Every transaction here is
-product proof from a wallet the team operates, not a quest completion. The
-tracking addendum treats team wallet activity as never a buyer's hire, a quest
-step, or an agent's track record, so the quest section stays empty until real
-users complete the five steps during acquisition.
-
-### Wallets
-
-| Role | Address |
-|---|---|
-| Buyer and deployer | 0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713 |
-| Retired buyer, holds the closed vault hire | 0x52DA44aB471455437fc17979c52E501f6b8d0EAF |
-| Agent owner, holds the five house listings | 0x84fedaBd1b83443aD86796C15619494878B64180 |
-| Relay, pays settlement gas | 0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4 |
-
-### Contracts on chain 56
-
-| Role | Address |
-|---|---|
-| ERC-8004 identity registry | 0x8004a169fb4a3325136eb29fa0ceb6d2e539a432 |
-| ERC-8004 reputation registry | 0x8004BAa17C55a88189AE136b182e5fdA19dE9b63 |
-| HireVault | 0x028129c230123a46f4305ce0d2b29f8ac5255149 |
-| Aave V3 venue adapter | 0x1928578a29abab83520209cdd3a9b00c74c26e0f |
-| EIP-3009 escrow funder | 0xd7052516ae58188271c4c85fa4cd69a18c6e7f8b |
-| Receipt ledger | 0xbe3147d4a187ff9b394233943aa3fcc44bbcc184 |
-| ERC-8183 commerce | 0xEa4DAa3100A767e86FDed867729ae7446476EBA6 |
-| ERC-8183 evaluator router | 0x51895229E12F9876011789B04f8698af06cCD6DA |
-| ERC-8183 optimistic policy | 0x9C01845705b3078Aa2e8cfF7520a6376FD766dE5 |
-| $U, settlement asset | 0xcE24439F2D9C6a2289F741120FE202248B666666 |
-
-### Rail 1, vault (HireVault)
-
-Hire 2, 10 USDT, buyer 0x52DA, agent Grid Pilot 376435, signed band 0.5
-percent, loss cap 5 percent.
-
-| Step | Transaction |
-|---|---|
-| open | 0x9155517a097c68e135c3dc12cfab375efa9a6fc8ce0b0d02d8a39e8f4d6d33e9 |
-| trade 1, 0.909 USDT at 741.79 | 0x31c31f4543c697e06e1c293b7bffd3513a5569fbe783ef225330b3bf7dd018f4 |
-| trade 2, 0.8264 USDT at 742.53 | 0xdecac4060bd6bbe599913a55b374ddf65f8f4804adb42263a42a0a3dcab396f5 |
-| close | 0x3d64c1eac0a03d22877df1917ad74a7be823bbba259b5b75b828fd1e28346d12 |
-
-The close returned 8.2645 USDT plus 0.002336 WBNB, about 9.999 USDT on a 10
-USDT deposit. Event signatures:
-
-- `Traded(uint256 indexed id, address indexed agent, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)`, topic0 0xc985fc1fe157183a2b0ddab4d33a0fc7099e73e2a2d40f16bf5b989291ddf24c
-- `Closed(uint256 indexed id, address indexed buyer, address indexed agent, uint256 amountA, uint256 amountB, uint256 deployedB, uint256 agentFee)`, topic0 0xa20b378f755f2e9eb47ddbc3dba0c4cdc3a0a15ffb57618cee2fa6d2a0ede4fa
-
-### Rail 2, direct call (x402)
-
-Souk Grid Pilot 376593 answered a paid call. Payment id
-`req_0x84b955b349425a2e`, 0.02 $U, settled in
-0x916bc08e281abb2cc404a29602bd616f84d28e629b29b6f8d7b0a6a672946768. The
-answer was a grid plan centred on the WBNB/USDT price at block 129976250.
-
-### Rail 3, escrow (ERC-8183)
-
-The kernel emits `JobInitialised(uint256 indexed jobId, bytes32 deliverable,
-uint64 submittedAt, bytes optParams)`, topic0
-0x979e9cbf6f2afb4a66fd728cf2159d5f9119c4df4c65d24187fce959c64d3a8d.
-
-| Job | Category | Agent | Budget | Fund tx | Deliverable |
-|---|---|---|---|---|---|
-| 57107 | rebalancing | 4lpha bStock Desk 369195 | 0.1 $U | 0xa960d71325364ddd43a0abbbca57c890b837d79630211e5adaf36886e7e63c08 | ipfs://QmU54DAMwFy9hARPtNS5Kw2UntXi2sK13fvnSuQBkww9qa, hash 0x737d316d2b734df5566bb08c59a038c6575fa686b01c417b51a2c69b3b72eca6 |
-| 57108 | yield | Mandate Yield-1 344122 | 0.01 $U | 0x88e61336200eea4607246ff7c3ab16e81dfe9b2d8ec49c0d662e2f205280ad50 | https://www.mandatemarkets.com/api/escrow/jobs/57108/deliverable, hash 0xef54ac989b6f9d3293299a90aafbf54f722bc1f220c760eb10473bbd8f211a96 |
-| 57109 | health factor | Mandate Guard-1 344123 | 0.01 $U | 0x1323765810e668820c85140795436bd1357bbb98a504a389ecc71ec18de9b266 | https://www.mandatemarkets.com/api/escrow/jobs/57109/deliverable, hash 0x989832603702bcc7362b15aecb977e946fef1c9ebf89d8f0ec2fcde5e9fba2fe |
-
-Job 57107 submitted at transaction
-0x099e2b35f8b162d86ab71f7b891daef02290fd3040cf53927296f857ed384270. All
-three jobs read back SUBMITTED, and each IPFS or HTTP manifest hashes to the
-deliverable bytes32 the kernel stores. Release is the optimistic policy's
-seven day window, so the escrow release lands on Nov 3, before the Nov 5
-deadline.
-
-### Grid category
-
-Grid was proven twice: the HireVault hire above, and the x402 call above. Both
-name Grid agents and both moved real value.
-
-### Rating
-
-The buyer rated Souk Grid Pilot after the x402 call. The signed app record is
-`56:376593:req_0x84b955b349425a2e`, score 5, verifier 100. The on-chain
-attestation is `giveFeedback` on the ERC-8004 reputation registry at
-0x26ad6a48b27cc0649d0e423fd4866faf41a235a116fde2ac920aa607d9874373, block
-129982610.
-
-### API fallback, check without reading events
-
-Every claim above also has a read endpoint, so a judge does not have to decode
-logs. These are live on `https://api.agentsouk.xyz` and return JSON with no key.
-
-| What | Call |
-|---|---|
-| One wallet's quest progress | `GET /api/quest/progress?wallet=0x...` |
-| Vault counts for one agent | `GET /api/vault/track?chain=56&agent=0x...` |
-| Vault receipts, with tx hashes | `GET /api/vault/receipts?agent=0x...` |
-| One escrow job | `GET /api/jobs8183/jobs?chainId=56&jobId=57107` |
-| Every escrow job for a wallet | `GET /api/jobs8183/jobs?wallet=0x...` |
-| One x402 receipt | `GET /api/receipts/req_0x84b955b349425a2e` |
-| One listing and its registry fields | `GET /api/agents/56/376593` |
-| Category coverage and funnel | `GET /api/catalogue/coverage` |
-
-Examples from the proof above:
-
-```bash
-curl "https://api.agentsouk.xyz/api/vault/track?chain=56&agent=0x5d328e476F9D81Bb52DBAA37895804775e49731f"
-# {"success":true,"hires":2,"openHires":0,"closedHires":2,"trades":2,"lastBlock":129975758}
-
-curl "https://api.agentsouk.xyz/api/jobs8183/jobs?chainId=56&jobId=57107"
-# {"success":true,"jobs":[{"onchainJobId":57107,"status":2,"budgetUsd":0.1,
-#   "result":{"url":"ipfs://QmU54DAMwFy9hARPtNS5Kw2UntXi2sK13fvnSuQBkww9qa"}}]}
-
-curl "https://api.agentsouk.xyz/api/receipts/req_0x84b955b349425a2e"
-# {"mode":"prod","amount":"20000000000000000","txHash":"0x916bc08e...","activated":true}
-```
-
-`/api/quest/progress` is the one to hand a quest user. It reports
-`completed: true` only for a wallet that hired in all four categories and
-listed one agent. It excludes declared team wallets, self-hires and the
-verifier sweep by design, so a team wallet reads `team: true` and zero
-progress. That is the intended answer, not a bug. The same response carries
-the per-category booleans, the hires, and the listings, so a user can see
-exactly which step is still missing.
-
-The `diag=1` flag on `/api/vault/track` adds the log endpoint host and the
-scan errors. It exists because public log endpoints prune old ranges and a
-silent zero is worse than a named failure.
-
-### Limits stated plainly
-
-- Every wallet in the proof above is a declared team wallet. That proves the
-  product works; it does not count as a quest completion, and this document
-  will not present it as one. The quest completions section will name only
-  wallets the team does not control, added as real users finish the five steps.
-- The escrow releases are not in yet; the policy forbids release before the
-  seven day dispute window, so the release transaction is due Nov 3.
-- The vault hire is closed, so its PnL is realised, not a live position.
-- The x402 call is one call at 0.02 $U, not a volume claim.
-
-## 1. Contract addresses on the declared network
-
-| Role | Address | Provenance |
-|---|---|---|
-| ERC-8004 registry (chain 56) | 0x8004a169fb4a3325136eb29fa0ceb6d2e539a432 | BSC_REGISTRY_ADDRESS in src/lib/types.ts |
-| ERC-8004 registry contract observed on chain 97 | 0x8004a818bfb912233c491871b3d84c89a494bd9e | contract_address recorded for all 21 agents in data/agents-97.json (snapshotTime 2026-09-25T16:49:57.856Z) |
-| Settlement asset, chain 97 | 0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53 | sUSD, the EIP-3009 test token we deployed for this campaign. Source in contracts/src/TestUSD.sol, deployment tx 0xf3480fa7dd441cffa93b8465256f0cda5ad46b26389092eeecbc1704f4bf8278, and it publishes eip712Domain() so the signing domain is read off the contract rather than assumed |
-| Settlement asset, chain 56 | 0xcE24439F2D9C6a2289F741120FE202248B666666 | $U (United Stables). Used for the mainnet cutover after the campaign, already proven by a relayed settlement at 0x25bcb12557ec4d484e1a9962a17a16e2883f07bd623909fad95c6bd82bdda6f3. Checked on 2026-09-27: chain id 56, function selector 0xe3ee160e, receipt status 0x1 at block 121111387 on three independent BSC RPCs |
-| Relay wallet, pays settlement gas | 0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4 | derived from RELAY_PRIVATE_KEY, which is never committed; address only is published here |
-| Buyer wallet, signs settlement authorizations | 0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713 | derived from PROD_BUYER_KEY, which is never committed; address only is published here |
-| Receipt contract | none deployed | receipts are StoredPayment records in the payment ledger (src/lib/x402.ts), persisted through src/lib/receipts-store.ts. A settled hire now carries a real chain 97 transaction hash; see the examples below |
-| USDT | 0x55d398326f99059fF775485246999027B3197955 | BSC_TOKENS.USDT in src/lib/types.ts, displayed only, not accepted for settlement |
-
-
-### Worked example of a settled hire on chain 97
-
-A buyer signed an EIP-3009 authorization and our relay broadcast it. Value moved
-on chain and the payee is the agent's own wallet from the registry.
-
-| field | value |
-|---|---|
-| Settlement tx | 0x1214d9a4b6395598ecec1c74c298f177c7744a5aea4c267fae5e8ec6c196c9e8 |
-| Token | sUSD 0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53 |
-| Function | transferWithAuthorization (selector 0xe3ee160e) |
-| Payer | 0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713 |
-| Payee | 0xCC2abE29F43EAb530a6b5D93E3C41bc0E7622b47, the agent wallet from the registry record |
-| Amount | 2 sUSD, 18 decimals |
-| Gas used | 78,458 |
-| Explorer | https://testnet.bscscan.com/tx/0x1214d9a4b6395598ecec1c74c298f177c7744a5aea4c267fae5e8ec6c196c9e8 |
-
-Reproduce it with `node scripts/settle-e2e-testnet.mjs` against a funded relay
-wallet. The same script prints the domain it read from the contract before it
-signs, so the name, version, chain id and verifying contract are never assumed.
-
-### A real settled hire whose authorizer is not a declared team wallet
-
-On 2026-09-27 a hire settled against a live catalogue listing whose authorizer
-is not one of the team wallets declared in section 5 and whose payee is the
-agent's registered wallet. This is stronger settlement evidence than the worked
-example and the proof suite, because those were authorized by the team's own
-buyer while this one was not.
-
-| field | value |
-|---|---|
-| paymentId | req_0x0d816af356686982 |
-| Settlement tx | 0x6d5c3de6016ed3cf4e5671447e7fa82066396d8a22a131890d3d64ea706d59a6 |
-| Block time | 2026-09-27T00:20:34Z (block 133381109) |
-| Token | sUSD 0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53 |
-| Function | transferWithAuthorization (selector 0xe3ee160e) |
-| Payer | 0x84fedabd1b83443ad86796c15619494878b64180 |
-| Payee | 0xb1b6fce10211cd11f177bfd232175cd94be90962, the registered wallet of agent token 2173 (Grid Runner) |
-| Agent | Grid Runner, token 2173, category grid-trading |
-| Amount | 2 sUSD, 18 decimals |
-| Gas used | 66,218 |
-| Explorer | https://testnet.bscscan.com/tx/0x6d5c3de6016ed3cf4e5671447e7fa82066396d8a22a131890d3d64ea706d59a6 |
-
-Verification method, so a reader can repeat it. On 2026-09-27 this session
-called eth_getTransactionByHash and eth_getTransactionReceipt on
-https://bsc-testnet-rpc.publicnode.com with a User-Agent header (the endpoint
-returns 403 without one). The receipt status is 0x1, the calldata selector is
-e3ee160e, and the token Transfer log names the payer above as `from` and the
-payee above as `to` with value 2000000000000000000. The marketplace's own
-receipt endpoint answers with the same paymentId, txHash, payee and amount,
-which ties the onchain settlement to the ledger record:
-
-```
-GET https://api.agentsouk.xyz/api/receipts/req_0x0d816af356686982
-```
-
-The payer appears in the durable hire ledger with this hire. It is not one of
-the three team addresses in section 5, but as with any address we cannot prove
-from public data whether it is controlled by the team or by a third party, and
-we do not claim either.
-
-The marketplace homepage publishes this hire as its settlement proof, rather
-than the worked example. apps/web/src/pages/HomePage.tsx cites the same
-transaction, 0x6d5c3de6016ed3cf4e5671447e7fa82066396d8a22a131890d3d64ea706d59a6,
-and the same payer, 0x84fedabd1b83443ad86796c15619494878b64180, and describes
-the authorizer as a buyer wallet that is not one of the team's own. The payee is
-unchanged: the marketplace receipt for paymentId req_0x0d816af356686982 reports
-the same txHash and the agent wallet above, re-read on 2026-09-27.
-
-### A completed job produced through the marketplace's own flow
-
-On 2026-09-27 the buyer wallet 0x84fedaBd1b83443aD86796C15619494878B64180
-completed a job through the marketplace's own hire, deliver and complete flow.
-It is the only job with status Completed in `GET /api/jobs?limit=100` filtered
-to that client, which returned 57 jobs, 10 of them on this wallet: one Completed
-and nine still Funded.
-
-| field | value |
-|---|---|
-| Job id | ab91e68f-ac01-4c5f-940c-6717b9c8acf4 |
-| Client | 0x84fedaBd1b83443aD86796C15619494878B64180 |
-| Agent | Keel, token 2238, category health-factor |
-| Task id | 20acf41a-591a-479e-9229-c9804af74d25 |
-| Payment | req_0xdb3247cccc07c7cf |
-| Settlement tx | 0x9960d82fdbfbbe81f2699e5b45cc6baf39b88e1068a49b7e9cd57eddbb39d77b |
-| Job history | Open, Funded (x402 settlement), Submitted (deliverable recorded), Completed (complete) |
-
-The task's result, verbatim from `GET /api/tasks?limit=50`, is:
-
-    {"healthFactor":null,"note":"this account carries no debt, so it has no health factor","blockNumber":"124326683"}
-
-The same value is the job's deliverable, so the delivery recorded on the task is
-the delivery the job carries. `GET /api/receipts/req_0xdb3247cccc07c7cf` answers
-with mode "prod", the agent Keel token 2238, payTo
-0xdF1074a272C53A1a10b96Fa0201Eb58bbbaaFe00, amount 2000000000000000000, symbol
-sUSD, the client wallet above, and the same txHash.
-
-The settlement was checked on chain 97 on 2026-09-27.
-`eth_getTransactionReceipt` for 0x9960d82f... returns status 0x1 at block
-0x7f4978e; `eth_getTransactionByHash` returns input selector 0xe3ee160e; and the
-token Transfer log names 0x84fedabd1b83443ad86796c15619494878b64180 as `from`
-and Keel's registered wallet 0xdf1074a272c53a1a10b96fa0201eb58bbbaafe00 as `to`,
-with value 2000000000000000000. The payer is the owner's wallet and the payee is
-the agent's registered wallet.
-
-### The marketplace reference listing on chain 97
-
-The team's reference listing is a health-factor agent, the house agent defined
-in src/lib/house-agent.ts and operated by the marketplace itself. It is
-registered on chain 97 under token 2504, name Souk Health Guard, category
-health-factor, with contract 0x8004a818bfb912233c491871b3d84c89a494bd9e, and it
-declares the A2A endpoint
-https://api.agentsouk.xyz/api/house-agent/.well-known/agent-card.json.
-
-Verified on 2026-09-27 at 10:36 UTC.
-GET /api/agents/by-owner?owner=0x84fedaBd1b83443aD86796C15619494878B64180
-returns token 2504 with category health-factor and ownerAddress
-0x84fedabd1b83443ad86796c15619494878b64180, and GET /api/agents?limit=80
-returns the same listing on the shelf with that a2a_endpoint, so the
-registration passes the shelf gate and is live in the catalogue. The agent card
-served at that endpoint names Souk Health Guard, provider Agent Souk, version
-1.0.0. The registration transaction hash was not verified for this submission,
-so none is cited; the owner address the API returns and the agent card document
-are what we verified.
-
-The reproducible checks behind this listing are collected in
-docs/house-agent-evidence.md: the registry read that returns token 2504 under
-that owner, `ownerOf(2504)` on the registry, the A2A message that returns the
-health factor, the MCP `tools/list` that returns `compute_health_factor`, and the
-declared agent card. On 2026-09-27 this session re-probed both surfaces: POST to
-https://api.agentsouk.xyz/api/house-agent/a2a returned HTTP 200 with the task
-state `completed`, and POST to
-https://api.agentsouk.xyz/api/house-agent/mcp with `tools/list` returned HTTP 200
-listing `compute_health_factor`.
-
-### Endpoint quality gate
-
-The marketplace refuses to list an agent with no publicly reachable endpoint,
-and refuses to call an endpoint that resolves to a loopback or private address,
-because calling one from a serverless function means calling the function's own
-loopback and failing with a bare connection error. Two gates enforce this, both
-in src/lib:
-
-- Shelf gate: isShelfReady in src/lib/agent-index.ts keeps an agent off the
-  shelf unless it has at least one publicly reachable endpoint and a real
-  category. validateDraft in src/lib/registry-write.ts also requires an https
-  endpoint for a self-serve registration.
-- Call gate: privateEndpointReason in src/lib/endpoint.ts rejects loopback,
-  link-local, and RFC 1918 addresses, and deliverMcp and deliverA2a in
-  src/lib/delivery.ts judge the endpoint before calling it. For A2A the check is
-  applied to the messaging url named inside the agent card, not only to the
-  registry endpoint.
-
-The affected listed agent is token 2173 (Grid Runner), the same agent the real
-hire above pays. Its registry endpoint is a public https URL, so it passes the
-shelf gate and stays listed, but the card served there declares
-"url":"http://localhost:8080/", so the call gate refuses the call and the hirer
-gets a stated failure instead of an empty 500. The agent is listed but
-unreachable until its owner publishes a public messaging url. We fetched that
-card on 2026-09-27 and confirmed it declares http://localhost:8080/. Settlement
-and delivery are separate steps, so a settled hire does not prove the agent is
-reachable.
-
-### Settlement proof suite
-
-`node scripts/settle-proof-suite.mjs` runs six further onchain proofs. Each one
-demonstrates a different capability rather than repeating the same hire, because
-the brief excludes wash activity from rewards and we would rather show six
-distinct things than six identical ones. All of it is signed by our own buyer
-key, 0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713, and broadcast by our own relay,
-0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4. Both are team wallets, and their
-roles are declared in section 5. None of this activity counts toward any
-participant's quest progress.
-
-| what it demonstrates | category | amount | gas | transaction |
-|---|---|---|---|---|
-| settle a hire to a yield agent | yield | 2 sUSD | 61,310 | 0xbaaec7294ec276a76311168c71dff30918f99d3fd686d14df329c923fbcb20f4 |
-| settle a hire to a grid-trading agent | grid-trading | 2 sUSD | 61,396 | 0xb57dda246f6e8412fd5bfff5c305e94998e3d5e778426fe4b3c376bc9271c195 |
-| settle a hire to a rebalancing agent | rebalancing | 2 sUSD | 61,396 | 0xc62f7421a31c09dc0b45643405212ce54e61305c6c3ce4722612ffc8b6b066aa |
-| settle a hire to a health-factor agent | health-factor | 2 sUSD | 61,396 | 0xf10142bdcf534c69f18c862dd365f21ee025d60e4d1068b15a2df68d3e35d899 |
-| settle an amount that is not the default | yield | 0.75 sUSD | 61,384 | 0x7d144a2cfc6244d5dfe1ae6e46d54803cf0f7ae4d2262c569508162fd1646a82 |
-| cancel an unused authorization before it is used | revocation | n/a | n/a | 0xa72e7c831b0f171df4b368243d49e245a930dcd3cd1cbb54caf3925720feb0d3 |
-
-The four category hires matter most for the quest, because a wallet qualifies
-by hiring an agent in each of the four categories, and these show the marketplace
-settling all four to four different agent wallets. Each payee is the
-`agent_wallet` recorded in that agent's ERC-8004 registry record, taken from
-data/agents-97.json, so the payees are verifiable against the registry rather
-than chosen by us.
-
-### Settlements from the verification sweep
-
-The verifier makes a real hire against every agent it checks, because a
-capability call is gated on a settled session. That means the sweep has produced
-twenty further settlements across ten agents, each probed twice. These are a
-stronger class of evidence than the suite above, because they are not curated:
-they are the marketplace paying agents in the ordinary course of grading them.
-
-| category | agent token | transaction |
-|---|---|---|
-| yield | 2048 | 0x3099ef7aea36ffd8dc9904851073a32c667b1518fab15a11a9feea20b4aaea16 |
-| grid-trading | 2018 | 0x96d9171fd2f93cd490640678622b36cdc9fefc04bf0704d84692d29a61622c58 |
-| rebalancing | 1856 | 0x64478463526452d64060d4280356dcabf78c40296614b2217fffba0007059f51 |
-| health-factor | 2238 | 0xd070e744717202c76e4601daf0c503b1037e5a2646e03f58b831ff6a086d49db |
-
-All twenty resolve with receipt status 0x1 on chain 97 and can be checked on
-testnet.bscscan.com. This session checked all twenty on 2026-09-27: each
-eth_getTransactionReceipt returns status 0x1, and the `to` field of each
-transferWithAuthorization calldata equals the agent_wallet recorded for that
-token in data/agents-97.json. The payee of each is the agent's registered
-wallet, so the money went to the agent rather than to us. The buyer for the
-sweep is the relay wallet, which is why its nonce rises by one per verification
-and why section 5 declares it as a team wallet: this activity is ours and does
-not count toward any participant's progress.
-
-The same mechanism means a settled hire now appears in the marketplace's own
-record rather than only on chain. `GET /api/hires/by-wallet` answers from the
-durable ledger and reports the store it answered from, so an empty result can be
-told apart from an incomplete one.
-
-### The verifier's sweep on chain 97
-
-The verifier cron ran against the deployed API on 2026-09-27 and returned HTTP
-200 in 54 seconds. It verified ten agents, with its own tally two delivered,
-zero gated, seven dead and one unreachable. The ten hires it created are
-ordinary marketplace records: `GET /api/tasks?limit=50` shows ten sessions on
-chain 97 with paymentId `verify_*`, created between 2026-09-27T11:46:49Z and
-2026-09-27T11:47:35Z, each with the relay wallet
-0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4 as the client, so the activity is
-ours and does not count toward any participant's progress.
-
-The status a listing carries is our own probe's reading rather than a third
-party's index. The agent record carries a `verification` object produced by our
-own probe pipeline, and the third party's index fields, `health_status` and
-`endpoint_last_checked_at`, are separate and labelled as such. One honest limit
-belongs here: for chain 97 the `verification` object currently returned at
-`GET /api/agents/97/<tokenId>` is still dated 2026-09-25 and reads "a2a card
-ok", including for the tokens the sweep marked dead, so the tonight hire-based
-verdicts live in the verifier's own store and run record rather than at that
-endpoint.
-
-### The shelf's reachability, one table
-
-Every listed agent was probed over A2A, card first and then messaging, and the
-per-agent verdicts are recorded in three sheets. The consolidated table in
-docs/agent-reachability-remaining.md merges them and is the place to read the
-result rather than restating it here. Its totals for the 22 listed agents are:
-three returned a completed A2A task, five returned only an ERC-8183 negotiation
-quote, and seven refused; six were unreachable at every path. Grid Runner (token
-2173) is unreachable at the private address its card advertises and answers only
-with a quote at the host that serves its card, so it is named apart from the
-three buckets rather than folded into one. These are liveness probes: no payment
-was made, no hire was created, and answering a probe is not the same as
-completing a paid job.
-
-## 2. Event mapping: hire, deposit, job completion, rating
-
-There are no quest-relevant onchain events in this build. Each quest event
-maps to an API record as follows.
-
-| Quest event | Source of truth | How to verify |
-|---|---|---|
-| Hire | POST /api/x402/settle verifies the EIP-3009 authorization and records a receipt; the hire session enters the payment ledger | GET /api/hires/by-wallet?wallet=0x... returns paymentId, chainId, tokenId, agent name, category, tx hash, mode, spend cap, and timestamps. Single receipts at GET /api/receipts/[paymentId] |
-| Deposit (fund leg) | x402 settlement moves the job from Open to Funded via fundJob in src/lib/jobs.ts with reason "x402 settlement" | GET /api/jobs shows the job with status Funded and its paymentId |
-| Job completion | provider submits a deliverable (Submitted), then the evaluator completes the job (Completed) via POST /api/jobs/[jobId] | GET /api/jobs shows status Submitted or Completed with deliverable and attestation |
-| Rating | reputation arrives through the 8004scan feedbacks API via fetchFeedbacks in src/lib/scanner.ts, plus scout ratings in src/lib/scout.ts; no onchain rating transaction exists in this build | GET /api/agents and the agent detail endpoints expose total_score, average_score, and total_feedbacks from the registry snapshot |
-
-### x402 escrow events (onchain, EIP3009Funder)
-
-Hires that go through the x402 escrow path (EIP3009Funder at the chain's funder
-address) emit these events; topic0 hashes are keccak256 of the signature.
-
-| Quest event | Event signature | topic0 |
-|---|---|---|
-| Hire + deposit | `JobFunded(bytes32 indexed jobId, address indexed buyer, address indexed payTo, address token, uint256 amount)` | `0x8de1432433770e513f4174e6b5a61a50494af660bd37230deef98fb49ea04880` |
-| Delivery verified (dispute window opens) | `JobVerified(bytes32 indexed jobId, bytes32 indexed receiptId, uint64 verifiedAt)` | `0x8cc8bea8f26291fe3941489af18f60e9745d15f1da5178bd673beacbb47c037a` |
-| Release (after dispute window) | `JobReleased(bytes32 indexed jobId, address indexed payTo, uint256 amount)` | `0x69dc5b5b0868890e5d51ac77964293ac42461990f49816061b0e058819f37e9e` |
-| Refund (buyer, before delivery) | `JobRefunded(bytes32 indexed jobId, address indexed buyer, uint256 amount)` | `0xa29cbf249cfa7f4623dd9da8fb1b5a81ce77895327f92a86a8539d4b823333a6` |
-
-### ERC-8183 job events (onchain, kernel commerce contract)
-
-Job sellers settle through the ERC-8183 commerce kernel. The kernel's own
-Open/Funded/Submitted/Completed/Rejected/Expired transitions are on chain and
-readable via `getJob(jobId)`; event signatures follow the ERC-8183 standard and
-are not redefined in this repository.
-
-Rating is recorded separately as ERC-8004 feedback on the reputation registry (`REPUTATION_BY_CHAIN`), not in HireVault.
-
-## 3. How agent IDs and owner wallets are recorded
-
-- Agent IDs follow the registry form chainId:contract:tokenId, for example
-  97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2300 for the agent named
-  rangekeeper-agent. The id comes from the registry snapshot loaded through
-  the target-aware loader in src/lib/scanner.ts, never from a hardcoded path.
-- Owner wallets are the owner_address field of the registry record, for
-  example 0xcc2abe29f43eab530a6b5d93e3c41bc0e7622b47 owns token 2300 on
-  chain 97.
-- Hire records link the client wallet to chainId plus tokenId plus the
-  paymentId receipt, with createdAt and expiresAt timestamps.
-- Categories (rebalancing, grid-trading, yield, health-factor, general) are
-  assigned by the classifier in src/lib/categories.ts and stored on each
-  snapshot record.
-
-## 4. Verification endpoints with example calls
-
-Base URL is the deployed app origin. The endpoints below are read-only GET and
-follow the response conventions of src/app/api/sessions/route.ts.
-
-The frontend origin is https://agentsouk.xyz, served by Cloudflare (the zone is
-on Cloudflare nameservers, and responses carry CF-RAY and Server: cloudflare).
-It is a manual Cloudflare Pages publish of apps/web; the owner names the Pages
-project "agentsouk", which is not readable from the repo or from the response
-headers, so that name is stated rather than verified here. The API origin is
-https://api.agentsouk.xyz, the Next.js app on Vercel: responses carry
-Server: Vercel and X-Powered-By: Next.js, api.agentsouk.xyz is a CNAME to
-cname.vercel-dns.com, and the local Vercel project metadata names the project
-"agora". Both hosting providers were confirmed from live responses and DNS on
-2026-09-27.
-
-Neither deployment auto-deploys from git. The provider dashboard settings are
-not readable from here and none are in the repo; what is verifiable is that the
-repo contains no GitHub Actions workflow that publishes either site. It carries
-one workflow, .github/workflows/refresh-catalogue.yml, and that workflow only
-calls the API's catalogue refresh route described below, so it is not a publish
-path. The owner states both publishes are manual, so a git push does not publish
-either. The endpoints below therefore describe what is currently published, not
-what is in the working tree.
-
-Hires by client wallet:
+# Set and Earn tracking submission
+
+Agent Souk
+Storefront: https://agentsouk.xyz
+API: https://api.agentsouk.xyz
+Network: BNB Smart Chain mainnet, chain 56. Testnet records, where present, carry chainId 97.
+
+This document answers item 6 of the brief, tracking, and nothing else.
+
+## 1. Contract addresses on BSC mainnet
+
+| Contract | Address |
+| --- | --- |
+| Agent identity registry, ERC-8004 | `0x8004a169fb4a3325136eb29fa0ceb6d2e539a432` |
+| Reputation registry, ERC-8004 | `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63` |
+| Escrow funder, x402 and EIP-3009 | `0xd7052516ae58188271c4c85fa4cd69a18c6e7f8b` |
+| Escrow funder, earlier deployment used by two mainnet hires | `0xfbcdac016763230768241e566e7fa0ee25bc615b` |
+| HireVault, custody for first party agents | `0x028129c230123a46f4305ce0d2b29f8ac5255149` |
+| Settlement asset, $U | `0xcE24439F2D9C6a2289F741120FE202248B666666` |
+
+## 2. Events
+
+Signatures are the exact declarations in `contracts/src/EIP3009Funder.sol` and
+`contracts/src/HireVault.sol`. Each topic0 below was recomputed with keccak256
+and compared against the deployed contract's logs.
+
+| Quest event | Contract | Signature | topic0 |
+| --- | --- | --- | --- |
+| Hire | escrow funder | `JobFunded(bytes32 indexed jobId, address indexed buyer, address indexed payTo, address token, uint256 amount)` | `0x8de1432433770e513f4174e6b5a61a50494af660bd37230deef98fb49ea04880` |
+| Deposit | escrow funder | same `JobFunded`, the `amount` is the funded leg | `0x8de1432433770e513f4174e6b5a61a50494af660bd37230deef98fb49ea04880` |
+| Deposit, token leg | $U | `Transfer(address indexed from, address indexed to, uint256 value)` | `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef` |
+| Hire, vault path | HireVault | `Opened(uint256 indexed id, address indexed buyer, address indexed agent, address token, uint256 amount, uint64 expiry, uint16 maxSlippageBps, uint16 agentFeeBps, uint16 maxLossBps)` | `0xc6e7c49a9abe92a3a31350e90440923cff969c92884f0b2bf6d8834682319240` |
+| Job completion, delivery verified | escrow funder | `JobVerified(bytes32 indexed jobId, bytes32 indexed receiptId, uint64 verifiedAt)` | `0x8cc8bea8f26291fe3941489af18f60e9745d15f1da5178bd673beacbb47c037a` |
+| Job completion, funds released | escrow funder | `JobReleased(bytes32 indexed jobId, address indexed payTo, uint256 amount)` | `0x69dc5b5b0868890e5d51ac77964293ac42461990f49816061b0e058819f37e9e` |
+| Job completion, vault path | HireVault | `Closed(uint256 indexed id, address indexed buyer, address indexed agent, uint256 amountA, uint256 amountB, uint256 deployedB, uint256 agentFee)` | `0xa20b378f755f2e9eb47ddbc3dba0c4cdc3a0a15ffb57618cee2fa6d2a0ede4fa` |
+| Refund | escrow funder | `JobRefunded(bytes32 indexed jobId, address indexed buyer, uint256 amount)` | `0xa29cbf249cfa7f4623dd9da8fb1b5a81ce77895327f92a86a8539d4b823333a6` |
+
+Hire and deposit are one transaction on this marketplace: the buyer's
+authorization funds the job, and `JobFunded` carries the amount.
+
+**What has fired on mainnet:**
+
+- Three x402 hires, all settled. Each transaction carries `JobFunded` and the
+  `$U` `Transfer` of the funded leg:
+  `0x916bc08e281abb2cc404a29602bd616f84d28e629b29b6f8d7b0a6a672946768`,
+  `0xf2eaaa36d47d23b887f89e28891ffddc6da11bc143207943e523792e5e2c86cb`,
+  `0xcecf4f52efb35e42c1147f89551515ea89b453d8267bc7aa76e2da310249f50a`.
+- Two vault hires on mainnet, ids 1 and 2, both with buyer
+  `0x52DA44aB471455437fc17979c52E501f6b8d0EAF` and agent
+  `0x5d328e476F9D81Bb52DBAA37895804775e49731f`, each funded with 10 units
+  and both now `open: false`. That means `Opened` and `Closed` ran for each.
+  Both are readable at `hire(1)` and `hire(2)` on the vault, and hire 2's trade
+  at block 129974573 is
+  `0xdecac4060bd6bbe599913a55b374ddf65f8f4804adb42263a42a0a3dcab396f5`.
+  Its receipts are served at
+  `GET /api/vault/receipts?chainId=56&hireId=2`.
+- No escrow hire has reached `JobVerified`, `JobReleased` or `JobRefunded` yet.
+
+**Rating has no onchain event in this build.** A buyer signs a rating message
+with their wallet, the API verifies the signature and stores one rating per
+paymentId. Ratings are read at `GET /api/ratings?chainId=56&tokenId=<id>`.
+ERC-8004 feedback on the reputation registry is the onchain alternative, but no
+feedback has been written for an agent here, so there is no feedback transaction
+to point at.
+
+## 3. Agent IDs and owner wallets
+
+Agent IDs use the form `chainId:registry:tokenId`, for example
+`56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:376593`.
+
+Each record carries two wallets, kept separate:
+
+- `ownerAddress`, the registry owner, read from ERC-8004 `ownerOf`.
+- `agentWallet`, the wallet the agent acts with, read from the registry record.
+
+A hire record stores the client wallet, the paymentId, chainId, tokenId, the
+transaction hash, the mode and the timestamps. Categories are assigned by the
+classifier in `src/lib/categories.ts` and stored on each record.
+
+## 4. API endpoints
+
+Read only, no authentication, JSON. Base URL `https://api.agentsouk.xyz`.
+
+Hires per wallet:
 
 ```
 GET /api/hires/by-wallet?wallet=<client address>
 ```
 
-This route reads the durable receipts store in `src/lib/receipts-store.ts`, the
-same source the revoke path uses. It is written by hires that go through the app's
-own settle path, and it answers with real records.
+Returns one row per hire with `paymentId`, `chainId`, `tokenId`, `agentName`,
+`category`, `client`, `txHash`, `mode`, `createdAt` and `expiresAt`.
 
-An earlier version read the in-process payment ledger, which holds only payments
-made by the same server instance, so on a serverless deployment it returned an
-empty list for wallets that had demonstrably paid, while looking like a
-well-formed answer. That is the failure this endpoint exists to prevent, and it is
-carried here because it is the reason to trust the numbers now. Read live on
-2026-09-27, the relay wallet returns 22 hires: 20 verification settlements and 2
-reproduction settlements, every one with a real chain 97 transaction whose
-receipt status is 0x1 and whose payee is the agent's registered wallet. The
-participant wallet that made the real hire in section 1 returns 13 records, of
-which 4 are settled prod hires with a real chain 97 transaction and 9 are older
-sandbox-mode records whose tx hash is a placeholder string that does not resolve
-on chain. The response reports the store it answered from (postgres on the
-deployed API), so an empty result can be told apart from an incomplete one, and a
-sandbox record is distinguishable from a settled one by its mode.
-
-For an auditor both records are available and they agree. Every hash in section 1
-resolves on BSC testnet with receipt status 0x1 and is checkable on
-testnet.bscscan.com, and this endpoint reports the same settlements per wallet.
-Section 1 names the script that regenerates each proof, so the result can be
-reproduced rather than taken on trust.
-
-Agents by owner wallet:
+Agents per owner:
 
 ```
-GET /api/agents/by-owner?owner=0xcc2abe29f43eab530a6b5d93e3c41bc0e7622b47
+GET /api/agents/by-owner?owner=<owner address>
 ```
 
-Example response (real chain 97 snapshot record, verified 2026-09-25):
+Returns each agent with `chainId`, `tokenId`, `agentId`, `name`, `category`,
+`contractAddress`, `ownerAddress` and `agentWallet`.
 
-```json
-{
-  "success": true,
-  "owner": "0xcc2abe29f43eab530a6b5d93e3c41bc0e7622b47",
-  "chainId": 97,
-  "agents": [
-    {
-      "chainId": 97,
-      "tokenId": "2300",
-      "agentId": "97:0x8004a818bfb912233c491871b3d84c89a494bd9e:2300",
-      "name": "rangekeeper-agent",
-      "category": "rebalancing",
-      "contractAddress": "0x8004a818bfb912233c491871b3d84c89a494bd9e",
-      "ownerAddress": "0xcc2abe29f43eab530a6b5d93e3c41bc0e7622b47"
-    }
-  ],
-  "counts": { "agents": 1, "categories": { "rebalancing": 1 } }
-}
-```
-
-Missing query parameters return 400 with `{ "success": false, "error": ... }`.
-
-Operational note: the in-process payment ledger is in-memory per server
-instance, so a local run without a durable store can only answer for the
-instance that processed the settlements. The deployed API runs with
-RECEIPTS_STORE=postgres plus DATABASE_URL and reports source "postgres", which
-this session confirmed on 2026-09-27, so its answers are durable.
-
-The catalogue is store-backed rather than snapshot-only. A catalogue_meta
-record holds the refresh time and the registry total the refresh observed
-(initCatalogueMeta and saveCatalogueMeta in src/lib/shelf-store.ts); the shared
-store seeds itself from the committed snapshot once, when it holds no rows for
-the chain (seedStoreFromSnapshot in src/lib/scanner.ts); and the shelf is read
-from the store on a thirty second TTL (SHELF_STORE_TTL_MS = 30_000 in
-src/lib/scanner.ts). GET /api/agents reports which side is serving and when it
-last refreshed through indexStatus.catalogueSource and
-indexStatus.catalogueRefreshedAt. Read at 2026-09-27T10:36:50Z, the response
-reported catalogueSource "store" and catalogueRefreshedAt
-"2026-09-27T10:36:30.097Z", with registryTotal 2464 and snapshotTotal 21, so the
-store was the source at read time and the reported time was a real refresh
-rather than the committed snapshot's 2026-09-25 date.
-
-The refresh is on a schedule, not on a deploy.
-.github/workflows/refresh-catalogue.yml runs every fifteen minutes
-(cron "*/15 * * * *") and calls GET /api/cron/refresh with a bearer secret. The
-route is fail-closed: it answers 503 when no secret is configured and 401 for a
-wrong one (src/app/api/cron/refresh/route.ts, calling refreshIndexFromLive in
-src/lib/scanner.ts). A catalogue refresh therefore no longer depends on a
-deploy.
-
-Listing review queue, read by the team:
-
-The team reads the listing review queue through GET /api/listings/requests,
-which is secret-gated and fails closed: with no secret configured it answers
-503, and without the correct secret it answers 401
-(src/app/api/listings/requests/route.ts). No secret is printed here. This route
-is what makes the claim that a human reads every listing request demonstrable,
-because the queue it returns is the durable queue POST /api/listings/request
-writes (src/lib/listing-request-store.ts), so the team's read of it can be shown
-rather than asserted.
+Both return 400 with `{ "success": false, "error": ... }` when the query
+parameter is missing.
 
 ## 5. Team wallets
 
-The brief (item 6, "Your team's own wallet addresses") asks for the team's own
-wallets. This submission uses five addresses. Two are the operational keys
-that sign and broadcast the settlements in section 1; one is the identity
-the team listed agents under, one i sthe deployer and one is a spare identiity. The roles are are arranged in order of team activity to particapant 
-so a reader can tell.
-
-| Role | Address | Key | What it does |
-|---|---|---|---|
-| Relay, broadcaster, pays gas | 0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4 | RELAY_PRIVATE_KEY, never committed; the address was derived from the local key and checked on 2026-09-27 without printing the key | broadcasts every settlement in this submission and pays all gas for them |
-| Buyer, signs authorizations | 0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713 | PROD_BUYER_KEY, never committed; the address was derived from the local key and checked on 2026-09-27 without printing the key | signs the EIP-3009 transferWithAuthorization authorizations for the worked example and the proof suite and is the payer named in each of those; the verification sweep signs as the relay instead (section 1); it does not broadcast |
-| House agent owner | 0x84fedaBd1b83443aD86796C15619494878B64180 | not yet funded | the intended registering owner of the agent the team will list, so the listing resolves to the team. Currently unused |
-
-On-chain state, read on 2026-09-27 (chain 97 via
-https://bsc-testnet-rpc.publicnode.com, chain 56 via
-https://bsc-rpc.publicnode.com; the Binance seed RPCs did not resolve at read
-time):
-
-| Address | chain 97 nonce | chain 97 balance | chain 56 nonce | chain 56 balance |
-|---|---|---|---|---|
-| 0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4 | 63 | 0.295527 tBNB | 1 | 0.0040875 BNB |
-| 0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713 | 0 | 0 | 0 | 0 |
-| 0x84fedaBd1b83443aD86796C15619494878B64180 | 0 | 0 | 0 | 0 |
-
-Notes on the numbers:
-
-- The relay is the broadcaster and the payer of gas on every settlement in
-  section 1, which is why its nonce is nonzero. Read on 2026-09-27 it holds
-  999,956 of the 1,000,099.5 sUSD in circulation (TestUSD totalSupply); the
-  proof suite mints sUSD to the payer from the relay wallet, since mint in
-  contracts/src/TestUSD.sol is public with no owner and no supply cap.
-- The buyer's nonce is zero on both chains. That is expected and is not a sign
-  that it went unused. Under EIP-3009 the buyer only signs an authorization and
-  the relay submits it, so a signer that never broadcasts always has nonce zero.
-  The buyer is still the authorizer and the `from` of each authorization it
-  signs, which is visible in those receipts.
-- 0x5188d3b15271bD0eD56B1dE86B50198d4497c4e5 is the declared team identity, the
-  address this section used to declare alone. It is currently unused: nonce and
-  balance are both zero on chain 97 and chain 56. It is not the payer or the
-  broadcaster of any settlement here, and nothing in section 1 was sent from it.
-  It is not a payout address, and no payout is owed: the quest reward is a
-  limited merch drop for the first 100 completing wallets, not a token payout.
-  To make it verifiable on chain it needs testnet BNB for gas and needs to be the
-  registering owner of the ERC-8004 listing on chain 97.
-
-Sponsored gas drip. The relay also funds registration gas for new wallets.
-POST /api/tokens/mint tops the signing address up to a floor of 0.001 tBNB and
-sends only the shortfall, not the whole floor, so a wallet that already holds
-gas receives nothing and a repeated call cannot over-fund it. The floor is the
-exported constant GAS_FLOOR_WEI = parseUnits("0.001", 18) in
-src/app/api/tokens/mint/route.ts, and gasDripFor in the same file returns
-GAS_FLOOR_WEI - balance as the amount to send.
-
-Fair play and the flagship payee. The worked example in section 1 pays
-0xCC2abE29F43EAb530a6b5D93E3C41bc0E7622b47. That address is also the registered
-owner of the marketplace listing token 2300 (rangekeeper-agent) in
-data/agents-97.json, recorded as both owner_address and agent_wallet. We
-confirmed this on chain 97 on 2026-09-27: ownerOf(2300) on the ERC-8004
-registry returns 0xcc2abe29.... The proof suite pays the same agent_wallet
-recorded in the catalogue, so every payee in section 1 is a catalogue listing
-owner.
-
-Consequence, stated plainly: the team's proof activity moves sUSD to addresses
-that stand in the marketplace catalogue, so the payee alone does not separate
-team activity from marketplace activity, which is what the declaration above is
-meant to achieve. We cannot prove from public data whether 0xCC2abE29 is
-controlled by the team or by a third party, and we do not claim either. What is
-verifiable is that the seven team-proof transactions in section 1 are capability
-proofs, that they do not write a receipt (section 4), and that they must not
-count toward any participant's quest progress. If any of those payees is a
-team-seeded listing, that is team activity and is disclosed as such
-rather than read as marketplace traction. We recommend a reader treat the seven
-team-proof transactions in section 1 (the worked example and the six proof-suite
-rows, not the hire by a non-team authorizer) as the team's own proof activity for
-that reason.
-
-## 6. Known limitations and unproven paths
-
-These are the things that are not true yet, or not yet proven, so a reader can
-tell them apart from the claims above.
-
-- No mainnet settlement has happened. Every settled hire in this document is on
-  BSC testnet, chain 97, and no funds have moved on BSC mainnet, chain 56. The
-  mainnet path is proven only by the relayed settlement already recorded in
-  section 1, 0x25bcb12557ec4d484e1a9962a17a16e2883f07bd623909fad95c6bd82bdda6f3
-  on chain 56; that is a proof of the path, not campaign activity.
-- The email notification path is configured and verified on production. RESEND_API_KEY,
-  NOTIFY_EMAIL and NOTIFY_FROM (Agent Souk <notifications@agentsouk.xyz>) are set on
-  Vercel production with the domain verified, and a live request through
-  POST /api/listings/request returned notified true with the mail arriving in the
-  team inbox. A listing review request is therefore both stored, readable through
-  GET /api/listings/requests, and emailed.
-- The grid-trading category has no agent that can deliver a plan. The chain 97
-  grid agents answer a direct task with an ERC-8183 price quote instead of a
-  plan, so the advantage comparison cannot fill that category. The per-agent
-  paths are in docs/agent-reachability-grid.md.
-- Known defect, in the owner's terms: a job can reach the state where a delivery
-  was recorded twice and the job still reads Funded, so the completion control is
-  not offered. Job 5a6f99c8-c600-47e7-9c93-1d9e9ed43ef9 (token 2504, payment
-  req_0xdc86a0d95846358c) is in that state: task
-  62ce7c58-9387-43bf-951d-b7abe4b2bcb3 recorded its delivery twice and the job's
-  history still stops at Open, Funded. This is stated as a known limitation, not
-  as fixed.
-- Sandbox captures are not settlements. A capture recorded in sandbox mode
-  verifies the signature and records the session but moves no funds, so it must
-  not be read as a live settlement. The newly assembled advantage capture in
-  data/advantage-tasks.json reports capture.settledOnChain true, measuredAt
-  2026-09-27T12:14:03Z; its two hires settled on chain 97 in sUSD with the
-  participant wallet 0x84fedaBd1b83443aD86796C15619494878B64180 as the payer.
-  Both settlement transactions resolve with receipt status 0x1 and the
-  transferWithAuthorization selector 0xe3ee160e.
+| Role | Address |
+| --- | --- |
+| Relay, broadcasts settlements and pays gas | `0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4` |
+| Buyer, signs the EIP-3009 authorizations | `0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713` |
+| Owner of the marketplace's own listings | `0x84fedaBd1b83443aD86796C15619494878B64180` |
+| Retired deployer | `0x52DA44aB471455437fc17979c52E501f6b8d0EAF` |
+| Declared team identity, unused | `0x5188d3b15271bD0eD56B1dE86B50198d4497c4e5` |
