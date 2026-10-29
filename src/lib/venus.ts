@@ -24,6 +24,11 @@ const COMPTROLLER_ABI = [
   { name: "marketsEntered", type: "function", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ name: "", type: "address[]" }] },
   { name: "getAssetsIn", type: "function", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ name: "", type: "address[]" }] },
   { name: "markets", type: "function", stateMutability: "view", inputs: [{ name: "vToken", type: "address" }], outputs: [{ name: "isListed", type: "bool" }, { name: "collateralFactorMantissa", type: "uint256" }, { name: "isVenus", type: "bool" }] },
+  { name: "oracle", type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "address" }] },
+] as const;
+
+const ORACLE_ABI = [
+  { name: "getUnderlyingPrice", type: "function", stateMutability: "view", inputs: [{ name: "vToken", type: "address" }], outputs: [{ name: "", type: "uint256" }] },
 ] as const;
 
 // VToken ABI (minimal)
@@ -33,16 +38,19 @@ const VTOKEN_ABI = [
   { name: "exchangeRateCurrent", type: "function", stateMutability: "nonpayable", inputs: [], outputs: [{ name: "", type: "uint256" }] },
   { name: "underlying", type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "address" }] },
   { name: "getCash", type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
+  { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ name: "owner", type: "address" }], outputs: [{ name: "", type: "uint256" }] },
+  { name: "exchangeRateStored", type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint256" }] },
+  { name: "borrowBalanceStored", type: "function", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ name: "", type: "uint256" }] },
 ] as const;
 
 export interface VenusPosition {
   account: string;
   marketsEntered: string[]; // vToken addresses
-  totalCollateralUsd: number; // sum of underlying values of entered markets
+  totalCollateralUsd: number; // entered markets at oracle price, before collateral factors
   totalBorrowUsd: number; // sum of borrow balances
   liquidity: bigint; // from getAccountLiquidity (in USD, scaled 1e18)
   shortfall: bigint; // from getAccountLiquidity (in USD, scaled 1e18)
-  healthFactor: number | null; // collateral/borrow ratio, or null if no debt
+  healthFactor: number | null; // borrow power over debt, or null if no debt
   liquidatable: boolean; // shortfall > 0
   positions: Array<{
     vToken: string;
@@ -58,62 +66,73 @@ export async function readVenusPosition(
 ): Promise<VenusPosition> {
   const comptroller = VENUS_MAINNET.comptroller;
 
-  // Get markets entered
-  const markets = await client.readContract({
+  const markets = (await client.readContract({
     address: comptroller,
     abi: COMPTROLLER_ABI,
-    functionName: "marketsEntered",
+    functionName: "getAssetsIn",
     args: [account as `0x${string}`],
-  }) as `0x${string}`[];
+  })) as `0x${string}`[];
 
-  // Get account liquidity
-  const [error, liquidity, shortfall] = await client.readContract({
+  const [, liquidity, shortfall] = (await client.readContract({
     address: comptroller,
     abi: COMPTROLLER_ABI,
     functionName: "getAccountLiquidity",
     args: [account as `0x${string}`],
-  }) as [bigint, bigint, bigint];
+  })) as [bigint, bigint, bigint];
 
-  // Read each position
+  const oracle = (await client.readContract({
+    address: comptroller,
+    abi: COMPTROLLER_ABI,
+    functionName: "oracle",
+  })) as `0x${string}`;
+
   const positions: VenusPosition["positions"] = [];
-  let totalCollateral = 0n;
-  let totalBorrow = 0n;
+  let collateralUsd = 0;
+  let borrowUsd = 0;
 
   for (const vToken of markets) {
     try {
-      const [collateral, borrow] = await Promise.all([
-        client.readContract({ address: vToken, abi: VTOKEN_ABI as any, functionName: "balanceOfUnderlying", args: [account as `0x${string}`] }) as Promise<bigint>,
-        client.readContract({ address: vToken, abi: VTOKEN_ABI as any, functionName: "borrowBalanceCurrent", args: [account as `0x${string}`] }) as Promise<bigint>,
+      const [shares, rate, borrowed, price] = await Promise.all([
+        client.readContract({ address: vToken, abi: VTOKEN_ABI, functionName: "balanceOf", args: [account as `0x${string}`] }) as Promise<bigint>,
+        client.readContract({ address: vToken, abi: VTOKEN_ABI, functionName: "exchangeRateStored" }) as Promise<bigint>,
+        client.readContract({ address: vToken, abi: VTOKEN_ABI, functionName: "borrowBalanceStored", args: [account as `0x${string}`] }) as Promise<bigint>,
+        client.readContract({ address: oracle, abi: ORACLE_ABI, functionName: "getUnderlyingPrice", args: [vToken] }) as Promise<bigint>,
       ]);
-      const underlying = await client.readContract({ address: vToken, abi: VTOKEN_ABI as any, functionName: "underlying" }) as `0x${string}`;
-      positions.push({ vToken, underlying, collateralBalance: collateral, borrowBalance: borrow });
-      totalCollateral += collateral;
-      totalBorrow += borrow;
+      const underlying = (await client.readContract({
+        address: vToken,
+        abi: VTOKEN_ABI,
+        functionName: "underlying",
+      })) as `0x${string}`;
+
+      const held = (shares * rate) / 10n ** 18n;
+      // the oracle prices in 1e(36 - underlyingDecimals), so the product below is 1e36 scaled USD
+      collateralUsd += Number((held * price) / 10n ** 18n) / 1e18;
+      borrowUsd += Number((borrowed * price) / 10n ** 18n) / 1e18;
+
+      positions.push({ vToken, underlying, collateralBalance: held, borrowBalance: borrowed });
     } catch {
-      // skip markets that fail to read
+      // a market that will not read is left out rather than counted as zero risk
     }
   }
 
-  // Health factor (simplified: collateral/borrow ratio)
-  let healthFactor: number | null = null;
-  if (totalBorrow > 0n) {
-    healthFactor = Number(totalCollateral) / Number(totalBorrow);
-  }
+  // the comptroller's own view of what the collateral supports, which is what
+  // liquidation is decided on. liquidity and shortfall are 1e18 scaled USD
+  const supported =
+    shortfall > 0n
+      ? borrowUsd - Number(shortfall) / 1e18
+      : borrowUsd + Number(liquidity) / 1e18;
+
+  const healthFactor = borrowUsd > 0 ? supported / borrowUsd : null;
 
   return {
     account,
     marketsEntered: markets,
-    totalCollateralUsd: 0, // TODO: convert using price oracle
-    totalBorrowUsd: 0,
+    totalCollateralUsd: collateralUsd,
+    totalBorrowUsd: borrowUsd,
     liquidity,
     shortfall,
     healthFactor,
     liquidatable: shortfall > 0n,
     positions,
   };
-}
-
-export function venusComptroller(chainId: number): string | null {
-  if (chainId !== 56) return null; // Venus is on mainnet only
-  return VENUS_MAINNET.comptroller;
 }
