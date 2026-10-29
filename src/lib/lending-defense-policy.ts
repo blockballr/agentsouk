@@ -1,71 +1,105 @@
-// Lending defense policy: monitors a Venus lending position and decides
-// when to defend (sell collateral, repay debt) to prevent liquidation.
-// Unlike the vault's Porter policy (which treats vault balances as a synthetic
-// position), this policy reads a REAL lending position from Venus.
-
 import type { VenusPosition } from "./venus";
 
+export type Profile = "guard" | "exit";
+
 export interface LendingDefensePolicy {
-  // health factor below which defense triggers
-  defendAt: number; // e.g., 1.5
-  // health factor to restore to after defense
-  restoreTo: number; // e.g., 2.0
-  // max % of collateral to sell per defense (e.g., 25%)
+  profile: Profile;
+  triggerHealthFactor: number;
+  targetHealthFactor: number;
   maxSellBps: number;
-  // slippage tolerance in bps
+  maxActionUsd: number;
   maxSlippageBps: number;
+  cooldownMs: number;
 }
 
-export function lendingDefensePolicyFromEnv(env: Record<string, string | undefined>): LendingDefensePolicy {
-  return {
-    defendAt: Number(env.LENDING_DEFEND_AT ?? "1.5"),
-    restoreTo: Number(env.LENDING_RESTORE_TO ?? "2.0"),
-    maxSellBps: Number(env.LENDING_MAX_SELL_BPS ?? "2500"),
-    maxSlippageBps: Number(env.LENDING_MAX_SLIPPAGE_BPS ?? "500"),
-  };
+export interface Holdings {
+  stableUsd: number;
+  collateralUsd: number;
 }
 
 export type LendingDefenseDecision =
   | { action: "skip"; reason: string }
   | { action: "refuse"; reason: string }
-  | { action: "defend"; amountToSell: bigint; reason: string };
+  | { action: "defend"; amountToSell: bigint; reason: string }
+  | { action: "repay"; amountUsd: number; reason: string }
+  | { action: "add-collateral"; amountUsd: number; reason: string };
+
+export function lendingDefensePolicyFromEnv(env: Record<string, string | undefined>): LendingDefensePolicy {
+  return {
+    profile: env.LENDING_PROFILE === "exit" ? "exit" : "guard",
+    triggerHealthFactor: Number(env.LENDING_DEFEND_AT ?? "1.6"),
+    targetHealthFactor: Number(env.LENDING_RESTORE_TO ?? "1.9"),
+    maxSellBps: Number(env.LENDING_MAX_SELL_BPS ?? "2500"),
+    maxActionUsd: Number(env.LENDING_MAX_ACTION_USD ?? "100"),
+    maxSlippageBps: Number(env.LENDING_MAX_SLIPPAGE_BPS ?? "500"),
+    cooldownMs: Number(env.LENDING_COOLDOWN_MS ?? "3600000"),
+  };
+}
+
+function debtToRepayFor(position: VenusPosition, target: number): number {
+  if (position.healthFactor === null || position.healthFactor <= 0) return 0;
+  const trimmed = position.totalBorrowUsd * (1 - position.healthFactor / target);
+  return Math.max(0, trimmed);
+}
 
 export function decideLendingDefense(
   position: VenusPosition,
   policy: LendingDefensePolicy,
+  holdings: Holdings = { stableUsd: 0, collateralUsd: 0 },
+  lastActionAt: number | null = null,
+  now: number = Date.now(),
 ): LendingDefenseDecision {
-  // no debt = no risk
   if (position.healthFactor === null) {
     return { action: "skip", reason: "no debt, no liquidation risk" };
   }
 
-  // already liquidatable - too late
   if (position.liquidatable) {
     return { action: "refuse", reason: "position is already liquidatable (shortfall > 0)" };
   }
 
-  // healthy - no action needed
-  if (position.healthFactor >= policy.defendAt) {
-    return { action: "skip", reason: `health factor ${position.healthFactor.toFixed(2)} >= ${policy.defendAt}, no defense needed` };
+  if (position.healthFactor >= policy.triggerHealthFactor) {
+    return {
+      action: "skip",
+      reason: `health factor ${position.healthFactor.toFixed(2)} >= ${policy.triggerHealthFactor}, no action needed`,
+    };
   }
 
-  // need to defend: sell collateral to repay debt
-  // calculate how much collateral to sell to restore to restoreTo
-  // target debt = collateral * threshold / restoreTo
-  // debt to repay = current debt - target debt
-  // collateral to sell = debt to repay / price (approx 1:1 for WBNB/USDT, simplified)
-  const currentHF = position.healthFactor;
-  const targetDebt = position.totalCollateralUsd * 0.8 / policy.restoreTo; // simplified: 80% collateral factor
-  const debtToRepay = position.totalBorrowUsd - targetDebt;
-
-  if (debtToRepay <= 0) {
-    return { action: "skip", reason: "no debt to repay at target health factor" };
+  if (lastActionAt !== null && now - lastActionAt < policy.cooldownMs) {
+    return { action: "skip", reason: "inside the cooldown since the last action" };
   }
 
-  // cap at maxSellBps of collateral
+  const need = debtToRepayFor(position, policy.targetHealthFactor);
+
+  if (policy.profile === "guard") {
+    if (holdings.stableUsd > 0 && need > 0) {
+      const amountUsd = Math.min(need, holdings.stableUsd, policy.maxActionUsd);
+      if (amountUsd > 0) {
+        return {
+          action: "repay",
+          amountUsd,
+          reason: `health factor ${position.healthFactor.toFixed(2)} < ${policy.triggerHealthFactor}, repaying from the balance held`,
+        };
+      }
+    }
+    if (holdings.collateralUsd > 0 && need > 0) {
+      const amountUsd = Math.min(need, holdings.collateralUsd, policy.maxActionUsd);
+      if (amountUsd > 0) {
+        return {
+          action: "add-collateral",
+          amountUsd,
+          reason: `health factor ${position.healthFactor.toFixed(2)} < ${policy.triggerHealthFactor}, posting collateral held`,
+        };
+      }
+    }
+    return { action: "skip", reason: "below the guard line but the agent holds nothing it may act with" };
+  }
+
+  if (need <= 0) {
+    return { action: "skip", reason: "no debt to repay at the target health factor" };
+  }
+
   const maxSell = (position.totalCollateralUsd * policy.maxSellBps) / 10_000;
-  const amountToSell = Math.min(debtToRepay, maxSell);
-
+  const amountToSell = Math.min(need, maxSell, policy.maxActionUsd);
   if (amountToSell <= 0) {
     return { action: "skip", reason: "calculated sell amount is zero" };
   }
@@ -73,6 +107,6 @@ export function decideLendingDefense(
   return {
     action: "defend",
     amountToSell: BigInt(Math.floor(amountToSell * 1e18)),
-    reason: `health factor ${currentHF.toFixed(2)} < ${policy.defendAt}, selling ${amountToSell.toFixed(2)} USD of collateral to restore to ${policy.restoreTo}`,
+    reason: `health factor ${position.healthFactor.toFixed(2)} < ${policy.triggerHealthFactor}, selling ${amountToSell.toFixed(2)} USD of collateral`,
   };
 }
