@@ -96,6 +96,7 @@ Deployed addresses:
 | HireVault | 56 | `0x028129c230123a46f4305ce0d2b29f8ac5255149` |
 | AaveV3VenueAdapter | 56 | `0x1928578a29abab83520209cdd3a9b00c74c26e0f` |
 | EIP3009Funder (escrow) | 56 | `0xd7052516ae58188271c4c85fa4cd69a18c6e7f8b` |
+| EIP3009Funder (escrow, earlier deployment) | 56 | `0xfbcdac016763230768241e566e7fa0ee25bc615b` |
 | ReceiptLedger (escrow) | 56 | `0xbe3147d4a187ff9b394233943aa3fcc44bbcc184` |
 | Escrow relay | 56 | `0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4` |
 | HireVault | 97 | `0xe1cd584d0bf2dbba90f84d5ac991984cae8f9d74` |
@@ -133,6 +134,9 @@ External addresses:
 - ERC-8004 identity registry, chain 97: `0x8004a818bfb912233c491871b3d84c89a494bd9e`
 - ERC-8004 reputation registry, chain 56: `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`
 - ERC-8004 reputation registry, chain 97: `0x8004B663056A597Dffe9eCcC1965A193B7388713`
+- ERC-8183 commerce kernel, chain 56: `0xEa4DAa3100A767e86FDed867729ae7446476EBA6`
+- ERC-8183 evaluator router, chain 56: `0x51895229E12F9876011789B04f8698af06cCD6DA`
+- ERC-8183 optimistic policy, chain 56: `0x9C01845705b3078Aa2e8cfF7520a6376FD766dE5`
 - $U settlement token, chain 56: `0xcE24439F2D9C6a2289F741120FE202248B666666`
 
 ## Reference
