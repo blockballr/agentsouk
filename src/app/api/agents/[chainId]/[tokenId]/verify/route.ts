@@ -12,6 +12,7 @@ export const maxDuration = 180;
 // admitted tokens only, and never twice within twenty hours, so neither a
 // lister nor a stranger can spend the relay dry through this route.
 const REPROBE_MS = 20 * 60 * 60 * 1000;
+const FREE_REPROBE_MS = 10 * 60 * 1000;
 
 // The registered owner may force a fresh probe, so a lister can re-check on
 // demand; anyone else keeps the twenty hour cap.
@@ -77,7 +78,8 @@ export async function POST(
   const forced = await ownerMayForce(chainId, tokenId, detail, body);
 
   const seen = (await loadVerifications(chainId).catch(() => new Map())).get(tokenId);
-  if (!forced && seen?.checkedAt && Date.now() - Date.parse(seen.checkedAt) < REPROBE_MS) {
+  const window = process.env.VERIFY_PAID === "1" ? REPROBE_MS : FREE_REPROBE_MS;
+  if (!forced && seen?.checkedAt && Date.now() - Date.parse(seen.checkedAt) < window) {
     return NextResponse.json({ success: true, skipped: true, verification: seen });
   }
 
