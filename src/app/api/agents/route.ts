@@ -155,5 +155,11 @@ export async function GET(req: NextRequest) {
     counts: result.categoryCounts,
     snapshotTime: result.indexStatus.snapshotTime,
     lastTopUpAt: result.indexStatus.lastTopUpAt,
-  }, { headers: { "Cache-Control": "public, s-maxage=600, stale-while-revalidate=600" } });
+  }, {
+    headers: {
+      "Cache-Control": "public, max-age=0, must-revalidate",
+      // Vercel caches the CDN copy on this header while the browser revalidates
+      "Vercel-CDN-Cache-Control": "public, s-maxage=600, stale-while-revalidate=600",
+    },
+  });
 }
