@@ -21,4 +21,10 @@ describe("freshness", () => {
   it("treats a missing read as dead with no age", () => {
     expect(readFreshness(null, now)).toEqual({ state: "dead", ageMs: null });
   });
+
+  it("takes a per-job window", () => {
+    const at = "2026-10-31T11:50:00.000Z";
+    expect(readFreshness(at, now).state).toBe("dead");
+    expect(readFreshness(at, now, 15 * 60_000, 30 * 60_000).state).toBe("fresh");
+  });
 });
