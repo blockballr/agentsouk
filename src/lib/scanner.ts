@@ -811,7 +811,7 @@ async function writeCatalogueMeta(
 // registry total the refresh observed and the size of the catalogue it served.
 // Head at the time the catalogue record was written.
 async function chainHeadBlock(chainId: number): Promise<number | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (process.env.NODE_ENV !== "production") return null;
   for (const url of rpcUrls(chainId)) {
     try {
       const res = await fetch(url, {
