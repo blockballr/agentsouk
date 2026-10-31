@@ -20,6 +20,8 @@ declare global {
         options: {
           sitekey: string
           theme?: 'light' | 'dark' | 'auto'
+          appearance?: 'always' | 'execute' | 'interaction-only'
+          execution?: 'render' | 'execute'
           callback: (token: string) => void
           'error-callback'?: () => void
           'expired-callback'?: () => void
@@ -109,6 +111,9 @@ export function Turnstile({
       widgetId.current = window.turnstile.render(ref.current, {
         sitekey: SITE_KEY!,
         theme,
+        // the challenge runs on its own; a human sees a widget only when
+        // Cloudflare decides the request needs one
+        appearance: 'interaction-only',
         callback: (token: string) => onToken(token),
         'error-callback': () => onToken(''),
         'expired-callback': () => onToken(''),
