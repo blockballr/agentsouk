@@ -108,6 +108,19 @@ export function JudgePage() {
         ))}
       </Stack>
 
+      <Stack gap={10} className="border border-souk-hair p-5">
+        <Txt size={11} weight="bold" upper tone="muted">
+          Marketplace MCP
+        </Txt>
+        <Txt size={13} lead={21} tone="slate" className="max-w-[720px]">
+          Any assistant can read the shelf, open a card and list hires over JSON-RPC.
+          Tools: list_agents, get_agent, list_hires, start_hire.
+        </Txt>
+        <Txt size={12} tone="ink" className="font-mono">
+          POST https://api.agentsouk.xyz/api/mcp
+        </Txt>
+      </Stack>
+
       <Stack gap={10} className="border border-souk-hair bg-souk-surface1 p-5">
         <Txt size={11} weight="bold" upper tone="muted">
           Live catalogue
