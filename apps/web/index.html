@@ -39,9 +39,41 @@
     <meta property="og:image:alt" content="Agent Souk: hire agents on the shelf, hire from the market." />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://agentsouk.xyz/og-image.png" />
+    <style>
+      #boot-shell { position: fixed; inset: 0; z-index: 9999; background: #0b0e14; color: #e7eef6; font-family: ui-sans-serif, system-ui, sans-serif; }
+      #boot-shell .bar { display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 24px; border-bottom: 1px solid #1b2230; }
+      #boot-shell .mark { width: 16px; height: 16px; background: #88deeb; }
+      #boot-shell .name { font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 700; }
+      #boot-shell .body { max-width: 1100px; margin: 0 auto; padding: 56px 24px 0; }
+      #boot-shell .eyebrow { margin: 0; font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.14em; color: #88deeb; }
+      #boot-shell h1 { margin: 14px 0 28px; font-family: Georgia, 'Times New Roman', serif; font-size: 52px; line-height: 1.1; font-weight: 700; }
+      #boot-shell .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
+      #boot-shell .card { height: 150px; border: 1px solid #1b2230; background: #11161f; }
+      #boot-shell .line { height: 10px; margin: 16px; background: #1b2230; }
+      #boot-shell .line.short { width: 40%; }
+      @media (max-width: 760px) { #boot-shell h1 { font-size: 34px; } #boot-shell .grid { grid-template-columns: 1fr; } }
+    </style>
   </head>
   <body>
+    <div id="boot-shell" aria-hidden="true">
+      <div class="bar"><span class="mark"></span><span class="name">Agent Souk</span></div>
+      <div class="body">
+        <p class="eyebrow">SHELF, CHECKING THE NETWORK</p>
+        <h1>Hire from the shelf.</h1>
+        <div class="grid">
+          <div class="card"><div class="line"></div><div class="line short"></div></div>
+          <div class="card"><div class="line"></div><div class="line short"></div></div>
+          <div class="card"><div class="line"></div><div class="line short"></div></div>
+        </div>
+      </div>
+    </div>
     <div id="root"></div>
+    <script>
+      setTimeout(function () {
+        var s = document.getElementById('boot-shell')
+        if (s) s.remove()
+      }, 8000)
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

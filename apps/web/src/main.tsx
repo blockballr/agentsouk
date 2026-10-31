@@ -24,3 +24,8 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+// the boot shell covers the app until the first frame is painted
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => document.getElementById('boot-shell')?.remove())
+})

@@ -145,8 +145,11 @@ export function NetworkTicker({
       }
     }
 
-    fetchPrice()
-    fetchTps()
+    // the ticker is decoration; let the page paint and fetch its own data first
+    const startId = window.setTimeout(() => {
+      fetchPrice()
+      fetchTps()
+    }, 1_500)
     const id = window.setInterval(() => {
       if (document.visibilityState === 'hidden') return
       fetchPrice()
@@ -154,6 +157,7 @@ export function NetworkTicker({
     }, pollMs)
     return () => {
       cancelled = true
+      window.clearTimeout(startId)
       window.clearInterval(id)
     }
   }, [priceUrl, pricePath, rpcUrl, pollMs])
