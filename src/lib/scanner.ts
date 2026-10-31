@@ -1253,6 +1253,7 @@ export interface QueryResult {
     // The shared catalogue's own refresh time, from the store's meta; null when
     // the store has never recorded one, so the page falls back to the snapshot.
     catalogueRefreshedAt: string | null;
+    catalogueBlock: number | null;
     // How many agents the catalogue actually serves on this chain: the committed
     // snapshot plus anything the shared store has added, minus the ones the sweeps
     // removed. This is the curated count, as opposed to the registry's total for
@@ -1392,6 +1393,7 @@ export async function queryAgents(
       error: index.error,
       snapshotTime,
       catalogueRefreshedAt: index.catalogueRefreshedAt,
+      catalogueBlock: index.catalogueBlock,
       // the curated count the strap shows: classified, executable agents
       // actually served, not the raw size of the in-memory index
       shelved: shelf.length,
