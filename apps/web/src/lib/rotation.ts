@@ -1,8 +1,8 @@
-// A rotation seed shared by every visit in the same five minute window, so the
+// A rotation seed shared by every visit in the same ten minute window, so the
 // shelf request is the same URL and the edge can serve it from cache. Paging
 // within a tab keeps one seed, so the order does not shift under the reader.
 const KEY = 'souk.rotation'
-const BUCKET_MS = 5 * 60_000
+const BUCKET_MS = 10 * 60_000
 const bucketSeed = Math.floor(Date.now() / BUCKET_MS).toString(36)
 
 export function visitSeed(): string {

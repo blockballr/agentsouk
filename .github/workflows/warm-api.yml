@@ -15,7 +15,14 @@ jobs:
   warm:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping the two read paths a visitor waits on
+      - name: Ping the read paths a visitor waits on
         run: |
           curl -fsS --max-time 30 "https://api.agentsouk.xyz/api/agents?chainId=56" > /dev/null
           curl -fsS --max-time 30 "https://api.agentsouk.xyz/api/agents/56/376593" > /dev/null
+      - name: Warm the shelf for this window and the next
+        run: |
+          now=$(node -e "process.stdout.write(Math.floor(Date.now()/600000).toString(36))")
+          next=$(node -e "process.stdout.write(Math.floor(Date.now()/600000+1).toString(36))")
+          for seed in "$now" "$next"; do
+            curl -fsS --max-time 60 "https://api.agentsouk.xyz/api/agents?type=jobs&metric=score&limit=48&seed=$seed" > /dev/null || true
+          done
