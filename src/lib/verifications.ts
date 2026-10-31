@@ -150,6 +150,18 @@ async function loadOnce(chainId: number): Promise<Map<string, RecordedVerificati
   } catch {
   }
 
+  // A 402 from an unfunded verifier was once recorded as the agent being dead.
+  // That was our failure, so those rows read as not checked rather than broken.
+  for (const [tokenId, v] of byToken) {
+    if (v.status === "dead" && String(v.detail ?? "").startsWith("settle failed (402)")) {
+      byToken.set(tokenId, {
+        ...v,
+        status: "not_checked",
+        detail: "the verifier could not pay for this check",
+      });
+    }
+  }
+
   return byToken;
 }
 
