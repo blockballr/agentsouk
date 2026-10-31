@@ -1,7 +1,9 @@
 import "server-only";
 
 import { privateKeyToAccount } from "viem/accounts";
-import { getAddress } from "viem";
+import { createPublicClient, getAddress } from "viem";
+import { bsc, bscTestnet } from "viem/chains";
+import { rpcTransport } from "./rpc";
 import { randomBytes } from "node:crypto";
 import { unreachableEndpointVerdict } from "@/lib/verifications";
 import { upsertVerification } from "@/lib/verifications-store";
@@ -69,7 +71,51 @@ export async function fetchJson(url: string, opts: RequestInit = {}, timeoutMs =
   }
 }
 
-async function settleHire(cand: { chainId: number; tokenId: string; name: string }): Promise<{ ok: true; paymentId: string } | { ok: false; detail: string; gated?: true }> {
+// A verifier that cannot pay marks every paid agent dead. Check its own funds
+// first, so a funding gap is recorded as our failure, not the agent's.
+const ERC20_BALANCE_ABI = [
+  {
+    name: "balanceOf",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+async function payerShortfall(
+  chainId: number,
+  asset: string,
+  payer: `0x${string}`,
+  amount: bigint,
+): Promise<string | null> {
+  const client = createPublicClient({
+    chain: chainId === 97 ? bscTestnet : bsc,
+    transport: rpcTransport(chainId),
+  });
+  try {
+    const [balance, gas] = await Promise.all([
+      client.readContract({
+        address: asset as `0x${string}`,
+        abi: ERC20_BALANCE_ABI,
+        functionName: "balanceOf",
+        args: [payer],
+      }) as Promise<bigint>,
+      client.getBalance({ address: payer }),
+    ]);
+    if (balance < amount) {
+      return `the verifier holds ${Number(balance) / 1e18} of the settlement asset and needs ${Number(amount) / 1e18}`;
+    }
+    if (gas < 10n ** 15n) {
+      return `the verifier holds ${Number(gas) / 1e18} BNB for gas and needs at least 0.001`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function settleHire(cand: { chainId: number; tokenId: string; name: string }): Promise<{ ok: true; paymentId: string } | { ok: false; detail: string; gated?: true; verifierFault?: true }> {
   // the probe runs before any payment, so a verifier without a relay key can
   // still learn that an agent sells by job and record it honestly
   const canPay = Boolean(process.env.RELAY_PRIVATE_KEY);
@@ -105,7 +151,12 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
     return { ok: false, detail: `requirements failed (${reqRes.status})` };
   }
   if (!canPay) {
-    return { ok: false, detail: "the verifier has no relay key, so no hire was paid" };
+    return { ok: false, verifierFault: true, detail: "the verifier has no relay key, so no hire was paid" };
+  }
+
+  const shortfall = await payerShortfall(cand.chainId, pr.asset, wallet().address, BigInt(pr.amount));
+  if (shortfall) {
+    return { ok: false, verifierFault: true, detail: shortfall };
   }
 
   const asset = getAddress(pr.asset);
@@ -213,7 +264,11 @@ export async function verifyCandidate(cand: VerifyCandidate): Promise<VerifyVerd
   }
 
   const hire = await settleHire(cand);
-  if (!hire.ok) return { status: hire.gated ? "gated" : "dead", detail: hire.detail };
+  if (!hire.ok) {
+    // an unpaid check is not a dead agent; say the test did not run
+    if (hire.verifierFault) return { status: "not_checked", detail: hire.detail };
+    return { status: hire.gated ? "gated" : "dead", detail: hire.detail };
+  }
 
   const cap = await deliverJson(hire.paymentId);
   if (cap.status === 402 || cap.body?.success === false) {
