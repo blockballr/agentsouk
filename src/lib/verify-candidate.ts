@@ -9,6 +9,7 @@ import { unreachableEndpointVerdict } from "@/lib/verifications";
 import { upsertVerification } from "@/lib/verifications-store";
 import { GATED_RE } from "@/lib/delivery";
 import { requestsWalletSecret } from "@/lib/quest-eligibility";
+import { probeCandidateEndpoint } from "./scout-pipeline";
 
 export interface VerifyCandidate {
   chainId: number;
@@ -150,6 +151,9 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
   if (reqRes.status !== 200 || !pr) {
     return { ok: false, detail: `requirements failed (${reqRes.status})` };
   }
+  if (process.env.VERIFY_PAID === "0") {
+    return { ok: false, verifierFault: true, detail: "paid check disabled by VERIFY_PAID=0" };
+  }
   if (!canPay) {
     return { ok: false, verifierFault: true, detail: "the verifier has no relay key, so no hire was paid" };
   }
@@ -265,8 +269,17 @@ export async function verifyCandidate(cand: VerifyCandidate): Promise<VerifyVerd
 
   const hire = await settleHire(cand);
   if (!hire.ok) {
-    // an unpaid check is not a dead agent; say the test did not run
-    if (hire.verifierFault) return { status: "not_checked", detail: hire.detail };
+    // the endpoint may answer for free even when the verifier cannot pay
+    if (hire.verifierFault) {
+      const probe = await probeCandidateEndpoint({ chain_id: cand.chainId, token_id: cand.tokenId });
+      if (!probe.ok) {
+        const unreachable = unreachableEndpointVerdict(probe.detail);
+        if (unreachable) return unreachable;
+        if (GATED_RE.test(probe.detail)) return { status: "gated", detail: probe.detail };
+        return { status: "dead", detail: probe.detail };
+      }
+      return { status: "online", detail: `${probe.detail}; paid delivery not tested: ${hire.detail}` };
+    }
     return { status: hire.gated ? "gated" : "dead", detail: hire.detail };
   }
 

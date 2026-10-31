@@ -204,7 +204,9 @@ export async function discoverCandidates(opts: DiscoverOptions = {}): Promise<Di
   };
 }
 
-export async function probeCandidateEndpoint(candidate: ScoutCandidate): Promise<EndpointProbe> {
+export async function probeCandidateEndpoint(
+  candidate: Pick<ScoutCandidate, "chain_id" | "token_id">,
+): Promise<EndpointProbe> {
   const detail = await fetchAgentDetail(candidate.chain_id, candidate.token_id);
   const mcp = detail?.mcp_server ?? null;
   const a2a = detail?.a2a_endpoint ?? null;
@@ -236,6 +238,9 @@ export async function probeCandidateEndpoint(candidate: ScoutCandidate): Promise
         signal: ctl.signal,
       }).finally(() => clearTimeout(timer));
       const text = await res.text();
+      if (res.status === 402) {
+        return { tokenId: candidate.token_id, ok: true, detail: "mcp 402 payment required", protocol: "mcp" };
+      }
       if (!res.ok) {
         return { tokenId: candidate.token_id, ok: false, detail: `mcp ${res.status}`, protocol: "mcp" };
       }
@@ -257,6 +262,9 @@ export async function probeCandidateEndpoint(candidate: ScoutCandidate): Promise
         headers: { accept: "application/json" },
         signal: ctl.signal,
       }).finally(() => clearTimeout(timer));
+      if (res.status === 402 || res.status === 405) {
+        return { tokenId: candidate.token_id, ok: true, detail: `a2a ${res.status} endpoint live`, protocol: "a2a" };
+      }
       if (!res.ok) {
         return { tokenId: candidate.token_id, ok: false, detail: `a2a ${res.status}`, protocol: "a2a" };
       }
