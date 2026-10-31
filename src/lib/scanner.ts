@@ -829,9 +829,12 @@ async function recordCatalogueRefresh(
   }
 }
 
+import { snapshotServingAllowed } from "./snapshot-policy";
+
 // the snapshot is the primary catalogue, and live warming only fills in when it
 // is absent
 async function loadSnapshot(): Promise<boolean> {
+  if (!snapshotServingAllowed()) return false;
   if (snapshotLoaded) return true;
   try {
     const fs = await import("node:fs/promises");

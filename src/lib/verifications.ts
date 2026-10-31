@@ -1,6 +1,7 @@
 import type { Verification, VerificationStatus } from "./types";
 import { BSC_CHAIN_ID, scoutDirFor, targetChainId } from "./types";
 import { privateEndpointReason } from "./endpoint";
+import { snapshotServingAllowed } from "./snapshot-policy";
 
 // a recorded verification, plus the plain reason behind a refusal so an
 // auditor sees why the endpoint could not be reached
@@ -137,9 +138,13 @@ async function loadMainnetFile(): Promise<Map<string, RecordedVerification>> {
 }
 
 async function loadOnce(chainId: number): Promise<Map<string, RecordedVerification>> {
-  // read the durable store on every chain; the per-chain file is the fallback
-  const byToken =
-    chainId === BSC_CHAIN_ID ? await loadMainnetFile() : await loadScoutFile(chainId);
+  // read the durable store on every chain; a committed file is test and local
+  // only, never a production answer
+  const byToken = snapshotServingAllowed()
+    ? chainId === BSC_CHAIN_ID
+      ? await loadMainnetFile()
+      : await loadScoutFile(chainId)
+    : new Map<string, RecordedVerification>();
 
   try {
     const { loadVerificationsFromDb } = await import("./verifications-store");
