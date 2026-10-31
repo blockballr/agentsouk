@@ -42,11 +42,12 @@ export interface AgentsResult {
 // The catalogue's own state, reported by the server from the shared store rather
 // than from the committed file.
 export interface IndexStatus {
-  // ISO time the shared catalogue was last refreshed; null when the store has
-  // never recorded one, so the page falls back to the snapshot's date
   catalogueRefreshedAt: string | null
-  // "store" when the shared store holds this chain's rows, otherwise "snapshot"
-  catalogueSource: 'store' | 'snapshot'
+  // the chain head when the catalogue record was written
+  catalogueBlock: number | null
+  // "store" when the shared store holds this chain's rows, "unavailable" when
+  // the store is empty and the registry did not answer
+  catalogueSource: 'store' | 'snapshot' | 'unavailable'
 }
 
 // warm the detail route while the pointer is on the card, so the click lands on
@@ -79,6 +80,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     indexStatus?: {
       catalogueRefreshedAt?: string | null
       catalogueSource?: string
+      catalogueBlock?: number | null
     }
   }>(res, 'agents')
   const items: AgentSummary[] = body.items ?? []
@@ -95,7 +97,15 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
         ? body.indexStatus.catalogueRefreshedAt
         : null,
     catalogueSource:
-      body.indexStatus?.catalogueSource === 'store' ? 'store' : 'snapshot',
+      body.indexStatus?.catalogueSource === 'store'
+        ? 'store'
+        : body.indexStatus?.catalogueSource === 'unavailable'
+          ? 'unavailable'
+          : 'snapshot',
+    catalogueBlock:
+      typeof body.indexStatus?.catalogueBlock === 'number'
+        ? body.indexStatus.catalogueBlock
+        : null,
   }
   return {
     items,

@@ -101,6 +101,7 @@ export function MarketplacePage() {
     registryTotal: number | null
     snapshotTime: string | null
     catalogueRefreshedAt: string | null
+    source: 'store' | 'snapshot' | 'unavailable'
     total: number
   } | null>(null)
   // the network is unknown until the market answers; do not paint the compiled
@@ -153,6 +154,7 @@ export function MarketplacePage() {
             registryTotal: r.registryTotal,
             snapshotTime: r.snapshotTime,
             catalogueRefreshedAt: r.indexStatus.catalogueRefreshedAt,
+            source: r.indexStatus.catalogueSource,
             total: r.total,
           })
           setChainId(r.chainId)
@@ -455,7 +457,9 @@ export function MarketplacePage() {
         <Section pad="pt-6 pb-16">
         <Stack gap={24}>
         <Stack>
-          {error ? (
+          {result?.source === 'unavailable' ? (
+            <UnavailableState onRetry={() => setSp(new URLSearchParams(sp))} />
+          ) : error ? (
             <ErrorState onRetry={() => setSp(new URLSearchParams(sp))} />
           ) : loading ? (
             <GridSkeleton />
@@ -836,6 +840,22 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
       </Txt>
       <Txt size={13} lead={20} tone="slate">
         The catalogue service did not respond. It should be back shortly.
+      </Txt>
+      <Btn kind="primary" onClick={onRetry} className="mt-4">
+        Retry
+      </Btn>
+    </Stack>
+  )
+}
+
+function UnavailableState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Stack surface pad={[40, 40, 40, 40]} gap={12} className="items-center text-center">
+      <Txt size={20} lead={26} weight="bold" tone="ink">
+        The market cannot be read.
+      </Txt>
+      <Txt size={13} lead={20} tone="slate">
+        The registry did not answer, and no cached list is served in its place.
       </Txt>
       <Btn kind="primary" onClick={onRetry} className="mt-4">
         Retry

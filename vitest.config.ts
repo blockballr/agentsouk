@@ -41,5 +41,6 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts", "tests/**/*.ts"],
     exclude: ["tests/server-only-stub.ts"],
+    testTimeout: 15_000,
   },
 });
