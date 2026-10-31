@@ -20,7 +20,9 @@ function card(a) {
 }
 
 try {
-  const res = await fetch(`${API}/api/agents?type=jobs&metric=score&limit=24&seed=${seed}`)
+  const res = await fetch(`${API}/api/agents?type=jobs&metric=score&limit=24&seed=${seed}`, {
+    signal: AbortSignal.timeout(20_000),
+  })
   if (!res.ok) throw new Error(`agents ${res.status}`)
   const body = await res.json()
   const items = (body.items ?? []).slice(0, 24)
