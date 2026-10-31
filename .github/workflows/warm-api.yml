@@ -19,10 +19,10 @@ jobs:
         run: |
           curl -fsS --max-time 30 "https://api.agentsouk.xyz/api/agents?chainId=56" > /dev/null
           curl -fsS --max-time 30 "https://api.agentsouk.xyz/api/agents/56/376593" > /dev/null
-      - name: Warm the shelf for this window and the next
+      - name: Warm the shelf for today and tomorrow
         run: |
-          now=$(node -e "process.stdout.write(Math.floor(Date.now()/600000).toString(36))")
-          next=$(node -e "process.stdout.write(Math.floor(Date.now()/600000+1).toString(36))")
-          for seed in "$now" "$next"; do
-            curl -fsS --max-time 60 "https://api.agentsouk.xyz/api/agents?type=jobs&metric=score&limit=48&seed=$seed" > /dev/null || true
+          today=$(node -e "process.stdout.write(Math.floor(Date.now()/86400000).toString(36))")
+          tomorrow=$(node -e "process.stdout.write(Math.floor(Date.now()/86400000+1).toString(36))")
+          for seed in "$today" "$tomorrow"; do
+            curl -fsS --max-time 90 "https://api.agentsouk.xyz/api/agents?type=jobs&metric=score&limit=48&seed=$seed" > /dev/null || true
           done
