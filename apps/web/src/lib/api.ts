@@ -4,7 +4,6 @@ import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 import { getProvider, setTargetChain } from './wallet'
 import { sessionAccount } from './wallet-session'
-import { visitSeed } from './rotation'
 import { listingControlMessage, type ListingAction } from './listing-control'
 
 export interface AgentsQuery {
@@ -65,8 +64,6 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   if (query.page && query.page > 1) sp.set('page', String(query.page))
   if (query.limit) sp.set('limit', String(query.limit))
   if (query.pcs) sp.set('pcs', '1')
-  // every caller rotates by the visit, so search and compare stay stable while a tab is open
-  sp.set('seed', query.seed ?? visitSeed())
   const res = await fetch(`${BASE}/agents?${sp}`)
   if (!res.ok) throw new Error(`agents ${res.status}`)
   const body = await readJsonBody<{

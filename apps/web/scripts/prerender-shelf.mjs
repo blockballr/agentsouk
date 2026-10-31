@@ -8,7 +8,6 @@ import { fileURLToPath } from 'node:url'
 const root = fileURLToPath(new URL('..', import.meta.url))
 const dist = join(root, 'dist')
 const API = 'https://api.agentsouk.xyz'
-const seed = Math.floor(Date.now() / 86_400_000).toString(36)
 
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
@@ -20,7 +19,7 @@ function card(a) {
 }
 
 try {
-  const res = await fetch(`${API}/api/agents?type=jobs&metric=score&limit=24&seed=${seed}`, {
+  const res = await fetch(`${API}/api/agents?type=jobs&metric=score&limit=24`, {
     signal: AbortSignal.timeout(20_000),
   })
   if (!res.ok) throw new Error(`agents ${res.status}`)

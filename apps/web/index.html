@@ -14,12 +14,11 @@
     <script>
       (function () {
         try {
-          var seed = Math.floor(Date.now() / 86400000).toString(36);
           var l = document.createElement('link');
           l.rel = 'preload';
           l.as = 'fetch';
           l.crossOrigin = 'anonymous';
-          l.href = 'https://api.agentsouk.xyz/api/agents?type=jobs&metric=score&limit=48&seed=' + seed;
+          l.href = 'https://api.agentsouk.xyz/api/agents?type=jobs&metric=score&limit=48';
           document.head.appendChild(l);
         } catch (e) {}
       })();

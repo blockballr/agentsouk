@@ -19,10 +19,11 @@ const RANK: Record<string, number> = {
 
 type Verifications = Map<string, { status?: string }> | undefined;
 
-// the visitor's own seed keeps paging stable through one visit; a caller that sends none,
-// such as an MCP client, gets an order that turns over every hour
-export function rotationSeed(seed: string | null | undefined, now: number = Date.now()): string {
-  return seed && /^[A-Za-z0-9_-]{1,64}$/.test(seed) ? seed : `hour-${Math.floor(now / 3_600_000)}`;
+// The shelf order is fixed. "Working first" still serves the agents that
+// answered, in a stable order, so a card does not move between visits and the
+// shelf URL stays the same for every reader and every cache.
+export function rotationSeed(_seed?: string | null): string {
+  return "shelf";
 }
 
 // FNV-1a over the seed and the token, the same on every instance, then murmur3's finaliser,

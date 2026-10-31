@@ -51,10 +51,10 @@ describe("working first", () => {
     expect(leaders.size).toBe(1);
   });
 
-  it("takes a well formed seed as given and turns an absent one over hourly", () => {
-    expect(rotationSeed("abc_123")).toBe("abc_123");
-    expect(rotationSeed("../etc")).toBe(rotationSeed(null));
-    expect(rotationSeed(null, 3_600_000 * 5)).not.toBe(rotationSeed(null, 3_600_000 * 6));
+  it("pins every caller to one order", () => {
+    expect(rotationSeed("abc_123")).toBe(rotationSeed(null));
+    expect(rotationSeed("../etc")).toBe("shelf");
+    expect(rotationSeed(null, 3_600_000 * 5)).toBe(rotationSeed(null, 3_600_000 * 6));
   });
 });
 
