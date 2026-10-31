@@ -1156,6 +1156,49 @@ export interface RecentHire {
   txHash: string | null
 }
 
+export interface NetworkReading {
+  price: number | null
+  tps: number | null
+  block: number | null
+  checkedAt: string
+  source: string
+  error: string | null
+}
+
+export interface FreshnessReading {
+  state: 'fresh' | 'stale' | 'dead'
+  ageMs: number | null
+}
+
+export async function getNetwork(): Promise<{
+  data: NetworkReading
+  error: string | null
+  meta: { checkedAt: string; freshness: FreshnessReading; cached: boolean }
+}> {
+  const res = await fetch(`${BASE}/network`)
+  if (!res.ok) throw new Error(`network ${res.status}`)
+  return readJsonBody(res, 'network')
+}
+
+export interface StatusJob {
+  name: string
+  lastRun: string | null
+  block: number | null
+  registryTotal: number | null
+  shelfSize: number | null
+  freshness: FreshnessReading
+}
+
+export async function getStatus(): Promise<{
+  data: { chainId: number; store: string; jobs: StatusJob[] }
+  error: string | null
+  meta: { checkedAt: string; freshness: FreshnessReading }
+}> {
+  const res = await fetch(`${BASE}/status`)
+  if (!res.ok) throw new Error(`status ${res.status}`)
+  return readJsonBody(res, 'status')
+}
+
 export async function getRecentHires(limit = 6): Promise<RecentHire[]> {
   const res = await fetch(`${BASE}/hires/recent?limit=${limit}`)
   if (!res.ok) throw new Error(`recent hires ${res.status}`)

@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { HomePage } from './pages/HomePage'
+import { JudgePage } from './pages/JudgePage'
 import { ScrollToTop } from './components/ScrollToTop'
 import { SecurityGate } from './components/SecurityGate'
 import { HostRouter } from './components/HostRouter'
@@ -58,6 +59,7 @@ function App() {
             />
             <Route path="/about" element={<HomePage />} />
             <Route path="/agents" element={<MarketplacePage />} />
+        <Route path="/judge" element={<JudgePage />} />
             <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
             <Route path="/compare" element={<ComparePage />} />
             <Route path="/advantage" element={<AdvantagePage />} />

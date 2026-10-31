@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { latestQuestProgress, questModeFor, requiredDone } from '../lib/quest'
 import { sessionAccount } from '../lib/wallet-session'
+import { getNetwork } from '../lib/api'
 import { SwapTicker } from './SwapTicker'
 import { ThemeToggle } from './ThemeToggle'
 import { LanguagePicker } from './LanguagePicker'
@@ -17,34 +18,11 @@ export interface TickerMetric {
 }
 
 export interface NetworkTickerProps {
-  priceUrl?: string
-  pricePath?: (json: unknown) => number | null
-  rpcUrl?: string
-  pollMs?: number
   extraMetrics?: TickerMetric[]
   className?: string
 }
 
-const DEFAULT_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd'
-const FALLBACK_PRICE_URL = 'https://api.coinbase.com/v2/prices/BNB-USD/spot'
-const DEFAULT_RPC_URL = 'https://bsc-dataseed.bnbchain.org'
-
-function readPrice(json: unknown): number | null {
-  const v = (json as { binancecoin?: { usd?: number } })?.binancecoin?.usd
-  return typeof v === 'number' ? v : null
-}
-
-function readFallbackPrice(json: unknown): number | null {
-  const v = (json as { data?: { amount?: string } })?.data?.amount
-  const n = typeof v === 'string' ? Number(v) : NaN
-  return Number.isFinite(n) ? n : null
-}
-
 export function NetworkTicker({
-  priceUrl = DEFAULT_PRICE_URL,
-  pricePath = readPrice,
-  rpcUrl = DEFAULT_RPC_URL,
-  pollMs = 60_000,
   extraMetrics = [],
   className = '',
 }: NetworkTickerProps) {
@@ -75,94 +53,31 @@ export function NetworkTicker({
       setQuest({ kind: 'start' })
     }
   }
-  // rolling window of recent blocks for a real TPS reading
-  const windowRef = useRef<{ number: number; txCount: number; ts: number }[]>([])
 
   useEffect(() => {
     let cancelled = false
-
-    async function fetchPrice() {
+    const load = async () => {
       try {
-        const res = await fetch(priceUrl)
-        if (res.ok) {
-          const p = pricePath(await res.json())
-          if (!cancelled && p !== null) {
-            setPrice(p)
-            return
-          }
-        }
+        const r = await getNetwork()
+        if (cancelled) return
+        setPrice(r.data.price)
+        setTps(r.data.tps)
       } catch {
-        // fall through to the fallback when the default feed is blocked
-      }
-      if (priceUrl !== DEFAULT_PRICE_URL || pricePath !== readPrice) return
-      try {
-        const res = await fetch(FALLBACK_PRICE_URL)
-        if (!res.ok) return
-        const p = readFallbackPrice(await res.json())
-        if (!cancelled && p !== null) setPrice(p)
-      } catch {
-        // keep last value
+        // keep the last reading
       }
     }
-
-    async function fetchTps() {
-      try {
-        const body = { jsonrpc: '2.0', id: 1, method: 'eth_getBlockByNumber', params: ['latest', false] }
-        const res = await fetch(rpcUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        })
-        if (!res.ok) return
-        const json = await res.json()
-        const r = json?.result
-        const blockNum = r?.number ? parseInt(r.number, 16) : null
-        const txCount = Array.isArray(r?.transactions) ? r.transactions.length : null
-        const ts = r?.timestamp ? parseInt(r.timestamp, 16) * 1000 : null
-        if (blockNum === null || txCount === null || ts === null) return
-        const w = windowRef.current
-        // drop stale entries older than 60s
-        const cutoff = ts - 60000
-        const fresh = w.filter((e) => e.ts >= cutoff && e.number < blockNum)
-        fresh.push({ number: blockNum, txCount, ts })
-        windowRef.current = fresh
-        // compute TPS over the window when we have at least two blocks
-        if (fresh.length >= 2) {
-          const first = fresh[0]
-          const last = fresh[fresh.length - 1]
-          const spanSec = (last.ts - first.ts) / 1000
-          const txs = fresh.reduce((s, e) => s + e.txCount, 0) - first.txCount
-          if (spanSec > 0) {
-            const tpsVal = Math.round(txs / spanSec)
-            if (!cancelled) setTps(tpsVal)
-          }
-        } else {
-          // fallback estimate until the window fills
-          if (!cancelled) setTps(Math.round(txCount / 3))
-        }
-      } catch {
-        // keep last value
-      }
-    }
-
-    // Let the page paint first.
-    const startId = window.setTimeout(() => {
-      fetchPrice()
-      fetchTps()
-    }, 1_500)
+    const startId = window.setTimeout(load, 1_500)
     const id = window.setInterval(() => {
       if (document.visibilityState === 'hidden') return
-      fetchPrice()
-      fetchTps()
-    }, pollMs)
+      void load()
+    }, 60_000)
     return () => {
       cancelled = true
       window.clearTimeout(startId)
       window.clearInterval(id)
     }
-  }, [priceUrl, pricePath, rpcUrl, pollMs])
+  }, [])
 
-  // mirror the quest card's minimized state so a tab can summon it back
   useEffect(() => {
     const sync = () => {
       try { setQuestMinimized(localStorage.getItem('agentsouk.quest.minimized') === '1') } catch {}
@@ -211,7 +126,6 @@ export function NetworkTicker({
         )}
 
         <span className="ml-auto flex items-center gap-4">
-          {/* price widget */}
           <span className="hidden items-center gap-1.5 sm:flex">
             <span className="text-souk-muted">BNB/$U</span>
             <span className="flex items-center gap-1">
@@ -227,13 +141,11 @@ export function NetworkTicker({
             </span>
           </span>
 
-          {/* tps widget */}
           <span className="hidden items-center gap-1.5 md:flex">
             <span className="text-souk-muted">TPS:</span>
             <span className="text-souk-ink font-semibold">{tps !== null ? tps.toLocaleString() : '-'}</span>
           </span>
 
-          {/* extensible metrics */}
           <span className="hidden items-center gap-3 lg:flex">
             {extraMetrics.map((m, i) => (
               <span key={i} className="flex items-center gap-1.5">

@@ -1,0 +1,18 @@
+Agent Souk third-party notices
+==============================
+
+Fonts
+-----
+Inter, Fraunces and JetBrains Mono are distributed through Fontsource under the
+SIL Open Font License 1.1. The license text ships with each package under
+node_modules/@fontsource-variable/*/LICENSE.
+
+Runtime and build
+-----------------
+React, React DOM and React Router: MIT.
+viem: MIT.
+Next.js: MIT.
+Vite: MIT.
+Tailwind CSS: MIT.
+
+Full license texts are available in each package under node_modules.
