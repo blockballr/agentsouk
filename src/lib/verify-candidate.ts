@@ -151,8 +151,10 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
   if (reqRes.status !== 200 || !pr) {
     return { ok: false, detail: `requirements failed (${reqRes.status})` };
   }
-  if (process.env.VERIFY_PAID === "0") {
-    return { ok: false, verifierFault: true, detail: "paid check disabled by VERIFY_PAID=0" };
+  // liveness is measured with free probes by default; a paid delivery check is
+  // opt in, so a verification sweep can never spend the relay without a decision
+  if (process.env.VERIFY_PAID !== "1") {
+    return { ok: false, verifierFault: true, detail: "paid check disabled; using the free probe" };
   }
   if (!canPay) {
     return { ok: false, verifierFault: true, detail: "the verifier has no relay key, so no hire was paid" };
