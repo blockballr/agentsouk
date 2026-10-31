@@ -1,8 +1,4 @@
-// The gate a new browser session passes before write paths on the app and
-// station hosts. It is a Turnstile check, verified server-side, and the pass is
-// kept in sessionStorage so reloads inside the same session do not ask again.
-// Browsing is never blocked: the challenge runs beside the app, after the shelf
-// has had a chance to paint, so a reader sees the product first.
+// The gate runs beside the app, never in front of it.
 import { useCallback, useEffect, useState } from 'react'
 import { TURNSTILE_ENABLED, Turnstile } from './Turnstile'
 import { verifyTurnstile } from '../lib/api'

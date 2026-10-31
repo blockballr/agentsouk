@@ -72,8 +72,7 @@ export async function fetchJson(url: string, opts: RequestInit = {}, timeoutMs =
   }
 }
 
-// A verifier that cannot pay marks every paid agent dead. Check its own funds
-// first, so a funding gap is recorded as our failure, not the agent's.
+// Unfunded verifier is our failure, not the agent's.
 const ERC20_BALANCE_ABI = [
   {
     name: "balanceOf",
@@ -151,8 +150,7 @@ async function settleHire(cand: { chainId: number; tokenId: string; name: string
   if (reqRes.status !== 200 || !pr) {
     return { ok: false, detail: `requirements failed (${reqRes.status})` };
   }
-  // liveness is measured with free probes by default; a paid delivery check is
-  // opt in, so a verification sweep can never spend the relay without a decision
+  // Paid checks are opt in.
   if (process.env.VERIFY_PAID !== "1") {
     return { ok: false, verifierFault: true, detail: "paid check disabled; using the free probe" };
   }
@@ -271,7 +269,7 @@ export async function verifyCandidate(cand: VerifyCandidate): Promise<VerifyVerd
 
   const hire = await settleHire(cand);
   if (!hire.ok) {
-    // the endpoint may answer for free even when the verifier cannot pay
+    // Free probe when payment is unavailable.
     if (hire.verifierFault) {
       const probe = await probeCandidateEndpoint({ chain_id: cand.chainId, token_id: cand.tokenId });
       if (!probe.ok) {

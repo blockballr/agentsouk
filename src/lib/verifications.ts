@@ -138,8 +138,7 @@ async function loadMainnetFile(): Promise<Map<string, RecordedVerification>> {
 }
 
 async function loadOnce(chainId: number): Promise<Map<string, RecordedVerification>> {
-  // read the durable store on every chain; a committed file is test and local
-  // only, never a production answer
+  // Store only; committed files are for tests.
   const byToken = snapshotServingAllowed()
     ? chainId === BSC_CHAIN_ID
       ? await loadMainnetFile()
@@ -155,8 +154,7 @@ async function loadOnce(chainId: number): Promise<Map<string, RecordedVerificati
   } catch {
   }
 
-  // A 402 from an unfunded verifier was once recorded as the agent being dead.
-  // That was our failure, so those rows read as not checked rather than broken.
+  // Old 402 rows were our fault; read them as unchecked.
   for (const [tokenId, v] of byToken) {
     if (v.status === "dead" && String(v.detail ?? "").startsWith("settle failed (402)")) {
       byToken.set(tokenId, {

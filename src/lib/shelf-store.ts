@@ -120,9 +120,16 @@ function initCatalogueMeta(): Promise<boolean> {
               chain_id integer primary key,
               refreshed_at timestamptz,
               registry_total integer,
-              shelf_size integer
+              shelf_size integer,
+              refreshed_block bigint
             )
           `,
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("catalogue meta db timeout")), 4000),
+          ),
+        ]);
+        await Promise.race([
+          c`alter table catalogue_meta add column if not exists refreshed_block bigint`,
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error("catalogue meta db timeout")), 4000),
           ),
@@ -371,12 +378,14 @@ export interface CatalogueMeta {
   refreshedAt: string;
   registryTotal: number | null;
   shelfSize: number | null;
+  refreshedBlock: number | null;
 }
 
 export interface CatalogueMetaInput {
   refreshedAt: string;
   registryTotal: number | null;
   shelfSize: number | null;
+  refreshedBlock?: number | null;
 }
 
 // A count is a figure only when it is a finite number; a missing column stays
@@ -402,12 +411,13 @@ export async function saveCatalogueMeta(
     const registryTotal = metaCount(meta.registryTotal);
     const shelfSize = metaCount(meta.shelfSize);
     await c`
-      insert into catalogue_meta (chain_id, refreshed_at, registry_total, shelf_size)
-      values (${chainId}, ${refreshedAt}, ${registryTotal}, ${shelfSize})
+      insert into catalogue_meta (chain_id, refreshed_at, registry_total, shelf_size, refreshed_block)
+      values (${chainId}, ${refreshedAt}, ${registryTotal}, ${shelfSize}, ${metaCount(meta.refreshedBlock)})
       on conflict (chain_id) do update set
         refreshed_at = excluded.refreshed_at,
         registry_total = excluded.registry_total,
-        shelf_size = excluded.shelf_size
+        shelf_size = excluded.shelf_size,
+        refreshed_block = excluded.refreshed_block
     `;
   } catch {
     // the page keeps reporting the previous record rather than a guess
@@ -425,7 +435,7 @@ export async function loadCatalogueMeta(
   if (!(await initCatalogueMeta()) || !c) return null;
   try {
     const rows = await c`
-      select refreshed_at, registry_total, shelf_size
+      select refreshed_at, registry_total, shelf_size, refreshed_block
       from catalogue_meta where chain_id = ${chainId}
     `;
     if (rows.length === 0) return null;
@@ -441,6 +451,7 @@ export async function loadCatalogueMeta(
       registryTotal:
         registryTotal !== null && registryTotal > 0 ? registryTotal : null,
       shelfSize: metaCount(row.shelf_size),
+      refreshedBlock: metaCount(row.refreshed_block),
     };
   } catch {
     return null;

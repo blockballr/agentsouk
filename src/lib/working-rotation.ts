@@ -19,9 +19,7 @@ const RANK: Record<string, number> = {
 
 type Verifications = Map<string, { status?: string }> | undefined;
 
-// The shelf order is fixed. "Working first" still serves the agents that
-// answered, in a stable order, so a card does not move between visits and the
-// shelf URL stays the same for every reader and every cache.
+// One fixed order for every reader and cache.
 export function rotationSeed(_seed?: string | null): string {
   return "shelf";
 }

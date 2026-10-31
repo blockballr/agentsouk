@@ -1,5 +1,4 @@
-// The shelf no longer rotates. Every reader and every cache sees the same
-// order, which is also what makes one warmed URL serve the whole site.
+// One shelf URL for every reader.
 export function visitSeed(): string {
   return 'shelf'
 }

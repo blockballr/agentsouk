@@ -111,8 +111,7 @@ export function Turnstile({
       widgetId.current = window.turnstile.render(ref.current, {
         sitekey: SITE_KEY!,
         theme,
-        // the challenge runs on its own; a human sees a widget only when
-        // Cloudflare decides the request needs one
+        // Runs automatically; visible only when a human is needed.
         appearance: 'interaction-only',
         callback: (token: string) => onToken(token),
         'error-callback': () => onToken(''),

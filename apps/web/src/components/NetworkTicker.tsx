@@ -145,7 +145,7 @@ export function NetworkTicker({
       }
     }
 
-    // the ticker is decoration; let the page paint and fetch its own data first
+    // Let the page paint first.
     const startId = window.setTimeout(() => {
       fetchPrice()
       fetchTps()
