@@ -61,7 +61,7 @@ export function unreachableEndpointVerdict(
   return detail ? { status: "unreachable", detail } : null;
 }
 
-const CACHE_MS = 300_000;
+const CACHE_MS = 30_000;
 let cache: { at: number; chain: number; map: Map<string, RecordedVerification>; version?: string | null } | null = null;
 let inflight: Promise<Map<string, RecordedVerification>> | null = null;
 // which chain the in-flight read is for, so a testnet page never inherits a
