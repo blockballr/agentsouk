@@ -3,6 +3,7 @@ import { targetChainId } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
 import { baseUrl, fetchJson, verifyAndRecord } from "@/lib/verify-candidate";
 import { isAgentOwner, verifyBoostOwnership } from "@/lib/boost-auth";
+import { clientIpFrom, enforceRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 180;
@@ -13,6 +14,7 @@ export const maxDuration = 180;
 // lister nor a stranger can spend the relay dry through this route.
 const REPROBE_MS = 20 * 60 * 60 * 1000;
 const FREE_REPROBE_MS = 10 * 60 * 1000;
+const PROBE_RATE = { table: "verify_caller_rate", limit: 30, windowMs: 60 * 60 * 1000 };
 
 // The registered owner may force a fresh probe, so a lister can re-check on
 // demand; anyone else keeps the twenty hour cap.
@@ -55,6 +57,14 @@ export async function POST(
   }
   if (!/^\d+$/.test(tokenId)) {
     return NextResponse.json({ success: false, error: "bad token id" }, { status: 400 });
+  }
+
+  const probe = await enforceRateLimit(PROBE_RATE, { keys: [`ip:${clientIpFrom(req.headers)}`] });
+  if (!probe.allowed) {
+    return NextResponse.json(
+      { success: false, error: "too many probes from this address" },
+      { status: 429 },
+    );
   }
 
   const body = (await req.json().catch(() => ({}))) as {

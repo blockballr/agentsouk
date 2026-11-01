@@ -47,6 +47,7 @@ const CHECKS: Array<{ asks: string; how: string; href: string; external?: boolea
 export function JudgePage() {
   const [jobs, setJobs] = useState<StatusJob[] | null>(null)
   const [chainId, setChainId] = useState<number | null>(null)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -57,7 +58,9 @@ export function JudgePage() {
         setChainId(r.data.chainId)
       })
       .catch(() => {
-        if (!cancelled) setJobs([])
+        if (cancelled) return
+        setFailed(true)
+        setJobs([])
       })
     return () => {
       cancelled = true
@@ -146,6 +149,10 @@ export function JudgePage() {
                 : ''}
             </Txt>
           </Row>
+        ) : failed ? (
+          <Txt size={13} tone="slate">
+            Status unavailable. The API did not answer, so the live figures cannot be attested right now.
+          </Txt>
         ) : (
           <Txt size={13} tone="muted">
             Reading /api/status

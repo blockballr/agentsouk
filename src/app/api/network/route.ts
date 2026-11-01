@@ -55,9 +55,14 @@ async function readBlock(chainId: number): Promise<{ tps: number | null; block: 
       chain: chainId === BSC_TESTNET_CHAIN_ID ? bscTestnet : bsc,
       transport: rpcTransport(chainId),
     });
-    const block = await client.getBlock({ blockTag: "latest", includeTransactions: false });
-    const txs = block.transactions.length;
-    return { tps: Math.round(txs / 3), block: Number(block.number), error: null };
+    const head = await client.getBlock({ blockTag: "latest", includeTransactions: false });
+    const earlierNumber = head.number > 100n ? head.number - 100n : 0n;
+    const earlier = await client.getBlock({ blockNumber: earlierNumber, includeTransactions: false });
+    const seconds = Number(head.timestamp - earlier.timestamp);
+    const blocks = Number(head.number - earlier.number);
+    const interval = blocks > 0 && seconds > 0 ? seconds / blocks : null;
+    const tps = interval ? Math.round(head.transactions.length / interval) : null;
+    return { tps, block: Number(head.number), error: null };
   } catch {
     return { tps: null, block: null, error: "chain unavailable" };
   }

@@ -102,6 +102,8 @@ export function MarketplacePage() {
     snapshotTime: string | null
     catalogueRefreshedAt: string | null
     source: 'store' | 'snapshot' | 'unavailable'
+    counts: Record<string, number>
+    onlineCounts: Record<string, number>
     total: number
   } | null>(null)
   // the network is unknown until the market answers; do not paint the compiled
@@ -155,6 +157,8 @@ export function MarketplacePage() {
             snapshotTime: r.snapshotTime,
             catalogueRefreshedAt: r.indexStatus.catalogueRefreshedAt,
             source: r.indexStatus.catalogueSource,
+            counts: r.counts,
+            onlineCounts: r.onlineCounts,
             total: r.total,
           })
           setChainId(r.chainId)
@@ -297,10 +301,20 @@ export function MarketplacePage() {
             <div className="-mx-1 flex min-w-0 flex-1 items-center gap-6 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <Tab active={category === 'all'} onClick={() => setParam('category', 'all')}>
                 All
+                {result ? (
+                  <span className="ml-1.5 font-mono text-[10px] text-souk-muted" title={`${result.onlineCounts.all ?? 0} online of ${result.counts.all ?? 0}`}>
+                    {result.onlineCounts.all ?? 0}/{result.counts.all ?? 0}
+                  </span>
+                ) : null}
               </Tab>
               {CATEGORIES.map((c) => (
                 <Tab key={c.key} active={category === c.key} onClick={() => setParam('category', c.key)}>
                   {c.label}
+                  {result ? (
+                    <span className="ml-1.5 font-mono text-[10px] text-souk-muted" title={`${result.onlineCounts[c.key] ?? 0} online of ${result.counts[c.key] ?? 0}`}>
+                      {result.onlineCounts[c.key] ?? 0}/{result.counts[c.key] ?? 0}
+                    </span>
+                  ) : null}
                 </Tab>
               ))}
             </div>
@@ -554,7 +568,7 @@ function Tab({
 }: {
   active: boolean
   onClick: () => void
-  children: string
+  children: ReactNode
 }) {
   return (
     <button

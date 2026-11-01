@@ -30,12 +30,20 @@ export async function GET(req: NextRequest) {
   const pcs = sp.get("pcs") === "1";
 
   const tStart = performance.now();
+  let tVerify = tStart;
+  let tCustom = tStart;
   const [verifications, customAgents] = await Promise.all([
-    loadVerifications(),
-    listCustomAgents().catch(() => []),
+    loadVerifications().then((value) => {
+      tVerify = performance.now();
+      return value;
+    }),
+    listCustomAgents()
+      .catch(() => [])
+      .then((value) => {
+        tCustom = performance.now();
+        return value;
+      }),
   ]);
-  const tVerify = performance.now();
-  const tCustom = tVerify;
   const customByToken = new Map<string, (typeof customAgents)[number]>();
   for (const ca of customAgents) {
     if (ca.onChainTokenId) customByToken.set(String(ca.onChainTokenId), ca);
@@ -145,14 +153,23 @@ export async function GET(req: NextRequest) {
   });
 
   const tEnd = performance.now();
+  const tDeps = Math.max(tVerify, tCustom);
   const timing = {
     verifications: Math.round(tVerify - tStart),
-    custom: Math.round(tCustom - tVerify),
-    query: Math.round(tQuery - tCustom),
+    custom: Math.round(tCustom - tStart),
+    query: Math.round(tQuery - tDeps),
     skills: Math.round(tSkills - tQuery),
     enrich: Math.round(tEnd - tSkills),
     total: Math.round(tEnd - tStart),
   };
+
+  const headers: Record<string, string> = {
+    "Cache-Control": "public, max-age=0, must-revalidate",
+    "Vercel-CDN-Cache-Control": "public, s-maxage=600, stale-while-revalidate=600",
+  };
+  if (sp.get("timing") === "1") {
+    headers["Server-Timing"] = `verifications;dur=${timing.verifications}, custom;dur=${timing.custom}, query;dur=${timing.query}, skills;dur=${timing.skills}, enrich;dur=${timing.enrich}, total;dur=${timing.total}`;
+  }
 
   return NextResponse.json({
     success: true,
@@ -173,14 +190,8 @@ export async function GET(req: NextRequest) {
     shelved: result.indexStatus.shelved,
     registryTotal: result.indexStatus.registryTotal,
     counts: result.categoryCounts,
+    onlineCounts: result.onlineCounts,
     snapshotTime: result.indexStatus.snapshotTime,
     lastTopUpAt: result.indexStatus.lastTopUpAt,
-  }, {
-    headers: {
-      "Cache-Control": "public, max-age=0, must-revalidate",
-      // Vercel caches the CDN copy on this header while the browser revalidates
-      "Vercel-CDN-Cache-Control": "public, s-maxage=600, stale-while-revalidate=600",
-      "Server-Timing": `verifications;dur=${timing.verifications}, custom;dur=${timing.custom}, query;dur=${timing.query}, skills;dur=${timing.skills}, enrich;dur=${timing.enrich}, total;dur=${timing.total}`,
-    },
-  });
+  }, { headers });
 }

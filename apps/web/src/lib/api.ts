@@ -34,6 +34,7 @@ export interface AgentsResult {
   snapshotTime: string | null
   lastTopUpAt: number | null
   counts: Record<string, number>
+  onlineCounts: Record<string, number>
   chainId: number | null
   // the catalogue's own state, from the shared store rather than the committed file
   indexStatus: IndexStatus
@@ -76,6 +77,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     snapshotTime?: string | null
     lastTopUpAt?: number | null
     counts?: Record<string, number>
+    onlineCounts?: Record<string, number>
     chainId?: number
     indexStatus?: {
       catalogueRefreshedAt?: string | null
@@ -122,6 +124,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
         ? body.lastTopUpAt
         : null,
     counts: body.counts ?? {},
+    onlineCounts: body.onlineCounts ?? {},
     chainId,
     indexStatus,
   }

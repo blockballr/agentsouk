@@ -811,7 +811,7 @@ async function writeCatalogueMeta(
 // registry total the refresh observed and the size of the catalogue it served.
 // Head at the time the catalogue record was written.
 async function chainHeadBlock(chainId: number): Promise<number | null> {
-  if (process.env.NODE_ENV !== "production") return null;
+  if (!process.env.DATABASE_URL || process.env.NODE_ENV !== "production") return null;
   for (const url of rpcUrls(chainId)) {
     try {
       const res = await fetch(url, {
@@ -1268,6 +1268,7 @@ export interface QueryResult {
     lastDurableReadAt: number | null;
   };
   categoryCounts: Record<string, number>;
+  onlineCounts: Record<string, number>;
 }
 
 export async function queryAgents(
@@ -1365,6 +1366,15 @@ export async function queryAgents(
     categoryCounts[key] = (categoryCounts[key] ?? 0) + 1;
   }
 
+  const onlineCounts: Record<string, number> = { all: 0 };
+  for (const a of shelf) {
+    const status = verifications?.get(a.token_id)?.status;
+    if (status !== "online" && status !== "delivered") continue;
+    onlineCounts.all += 1;
+    const key = a.category ?? "general";
+    onlineCounts[key] = (onlineCounts[key] ?? 0) + 1;
+  }
+
   items = sortAgents(items, resolvedType, resolvedMetric, category, verifications, rotationSeed(opts.seed));
 
   const total = items.length;
@@ -1402,6 +1412,7 @@ export async function queryAgents(
       lastDurableReadAt: durableReadAt,
     },
     categoryCounts,
+    onlineCounts,
   };
 }
 

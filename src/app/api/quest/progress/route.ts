@@ -152,6 +152,7 @@ export async function GET(req: NextRequest) {
       category: a.category ?? "general",
     }));
 
+  const distinctAgents = new Set(hires.map((h) => h.agent)).size;
   const hiredAllFour = CATEGORY_KEYS.every((k) => categories[k]);
   const listedOne = listings.length > 0;
   const { points, awards, agentsHired, finished: completed } = questAwards(hires, listedOne);
@@ -169,6 +170,7 @@ export async function GET(req: NextRequest) {
     categories,
     hiredAllFour,
     agentsHired,
+    distinctAgents,
     requiredHires: REQUIRED_HIRES,
     // our own wallets never earn a stamp, so a page must not read their empty list as "has not hired"
     team: isTeam,

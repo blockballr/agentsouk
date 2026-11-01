@@ -60,8 +60,8 @@ export function NetworkTicker({
       try {
         const r = await getNetwork()
         if (cancelled) return
-        setPrice(r.data.price)
-        setTps(r.data.tps)
+        if (r.data.price !== null) setPrice(r.data.price)
+        if (r.data.tps !== null) setTps(r.data.tps)
       } catch {
         // keep the last reading
       }
