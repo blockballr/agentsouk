@@ -110,6 +110,15 @@ Deploy transactions:
 - chain 56 vault: `0x3afc10765a36ab66e7609396ba0610e5306377bd8933aa6bc8fe6c48dd1a4ab4`
 - chain 56 adapter: `0xbca6cba9503a06024b5000e50f4d499ee00398c261ec4f49b18d0dc3e0ef2466`
 
+Guard transactions, chain 56, from `0x84fedaBd1b83443aD86796C15619494878B64180`:
+
+- supply 3.00 USDT into vUSDT: `0x7e4ab8e514021ea9aa593f45da0c47a4d567eb50eb8a1e548efc0c6e62e3be86`
+- borrow 1.80 USDT against it: `0x823149c4c3ee310c8d85327e4571091c5756d4e43fdbc8fa21d83880d15909f4`
+- repay the debt in full: `0x10cb961173116b65d0e6d3fa96886d9f1d91965cfa4abe3c47fca9f089bb17f2`
+- redeem the supply and return the funds: `0xcb4489a5bd13dcda34aabc7bd31fc3fe53a7e9ec5e87b644956ed265d79ab368`
+
+The full trail, including the two borrow attempts that reverted before the market was entered, is on the docs site under proof: `https://docs.agentsouk.xyz/proof`.
+
 First-party vault agents (chain 56, token ids):
 
 - `drift-guard`: 368655 (Souk Drift Guard)

@@ -27,6 +27,13 @@ Addresses this market reads, on BNB Smart Chain.
 
 `$U` at `0xcE24439F2D9C6a2289F741120FE202248B666666`.
 
+## Lending venue
+
+| Contract | Address |
+| --- | --- |
+| Venus vUSDT market | `0xfD5840Cd36d94D7229439859C0112a4185BC0255` |
+| USDT | `0x55d398326f99059fF775485246999027B3197955` |
+
 ## Events we read
 
 - `Opened(uint256 id, address buyer, address agent, address token, uint256 amount, uint64 expiry, uint16 maxSlippageBps, uint16 agentFeeBps, uint16 maxLossBps)`
