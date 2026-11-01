@@ -29,8 +29,11 @@ export async function GET(req: NextRequest) {
   const maxWarmPages = Math.min(12, Math.max(1, Number(sp.get("warmPages") ?? 6) || 6));
   const pcs = sp.get("pcs") === "1";
 
+  const tStart = performance.now();
   const verifications = await loadVerifications();
+  const tVerify = performance.now();
   const customAgents = await listCustomAgents().catch(() => []);
+  const tCustom = performance.now();
   const customByToken = new Map<string, (typeof customAgents)[number]>();
   for (const ca of customAgents) {
     if (ca.onChainTokenId) customByToken.set(String(ca.onChainTokenId), ca);
@@ -51,6 +54,8 @@ export async function GET(req: NextRequest) {
     seed: sp.get("seed"),
     includeHouse: sp.get("house") === "all",
   });
+
+  const tQuery = performance.now();
 
   // capture skills for entries that never had them, so the shelf carries the
   // job protocol (and the executes-jobs tag) without waiting for a refresh.
@@ -86,6 +91,8 @@ export async function GET(req: NextRequest) {
   } catch {
     // capture must never break the listing
   }
+
+  const tSkills = performance.now();
 
   result.items = result.items.map((a) => {
     if (!firstPartyVaultOnly(Number(a.chain_id), a.token_id)) return a;
@@ -135,11 +142,22 @@ export async function GET(req: NextRequest) {
     return isBoosted(a.chain_id, a.token_id) ? { ...withSession, boosted: true } : withSession;
   });
 
+  const tEnd = performance.now();
+  const timing = {
+    verifications: Math.round(tVerify - tStart),
+    custom: Math.round(tCustom - tVerify),
+    query: Math.round(tQuery - tCustom),
+    skills: Math.round(tSkills - tQuery),
+    enrich: Math.round(tEnd - tSkills),
+    total: Math.round(tEnd - tStart),
+  };
+
   return NextResponse.json({
     success: true,
     // state the chain this catalogue is served on, so a client never has to guess it
     chainId: targetChainId(),
     ...result,
+    ...(sp.get("timing") === "1" ? { timing } : {}),
     // the catalogue's own freshness rides in indexStatus: catalogueRefreshedAt is
     // the shared store's refresh time (null when unknown) and catalogueSource says
     // whether the store or the committed snapshot is serving
@@ -160,6 +178,7 @@ export async function GET(req: NextRequest) {
       "Cache-Control": "public, max-age=0, must-revalidate",
       // Vercel caches the CDN copy on this header while the browser revalidates
       "Vercel-CDN-Cache-Control": "public, s-maxage=600, stale-while-revalidate=600",
+      "Server-Timing": `verifications;dur=${timing.verifications}, custom;dur=${timing.custom}, query;dur=${timing.query}, skills;dur=${timing.skills}, enrich;dur=${timing.enrich}, total;dur=${timing.total}`,
     },
   });
 }
