@@ -2118,7 +2118,14 @@ function HirePanel({
             <Row label="Price" value={`$${option.amountUsd} ${option.tokenSymbol}`} mono />
             <Row label="To" value={shortAddress(option.payTo)} mono />
             <Row label="For" value={preview.resource.description} />
+            <Row label="Method" value={option.assetTransferMethod === 'eip3009' ? 'EIP-3009 transferWithAuthorization' : 'Permit2 approval'} mono />
+            <Row label="Asset" value={`${option.tokenSymbol} · ${shortAddress(option.originalAccept.asset)}`} mono />
+            <Row label="Network" value={option.originalAccept.network} mono />
+            <Row label="Valid for" value={`${option.originalAccept.maxTimeoutSeconds}s after signing`} />
           </div>
+          <p className="mt-3 text-[11px] leading-4 text-souk-muted">
+            One amount, one recipient. No blanket approval.
+          </p>
           {step === 'preview' ? (
             <div className="mt-4 space-y-2">
               {shortForHire && (
