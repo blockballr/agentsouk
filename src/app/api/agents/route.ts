@@ -30,10 +30,12 @@ export async function GET(req: NextRequest) {
   const pcs = sp.get("pcs") === "1";
 
   const tStart = performance.now();
-  const verifications = await loadVerifications();
+  const [verifications, customAgents] = await Promise.all([
+    loadVerifications(),
+    listCustomAgents().catch(() => []),
+  ]);
   const tVerify = performance.now();
-  const customAgents = await listCustomAgents().catch(() => []);
-  const tCustom = performance.now();
+  const tCustom = tVerify;
   const customByToken = new Map<string, (typeof customAgents)[number]>();
   for (const ca of customAgents) {
     if (ca.onChainTokenId) customByToken.set(String(ca.onChainTokenId), ca);
