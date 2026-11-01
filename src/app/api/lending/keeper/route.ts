@@ -25,8 +25,8 @@ export async function GET(req: NextRequest) {
 
   const policy = lendingDefensePolicyFromEnv(process.env);
   const holdings = {
-    stableUsd: Number(process.env.LENDING_STABLE_USD ?? "0"),
-    collateralUsd: Number(process.env.LENDING_COLLATERAL_USD ?? "0"),
+    stableUsd: Number(req.nextUrl.searchParams.get("stableUsd") ?? process.env.LENDING_STABLE_USD ?? "0"),
+    collateralUsd: Number(req.nextUrl.searchParams.get("collateralUsd") ?? process.env.LENDING_COLLATERAL_USD ?? "0"),
   };
 
   try {
