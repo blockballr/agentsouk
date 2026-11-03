@@ -59,6 +59,10 @@ export function firstPartyDescription(chainId: number, tokenId: string): string 
   return byToken(chainId, tokenId)?.description ?? null;
 }
 
+export function firstPartyAgentsFor(chainId: number): FirstPartyAgent[] {
+  return all().filter((a) => a.chainId === Number(chainId));
+}
+
 export function firstPartyWallet(chainId: number, tokenId: string): string | null {
   return byToken(chainId, tokenId)?.wallet ?? null;
 }

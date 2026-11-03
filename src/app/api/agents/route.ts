@@ -63,6 +63,7 @@ export async function GET(req: NextRequest) {
     verifications,
     seed: sp.get("seed"),
     includeHouse: sp.get("house") === "all",
+    liveOnly: sp.get("all") !== "1",
   });
 
   const tQuery = performance.now();

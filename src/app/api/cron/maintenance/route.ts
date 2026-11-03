@@ -7,6 +7,7 @@ import { escrowFunder, escrowStatuses, releaseEscrowIfDue } from "@/lib/escrow";
 import { listRecentPayments } from "@/lib/receipts-store";
 import { emitNotification } from "@/lib/notifications";
 import { queryAgents } from "@/lib/scanner";
+import { reconcileFirstPartyShelf } from "@/lib/shelf-admission";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,8 @@ async function run(): Promise<NextResponse> {
     }
   }
 
+  const reconcile = await reconcileFirstPartyShelf(targetChainId()).catch(() => []);
+
   return NextResponse.json({
     success: true,
     chainId: targetChainId(),
@@ -126,6 +129,7 @@ async function run(): Promise<NextResponse> {
     delisted,
     warned,
     released,
+    reconcile,
     stale: stale.map((t) => ({
       tokenId: t.tokenId,
       name: t.name,

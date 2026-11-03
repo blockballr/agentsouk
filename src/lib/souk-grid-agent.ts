@@ -8,7 +8,7 @@ import { privateEndpointReason } from "./endpoint";
 import { gridPlanSkill, type GridAgentCard, type GridAgentSkill } from "./reference-grid";
 import { VAULT_BY_CHAIN } from "./vault";
 
-export const SOUK_GRID_AGENT_NAME = "Souk Grid Pilot";
+export const SOUK_GRID_AGENT_NAME = "Souk Grid Desk";
 export const SOUK_GRID_AGENT_VERSION = "1.0.0";
 export const SOUK_GRID_AGENT_CATEGORY = "grid-trading";
 export const SOUK_GRID_AGENT_PROTOCOL_VERSION = "0.3.0";

@@ -946,6 +946,13 @@ export interface ShelfAdmission {
 // shelf serves it on this instance and the durable store carries it to the
 // fleet. Refusal is a sentence, never a thrown error, because the registration
 // is a chain fact and the shelf decision must not fail it.
+// whether a token is on the shelf at all, so a reconciler can tell a listing
+// that was never admitted from one that is merely filtered out of a view
+export async function shelfHasToken(chainId: number, tokenId: string): Promise<boolean> {
+  await loadSnapshot();
+  return index.agents.has(indexKey(chainId, String(tokenId)));
+}
+
 export async function admitConfirmedAgent(
   summary: AgentSummary,
 ): Promise<ShelfAdmission> {
@@ -1232,6 +1239,8 @@ export interface QueryOptions {
   includeHouse?: boolean;
   // an owner's own view keeps a delisted agent, so it can be relisted from there
   includeDelisted?: boolean;
+  // the browse shelf pages only listings whose probe answered
+  liveOnly?: boolean;
 }
 
 export interface QueryResult {
@@ -1323,7 +1332,12 @@ export async function queryAgents(
     const v = verificationsMap?.get(String(a.token_id));
     return v?.quotable !== false;
   });
-  const shelf = opts.includeHouse ? executable : withoutHouseAgents(executable, verifications);
+  // a probe that never answered is not paged as hireable
+  const live = opts.liveOnly ? executable.filter((a) => {
+    const v = verificationsMap?.get(String(a.token_id));
+    return v?.status === "online" || v?.status === "delivered";
+  }) : executable;
+  const shelf = opts.includeHouse ? live : withoutHouseAgents(live, verifications);
   let items = shelf;
 
   if (category && category !== "all") {
