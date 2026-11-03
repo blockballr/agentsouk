@@ -35,6 +35,10 @@ function moved(host: string, pathname: string, search: string): Response {
   return Response.redirect(`https://${host}${pathname}${search}`, 308);
 }
 
+function subpath(pathname: string, prefix: string): string {
+  return pathname.slice(prefix.length) || "/";
+}
+
 export const onRequest = async (context: PagesContext): Promise<Response> => {
   const url = new URL(context.request.url);
   const host = url.hostname;
@@ -43,8 +47,8 @@ export const onRequest = async (context: PagesContext): Promise<Response> => {
   // the apex is the homepage and nothing else
   if (APEX_HOSTS.has(host)) {
     if (path === "/" || isAsset(path)) return context.next();
-    if (path === "/docs" || path.startsWith("/docs/")) return moved(DOCS_HOST, "/", url.search);
-    if (path === "/station" || path.startsWith("/station/")) return moved(STATION_HOST, "/", url.search);
+    if (path === "/docs" || path.startsWith("/docs/")) return moved(DOCS_HOST, subpath(path, "/docs"), url.search);
+    if (path === "/station" || path.startsWith("/station/")) return moved(STATION_HOST, subpath(path, "/station"), url.search);
     return moved(APP_HOST, path, url.search);
   }
 
@@ -55,9 +59,11 @@ export const onRequest = async (context: PagesContext): Promise<Response> => {
     return moved(host, "/", url.search);
   }
 
-  // the app root is the marketplace; the marketing homepage stays on the apex
-  if (host === APP_HOST && path === "/") {
-    return moved(APP_HOST, "/agents", url.search);
+  // the app host owns the app and the manual lives on its own origin, so the
+  // redirect happens here rather than after the bundle boots and swaps
+  if (host === APP_HOST) {
+    if (path === "/docs" || path.startsWith("/docs/")) return moved(DOCS_HOST, subpath(path, "/docs"), url.search);
+    if (path === "/") return moved(APP_HOST, "/agents", url.search);
   }
 
   return context.next();

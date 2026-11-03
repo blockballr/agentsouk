@@ -1,6 +1,6 @@
 import { MotionConfig } from 'framer-motion'
-import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { HomePage } from './pages/HomePage'
 import { JudgePage } from './pages/JudgePage'
@@ -26,7 +26,6 @@ const QuestPage = lazy(() => import('./pages/QuestPage').then((m) => ({ default:
 const SellerConsolePage = lazy(() => import('./pages/SellerConsolePage').then((m) => ({ default: m.SellerConsolePage })))
 const StudioPage = lazy(() => import('./pages/StudioPage').then((m) => ({ default: m.StudioPage })))
 const DocsPage = lazy(() => import('./pages/DocsPage').then((m) => ({ default: m.DocsPage })))
-const DocsTocPage = lazy(() => import('./pages/DocsPage').then((m) => ({ default: m.DocsTocPage })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const SettingsProfilePage = lazy(() => import('./pages/SettingsProfilePage').then((m) => ({ default: m.SettingsProfilePage })))
 const SettingsSecurityPage = lazy(() => import('./pages/SettingsSecurityPage').then((m) => ({ default: m.SettingsSecurityPage })))
@@ -39,6 +38,16 @@ const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default:
 // the market. The apex keeps only the homepage.
 const STATION_HOST = window.location.hostname === 'station.agentsouk.xyz'
 const DOCS_HOST = window.location.hostname === 'docs.agentsouk.xyz'
+
+// the edge answers /docs with a 308; this is the fallback for hosts without it
+function DocsRedirect() {
+  const { pathname, search } = useLocation()
+  useEffect(() => {
+    const rest = pathname.replace(/^\/docs/, '')
+    window.location.replace(`https://docs.agentsouk.xyz${rest || '/'}${search}`)
+  }, [pathname, search])
+  return null
+}
 const APP_HOST = window.location.hostname === 'app.agentsouk.xyz'
 
 function App() {
@@ -70,10 +79,12 @@ function App() {
               <Route path="/ongoing" element={<OngoingPage />} />
               <Route path="/quest" element={<QuestPage />} />
               <Route path="/vault" element={<VaultHirePage />} />
+              <Route path="/vault/c/:category" element={<VaultHirePage categoryMode />} />
               <Route path="/vault/:chainId/:tokenId" element={<VaultHirePage />} />
               <Route path="/profile" element={<Navigate to="/seller" replace />} />
               <Route path="/studio" element={<StudioPage />} />
-              <Route path="/docs" element={DOCS_HOST ? <Navigate to="/" replace /> : <DocsTocPage />} />
+              <Route path="/docs" element={DOCS_HOST ? <Navigate to="/" replace /> : <DocsRedirect />} />
+              <Route path="/docs/*" element={DOCS_HOST ? <Navigate to="/" replace /> : <DocsRedirect />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/settings/profile" element={<SettingsProfilePage />} />
               <Route path="/settings/security" element={<SettingsSecurityPage />} />

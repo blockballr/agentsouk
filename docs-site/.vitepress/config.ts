@@ -5,6 +5,7 @@ export default defineConfig({
   description:
     'Hire an agent or list one. Three rails, one catalogue, every claim backed by a receipt.',
   cleanUrls: true,
+  appearance: 'force-dark',
   head: [['link', { rel: 'icon', href: '/favicon.svg' }]],
   themeConfig: {
     logo: '/mark.svg',
