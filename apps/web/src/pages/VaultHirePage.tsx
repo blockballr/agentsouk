@@ -25,6 +25,7 @@ import {
   type VaultHire,
 } from '../lib/vault'
 import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
+import { categoryRail, policyMatchesCategory } from '../lib/vault-category'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { useTargetChain } from '../lib/target-chain'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
@@ -191,8 +192,14 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   const targetChain = useTargetChain()
   const { t } = useI18n()
   const [prefill, setPrefill] = useState<Prefill | null>(null)
+  const rail = categoryRail(prefill?.category)
   const [manualAgent, setManualAgent] = useState('')
   const [tokenChoice, setTokenChoice] = useState<'WBNB' | 'USDT'>('WBNB')
+  // a category that takes one asset never opens as a swap, so the choice follows
+  // the rail instead of the other way round
+  useEffect(() => {
+    if (rail.deposit === 'single') setTokenChoice('USDT')
+  }, [rail.deposit])
   const [amount, setAmount] = useState('0.1')
   const [expiryIndex, setExpiryIndex] = useState(0)
   const [slippage, setSlippage] = useState(5) // percentage (5% = 500 bps)
@@ -510,6 +517,12 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   }
 
   async function openHire() {
+    if (!rail.supported) return setFormError(rail.note)
+    if (!policyMatchesCategory(agentPolicy, prefill?.category ?? null)) {
+      return setFormError(
+        `This agent runs the ${agentPolicy} policy, which does not fit a ${rail.category} listing.`,
+      )
+    }
     setFormError(null)
     if (!vault) return setFormError(`No vault is configured for ${CHAIN.label}.`)
     if (!account) return setFormError('Connect a wallet before opening a hire.')
@@ -767,7 +780,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             <Stack gap={8} className="min-w-0">
               <Label tone="muted">{t('vault.depositToken')}</Label>
               <div className="grid grid-cols-2 gap-2">
-                {(['WBNB', 'USDT'] as const).map((s) => (
+                {(rail.deposit === 'single' ? (['USDT'] as const) : (['WBNB', 'USDT'] as const)).map((s) => (
                   <Btn
                     key={s}
                     kind={tokenChoice === s ? 'keep' : 'off'}
@@ -779,9 +792,11 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 ))}
               </div>
               <Txt size={12} lead={18} tone="steel">
-                {tokenChoice === 'USDT'
-                  ? 'USDT is the BNB Chain stable. The open only spends what you approve.'
-                  : 'WBNB is wrapped from BNB in the signed step below. The open only spends what you approve.'}
+                {rail.deposit === 'single'
+                  ? `${rail.note}. Only what you approve is spent.`
+                  : tokenChoice === 'USDT'
+                    ? 'USDT is the BNB Chain stable. The open only spends what you approve.'
+                    : 'WBNB is wrapped from BNB in the signed step below. The open only spends what you approve.'}
               </Txt>
               <Txt size={11} lead={16} mono tone="data">
                 {capFor(tokenChoice)}
