@@ -12,6 +12,7 @@ import { serialLabel } from "@/lib/passport-serial";
 import { rpcTransport } from "@/lib/rpc";
 import { vaultFor } from "@/lib/vault";
 import { readHire } from "@/lib/vault-executor";
+import { listHirePolicies } from "@/lib/policy-registry";
 import { firstPartyBadges } from "@/lib/first-party-copy";
 import { BSC_TESTNET_CHAIN_ID, targetChainId } from "@/lib/types";
 
@@ -107,6 +108,8 @@ export async function GET(req: NextRequest) {
         transport: rpcTransport(vaultChainId),
       });
       const byWallet = new Map(firstPartyBadges(vaultChainId).map((b) => [b.wallet.toLowerCase(), b]));
+      const tags = await listHirePolicies(vaultChainId).catch(() => []);
+      const tagById = new Map(tags.map((t) => [t.hireId, t]));
       const ids = (await client.readContract({
         address: vault as `0x${string}`,
         abi: HIRES_OF_ABI,
@@ -126,15 +129,16 @@ export async function GET(req: NextRequest) {
         const badge = byWallet.get(hire.agent.toLowerCase());
         if (!badge) continue;
         const category = badge.category;
+        const tag = tagById.get(id.toString());
         hires.push({
           paymentId: `vault:${vaultChainId}:${id}`,
           agent: `${vaultChainId}:${badge.tokenId}`,
           tokenId: badge.tokenId,
           agentName: badge.name ?? "vault agent",
           category,
-          txHash: null,
+          txHash: tag?.txHash ?? null,
           mode: "prod",
-          createdAt: null,
+          createdAt: tag?.openedAt ?? null,
         });
         if (category && CATEGORY_KEYS.includes(category as CategoryKey)) categories[category] = true;
       }

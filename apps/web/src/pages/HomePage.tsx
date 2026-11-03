@@ -6,6 +6,7 @@ import { CATEGORIES } from '@agora/core'
 import { chainLabel, explorerTxBase, settlementAssetFor } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { AnimatedNumber } from '../components/AnimatedNumber'
+import { CategoryCard } from '../components/CategoryCard'
 import { Reveal } from '../components/Reveal'
 import { SPRING_STIFF, SPRING_SMOOTH } from '../lib/motion'
 import { Stack, Row, Txt, Pill, Dot, SectionHead, Btn, Label } from '../components/souk'
@@ -124,7 +125,9 @@ export function HomePage() {
     fetch(`${base}/agents?type=all&limit=1`)
       .then((r) => r.json())
       .then((d) => {
-        if (typeof d?.shelved === 'number') setCuratedAgents(d.shelved)
+        const online = d?.onlineCounts?.all
+        if (typeof online === 'number') setCuratedAgents(online)
+        else if (typeof d?.shelved === 'number') setCuratedAgents(d.shelved)
         else if (typeof d?.total === 'number') setCuratedAgents(d.total)
         if (d?.categoryCounts && typeof d.categoryCounts === 'object') {
           setCategoryCounts(d.categoryCounts as Record<string, number>)
@@ -233,7 +236,7 @@ export function HomePage() {
                   <dd className="mt-1 font-mono text-[10px] uppercase leading-[14px] text-souk-labels">
                     {curatedAgents === null
                       ? 'Live count unavailable'
-                      : `${curatedAgents.toLocaleString('en-US')} curated on Agent Souk`}
+                      : `${curatedAgents.toLocaleString('en-US')} hireable on Agent Souk`}
                   </dd>
                 ) : null}
               </motion.div>
@@ -257,27 +260,15 @@ export function HomePage() {
                 viewport={{ once: true, margin: '0px 0px -60px 0px' }}
                 transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
               >
-                <Link to={`/agents?category=${c.key}`} className="group block h-full">
-                  <Stack
-                    surface
-                    gap={12}
-                    pad={[20, 22, 20, 22]}
-                    className="h-full transition-colors group-hover:border-white/[0.16]"
-                  >
-                    {(
-                      <>
-                        <Row justify="between" align="center">
-                          <Txt size={10} lead={14} weight="bold" upper tone="muted">{c.short}</Txt>
-                          <Txt size={10} lead={14} mono tone="labels">
-                            {categoryCounts ? `${categoryCounts[c.key] ?? 0} agents` : 'reading'}
-                          </Txt>
-                        </Row>
-                        <Txt size={22} lead={28} weight="bold" tone="ink">{c.label}</Txt>
-                        <Txt size={13} lead={20} tone="slate">{c.blurb}</Txt>
-                      </>
-                    )}
-                  </Stack>
-                </Link>
+                <CategoryCard
+                  category={c.key}
+                  title={c.label}
+                  note={c.blurb}
+                  measure={categoryCounts ? `${categoryCounts[c.key] ?? 0} agents` : null}
+                  cta="Browse agents"
+                  to={`/agents?category=${c.key}`}
+                  size="sm"
+                />
               </motion.div>
               )
             })}
@@ -615,39 +606,6 @@ export function HomePage() {
 
       
 
-      <Reveal>
-        <section className="py-16 md:py-18">
-          <SectionHead title="What comes next." note="PIPELINE" />
-          {/* Plain text on purpose. The first version of this list carried a per-row string
-              that the row rendered behind a CSS blur, and the strings named a third party's
-              social handle beside a statement about what is unfinished. The blur did not
-              remove the text, it only made it hard to read, so the names were still in the
-              DOM, in this file and in the bundle. Anything left here is written out. */}
-          <div className="mt-12 space-y-3">
-            {[
-              'Grid execution wired to the bounded fill, so a planned ladder can be placed rather than only priced, with the rung floor taken from the plan and not from a live quote',
-              'The spend mandate on mainnet, so a session key cannot exceed its cap or pay above a published floor',
-              'Merchant-set hire pricing, so a seller sets the price instead of the marketplace applying a default',
-              'Self-reported agent performance, keeping the honest 404 when no scan has run',
-              'An evaluator quality leaderboard',
-              'A standalone API service',
-              'A mobile in-app browser regression pass',
-              'WalletConnect QR-based connection',
-              'A smart wallet support audit',
-              'Live settlement on mainnet, once the credentials are in place',
-            ].map((label) => (
-              <div key={label} className="flex items-start gap-4">
-                <span className="mt-2 inline-flex">
-                  <Dot tone="quiet" size={8} />
-                </span>
-                <Txt size={14} lead={20} tone="slate">
-                  {label}
-                </Txt>
-              </div>
-            ))}
-          </div>
-        </section>
-      </Reveal>
 
       {/* The not-done half of this list was removed rather than kept behind a blur. It carried a
           per-row string of placeholder text naming a third party's social handle, and the row

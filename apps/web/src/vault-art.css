@@ -1,0 +1,50 @@
+/* the four vault category scenes. the pen is the ink token, so the same drawing
+   reads navy on paper and near-white on the dark register without a second file.
+   motion is GSAP, set in VaultArt, so nothing here animates. */
+
+.vault-art {
+  width: 100%;
+  height: 118px;
+  display: block;
+}
+.vault-art.sm {
+  height: 92px;
+}
+
+.vault-art .stroke {
+  stroke: var(--color-souk-ink);
+}
+.vault-art .p-cool {
+  fill: var(--color-souk-sky);
+}
+.vault-art .p-warm {
+  fill: var(--color-souk-peach);
+}
+.vault-art .p-soft {
+  fill: var(--color-souk-surface2);
+}
+.vault-art .p-paper {
+  fill: var(--color-souk-surface1);
+}
+.vault-art .eye {
+  fill: var(--color-souk-canvas);
+}
+.vault-art .face-line {
+  stroke: var(--color-souk-canvas);
+}
+
+/* on paper the brand sky is a deep teal and the peach is an amber, so a full
+   fill reads heavier than the page around it. washing the block fills toward the
+   card keeps the drawing airy, and the face marks flip to ink to stay legible. */
+[data-theme='light'] .vault-art .p-cool {
+  fill: color-mix(in srgb, var(--color-souk-sky) 34%, var(--color-souk-surface1));
+}
+[data-theme='light'] .vault-art .p-warm {
+  fill: color-mix(in srgb, var(--color-souk-peach) 40%, var(--color-souk-surface1));
+}
+[data-theme='light'] .vault-art .eye {
+  fill: var(--color-souk-ink);
+}
+[data-theme='light'] .vault-art .face-line {
+  stroke: var(--color-souk-ink);
+}

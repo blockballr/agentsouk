@@ -1,0 +1,51 @@
+/* the hire, in action. one panel per category, driven by GSAP in HireInAction */
+
+.hia { display: flex; flex-direction: column; gap: 10px; }
+.hia-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hia-cat {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--color-souk-muted);
+}
+.hia-flow { display: flex; align-items: center; gap: 4px; }
+.hia-node {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  border: 1px solid var(--color-souk-hair);
+  border-radius: 8px;
+  padding: 6px 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--color-souk-steel);
+  transition: border-color .3s, color .3s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hia-node.hit { border-color: var(--color-souk-sky); color: var(--color-souk-ink); }
+.hia-leg { width: 30px; height: 2px; background: var(--color-souk-hair); position: relative; flex: none; }
+.hia-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--color-souk-sky);
+  position: absolute; top: -2px; left: 0; opacity: 0;
+}
+.hia-chart { width: 100%; height: auto; aspect-ratio: 320 / 132; display: block; max-width: 640px; }
+.hia-events { min-height: 60px; display: flex; flex-direction: column; gap: 3px; }
+.hia-ev {
+  font-family: var(--font-mono); font-size: 10px; line-height: 14px;
+  color: var(--color-souk-muted); opacity: 0;
+}
+.hia-ev b { color: var(--color-souk-data); font-weight: 500; }
+.hia-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hia-value { font-family: var(--font-mono); font-size: 12px; color: var(--color-souk-data); }
+.hia-note { margin: 0; font-size: 10px; line-height: 14px; color: var(--color-souk-muted); }
+.hia.compact .hia-flow { gap: 3px; }
+.hia.compact .hia-leg { width: 16px; }
+.hia.compact .hia-node { font-size: 8px; padding: 4px 2px; letter-spacing: .02em; }
+.hia.compact .hia-chart { aspect-ratio: 320 / 120; }

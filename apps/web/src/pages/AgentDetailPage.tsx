@@ -16,7 +16,7 @@ import {
   sellsByJob,
   CATEGORIES,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentActivity, getAgentDetail, getAuthority, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultAgents, getVaultExecutor, recordAgentView, retryTask, type AgentCardSkill, type AuthorityView, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row, type VaultAgentLink, type WalletActivity } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentDetail, getAuthority, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultAgents, getVaultExecutor, recordAgentView, retryTask, type AgentCardSkill, type AuthorityView, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row, type VaultAgentLink } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import Jobs8183JobCard from '../components/Jobs8183JobCard'
 import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
@@ -250,7 +250,6 @@ export function AgentDetailPage() {
   }, [detail])
   const [perfProbe, setPerfProbe] = useState<PerformanceProbe | null>(null)
   const [liveness, setLiveness] = useState<OnchainLiveness | null>(null)
-  const [activity, setActivity] = useState<WalletActivity | null>(null)
   // the connected viewer, so owner-only affordances can be hidden from everyone else
   // (the wallet itself comes from the watched hook below)
   // whether the wallet read and the hire lookup have answered, so nothing is claimed before they do
@@ -450,17 +449,6 @@ export function AgentDetailPage() {
     let cancelled = false
     fetchOnchainLiveness(chainId, tokenId).then((l) => {
       if (!cancelled) setLiveness(l)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [chainId, tokenId])
-
-  useEffect(() => {
-    let cancelled = false
-    setActivity(null)
-    getAgentActivity(chainId, tokenId).then((a) => {
-      if (!cancelled) setActivity(a)
     })
     return () => {
       cancelled = true
@@ -1000,35 +988,6 @@ export function AgentDetailPage() {
             </AsideCard>
           )}
 
-          <AsideCard>
-            <div className="flex items-center justify-between gap-3">
-              <p className="micro text-souk-ink">On-chain activity</p>
-              {activity?.available ? (
-                <Pill variant={activity.qualified ? 'keep' : 'off'}>
-                  {activity.qualified ? 'executes' : 'thin'}
-                </Pill>
-              ) : null}
-            </div>
-            {activity?.available ? (
-              <>
-                <div className="mt-3 space-y-2 text-xs">
-                  <Row label="Contract actions" value={`${activity.actions}`} />
-                  <Row label="Active days" value={`${activity.days}`} />
-                  <Row label="Last action" value={activity.lastAt ? timeAgo(activity.lastAt) : 'none'} />
-                </div>
-                <p className="micro mt-3 text-souk-muted">
-                  The listing standard asks for 5 actions on 3 days. Transfers, approvals and registry
-                  writes are excluded; job deliveries count.
-                </p>
-              </>
-            ) : (
-              <p className="micro mt-2 text-souk-muted">
-                {activity?.reason ?? 'The chain read is unavailable, so this is not shown as zero.'}
-              </p>
-            )}
-          </AsideCard>
-
-
           {/* the design's right column: the hire card and the quote are two cards
               of the same shell, not one card holding a note */}
           {(!vaultCapable || mySession) &&
@@ -1138,8 +1097,9 @@ export function AgentDetailPage() {
                 <Pill variant="good">Vault</Pill>
               </SoukRow>
               <Txt size={13} lead={20} tone="slate" className="mt-3 block">
-                Fund a hire and the agent trades it inside the vault. The deposit stays
-                in the contract, the loss is capped, and you withdraw whatever is left.
+                {detail.category === 'yield'
+                  ? 'The agent supplies it to a lending venue. The loss is capped and you withdraw whatever is left.'
+                  : 'The agent trades it inside the bounds. The loss is capped and you withdraw whatever is left.'}
               </Txt>
               <button
                 type="button"

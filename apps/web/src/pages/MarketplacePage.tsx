@@ -4,8 +4,9 @@ import type { AgentSummary } from '../core/types'
 import { defaultAvatarFor } from '../lib/default-avatar'
 import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, takesVault, shortAddress, timeAgo, classifyExecution } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
+import { HireInAction } from '../components/HireInAction'
 import { OnChainBadge } from '../components/OnChainBadge'
-import { getAgents, getRecentHires, prefetchAgent, type RecentHire } from '../lib/api'
+import { getAgents, prefetchAgent } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
@@ -92,7 +93,7 @@ export function MarketplacePage() {
   const hide = sp.get('hide') === '1'
   const verifiedOnly = sp.get('verified') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
-  const PAGE_SIZE = 48
+  const PAGE_SIZE = 12
 
   const [result, setResult] = useState<{
     items: AgentSummary[]
@@ -115,7 +116,6 @@ export function MarketplacePage() {
   const [error, setError] = useState<string | null>(null)
   const [shortlist, setShortlist] = useState<string[]>(() => getShortlist())
   const [showFilters, setShowFilters] = useState(false)
-  const [hires, setHires] = useState<RecentHire[] | null>(null)
   const [showLegend, setShowLegend] = useState(false)
 
   function handleToggle(key: string) {
@@ -127,20 +127,6 @@ export function MarketplacePage() {
     persistShortlist([])
   }
 
-  // the shelf says what can be hired; this reads what was, once, and never blocks the grid
-  useEffect(() => {
-    let live = true
-    getRecentHires(5)
-      .then((rows) => {
-        if (live) setHires(rows)
-      })
-      .catch(() => {
-        if (live) setHires([])
-      })
-    return () => {
-      live = false
-    }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -203,16 +189,12 @@ export function MarketplacePage() {
     [result],
   )
 
-  // the shelf's strap: the chain it reads, how many listings the registry holds,
-  // how many of them are curated onto the shelf, and how fresh that reading is.
-  // A part the market has not answered for is dropped, not guessed.
+  // the shelf's strap: chain, registry size, how many answer, and freshness
   const strap = [
     'shelf',
     chainId === null ? 'checking the network' : `${chainLabel(chainId)} ${chainId}`,
     result?.registryTotal ? `${result.registryTotal.toLocaleString('en-US')} agents` : null,
-    (result?.shelved ?? result?.snapshotTotal)
-      ? `${(result?.shelved ?? result?.snapshotTotal)!.toLocaleString('en-US')} shelved`
-      : null,
+    result ? `${(result.onlineCounts?.all ?? 0).toLocaleString('en-US')} hireable` : null,
     freshness,
   ]
     .filter((part): part is string => Boolean(part))
@@ -242,39 +224,20 @@ export function MarketplacePage() {
             <Txt size={11} lead={16} mono upper tone="data" className="line-clamp-2 sm:line-clamp-none">
               {strap}
             </Txt>
-            {/* the proof lives on /about, but a reviewer who lands here must still
-                see the chain and asset the market actually settles in */}
-            <Row align="center" gap={16} className="hidden flex-wrap sm:flex">
-              {chainId !== null ? (
-                <Txt size={11} lead={16} mono tone="steel">
-                  hires settle in {settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}
-                  {result ? ` · ${result.total.toLocaleString('en-US')} shown` : ''}
-                </Txt>
-              ) : null}
-              {chainId !== null && registry ? (
-                <a
-                  href={explorerAddressUrl(chainId, registry)}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={`ERC-8004 identity registry ${registry} on ${chainLabel(chainId)}`}
-                  className="font-mono text-[11px] leading-4 text-souk-sky transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
-                >
-                  ERC-8004 registry ↗
-                </a>
-              ) : null}
-            </Row>
           </Row>
 
-          <Row align="baseline" gap={12} className="flex-wrap">
-            <Txt size={34} lead={42} display weight="bold" tone="ink">
-              {category === 'all' ? 'Hire from the shelf.' : labelFor(category)}
-            </Txt>
-            {loading && !result ? (
-              <Txt size={11} lead={16} mono upper tone="muted">
-                loading agents
+          {category === 'all' ? null : (
+            <Row align="baseline" gap={12} className="flex-wrap">
+              <Txt size={34} lead={42} display weight="bold" tone="ink">
+                {labelFor(category)}
               </Txt>
-            ) : null}
-          </Row>
+              {loading && !result ? (
+                <Txt size={11} lead={16} mono upper tone="muted">
+                  loading agents
+                </Txt>
+              ) : null}
+            </Row>
+          )}
 
           <div className="flex flex-wrap items-center gap-2">
             {['ERC-8004', 'ERC-8183', 'x402', 'PancakeSwap'].map((rail) => (
@@ -287,10 +250,46 @@ export function MarketplacePage() {
             ))}
           </div>
         </Stack>
-        <HireFeed hires={hires} />
+        <Row align="center" gap={16} className="hidden self-end justify-end sm:flex">
+          {chainId !== null ? (
+            <Txt size={11} lead={16} mono tone="steel">
+              hires settle in {settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}
+              {result ? ` · ${result.total.toLocaleString('en-US')} shown` : ''}
+            </Txt>
+          ) : null}
+          {chainId !== null && registry ? (
+            <a
+              href={explorerAddressUrl(chainId, registry)}
+              target="_blank"
+              rel="noreferrer"
+              title={`ERC-8004 identity registry ${registry} on ${chainLabel(chainId)}`}
+              className="font-mono text-[11px] leading-4 text-souk-sky transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+            >
+              ERC-8004 registry ↗
+            </a>
+          ) : null}
+        </Row>
         </div>
         </Section>
         </div>
+
+        <Section pad="pt-2 pb-16">
+          <Row justify="between" align="baseline" gap={12} className="flex-wrap">
+            <Txt size={10} lead={14} weight="bold" upper tone="muted">
+              Hire on vault
+            </Txt>
+            <Txt size={11} lead={16} mono tone="steel">
+              four rails, one custody contract
+            </Txt>
+          </Row>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {CATEGORIES.map((c, i) => (
+              <Link key={c.key} to={`/vault/c/${c.key}`} className="block transition hover:opacity-90">
+                <HireInAction category={c.key} compact delay={i * 1.6} />
+              </Link>
+            ))}
+          </div>
+        </Section>
 
         {/* the control band: two rows, sticky. categories first, then find, rail,
             order and the count together; the toggles and the state key fold away
@@ -303,7 +302,7 @@ export function MarketplacePage() {
                 All
                 {result ? (
                   <span className="ml-1.5 font-mono text-[10px] text-souk-muted" title={`${result.onlineCounts.all ?? 0} online of ${result.counts.all ?? 0}`}>
-                    {result.onlineCounts.all ?? 0}/{result.counts.all ?? 0}
+                    {result.onlineCounts.all ?? 0}
                   </span>
                 ) : null}
               </Tab>
@@ -312,7 +311,7 @@ export function MarketplacePage() {
                   {c.label}
                   {result ? (
                     <span className="ml-1.5 font-mono text-[10px] text-souk-muted" title={`${result.onlineCounts[c.key] ?? 0} online of ${result.counts[c.key] ?? 0}`}>
-                      {result.onlineCounts[c.key] ?? 0}/{result.counts[c.key] ?? 0}
+                      {result.onlineCounts[c.key] ?? 0}
                     </span>
                   ) : null}
                 </Tab>
@@ -896,40 +895,3 @@ function EmptyState({ onReset }: { onReset: () => void }) {
 
 // the market's own last settlements, told as a log rather than a claim. one line
 // per hire, with the money in the settled colour so the proof reads first
-function HireFeed({ hires }: { hires: RecentHire[] | null }) {
-  const rows = hires ?? []
-  if (hires !== null && rows.length === 0) return null
-  return (
-    <div className="border border-souk-hair bg-souk-surface1/50">
-      <div className="flex items-center justify-between border-b border-souk-hair px-3 py-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-souk-muted">on the ledger</span>
-        <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-souk-good">
-          <span className="h-1.5 w-1.5 rounded-full bg-souk-good" />
-          live
-        </span>
-      </div>
-      {hires === null ? (
-        <p className="px-3 py-3 font-mono text-[11px] text-souk-muted">reading the ledger</p>
-      ) : (
-        <ul>
-          {rows.map((row) => (
-            <li
-              key={`${row.at}-${row.txHash ?? row.tokenId}`}
-              className="flex items-center gap-3 border-b border-souk-hair/60 px-3 py-2 font-mono text-[11px] last:border-b-0"
-            >
-              <span className="text-souk-muted">{clockOf(row.at)}</span>
-              <span className="min-w-0 flex-1 truncate text-souk-slate">{row.agentName}</span>
-              <span className="whitespace-nowrap text-souk-good">{`+${row.amount} ${row.symbol}`}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
-function clockOf(iso: string): string {
-  const at = new Date(iso)
-  if (Number.isNaN(at.getTime())) return '--:--'
-  return `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`
-}

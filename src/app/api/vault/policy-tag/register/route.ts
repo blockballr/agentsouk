@@ -56,8 +56,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (onchainAgent.toLowerCase() !== agent.toLowerCase()) {
     return json({ success: false, error: "the event and the stored hire disagree" }, 409);
   }
-  if (BigInt(hire[4] as bigint) !== 1n) return json({ success: false, error: "the hire is not open" }, 409);
-
-  await setHirePolicy(chainId, hireId, match.policy);
+  // a closed hire still counts for the quest, so the tag records it either way
+  const block = await client.getBlock({ blockNumber: receipt.blockNumber }).catch(() => null);
+  const openedAt = block ? new Date(Number(block.timestamp) * 1000).toISOString() : null;
+  await setHirePolicy(chainId, hireId, match.policy, { txHash, openedAt });
   return json({ success: true, ok: true, chainId, hireId, policy: match.policy, tokenId: match.tokenId, agent });
 }

@@ -14,7 +14,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const agents = firstPartyBadges(chainId)
     .filter((a) => a.vaultOnly)
-    .sort((a, b) => Number(a.tokenId) - Number(b.tokenId));
+    .sort((a, b) => Number(a.tokenId) - Number(b.tokenId))
+    .map((a) => ({ ...a, firstParty: true }));
 
   return NextResponse.json(
     { success: true, chainId, agents },

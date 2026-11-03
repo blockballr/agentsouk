@@ -119,7 +119,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
       </aside>
 
       <div className="min-w-0 flex-1">
-        <nav className="mb-4 flex gap-2 overflow-x-auto pb-1 md:hidden">
+        <nav className="mb-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:hidden">
           {RAIL.flatMap((g) => g.items).map((item) => (
             <RailLink key={item.to} item={item} chip />
           ))}

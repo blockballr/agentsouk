@@ -23,12 +23,53 @@ describe("category rail", () => {
   });
 
   it("falls back to a swap for an unknown or missing category", () => {
-    expect(categoryRail(null).category).toBe("general");
+    expect(categoryRail(null).category).toBe("not-declared");
     expect(categoryRail("nonsense").deposit).toBe("pair");
   });
 
   it("does not treat a health factor as a swap", () => {
     expect(categoryRail("health-factor").deposit).not.toBe("pair");
+  });
+});
+
+describe("category form", () => {
+  it("gives every category its own title, not the swap one", () => {
+    const titles = ["yield", "grid-trading", "rebalancing", "health-factor", null].map(
+      (category) => categoryRail(category).ui.title,
+    );
+    expect(new Set(titles).size).toBe(titles.length);
+    expect(categoryRail("grid-trading").ui.title).toContain("grids");
+    expect(categoryRail("rebalancing").ui.title).toContain("target weight");
+  });
+
+  it("gives a yield agent its own heading and no liquidity controls", () => {
+    const rail = categoryRail("yield");
+    expect(rail.label).toBe("Yield");
+    expect(rail.ui.heading).toBe("Open a yield hire");
+    expect(rail.ui.depositLabel).toBe("Deposit one asset");
+    expect(rail.ui.showsSlippage).toBe(false);
+    expect(rail.ui.showsPoolChoice).toBe(false);
+    expect(rail.ui.unsupported).toBeNull();
+  });
+
+  it("keeps the pair controls for grid and rebalance", () => {
+    for (const category of ["grid-trading", "rebalancing"]) {
+      const rail = categoryRail(category);
+      expect(rail.ui.showsSlippage).toBe(true);
+      expect(rail.ui.showsPoolChoice).toBe(true);
+    }
+  });
+
+  it("explains why a health factor has no form", () => {
+    const rail = categoryRail("health-factor");
+    expect(rail.supported).toBe(false);
+    expect(rail.ui.unsupported?.title).toContain("not on the vault rail");
+    expect(rail.ui.unsupported?.body).toContain("cannot borrow");
+  });
+
+  it("says what the open does in the category's words", () => {
+    expect(categoryRail("yield").ui.actionLine).toContain("supply and withdraw");
+    expect(categoryRail("grid-trading").ui.actionLine).toContain("fee tier");
   });
 });
 

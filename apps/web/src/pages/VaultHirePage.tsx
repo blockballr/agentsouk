@@ -27,13 +27,13 @@ import {
 import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
 import { categoryRail, policyMatchesCategory } from '../lib/vault-category'
 import { useConnectedAccount } from '../lib/use-connected-account'
-import { useTargetChain } from '../lib/target-chain'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { explorerAddressUrl } from '../lib/contracts'
 import { ratedHires } from '../lib/rating'
 import { getVaultExecutor } from '../lib/api'
 import { useI18n } from '../lib/i18n'
 import { RateAgent } from '../components/RateAgent'
+import { CategoryCard } from '../components/CategoryCard'
 import { ResultBox } from '../components/ui'
 import {
   Stack,
@@ -82,6 +82,7 @@ interface AgentBadge {
   policy: string | null
   vaultOnly: boolean
   name: string | null
+  firstParty?: boolean
 }
 
 // the registry category is the strategy the listing declared, so the hire view
@@ -179,26 +180,35 @@ interface VaultHireProps {
   chainId?: string
   tokenId?: string
   onClose?: () => void
+  categoryMode?: boolean
 }
 
 export default function VaultHirePage(props: VaultHireProps = {}) {
   const params = useParams()
+  const isCategoryMode = Boolean(props.categoryMode)
+  const categoryParam = (params.category ?? '').toLowerCase()
   const tokenId = props.tokenId ?? params.tokenId ?? ''
   // the chain the url asked for, so a listing's identity is read from its own chain
   const requestedChain = Number(props.chainId ?? params.chainId) > 0 ? Number(props.chainId ?? params.chainId) : 56
   const CHAIN = CHAINS[requestedChain] ?? CHAINS[56]
 
   const account = useConnectedAccount()
-  const targetChain = useTargetChain()
   const { t } = useI18n()
   const [prefill, setPrefill] = useState<Prefill | null>(null)
-  const rail = categoryRail(prefill?.category)
+  const [picked, setPicked] = useState<AgentBadge | null>(null)
+  const [agentQuery, setAgentQuery] = useState('')
+  const rail = categoryRail(isCategoryMode && !picked ? categoryParam : prefill?.category)
   const [manualAgent, setManualAgent] = useState('')
   const [tokenChoice, setTokenChoice] = useState<'WBNB' | 'USDT'>('WBNB')
   // a category that takes one asset never opens as a swap, so the choice follows
   // the rail instead of the other way round
   useEffect(() => {
     if (rail.deposit === 'single') setTokenChoice('USDT')
+  }, [rail.deposit])
+  // a single asset hire has no pair to size against, so it starts at the smallest
+  // sensible stable amount instead of a fraction of a token
+  useEffect(() => {
+    setAmount(rail.deposit === 'single' ? '5' : '0.1')
   }, [rail.deposit])
   const [amount, setAmount] = useState('0.1')
   const [expiryIndex, setExpiryIndex] = useState(0)
@@ -389,6 +399,26 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   useEffect(() => {
     if (tokenId) loadPrefill(String(requestedChain), tokenId).then(setPrefill)
   }, [requestedChain, tokenId])
+
+  // an agent picked inside a category vault stands in for the url prefill, so the
+  // form below reads it exactly as it reads a listing opened from its own page
+  useEffect(() => {
+    if (!picked) return
+    setPrefill({
+      name: picked.name,
+      wallet: picked.wallet,
+      category: picked.category,
+      minDepositUsd: null,
+    })
+    setManualAgent('')
+  }, [picked])
+
+  // a pick belongs to the category route that made it
+  useEffect(() => {
+    if (isCategoryMode || tokenId) return
+    setPicked(null)
+    setPrefill(null)
+  }, [isCategoryMode, tokenId])
 
   useEffect(() => {
     if (!account || !vault) return
@@ -648,19 +678,44 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   })()
   const venueMissing = agentPolicy === 'buffer' && venues !== null && !venueTarget
 
-  // the page reads the vault agents on this chain anyway, so the list under the
-  // rules is the same truth, not a second hand-maintained set
-  const otherVaultAgents = (vaultAgents ?? []).filter((a) => a.tokenId !== tokenId)  // the shelf serves the deployment's chain. when this page is showing another
-  // one, there is no shelf link that would land on the same list, so the whole
-  // short list stays on the page instead of being cut behind a dead link
-  const canSeeAll = targetChain?.chainId === requestedChain
-  const vaultAgentsShown = canSeeAll ? otherVaultAgents.slice(0, 4) : otherVaultAgents.slice(0, 4)
   const openCount = (hires ?? []).filter((h) => h.open).length
   const atQueueCap = maxOpen !== null && openCount >= maxOpen
 
   // the agent may ask for more than the vault's floor; the buyer sees the larger
   // of the two before signing
   const requiredMin = Math.max(minDeposit ?? 0, prefill?.minDepositUsd ?? 0) || null
+  const chooser = !tokenId && !isCategoryMode
+  const categoryAgents = (vaultAgents ?? []).filter((a) => policyMatchesCategory(a.policy, categoryParam))
+  const agentNeedle = agentQuery.trim().toLowerCase()
+  const shownAgents = categoryAgents.filter(
+    (a) =>
+      !agentNeedle ||
+      (a.name ?? '').toLowerCase().includes(agentNeedle) ||
+      a.tokenId.includes(agentNeedle),
+  )
+  const showForm = !chooser && (!isCategoryMode || picked !== null) && rail.supported
+  const railCards: { key: string; label: string; note: string; tally: number | null; available: boolean; to: string }[] = [
+    "yield",
+    "grid-trading",
+    "rebalancing",
+    "health-factor",
+  ].map((key) => {
+    const card = categoryRail(key)
+    const tally = (vaultAgents ?? []).filter((a) => policyMatchesCategory(a.policy, key)).length
+    return {
+      key,
+      label: card.label,
+      note: card.note,
+      tally: vaultAgents ? tally : null,
+      available: card.supported,
+      to: card.supported ? `/vault/c/${key}` : `/agents?category=${key}`,
+    }
+  })
+  // an agent may ask for more than the vault minimum, so the field starts at the
+  // larger of the two rather than opening with a number the form will reject
+  useEffect(() => {
+    if (requiredMin != null && Number(amount) < requiredMin) setAmount(String(requiredMin))
+  }, [requiredMin])
   const depositUsd = (() => {
     const n = Number(amount)
     if (!Number.isFinite(n) || n <= 0) return null
@@ -705,7 +760,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             </Txt>
             <span className="text-souk-muted">/</span>
             <Txt size={11} lead={16} mono upper tone="steel">
-              {vault ? short(vault) : 'no vault'}
+              {vault ? `vault ${short(vault)}` : 'no vault'}
             </Txt>
             {tokenId ? (
               <>
@@ -720,23 +775,144 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             <div className="min-w-0">
               <h1 className="m-0 max-w-[900px]">
                 <Txt size={34} lead={42} display weight="bold" tone="ink">
-                  {t('vault.title')}
+                  {chooser ? 'Pick a vault.' : rail.ui.title}
                 </Txt>
               </h1>
               <Txt size={14} lead={22} tone="slate" className="mt-3 block max-w-[720px]">
-                {t('vault.deck')}
+                {chooser
+                  ? 'Four rails, one custody contract. Open a vault to pick its agent and name the deposit.'
+                  : 'The deposit stays in the vault. One withdraw returns it.'}
               </Txt>
             </div>
             <Row gap={8} align="center" className="shrink-0 flex-wrap">
               <Pill variant={vault ? 'keep' : 'warn'}>{vault ? t('vault.vaultLive') : t('vault.vaultMissing')}</Pill>
               <Pill variant="off">{t('vault.dayCap', { days: termDays })}</Pill>
-              <Pill variant="off">pancakeswap v3</Pill>
+              {chooser ? null : <Pill variant="off">{rail.label}</Pill>}
+              {!chooser && rail.deposit === 'pair' ? <Pill variant="off">pancakeswap v3</Pill> : null}
             </Row>
           </div>
         </Stack>
       </div>
 
-      {prefill?.name ? (
+      {chooser ? (
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {railCards.map((v) => (
+            <CategoryCard
+              key={v.key}
+              category={v.key}
+              title={v.label}
+              note={v.note}
+              measure={
+                v.available
+                  ? v.tally == null
+                    ? 'vault'
+                    : `${v.tally} agent${v.tally === 1 ? '' : 's'}`
+                  : 'shelf only'
+              }
+              cta={v.available ? 'Open vault' : 'Browse shelf'}
+              to={v.to}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      {isCategoryMode && !picked ? (
+        <Stack surface pad={[20, 22, 20, 22]} gap={12} className="mt-5">
+          <SectionHead title={`${rail.label} vault`} note={rail.note} />
+          <Row gap={10} align="center" className="flex-wrap">
+            <input
+              value={agentQuery}
+              onChange={(e) => setAgentQuery(e.target.value)}
+              placeholder="Search vault agents"
+              className="h-11 min-w-[220px] flex-1 rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 text-[13px] text-souk-ink outline-none focus:border-souk-sky"
+            />
+            <Link
+              to={`/agents?type=vault&category=${categoryParam}`}
+              className="h-11 shrink-0 rounded-[8px] border border-souk-hair px-4 font-mono text-[11px] uppercase leading-[44px] tracking-[0.08em] text-souk-data"
+            >
+              See agents
+            </Link>
+          </Row>
+          <div className="grid gap-2">
+            {shownAgents.map((a) => (
+              <button
+                key={a.tokenId}
+                type="button"
+                onClick={() => setPicked(a)}
+                className="flex items-center justify-between rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 py-3 text-left transition hover:border-souk-sky"
+              >
+                <span className="flex items-baseline gap-2">
+                  <span className="font-mono text-[12px] text-souk-ink">{a.name ?? `#${a.tokenId}`}</span>
+                  {a.firstParty !== false ? (
+                    <span className="font-mono text-[10px] lowercase tracking-[0.04em] text-souk-muted">
+                      (recommended)
+                    </span>
+                  ) : null}
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-souk-data">hire</span>
+              </button>
+            ))}
+            {vaultAgents && shownAgents.length === 0 ? (
+              <Txt size={12} lead={18} tone="muted">
+                No agent declares a vault hire here. The {rail.label.toLowerCase()} listings sell on the shelf instead.
+              </Txt>
+            ) : null}
+          </div>
+          <Row gap={8} align="center" className="flex-wrap">
+            <input
+              value={manualAgent}
+              onChange={(e) => setManualAgent(e.target.value)}
+              placeholder="or paste an agent wallet"
+              className="h-11 min-w-[220px] flex-1 rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 font-mono text-[12px] text-souk-ink outline-none focus:border-souk-sky"
+            />
+            <Btn
+              kind="off"
+              disabled={!/^0x[a-fA-F0-9]{40}$/.test(manualAgent.trim())}
+              onClick={() =>
+                setPicked({
+                  tokenId: '',
+                  wallet: manualAgent.trim(),
+                  category: rail.category,
+                  policy: rail.policy,
+                  vaultOnly: true,
+                  name: null,
+                })
+              }
+            >
+              Use wallet
+            </Btn>
+          </Row>
+        </Stack>
+      ) : null}
+
+      {isCategoryMode && picked ? (
+        <Stack surface pad={[14, 18, 14, 18]} className="mt-5">
+          <Row justify="between" align="center" gap={10} className="flex-wrap">
+            <Txt size={13} lead={20} weight="semibold" tone="ink">
+              {picked.name ?? `${picked.wallet.slice(0, 6)}...${picked.wallet.slice(-4)}`}
+            </Txt>
+            <Row gap={12} align="center">
+              {picked.tokenId ? (
+                <Link
+                  to={`/agents/${requestedChain}/${picked.tokenId}`}
+                  className="font-mono text-[10px] uppercase tracking-[0.08em] text-souk-data"
+                >
+                  Agent page
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setPicked(null)}
+                className="font-mono text-[10px] uppercase tracking-[0.08em] text-souk-steel"
+              >
+                Change
+              </button>
+            </Row>
+          </Row>
+        </Stack>
+      ) : null}
+
+      {prefill?.name && !isCategoryMode && tokenId ? (
         <Stack surface pad={[14, 18, 14, 18]} className="mt-5">
           <Row justify="between" align="center" gap={12} className="flex-wrap">
             <Row align="center" gap={11} className="min-w-0">
@@ -752,25 +928,49 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             </Row>
             <Row gap={6} align="center" className="shrink-0 flex-wrap">
               {strategy ? <Pill variant="off">{strategy}</Pill> : null}
-              <Pill
-                variant={
-                  pairing === 'match'
-                    ? 'good'
-                    : pairing === 'mismatch' || pairing === 'no-executor' || pairing === 'unread'
-                      ? 'warn'
-                      : 'off'
-                }
-              >
-                {pairingLabel}
-              </Pill>
+              {rail.deposit === 'pair' ? (
+                <Pill
+                  variant={
+                    pairing === 'match'
+                      ? 'good'
+                      : pairing === 'mismatch' || pairing === 'no-executor' || pairing === 'unread'
+                        ? 'warn'
+                        : 'off'
+                  }
+                >
+                  {pairingLabel}
+                </Pill>
+              ) : null}
             </Row>
           </Row>
         </Stack>
       ) : null}
 
       <div className="mt-5 flex flex-col gap-5">
-        <Stack surface pad={[20, 22, 20, 22]} gap={14}>
-          <SectionHead title={t('vault.open')} note={t('vault.openNote')} />
+        <Stack
+          surface
+          pad={[20, 22, 20, 22]}
+          gap={14}
+          className={showForm || (!rail.supported && rail.ui.unsupported) ? '' : 'hidden'}
+        >
+          <SectionHead title={rail.ui.heading} note={rail.note} />
+          {!rail.supported && rail.ui.unsupported ? (
+            <Stack pad={[14, 16, 14, 16]} gap={6} radius={14} hair>
+              <Txt size={13} lead={20} weight="semibold" tone="ink">
+                {rail.ui.unsupported.title}
+              </Txt>
+              <Txt size={12} lead={18} tone="slate">
+                {rail.ui.unsupported.body}
+              </Txt>
+              <Link
+                to={`/agents?category=${rail.category}`}
+                className="font-mono text-[10px] uppercase tracking-[0.08em] text-souk-data"
+              >
+                Browse {rail.label.toLowerCase()} agents
+              </Link>
+            </Stack>
+          ) : null}
+          <div className={showForm ? '' : 'hidden'}>
           {!vault ? (
             <Txt size={13} lead={20} tone="peach">
               No vault is configured for {CHAIN.label}. Switch to a chain with a deployment.
@@ -778,7 +978,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
           ) : null}
           <div className="grid gap-5 md:grid-cols-3">
             <Stack gap={8} className="min-w-0">
-              <Label tone="muted">{t('vault.depositToken')}</Label>
+              <Label tone="muted">{rail.ui.depositLabel}</Label>
               <div className="grid grid-cols-2 gap-2">
                 {(rail.deposit === 'single' ? (['USDT'] as const) : (['WBNB', 'USDT'] as const)).map((s) => (
                   <Btn
@@ -791,13 +991,11 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                   </Btn>
                 ))}
               </div>
-              <Txt size={12} lead={18} tone="steel">
-                {rail.deposit === 'single'
-                  ? `${rail.note}. Only what you approve is spent.`
-                  : tokenChoice === 'USDT'
-                    ? 'USDT is the BNB Chain stable. The open only spends what you approve.'
-                    : 'WBNB is wrapped from BNB in the signed step below. The open only spends what you approve.'}
-              </Txt>
+              {rail.deposit === 'single' ? null : (
+                <Txt size={12} lead={18} tone="steel">
+                  {tokenChoice === 'USDT' ? 'Stable. Approve exactly this amount.' : 'Wrapped in the first signature. Approve exactly this amount.'}
+                </Txt>
+              )}
               <Txt size={11} lead={16} mono tone="data">
                 {capFor(tokenChoice)}
               </Txt>
@@ -816,7 +1014,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 </span>
               </div>
               <Txt size={12} lead={18} tone="steel">
-                The approval is scoped to this exact amount, never a blanket number.
+                The approval is scoped to this amount.
               </Txt>
               {requiredMin != null ? (
                 <Txt size={11} lead={16} mono tone="data">
@@ -825,9 +1023,9 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
               ) : null}
               {gasNote && agentPolicy === 'buffer' ? (
                 <Txt size={10} lead={14} mono tone="peach">
-                  {yieldUsd != null && gasUsd != null && gasShare != null
-                    ? `~${usd(yieldUsd)} yield in ${costDays === 1 ? '1 day' : `${costDays} days`}; gas ~${usd(gasUsd)} (${Math.round(gasShare * 100)}% of it${gasEstimate?.source === 'recent' ? ', recent average' : ''}).`
-                    : 'Below 25 USDT, gas can eat most of a month of yield.'}
+                  {yieldUsd != null && gasUsd != null
+                    ? `${usd(yieldUsd)}/day yield, ${usd(gasUsd)} gas`
+                    : 'Thin deposit. Gas can eat a month of yield.'}
                 </Txt>
               ) : null}
               {agentPolicy === 'buffer' ? (
@@ -836,23 +1034,35 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 </Txt>
               ) : null}
             </Stack>
-            <Stack gap={8} className="min-w-0">
-              <Label tone="muted">Slippage (%)</Label>
-              <div className="relative">
-                <input
-                  value={slippage}
-                  onChange={(e) => setSlippage(Number(e.target.value) || 0)}
-                  inputMode="decimal"
-                  className="h-11 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 pr-8 font-mono text-[13px] leading-[20px] text-souk-ink outline-none focus:border-souk-data"
-                />
-                <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 font-mono text-[11px] uppercase tracking-[0.08em] text-souk-steel">
-                  %
-                </span>
-              </div>
-              <Txt size={12} lead={18} tone="steel">
-                0.01 to 10%. Default 5%.
-              </Txt>
-            </Stack>
+            {rail.ui.showsSlippage ? (
+              <Stack gap={8} className="min-w-0">
+                <Label tone="muted">Slippage (%)</Label>
+                <div className="relative">
+                  <input
+                    value={slippage}
+                    onChange={(e) => setSlippage(Number(e.target.value) || 0)}
+                    inputMode="decimal"
+                    className="h-11 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 pr-8 font-mono text-[13px] leading-[20px] text-souk-ink outline-none focus:border-souk-data"
+                  />
+                  <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 font-mono text-[11px] uppercase tracking-[0.08em] text-souk-steel">
+                    %
+                  </span>
+                </div>
+                <Txt size={12} lead={18} tone="steel">
+                  0.01 to 10%.
+                </Txt>
+              </Stack>
+            ) : (
+              <Stack gap={8} className="min-w-0">
+                <Label tone="muted">Exit</Label>
+                <div className="flex h-11 items-center rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5 font-mono text-[13px] text-souk-ink">
+                  withdraw any time
+                </div>
+                <Txt size={12} lead={18} tone="steel">
+                  0.01 to 10%.
+                </Txt>
+              </Stack>
+            )}
           </div>
           <div className="grid gap-5 md:grid-cols-2">
             <Stack gap={8} className="min-w-0">
@@ -869,7 +1079,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 </span>
               </div>
               <Txt size={12} lead={18} tone="steel">
-                Performance fee on profits above the high-water mark. Set by the agent.
+                Profit share above the high-water mark.
               </Txt>
             </Stack>
             <Stack gap={8} className="min-w-0">
@@ -886,10 +1096,11 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 </span>
               </div>
               <Txt size={12} lead={18} tone="steel">
-                Auto-close if value drops below this % of deposit. 0 to 50%. Default 20%.
+                Auto-close below this share of the deposit.
               </Txt>
             </Stack>
           </div>
+          {rail.ui.showsPoolChoice ? (
           <Stack gap={8} className="min-w-0">
             <Row justify="between" align="center">
               <Label tone="muted">Pool fee</Label>
@@ -910,7 +1121,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
               <Pill variant={selectedFee ? 'keep' : 'off'}>{feeOverride === 'auto' ? 'auto' : 'manual'}</Pill>
             </div>
             <Txt size={12} lead={18} tone="steel">
-              Deepest pool with 30 minutes of price history. Locked when the hire opens.
+              Locked at open.
             </Txt>
             {showFee && (
               <select
@@ -931,6 +1142,20 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
               </select>
             )}
           </Stack>
+          ) : (
+          <Stack gap={8} className="min-w-0">
+            <Label tone="muted">Valuation</Label>
+            <div className="flex h-11 items-center justify-between rounded-[8px] border border-souk-hair bg-souk-surface2 px-3.5">
+              <span className="font-mono text-[13px] text-souk-ink">
+                {vaultTokenA(requestedChain)?.symbol ?? 'WBNB'} / {vaultTokenB(requestedChain)?.symbol ?? 'USDT'}
+              </span>
+              <Pill variant={selectedFee ? 'keep' : 'off'}>once</Pill>
+            </div>
+            <Txt size={12} lead={18} tone="steel">
+              {rail.ui.poolNote}
+            </Txt>
+          </Stack>
+          )}
           <Stack gap={8}>
             <Label tone="muted">{t('vault.term')}</Label>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
@@ -946,16 +1171,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 </Btn>
               ))}
             </div>
-            <Txt size={12} lead={18} tone="steel">
-              The farthest rung is the {termDays} day cap. A withdraw is allowed before the term ends.
-            </Txt>
-          </Stack>
-          <Stack gap={4} className="min-w-0">
-            <Label tone="muted">{t('vault.payout')}</Label>
-            <Txt size={12} lead={18} tone="steel">
-              One withdraw returns every balance the hire holds, expired or not. There is no schedule
-              and no standing approval.
-            </Txt>
+            <Txt size={12} lead={18} tone="steel">Withdraw any time.</Txt>
           </Stack>
           {!prefill?.wallet ? (
             <Stack gap={8}>
@@ -985,12 +1201,21 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 {termLabel(EXPIRY_PRESETS[expiryIndex].days)}
               </Txt>
             </Stack>
-            <Stack gap={1}>
-              <Label tone="muted">Slippage</Label>
-              <Txt size={12} lead={18} mono tone="ink">
-                {slippage} %
-              </Txt>
-            </Stack>
+            {rail.ui.showsSlippage ? (
+              <Stack gap={1}>
+                <Label tone="muted">Slippage</Label>
+                <Txt size={12} lead={18} mono tone="ink">
+                  {slippage} %
+                </Txt>
+              </Stack>
+            ) : (
+              <Stack gap={1}>
+                <Label tone="muted">Rail</Label>
+                <Txt size={12} lead={18} mono tone="ink">
+                  {rail.label}
+                </Txt>
+              </Stack>
+            )}
             <Stack gap={1}>
               <Label tone="muted">Agent</Label>
               <Txt size={12} lead={18} mono tone={pairing === 'match' ? 'data' : 'slate'}>
@@ -1007,10 +1232,10 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             <Btn
               kind="primary"
               onClick={openHire}
-              disabled={busy !== null || !vault || !account || !agentAddress || atQueueCap}
+              disabled={busy !== null || !vault || !account || !agentAddress || atQueueCap || !rail.supported}
               className="w-full sm:w-[260px]"
             >
-              {busy === 'open' ? t('vault.opening') : t('vault.approveOpen')}
+              {busy === 'open' ? t('vault.opening') : rail.supported ? t('vault.approveOpen') : 'Not available on this rail'}
             </Btn>
             <Txt size={12} lead={18} tone={atQueueCap ? 'peach' : 'labels'}>
               {atQueueCap
@@ -1022,12 +1247,9 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                   : 'Wrap, approve, open: three named signatures at most.'}
             </Txt>
           </Row>
-          <Txt size={12} lead={18} tone="steel">
-            The open names the agent, the deposit, the expiry, the slippage ceiling and the fee tier
-            in one call. The approval is scoped to the exact deposit.
-          </Txt>
+          </div>
         </Stack>
-        <Stack surface pad={[20, 22, 20, 22]} gap={12}>
+        <Stack surface pad={[20, 22, 20, 22]} gap={12} className={showForm ? '' : 'hidden'}>
           <Row justify="between" align="center" gap={8} className="border-b border-souk-hair pb-2">
             <Txt size={18} lead={27} weight="bold" tone="ink">
               {t('vault.yourHires')}
@@ -1263,11 +1485,10 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             </Stack>
           )}
           <Txt size={12} lead={18} tone="muted">
-            A revoke is unconditional: every balance comes back in one transaction and is not gated
-            on the timeout.
+            Withdraw any time, even mid-term.
           </Txt>
         </Stack>
-        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+        <div className={!showForm ? 'hidden' : 'grid grid-cols-1 items-start gap-5 lg:grid-cols-2'}>
           {vault ? (
             <Stack surface pad={[20, 22, 20, 22]} gap={14}>
               <Row justify="between" align="center" gap={12} className="flex-wrap">
@@ -1276,18 +1497,22 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                     {t('vault.rules')}
                   </Txt>
                   <Txt size={13} lead={20} tone="muted">
-                    The only positions a hire may hold, and the ceiling on each one
+                    {rail.deposit === 'pair'
+                      ? 'The only positions a hire may hold, and the ceiling on each one'
+                      : 'What the hire may hold, and the ceiling on it'}
                   </Txt>
                 </Stack>
                 <Row gap={8} align="center" className="shrink-0">
-                  <Pill>pancakeswap v3</Pill>
+                  <Pill>{rail.deposit === 'pair' ? 'pancakeswap v3' : 'lending venue'}</Pill>
                   <Pill variant="warn">
                     {CHAIN.label} {CHAIN.id}
                   </Pill>
                 </Row>
               </Row>
               <div className="grid gap-3 sm:grid-cols-2">
-                {[vaultTokenA(requestedChain), vaultTokenB(requestedChain)].map((t) =>
+                {[vaultTokenA(requestedChain), vaultTokenB(requestedChain)]
+                  .filter((t) => t && (rail.deposit === 'pair' || t.symbol === 'USDT'))
+                  .map((t) =>
                   t ? (
                     <Stack key={t.symbol} bg="surface2" radius={10} pad={[14, 16, 14, 16]} gap={5}>
                       <Row justify="between" align="center" gap={10}>
@@ -1307,11 +1532,18 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 )}
               </div>
               <div className="grid gap-2.5 sm:grid-cols-3">
-                {[
-                  { value: selectedFee ? feeLabel(selectedFee.fee) : 'none', label: 'Fee tier', note: 'bound when the hire opens' },
-                  { value: `${MAX_SLIPPAGE_BPS / 100}%`, label: 'Slippage ceiling', note: 'the widest the vault takes' },
-                  { value: `${termDays} days`, label: 'Term', note: 'the longest the vault holds a hire open' },
-                ].map((f) => (
+                {(rail.deposit === 'pair'
+                  ? [
+                      { value: selectedFee ? feeLabel(selectedFee.fee) : 'none', label: 'Fee tier', note: 'bound when the hire opens' },
+                      { value: `${MAX_SLIPPAGE_BPS / 100}%`, label: 'Slippage ceiling', note: 'the widest the vault takes' },
+                      { value: `${termDays} days`, label: 'Term', note: 'the longest the vault holds a hire open' },
+                    ]
+                  : [
+                      { value: 'venue', label: 'Lending venue', note: 'named by the buyer at open' },
+                      { value: 'exit', label: 'Withdraw', note: 'any time, no slippage' },
+                      { value: `${termDays} days`, label: 'Term', note: 'the longest the vault holds a hire open' },
+                    ]
+                ).map((f) => (
                   <Stack key={f.label} bg="surface2" radius={8} pad={[10, 12, 10, 12]} gap={3}>
                     <Txt size={15} lead={21} weight="bold" mono tone="ink">
                       {f.value}
@@ -1324,10 +1556,9 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 ))}
               </div>
               <Txt size={12} lead={18} tone="steel">
-                The agent may swap part of the deposit between these two tokens and nothing else, and
-                the agent can never move the deposit out. The factory and the fee tier are fixed before
-                the hire opens, and the floor is the price read at open rather than the moment of the
-                trade.
+                {rail.deposit === 'pair'
+                  ? 'The agent may swap part of the deposit between these two tokens and nothing else, and it can never move the deposit out. The factory and the fee tier are fixed before the hire opens.'
+                  : 'The agent may supply the deposit to the venue named at open and nothing else, and it can never move the deposit out.'}
               </Txt>
             </Stack>
           ) : null}
@@ -1335,7 +1566,9 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             <SectionHead title={t('vault.honest')} note={t('vault.honestNote')} />
             <Txt size={12} lead={18} tone="steel">
               {vault
-                ? 'The vault holds the deposit. The agent can trade it inside the bound pair and can never move it out. A hire is trading capital, not escrow.'
+                ? rail.deposit === 'single'
+                  ? 'The vault holds the deposit. The agent can supply it to the named venue and can never move it out. A hire is working capital, not escrow.'
+                  : 'The vault holds the deposit. The agent can trade it inside the bound pair and can never move it out. A hire is trading capital, not escrow.'
                 : `No vault is configured for ${CHAIN.label}. Nothing on this page can open a hire until one is.`}
             </Txt>
             <Stack gap={7}>
@@ -1421,55 +1654,6 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
           </Stack>
         </div>
       </div>
-
-      {!props.onClose && otherVaultAgents.length > 0 ? (
-        <Stack surface pad={[20, 22, 20, 22]} gap={12} className="mt-5">
-          <SectionHead title="Vault agents" note={`DECLARES A VAULT HIRE ON ${CHAIN.label.toUpperCase()} ${CHAIN.id}`} />
-          <Txt size={12} lead={18} tone="steel">
-            Open an agent to read its strategy and fund a hire from its card. Every hire moves
-            through this same vault, and the buyer names the agent's wallet at open.
-          </Txt>
-          <div className="grid gap-4 md:grid-cols-2">
-            {vaultAgentsShown.map((a) => (
-              <Link
-                key={a.tokenId}
-                to={`/agents/${requestedChain}/${a.tokenId}`}
-                className="flex items-center justify-between gap-3 border-t border-souk-hair py-2.5 first:border-t-0 hover:opacity-70"
-              >
-                <Stack gap={1} className="min-w-0">
-                  <Txt size={14} lead={20} weight="semibold" tone="ink">
-                    {a.name ?? `token #${a.tokenId}`}
-                  </Txt>
-                  <Txt size={10} lead={14} mono tone="muted">
-                    token #{a.tokenId} · {short(a.wallet)}
-                  </Txt>
-                  {tracks[a.wallet] ? (
-                    <Txt size={9} lead={12} mono tone="muted">
-                      {tracks[a.wallet]!.hires} hires · {tracks[a.wallet]!.trades} trades
-                    </Txt>
-                  ) : null}
-                </Stack>
-                <Row gap={8} align="center" className="shrink-0">
-                  {strategyLabel(a.category) ? (
-                    <Pill variant="off">{strategyLabel(a.category)}</Pill>
-                  ) : null}
-                  <Txt size={12} lead={18} mono tone="data">
-                    open
-                  </Txt>
-                </Row>
-              </Link>
-            ))}
-          </div>
-          {canSeeAll && otherVaultAgents.length > vaultAgentsShown.length ? (
-            <Link
-              to="/agents?type=vault"
-              className="text-[12px] font-semibold text-souk-slate underline decoration-souk-hair underline-offset-2 transition hover:text-souk-ink"
-            >
-              See all vault agents
-            </Link>
-          ) : null}
-        </Stack>
-      ) : null}
 
       {lines.length > 0 ? (
         <div className="mt-5">

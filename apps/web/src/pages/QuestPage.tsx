@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { shortAddress } from '@agora/core'
+import { CATEGORIES, shortAddress } from '@agora/core'
+import { HireInAction } from '../components/HireInAction'
 import { visitSeed } from '../lib/rotation'
 import { isOperatedByAgentSouk } from '../lib/first-party'
 import { useConnectedAccount } from '../lib/use-connected-account'
@@ -366,11 +367,18 @@ export function QuestPage() {
         </Section>
 
         <section className="mt-10">
-          <Stack surface>
-            <div className="overflow-x-auto">
-
-            </div>
-          </Stack>
+          <SectionHead title="Hire on vault" note="FOUR RAILS, ONE CUSTODY CONTRACT" />
+          <Txt size={12} lead={18} tone="steel" className="mt-2 block">
+            A vault hire counts as a hire for the quest. Open a rail, pick its agent, and the deposit
+            stays in the contract until you withdraw it.
+          </Txt>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {CATEGORIES.map((c, i) => (
+              <Link key={c.key} to={`/vault/c/${c.key}`} className="block transition hover:opacity-90">
+                <HireInAction category={c.key} compact delay={i * 1.6} />
+              </Link>
+            ))}
+          </div>
         </section>
 
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
