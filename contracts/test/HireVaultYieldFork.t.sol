@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import {HireVault} from "../src/HireVault.sol";
 import {AaveV3VenueAdapter} from "../src/venues/AaveV3VenueAdapter.sol";
+import {ForkGuard} from "./ForkGuard.sol";
 
 interface Vm {
     function prank(address sender) external;
@@ -46,6 +47,8 @@ contract HireVaultYieldForkTest {
     }
 
     function testSupplyAccruesAndWithdrawCredits() public {
+        ForkGuard.ensure();
+
         (HireVault vault, AaveV3VenueAdapter adapter, uint256 id) = _openFunded();
         require(adapter.valueOf(id) > 100e18, "no accrual");
 
@@ -59,12 +62,16 @@ contract HireVaultYieldForkTest {
     }
 
     function testBuyerClosePullsVenue() public {
+        ForkGuard.ensure();
+
         (HireVault vault,, uint256 id) = _openFunded();
         vault.withdraw(id);
         require(IERC20(USDT).balanceOf(address(this)) > 1_000e18, "buyer close did not pull interest");
     }
 
     function testCloseIfGoalPullsVenue() public {
+        ForkGuard.ensure();
+
         (HireVault vault,, uint256 id) = _openFunded();
         vault.closeIfGoal(id, 100e18);
         require(IERC20(USDT).balanceOf(address(this)) > 1_000e18, "goal close did not pull interest");
@@ -73,6 +80,8 @@ contract HireVaultYieldForkTest {
     // two hires on one adapter, opened a fortnight apart. closing the older one
     // first must pay its own interest and leave the younger position untouched.
     function testTwoHiresAccrueSeparately() public {
+        ForkGuard.ensure();
+
         address lp = IFactory(FACTORY).getPool(WBNB, USDT, 500);
         vm.prank(lp);
         require(IERC20(USDT).transfer(address(this), 1_000e18), "fund");

@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import {AaveV3VenueAdapter} from "../src/venues/AaveV3VenueAdapter.sol";
+import {ForkGuard} from "./ForkGuard.sol";
 
 interface Vm {
     function prank(address sender) external;
@@ -25,6 +26,8 @@ contract AaveV3VenueAdapterForkTest {
     address private constant A_USDT = 0xa9251ca9DE909CB71783723713B21E4233fbf1B1;
 
     function testSupplyWithdrawAndRate() public {
+        ForkGuard.ensure();
+
         AaveV3VenueAdapter adapter = new AaveV3VenueAdapter(address(this), USDT, POOL, A_USDT);
         vm.prank(POOL);
         require(IERC20Balance(USDT).transfer(address(this), 200e18), "fund");
@@ -47,6 +50,8 @@ contract AaveV3VenueAdapterForkTest {
     // two hires, one adapter. closing the first must pay its own share and
     // leave the second's position whole, including its interest.
     function testTwoHiresKeepTheirOwnInterest() public {
+        ForkGuard.ensure();
+
         AaveV3VenueAdapter adapter = new AaveV3VenueAdapter(address(this), USDT, POOL, A_USDT);
         vm.prank(POOL);
         require(IERC20Balance(USDT).transfer(address(this), 300e18), "fund");

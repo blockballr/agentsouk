@@ -25,3 +25,8 @@ jobs:
         run: npx tsc --noEmit -p apps/web/tsconfig.app.json --pretty false
       - name: Tests
         run: npx vitest run
+      - name: Install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+      - name: Contract tests
+        working-directory: contracts
+        run: forge test
