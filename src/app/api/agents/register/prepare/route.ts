@@ -9,6 +9,8 @@ import {
   type RegistrationDraft,
 } from "@/lib/registry-write";
 import { claimsMode, createClaim, isWalletAddress, newClaimId } from "@/lib/listing-claims";
+import { normaliseDeclaration } from "@/lib/authority-declaration";
+import { claimKey, saveDeclaration } from "@/lib/authority-store";
 import { jobCardCheck, type JobCardCheck } from "@/lib/job-card-check";
 import {
   enforcePrepareRateLimit,
@@ -137,6 +139,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // an owner may declare how their agent may act at the moment they register,
+  // so the ceiling travels with the claim and lands on the token at confirm
+  let declared: ReturnType<typeof normaliseDeclaration> | null = null;
+  if (body.authority !== undefined && body.authority !== null) {
+    declared = normaliseDeclaration(body.authority);
+    if (!declared.ok) {
+      return NextResponse.json(
+        { success: false, error: declared.errors.join("; ") },
+        { status: 400 },
+      );
+    }
+  }
+
   const claimId = newClaimId();
   const claim = await createClaim({
     claimId,
@@ -146,6 +161,10 @@ export async function POST(req: NextRequest) {
     draft,
   });
 
+  if (declared?.ok) {
+    await saveDeclaration(claimKey(claim.claimId), declared.value, owner || "unknown").catch(() => false);
+  }
+
   return NextResponse.json({
     success: true,
     claimId: claim.claimId,
@@ -154,6 +173,7 @@ export async function POST(req: NextRequest) {
     registryAddress: registry,
     registerCalldata: encodeRegister(chainId, claim.agentUri),
     persistence: claimsMode(),
+    ...(declared?.ok ? { authority: declared.value } : {}),
     ...(cardCheck ? { cardCheck } : {}),
   });
 }

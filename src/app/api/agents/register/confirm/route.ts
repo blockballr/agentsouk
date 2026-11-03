@@ -18,6 +18,7 @@ import {
   type ShelfAdmission,
 } from "@/lib/scanner";
 import { enqueueSweep } from "@/lib/verifications-store";
+import { declarationKey, claimKey, loadDeclaration, saveDeclaration } from "@/lib/authority-store";
 
 export const dynamic = "force-dynamic";
 
@@ -213,6 +214,27 @@ export async function POST(req: NextRequest) {
   const confirmed = await confirmClaim(claim.claimId, { agentId, txHash: txHash as string });
   if (!confirmed) {
     return NextResponse.json({ success: false, error: "claim not found" }, { status: 404 });
+  }
+
+  // a declaration made at registration now belongs to the token, not the claim
+  const pending = await loadDeclaration(claimKey(confirmed.claimId)).catch(() => null);
+  if (pending) {
+    const moved = await saveDeclaration(
+      declarationKey(confirmed.chainId, agentId),
+      pending,
+      pending.updatedBy,
+    ).catch(() => false);
+    if (!moved) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "the agent is registered but its authority declaration could not be stored",
+          agentId,
+          txHash,
+        },
+        { status: 503 },
+      );
+    }
   }
 
   // The verification above proved the agent exists and belongs to the caller, so

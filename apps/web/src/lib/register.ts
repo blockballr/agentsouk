@@ -43,15 +43,22 @@ export interface ConfirmResult {
   verification?: { verified?: boolean; detail?: string }
 }
 
+export interface AuthorityDraft {
+  model: 'job-scoped' | 'underwritten'
+  bondUsd?: number
+  bondWallet?: string
+}
+
 export async function prepareRegistration(
   draft: RegistrationDraft,
   owner: string,
   mode: 'job' | 'call' | 'both' = 'call',
+  authority?: AuthorityDraft,
 ): Promise<PrepareResult> {
   const res = await fetch(`${BASE}/agents/register/prepare`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ draft, owner, mode }),
+    body: JSON.stringify({ draft, owner, mode, ...(authority ? { authority } : {}) }),
   })
   const body = (await res.json().catch(() => null)) as
     | (PrepareResult & { success: boolean; error?: string; errors?: string[] })

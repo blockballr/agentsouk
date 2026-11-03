@@ -16,7 +16,7 @@ import {
   sellsByJob,
   CATEGORIES,
 } from '@agora/core'
-import { activateBoost, actOnJob, deliverTask, getAgentActivity, getAgentDetail, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultAgents, getVaultExecutor, recordAgentView, retryTask, type AgentCardSkill, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row, type VaultAgentLink, type WalletActivity } from '../lib/api'
+import { activateBoost, actOnJob, deliverTask, getAgentActivity, getAgentDetail, getAuthority, getBoostStatus, getEscrowStatuses, getHiresByWallet, getJobByPayment, getJobs8183Job, getJobs8183Jobs, getOngoing, getTask, getTasksByPayment, getVaultAgents, getVaultExecutor, recordAgentView, retryTask, type AgentCardSkill, type AuthorityView, type DeliverData, type DeliverTool, type EscrowStatus, type HireTask, type JobStatus, type Jobs8183Row, type VaultAgentLink, type WalletActivity } from '../lib/api'
 import { TestTokens } from '../components/TestTokens'
 import Jobs8183JobCard from '../components/Jobs8183JobCard'
 import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
@@ -2009,6 +2009,7 @@ function HirePanel({
   const [account, setAccount] = useState<string | null>(null)
   const [requirements, setRequirements] = useState<PaymentRequirements | null>(null)
   const [preview, setPreview] = useState<PreviewResult | null>(null)
+  const [authority, setAuthority] = useState<AuthorityView | null>(null)
   const [agent, setAgent] = useState<HireRequirementsData['agent'] | null>(null)
   const [result, setResult] = useState<SettleResult | null>(null)
   // catch the shortfall before the signature, saving a wasted signature and a reverted tx
@@ -2054,6 +2055,10 @@ function HirePanel({
       setPreview(data.preview)
       setAgent(data.agent)
       setStep('preview')
+      const price = data.preview.options[0]?.amountUsd ?? 0
+      getAuthority(chainId, tokenId, price)
+        .then(setAuthority)
+        .catch(() => {})
     } catch (e) {
       setError(hireErrorText(e))
       setStep('idle')
@@ -2082,6 +2087,7 @@ function HirePanel({
     setError(null)
     setRequirements(null)
     setPreview(null)
+    setAuthority(null)
     setAgent(null)
     setResult(null)
     setReceipt(null)
@@ -2122,10 +2128,26 @@ function HirePanel({
             <Row label="Asset" value={`${option.tokenSymbol} · ${shortAddress(option.originalAccept.asset)}`} mono />
             <Row label="Network" value={option.originalAccept.network} mono />
             <Row label="Valid for" value={`${option.originalAccept.maxTimeoutSeconds}s after signing`} />
+            {authority && (
+              <>
+                <Row
+                  label="Authority"
+                  value={`${authority.authority.model} · ${authority.authority.spendCapUsd} cap`}
+                  mono
+                />
+                <Row
+                  label="Loss bearer"
+                  value={authority.authority.lossBearer === 'owner-bond' ? 'owner bond' : 'job escrow'}
+                />
+              </>
+            )}
           </div>
           <p className="mt-3 text-[11px] leading-4 text-souk-muted">
             One amount, one recipient. No blanket approval.
           </p>
+          {authority && (
+            <p className="mt-1 text-[11px] leading-4 text-souk-muted">{authority.authority.reasons[0]}</p>
+          )}
           {step === 'preview' ? (
             <div className="mt-4 space-y-2">
               {shortForHire && (

@@ -140,6 +140,32 @@ export async function getAgentDetail(
   return body.data ?? null
 }
 
+export interface AuthorityGrantView {
+  model: 'job-scoped' | 'earned' | 'underwritten'
+  tier: 'new' | 'known' | 'proven'
+  spendCapUsd: number
+  expiresInHours: number
+  lossBearer: 'escrow' | 'owner-bond'
+  bondBackedUsd: number
+  reasons: string[]
+}
+
+export interface AuthorityView {
+  authority: AuthorityGrantView
+  summary: string
+}
+
+export async function getAuthority(
+  chainId: string,
+  tokenId: string,
+  priceUsd: number,
+): Promise<AuthorityView | null> {
+  const res = await fetch(`${BASE}/agents/${chainId}/${tokenId}/authority?price=${priceUsd}`)
+  if (!res.ok) return null
+  const body = await readJsonBody<AuthorityView>(res, 'authority')
+  return body.authority ? body : null
+}
+
 // An impression is one open of a listing page. The call is fire-and-forget and
 // keepalive so a reader who leaves immediately still counts, and the server
 // dedupes a reader to one an hour.

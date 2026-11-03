@@ -15,6 +15,7 @@ import {
   waitForTransactionReceipt,
   withSendTimeout,
   type ConfirmResult,
+  type AuthorityDraft,
   type EndpointProbe,
   type PrepareResult,
   type TransactionReceipt,
@@ -153,6 +154,8 @@ export function RegisterWizard({
     onStep?.(step)
   }, [step, onStep])
   const [draft, setDraft] = useState<RegistrationDraft>(EMPTY)
+  const [declaredModel, setDeclaredModel] = useState<'job-scoped' | 'underwritten'>('job-scoped')
+  const [bondUsd, setBondUsd] = useState('')
   const [importId, setImportId] = useState('')
   const [importErr, setImportErr] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
@@ -414,7 +417,11 @@ export function RegisterWizard({
     if (mode !== 'call') mark('job', 'checking')
     try {
       const account = (await sessionAccount()) ?? (await connectWallet())
-      const res = await prepareRegistration(draft, account, mode)
+      const authority: AuthorityDraft =
+        declaredModel === 'underwritten'
+          ? { model: 'underwritten', bondUsd: Number(bondUsd) || 0, bondWallet: account }
+          : { model: 'job-scoped' }
+      const res = await prepareRegistration(draft, account, mode, authority)
       if (res.cardCheck) mark('job', 'passed', res.cardCheck.detail)
       setTargetChain(res.chainId)
       let onChain: string
@@ -875,6 +882,42 @@ export function RegisterWizard({
                   ))}
                 </select>
               </label>
+            </div>
+
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="micro text-souk-muted">How it may act</span>
+                <select
+                  value={declaredModel}
+                  onChange={(e) => setDeclaredModel(e.target.value as 'job-scoped' | 'underwritten')}
+                  disabled={busy || step !== 'form'}
+                  className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                >
+                  <option value="job-scoped">One hire at a time</option>
+                  <option value="underwritten">Backed by a bond</option>
+                </select>
+                <span className="mt-1 block text-[11px] leading-4 text-souk-muted">
+                  {declaredModel === 'job-scoped'
+                    ? 'The cap is one quoted price and the loss stops at the job escrow.'
+                    : 'The owner bond is checked against the balance held when a buyer asks.'}
+                </span>
+              </label>
+              {declaredModel === 'underwritten' && (
+                <label className="block">
+                  <span className="micro text-souk-muted">Bond</span>
+                  <input
+                    value={bondUsd}
+                    onChange={(e) => setBondUsd(e.target.value)}
+                    disabled={busy || step !== 'form'}
+                    inputMode="decimal"
+                    className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                    placeholder="25"
+                  />
+                  <span className="mt-1 block text-[11px] leading-4 text-souk-muted">
+                    Held in your wallet, read at hire time. Not escrowed yet.
+                  </span>
+                </label>
+              )}
             </div>
 
             <label className="mt-4 block">

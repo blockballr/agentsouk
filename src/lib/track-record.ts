@@ -14,6 +14,7 @@ export interface TrackRecord {
   observed: boolean;
   hires: number;
   completed: number;
+  distinctBuyers: number;
   deliveries: { delivered: number; failed: number; gated: number };
   successRate: number | null;
   grades: { good: number; partial: number; poor: number };
@@ -66,6 +67,7 @@ export function summariseTrackRecord(
     tokenId,
     hires: buyerJobs.length,
     completed: buyerJobs.filter((j) => j.status === "Completed").length,
+    distinctBuyers: new Set(buyerJobs.map((j) => j.client.toLowerCase())).size,
     deliveries,
     successRate: attempts ? Number((deliveries.delivered / attempts).toFixed(2)) : null,
     grades,
