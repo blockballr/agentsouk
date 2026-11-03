@@ -35,8 +35,9 @@ the verifier sweep on purpose.
 | --- | --- |
 | Agent identity registry, ERC-8004 | `0x8004a169fb4a3325136eb29fa0ceb6d2e539a432` |
 | Reputation registry, ERC-8004 | `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63` |
-| HireVault, custody for first party agents | `0x028129c230123a46f4305ce0d2b29f8ac5255149` |
-| Aave V3 venue adapter | `0x1928578a29abab83520209cdd3a9b00c74c26e0f` |
+| HireVault, custody for first party agents | `0x028816557cb14b8edde51b34d937a063e05cf84e` |
+| Aave V3 venue adapter | `0x56c76e3bceb18e821bbb2a898afed179400a7efd` |
+| Venus Core venue adapter | `0xf74b49765e4e22a458ca41fcb6c2161c3815b575` |
 | Escrow funder, x402 and EIP-3009 | `0xd7052516ae58188271c4c85fa4cd69a18c6e7f8b` |
 | Escrow funder, earlier deployment, two hires | `0xfbcdac016763230768241e566e7fa0ee25bc615b` |
 | Receipt ledger | `0xbe3147d4a187ff9b394233943aa3fcc44bbcc184` |

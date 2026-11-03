@@ -22,7 +22,7 @@ const VAULT = vaultFor(97)!
 describe('the panel contracts the vault actually enforces', () => {
   it('has a vault on chain 56 and chain 97', () => {
     expect(vaultFor(97)).toBe(VAULT)
-    expect(vaultFor(56)).toBe('0x028129c230123a46f4305ce0d2b29f8ac5255149')
+    expect(vaultFor(56)).toBe('0x028816557cb14b8edde51b34d937a063e05cf84e')
   })
 
   it('binds the same pair the deployment uses', () => {

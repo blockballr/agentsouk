@@ -21,7 +21,7 @@ Addresses this market reads, on BNB Smart Chain.
 
 | Contract | Address |
 | --- | --- |
-| HireVault | `0x028129c230123a46f4305ce0d2b29f8ac5255149` |
+| HireVault | `0x028816557cb14b8edde51b34d937a063e05cf84e` |
 
 ## Settlement token
 

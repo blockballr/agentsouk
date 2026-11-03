@@ -93,8 +93,9 @@ Deployed addresses:
 
 | Contract | Chain | Address |
 | --- | --- | --- |
-| HireVault | 56 | `0x028129c230123a46f4305ce0d2b29f8ac5255149` |
-| AaveV3VenueAdapter | 56 | `0x1928578a29abab83520209cdd3a9b00c74c26e0f` |
+| HireVault | 56 | `0x028816557cb14b8edde51b34d937a063e05cf84e` |
+| AaveV3VenueAdapter | 56 | `0x56c76e3bceb18e821bbb2a898afed179400a7efd` |
+| VenusCoreVenueAdapter | 56 | `0xf74b49765e4e22a458ca41fcb6c2161c3815b575` |
 | EIP3009Funder (escrow) | 56 | `0xd7052516ae58188271c4c85fa4cd69a18c6e7f8b` |
 | EIP3009Funder (escrow, earlier deployment) | 56 | `0xfbcdac016763230768241e566e7fa0ee25bc615b` |
 | ReceiptLedger (escrow) | 56 | `0xbe3147d4a187ff9b394233943aa3fcc44bbcc184` |
@@ -102,7 +103,7 @@ Deployed addresses:
 | HireVault | 97 | `0xe1cd584d0bf2dbba90f84d5ac991984cae8f9d74` |
 | Mock venue | 97 | `0x6b81b6fff9f6920b309e511159f737454870f8e8` |
 
-The vault is unaudited. The audit brief describes each contract and the fork tests show what it enforces. The buyer names the venue at open; on chain 56 that is the Aave adapter, on chain 97 the mock.
+The vault is unaudited. The audit brief describes each contract and the fork tests show what it enforces. The buyer names the venue at open; on chain 56 that is either lending adapter, chosen by rate, and on chain 97 the mock.
 
 Deploy transactions:
 

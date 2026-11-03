@@ -4,6 +4,7 @@ import {
   RECEIPT_LEDGER_BY_CHAIN,
   VAULT_BY_CHAIN,
   VENUE_ADAPTER_BY_CHAIN,
+  VENUS_ADAPTER_BY_CHAIN,
   chainLabel,
   explorerAddressUrl,
 } from '../lib/contracts'
@@ -84,6 +85,7 @@ export function Footer() {
                   {[
                     ['HireVault', VAULT_BY_CHAIN[target.chainId]],
                     ['Aave adapter', VENUE_ADAPTER_BY_CHAIN[target.chainId]],
+                    ['Venus adapter', VENUS_ADAPTER_BY_CHAIN[target.chainId]],
                     ['Escrow funder', ESCROW_FUNDER_BY_CHAIN[target.chainId]],
                     ['Receipt ledger', RECEIPT_LEDGER_BY_CHAIN[target.chainId]],
                   ]

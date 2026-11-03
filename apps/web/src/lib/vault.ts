@@ -8,7 +8,7 @@ export const PANCAKE_V3_FACTORY = '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865' a
 // addresses are per chain; chain 56 redeployed with closeIfGoal and valueInToken0 (0xf3dfb43d7bdccbe8d612c712dcca148884fc68ec), mirrored from the server-side vault table
 
 export const VAULT_BY_CHAIN: Record<number, string> = {
-  56: import.meta.env.VITE_VAULT_ADDRESS_56 ?? '0x028129c230123a46f4305ce0d2b29f8ac5255149',
+  56: import.meta.env.VITE_VAULT_ADDRESS_56 ?? '0x028816557cb14b8edde51b34d937a063e05cf84e',
   97: import.meta.env.VITE_VAULT_ADDRESS_97 ?? '0xe1cd584d0bf2dbba90f84d5ac991984cae8f9d74',
 }
 

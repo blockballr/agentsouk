@@ -13,12 +13,16 @@ export const SETTLEMENT_ASSET_BY_CHAIN: Record<number, { symbol: string; address
 
 // the HireVault custody contract, the Aave V3 venue adapter, and the escrow pair
 export const VAULT_BY_CHAIN: Record<number, string> = {
-  56: '0x028129c230123a46f4305ce0d2b29f8ac5255149',
+  56: '0x028816557cb14b8edde51b34d937a063e05cf84e',
   97: '0xe1cd584d0bf2dbba90f84d5ac991984cae8f9d74',
 }
 
 export const VENUE_ADAPTER_BY_CHAIN: Record<number, string> = {
-  56: '0x1928578a29abab83520209cdd3a9b00c74c26e0f',
+  56: '0x56c76e3bceb18e821bbb2a898afed179400a7efd',
+}
+
+export const VENUS_ADAPTER_BY_CHAIN: Record<number, string> = {
+  56: '0xf74b49765e4e22a458ca41fcb6c2161c3815b575',
 }
 
 export const ESCROW_FUNDER_BY_CHAIN: Record<number, string> = {
