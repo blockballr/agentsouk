@@ -41,6 +41,7 @@ jobs:
         # function and its daily quota; the WalletConnect id is a public client id
         env:
           VITE_API_URL: https://api.agentsouk.xyz/api
+          VITE_TELEGRAM_API: https://agentsouk-telegram.vercel.app
           VITE_WC_PROJECT_ID: ${{ vars.VITE_WC_PROJECT_ID }}
           VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
         run: npm run build --workspace @agora/web
