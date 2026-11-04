@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { telegramLinkMessage } from '@agora/core'
 import { Btn, Stack, Txt } from '../components/souk'
-import { connectProvider, signPersonalMessage } from '../lib/wallet'
+import { beginWalletConnect, connectProvider, signPersonalMessage } from '../lib/wallet'
 
 const BASE = import.meta.env.VITE_TELEGRAM_API ?? 'https://telegram.agentsouk.xyz'
 
-type TelegramApp = { initData: string; ready: () => void; expand: () => void }
+type TelegramApp = {
+  initData: string
+  ready: () => void
+  expand: () => void
+  openLink?: (url: string) => void
+}
 
 function telegramApp(): TelegramApp | null {
   const w = window as unknown as { Telegram?: { WebApp?: TelegramApp } }
@@ -21,11 +26,18 @@ function telegramIdFrom(initData: string): string | null {
   }
 }
 
+function openWallet(url: string) {
+  const app = telegramApp()
+  if (app?.openLink) app.openLink(url)
+  else window.location.href = url
+}
+
 // Opened from the bot. Telegram signs initData, the wallet signs one free message,
 // and the pair is stored so a settlement can find the chat. No transaction.
 export function TelegramLinkPage() {
   const [initData, setInitData] = useState('')
   const [wallet, setWallet] = useState<string | null>(null)
+  const [wcUri, setWcUri] = useState<string | null>(null)
   const [linked, setLinked] = useState<string | null>(null)
   const [busy, setBusy] = useState<'connect' | 'sign' | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -56,7 +68,17 @@ export function TelegramLinkPage() {
     setBusy('connect')
     setError(null)
     try {
-      setWallet(await connectProvider())
+      if (!telegramApp()?.initData) {
+        setWallet(await connectProvider())
+        return
+      }
+      // inside Telegram the custom scheme is blocked, so take the pairing URI and
+      // hand the user a universal link that opens the wallet app
+      const { uri, account } = await beginWalletConnect()
+      setWcUri(uri)
+      setBusy('sign')
+      setWallet(await account)
+      setWcUri(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not connect the wallet.')
     } finally {
@@ -65,23 +87,22 @@ export function TelegramLinkPage() {
   }, [])
 
   const link = useCallback(async () => {
+    if (!wallet) return
     setBusy('sign')
     setError(null)
     try {
       const telegramId = telegramIdFrom(initData)
       if (!telegramId) throw new Error('Open this page from the Agent Souk bot in Telegram.')
-      const account = wallet ?? (await connectProvider())
-      setWallet(account)
-      const message = telegramLinkMessage({ telegramId, wallet: account })
-      const signature = await signPersonalMessage(account, message)
+      const message = telegramLinkMessage({ telegramId, wallet })
+      const signature = await signPersonalMessage(wallet, message)
       const res = await fetch(`${BASE}/telegram/link`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ initData, wallet: account, signature }),
+        body: JSON.stringify({ initData, wallet, signature }),
       })
       const body = (await res.json().catch(() => null)) as { success?: boolean; wallet?: string; error?: string } | null
       if (!res.ok || !body?.success) throw new Error(body?.error ?? 'Could not link the wallet.')
-      setLinked(body.wallet ?? account.toLowerCase())
+      setLinked(body.wallet ?? wallet.toLowerCase())
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not link the wallet.')
     } finally {
@@ -132,16 +153,44 @@ export function TelegramLinkPage() {
             </Txt>
           </Stack>
         ) : (
-          <div className="flex flex-wrap gap-3">
-            {wallet ? null : (
-              <Btn kind="off" onClick={() => void connect()} disabled={busy !== null}>
-                {busy === 'connect' ? 'Connecting' : 'Connect wallet'}
+          <Stack gap={12}>
+            <div className="flex flex-wrap gap-3">
+              {wallet ? null : (
+                <Btn kind="off" onClick={() => void connect()} disabled={busy !== null}>
+                  {busy === 'connect' ? 'Opening' : 'Connect wallet'}
+                </Btn>
+              )}
+              <Btn kind="primary" onClick={() => void link()} disabled={busy !== null || !telegramId || !wallet}>
+                {busy === 'sign' ? 'Waiting for the signature' : 'Sign and link'}
               </Btn>
-            )}
-            <Btn kind="primary" onClick={() => void link()} disabled={busy !== null || !telegramId}>
-              {busy === 'sign' ? 'Waiting for the signature' : 'Sign and link'}
-            </Btn>
-          </div>
+            </div>
+
+            {wcUri ? (
+              <Stack surface pad={[14, 16, 14, 16]} gap={10}>
+                <Txt size={12} lead={18} tone="slate">
+                  Telegram cannot open a wallet app directly. Tap the wallet you use, approve the connection,
+                  then come back here to sign.
+                </Txt>
+                <div className="flex flex-wrap gap-3">
+                  <Btn
+                    kind="primary"
+                    onClick={() => openWallet(`https://metamask.app.link/wc?uri=${encodeURIComponent(wcUri)}`)}
+                  >
+                    Open MetaMask
+                  </Btn>
+                  <Btn
+                    kind="off"
+                    onClick={() => openWallet(`https://link.trustwallet.com/wc?uri=${encodeURIComponent(wcUri)}`)}
+                  >
+                    Open Trust Wallet
+                  </Btn>
+                  <Btn kind="off" onClick={() => void navigator.clipboard?.writeText(wcUri)}>
+                    Copy link
+                  </Btn>
+                </div>
+              </Stack>
+            ) : null}
+          </Stack>
         )}
 
         {error ? (

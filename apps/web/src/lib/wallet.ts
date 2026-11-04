@@ -234,12 +234,13 @@ function pickerOptions(injected: WalletOption[]): WalletOption[] {
 
 let wcProvider: Eip1193Provider | null = null;
 let wcInit: Promise<Eip1193Provider> | null = null;
+let wcUri: string | null = null;
 
 function wcProjectId(): string | undefined {
   return (import.meta.env.VITE_WC_PROJECT_ID as string | undefined) || undefined;
 }
 
-function initWalletConnect(): Promise<Eip1193Provider> {
+function initWalletConnect(showQrModal = true): Promise<Eip1193Provider> {
   if (wcProvider) return Promise.resolve(wcProvider);
   if (!wcInit) {
     const projectId = wcProjectId();
@@ -252,13 +253,19 @@ function initWalletConnect(): Promise<Eip1193Provider> {
           projectId,
           // follow the deployment's target chain, not a fixed mainnet id
           chains: [targetChainId],
-          showQrModal: true,
+          showQrModal,
           metadata: {
             name: "Agent Souk",
             description: "Hire AI agents on BNB Chain",
             url: typeof window !== "undefined" ? window.location.origin : "https://agentsouk",
             icons: [],
           },
+        });
+        const events = provider as unknown as {
+          on?: (event: string, handler: (uri: string) => void) => void;
+        };
+        events.on?.("display_uri", (uri) => {
+          wcUri = uri;
         });
         wcProvider = provider;
         return provider;
@@ -274,6 +281,34 @@ function initWalletConnect(): Promise<Eip1193Provider> {
       });
   }
   return wcInit;
+}
+
+export function walletConnectUri(): string | null {
+  return wcUri;
+}
+
+// Telegram's in-app browser does not hand custom schemes to the wallet app, so
+// the Mini App needs the pairing URI itself and a universal link the user taps.
+// Resolves with the URI and a promise that settles when the wallet approves.
+export async function beginWalletConnect(): Promise<{ uri: string; account: Promise<string> }> {
+  const provider = await initWalletConnect(false);
+  const uriPromise = new Promise<string>((resolve) => {
+    if (wcUri) {
+      resolve(wcUri);
+      return;
+    }
+    const events = provider as unknown as {
+      once?: (event: string, handler: (uri: string) => void) => void;
+    };
+    events.once?.("display_uri", resolve);
+  });
+  const connect = provider as unknown as { connect?: () => Promise<void> };
+  const account = (async () => {
+    if (connect.connect) await connect.connect.call(provider);
+    return requestAccounts(provider);
+  })();
+  const uri = await uriPromise;
+  return { uri, account };
 }
 
 // --- provider resolution ---
