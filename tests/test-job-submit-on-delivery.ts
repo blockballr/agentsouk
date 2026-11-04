@@ -2,7 +2,7 @@
 // opened the job ran on another instance. The durable store is faked across freshly
 // imported delivery modules, so the in-memory job map is empty while the store
 // holds the job, which is the exact split the defect produced in production.
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
   delete process.env.DATABASE_URL;
@@ -145,6 +145,15 @@ function seedJob(job: StoredJob) {
   if (job.paymentId) store.jobByPayment.set(job.paymentId, job.id);
 }
 
+// The first import of delivery pulls viem and the rest of the app graph through
+// the TypeScript transform, which costs seconds on a loaded full run. Paying it
+// here, under the hook timeout, keeps that cost out of the first test's budget:
+// vi.resetModules() still gives each test a cold instance with empty maps.
+beforeAll(async () => {
+  await import("../src/lib/jobs");
+  await import("../src/lib/delivery");
+}, 60000);
+
 beforeEach(() => {
   store.jobs.clear();
   store.jobByPayment.clear();
@@ -160,8 +169,8 @@ beforeEach(() => {
 });
 
 describe("delivery advances a job it did not create", () => {
-  // the cold module re-import this test performs runs long against the 5s default
-  // when four workers share the CPU in a full run, though it is well under alone
+  // the module graph is warmed in beforeAll, so this test only pays for a fresh
+  // instance; the timeout stays generous so a loaded run does not fail on import cost
   it("finds a Funded job in the durable store and submits it", async () => {
     const paymentId = "pay-elsewhere";
     const job = storedJob(paymentId, "Funded");
