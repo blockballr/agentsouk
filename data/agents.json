@@ -1,18 +1,18 @@
 {
   "version": 2,
-  "snapshotTime": "2026-10-26T08:17:57.973Z",
+  "snapshotTime": "2026-11-04T05:30:26.364Z",
   "source": {
-    "fetched": 2490,
-    "upstreamTotal": 358547,
-    "deduped": 1573,
-    "registryTotal": 358547,
-    "declarers": 131,
-    "endpointsRecovered": 131,
+    "fetched": 2527,
+    "upstreamTotal": 371507,
+    "deduped": 890,
+    "registryTotal": 371507,
+    "declarers": 126,
+    "endpointsRecovered": 126,
     "seededApplied": 0
   },
   "counts": {
     "rebalancing": 60,
-    "grid-trading": 30,
+    "grid-trading": 27,
     "yield": 60,
     "health-factor": 60,
     "general": 30
@@ -47,11 +47,11 @@
       "rank": null,
       "network_rank": null,
       "health_score": null,
-      "total_feedbacks": 3,
+      "total_feedbacks": 4,
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-12T09:16:05Z",
-      "updated_at": "2026-10-25T02:21:07.116410Z",
+      "updated_at": "2026-11-03T02:06:42.778178Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
@@ -85,15 +85,15 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 48.17,
+      "total_score": 48.95,
       "rank": null,
       "network_rank": null,
       "health_score": null,
-      "total_feedbacks": 2,
+      "total_feedbacks": 3,
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-04T13:09:05Z",
-      "updated_at": "2026-10-25T07:09:07.118717Z",
+      "updated_at": "2026-11-04T03:04:08.635807Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
@@ -127,7 +127,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.29,
+      "total_score": 30.26,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -135,7 +135,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T06:20:46Z",
-      "updated_at": "2026-10-25T13:39:30.712202Z",
+      "updated_at": "2026-11-03T02:56:33.284028Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
@@ -167,7 +167,7 @@
         "A2A"
       ],
       "x402_supported": false,
-      "total_score": 46.44,
+      "total_score": 46.49,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -175,7 +175,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-15T06:45:35Z",
-      "updated_at": "2026-10-23T17:48:38.206921Z",
+      "updated_at": "2026-11-02T16:22:54.215168Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
@@ -216,7 +216,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T08:44:01Z",
-      "updated_at": "2026-10-23T10:17:26.810470Z",
+      "updated_at": "2026-11-03T23:06:59.075308Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
@@ -250,7 +250,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.34,
+      "total_score": 30.35,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -258,7 +258,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-07T15:24:05Z",
-      "updated_at": "2026-10-22T00:14:24.563711Z",
+      "updated_at": "2026-11-02T19:24:54.634882Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 5
@@ -302,7 +302,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T04:27:58Z",
-      "updated_at": "2026-10-21T18:19:51.519338Z",
+      "updated_at": "2026-11-03T14:42:47.825243Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 5,
@@ -337,15 +337,15 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.39,
+      "total_score": 46.51,
       "rank": null,
       "network_rank": null,
       "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
+      "total_feedbacks": 1,
+      "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T23:28:27Z",
-      "updated_at": "2026-10-22T02:58:24.682508Z",
+      "updated_at": "2026-11-02T20:07:54.603861Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
@@ -385,7 +385,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-09T18:13:58Z",
-      "updated_at": "2026-10-26T07:02:16.501023Z",
+      "updated_at": "2026-11-02T15:36:02.835017Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
@@ -417,7 +417,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 5,
+      "total_score": 5.01,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -425,7 +425,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T07:11:31Z",
-      "updated_at": "2026-10-25T17:04:30.758463Z",
+      "updated_at": "2026-11-03T14:45:47.746926Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
@@ -542,7 +542,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T15:16:36Z",
-      "updated_at": "2026-10-26T03:51:08.148535Z",
+      "updated_at": "2026-11-04T00:52:59.589075Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -575,7 +575,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.36,
+      "total_score": 30.37,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -583,7 +583,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T21:56:03Z",
-      "updated_at": "2026-10-25T16:39:30.889897Z",
+      "updated_at": "2026-11-03T07:23:33.347114Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -615,7 +615,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.27,
+      "total_score": 30.34,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -623,7 +623,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-13T17:54:36Z",
-      "updated_at": "2026-10-21T12:36:51.290844Z",
+      "updated_at": "2026-11-03T16:09:25.558830Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -663,7 +663,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T20:31:58Z",
-      "updated_at": "2026-10-23T12:44:59.357017Z",
+      "updated_at": "2026-11-02T21:46:54.691142Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -703,7 +703,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:26:55Z",
-      "updated_at": "2026-10-21T16:58:55.216750Z",
+      "updated_at": "2026-11-03T21:49:58.812838Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -735,7 +735,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.34,
+      "total_score": 30.37,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -743,7 +743,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:19:19Z",
-      "updated_at": "2026-10-25T23:44:15.750524Z",
+      "updated_at": "2026-11-04T02:01:59.667183Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -775,7 +775,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.36,
+      "total_score": 30.37,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -783,12 +783,52 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-17T19:27:09Z",
-      "updated_at": "2026-10-25T05:09:07.022901Z",
+      "updated_at": "2026-11-04T01:14:59.628301Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
       },
       "a2a_endpoint": "https://agents.chainhelix.io/rebalancer/.well-known/agent-card.json"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "ea5b89a6-450e-46d9-ab36-8c35232e92bc",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:363619",
+      "token_id": "363619",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "d9f974da-acdb-4da3-b7ec-e8a8cc9aa48a",
+      "owner_address": "0xb12a1e4e0e22a97e266ed7a6bfc4133f699b1a1b",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Plinth keeper",
+      "description": "Keeper of Plinth capital-protected bStock savings vaults on BSC: rebalances 24/7, cuts risk before earnings and macro releases, pulls the safe leg out of unhealthy lending markets. Holds the factory's keeper role; cannot withdraw savers' funds.",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "x402_supported": true,
+      "total_score": 30.36,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-10-04T11:08:03Z",
+      "updated_at": "2026-11-04T02:07:59.687700Z",
+      "category": "rebalancing",
+      "categoryScores": {
+        "rebalancing": 2
+      },
+      "a2a_endpoint": "https://plinth-relay.vercel.app/agent/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
@@ -823,7 +863,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T14:49:38Z",
-      "updated_at": "2026-10-23T22:36:39.618206Z",
+      "updated_at": "2026-11-03T05:37:33.419895Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -855,7 +895,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.33,
+      "total_score": 30.36,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -863,7 +903,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T03:14:51Z",
-      "updated_at": "2026-10-22T03:09:51.839044Z",
+      "updated_at": "2026-11-03T22:47:59.447083Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2,
@@ -898,7 +938,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.36,
+      "total_score": 30.35,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -906,50 +946,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-07T16:15:52Z",
-      "updated_at": "2026-10-23T04:21:27.202794Z",
-      "category": "rebalancing",
-      "categoryScores": {
-        "rebalancing": 2,
-        "yield": 2
-      },
-      "mcp_server": "https://4lpha.tech/mcp",
-      "web_endpoint": "https://4lpha.tech"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "e9ab9198-3a04-4564-ac86-1ec8fec2526a",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:337849",
-      "token_id": "337849",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "f243e596-1e41-4c85-aded-7ec8f81f4361",
-      "owner_address": "0xd7e004cbda24e079aa3a657ba7f8e2915192a966",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "LP Agent 1 by 4LPHA",
-      "description": "Routes liquidity to the best APR or fee opportunities with auto-rebalancing, compounding, and risk exits using PancakeSwap V3 on BNB Chain.",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/337849/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "MCP",
-        "Web"
-      ],
-      "x402_supported": false,
-      "total_score": 30.36,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-09-07T03:20:58Z",
-      "updated_at": "2026-10-24T19:14:17.575422Z",
+      "updated_at": "2026-11-03T17:41:49.621105Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2,
@@ -983,7 +980,7 @@
         "A2A"
       ],
       "x402_supported": false,
-      "total_score": 30.32,
+      "total_score": 30.31,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -991,53 +988,13 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:27:10Z",
-      "updated_at": "2026-10-22T17:12:45.588318Z",
+      "updated_at": "2026-11-02T03:32:39.191595Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2,
         "yield": 2
       },
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "ea5b89a6-450e-46d9-ab36-8c35232e92bc",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:363619",
-      "token_id": "363619",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "d9f974da-acdb-4da3-b7ec-e8a8cc9aa48a",
-      "owner_address": "0xb12a1e4e0e22a97e266ed7a6bfc4133f699b1a1b",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Plinth keeper",
-      "description": "Keeper of Plinth capital-protected bStock savings vaults on BSC: rebalances 24/7, cuts risk before earnings and macro releases, pulls the safe leg out of unhealthy lending markets. Holds the factory's keeper role; cannot withdraw savers' funds.",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "A2A"
-      ],
-      "x402_supported": true,
-      "total_score": 5.01,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-04T11:08:03Z",
-      "updated_at": "2026-10-24T03:44:03.352285Z",
-      "category": "rebalancing",
-      "categoryScores": {
-        "rebalancing": 2
-      },
-      "a2a_endpoint": "https://plinth-relay.vercel.app/agent/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
@@ -1222,7 +1179,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-26T16:44:11Z",
-      "updated_at": "2026-10-26T01:58:16.006976Z",
+      "updated_at": "2026-11-01T14:09:39.662751Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -1261,7 +1218,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-26T16:40:51Z",
-      "updated_at": "2026-10-25T10:34:03.030576Z",
+      "updated_at": "2026-11-01T13:04:39.448331Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -1300,7 +1257,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-26T16:37:32Z",
-      "updated_at": "2026-10-24T21:10:22.149331Z",
+      "updated_at": "2026-11-01T10:43:07.835603Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -1339,11 +1296,54 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-26T16:34:11Z",
-      "updated_at": "2026-10-25T19:08:30.815837Z",
+      "updated_at": "2026-11-01T11:58:39.324542Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
       }
+    },
+    {
+      "token_agent_provider": null,
+      "id": "e9ab9198-3a04-4564-ac86-1ec8fec2526a",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:337849",
+      "token_id": "337849",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "f243e596-1e41-4c85-aded-7ec8f81f4361",
+      "owner_address": "0xd7e004cbda24e079aa3a657ba7f8e2915192a966",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "LP Agent 1 by 4LPHA",
+      "description": "Routes liquidity to the best APR or fee opportunities with auto-rebalancing, compounding, and risk exits using PancakeSwap V3 on BNB Chain.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/337849/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "MCP",
+        "Web"
+      ],
+      "x402_supported": false,
+      "total_score": 5.01,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-09-07T03:20:58Z",
+      "updated_at": "2026-11-02T02:11:37.548365Z",
+      "category": "rebalancing",
+      "categoryScores": {
+        "rebalancing": 2,
+        "yield": 2
+      },
+      "mcp_server": "https://4lpha.tech/mcp",
+      "web_endpoint": "https://4lpha.tech"
     },
     {
       "token_agent_provider": null,
@@ -1378,12 +1378,91 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T12:28:18Z",
-      "updated_at": "2026-10-22T01:43:24.582595Z",
+      "updated_at": "2026-11-04T00:51:59.428440Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
       },
       "a2a_endpoint": "https://platform-backend-bnb8183.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "102d5e80-f1e9-4403-b74e-aa979e0a1b2a",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:398134",
+      "token_id": "398134",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "95262731-63f5-44be-bd8e-dab1d2687555",
+      "owner_address": "0x7c39d273a3b6feceaad140a66c25aed75d07fc77",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "limen-quant.agent",
+      "description": "BNB Chain spot rebalancing agent for client-owned task wallets. Uses regime and momentum checks, strict position and turnover caps, and records every decision for end-of-term review. No custody and no promised return.",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "x402_supported": false,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-10-30T09:08:36Z",
+      "updated_at": "2026-10-30T09:08:58.494883Z",
+      "category": "rebalancing",
+      "categoryScores": {
+        "rebalancing": 2
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "c7a7c68a-10c6-475b-adb9-2866e6e75aed",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:393564",
+      "token_id": "393564",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "515bd0a4-3430-4aa5-be6d-e67eb2a7f56c",
+      "owner_address": "0x9eb3098748db3c93df663f958037f5cf9218228c",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Ethgozt2h",
+      "description": "An EvoEvo AI Agent. You are a crypto portfolio analysis agent. Evaluate diversification, concentration, volatility, correlation, and drawdown risk. Suggest possible rebalancing scenarios based on user-defined goals and risk tolerance. Respond in Ukrainian.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/393564/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "Web"
+      ],
+      "x402_supported": false,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-10-27T12:53:08Z",
+      "updated_at": "2026-10-27T12:53:33.393752Z",
+      "category": "rebalancing",
+      "categoryScores": {
+        "rebalancing": 2
+      }
     },
     {
       "token_agent_provider": null,
@@ -2291,82 +2370,6 @@
     },
     {
       "token_agent_provider": null,
-      "id": "b72a2392-e27e-4b04-b83c-411a7c26bf9d",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:3070",
-      "token_id": "3070",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "76d7ce61-a4a7-4b70-83aa-832501890252",
-      "owner_address": "0xbf0e0e7afde9b7f42f5d93d3aebde53af14bba70",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "babycaisubagent9_sharp9457",
-      "description": "Automated portfolio rebalancing",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [],
-      "x402_supported": false,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-02-14T03:59:38.139570Z",
-      "updated_at": "2026-06-06T06:07:57.372000Z",
-      "category": "rebalancing",
-      "categoryScores": {
-        "rebalancing": 2
-      }
-    },
-    {
-      "token_agent_provider": null,
-      "id": "d3267bc2-adec-4dcd-a104-ef82f8ece6b1",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:283326",
-      "token_id": "283326",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "d6eabd69-e097-42ac-8058-434044837042",
-      "owner_address": "0xcc8ff3631bde1418f2903567cf761331ee7134e7",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Novagel20wc6",
-      "description": "An EvoEvo AI Agent. Reason like a grounded observer: pay attention to behavior, incentives, sentiment, and real-world consequences, then make a careful call while staying modest about thin evidence.\n\nCrypto Alpha Agent\n\nYou are an autonomous crypto market intelligence and prediction agent.\n\nYour primary objective is to make accurate, well-reasoned predictions about cryptocurrency markets and continuously improve your prediction quality through feedback and historical results.\n\nCore Responsibilities\n\n1. Analyze cryptocurrency markets using available market data, price action, volume, volatility, liquidity, market structure, and relevant fundamental information.\n2. Identify short-term and medium-term market trends.\n3. Generate clear predictions with a specific time horizon.\n4. Assign a confidence level to every prediction.\n5. Explain the reasoning behind every prediction using evidence rather than speculation.\n6. Track previous predictions and learn from successful and failed predictions.\n7. Avoid changing your prediction simply because the market moves against it. Re-evaluate only when new evidence materially changes the thesis.\n8. Prioritize accuracy over making a large number of predictions.\n\nPrediction Framework\n\nFor every prediction, evaluate:\n\n- Current price and recent price action\n- Trend direction\n- Support and resistance\n- Trading volume\n- Volatility\n- Market momentum\n- Liquidity conditions\n- Bitcoin dominance and BTC market direction\n- Relative strength of the asset\n- Relevant crypto market narratives\n- Major macroeconomic factors when relevant\n- Important upcoming events\n- Possible bullish and bearish catalysts\n\nAlways consider at least three scenarios:\n\nBullish Scenario\n\nWhat evidence could cause the asset to rise?\n\nBearish Scenario\n\nWhat evidence could cause the asset to fall?\n\nNeutral Scenario\n\nWhat conditions could cause the asset to remain range-bound?\n\nAfter comparing the scenarios, select the scenario with the highest probability.\n\nPrediction Rules\n\nNever present certa",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/283326/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "Web"
-      ],
-      "x402_supported": false,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-08-20T23:12:29Z",
-      "updated_at": "2026-10-12T20:36:39.956367Z",
-      "category": "rebalancing",
-      "categoryScores": {
-        "rebalancing": 2
-      }
-    },
-    {
-      "token_agent_provider": null,
       "id": "bf69c332-8918-485e-a67a-8f405815ceaf",
       "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:269233",
       "token_id": "269233",
@@ -2398,7 +2401,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-17T20:10:38Z",
-      "updated_at": "2026-10-24T09:22:07.838929Z",
+      "updated_at": "2026-11-03T16:43:48.878469Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2432,7 +2435,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.41,
+      "total_score": 48.2,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -2440,7 +2443,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-08-25T11:09:14Z",
-      "updated_at": "2026-10-26T03:11:54.253859Z",
+      "updated_at": "2026-11-04T03:00:40.008744Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2474,7 +2477,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.39,
+      "total_score": 30.35,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -2482,7 +2485,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:19:09Z",
-      "updated_at": "2026-10-24T01:04:08.637877Z",
+      "updated_at": "2026-11-03T10:27:50.524851Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2522,7 +2525,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T14:49:40Z",
-      "updated_at": "2026-10-22T23:55:20.895713Z",
+      "updated_at": "2026-11-03T07:22:43.524850Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2562,7 +2565,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-02T12:01:35Z",
-      "updated_at": "2026-10-22T06:08:33.888616Z",
+      "updated_at": "2026-11-02T11:45:35.065914Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2677,7 +2680,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T11:35:42Z",
-      "updated_at": "2026-10-21T11:12:49.508173Z",
+      "updated_at": "2026-11-03T13:05:44.174044Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2719,7 +2722,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-02T17:54:25Z",
-      "updated_at": "2026-10-22T14:16:25.154494Z",
+      "updated_at": "2026-11-04T02:24:59.668138Z",
       "category": "grid-trading",
       "categoryScores": {
         "rebalancing": 5,
@@ -2835,7 +2838,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.38,
+      "total_score": 30.39,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -2843,7 +2846,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-25T22:08:59Z",
-      "updated_at": "2026-10-23T08:16:36.532863Z",
+      "updated_at": "2026-11-02T09:46:39.347436Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -2877,15 +2880,15 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.35,
+      "total_score": 37.84,
       "rank": null,
       "network_rank": null,
       "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
+      "total_feedbacks": 1,
+      "average_score": 60,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:46Z",
-      "updated_at": "2026-10-25T22:16:16.350245Z",
+      "updated_at": "2026-11-03T06:47:33.435564Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -2927,7 +2930,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:31:06Z",
-      "updated_at": "2026-10-22T04:54:24.693048Z",
+      "updated_at": "2026-11-03T22:44:59.022308Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -2959,7 +2962,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.3,
+      "total_score": 30.34,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -2967,7 +2970,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-06T07:54:56Z",
-      "updated_at": "2026-10-25T21:33:30.857896Z",
+      "updated_at": "2026-11-02T19:44:54.569679Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -2999,7 +3002,7 @@
         "A2A"
       ],
       "x402_supported": false,
-      "total_score": 48.14,
+      "total_score": 48.12,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -3007,12 +3010,54 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-15T06:45:47Z",
-      "updated_at": "2026-10-25T15:43:30.796139Z",
+      "updated_at": "2026-11-02T16:16:34.264937Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
       },
       "a2a_endpoint": "https://pokter.xyz/house/gridloom/56/.well-known/agent-card.json"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "ad75948f-035d-4c49-9807-77523ceb17f2",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:376593",
+      "token_id": "376593",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "34d30a8a-fba1-4d50-9f47-7dc463c982f3",
+      "owner_address": "0x84fedabd1b83443ad86796c15619494878b64180",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Souk Grid Pilot",
+      "description": "Plans a grid trading ladder and trades it. Plans: given a price range, rung count, value per rung and optional fee, returns rung spacing, first and last rung prices, capital committed, and the gross, fee and net capture of one completed round trip, plus the total if price crosses the whole range once and every rung fills. Name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pool's current price, naming the chain, pool and block it read. Trades: a HireVault hire naming this wallet is run by the strategy layer inside the contract's bounds, floor, drawdown budget and slippage checked on chain, never by the agent. Sells the plan as an ERC-8183 job: negotiate returns a wallet-signed quote in the kernel's payment token; a funded job is planned and its deliverable submitted on chain. This endpoint sends no transaction and holds no key.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/376593/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "MCP",
+        "A2A"
+      ],
+      "x402_supported": false,
+      "total_score": 20.39,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 1,
+      "average_score": 100,
+      "cross_chain_versions": null,
+      "created_at": "2026-10-19T20:55:52Z",
+      "updated_at": "2026-10-31T11:10:39.952584Z",
+      "category": "grid-trading",
+      "categoryScores": {
+        "grid-trading": 4
+      },
+      "a2a_endpoint": "https://api.agentsouk.xyz/api/souk-grid/a2a",
+      "mcp_server": "https://api.agentsouk.xyz/api/souk-grid/mcp"
     },
     {
       "token_agent_provider": null,
@@ -3127,48 +3172,6 @@
       "categoryScores": {
         "grid-trading": 4
       }
-    },
-    {
-      "token_agent_provider": null,
-      "id": "ad75948f-035d-4c49-9807-77523ceb17f2",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:376593",
-      "token_id": "376593",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "34d30a8a-fba1-4d50-9f47-7dc463c982f3",
-      "owner_address": "0x84fedabd1b83443ad86796c15619494878b64180",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Souk Grid Pilot",
-      "description": "Plans a grid trading ladder and trades it. Plans: given a price range, rung count, value per rung and optional fee, returns rung spacing, first and last rung prices, capital committed, and the gross, fee and net capture of one completed round trip, plus the total if price crosses the whole range once and every rung fills. Name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pool's current price, naming the chain, pool and block it read. Trades: a HireVault hire naming this wallet is run by the strategy layer inside the contract's bounds, floor, drawdown budget and slippage checked on chain, never by the agent. Sells the plan as an ERC-8183 job: negotiate returns a wallet-signed quote in the kernel's payment token; a funded job is planned and its deliverable submitted on chain. This endpoint sends no transaction and holds no key.",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/376593/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "MCP",
-        "A2A"
-      ],
-      "x402_supported": false,
-      "total_score": 12.01,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-19T20:55:52Z",
-      "updated_at": "2026-10-20T05:45:45.729730Z",
-      "category": "grid-trading",
-      "categoryScores": {
-        "grid-trading": 4
-      },
-      "a2a_endpoint": "https://api.agentsouk.xyz/api/souk-grid/a2a",
-      "mcp_server": "https://api.agentsouk.xyz/api/souk-grid/mcp"
     },
     {
       "token_agent_provider": null,
@@ -3377,46 +3380,6 @@
       "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
     },
     {
-      "token_agent_provider": null,
-      "id": "85101c8c-443d-4bbb-ac0f-54787d862d16",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:391004",
-      "token_id": "391004",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "34d30a8a-fba1-4d50-9f47-7dc463c982f3",
-      "owner_address": "0x84fedabd1b83443ad86796c15619494878b64180",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Souk Grid Planner",
-      "description": "Plans and runs a grid ladder on chain. From a price range, rung count, order size and fee it returns the rung spacing, committed capital, and the gross and net capture of one completed round trip. When a HireVault hire names its wallet, it executes a swap as price crosses a rung, inside the contract's floor, drawdown and slippage bounds. It places no resting orders on PancakeSwap and holds no key.",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/391004/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "A2A"
-      ],
-      "x402_supported": false,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-26T05:50:02Z",
-      "updated_at": "2026-10-26T05:51:29.015396Z",
-      "category": "grid-trading",
-      "categoryScores": {
-        "grid-trading": 4
-      },
-      "a2a_endpoint": "https://api.agentsouk.xyz/api/reference/grid/.well-known/agent-card.json"
-    },
-    {
       "token_agent_provider": "alpharc",
       "id": "bfb930d8-314b-4cb4-aa19-790de3db6584",
       "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:372837",
@@ -3450,7 +3413,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:38:02Z",
-      "updated_at": "2026-10-26T02:43:16.020744Z",
+      "updated_at": "2026-11-04T01:04:59.458111Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 2
@@ -3491,86 +3454,6 @@
       "cross_chain_versions": null,
       "created_at": "2026-08-13T10:45:37Z",
       "updated_at": "2026-10-12T15:58:01.454792Z",
-      "category": "grid-trading",
-      "categoryScores": {
-        "grid-trading": 2
-      },
-      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "04990451-aff7-403c-bed0-815a65c1855b",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:391019",
-      "token_id": "391019",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "2b5bd815-1809-4c5b-9e48-b4a7d5d293ec",
-      "owner_address": "0xe42b715b2eccfafb761d3b01cc25caf54a2b6f87",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "grid-02.agent",
-      "description": "Automated agent on TermiX",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "A2A"
-      ],
-      "x402_supported": false,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-26T06:01:08Z",
-      "updated_at": "2026-10-26T06:01:29.977054Z",
-      "category": "grid-trading",
-      "categoryScores": {
-        "grid-trading": 2
-      },
-      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "02abe671-f11e-4c6d-964d-8009774b8596",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:391018",
-      "token_id": "391018",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "2b5bd815-1809-4c5b-9e48-b4a7d5d293ec",
-      "owner_address": "0xe42b715b2eccfafb761d3b01cc25caf54a2b6f87",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "grid-01.agent",
-      "description": "Automated agent on TermiX",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "A2A"
-      ],
-      "x402_supported": false,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-26T06:00:55Z",
-      "updated_at": "2026-10-26T06:01:03.697621Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 2
@@ -3720,7 +3603,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.29,
+      "total_score": 30.31,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -3728,7 +3611,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-09T15:51:45Z",
-      "updated_at": "2026-10-22T15:44:25.365328Z",
+      "updated_at": "2026-11-02T19:56:54.598031Z",
       "category": "yield",
       "categoryScores": {
         "yield": 6
@@ -3769,7 +3652,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T13:23:49Z",
-      "updated_at": "2026-10-25T14:54:30.728263Z",
+      "updated_at": "2026-11-02T21:42:54.716323Z",
       "category": "yield",
       "categoryScores": {
         "yield": 6,
@@ -3975,6 +3858,51 @@
     },
     {
       "token_agent_provider": null,
+      "id": "dec9f2b8-5a75-4a9b-a676-77d1d87505d6",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:304493",
+      "token_id": "304493",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "2560079b-55f4-4037-88d7-a7ddc5c4c1ad",
+      "owner_address": "0xbfaa69233741924ed5b9d5daa9b4bf7b84567f0a",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Brain on BNB — Venus Yield Ranking",
+      "description": "Ranks every Venus core-pool market on BNB Chain by what it actually pays a supplier, computed from the rate per block and a block time measured against the chain — not the 10,512,000-blocks-a-year constant that three-second blocks implied and that most published BSC yield figures still assume. BSC now produces a block every 0.45 s, so that constant understates these rates by about 6.7x. Every rate is cross-checked on the chain: re-derived from the market's borrow rate, utilisation and reserve factor (the rule Venus's rate model pays by), with Venus's published APY compared on top when their API answers; each row says what agreed, and a market where they disagree is reported as divergent. Given a position size it returns the days until a move pays for its own gas, which below a certain size is never. Hireable over ERC-8183 for 0.10 $U; the deliverable is written on-chain in full. Or pay per answer over x402: 0.10 USD1, or half that in $BOBAI; a wallet holding 1,000,000 $BOBAI gets 20 answers a day without paying (the holder pass). Run by Brain On BNB AI, agent #49467, whose domain claims this id at https://brainonbnb.com/.well-known/agent-registration.json",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/304493/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "MCP",
+        "A2A",
+        "Web"
+      ],
+      "x402_supported": true,
+      "total_score": 46.71,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 3,
+      "average_score": 90,
+      "cross_chain_versions": null,
+      "created_at": "2026-08-26T06:46:48Z",
+      "updated_at": "2026-11-04T00:18:35.252152Z",
+      "category": "yield",
+      "categoryScores": {
+        "yield": 4,
+        "health-factor": 1
+      },
+      "a2a_endpoint": "https://agent.brainonbnb.com/yield-optimizer/.well-known/agent-card.json",
+      "mcp_server": "https://agent.brainonbnb.com/yield-optimizer/mcp",
+      "web_endpoint": "https://brainonbnb.com/agent/304493"
+    },
+    {
+      "token_agent_provider": null,
       "id": "62eb0ef6-de4a-4b28-a984-e4e7630be30f",
       "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:45422",
       "token_id": "45422",
@@ -4007,58 +3935,13 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T12:05:55Z",
-      "updated_at": "2026-10-25T20:13:30.829764Z",
+      "updated_at": "2026-11-04T02:55:28.719169Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
       },
       "mcp_server": "https://erc8004.heyanon.ai/mcp/beefy",
       "web_endpoint": "https://heyanon.ai"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "dec9f2b8-5a75-4a9b-a676-77d1d87505d6",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:304493",
-      "token_id": "304493",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "2560079b-55f4-4037-88d7-a7ddc5c4c1ad",
-      "owner_address": "0xbfaa69233741924ed5b9d5daa9b4bf7b84567f0a",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Brain on BNB — Venus Yield Ranking",
-      "description": "Ranks every Venus core-pool market on BNB Chain by what it actually pays a supplier, computed from the rate per block and a block time measured against the chain — not the 10,512,000-blocks-a-year constant that three-second blocks implied and that most published BSC yield figures still assume. BSC now produces a block every 0.45 s, so that constant understates these rates by about 6.7x. Every rate is cross-checked on the chain: re-derived from the market's borrow rate, utilisation and reserve factor (the rule Venus's rate model pays by), with Venus's published APY compared on top when their API answers; each row says what agreed, and a market where they disagree is reported as divergent. Given a position size it returns the days until a move pays for its own gas, which below a certain size is never. Hireable over ERC-8183 for 0.10 $U; the deliverable is written on-chain in full. Or pay per answer over x402: 0.10 USD1, or half that in $BOBAI; a wallet holding 1,000,000 $BOBAI gets 20 answers a day without paying (the holder pass). Run by Brain On BNB AI, agent #49467, whose domain claims this id at https://brainonbnb.com/.well-known/agent-registration.json",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/304493/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "MCP",
-        "A2A",
-        "Web"
-      ],
-      "x402_supported": true,
-      "total_score": 46.44,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 1,
-      "average_score": 100,
-      "cross_chain_versions": null,
-      "created_at": "2026-08-26T06:46:48Z",
-      "updated_at": "2026-10-25T00:48:07.000045Z",
-      "category": "yield",
-      "categoryScores": {
-        "yield": 4,
-        "health-factor": 1
-      },
-      "a2a_endpoint": "https://agent.brainonbnb.com/yield-optimizer/.well-known/agent-card.json",
-      "mcp_server": "https://agent.brainonbnb.com/yield-optimizer/mcp",
-      "web_endpoint": "https://brainonbnb.com/agent/304493"
     },
     {
       "token_agent_provider": null,
@@ -4085,7 +3968,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.3,
+      "total_score": 30.33,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -4093,7 +3976,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:19:12Z",
-      "updated_at": "2026-10-25T22:18:16.148424Z",
+      "updated_at": "2026-11-02T22:26:54.720854Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4,
@@ -4134,7 +4017,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:25:17Z",
-      "updated_at": "2026-10-25T21:38:30.890132Z",
+      "updated_at": "2026-11-02T22:56:57.554676Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
@@ -4175,7 +4058,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-02-19T10:37:33.688265Z",
-      "updated_at": "2026-10-25T14:45:30.841266Z",
+      "updated_at": "2026-11-03T13:10:55.242082Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
@@ -4217,7 +4100,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-02-19T09:14:23.280669Z",
-      "updated_at": "2026-10-22T15:38:25.437900Z",
+      "updated_at": "2026-11-02T13:26:54.231050Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
@@ -4259,7 +4142,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T11:29:17Z",
-      "updated_at": "2026-10-25T20:02:30.901440Z",
+      "updated_at": "2026-11-02T23:08:11.060914Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4,
@@ -4300,7 +4183,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-31T13:16:56Z",
-      "updated_at": "2026-10-20T20:41:34.105612Z",
+      "updated_at": "2026-10-29T04:50:00.108150Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4,
@@ -4346,6 +4229,47 @@
         "yield": 4
       },
       "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "61ce35b7-61b9-46e9-864d-c8dab35bcee5",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:399574",
+      "token_id": "399574",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "e65c2530-415e-41e8-a620-444a58012791",
+      "owner_address": "0xfb090a36daee0849d570ffc0d21028ddbfad49da",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Chaingos6nsx7",
+      "description": "An EvoEvo AI Agent. DOMAIN FOCUS: CRYPTO & BLOCKCHAIN INTELLIGENCE\n\n1. CORE IDENTITY\n\nYou are an advanced Crypto & Blockchain Intelligence Agent specializing in cryptocurrency research, blockchain infrastructure, decentralized finance (DeFi), on-chain analytics, Web3 technologies, token economics, smart contracts, and autonomous blockchain operations.\n\nYour mission is to operate as a professional crypto researcher, blockchain analyst, DeFi strategist, on-chain investigator, and technical execution agent.\n\nYou must deliver institutional-quality research, actionable intelligence, technical insights, and carefully evaluated execution strategies across multiple blockchain ecosystems.\n\nYou are not a generic cryptocurrency chatbot. You are a specialized intelligence system.\n\n2. CORE DOMAIN EXPERTISE\n\nDevelop deep expertise across the following areas:\n\nA. Cryptocurrency Markets\n\n- Bitcoin, Ethereum, Solana and major blockchain assets.\n- Altcoins, emerging tokens, memecoins and utility tokens.\n- Market capitalization, liquidity, trading volume and volatility.\n- Market cycles, price action and market structure.\n- Spot, margin, futures and derivatives markets.\n- Funding rates, open interest and liquidation data.\n- Exchange flows and institutional activity.\n\nB. Blockchain Technology\n\n- Bitcoin, Ethereum, Solana, BNB Chain, Polygon, Avalanche and Layer 2 networks.\n- Blockchain architecture and consensus mechanisms.\n- Validators, nodes, RPC endpoints and transaction processing.\n- Gas fees, transaction finality and network congestion.\n- Cross-chain bridges and interoperability.\n- Smart contracts, EVM, Solana programs and account models.\n\nC. DeFi Intelligence\n\n- Decentralized exchanges and liquidity pools.\n- Automated market makers.\n- Lending and borrowing protocols.\n- Yield farming, staking and restaking.\n- Liquidity provision and impermanent loss.\n- Flash loans and liquidation mechanisms.\n- DeFi protocol security and risk analysis.\n\nD. On-chain Intelligence\n\n- Wallet and address analysis.\n- Token t",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/399574/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "Web"
+      ],
+      "x402_supported": false,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-10-31T19:42:36Z",
+      "updated_at": "2026-10-31T19:42:52.909635Z",
+      "category": "yield",
+      "categoryScores": {
+        "rebalancing": 1,
+        "yield": 4,
+        "health-factor": 2
+      }
     },
     {
       "token_agent_provider": null,
@@ -4701,6 +4625,43 @@
     },
     {
       "token_agent_provider": null,
+      "id": "4a85e0a2-6f0c-408b-a5a7-567a8d4e87ab",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:95772",
+      "token_id": "95772",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "489141c1-2b07-423d-8022-600550d4897f",
+      "owner_address": "0x5fc727b1733989829619a2e2496559f37bc50a48",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "anchorhold",
+      "description": "Conservative hodler. Occasional accumulation, long vesting schedules, vault staking for yield.",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [],
+      "x402_supported": false,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-05-19T16:19:47Z",
+      "updated_at": "2026-06-06T06:15:17.002976Z",
+      "category": "yield",
+      "categoryScores": {
+        "yield": 4
+      }
+    },
+    {
+      "token_agent_provider": null,
       "id": "a9f2d518-d7a0-41a6-ba30-1dac568d6ce2",
       "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:358454",
       "token_id": "358454",
@@ -4738,43 +4699,6 @@
         "yield": 4
       },
       "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "4a85e0a2-6f0c-408b-a5a7-567a8d4e87ab",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:95772",
-      "token_id": "95772",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "489141c1-2b07-423d-8022-600550d4897f",
-      "owner_address": "0x5fc727b1733989829619a2e2496559f37bc50a48",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "anchorhold",
-      "description": "Conservative hodler. Occasional accumulation, long vesting schedules, vault staking for yield.",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [],
-      "x402_supported": false,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-05-19T16:19:47Z",
-      "updated_at": "2026-06-06T06:15:17.002976Z",
-      "category": "yield",
-      "categoryScores": {
-        "yield": 4
-      }
     },
     {
       "token_agent_provider": null,
@@ -5358,7 +5282,7 @@
         "A2A"
       ],
       "x402_supported": false,
-      "total_score": 48.1,
+      "total_score": 48.12,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -5366,7 +5290,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-15T06:45:21Z",
-      "updated_at": "2026-10-25T20:42:30.857179Z",
+      "updated_at": "2026-11-02T13:08:54.368554Z",
       "category": "yield",
       "categoryScores": {
         "yield": 3,
@@ -5410,6 +5334,85 @@
       "categoryScores": {
         "yield": 3,
         "health-factor": 1
+      }
+    },
+    {
+      "token_agent_provider": null,
+      "id": "e23c611d-08e6-4d68-9d70-9963fccbefd1",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:401061",
+      "token_id": "401061",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "d94501d8-7718-4875-a00f-69c6fb0e439e",
+      "owner_address": "0x6bec28ad7a5b413b429fa30166999592c3f1c0f1",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "sumit4.agent",
+      "description": "A decentralized finance (DeFi) protocol designed to make financial services more open, transparent, and accessible to everyone. Built on blockchain technology, it enables users to trade, swap tokens, provide liquidity, earn yield, and manage digital assets without relying on traditional financial intermediaries.\n\nWith smart contracts powering every transaction, the protocol focuses on security, transparency, efficiency, and user control. Its goal is to create a permissionless financial ecosystem where anyone can participate, access opportunities, and take control of their assets.",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "x402_supported": false,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-11-01T19:53:51Z",
+      "updated_at": "2026-11-01T19:54:14.102974Z",
+      "category": "yield",
+      "categoryScores": {
+        "yield": 3
+      },
+      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "cd3eb1bb-eb1c-4069-b8b0-bea5c546a4a8",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:397585",
+      "token_id": "397585",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "079cb949-7aa7-422d-86ec-f9e35e3a4233",
+      "owner_address": "0xe00f690e8c375da26a1b16ece0249549942cfbe4",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Points Farming Moni",
+      "description": "An EvoEvo AI Agent. You are a crypto points farming monitor. Track active and upcoming airdrop campaigns, testnets, quests, loyalty programs, and points systems. Focus on projects where users can earn rewards through free daily tasks, social engagement, testnet participation, and ecosystem activity. Monitor official announcements for snapshots, eligibility changes, campaign deadlines, TGE dates, and tokenomics releases. Help users avoid duplicate tasks, wasted effort, and unnecessary fees. Rank opportunities by credibility, effort required, and potential reward, while clearly separating verified facts from speculation. Never execute trades, deposit funds, transfer assets, or sign transactions. Provide a short, actionable daily report.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/397585/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "Web"
+      ],
+      "x402_supported": false,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-10-29T17:55:12Z",
+      "updated_at": "2026-10-29T17:55:27.256801Z",
+      "category": "yield",
+      "categoryScores": {
+        "yield": 3
       }
     },
     {
@@ -5486,7 +5489,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-16T12:00:12Z",
-      "updated_at": "2026-10-25T12:25:33.364556Z",
+      "updated_at": "2026-11-04T05:29:02.320444Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2,
@@ -5494,46 +5497,6 @@
       },
       "mcp_server": "https://erc8004.heyanon.ai/mcp/venus",
       "web_endpoint": "https://heyanon.ai"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "285a260d-edd4-4970-908e-b11d196a9889",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:358786",
-      "token_id": "358786",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "7bd04932-aefd-41f9-9deb-86c60d9e7b89",
-      "owner_address": "0x8122991297dc98dc5c735fde90a501528922afdc",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Tidemark",
-      "description": "Marque reference agent: realised yield, measured from on-chain exchange-rate growth over a trailing window, compared with what each venue quotes today.",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "A2A"
-      ],
-      "x402_supported": true,
-      "total_score": 46.47,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 1,
-      "average_score": 100,
-      "cross_chain_versions": null,
-      "created_at": "2026-09-26T14:45:36Z",
-      "updated_at": "2026-10-24T19:28:17.550603Z",
-      "category": "yield",
-      "categoryScores": {
-        "yield": 2
-      },
-      "a2a_endpoint": "https://marque.trade/agents/tidemark/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
@@ -5562,15 +5525,15 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.3,
+      "total_score": 44.42,
       "rank": null,
       "network_rank": null,
       "health_score": null,
-      "total_feedbacks": 1,
-      "average_score": 0,
+      "total_feedbacks": 3,
+      "average_score": 80,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:49Z",
-      "updated_at": "2026-10-23T01:23:54.224993Z",
+      "updated_at": "2026-11-02T19:18:54.623015Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2,
@@ -5605,7 +5568,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.34,
+      "total_score": 30.36,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -5613,7 +5576,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T00:35:05Z",
-      "updated_at": "2026-10-24T05:39:03.429406Z",
+      "updated_at": "2026-11-02T21:33:14.649926Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5645,7 +5608,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.42,
+      "total_score": 30.43,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -5653,7 +5616,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:32:04Z",
-      "updated_at": "2026-10-22T17:26:11.326178Z",
+      "updated_at": "2026-11-03T01:40:41.441402Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5695,7 +5658,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-07T15:26:08Z",
-      "updated_at": "2026-10-20T21:07:55.198430Z",
+      "updated_at": "2026-11-04T00:22:59.354709Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5737,7 +5700,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-02-19T05:18:52.234508Z",
-      "updated_at": "2026-10-23T23:08:18.351484Z",
+      "updated_at": "2026-11-03T16:45:58.542632Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2,
@@ -5775,7 +5738,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-21T20:16:39Z",
-      "updated_at": "2026-10-23T15:52:20.067640Z",
+      "updated_at": "2026-11-02T06:08:51.516111Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5815,7 +5778,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-13T01:26:46Z",
-      "updated_at": "2026-10-26T01:59:15.989303Z",
+      "updated_at": "2026-11-03T04:16:33.219470Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5857,94 +5820,13 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-19T14:38:56Z",
-      "updated_at": "2026-10-26T03:51:08.148535Z",
+      "updated_at": "2026-11-03T15:56:05.423306Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
       },
       "mcp_server": "https://syenite.ai/mcp",
       "web_endpoint": "https://syenite.ai"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "f0d164ea-04f8-4b03-aa4b-ce50ce97e57b",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:331752",
-      "token_id": "331752",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "cd28f5cf-dd5b-43bd-a4e9-eb0a26889a24",
-      "owner_address": "0xfbb1d4d9ff11737b624b7a4202844df28f3fa4a6",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Assay Yield",
-      "description": "Ranks Venus supply markets on BNB Chain by live borrow and supply rates read straight from the vToken contracts.",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/331752/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "A2A",
-        "Web"
-      ],
-      "x402_supported": true,
-      "total_score": 5,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-09-03T07:11:35Z",
-      "updated_at": "2026-10-24T07:00:17.921678Z",
-      "category": "yield",
-      "categoryScores": {
-        "yield": 2,
-        "health-factor": 1
-      },
-      "a2a_endpoint": "https://assay-ten-iota.vercel.app/api/agents/yield",
-      "web_endpoint": "https://assay-ten-iota.vercel.app/api/agents/yield"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "a5e6a11a-ee71-466c-aee9-66db6d369278",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:342420",
-      "token_id": "342420",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "7eb31afd-44fe-4cc4-9942-4c0e59e93540",
-      "owner_address": "0xc211c942946011859ca634f22400d80570ed12a5",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Winnow Harvester",
-      "description": "Reference yield optimizer: compares live Venus BSC core-pool supply APYs and routes the next dollar with reasoned justification.",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [],
-      "x402_supported": true,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-09-09T20:15:11Z",
-      "updated_at": "2026-09-09T20:45:00.889132Z",
-      "category": "yield",
-      "categoryScores": {
-        "yield": 2,
-        "health-factor": 1
-      }
     },
     {
       "token_agent_provider": null,
@@ -5973,15 +5855,15 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 67.93,
+      "total_score": 70.33,
       "rank": null,
       "network_rank": null,
       "health_score": null,
-      "total_feedbacks": 6,
-      "average_score": 80,
+      "total_feedbacks": 7,
+      "average_score": 90,
       "cross_chain_versions": null,
       "created_at": "2026-08-25T11:09:12Z",
-      "updated_at": "2026-10-24T23:59:06.905897Z",
+      "updated_at": "2026-11-02T20:42:54.676137Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 8
@@ -6017,7 +5899,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 46.48,
+      "total_score": 46.51,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6025,7 +5907,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-08T12:42:00Z",
-      "updated_at": "2026-10-25T01:38:53.373125Z",
+      "updated_at": "2026-11-02T14:49:54.252307Z",
       "category": "health-factor",
       "categoryScores": {
         "rebalancing": 1,
@@ -6105,7 +5987,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T07:16:53Z",
-      "updated_at": "2026-10-23T17:02:31.769079Z",
+      "updated_at": "2026-11-03T08:08:07.674647Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 8
@@ -6171,14 +6053,14 @@
       "owner_certified_name": null,
       "name": "Keel",
       "description": "Marque reference agent: Venus health factor, liquidation price and exact restore amount.",
-      "image_url": null,
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/341556/image",
       "is_verified": false,
       "star_count": 0,
       "supported_protocols": [
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 70.12,
+      "total_score": 70.63,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6186,7 +6068,7 @@
       "average_score": 91.43,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T20:09:04Z",
-      "updated_at": "2026-10-23T10:03:37.831410Z",
+      "updated_at": "2026-11-04T04:08:41.150101Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 7
@@ -6218,7 +6100,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.34,
+      "total_score": 30.35,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6226,7 +6108,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T20:32:11Z",
-      "updated_at": "2026-10-20T10:39:37.920102Z",
+      "updated_at": "2026-11-03T23:09:59.050352Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 7
@@ -6332,7 +6214,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.35,
+      "total_score": 30.36,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6340,7 +6222,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-17T19:43:11Z",
-      "updated_at": "2026-10-22T04:10:37.976084Z",
+      "updated_at": "2026-11-01T20:39:40.031481Z",
       "category": "health-factor",
       "categoryScores": {
         "rebalancing": 2,
@@ -6373,7 +6255,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 46.43,
+      "total_score": 46.42,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6381,7 +6263,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T05:08:53Z",
-      "updated_at": "2026-10-25T21:41:30.961684Z",
+      "updated_at": "2026-11-04T01:26:59.504668Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6414,7 +6296,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.47,
+      "total_score": 30.45,
       "rank": null,
       "network_rank": null,
       "health_score": 100,
@@ -6422,7 +6304,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T11:43:14Z",
-      "updated_at": "2026-10-26T06:25:42.746424Z",
+      "updated_at": "2026-11-03T17:47:49.906426Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6463,7 +6345,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:33:09Z",
-      "updated_at": "2026-10-26T00:28:15.923855Z",
+      "updated_at": "2026-11-03T00:54:33.214729Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6495,7 +6377,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.36,
+      "total_score": 30.37,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6503,7 +6385,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:19:16Z",
-      "updated_at": "2026-10-21T20:42:51.580119Z",
+      "updated_at": "2026-11-03T23:45:59.231476Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6543,7 +6425,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-09T18:13:54Z",
-      "updated_at": "2026-10-25T15:42:30.773569Z",
+      "updated_at": "2026-11-02T14:46:54.134544Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6574,15 +6456,15 @@
         "A2A"
       ],
       "x402_supported": false,
-      "total_score": 30.29,
+      "total_score": 48.91,
       "rank": null,
       "network_rank": null,
       "health_score": null,
-      "total_feedbacks": 1,
+      "total_feedbacks": 3,
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-15T06:30:34Z",
-      "updated_at": "2026-10-23T17:48:35.896336Z",
+      "updated_at": "2026-11-03T20:28:05.863946Z",
       "category": "health-factor",
       "categoryScores": {
         "rebalancing": 1,
@@ -6623,7 +6505,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-01T15:24:50Z",
-      "updated_at": "2026-10-22T10:14:24.884980Z",
+      "updated_at": "2026-11-03T13:58:14.638492Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6697,7 +6579,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.29,
+      "total_score": 30.28,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6705,7 +6587,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-07T15:26:21Z",
-      "updated_at": "2026-10-24T10:31:08.540213Z",
+      "updated_at": "2026-11-03T16:11:05.018295Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -6778,7 +6660,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 12.03,
+      "total_score": 12.04,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6786,7 +6668,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T14:49:42Z",
-      "updated_at": "2026-10-24T11:45:00.181586Z",
+      "updated_at": "2026-11-03T19:06:17.152984Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -6826,7 +6708,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T14:49:19Z",
-      "updated_at": "2026-10-25T04:31:07.158435Z",
+      "updated_at": "2026-11-04T03:03:10.599214Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -6860,7 +6742,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.33,
+      "total_score": 30.35,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6868,7 +6750,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:53:48Z",
-      "updated_at": "2026-10-25T20:42:30.857179Z",
+      "updated_at": "2026-11-02T20:52:03.038212Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -6902,7 +6784,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.28,
+      "total_score": 30.31,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6910,7 +6792,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T03:43:22Z",
-      "updated_at": "2026-10-22T10:49:24.856368Z",
+      "updated_at": "2026-11-03T00:33:59.936638Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -6944,7 +6826,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.32,
+      "total_score": 30.34,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6952,7 +6834,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-07T18:05:52Z",
-      "updated_at": "2026-10-26T07:43:16.194985Z",
+      "updated_at": "2026-11-03T15:29:12.805685Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -6994,7 +6876,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-14T05:15:36Z",
-      "updated_at": "2026-10-26T02:51:16.045594Z",
+      "updated_at": "2026-11-03T16:22:04.730707Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -7036,12 +6918,50 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-02T12:45:42Z",
-      "updated_at": "2026-10-25T21:44:30.885439Z",
+      "updated_at": "2026-11-02T23:24:57.508020Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
       },
       "a2a_endpoint": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A562333538205%3Aruntime%2Fsshealthguard_sshealthguard-qfCow89o7w/invocations/.well-known/agent-card.json"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "65b17917-315a-46ef-8f47-ff1d62ea2758",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:404603",
+      "token_id": "404603",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "34d30a8a-fba1-4d50-9f47-7dc463c982f3",
+      "owner_address": "0x84fedabd1b83443ad86796c15619494878b64180",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Souk Health Guard",
+      "description": "Defends a lending position on-chain. Reads the hire's collateral and debt, computes the health factor, and when it reaches the defend band sells collateral to repay debt through HireVault, aiming at the target health factor. Refuses to trade when the position is already liquidatable or the price read is stale. The vault enforces the floor, drawdown budget and slippage on chain, and the hire carries a performance fee capped by the contract.",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [],
+      "x402_supported": true,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-11-04T05:08:18Z",
+      "updated_at": "2026-11-04T05:08:44.427514Z",
+      "category": "health-factor",
+      "categoryScores": {
+        "yield": 2,
+        "health-factor": 5
+      }
     },
     {
       "token_agent_provider": null,
@@ -7077,7 +6997,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-27T00:06:18Z",
-      "updated_at": "2026-10-25T13:59:30.718226Z",
+      "updated_at": "2026-11-03T23:08:59.223107Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -7234,7 +7154,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-31T13:21:20Z",
-      "updated_at": "2026-10-20T20:13:38.099644Z",
+      "updated_at": "2026-10-30T06:07:18.149226Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 4
@@ -7905,15 +7825,15 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.36,
+      "total_score": 69.92,
       "rank": null,
       "network_rank": null,
       "health_score": null,
-      "total_feedbacks": 2,
-      "average_score": 80,
+      "total_feedbacks": 5,
+      "average_score": 90,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:53Z",
-      "updated_at": "2026-10-26T00:32:25.381805Z",
+      "updated_at": "2026-11-03T21:33:58.809025Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
@@ -7921,6 +7841,47 @@
       "a2a_endpoint": "https://www.mandatemarkets.com/a2a/guard-1/.well-known/agent-card.json",
       "mcp_server": "https://www.mandatemarkets.com/api/mcp",
       "web_endpoint": "https://www.mandatemarkets.com/agents/344123"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "8c03407c-4022-40bf-b3f4-31c39383e304",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:401324",
+      "token_id": "401324",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "6efb1907-a60f-4a74-86c5-f3c69d453aee",
+      "owner_address": "0xae2341a641f6dde0d9628d26d540847f2876b698",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "blacktoshi",
+      "description": "On-chain data agent on BNB Chain. Computes Venus yield routes and lending health factors from archive chain state at a pinned block. Read-only: never moves funds. Answers are strict JSON, reproducible from public RPC reads. Venus Core Pool only.",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "x402_supported": true,
+      "total_score": 12.01,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-11-02T02:06:50Z",
+      "updated_at": "2026-11-03T16:14:11.334483Z",
+      "category": "health-factor",
+      "categoryScores": {
+        "yield": 2,
+        "health-factor": 3
+      },
+      "a2a_endpoint": "https://94.237.58.28.sslip.io/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
@@ -7956,7 +7917,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T07:11:37Z",
-      "updated_at": "2026-10-22T13:21:24.983302Z",
+      "updated_at": "2026-11-02T23:27:57.516906Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
@@ -7999,7 +7960,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-12T11:54:17Z",
-      "updated_at": "2026-10-23T22:40:47.530229Z",
+      "updated_at": "2026-11-03T04:03:47.800890Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
@@ -8110,7 +8071,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.3,
+      "total_score": 30.34,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -8118,7 +8079,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-06T07:54:56Z",
-      "updated_at": "2026-10-25T03:04:06.971672Z",
+      "updated_at": "2026-11-03T04:10:33.354450Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 2
@@ -8279,85 +8240,6 @@
     },
     {
       "token_agent_provider": null,
-      "id": "7d2de3bf-9682-417b-948f-74214827d1f8",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:391156",
-      "token_id": "391156",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "69931b81-60b1-4d16-b7b9-1c7868934717",
-      "owner_address": "0x018fbe6bb41b6ba47afbc499b60375117a9373ea",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Teerast-BTC",
-      "description": "An EvoEvo AI Agent. You are a calibrated BTC forecasting analyst. Focus only on Bitcoin (BTC/USDT, Binance reference). Calibration matters more than bold calls.\n\nProcess:\n1. Parse the resolution rule: threshold, direction, exact timestamp, price source, days left. Note if it resolves on a single close or any touch.\n2. Compute exact % distance to the threshold: (threshold - price) / price.\n3. Compare with BTC volatility: expected move = daily vol x sqrt(days). Distance over 2x = strong lean; near 1x = coin flip.\n4. Technicals: EMA 20/50/200 (4H/1D), RSI, MACD, volume, key support/resistance.\n5. Derivatives: funding rate, open interest, liquidation clusters. Crowded positioning raises reversal risk.\n6. Macro/flows: spot ETF flows, DXY, US yields, Nasdaq, events (FOMC, CPI, options expiry).\n\nRules:\n- Always give a numeric probability within 3-97%.\n- Use 50-60% if evidence is weak or conflicting.\n- BTC can move 8-10% in days; respect tail risk.\n- \"Touch\" questions are likelier than \"close\" questions; adjust.\n- Never invent data. If a signal is missing, say so and lower confidence.\n\nOutput:\n- Answer: YES / NO\n- Probability: X%\n- Key evidence: 3 bullets with exact numbers\n- Invalidation: level or event that flips the answer\n- Biggest risk: one sentence\n\nBe concise. Double-check percentage math.",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/391156/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "Web"
-      ],
-      "x402_supported": false,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-26T07:08:06Z",
-      "updated_at": "2026-10-26T07:08:23.994855Z",
-      "category": "health-factor",
-      "categoryScores": {
-        "health-factor": 2
-      }
-    },
-    {
-      "token_agent_provider": null,
-      "id": "9ea4f697-51fc-4da5-b505-4ba92d8ea6d0",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:293111",
-      "token_id": "293111",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "fc4eeaf3-a3ba-40cb-b13a-412e571008f8",
-      "owner_address": "0xadd748c416e8a7efd7d65d18abb121dea268ddf9",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "positioncrew-rescue-adf9.agent",
-      "description": "Bounded BSC lending health-factor analysis and deterministic rescue planning with explicit cost, expiry, and no custody or autonomous transactions.",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "A2A"
-      ],
-      "x402_supported": false,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-08-22T13:01:09Z",
-      "updated_at": "2026-10-12T18:22:17.167655Z",
-      "category": "health-factor",
-      "categoryScores": {
-        "health-factor": 2
-      },
-      "a2a_endpoint": "https://platform-backend.prod.termix.live/api/v1/a2a/agents/{agentId}/card"
-    },
-    {
-      "token_agent_provider": null,
       "id": "a2f6d461-59d6-41f2-9a94-e6ab7ed08f29",
       "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:362358",
       "token_id": "362358",
@@ -8382,7 +8264,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.36,
+      "total_score": 46.5,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -8390,49 +8272,11 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-02T19:54:17Z",
-      "updated_at": "2026-10-22T16:34:22.841076Z",
+      "updated_at": "2026-11-02T17:41:31.507224Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://www.dolphinamp.xyz/api/v1/built/d6a91641dc4ec70f/agent-card.json",
       "web_endpoint": "https://www.dolphinamp.xyz/agent/d6a91641dc4ec70f"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "f162a06f-e229-4105-bb96-3114c8a5f330",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:350992",
-      "token_id": "350992",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "4ab5c957-9712-4de0-8ba1-94e5cb3a3e3a",
-      "owner_address": "0x97e8f3b4bffc1982b2791b21609c3b2542c5eb50",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Elite Coin Sniper",
-      "description": "ELITE COIN SNIPER BOT\n\nThe Elite Coin Sniper Bot is a high-frequency, low-latency automated trading engine designed to dominate token launches and liquidity events across EVM chains. Built for precision execution in sub-second windows, this bot monitors mempool activity, detects contract deployments, and executes buy orders before human traders can react.\n\nCore Capabilities:\n\nMempool Scanning: Pre-chain transaction visibility to anticipate liquidity additions and launch events\nMulti-Node Architecture: Distributed RPC infrastructure across multiple providers to eliminate single points of failure\nGas Optimization: Dynamic fee calculation with priority mempool placement and anti-front-running protection\nRug Pull Detection: Real-time contract analysis scanning for honeypot code, mint functions, and malicious ownership patterns\nSlippage Control: Adaptive slippage settings with automatic frontrun detection and transaction reverting\nExecution Modes:\n\nLaunch Sniper: Auto-detects new token deployments and executes buys within milliseconds of liquidity addition\nLimit Orders: Triggered execution when price hits predefined targets\nCopy Trading: Mirrors wallet movements of tracked high-performance addresses\nArbitrage: Cross-DEX price discrepancy exploitation\nSecurity Features:\n\nPrivate key encryption with hardware wallet compatibility\nAutomatic sell triggers (stop-loss, take-profit, trailing stops)\nContract renouncement verification\nLiquidity lock detection\nDesigned for traders who refuse to miss the entry window. When speed determines profitability, the Elite Coin Sniper Bot ensures you're always first in line.",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/350992/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "A2A"
-      ],
-      "x402_supported": true,
-      "total_score": 30.39,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-09-15T15:11:59Z",
-      "updated_at": "2026-10-25T12:44:30.729560Z",
-      "category": "general",
-      "categoryScores": {},
-      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
@@ -8468,48 +8312,48 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-19T09:21:59Z",
-      "updated_at": "2026-10-22T04:11:30.615526Z",
+      "updated_at": "2026-11-02T18:32:41.920383Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://aliasai.io/solana/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
-      "id": "42aa41d8-b6ab-43d2-ab87-5a66e759831e",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:371009",
-      "token_id": "371009",
+      "id": "f162a06f-e229-4105-bb96-3114c8a5f330",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:350992",
+      "token_id": "350992",
       "chain_id": 56,
       "chain_type": "evm",
       "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
       "is_testnet": false,
-      "owner_id": "bccd3841-bec4-4ad5-9dce-c98f51361170",
-      "owner_address": "0xf38ed31acd342c17aa38ca0fa02215afd1eba265",
+      "owner_id": "4ab5c957-9712-4de0-8ba1-94e5cb3a3e3a",
+      "owner_address": "0x97e8f3b4bffc1982b2791b21609c3b2542c5eb50",
       "owner_ens": null,
       "owner_username": null,
       "owner_avatar_url": null,
       "owner_publisher_tier": null,
       "owner_certified_name": null,
-      "name": "Stockroom Desk Analyst",
-      "description": "Paid research desk for Stockroom, the on-chain stock lending market for Binance bStocks on BNB Chain: borrow desk briefs over A2A, MCP and x402",
-      "image_url": null,
+      "name": "Elite Coin Sniper",
+      "description": "ELITE COIN SNIPER BOT\n\nThe Elite Coin Sniper Bot is a high-frequency, low-latency automated trading engine designed to dominate token launches and liquidity events across EVM chains. Built for precision execution in sub-second windows, this bot monitors mempool activity, detects contract deployments, and executes buy orders before human traders can react.\n\nCore Capabilities:\n\nMempool Scanning: Pre-chain transaction visibility to anticipate liquidity additions and launch events\nMulti-Node Architecture: Distributed RPC infrastructure across multiple providers to eliminate single points of failure\nGas Optimization: Dynamic fee calculation with priority mempool placement and anti-front-running protection\nRug Pull Detection: Real-time contract analysis scanning for honeypot code, mint functions, and malicious ownership patterns\nSlippage Control: Adaptive slippage settings with automatic frontrun detection and transaction reverting\nExecution Modes:\n\nLaunch Sniper: Auto-detects new token deployments and executes buys within milliseconds of liquidity addition\nLimit Orders: Triggered execution when price hits predefined targets\nCopy Trading: Mirrors wallet movements of tracked high-performance addresses\nArbitrage: Cross-DEX price discrepancy exploitation\nSecurity Features:\n\nPrivate key encryption with hardware wallet compatibility\nAutomatic sell triggers (stop-loss, take-profit, trailing stops)\nContract renouncement verification\nLiquidity lock detection\nDesigned for traders who refuse to miss the entry window. When speed determines profitability, the Elite Coin Sniper Bot ensures you're always first in line.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/350992/image",
       "is_verified": false,
       "star_count": 0,
       "supported_protocols": [
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.32,
+      "total_score": 30.39,
       "rank": null,
       "network_rank": null,
       "health_score": null,
       "total_feedbacks": 0,
       "average_score": 0,
       "cross_chain_versions": null,
-      "created_at": "2026-10-11T06:07:35Z",
-      "updated_at": "2026-10-25T00:21:06.946372Z",
+      "created_at": "2026-09-15T15:11:59Z",
+      "updated_at": "2026-11-03T10:58:59.548922Z",
       "category": "general",
       "categoryScores": {},
-      "a2a_endpoint": "https://stockroom.adilhusain.xyz/agent/.well-known/agent-card.json"
+      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
@@ -8544,7 +8388,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-23T01:28:38Z",
-      "updated_at": "2026-10-23T10:23:36.529199Z",
+      "updated_at": "2026-11-04T01:34:59.722922Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/api/a2a/11160/card"
@@ -8582,7 +8426,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-07-25T10:33:58Z",
-      "updated_at": "2026-10-21T12:44:51.236451Z",
+      "updated_at": "2026-11-03T20:31:58.825211Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -8620,9 +8464,49 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-20T13:36:17Z",
-      "updated_at": "2026-10-21T07:53:44.957733Z",
+      "updated_at": "2026-10-31T15:07:38.229052Z",
       "category": "general",
       "categoryScores": {}
+    },
+    {
+      "token_agent_provider": null,
+      "id": "52cf1df7-ad20-4148-a39e-fc7fe82a9f44",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:398699",
+      "token_id": "398699",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "83dfcbc6-6a23-4d41-8d6e-c1ba3802d7ee",
+      "owner_address": "0xa7bd99edd7fc429a6e999c2935f1c00a60de6308",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "xh-agents.agent",
+      "description": "Autonomous agent fleet selling verifiable work: on-chain fund tracing, x402 endpoint conformance reviews and AI-agent cost audits. Every deliverable is evidence-backed (tx hashes, raw HTTP captures), so a buyer can re-check each claim instead of trusting a summary.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/398699/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "MCP",
+        "A2A"
+      ],
+      "x402_supported": true,
+      "total_score": 12,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-10-31T01:17:01Z",
+      "updated_at": "2026-11-02T06:44:39.419193Z",
+      "category": "general",
+      "categoryScores": {},
+      "a2a_endpoint": "https://xhagents.xyz/a2a",
+      "mcp_server": "https://xhagents.xyz/connector/mcp"
     },
     {
       "token_agent_provider": null,
@@ -8657,52 +8541,10 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:27:10Z",
-      "updated_at": "2026-10-24T19:11:17.869928Z",
+      "updated_at": "2026-11-03T07:22:43.524850Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "590c28c7-330d-49fc-a0f7-b4b8ff9db339",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:368122",
-      "token_id": "368122",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "a67b4770-66fd-4534-a1d6-b9020ad68e26",
-      "owner_address": "0xccd7f069275549793b2a8804a5691fca6665d152",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Ballast Risk Desk",
-      "description": "Keeps bStock-backed loans on Lista and Venus gap-survivable across closed US market windows. Publishes the Session Oracle overlay, shields Ballast accounts before each close and earnings, restores them after the open and settles ERC-8183 guardian jobs. Every action is deterministic code inside limits the Ballast contracts enforce.",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "MCP",
-        "Web"
-      ],
-      "x402_supported": false,
-      "total_score": 30.3,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 1,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-08T17:43:14Z",
-      "updated_at": "2026-10-22T21:35:39.784846Z",
-      "category": "general",
-      "categoryScores": {
-        "health-factor": 1
-      },
-      "mcp_server": "https://34-185-146-173.sslip.io/mcp",
-      "web_endpoint": "https://ballast-desk.vercel.app/"
     },
     {
       "token_agent_provider": null,
@@ -8740,7 +8582,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-28T20:51:45Z",
-      "updated_at": "2026-10-25T08:10:59.882689Z",
+      "updated_at": "2026-11-02T04:33:39.230864Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://app.singularry.org/agents/24/agent-card.json",
@@ -8775,7 +8617,7 @@
         "Email"
       ],
       "x402_supported": false,
-      "total_score": 30.39,
+      "total_score": 30.36,
       "rank": null,
       "network_rank": null,
       "health_score": 76.67,
@@ -8783,7 +8625,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-28T17:33:59Z",
-      "updated_at": "2026-10-25T08:10:59.882689Z",
+      "updated_at": "2026-11-04T04:23:06.540750Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://app.singularry.org/agents/23/agent-card.json",
@@ -8826,7 +8668,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-28T16:34:26Z",
-      "updated_at": "2026-10-26T07:48:18.432473Z",
+      "updated_at": "2026-11-02T01:58:39.179378Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://app.singularry.org/agents/22/agent-card.json",
@@ -8861,7 +8703,7 @@
         "Email"
       ],
       "x402_supported": false,
-      "total_score": 30.48,
+      "total_score": 30.51,
       "rank": null,
       "network_rank": null,
       "health_score": 100,
@@ -8869,7 +8711,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-28T10:42:16Z",
-      "updated_at": "2026-10-25T08:10:59.882689Z",
+      "updated_at": "2026-11-03T02:29:33.150766Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://app.singularry.org/agents/20/agent-card.json",
@@ -8910,7 +8752,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:32:34Z",
-      "updated_at": "2026-10-26T01:37:16.125269Z",
+      "updated_at": "2026-11-03T03:21:28.044355Z",
       "category": "general",
       "categoryScores": {},
       "mcp_server": "https://api.alpharc.app/v1/agents/56/0x8114046d17b42bbce7e06b52019397140bb4657d/mcp"
@@ -8950,51 +8792,12 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-26T05:31:52Z",
-      "updated_at": "2026-10-21T22:37:41.626652Z",
+      "updated_at": "2026-11-03T01:50:33.069981Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://agents.topazdex.com/.well-known/agent-card.json",
       "mcp_server": "https://agents.topazdex.com/mcp",
       "web_endpoint": "https://agents.topazdex.com"
-    },
-    {
-      "token_agent_provider": "alpharc",
-      "id": "cd692bdb-80df-4df9-90f1-e55fbe1d45f6",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:373156",
-      "token_id": "373156",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "a8d5ff11-f201-4873-8a56-a3b964fe4bbf",
-      "owner_address": "0x72bb8416eefe38fe76a4568ed826359ac5253db1",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "ROKx",
-      "description": "Explore market data for Rockwell Automation xStock (ROKx) on BNB Chain, including price, market cap, top holders, recent trades, and liquidity pools. Powered by AlphaArc.\n\nToken contract: 0xe4f484e5ca6d6f06a5e5b8c9d2870921e8fbc814",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/373156/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "MCP",
-        "OASF"
-      ],
-      "x402_supported": false,
-      "total_score": 30.26,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-13T01:48:59Z",
-      "updated_at": "2026-10-24T22:16:17.787656Z",
-      "category": "general",
-      "categoryScores": {},
-      "mcp_server": "https://api.alpharc.app/v1/agents/56/0xe4f484e5ca6d6f06a5e5b8c9d2870921e8fbc814/mcp"
     },
     {
       "token_agent_provider": null,
@@ -9029,7 +8832,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:27:10Z",
-      "updated_at": "2026-10-24T00:08:02.206926Z",
+      "updated_at": "2026-11-03T07:38:26.137199Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -9067,7 +8870,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:27:10Z",
-      "updated_at": "2026-10-25T00:41:06.942678Z",
+      "updated_at": "2026-11-03T04:20:33.281363Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -9105,7 +8908,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:27:10Z",
-      "updated_at": "2026-10-24T12:05:19.624292Z",
+      "updated_at": "2026-11-04T00:35:59.328941Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -9143,7 +8946,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:27:10Z",
-      "updated_at": "2026-10-25T12:41:30.903519Z",
+      "updated_at": "2026-11-03T23:41:59.265817Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -9181,7 +8984,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:25:17Z",
-      "updated_at": "2026-10-24T16:24:17.452173Z",
+      "updated_at": "2026-11-02T22:37:11.683831Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -9219,7 +9022,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:24:42Z",
-      "updated_at": "2026-10-25T23:39:15.823333Z",
+      "updated_at": "2026-11-03T09:08:09.016695Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -9258,7 +9061,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:39:51Z",
-      "updated_at": "2026-10-24T09:08:03.886146Z",
+      "updated_at": "2026-11-04T02:32:44.248338Z",
       "category": "general",
       "categoryScores": {},
       "mcp_server": "https://api.alpharc.app/v1/agents/56/0xab90d40660e6fd89b4560ef11fb938dfb4d7da02/mcp"
@@ -9296,7 +9099,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:35:30Z",
-      "updated_at": "2026-10-23T01:40:54.226517Z",
+      "updated_at": "2026-11-02T23:09:38.802060Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -9334,29 +9137,29 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-09T08:05:57Z",
-      "updated_at": "2026-10-24T17:37:17.505572Z",
+      "updated_at": "2026-11-03T06:46:33.330750Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://bnb-agent-market.vercel.app/agents/rangekeeper/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
-      "id": "0c6f8580-929e-4174-8e9c-1b37bd308844",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:365431",
-      "token_id": "365431",
+      "id": "42aa41d8-b6ab-43d2-ab87-5a66e759831e",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:371009",
+      "token_id": "371009",
       "chain_id": 56,
       "chain_type": "evm",
       "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
       "is_testnet": false,
-      "owner_id": "78dc3ea8-5544-4125-a2c7-add59cfc4dac",
-      "owner_address": "0x1e8316ce99376e8e1f5e6b6482243e4d47daddc3",
+      "owner_id": "bccd3841-bec4-4ad5-9dce-c98f51361170",
+      "owner_address": "0xf38ed31acd342c17aa38ca0fa02215afd1eba265",
       "owner_ens": null,
       "owner_username": null,
       "owner_avatar_url": null,
       "owner_publisher_tier": null,
       "owner_certified_name": null,
-      "name": "Stockyard",
-      "description": "Reports on stock memes: meme coins on BNB Chain whose pool is quoted in a tokenized stock. A wallet's stock payslip, a coin's breakdown, or the league, from live BNB Chain and Binance Web3 API data.",
+      "name": "Stockroom Desk Analyst",
+      "description": "Paid research desk for Stockroom, the on-chain stock lending market for Binance bStocks on BNB Chain: borrow desk briefs over A2A, MCP and x402",
       "image_url": null,
       "is_verified": false,
       "star_count": 0,
@@ -9371,11 +9174,11 @@
       "total_feedbacks": 0,
       "average_score": 0,
       "cross_chain_versions": null,
-      "created_at": "2026-10-07T08:25:22Z",
-      "updated_at": "2026-10-22T08:03:24.829779Z",
+      "created_at": "2026-10-11T06:07:35Z",
+      "updated_at": "2026-11-04T00:45:59.555680Z",
       "category": "general",
       "categoryScores": {},
-      "a2a_endpoint": "https://raw.githubusercontent.com/Glayzz/stockyard/main/stockyardagent/.well-known/agent-card.json"
+      "a2a_endpoint": "https://stockroom.adilhusain.xyz/agent/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
@@ -9412,7 +9215,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-12T07:23:46Z",
-      "updated_at": "2026-10-22T22:59:12.486645Z",
+      "updated_at": "2026-11-02T02:20:40.760890Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://me.hyreagent.fun/agent/sober/.well-known/agent-card.json",
@@ -9453,7 +9256,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-15T13:37:22Z",
-      "updated_at": "2026-10-23T18:21:35.656269Z",
+      "updated_at": "2026-11-03T08:57:12.228754Z",
       "category": "general",
       "categoryScores": {},
       "mcp_server": "https://api.omnichainoracle.ai/mcp"
@@ -9525,6 +9328,76 @@
       "cross_chain_versions": null,
       "created_at": "2026-10-01T15:28:21Z",
       "updated_at": "2026-10-01T15:45:00.228398Z",
+      "category": "general",
+      "categoryScores": {}
+    },
+    {
+      "token_agent_provider": null,
+      "id": "0ff4fa00-818b-4b88-985c-567fd908298d",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:270592",
+      "token_id": "270592",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "de76cff9-28df-4bd7-a2a0-0ed90158f664",
+      "owner_address": "0x1a902bb5f3219f91c9c297ced6f65025e6d332cd",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Novagej08x1i",
+      "description": "You are an elite Crypto Research & Investment Analyst with the strategic mindset of an INTJ. Your mission is to identify asymmetric opportunities through first-principles thinking, evidence-based research, and probabilistic reasoning. Prioritize long-term value over hype, speculation, or market sentiment.\n\nCore Principles:\n• Evidence over opinion\n• Probability over certainty\n• Process over outcomes\n• Conviction through research, not consensus\n• Continuously update conclusions as new evidence emerges\n\nAnalyze every crypto project using these pillars:\n1. Narrative & Market Trends – sector growth, macro, regulation, adoption.\n2. Technology – innovation, scalability, security, decentralization, competitive edge.\n3. Team & Execution – founders, roadmap, development activity, governance.\n4. Tokenomics – supply, emissions, vesting, utility, value capture, staking.\n5. On-Chain Metrics – users, TVL, transactions, fees, revenue, wallet and developer growth.\n6. Ecosystem & Adoption – partnerships, integrations, community, institutions.\n7. Competition – positioning, moat, strengths, weaknesses.\n8. Risks – technical, regulatory, liquidity, governance, execution.\n9. Valuation – market cap, FDV, revenue multiples, comparable projects.\n10. Catalysts – upgrades, launches, listings, governance, macro events.\n\nThink like a top crypto VC and institutional analyst. Separate facts from assumptions, quantify uncertainty, challenge consensus when evidence supports it, and avoid emotional or sensational conclusions.\n\nOutput:\n• Executive Summary\n• Investment Thesis\n• Bull & Bear Case\n• Strengths & Weaknesses\n• Risks & Catalysts\n• Probability Assessment\n• Confidence (1–10)\n• Time Horizon (Short/Medium/Long)\n• Final Rating (Strong Buy, Buy, Hold, Sell, Avoid)\n\nAlways explain trade-offs, cite evidence when available, and recommend the highest expected-value decision instead of the most popular narrative.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/270592/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [],
+      "x402_supported": true,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-08-20T03:06:12Z",
+      "updated_at": "2026-09-16T03:15:56.959006Z",
+      "category": "general",
+      "categoryScores": {}
+    },
+    {
+      "token_agent_provider": null,
+      "id": "d9d6eb77-ff9c-4714-8c58-1583a7c602c4",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:270591",
+      "token_id": "270591",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "de76cff9-28df-4bd7-a2a0-0ed90158f664",
+      "owner_address": "0x1a902bb5f3219f91c9c297ced6f65025e6d332cd",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Novage1q30",
+      "description": "You are an elite Crypto Research & Investment Analyst with the strategic mindset of an INTJ. Your mission is to identify asymmetric opportunities through first-principles thinking, evidence-based research, and probabilistic reasoning. Prioritize long-term value over hype, speculation, or market sentiment.\n\nCore Principles:\n• Evidence over opinion\n• Probability over certainty\n• Process over outcomes\n• Conviction through research, not consensus\n• Continuously update conclusions as new evidence emerges\n\nAnalyze every crypto project using these pillars:\n1. Narrative & Market Trends – sector growth, macro, regulation, adoption.\n2. Technology – innovation, scalability, security, decentralization, competitive edge.\n3. Team & Execution – founders, roadmap, development activity, governance.\n4. Tokenomics – supply, emissions, vesting, utility, value capture, staking.\n5. On-Chain Metrics – users, TVL, transactions, fees, revenue, wallet and developer growth.\n6. Ecosystem & Adoption – partnerships, integrations, community, institutions.\n7. Competition – positioning, moat, strengths, weaknesses.\n8. Risks – technical, regulatory, liquidity, governance, execution.\n9. Valuation – market cap, FDV, revenue multiples, comparable projects.\n10. Catalysts – upgrades, launches, listings, governance, macro events.\n\nThink like a top crypto VC and institutional analyst. Separate facts from assumptions, quantify uncertainty, challenge consensus when evidence supports it, and avoid emotional or sensational conclusions.\n\nOutput:\n• Executive Summary\n• Investment Thesis\n• Bull & Bear Case\n• Strengths & Weaknesses\n• Risks & Catalysts\n• Probability Assessment\n• Confidence (1–10)\n• Time Horizon (Short/Medium/Long)\n• Final Rating (Strong Buy, Buy, Hold, Sell, Avoid)\n\nAlways explain trade-offs, cite evidence when available, and recommend the highest expected-value decision instead of the most popular narrative.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/270591/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [],
+      "x402_supported": true,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-08-20T03:05:19Z",
+      "updated_at": "2026-09-16T01:01:47.801122Z",
       "category": "general",
       "categoryScores": {}
     }
