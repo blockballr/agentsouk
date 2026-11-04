@@ -287,12 +287,16 @@ export async function handleLink(req, res) {
   const code = typeof body?.code === "string" ? body.code.trim() : "";
   const wallet = typeof body?.wallet === "string" ? body.wallet : "";
   const signature = typeof body?.signature === "string" ? body.signature : "";
+  const issued = typeof body?.issued === "string" ? body.issued : "";
 
   if (!/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
     return json(res, 400, { success: false, error: "wallet must be an address" }, origin);
   }
   if (!/^0x[0-9a-fA-F]{130}$/.test(signature)) {
     return json(res, 400, { success: false, error: "signature must be 65 bytes" }, origin);
+  }
+  if (!issued || Math.abs(Date.now() - Date.parse(issued)) > 10 * 60 * 1000) {
+    return json(res, 401, { success: false, error: "the signature has expired" }, origin);
   }
 
   let subject = "";
@@ -315,7 +319,7 @@ export async function handleLink(req, res) {
     return json(res, 400, { success: false, error: "wallet is not a valid address" }, origin);
   }
 
-  const message = telegramLinkMessage({ telegramId: subject, wallet: address });
+  const message = telegramLinkMessage({ telegramId: subject, wallet: address, issued });
   let proves = false;
   try {
     proves = await verifyMessage({ address, message, signature });

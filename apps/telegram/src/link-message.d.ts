@@ -1,1 +1,5 @@
-export function telegramLinkMessage(input: { telegramId: string; wallet: string }): string;
+export function telegramLinkMessage(input: {
+  telegramId: string;
+  wallet: string;
+  issued: string;
+}): string;

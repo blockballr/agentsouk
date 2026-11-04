@@ -66,7 +66,7 @@ describe("telegram initData", () => {
 
 describe("the link message", () => {
   it("keeps the service and the app on the same bytes", () => {
-    const input = { telegramId: "42", wallet: "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713" };
+    const input = { telegramId: "42", wallet: "0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713", issued: new Date().toISOString() };
     expect(serviceLinkMessage(input)).toBe(telegramLinkMessage(input));
   });
 
@@ -74,7 +74,8 @@ describe("the link message", () => {
     const account = privateKeyToAccount(
       "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
     );
-    const message = telegramLinkMessage({ telegramId: "42", wallet: account.address });
+    const issued = new Date().toISOString();
+    const message = telegramLinkMessage({ telegramId: "42", wallet: account.address, issued });
     const signature = await account.signMessage({ message });
     expect(await verifyMessage({ address: account.address, message, signature })).toBe(true);
   });

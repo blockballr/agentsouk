@@ -120,12 +120,18 @@ export function TelegramLinkPage() {
     try {
       const telegramId = code ? `code:${code}` : telegramIdFrom(initData)
       if (!telegramId) throw new Error('Open this page from the Agent Souk bot in Telegram.')
-      const message = telegramLinkMessage({ telegramId, wallet })
+      const issued = new Date().toISOString()
+      const message = telegramLinkMessage({ telegramId, wallet, issued })
       const signature = await signPersonalMessage(wallet, message)
       const res = await fetch(`${BASE}/telegram/link`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(code ? { code, wallet, signature } : { initData, wallet, signature }),
+        body: JSON.stringify({
+          ...(code ? { code } : { initData }),
+          wallet,
+          signature,
+          issued,
+        }),
       })
       const body = (await res.json().catch(() => null)) as { success?: boolean; wallet?: string; error?: string } | null
       if (!res.ok || !body?.success) throw new Error(body?.error ?? 'Could not link the wallet.')

@@ -5,7 +5,9 @@
 export function telegramLinkMessage(input) {
   return [
     "Agent Souk link",
+    "domain: app.agentsouk.xyz",
     `telegram: ${input.telegramId}`,
     `wallet: ${input.wallet.toLowerCase()}`,
+    `issued: ${input.issued}`,
   ].join("\n");
 }
