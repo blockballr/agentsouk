@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CATEGORIES, shortAddress } from '@agora/core'
+import { CATEGORIES, shortAddress, takesVault } from '@agora/core'
 import { HireInAction } from '../components/HireInAction'
 import { visitSeed } from '../lib/rotation'
 import { isOperatedByAgentSouk } from '../lib/first-party'
@@ -314,9 +314,13 @@ export function QuestPage() {
                 </Txt>
                 {stripAction ? (
                   stripAction.to ? (
-                    <Link to={stripAction.to} className="inline-block">
-                      <Btn kind={stripAction.label.toLowerCase().includes('wallet') ? 'primary' : 'off'}>
-                        {stripAction.label}
+                    <Link to={stripAction.to} className="block min-w-0 max-w-full">
+                      <Btn
+                        kind={stripAction.label.toLowerCase().includes('wallet') ? 'primary' : 'off'}
+                        className="max-w-full"
+                      >
+                        {/* the button names the agent, so a long name is cut rather than wrapped */}
+                        <span className="block min-w-0 truncate" title={stripAction.label}>{stripAction.label}</span>
                       </Btn>
                     </Link>
                   ) : (
@@ -324,9 +328,9 @@ export function QuestPage() {
                       kind={stripAction.label.toLowerCase().includes('wallet') ? 'primary' : 'off'}
                       onClick={stripAction.onClick}
                       disabled={stripAction.disabled}
-                      className="self-start"
+                      className="max-w-full self-start"
                     >
-                      {stripAction.label}
+                      <span className="block min-w-0 truncate" title={stripAction.label}>{stripAction.label}</span>
                     </Btn>
                   )
                 ) : null}
@@ -464,6 +468,17 @@ interface StepAction {
   disabled?: boolean
 }
 
+// a pick that declares the vault skill is hired on the vault rail, where its funded hire
+// lives; every other pick is hired through escrow or x402 on its own page. The label names
+// the agent, so a buyer reads who the button hires instead of a row of identical verbs
+function hireAction(step: QuestStep, agent: QuestAgent, chainId: number | null): StepAction {
+  const to = takesVault(agent.skills)
+    ? `/vault/${chainId}/${agent.tokenId}?quest=${step.key}`
+    : `/agents/${chainId}/${agent.tokenId}?quest=${step.key}`
+  const name = agent.name.trim()
+  return { label: name ? `Hire ${name}` : `Hire token ${agent.tokenId}`, to }
+}
+
 // what a step asks for and where its buttons go, worked out once so every card renders the same slots
 function stepContent(
   step: QuestStep,
@@ -506,10 +521,7 @@ function stepContent(
         : onlyOurs
           ? 'Only our own agents answer here today. One signature settles the hire.'
           : 'One signature settles the hire.',
-      actions: picks.map((a) => ({
-        label: 'Hire',
-        to: `/agents/${chainId}/${a.tokenId}?quest=${step.key}`,
-      })),
+      actions: picks.map((a) => hireAction(step, a, chainId)),
     }
   }
   if (onlyOurs) {

@@ -1,5 +1,5 @@
 import "server-only";
-import { CATEGORY_KEYS, classifyExecution, takesJobs } from "@agora/core";
+import { CATEGORY_KEYS, classifyExecution, takesJobs, takesVault } from "@agora/core";
 import { durableMode, loadJobsByToken } from "./durable-store";
 import { asksForSecrets, hasConfirmedCompletion } from "./quest-eligibility";
 import { answeringPick, declaredPrice } from "./quest-pick-health";
@@ -16,6 +16,9 @@ export interface QuestShelfAgent {
   // what the seller declares it charges, verbatim, or null when the price only
   // exists as a signed quote. never a number this server invented
   price?: string | null;
+  // the skill ids and names the card declares, and nothing else: enough for the
+  // page to tell a vault hire from an escrow one without carrying whole cards
+  skills?: { id?: string; name?: string }[];
 }
 
 // what a quest step may offer in one category, both in the order the shelf rotated them for
@@ -58,24 +61,29 @@ export async function loadQuestShelf(
     [a.name, a.description, ...(a.skills ?? []).map((s) => `${s.name} ${s.description ?? ""}`)].join(" ");
   const picks: Record<string, QuestShelf> = {};
   for (const category of CATEGORY_KEYS) {
-    // only job-capable (escrow) agents that answered their last check. A category with
-    // none stays empty, so the quest never sends a buyer to a direct-only, x402-only or
-    // unreachable agent, and never to one that has to answer a quote request it ignores
+    // only agents that can be hired through escrow or the vault, and that answered
+    // their last check. A category with none stays empty, so the quest never sends
+    // a buyer to a direct-only, x402-only or unreachable agent
     const working = shelf.items
       .filter((a) => {
         // the sweep's own row first, then the verdict the catalogue row carries, so a
         // cold or empty store does not read as "every listing is dead"
         const check = verifications.get(a.token_id) ?? a.verification;
         const detail = check && "detail" in check ? (check as { detail?: string }).detail : undefined;
+        const vault = takesVault(a.skills);
         return (
           a.category === category &&
-          takesJobs(a.skills) &&
+          (takesJobs(a.skills) || vault) &&
           answeringPick(check) &&
           (!detail || !asksForSecrets(detail)) &&
-          classifyExecution(executionText(a)).executes
+          (vault || classifyExecution(executionText(a)).executes)
         );
       })
-      .sort((a, b) => (takesJobs(b.skills) ? 1 : 0) - (takesJobs(a.skills) ? 1 : 0));
+      .sort((a, b) => {
+        const rank = (x: (typeof shelf.items)[number]) =>
+          takesJobs(x.skills) ? 0 : takesVault(x.skills) ? 1 : 2;
+        return rank(a) - rank(b);
+      });
     const proven: typeof working = [];
     // without the durable store no job can be read back, so nothing is claimed as confirmed
     if (observed) {
@@ -89,6 +97,7 @@ export async function loadQuestShelf(
       owner: a.owner_address,
       imageUrl: a.image_url,
       price: declaredPrice(a.skills),
+      skills: (a.skills ?? []).map((s) => ({ id: s.id, name: s.name })),
     });
     picks[category] = { confirmed: proven.slice(0, 3).map(shape), working: working.slice(0, 12).map(shape) };
   }

@@ -80,6 +80,14 @@ export interface QuestAgent {
   imageUrl?: string | null
   // the price the seller declares, as written; null means it only quotes at hire
   price?: string | null
+  // the skills the listing declares, id and name only, so the card can tell a
+  // vault hire from an escrow one without carrying a whole agent card
+  skills?: QuestSkill[]
+}
+
+export interface QuestSkill {
+  id?: string
+  name?: string
 }
 
 // an agent the server offers for a step
@@ -89,6 +97,7 @@ export interface QuestCandidate {
   owner?: string | null
   imageUrl?: string | null
   price?: string | null
+  skills?: QuestSkill[]
 }
 
 // what a step may offer in one category, in the order the shelf rotated them for this visit:
@@ -138,6 +147,8 @@ export const QUEST_STEPS: QuestStep[] = [
           tokenId: '368655',
           name: 'Souk Drift Guard',
           task: 'Fund a vault hire with 100 USDT and let the guard keep the position in range.',
+          // the step names a funded vault hire, so the card sends this pick to the vault rail
+          skills: [{ id: 'vault-execution' }],
         },
       },
     },
@@ -166,6 +177,8 @@ export const QUEST_STEPS: QuestStep[] = [
           tokenId: '391003',
           name: 'Souk Yield Lens',
           task: 'Fund a vault hire with 100 USDT and let the agent route to the highest yield.',
+          // the step names a funded vault hire, so the card sends this pick to the vault rail
+          skills: [{ id: 'vault-execution' }],
         },
       },
     },
@@ -221,7 +234,20 @@ export function questPicks(
     list
       .filter((a) => !me || a.owner?.toLowerCase() !== me)
       .filter((a) => !exclude.has(String(a.tokenId)))
-      .map((a) => ({ ...writtenById.get(a.tokenId), tokenId: a.tokenId, name: a.name, owner: a.owner ?? null, imageUrl: a.imageUrl ?? null, price: a.price ?? writtenById.get(a.tokenId)?.price ?? null }))
+      .map((a) => {
+        const known = writtenById.get(a.tokenId)
+        return {
+          ...known,
+          tokenId: a.tokenId,
+          name: a.name,
+          owner: a.owner ?? null,
+          imageUrl: a.imageUrl ?? null,
+          price: a.price ?? known?.price ?? null,
+          // the shelf's own card is the live truth; a written pick fills in the
+          // skills only when the sweep captured none for that agent
+          skills: a.skills?.length ? a.skills : known?.skills,
+        }
+      })
   // an unread shelf falls back to the written picks; a read one that offers nothing is believed
   if (!shelf) return written.filter((a) => !exclude.has(String(a.tokenId))).slice(0, 1)
   const confirmed = offer(shelf.confirmed)
