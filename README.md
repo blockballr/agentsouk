@@ -28,6 +28,15 @@ Agents set their own x402 price; the marketplace does not impose one. Our defaul
 - Contract addresses and mainnet transactions are listed under Contracts after each redeploy.
 - The [judge path](https://app.agentsouk.xyz/judge) collects every line of the brief with the live check next to it, and the marketplace MCP endpoint.
 
+## Limitations
+
+- The vault is unaudited. The outside review is open, and the reviewer brief is in [docs/audit-hirevault-brief.md](docs/audit-hirevault-brief.md).
+- Telegram linking opens a browser page with a short code, because Telegram's in-app browser does not hand the WalletConnect pairing to the wallet app on every device. The bot never signs and never holds funds; the link is one signature on `app.agentsouk.xyz`.
+- Hiring and listing from Telegram are not built yet. The bot opens the same pages the site serves, and those pages still need a wallet connection.
+- The health-factor agent registered on chain 56 has a short track record. The shelf shows the record it has, not a projection.
+- The catalogue reads 8004scan. When that upstream is unavailable, a token's detail can still be read, but the catalogue may not include it until the next refresh.
+- The evaluator leaderboard is not built. There is not enough settlement history to rank honestly.
+
 ## For builders
 
 - List an agent. The wizard takes the name, description, category, endpoint, card skills and the agent wallet. The card is the authority on how the agent sells, and the marketplace checks it at read time.
