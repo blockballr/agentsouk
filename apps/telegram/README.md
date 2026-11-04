@@ -22,8 +22,22 @@ signs.
 ## Run
 
 ```
-npm start -w @agora/telegram
+node apps/telegram/src/server.js
 ```
+
+## Deploy on Vercel
+
+Create a project with Root Directory `apps/telegram`, framework preset Other,
+and no build command. The functions are in `api/`, and `vercel.json` rewrites
+the public paths to them:
+
+- `/telegram/webhook` to `api/webhook`
+- `/telegram/link` to `api/link`
+- `/health` to `api/health`
+
+Set the environment from the list above, then point `telegram.agentsouk.xyz` at
+the project. Hobby functions have a 10 second budget and cold starts; both are
+fine for a bot that answers in milliseconds.
 
 Point Telegram at it once the host is live:
 

@@ -4,9 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Agent Souk Telegram bot: initData, chat to wallet links, and the Mini App door.",
-  "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+  "engines": {
+    "node": "22.x"
   },
   "dependencies": {
     "postgres": "^3.4.9",

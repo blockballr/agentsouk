@@ -1,0 +1,11 @@
+{
+  "framework": null,
+  "rewrites": [
+    { "source": "/telegram/webhook", "destination": "/api/webhook" },
+    { "source": "/telegram/link", "destination": "/api/link" },
+    { "source": "/health", "destination": "/api/health" }
+  ],
+  "functions": {
+    "api/*.js": { "maxDuration": 10 }
+  }
+}
