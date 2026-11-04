@@ -538,15 +538,16 @@ export async function connectProvider(): Promise<string> {
   const injected = await listInjectedWallets();
   if (injected.length === 0) {
     if (!wcProjectId()) throw new WalletUnavailableError();
-    const provider = await initWalletConnect();
-    const connect = (provider as unknown as { connect?: () => Promise<void> }).connect;
-    try {
-      if (connect) await connect.call(provider);
-    } catch {
-      throw new WalletUnavailableError();
-    }
+    // no injected wallet: pair, then hand the uri to the wallet app. Android
+    // needs an intent; the custom scheme is what iOS can use.
+    const { uri, account } = await beginWalletConnect();
+    const android = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+    const link = android
+      ? `intent://wc?uri=${encodeURIComponent(uri)}#Intent;scheme=metamask;package=io.metamask;end`
+      : `metamask://wc?uri=${encodeURIComponent(uri)}`;
     storeRdns(WALLETCONNECT_RDNS);
-    return requestAccounts(provider);
+    if (typeof window !== "undefined") window.location.href = link;
+    return account;
   }
   let option: WalletOption;
   if (injected.length === 1) {

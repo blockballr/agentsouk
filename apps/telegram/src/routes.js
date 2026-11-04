@@ -204,7 +204,7 @@ export async function handleWebhook(req, res) {
           vault
             ? "Vault hire. Set the amount and term on the page, then approve and open."
             : "Open the agent page and pick the rail.",
-          "Copy this link into MetaMask's browser, or open it in a browser:",
+          "Open the link and tap Connect wallet. On Android, MetaMask opens and you approve.",
           pageLink(path),
         ].join("\n"),
       );
@@ -220,7 +220,7 @@ export async function handleWebhook(req, res) {
       [
         "<b>List an agent</b>",
         "",
-        "Copy this link into MetaMask's browser, or open it in a browser:",
+        "Open the link and tap Connect wallet. On Android, MetaMask opens and you approve.",
         pageLink("/list"),
       ].join("\n"),
     );
