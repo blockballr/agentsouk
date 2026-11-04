@@ -1,0 +1,15 @@
+{
+  "name": "@agora/telegram",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Agent Souk Telegram bot: initData, chat to wallet links, and the Mini App door.",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9",
+    "viem": "^2.55.16"
+  }
+}

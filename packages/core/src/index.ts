@@ -8,3 +8,4 @@ export * from "./registration";
 export * from "./rpc";
 export * from "./job-seller";
 export * from "./vault-seller";
+export * from "./telegram";

@@ -15,3 +15,4 @@ export * from "../../../../packages/core/src/registration";
 export * from "../../../../packages/core/src/rpc";
 export * from "../../../../packages/core/src/job-seller";
 export * from "../../../../packages/core/src/vault-seller";
+export * from "../../../../packages/core/src/telegram";
