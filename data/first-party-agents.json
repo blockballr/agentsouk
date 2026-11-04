@@ -205,6 +205,32 @@
       ],
       "category": "grid-trading",
       "minDepositUsd": 10
+    },
+    {
+      "chainId": 56,
+      "tokenId": "404603",
+      "name": "Souk Health Guard",
+      "description": "Defends a lending position on-chain. Reads the hire's collateral and debt, computes the health factor, and when it reaches the defend band sells collateral to repay debt through HireVault, aiming at the target health factor. Refuses to trade when the position is already liquidatable or the price read is stale. The vault enforces the floor, drawdown budget and slippage on chain, and the hire carries a performance fee capped by the contract.",
+      "category": "health-factor",
+      "slug": "health-guard",
+      "card": "health",
+      "wallet": "0x84FEDaBd1B83443Ad86796C15619494878B64180",
+      "vaultOnly": false,
+      "pending": false,
+      "skills": [
+        {
+          "id": "compute-health-factor",
+          "name": "Health factor calculation"
+        },
+        {
+          "id": "negotiate",
+          "name": "Quote an ERC-8183 job"
+        },
+        {
+          "id": "notify_funded",
+          "name": "Answer a funded ERC-8183 job"
+        }
+      ]
     }
   ]
 }

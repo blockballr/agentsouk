@@ -21,6 +21,7 @@ export const HOUSE_AGENT_MESSAGING_PATH = "/api/house-agent/a2a";
 // rather than borrowing another agent's. a quote that named 368655 would send
 // the buyer to the wrong agent.
 export const HOUSE_AGENT_TOKEN_IDS: Record<number, number> = {
+  56: 404603,
   97: 2504,
 };
 
