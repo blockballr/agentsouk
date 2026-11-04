@@ -1,7 +1,7 @@
 {
   "nav.marketplace": "Agent shelf",
   "nav.compare": "Compare",
-  "nav.build": "Build",
+  "nav.list": "List",
   "nav.ongoing": "Ongoing",
   "nav.quest": "Quest",
   "nav.profile": "Profile",
@@ -14,7 +14,6 @@
   "nav.cart.many": "Cart, {{count}} items",
   "nav.account.profile": "Your profile",
   "nav.account.vault": "Your vault",
-  "nav.account.list": "List agent",
   "nav.account.disconnect": "Disconnect wallet",
   "nav.account.connect": "Connect wallet",
   "nav.account.notConnected": "Not connected",
@@ -116,5 +115,6 @@
   "vault.honestNote": "READ FROM THE DEPLOYMENT",
   "vault.term.day": "1 day",
   "vault.term.days": "{{days}} days",
-  "vault.term.until": "Until revoke"
+  "vault.term.until": "Until revoke",
+  "nav.account.build": "Build agent"
 }

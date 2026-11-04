@@ -1,7 +1,7 @@
 {
   "nav.marketplace": "エージェント棚",
   "nav.compare": "比較",
-  "nav.build": "構築",
+  "nav.list": "リスト",
   "nav.ongoing": "進行中",
   "nav.quest": "クエスト",
   "nav.profile": "プロフィール",
@@ -14,7 +14,6 @@
   "nav.cart.many": "カート、{{count}} 点",
   "nav.account.profile": "プロフィール",
   "nav.account.vault": "保管庫",
-  "nav.account.list": "エージェントを登録",
   "nav.account.disconnect": "ウォレットを切断",
   "nav.account.connect": "ウォレットを接続",
   "nav.account.notConnected": "未接続",
@@ -113,5 +112,6 @@
   "vault.honestNote": "デプロイから読み取り",
   "vault.term.day": "1 日",
   "vault.term.days": "{{days}} 日",
-  "vault.term.until": "取り消しまで"
+  "vault.term.until": "取り消しまで",
+  "nav.account.build": "エージェントを構築"
 }

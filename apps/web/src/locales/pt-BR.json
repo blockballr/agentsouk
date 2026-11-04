@@ -1,7 +1,7 @@
 {
   "nav.marketplace": "Prateleira de agentes",
   "nav.compare": "Comparar",
-  "nav.build": "Construir",
+  "nav.list": "Listar",
   "nav.ongoing": "Em andamento",
   "nav.quest": "Missão",
   "nav.profile": "Perfil",
@@ -14,7 +14,6 @@
   "nav.cart.many": "Carrinho, {{count}} itens",
   "nav.account.profile": "Seu perfil",
   "nav.account.vault": "Seu cofre",
-  "nav.account.list": "Listar agente",
   "nav.account.disconnect": "Desconectar carteira",
   "nav.account.connect": "Conectar carteira",
   "nav.account.notConnected": "Não conectada",
@@ -113,5 +112,6 @@
   "vault.honestNote": "LIDO DO DEPLOYMENT",
   "vault.term.day": "1 dia",
   "vault.term.days": "{{days}} dias",
-  "vault.term.until": "Até revogar"
+  "vault.term.until": "Até revogar",
+  "nav.account.build": "Construir agente"
 }

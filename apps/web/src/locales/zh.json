@@ -1,7 +1,7 @@
 {
   "nav.marketplace": "智能体货架",
   "nav.compare": "比较",
-  "nav.build": "构建",
+  "nav.list": "上架",
   "nav.ongoing": "进行中",
   "nav.quest": "任务",
   "nav.profile": "个人资料",
@@ -14,7 +14,6 @@
   "nav.cart.many": "购物车，{{count}} 件",
   "nav.account.profile": "你的资料",
   "nav.account.vault": "你的金库",
-  "nav.account.list": "上架代理",
   "nav.account.disconnect": "断开钱包",
   "nav.account.connect": "连接钱包",
   "nav.account.notConnected": "未连接",
@@ -113,5 +112,6 @@
   "vault.honestNote": "从部署读取",
   "vault.term.day": "1 天",
   "vault.term.days": "{{days}} 天",
-  "vault.term.until": "直到撤销"
+  "vault.term.until": "直到撤销",
+  "nav.account.build": "构建代理"
 }

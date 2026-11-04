@@ -1,7 +1,7 @@
 {
   "nav.marketplace": "Rayon des agents",
   "nav.compare": "Comparer",
-  "nav.build": "Construire",
+  "nav.list": "Lister",
   "nav.ongoing": "En cours",
   "nav.quest": "Quête",
   "nav.profile": "Profil",
@@ -14,7 +14,6 @@
   "nav.cart.many": "Panier, {{count}} articles",
   "nav.account.profile": "Votre profil",
   "nav.account.vault": "Votre coffre",
-  "nav.account.list": "Lister un agent",
   "nav.account.disconnect": "Déconnecter le portefeuille",
   "nav.account.connect": "Connecter le portefeuille",
   "nav.account.notConnected": "Non connecté",
@@ -113,5 +112,6 @@
   "vault.honestNote": "LU DEPUIS LE DÉPLOIEMENT",
   "vault.term.day": "1 jour",
   "vault.term.days": "{{days}} jours",
-  "vault.term.until": "Jusqu'à révocation"
+  "vault.term.until": "Jusqu'à révocation",
+  "nav.account.build": "Construire un agent"
 }

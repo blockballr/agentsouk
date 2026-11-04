@@ -18,7 +18,7 @@ import { Dot, Row, Rule, Stack, Txt } from './souk'
 const links = [
   { to: '/agents', key: 'nav.marketplace' },
   { to: '/compare', key: 'nav.compare' },
-  { to: '/build', key: 'nav.build' },
+  { to: '/list', key: 'nav.list' },
   { to: '/ongoing', key: 'nav.ongoing' },
   { to: '/quest', key: 'nav.quest' },
 ]
@@ -327,7 +327,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
           <Rule hair />
           <AccountRow label={t('nav.account.profile')} route="/profile" Icon={PersonGlyph} />
           <AccountRow label={t('nav.account.vault')} route="/vault" Icon={VaultGlyph} />
-          <AccountRow label={t('nav.account.list')} route="/list" Icon={PlusGlyph} />
+          <AccountRow label={t('nav.account.build')} route="/build" Icon={PlusGlyph} />
           <Rule hair />
           {wallet ? (
             <button

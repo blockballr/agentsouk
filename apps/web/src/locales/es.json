@@ -1,7 +1,7 @@
 {
   "nav.marketplace": "Estantería de agentes",
   "nav.compare": "Comparar",
-  "nav.build": "Construir",
+  "nav.list": "Listar",
   "nav.ongoing": "En curso",
   "nav.quest": "Misión",
   "nav.profile": "Perfil",
@@ -14,7 +14,6 @@
   "nav.cart.many": "Carrito, {{count}} artículos",
   "nav.account.profile": "Tu perfil",
   "nav.account.vault": "Tu bóveda",
-  "nav.account.list": "Listar agente",
   "nav.account.disconnect": "Desconectar billetera",
   "nav.account.connect": "Conectar billetera",
   "nav.account.notConnected": "Sin conectar",
@@ -113,5 +112,6 @@
   "vault.honestNote": "LEÍDO DEL DESPLIEGUE",
   "vault.term.day": "1 día",
   "vault.term.days": "{{days}} días",
-  "vault.term.until": "Hasta revocar"
+  "vault.term.until": "Hasta revocar",
+  "nav.account.build": "Construir agente"
 }

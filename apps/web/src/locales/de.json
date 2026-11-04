@@ -1,7 +1,7 @@
 {
   "nav.marketplace": "Agentenregal",
   "nav.compare": "Vergleichen",
-  "nav.build": "Bauen",
+  "nav.list": "Auflisten",
   "nav.ongoing": "Laufend",
   "nav.quest": "Quest",
   "nav.profile": "Profil",
@@ -14,7 +14,6 @@
   "nav.cart.many": "Warenkorb, {{count}} Artikel",
   "nav.account.profile": "Ihr Profil",
   "nav.account.vault": "Ihr Tresor",
-  "nav.account.list": "Agent listen",
   "nav.account.disconnect": "Wallet trennen",
   "nav.account.connect": "Wallet verbinden",
   "nav.account.notConnected": "Nicht verbunden",
@@ -113,5 +112,6 @@
   "vault.honestNote": "AUS DEM DEPLOYMENT GELESEN",
   "vault.term.day": "1 Tag",
   "vault.term.days": "{{days}} Tage",
-  "vault.term.until": "Bis Widerruf"
+  "vault.term.until": "Bis Widerruf",
+  "nav.account.build": "Agent bauen"
 }
