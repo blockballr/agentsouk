@@ -20,21 +20,9 @@ import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../compo
 // capability leads all of it. Picking a metric names what leads the chain, not
 // what replaces that order.
 const jobSorts = [
-  {
-    key: 'jobs',
-    label: 'ESCROW',
-    title: 'Escrow sellers lead: agents that sell both jobs and x402 ahead of jobs-only, then direct-call x402 agents, then the rest.',
-  },
-  {
-    key: 'x402',
-    label: 'x402',
-    title: 'Direct-call x402 agents lead, then job sellers, then the rest.',
-  },
-  {
-    key: 'vault',
-    label: 'VAULT',
-    title: 'Funded HireVault agents lead: the agents whose card declares a vault hire, where the deposit stays in the vault and one withdraw returns the balance.',
-  },
+  { key: 'jobs', label: 'ESCROW' },
+  { key: 'vault', label: 'VAULT' },
+  { key: 'x402', label: 'x402' },
 ] as const
 
 const defaultSorts = [
@@ -355,7 +343,6 @@ export function MarketplacePage() {
                 <SortButton
                   key={s.key}
                   active={type === s.key}
-                  title={'title' in s ? s.title : undefined}
                   onClick={() => setParam('type', s.key)}
                 >
                   {s.label}
@@ -684,10 +671,13 @@ function AgentCard({
   checked: boolean
   onToggle: (key: string) => void
 }) {
-  const img = agent.image_url ?? defaultAvatarFor(agent.chain_id, String(agent.token_id))
+  const firstParty = isOperatedByAgentSouk(agent.owner_address)
+  // our own agents carry a dicebear face, so the card shows it rather than the registry image
+  const img = firstParty
+    ? defaultAvatarFor(agent.chain_id, String(agent.token_id))
+    : agent.image_url ?? defaultAvatarFor(agent.chain_id, String(agent.token_id))
   const key = `${agent.chain_id}/${agent.token_id}`
   const verdict = verdictFor(agent.chain_id, agent.verification)
-  const firstParty = isOperatedByAgentSouk(agent.owner_address)
   const jobOnly = sellsByJob(agent.skills)
   const score = agent.total_score > 0 ? formatScore(agent.total_score) : null
   const reviews = agent.total_feedbacks

@@ -13,7 +13,7 @@ import { classifyAgent, relevanceScore } from "./categories";
 import { isPancakeSwapAgent, readsPancakeSwap } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
-import { firstPartyDescription, firstPartySkills, firstPartyVaultOnly, firstPartyWallet } from "./first-party-copy";
+import { firstPartyDescription, firstPartySkills, firstPartyWallet } from "./first-party-copy";
 import { loadDelisted } from "./delist-store";
 import { loadVerifications } from "./verifications";
 import { rotationSeed, withoutHouseAgents, reachabilityCompare, reachabilityRankCompare } from "./working-rotation";
@@ -239,12 +239,11 @@ export async function fetchAgentDetail(
   if (!body.success) return null;
   const data = body.data;
   const canonical = firstPartyDescription(chainId, tokenId);
-  if (canonical) data.description = canonical;
+  if (canonical && !data.description) data.description = canonical;
   const canonicalWallet = firstPartyWallet(chainId, tokenId);
-  if (canonicalWallet) data.agent_wallet = canonicalWallet;
-  if (firstPartyVaultOnly(chainId, tokenId)) data.x402_supported = false;
+  if (canonicalWallet && !data.agent_wallet) data.agent_wallet = canonicalWallet;
   const canonicalSkills = firstPartySkills(chainId, tokenId);
-  if (canonicalSkills) data.skills = canonicalSkills;
+  if (canonicalSkills && (!data.skills || data.skills.length === 0)) data.skills = canonicalSkills;
   const str = (v: unknown) => (typeof v === "string" ? v : null);
   const hs = data.health_status;
   const overall =
@@ -1446,15 +1445,13 @@ function sortAgents(
   seed: string = rotationSeed(null),
 ): AgentSummary[] {
   const copy = [...items];
-  // the first sort is job capability: a listing that sells through the ERC-8183
-  // job protocol, a direct-call x402 agent, or the rest. the selected type's
-  // group leads, so the buyer can re-order which group comes first
+  // the first sort is capability: escrow sellers lead, then vault agents, then
+  // direct-call x402, then the rest. the selected type's group leads, so the
+  // buyer can re-order which group comes first
   const group = (a: AgentSummary): number =>
-    takesJobs(a.skills) ? 0 : a.x402_supported ? 1 : 2; // 0=jobs 1=x402 2=others
-  const typeRank = (selected: string): number =>
-    selected === "x402" ? 1 : 0;
-  const leadGroup = typeRank(type);
-  const order = [leadGroup, ...[0, 1, 2].filter((g) => g !== leadGroup)];
+    takesJobs(a.skills) ? 0 : takesVault(a.skills) ? 1 : a.x402_supported ? 2 : 3;
+  const leadGroup = type === "vault" ? 1 : type === "x402" ? 2 : 0;
+  const order = [leadGroup, ...[0, 1, 2, 3].filter((g) => g !== leadGroup)];
   const tier = (a: AgentSummary): number => order.indexOf(group(a));
 
   const metricFns: Record<MetricKey, (a: AgentSummary, b: AgentSummary) => number> = {

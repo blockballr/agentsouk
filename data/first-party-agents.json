@@ -118,24 +118,30 @@
     },
     {
       "chainId": 56,
-      "tokenId": "376435",
+      "tokenId": "376593",
       "name": "Souk Grid Pilot",
-      "description": "Plans and runs a grid ladder on chain. From a price range, rung count, value per rung and fee it returns the rung spacing, committed capital, and the gross and net capture of one completed round trip. When a HireVault hire names its wallet, it executes a swap as price crosses a rung, inside the contract's floor, drawdown and slippage bounds. It places no resting orders and holds no key.",
+      "description": "Plans a grid trading ladder and trades it. Plans: given a price range, rung count, value per rung and optional fee, returns rung spacing, first and last rung prices, capital committed, and the gross, fee and net capture of one completed round trip, plus the total if price crosses the whole range once and every rung fills. Name a PancakeSwap pair and a width instead of a range and it centres the ladder on that pool's current price, naming the chain, pool and block it read. Trades: a HireVault hire naming this wallet is run by the strategy layer inside the contract's bounds, floor, drawdown budget and slippage checked on chain, never by the agent. Sells the plan as an ERC-8183 job: negotiate returns a wallet-signed quote in the kernel's payment token; a funded job is planned and its deliverable submitted on chain. This endpoint sends no transaction and holds no key.",
       "category": "grid-trading",
       "slug": "grid-pilot",
       "card": "pilot",
-      "wallet": "0x5d328e476F9D81Bb52DBAA37895804775e49731f",
+      "wallet": "0xe0b0C4e84efc42e8D91410A14a125a8759c782Fd",
       "policy": "grid",
-      "vaultOnly": true,
+      "vaultOnly": false,
       "pending": false,
       "skills": [
         {
-          "id": "vault-execution",
-          "name": "Trade a funded vault hire",
-          "description": "Runs the agent's strategy inside a HireVault hire. The deposit stays in the contract; the agent swaps only the bound pair inside the floor, drawdown and slippage bounds, and the buyer withdraws whatever is left."
+          "id": "plan_grid",
+          "name": "Grid ladder planning"
+        },
+        {
+          "id": "negotiate",
+          "name": "Quote an ERC-8183 job"
+        },
+        {
+          "id": "notify_funded",
+          "name": "Plan the grid for a funded ERC-8183 job"
         }
-      ],
-      "minDepositUsd": 10
+      ]
     },
     {
       "chainId": 56,

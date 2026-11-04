@@ -80,7 +80,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
           type: "string",
           enum: ["score", "newest", "feedback", "health"],
           description:
-            "Ranking. Job sellers lead, then direct-call agents, then the rest; the named metric leads the chain that follows and reachability settles its ties. Defaults to score.",
+            "Ranking. Escrow sellers lead, then vault agents, then direct-call agents, then the rest; the named metric leads the chain that follows and reachability settles its ties. Defaults to score.",
         },
         page: {
           type: "integer",

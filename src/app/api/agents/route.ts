@@ -9,7 +9,6 @@ import { hydrateBoostsFromDb, isBoosted } from "@/lib/boosts";
 import { withListingEdit } from "@/lib/listing-edit";
 import { listCustomAgents } from "@/lib/builder/custom";
 import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
-import { firstPartyCategory, firstPartyDescription, firstPartySkills, firstPartyVaultOnly, firstPartyWallet } from "@/lib/first-party-copy";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -104,17 +103,6 @@ export async function GET(req: NextRequest) {
   }
 
   const tSkills = performance.now();
-
-  result.items = result.items.map((a) => {
-    if (!firstPartyVaultOnly(Number(a.chain_id), a.token_id)) return a;
-    return {
-      ...a,
-      x402_supported: false,
-      description: firstPartyDescription(Number(a.chain_id), a.token_id) ?? a.description,
-      skills: firstPartySkills(Number(a.chain_id), a.token_id) ?? a.skills,
-      category: (firstPartyCategory(Number(a.chain_id), a.token_id) ?? a.category) as typeof a.category,
-    };
-  });
 
   await hydrateBoostsFromDb();
 
