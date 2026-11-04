@@ -150,6 +150,7 @@ export async function handleWebhook(req, res) {
         "",
         "Hire an agent, list your own, or finish the Set and Earn quest.",
         "Send /link to attach a wallet, or open the app with the buttons below.",
+        "Send /quest to see your progress. Send /hire <tokenId> or /list to get the right page.",
         "",
         linkedLine,
       ].join("\n"),
@@ -164,9 +165,19 @@ export async function handleWebhook(req, res) {
         "<b>Link a wallet</b>",
         "",
         link
-          ? "Open this link in Safari, or in MetaMask's browser, connect the wallet you hire with, and sign:"
+          ? "Use the wallet you registered on BNB Chain's campaign form. Hires signed by any other wallet do not count for the quest."
           : "Could not create a link. Try again in a moment.",
-        ...(link ? ["", link, "", `Code: <code>${created.code}</code>`, "", "The code expires in 15 minutes."] : []),
+        ...(link
+          ? [
+              "",
+              "Open this link in Safari, or in MetaMask's browser, connect the wallet you hire with, and sign:",
+              link,
+              "",
+              `Code: <code>${created.code}</code>`,
+              "",
+              "The code expires in 15 minutes.",
+            ]
+          : []),
         "",
         linkedLine,
       ].join("\n"),
@@ -232,9 +243,10 @@ export async function handleWebhook(req, res) {
         "",
         "/agents  the shelf",
         "/vault  a vault hire",
-        "/quest  Set and Earn",
+        "/quest  your Set and Earn progress",
         "/list  list your own agent",
         "/link  attach a wallet",
+        "/wallet  the attached wallet",
         "",
         linkedLine,
       ].join("\n"),

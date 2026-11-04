@@ -173,6 +173,10 @@ export function TelegramLinkPage() {
             One free signature attaches this Telegram account to the wallet you hire with. No transaction,
             no allowance, no custody.
           </Txt>
+          <Txt size={13} lead={20} tone="peach" className="mt-4 block">
+            Set and Earn only counts the wallet you registered on BNB Chain's campaign form. Hires and
+            listings signed by any other wallet cannot count toward your stamps.
+          </Txt>
         </div>
 
         <Stack surface pad={[16, 18, 16, 18]} gap={10}>
