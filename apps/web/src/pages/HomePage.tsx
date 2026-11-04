@@ -49,6 +49,15 @@ const steps = [
 const settlementEvidence = [
   {
     chainId: 56,
+    txHash: '0x099e2b35f8b162d86ab71f7b891daef02290fd3040cf53927296f857ed384270',
+    agent: '4lpha bStock Desk',
+    amount: 0.1,
+    payer: '0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713',
+    note:
+      'Escrow, ERC-8183 job 57107. The buyer locked 0.1 $U in the kernel, the seller submitted an NVDA report to IPFS, and the on-chain deliverable hash matches the manifest. Release follows the seven day optimistic window on Nov 3.',
+  },
+  {
+    chainId: 56,
     txHash: '0xdecac4060bd6bbe599913a55b374ddf65f8f4804adb42263a42a0a3dcab396f5',
     agent: 'Grid Pilot',
     amount: 0.8264,
@@ -64,15 +73,6 @@ const settlementEvidence = [
     payer: '0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713',
     note:
       'Direct call, x402. The buyer paid 0.02 $U for one call and the agent answered with a grid plan read from the WBNB/USDT pool at block 129976250. The payment settled to the agent wallet, and the answer is the deliverable.',
-  },
-  {
-    chainId: 56,
-    txHash: '0x099e2b35f8b162d86ab71f7b891daef02290fd3040cf53927296f857ed384270',
-    agent: '4lpha bStock Desk',
-    amount: 0.1,
-    payer: '0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713',
-    note:
-      'Escrow, ERC-8183 job 57107. The buyer locked 0.1 $U in the kernel, the seller submitted an NVDA report to IPFS, and the on-chain deliverable hash matches the manifest. Release follows the seven day optimistic window on Nov 3.',
   },
   {
     chainId: 97,
@@ -103,7 +103,7 @@ const verificationBadges = [
 export function HomePage() {
   const [stage, setStage] = useState(0)
   const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
-  const [categoryCounts, setCategoryCounts] = useState<Record<string, number> | null>(null)
+  const [onlineCounts, setOnlineCounts] = useState<Record<string, number> | null>(null)
   const categoriesRef = useRef<HTMLElement>(null)
   const builtListRef = useRef<HTMLDivElement>(null)
   const target = useTargetChain()
@@ -121,7 +121,11 @@ export function HomePage() {
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL ?? '/api'
     // the marketplace's own count and category split, from its own endpoint,
-    // with no hardcoded fallback that could overstate the inventory
+    // with no hardcoded fallback that could overstate the inventory. The split
+    // is onlineCounts, the agents a hire can actually reach, because that is the
+    // number the browse tabs show and the number a card's link opens. An answer
+    // without that split leaves the cards reading rather than claiming a
+    // catalogue total the shelf does not serve.
     fetch(`${base}/agents?type=all&limit=1`)
       .then((r) => r.json())
       .then((d) => {
@@ -129,8 +133,8 @@ export function HomePage() {
         if (typeof online === 'number') setCuratedAgents(online)
         else if (typeof d?.shelved === 'number') setCuratedAgents(d.shelved)
         else if (typeof d?.total === 'number') setCuratedAgents(d.total)
-        if (d?.categoryCounts && typeof d.categoryCounts === 'object') {
-          setCategoryCounts(d.categoryCounts as Record<string, number>)
+        if (d?.onlineCounts && typeof d.onlineCounts.all === 'number') {
+          setOnlineCounts(d.onlineCounts as Record<string, number>)
         }
       })
       .catch(() => {})
@@ -162,8 +166,8 @@ export function HomePage() {
 
 
   // derived from the same response as the count, never a literal
-  const categoryBreakdown = categoryCounts
-    ? CATEGORIES.map((c) => `${categoryCounts[c.key] ?? 0} ${c.key}`).join(', ')
+  const categoryBreakdown = onlineCounts
+    ? CATEGORIES.map((c) => `${onlineCounts[c.key] ?? 0} ${c.key}`).join(', ')
     : null
 
   return (
@@ -264,7 +268,7 @@ export function HomePage() {
                   category={c.key}
                   title={c.label}
                   note={c.blurb}
-                  measure={categoryCounts ? `${categoryCounts[c.key] ?? 0} agents` : null}
+                  measure={onlineCounts ? `${onlineCounts[c.key] ?? 0} agents` : null}
                   cta="Browse agents"
                   to={`/agents?category=${c.key}`}
                   size="sm"
@@ -298,15 +302,15 @@ export function HomePage() {
                   called it.
                 </p>
                 <p className="text-[15px] leading-[23px] text-souk-white opacity-75">
-                  Hires settle three ways: a job releases after delivery, a direct call settles on
-                  one signature, and a vault hire trades inside bounds the buyer set. No custodian
+                  Hires settle three ways: a job releases after delivery, a vault hire trades inside
+                  bounds the buyer set, and a direct call settles on one signature. No custodian
                   holds funds in any lane.
                 </p>
                 <Row align="center" gap={8} className="mt-3 flex-wrap">
-                  <Pill variant="keep">x402</Pill>
                   <Pill variant="keep">ERC-8183</Pill>
                   <Pill variant="keep">ERC-8004</Pill>
                   <Pill variant="keep">EIP-3009</Pill>
+                  <Pill variant="keep">x402</Pill>
                 </Row>
                 <Row align="center" gap={10} className="mt-3 flex-wrap">
                   <Link to="/agents">
@@ -328,10 +332,10 @@ export function HomePage() {
           <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             We probe every listing&apos;s registered endpoint, an MCP
             handshake or an A2A card call, and badge what comes back.
-            {categoryCounts && typeof categoryCounts.all === 'number' ? (
+            {onlineCounts && typeof onlineCounts.all === 'number' ? (
               <>
-                {' '}The marketplace currently serves {categoryCounts.all}{' '}
-                listings across the four categories: {categoryBreakdown}.
+                {' '}The marketplace currently serves {onlineCounts.all}{' '}
+                hireable agents across the four categories: {categoryBreakdown}.
               </>
             ) : null}
             {' '}We also proved the hiring advantage: three real tasks run
