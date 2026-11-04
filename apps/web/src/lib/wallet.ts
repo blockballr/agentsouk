@@ -298,16 +298,22 @@ export async function beginWalletConnect(): Promise<{ uri: string; account: Prom
       return;
     }
     const events = provider as unknown as {
-      once?: (event: string, handler: (uri: string) => void) => void;
+      on?: (event: string, handler: (uri: string) => void) => void;
     };
-    events.once?.("display_uri", resolve);
+    events.on?.("display_uri", resolve);
   });
   const connect = provider as unknown as { connect?: () => Promise<void> };
   const account = (async () => {
     if (connect.connect) await connect.connect.call(provider);
     return requestAccounts(provider);
   })();
-  const uri = await uriPromise;
+  account.catch(() => {});
+  const uri = await Promise.race([
+    uriPromise,
+    new Promise<string>((_, reject) =>
+      setTimeout(() => reject(new Error("The wallet pairing did not start. Try again.")), 10_000),
+    ),
+  ]);
   return { uri, account };
 }
 
