@@ -291,7 +291,10 @@ export function walletConnectUri(): string | null {
 // the Mini App needs the pairing URI itself and a universal link the user taps.
 // Resolves with the URI and a promise that settles when the wallet approves.
 export async function beginWalletConnect(): Promise<{ uri: string; account: Promise<string> }> {
-  const provider = await initWalletConnect(false);
+  // the modal is what starts the pairing and emits display_uri, so it has to be
+  // allowed to open; it is hidden as soon as the uri arrives and our own chooser
+  // takes over, which keeps the pairing alive because the modal state never closes
+  const provider = await initWalletConnect(true);
   const uriPromise = new Promise<string>((resolve) => {
     if (wcUri) {
       resolve(wcUri);
@@ -314,6 +317,11 @@ export async function beginWalletConnect(): Promise<{ uri: string; account: Prom
       setTimeout(() => reject(new Error("Telegram could not start the wallet pairing. Send /link to the bot and open the link in Safari or Chrome.")), 10_000),
     ),
   ]);
+  const modal = typeof document === "undefined" ? null : (document.querySelector("w3m-modal") as HTMLElement | null);
+  if (modal) modal.style.display = "none";
+  account.finally(() => {
+    if (modal) modal.style.display = "";
+  });
   return { uri, account };
 }
 
