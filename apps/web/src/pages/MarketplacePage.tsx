@@ -177,13 +177,12 @@ export function MarketplacePage() {
     [result],
   )
 
-  // the shelf's strap: chain, registry size, how many answer, and freshness
+  // the shelf's strap: chain and registry size only; the hireable count and the
+  // freshness move into the live stamp chip so the two facts read as state
   const strap = [
     'shelf',
     chainId === null ? 'checking the network' : `${chainLabel(chainId)} ${chainId}`,
     result?.registryTotal ? `${result.registryTotal.toLocaleString('en-US')} agents` : null,
-    result ? `${(result.onlineCounts?.all ?? 0).toLocaleString('en-US')} hireable` : null,
-    freshness,
   ]
     .filter((part): part is string => Boolean(part))
     .join(' · ')
@@ -212,6 +211,18 @@ export function MarketplacePage() {
             <Txt size={11} lead={16} mono upper tone="data" className="line-clamp-2 sm:line-clamp-none">
               {strap}
             </Txt>
+            {/* the live stamp: whether the shelf has answered, and how fresh the
+                data behind it is. the dot pulses only while the data is fresh */}
+            <span
+              className="inline-flex h-8 shrink-0 items-center gap-2 border border-souk-hair bg-souk-surface1 px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-labels"
+              title="Hireable now: agents whose endpoint answered the last probe"
+            >
+              <span
+                aria-hidden="true"
+                className={`h-1.5 w-1.5 rounded-full ${result ? 'bg-souk-good animate-scale-pulse' : 'bg-souk-muted'}`}
+              />
+              {result ? `${(result.onlineCounts?.all ?? 0).toLocaleString('en-US')} hireable · ${freshness}` : 'reading the shelf'}
+            </span>
           </Row>
 
           {category === 'all' ? null : (
@@ -271,9 +282,9 @@ export function MarketplacePage() {
             </Txt>
           </Row>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {CATEGORIES.map((c, i) => (
-              <Link key={c.key} to={`/vault/c/${c.key}`} className="block transition hover:opacity-90">
-                <HireInAction category={c.key} compact delay={i * 1.6} />
+            {CATEGORIES.map((c) => (
+              <Link key={c.key} to={`/vault/c/${c.key}`} className="group block">
+                <HireInAction category={c.key} compact cta="Open the vault" />
               </Link>
             ))}
           </div>
@@ -696,7 +707,7 @@ function AgentCard({
   const priceLabel = price.length > 26 ? `${price.slice(0, 25)}...` : price
   return (
     <article
-      className={`relative flex flex-col gap-3 border border-souk-hair bg-souk-surface1 p-4 ${
+      className={`group relative flex flex-col gap-3 border border-souk-hair bg-souk-surface1 p-4 ${
         checked ? 'ring-1 ring-souk-data' : ''
       }`}
     >
@@ -795,9 +806,15 @@ function AgentCard({
             ? 'This agent sells by ERC-8183 job: it quotes a price, the job is funded in escrow, and it is paid on delivery.'
             : undefined
         }
-        className="metal mt-auto flex h-9 items-center justify-center border border-souk-hair bg-[#c3c9d4] text-[12px] font-semibold text-[#0b0e14] transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data" style={{ backgroundImage: 'var(--metal-face)' }}
+        className="metal mt-auto flex h-9 items-center justify-center gap-1.5 border border-souk-hair bg-[#c3c9d4] text-[12px] font-semibold text-[#0b0e14] transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data" style={{ backgroundImage: 'var(--metal-face)' }}
       >
         Hire
+        <span
+          aria-hidden="true"
+          className="font-mono text-[13px] leading-none transition-transform group-hover:translate-x-1"
+        >
+          →
+        </span>
         <span className="sr-only">: {agent.name}</span>
       </Link>
     </article>

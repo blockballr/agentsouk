@@ -30,16 +30,11 @@
 }
 .hia-node.hit { border-color: var(--color-souk-sky); color: var(--color-souk-ink); }
 .hia-leg { width: 30px; height: 2px; background: var(--color-souk-hair); position: relative; flex: none; }
-.hia-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--color-souk-sky);
-  position: absolute; top: -2px; left: 0; opacity: 0;
-}
 .hia-chart { width: 100%; height: auto; aspect-ratio: 320 / 132; display: block; max-width: 640px; }
 .hia-events { min-height: 60px; display: flex; flex-direction: column; gap: 3px; }
 .hia-ev {
   font-family: var(--font-mono); font-size: 10px; line-height: 14px;
-  color: var(--color-souk-muted); opacity: 0;
+  color: var(--color-souk-muted);
 }
 .hia-ev b { color: var(--color-souk-data); font-weight: 500; }
 .hia-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
