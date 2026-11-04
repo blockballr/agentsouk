@@ -8,17 +8,23 @@ import { useTargetChain } from '../lib/target-chain'
 import { AnimatedNumber } from '../components/AnimatedNumber'
 import { CategoryCard } from '../components/CategoryCard'
 import { Reveal } from '../components/Reveal'
+import { HeroWaves } from '../components/HeroWaves'
 import { SPRING_STIFF, SPRING_SMOOTH } from '../lib/motion'
 import { Stack, Row, Txt, Pill, Dot, SectionHead, Btn, Label } from '../components/souk'
 
-// Home page entrance: the nav shell never re-animates, the hero cascades on mount,
-// and below-fold sections reveal once on scroll.
+// Home page entrance: the nav shell never re-animates, the hero cascades on mount
+// over the drifting wave backdrop, and below-fold sections reveal once on scroll.
 const TIMING = {
   label: 0,
   headline: 120,
   body: 260,
   stats: 400,
+  credentials: 560,
 }
+
+// the credibility strip under the hero ctas: four facts a buyer can check,
+// each one anchored elsewhere on the site, kept to one line on any width
+const credentials = ['Settles on BNB Smart Chain', 'Identity: ERC-8004', 'Paid by x402, escrow, vault', 'Non-custodial']
 
 const stats = [
   { value: 'served', label: 'agents on this marketplace', caption: 'each one called, not just listed' },
@@ -114,6 +120,7 @@ export function HomePage() {
       setTimeout(() => setStage(2), TIMING.headline),
       setTimeout(() => setStage(3), TIMING.body),
       setTimeout(() => setStage(4), TIMING.stats),
+      setTimeout(() => setStage(5), TIMING.credentials),
     ]
     return () => timers.forEach(clearTimeout)
   }, [])
@@ -172,7 +179,8 @@ export function HomePage() {
 
   return (
     <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-14">
-      <section>
+      <section className="relative isolate overflow-hidden">
+        <HeroWaves />
         <motion.p
           className="font-mono text-[11px] uppercase leading-[16px] text-souk-data"
           initial={{ opacity: 0, y: -8 }}
@@ -247,6 +255,22 @@ export function HomePage() {
             ))}
           </dl>
         </div>
+
+        <motion.div
+          className="mt-7 flex flex-wrap gap-1.5"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: stage >= 5 ? 1 : 0, y: stage >= 5 ? 0 : 12 }}
+          transition={SPRING_STIFF}
+        >
+          {credentials.map((label) => (
+            <span
+              key={label}
+              className="border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase leading-[14px] tracking-[0.08em] text-souk-labels"
+            >
+              {label}
+            </span>
+          ))}
+        </motion.div>
       </section>
 
       <Reveal>
