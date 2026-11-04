@@ -210,6 +210,17 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   useEffect(() => {
     setAmount(rail.deposit === 'single' ? '5' : '0.1')
   }, [rail.deposit])
+  // a /hire deep link can prefill the amount and the term, so the page lands ready
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const wanted = params.get('amount')
+    if (wanted && Number(wanted) > 0) setAmount(wanted)
+    const days = Number(params.get('days'))
+    if (days > 0) {
+      const index = EXPIRY_PRESETS.findIndex((preset) => preset.days === days)
+      if (index >= 0) setExpiryIndex(index)
+    }
+  }, [rail.deposit])
   const [amount, setAmount] = useState('0.1')
   const [expiryIndex, setExpiryIndex] = useState(0)
   const [slippage, setSlippage] = useState(5) // percentage (5% = 500 bps)

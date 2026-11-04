@@ -206,14 +206,14 @@ export async function handleWebhook(req, res) {
       const detail = await agentDetail(chain, token);
       const skills = detail?.skills ?? [];
       const vault = skills.some((s) => /vault/i.test(`${s.id ?? ""} ${s.name ?? ""}`));
-      const path = vault ? `/vault/${chain}/${token}` : `/agents/${chain}/${token}`;
+      const path = vault ? `/vault/${chain}/${token}?amount=5&days=7` : `/agents/${chain}/${token}`;
       await sendTelegramMessage(
         chatId,
         [
           `<b>Hire ${detail?.name ?? token}</b>`,
           "",
           vault
-            ? "Vault hire. Set the amount and term on the page, then approve and open."
+            ? "Vault hire prefilled at 5 USDT for 7 days. Change them on the page, then approve and open."
             : "Open the agent page and pick the rail.",
           "Open the link and tap Connect wallet. On Android, MetaMask opens and you approve.",
           pageLink(path),
