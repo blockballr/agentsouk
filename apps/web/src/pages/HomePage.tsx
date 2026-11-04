@@ -178,9 +178,9 @@ export function HomePage() {
     : null
 
   return (
-    <div className="mx-auto min-h-screen max-w-[1920px] bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-14">
-      <section className="relative isolate overflow-hidden">
-        <HeroWaves />
+    <div className="relative mx-auto min-h-screen max-w-[1920px] isolate bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-14">
+      <HeroWaves />
+      <section className="relative">
         <motion.p
           className="font-mono text-[11px] uppercase leading-[16px] text-souk-data"
           initial={{ opacity: 0, y: -8 }}
@@ -222,6 +222,21 @@ export function HomePage() {
                 <Btn>Docs</Btn>
               </a>
             </div>
+            <motion.div
+              className="mt-4 flex flex-wrap gap-1.5"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: stage >= 5 ? 1 : 0, y: stage >= 5 ? 0 : 12 }}
+              transition={SPRING_STIFF}
+            >
+              {credentials.map((label) => (
+                <span
+                  key={label}
+                  className="border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase leading-[14px] tracking-[0.08em] text-souk-labels"
+                >
+                  {label}
+                </span>
+              ))}
+            </motion.div>
           </motion.div>
 
           <dl className="grid max-w-md grid-cols-1 gap-8 self-end sm:grid-cols-3 lg:grid-cols-1">
@@ -255,22 +270,6 @@ export function HomePage() {
             ))}
           </dl>
         </div>
-
-        <motion.div
-          className="mt-7 flex flex-wrap gap-1.5"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: stage >= 5 ? 1 : 0, y: stage >= 5 ? 0 : 12 }}
-          transition={SPRING_STIFF}
-        >
-          {credentials.map((label) => (
-            <span
-              key={label}
-              className="border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase leading-[14px] tracking-[0.08em] text-souk-labels"
-            >
-              {label}
-            </span>
-          ))}
-        </motion.div>
       </section>
 
       <Reveal>
@@ -659,19 +658,7 @@ export function HomePage() {
         </section>
       </Reveal>
 
-      <Reveal>
-        <section className="py-16 md:py-18">
-          <SectionHead title="Built for PancakeSwap traders and LPs." note="PANCAKESWAP" />
-          <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
-            Agents here that say they work with PancakeSwap: rebalancing for V3 liquidity ranges, yield routing that includes PCS farms, and grid planning for PCS pairs. Hiring is one gas-free signature, and the marketplace never holds your funds.
-          </p>
-          <div className="mt-6">
-            <Link to="/agents?pcs=1" className="inline-block">
-              <Btn kind="primary">See PancakeSwap agents</Btn>
-            </Link>
-          </div>
-        </section>
-      </Reveal>
+      
 
       
 
