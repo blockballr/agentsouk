@@ -311,7 +311,7 @@ export async function beginWalletConnect(): Promise<{ uri: string; account: Prom
   const uri = await Promise.race([
     uriPromise,
     new Promise<string>((_, reject) =>
-      setTimeout(() => reject(new Error("The wallet pairing did not start. Try again.")), 10_000),
+      setTimeout(() => reject(new Error("Telegram could not start the wallet pairing. Send /link to the bot and open the link in Safari or Chrome.")), 10_000),
     ),
   ]);
   return { uri, account };
