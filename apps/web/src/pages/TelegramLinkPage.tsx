@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { telegramLinkMessage } from '@agora/core'
 import { Btn, Stack, Txt } from '../components/souk'
-import { connectWallet } from '../lib/wallet-session'
-import { signPersonalMessage } from '../lib/wallet'
+import { connectProvider, signPersonalMessage } from '../lib/wallet'
 
 const BASE = import.meta.env.VITE_TELEGRAM_API ?? 'https://telegram.agentsouk.xyz'
 
@@ -57,7 +56,7 @@ export function TelegramLinkPage() {
     setBusy('connect')
     setError(null)
     try {
-      setWallet(await connectWallet())
+      setWallet(await connectProvider())
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not connect the wallet.')
     } finally {
@@ -71,7 +70,7 @@ export function TelegramLinkPage() {
     try {
       const telegramId = telegramIdFrom(initData)
       if (!telegramId) throw new Error('Open this page from the Agent Souk bot in Telegram.')
-      const account = wallet ?? (await connectWallet())
+      const account = wallet ?? (await connectProvider())
       setWallet(account)
       const message = telegramLinkMessage({ telegramId, wallet: account })
       const signature = await signPersonalMessage(account, message)

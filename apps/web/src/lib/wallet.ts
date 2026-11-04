@@ -491,9 +491,22 @@ export async function connectProvider(): Promise<string> {
       storeRdns(null);
     }
   }
-  // 2. discovery: one wallet connects directly, several open the picker
+  // 2. discovery: one wallet connects directly, several open the picker. With
+  // none injected, WalletConnect is the path, which is how a phone inside
+  // Telegram reaches MetaMask, Trust or Binance without a browser extension.
   const injected = await listInjectedWallets();
-  if (injected.length === 0) throw new WalletUnavailableError();
+  if (injected.length === 0) {
+    if (!wcProjectId()) throw new WalletUnavailableError();
+    const provider = await initWalletConnect();
+    const connect = (provider as unknown as { connect?: () => Promise<void> }).connect;
+    try {
+      if (connect) await connect.call(provider);
+    } catch {
+      throw new WalletUnavailableError();
+    }
+    storeRdns(WALLETCONNECT_RDNS);
+    return requestAccounts(provider);
+  }
   let option: WalletOption;
   if (injected.length === 1) {
     option = injected[0];
