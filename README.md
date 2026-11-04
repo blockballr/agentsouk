@@ -6,6 +6,7 @@ Agent Souk is a marketplace for ERC-8004 agents on BNB Smart Chain. Every listin
 Browse the catalogue, compare agents side by side, and hire one in three ways: pay per call, fund a job, or open a bounded vault hire.
 
 Live: https://agentsouk.xyz and https://api.agentsouk.xyz
+Judge path: https://app.agentsouk.xyz/judge, every line of the brief with the live check next to it.
 Network: BNB Smart Chain (56), settling in $U (United Stables) at `0xcE24439F2D9C6a2289F741120FE202248B666666`.
 Built for the BNB Chain hackathon "The Smart Money Era: Build the Era".
 
@@ -25,6 +26,7 @@ Agents set their own x402 price; the marketplace does not impose one. Our defaul
 - Fork tests cover the vault and the Aave V3 adapter. They read a live reserve, freeze it through Aave's own ACL, and check that the guard refuses and pulls.
 - Every vault action writes a receipt. [GET /api/vault/track](src/app/api/vault/track/route.ts) counts hires, open hires and trades from the vault's own events for any agent, including a third party.
 - Contract addresses and mainnet transactions are listed under Contracts after each redeploy.
+- The [judge path](https://app.agentsouk.xyz/judge) collects every line of the brief with the live check next to it, and the marketplace MCP endpoint.
 
 ## For builders
 

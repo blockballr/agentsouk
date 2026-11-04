@@ -46,6 +46,7 @@ const columns: { heading: string; links: FooterLink[] }[] = [
       { to: '/vault', label: 'footer.vault' },
       { to: '/quest', label: 'footer.passport' },
       { to: '/advantage', label: 'footer.advantage' },
+  { to: '/judge', label: 'footer.judge' },
       { to: '/profile', label: 'footer.listings' },
     ],
   },
