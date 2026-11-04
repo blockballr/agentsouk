@@ -137,6 +137,8 @@ export function TelegramLinkPage() {
   }, [initData, wallet, code])
 
   const telegramId = telegramIdFrom(initData)
+  const pageUrl = typeof window === 'undefined' ? '' : window.location.href
+  const dappUrl = pageUrl ? `https://metamask.app.link/dapp/${pageUrl.replace(/^https?:\/\//, '')}` : ''
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[560px] flex-col justify-center px-6 py-12">
@@ -216,6 +218,23 @@ export function TelegramLinkPage() {
                   </Btn>
                   <Btn kind="off" onClick={() => void navigator.clipboard?.writeText(wcUri)}>
                     Copy link
+                  </Btn>
+                </div>
+              </Stack>
+            ) : null}
+
+            {!wallet && !linked && !telegramApp()?.initData ? (
+              <Stack surface pad={[14, 16, 14, 16]} gap={10}>
+                <Txt size={12} lead={18} tone="slate">
+                  On iOS, Brave and Chrome do not hand the pairing to a wallet app. Open this page in
+                  MetaMask's browser instead, where the wallet is already connected.
+                </Txt>
+                <div className="flex flex-wrap gap-3">
+                  <Btn kind="off" onClick={() => openWallet(dappUrl)}>
+                    Open in MetaMask
+                  </Btn>
+                  <Btn kind="off" onClick={() => void navigator.clipboard?.writeText(pageUrl)}>
+                    Copy page link
                   </Btn>
                 </div>
               </Stack>
