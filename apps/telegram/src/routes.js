@@ -79,6 +79,29 @@ const HIRE = keyboard([
 
 const ONE = (path, text) => keyboard([[{ text, path }]]);
 
+async function questProgress(wallet) {
+  const base = process.env.PUBLIC_API_URL?.trim() || "https://api.agentsouk.xyz";
+  try {
+    const res = await fetch(`${base}/api/quest/progress?wallet=${encodeURIComponent(wallet)}`);
+    const body = await res.json().catch(() => null);
+    return body?.success ? body : null;
+  } catch {
+    return null;
+  }
+}
+
+function questLines(p) {
+  const categories = Object.entries(p.categories ?? {})
+    .map(([key, done]) => `${done ? "done" : "open"} ${key}`)
+    .join(" · ");
+  return [
+    "<b>Set and Earn</b>",
+    `${p.agentsHired ?? 0}/${p.requiredHires ?? 2} hires · ${p.listedOne ? "listed" : "not listed"}`,
+    categories,
+    p.completed ? "Finished." : "Not finished yet.",
+  ].join("\n");
+}
+
 export async function handleHealth(req, res) {
   return json(res, 200, { ok: true, configured: Boolean(telegramBotToken()) }, req.headers.origin);
 }
@@ -138,9 +161,47 @@ export async function handleWebhook(req, res) {
   } else if (command === "/vault") {
     await sendTelegramMessage(chatId, "Open a vault hire: the deposit stays in the vault.", ONE("/vault", "Open the vault"));
   } else if (command === "/quest") {
-    await sendTelegramMessage(chatId, "The Set and Earn quest, with every stamp backed by a settled hire.", ONE("/quest", "Open the quest"));
+    if (!linked) {
+      await sendTelegramMessage(chatId, "Link a wallet first. Send /link and open the link it gives you.");
+    } else {
+      const progress = await questProgress(linked);
+      await sendTelegramMessage(
+        chatId,
+        progress ? questLines(progress) : "Could not read your quest progress right now.",
+      );
+    }
+  } else if (command === "/hire") {
+    const parts = text.split(/\s+/).slice(1);
+    const chain = parts.find((p) => p === "56" || p === "97") ?? "56";
+    const token = parts.find((p) => /^\d+$/.test(p) && p !== chain);
+    if (!token) {
+      await sendTelegramMessage(chatId, "Send /hire <tokenId>, for example /hire 376593.");
+    } else {
+      await sendTelegramMessage(
+        chatId,
+        [
+          `<b>Hire ${token}</b>`,
+          "",
+          "Open this in Safari or Chrome to connect a wallet and sign:",
+          `https://app.agentsouk.xyz/agents/${chain}/${token}`,
+        ].join("\n"),
+      );
+    }
+  } else if (command === "/wallet") {
+    await sendTelegramMessage(
+      chatId,
+      linked ? `Linked wallet: <code>${linked}</code>` : "No wallet linked yet. Send /link.",
+    );
   } else if (command === "/list") {
-    await sendTelegramMessage(chatId, "List an agent of your own.", ONE("/list", "List an agent"));
+    await sendTelegramMessage(
+      chatId,
+      [
+        "<b>List an agent</b>",
+        "",
+        "Open this in Safari or Chrome to connect a wallet and sign:",
+        "https://app.agentsouk.xyz/list",
+      ].join("\n"),
+    );
   } else {
     await sendTelegramMessage(
       chatId,

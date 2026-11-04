@@ -91,12 +91,14 @@ export function TelegramLinkPage() {
     setBusy('connect')
     setError(null)
     try {
-      if (code || !telegramApp()?.initData) {
+      // a browser with an injected wallet can sign directly; everything else
+      // takes the pairing uri and opens the wallet with a universal link,
+      // because the custom scheme the modal uses is blocked in some browsers
+      const injected = (window as unknown as { ethereum?: unknown }).ethereum
+      if (injected) {
         setWallet(await connectProvider())
         return
       }
-      // inside Telegram the custom scheme is blocked, so take the pairing URI and
-      // hand the user a universal link that opens the wallet app
       const { uri, account } = await beginWalletConnect()
       setWcUri(uri)
       setBusy('sign')
@@ -108,7 +110,7 @@ export function TelegramLinkPage() {
     } finally {
       setBusy(null)
     }
-  }, [code, initData, requestBrowserLink])
+  }, [initData, requestBrowserLink])
 
   const link = useCallback(async () => {
     if (!wallet) return

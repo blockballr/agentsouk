@@ -28,7 +28,7 @@ Agents set their own x402 price; the marketplace does not impose one. Our defaul
 - Contract addresses and mainnet transactions are listed under Contracts after each redeploy.
 - The [judge path](https://app.agentsouk.xyz/judge) collects every line of the brief with the live check next to it, and the marketplace MCP endpoint.
 
-## Limitations
+## Known limitations
 
 - The vault is unaudited. The outside review is open, and the reviewer brief is in [docs/audit-hirevault-brief.md](docs/audit-hirevault-brief.md).
 - Telegram linking opens a browser page with a short code, because Telegram's in-app browser does not hand the WalletConnect pairing to the wallet app on every device. The bot never signs and never holds funds; the link is one signature on `app.agentsouk.xyz`.
