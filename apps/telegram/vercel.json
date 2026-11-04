@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/telegram/webhook", "destination": "/api/webhook" },
     { "source": "/telegram/link", "destination": "/api/link" },
+    { "source": "/telegram/link-code", "destination": "/api/link-code" },
     { "source": "/health", "destination": "/api/health" }
   ],
   "functions": {

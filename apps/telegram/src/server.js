@@ -2,7 +2,7 @@
 // The route logic lives in routes.js, which the Vercel functions reuse.
 
 import { createServer } from "node:http";
-import { corsHeaders, handleHealth, handleLink, handleWebhook } from "./routes.js";
+import { corsHeaders, handleHealth, handleLink, handleLinkCode, handleWebhook } from "./routes.js";
 import { telegramBotToken } from "./telegram.js";
 
 const PORT = Number(process.env.PORT || 8787);
@@ -23,6 +23,9 @@ const server = createServer(async (req, res) => {
   }
   if (req.method === "POST" && url.pathname === "/telegram/link") {
     return handleLink(req, res);
+  }
+  if (req.method === "POST" && url.pathname === "/telegram/link-code") {
+    return handleLinkCode(req, res);
   }
 
   res.writeHead(404, { "content-type": "application/json; charset=utf-8" });

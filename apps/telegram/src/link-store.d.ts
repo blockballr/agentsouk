@@ -13,3 +13,9 @@ export function linkTelegram(input: {
 
 export function walletForTelegram(telegramId: string): Promise<string | null>;
 export function telegramForWallet(wallet: string): Promise<string | null>;
+
+export function createLinkCode(
+  telegramId: string,
+): Promise<{ code: string; expiresAt: string } | null>;
+
+export function consumeLinkCode(code: string): Promise<string | null>;

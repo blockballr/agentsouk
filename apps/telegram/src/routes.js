@@ -3,7 +3,7 @@
 
 import { getAddress, verifyMessage } from "viem";
 import { telegramBotToken, verifyInitData, sendTelegramMessage, webAppUrl } from "./telegram.js";
-import { linkTelegram, walletForTelegram } from "./link-store.js";
+import { linkTelegram, walletForTelegram, createLinkCode, consumeLinkCode } from "./link-store.js";
 import { telegramLinkMessage } from "./link-message.js";
 
 const MAX_BODY = 64 * 1024;
@@ -74,7 +74,6 @@ const HIRE = keyboard([
   ],
   [
     { text: "List an agent", path: "/list" },
-    { text: "Link a wallet", path: "/telegram/link" },
   ],
 ]);
 
@@ -103,7 +102,7 @@ export async function handleWebhook(req, res) {
   const linked = await walletForTelegram(telegramId).catch(() => null);
   const linkedLine = linked
     ? `Linked wallet: <code>${linked}</code>`
-    : "No wallet linked yet. Open <b>Link a wallet</b> and sign once.";
+    : "No wallet linked yet. Send /link to attach one.";
 
   if (command === "/start") {
     await sendTelegramMessage(
@@ -112,24 +111,27 @@ export async function handleWebhook(req, res) {
         "<b>Agent Souk</b>",
         "",
         "Hire an agent, list your own, or finish the Set and Earn quest.",
-        "Every button opens the app, where your own wallet signs.",
+        "Send /link to attach a wallet, or open the app with the buttons below.",
         "",
         linkedLine,
       ].join("\n"),
       HIRE,
     );
   } else if (command === "/link") {
+    const created = await createLinkCode(telegramId).catch(() => null);
+    const link = created ? webAppUrl(`/telegram/link?code=${created.code}`) : null;
     await sendTelegramMessage(
       chatId,
       [
         "<b>Link a wallet</b>",
         "",
-        "Open the link page, connect the wallet you hire with, and sign the message.",
-        "The signature is free and proves the wallet is yours.",
+        link
+          ? "Open this link in Safari or Chrome, connect the wallet you hire with, and sign:"
+          : "Could not create a link. Try again in a moment.",
+        ...(link ? ["", link, "", "The code expires in 15 minutes."] : []),
         "",
         linkedLine,
       ].join("\n"),
-      ONE("/telegram/link", "Link a wallet"),
     );
   } else if (command === "/agents") {
     await sendTelegramMessage(chatId, "Open the shelf and pick an agent.", ONE("/agents", "Open the shelf"));
@@ -160,6 +162,36 @@ export async function handleWebhook(req, res) {
   return json(res, 200, { ok: true });
 }
 
+export async function handleLinkCode(req, res) {
+  const origin = req.headers.origin;
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, corsHeaders(origin));
+    res.end();
+    return;
+  }
+  const body = await parseJson(req);
+  const initData = typeof body?.initData === "string" ? body.initData : "";
+  const verified = verifyInitData(initData, { maxAgeSeconds: 86_400 });
+  if (!verified.ok || !verified.user) {
+    return json(res, 401, { success: false, error: verified.error ?? "initData is not valid" }, origin);
+  }
+  const created = await createLinkCode(verified.user.id);
+  if (!created) {
+    return json(res, 503, { success: false, error: "could not create a code" }, origin);
+  }
+  return json(
+    res,
+    200,
+    {
+      success: true,
+      code: created.code,
+      expiresAt: created.expiresAt,
+      url: webAppUrl(`/telegram/link?code=${created.code}`),
+    },
+    origin,
+  );
+}
+
 export async function handleLink(req, res) {
   const origin = req.headers.origin;
   if (req.method === "OPTIONS") {
@@ -169,6 +201,7 @@ export async function handleLink(req, res) {
   }
   const body = await parseJson(req);
   const initData = typeof body?.initData === "string" ? body.initData : "";
+  const code = typeof body?.code === "string" ? body.code.trim() : "";
   const wallet = typeof body?.wallet === "string" ? body.wallet : "";
   const signature = typeof body?.signature === "string" ? body.signature : "";
 
@@ -179,9 +212,17 @@ export async function handleLink(req, res) {
     return json(res, 400, { success: false, error: "signature must be 65 bytes" }, origin);
   }
 
-  const verified = verifyInitData(initData, { maxAgeSeconds: 86_400 });
-  if (!verified.ok || !verified.user) {
-    return json(res, 401, { success: false, error: verified.error ?? "initData is not valid" }, origin);
+  let subject = "";
+  let username = null;
+  if (code) {
+    subject = `code:${code}`;
+  } else {
+    const verified = verifyInitData(initData, { maxAgeSeconds: 86_400 });
+    if (!verified.ok || !verified.user) {
+      return json(res, 401, { success: false, error: verified.error ?? "initData is not valid" }, origin);
+    }
+    subject = verified.user.id;
+    username = verified.user.username ?? null;
   }
 
   let address;
@@ -191,7 +232,7 @@ export async function handleLink(req, res) {
     return json(res, 400, { success: false, error: "wallet is not a valid address" }, origin);
   }
 
-  const message = telegramLinkMessage({ telegramId: verified.user.id, wallet: address });
+  const message = telegramLinkMessage({ telegramId: subject, wallet: address });
   let proves = false;
   try {
     proves = await verifyMessage({ address, message, signature });
@@ -202,10 +243,18 @@ export async function handleLink(req, res) {
     return json(res, 401, { success: false, error: "the signature does not prove this wallet" }, origin);
   }
 
+  let telegramId = subject;
+  if (code) {
+    telegramId = await consumeLinkCode(code);
+    if (!telegramId) {
+      return json(res, 410, { success: false, error: "this link code has expired" }, origin);
+    }
+  }
+
   const saved = await linkTelegram({
-    telegramId: verified.user.id,
+    telegramId,
     wallet: address,
-    username: verified.user.username ?? null,
+    username,
   });
   if (!saved.ok) {
     return json(res, 503, { success: false, error: saved.error ?? "could not save the link" }, origin);
@@ -216,9 +265,9 @@ export async function handleLink(req, res) {
     200,
     {
       success: true,
-      telegramId: verified.user.id,
+      telegramId,
       wallet: address.toLowerCase(),
-      username: verified.user.username ?? null,
+      username,
     },
     origin,
   );
