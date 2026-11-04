@@ -15,8 +15,9 @@ import { useI18n } from '../lib/i18n'
 
 // No external flag. The columns that used to carry one were re-pointed at internal routes
 // when the about link was dropped, which left the anchor branch unreachable, so it was
-// removed rather than left as a second way to render a link nobody uses.
-type FooterLink = { to: string; label: string }
+// removed rather than left as a second way to render a link nobody uses. docs is the one
+// genuinely external row, so it carries its own href branch.
+type FooterLink = { to?: string; href?: string; label: string }
 
 const columns: { heading: string; links: FooterLink[] }[] = [
   {
@@ -44,10 +45,11 @@ const columns: { heading: string; links: FooterLink[] }[] = [
       { to: '/about', label: 'footer.about' },
       { to: '/build', label: 'footer.build' },
       { to: '/vault', label: 'footer.vault' },
-      { to: '/quest', label: 'footer.passport' },
+      { to: '/quest', label: 'nav.quest' },
       { to: '/advantage', label: 'footer.advantage' },
   { to: '/judge', label: 'footer.judge' },
       { to: '/profile', label: 'footer.listings' },
+      { href: 'https://docs.agentsouk.xyz', label: 'footer.docs' },
     ],
   },
 ]
@@ -122,15 +124,27 @@ export function Footer() {
               <nav key={col.heading} aria-label={t(col.heading)} className="w-full min-w-0 lg:flex-1">
                 <Stack gap={9}>
                   <Label tone="muted">{t(col.heading)}</Label>
-                  {col.links.map((l) => (
+                  {col.links.map((l) =>
+                    l.href ? (
+                      <a
+                        key={l.label}
+                        href={l.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex min-h-[36px] items-center text-[14px] leading-[20px] text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data md:min-h-0"
+                      >
+                        {t(l.label)}
+                      </a>
+                    ) : (
                     <Link
                       key={l.label}
-                      to={l.to}
+                      to={l.to ?? '/'}
                       className="inline-flex min-h-[36px] items-center text-[14px] leading-[20px] text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data md:min-h-0"
                     >
                       {t(l.label)}
                     </Link>
-                  ))}
+                    ),
+                  )}
                 </Stack>
               </nav>
             ))}
