@@ -516,12 +516,10 @@ export async function connectProvider(): Promise<string> {
   const rdns = readStoredRdns();
   if (rdns) {
     if (rdns === WALLETCONNECT_RDNS) {
-      try {
-        return await requestAccounts(await initWalletConnect());
-      } catch {
-        // stale pairing or missing project id: fall through to discovery
-        storeRdns(null);
-      }
+      const provider = await initWalletConnect();
+      const session = (provider as unknown as { session?: unknown }).session;
+      if (session) return requestAccounts(provider);
+      storeRdns(null);
     } else if (rdns === LEGACY_RDNS) {
       const legacy = legacyProvider();
       if (legacy) return requestAccounts(legacy);
@@ -538,15 +536,11 @@ export async function connectProvider(): Promise<string> {
   const injected = await listInjectedWallets();
   if (injected.length === 0) {
     if (!wcProjectId()) throw new WalletUnavailableError();
-    // no injected wallet: pair, then hand the uri to the wallet app. Android
-    // needs an intent; the custom scheme is what iOS can use.
     const { uri, account } = await beginWalletConnect();
-    const android = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-    const link = android
-      ? `intent://wc?uri=${encodeURIComponent(uri)}#Intent;scheme=metamask;package=io.metamask;end`
-      : `metamask://wc?uri=${encodeURIComponent(uri)}`;
     storeRdns(WALLETCONNECT_RDNS);
-    if (typeof window !== "undefined") window.location.href = link;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("agentsouk:wallet-handoff", { detail: { uri } }));
+    }
     return account;
   }
   let option: WalletOption;
@@ -556,6 +550,14 @@ export async function connectProvider(): Promise<string> {
     const picked = await openWalletPicker();
     if (!picked) throw new WalletUnavailableError();
     option = picked;
+  }
+  if (option.kind === "walletconnect") {
+    const { uri, account } = await beginWalletConnect();
+    storeRdns(WALLETCONNECT_RDNS);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("agentsouk:wallet-handoff", { detail: { uri } }));
+    }
+    return account;
   }
   const provider = await resolveProvider(option);
   storeRdns(option.rdns);

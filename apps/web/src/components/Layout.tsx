@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Nav } from './Nav'
 import { NetworkTicker } from './NetworkTicker'
 import { QuestNudge } from './QuestNudge'
+import { WalletHandoff } from './WalletHandoff'
 
 // a route split is a short wait, not a blank page: the nav and the status bar
 // stay put and only the body shows the fallback
@@ -26,6 +27,7 @@ export function Layout() {
         </Suspense>
       </main>
       <QuestNudge />
+      <WalletHandoff />
       {/* persistent bottom status bar, fixed so it never scrolls away */}
       {!isHome && (
         <div className="fixed inset-x-0 bottom-0 z-50">
