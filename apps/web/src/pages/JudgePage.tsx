@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CATEGORIES } from '@agora/core'
 import { getStatus, type StatusJob } from '../lib/api'
 import { Stack, Row, Txt, Btn, Rule } from '../components/souk'
 
@@ -22,8 +23,7 @@ const CHECKS: Array<{ asks: string; how: string; href: string; external?: boolea
   {
     asks: 'All four categories, at least three agents each',
     how: 'Counts by category',
-    href: '/api/agents?limit=1',
-    external: true,
+    href: '/agents',
   },
   {
     asks: 'A working hire with scoped approval, cap and revoke',
@@ -47,6 +47,7 @@ const CHECKS: Array<{ asks: string; how: string; href: string; external?: boolea
 export function JudgePage() {
   const [jobs, setJobs] = useState<StatusJob[] | null>(null)
   const [chainId, setChainId] = useState<number | null>(null)
+  const [counts, setCounts] = useState<Record<string, number> | null>(null)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
@@ -65,6 +66,18 @@ export function JudgePage() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_URL ?? '/api'
+    fetch(`${base}/agents?type=all&limit=1`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.onlineCounts && typeof d.onlineCounts.all === 'number') {
+          setCounts(d.onlineCounts as Record<string, number>)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   const catalogue = jobs?.[0] ?? null
@@ -88,27 +101,43 @@ export function JudgePage() {
 
       <Stack gap={0} className="border border-souk-hair">
         {CHECKS.map((c, i) => (
-          <Row
+          <div
             key={c.asks}
-            justify="between"
-            align="center"
-            gap={24}
-            className={`px-5 py-4 ${i ? 'border-t border-souk-hair' : ''}`}
+            className={`flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 ${i ? 'border-t border-souk-hair' : ''}`}
           >
-            <Txt size={14} lead={21} tone="ink" className="max-w-[560px]">
+            <Txt size={14} lead={21} tone="ink" className="min-w-0 max-w-[560px]">
               {c.asks}
             </Txt>
-            {c.external ? (
-              <a href={c.href} target="_blank" rel="noreferrer" className="shrink-0">
-                <Btn kind="off">{c.how}</Btn>
-              </a>
-            ) : (
-              <Link to={c.href} className="shrink-0">
-                <Btn kind="off">{c.how}</Btn>
-              </Link>
-            )}
-          </Row>
+            <div className="shrink-0">
+              {c.external ? (
+                <a href={c.href} target="_blank" rel="noreferrer">
+                  <Btn kind="off">{c.how}</Btn>
+                </a>
+              ) : (
+                <Link to={c.href}>
+                  <Btn kind="off">{c.how}</Btn>
+                </Link>
+              )}
+            </div>
+          </div>
         ))}
+      </Stack>
+
+      <Stack gap={10} className="border border-souk-hair p-5">
+        <Txt size={11} weight="bold" upper tone="muted">
+          Categories
+        </Txt>
+        <Row gap={18} className="flex-wrap">
+          {CATEGORIES.map((c) => (
+            <Link key={c.key} to={`/agents?category=${c.key}`} className="flex items-baseline gap-2">
+              <Txt size={13} tone="slate">{c.label}</Txt>
+              <Txt size={13} mono tone="data">{counts?.[c.key] ?? '-'}</Txt>
+            </Link>
+          ))}
+        </Row>
+        <Txt size={12} lead={18} tone="muted">
+          Hireable now. Every count is a listing whose probe answered in the last check.
+        </Txt>
       </Stack>
 
       <Stack gap={10} className="border border-souk-hair p-5">
