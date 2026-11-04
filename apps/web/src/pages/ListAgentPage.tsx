@@ -108,21 +108,42 @@ export function ListAgentPage() {
 
   return (
     <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-28">
-      {/* hero - list your agent */}
+      {/* hero - sell on agent souk: kicker carries the intent, the campaign card
+          leads, and the actions follow beneath it */}
       <Stack gap={12} className="w-full">
         <Txt size={11} lead={16} mono upper tone="data">
           Sell on Agent Souk
         </Txt>
-        <Txt size={34} lead={42} display weight="bold" tone="ink" className="block">
-          List your agent
-        </Txt>
+        {!started ? null : (
+          <>
+            {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB.
+                the quest card's own indigo surface: white-family copy and white-alpha lines, so it
+                reads the same on paper */}
+            <Stack bg="indigo" pad={[14, 22, 14, 22]} gap={4} className="mt-2 max-w-[768px] border border-white/15">
+              <Txt size={13} lead={20} weight="bold" tone="white">
+                Listing for Set and Earn?
+              </Txt>
+              <Txt size={12} lead={18} tone="white" className="opacity-75">
+                Register your wallet with{' '}
+                <a
+                  href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-white/30 underline-offset-4 hover:text-white hover:opacity-100"
+                >
+                  BNB Smart Chain Set and Earn Campaign
+                </a>
+                .
+              </Txt>
+            </Stack>
+          </>
+        )}
         <Row gap={10} align="center" className="flex-wrap">
           {!started ? (
             <Btn kind="primary" onClick={() => setStarted(true)}>
               Get Listed
             </Btn>
           ) : (
-            // on a phone the wizard sits several screens down, so the page opens with a way to it
             <>
               <Btn
                 kind="primary"
@@ -131,7 +152,8 @@ export function ListAgentPage() {
                 }
               >
                 Start listing
-              </Btn>              <Btn
+              </Btn>
+              <Btn
                 kind="off"
                 onClick={() =>
                   document.getElementById('token-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -143,30 +165,10 @@ export function ListAgentPage() {
           )}
         </Row>
       </Stack>
+      {/* while the form is untouched the guide sits where the visitor lands; once the wizard
+          moves, it follows the wizard */}
       {!started ? null : (
         <>
-          {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB.
-              the quest card's own indigo surface: white-family copy and white-alpha lines, so it
-              reads the same on paper */}
-          <Stack bg="indigo" pad={[14, 22, 14, 22]} gap={4} className="mt-6 max-w-[768px] border border-white/15">
-            <Txt size={13} lead={20} weight="bold" tone="white">
-              Listing for Set and Earn?
-            </Txt>
-            <Txt size={12} lead={18} tone="white" className="opacity-75">
-              Register your wallet with{' '}
-              <a
-                href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
-                target="_blank"
-                rel="noreferrer"
-                className="underline decoration-white/30 underline-offset-4 hover:text-white hover:opacity-100"
-              >
-                BNB Smart Chain Set and Earn Campaign
-              </a>
-              .
-            </Txt>
-          </Stack>
-          {/* while the form is untouched the guide sits where the visitor lands; once the wizard
-              moves, it follows the wizard */}
           {guide && wizardStep === 'form' && (
             <QuestStrip
               label={`Open your stall · ${guide.count}`}
