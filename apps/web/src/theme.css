@@ -3,7 +3,8 @@
 // the WalletConnect modal is not reachable from a mini app or an in-app
 // browser and its open button cannot hand the pairing to the wallet app.
 // hiding the host keeps the pairing alive while our own chooser takes over.
-w3m-modal {
+w3m-modal,
+wcm-modal {
   display: none !important;
 }
 

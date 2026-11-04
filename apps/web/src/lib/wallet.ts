@@ -317,7 +317,9 @@ export async function beginWalletConnect(): Promise<{ uri: string; account: Prom
       setTimeout(() => reject(new Error("Telegram could not start the wallet pairing. Send /link to the bot and open the link in Safari or Chrome.")), 10_000),
     ),
   ]);
-  const modal = typeof document === "undefined" ? null : (document.querySelector("w3m-modal") as HTMLElement | null);
+  const modal = typeof document === "undefined"
+    ? null
+    : (document.querySelector("w3m-modal, wcm-modal") as HTMLElement | null);
   if (modal) modal.style.display = "none";
   account.finally(() => {
     if (modal) modal.style.display = "";
