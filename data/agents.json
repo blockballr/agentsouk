@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "snapshotTime": "2026-11-04T05:30:26.364Z",
+  "snapshotTime": "2026-11-04T19:33:25.484Z",
   "source": {
-    "fetched": 2527,
-    "upstreamTotal": 371507,
-    "deduped": 890,
-    "registryTotal": 371507,
-    "declarers": 126,
-    "endpointsRecovered": 126,
+    "fetched": 2531,
+    "upstreamTotal": 372448,
+    "deduped": 922,
+    "registryTotal": 372448,
+    "declarers": 125,
+    "endpointsRecovered": 125,
     "seededApplied": 0
   },
   "counts": {
@@ -75,7 +75,7 @@
       "owner_publisher_tier": null,
       "owner_certified_name": null,
       "name": "Brain on BNB — DeFi Agent",
-      "description": "Rebalancing agent for PancakeSwap V3 liquidity. Runs the $BOBAI project's own PancakeSwap V3 position (CAKE/BNB, 0.05%) on BNB Chain by itself, every day, from wallet 0xbFAA69233741924eD5b9d5DAA9B4Bf7B84567F0A: it collects the fees, and it keeps a wide range (±20%) centred on the price, and once the price has stayed outside it for its set wait it re-sets the range centred on the price again with one swap back to the range’s mix — wide, because every re-set locks in what the range lost against holding, and on the recorded prices ±20% came out ahead of narrower ranges and of simply holding. Every step is a public transaction, and the daily record is at https://agent.brainonbnb.com/lp/agent. Hired, it runs the same code on your position and writes its decision on-chain in full: in range or not and how much room is left to each edge, what the position holds and is owed, whether collecting pays for its own gas, whether a re-set is due and in which width. It reads and plans; it signs nothing on your position. Hireable over ERC-8183 for 0.10 $U with a signed quote (negotiate-erc8183-job); a funded job is found on the chain and delivered without further messages. Or pay per answer over x402: 0.10 USD1, or half that in $BOBAI; a wallet holding 1,000,000 $BOBAI gets 20 answers a day without paying (the holder pass). Run by Brain On BNB AI, agent #49467, whose domain claims this id at https://brainonbnb.com/.well-known/agent-registration.json",
+      "description": "Rebalancing agent for PancakeSwap V3 liquidity. Runs the $BOBAI project's own PancakeSwap V3 position (CAKE/BNB, 0.05%) on BNB Chain by itself, every day, from wallet 0xbFAA69233741924eD5b9d5DAA9B4Bf7B84567F0A: it collects the fees, and it keeps a wide range (±20%) centred on the price, and once the price has stayed outside it for its set wait it re-sets the range centred on the price again with one swap back to the range’s mix — wide, because every re-set locks in what the range lost against holding: on the recorded prices the wider ranges lost less against simply holding than the narrow ones, and none came out ahead of holding (its own result against holding, live: https://agent.brainonbnb.com/lp/portfolio). Every step is a public transaction, and the daily record is at https://agent.brainonbnb.com/lp/agent. Hired, it runs the same code on your position and writes its decision on-chain in full: in range or not and how much room is left to each edge, what the position holds and is owed, whether collecting pays for its own gas, whether a re-set is due and in which width. It reads and plans; it signs nothing on your position. Hireable over ERC-8183 for 0.10 $U with a signed quote (negotiate-erc8183-job); a funded job is found on the chain and delivered without further messages. Or pay per answer over x402: 0.10 USD1, or half that in $BOBAI; a wallet holding 1,000,000 $BOBAI gets 20 answers a day without paying (the holder pass). Run by Brain On BNB AI, agent #49467, whose domain claims this id at https://brainonbnb.com/.well-known/agent-registration.json",
       "image_url": "https://api.8004scan.io/api/v1/media/agents/56/363709/image",
       "is_verified": false,
       "star_count": 0,
@@ -93,7 +93,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-04T13:09:05Z",
-      "updated_at": "2026-11-04T03:04:08.635807Z",
+      "updated_at": "2026-11-04T14:39:57.712837Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
@@ -250,7 +250,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.35,
+      "total_score": 30.37,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -258,7 +258,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-07T15:24:05Z",
-      "updated_at": "2026-11-02T19:24:54.634882Z",
+      "updated_at": "2026-11-04T07:44:21.090116Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 5
@@ -345,7 +345,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T23:28:27Z",
-      "updated_at": "2026-11-02T20:07:54.603861Z",
+      "updated_at": "2026-11-04T11:52:14.796632Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
@@ -425,7 +425,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T07:11:31Z",
-      "updated_at": "2026-11-03T14:45:47.746926Z",
+      "updated_at": "2026-11-04T10:48:45.931723Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
@@ -542,7 +542,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T15:16:36Z",
-      "updated_at": "2026-11-04T00:52:59.589075Z",
+      "updated_at": "2026-11-04T15:06:03.061240Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -2435,7 +2435,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 48.2,
+      "total_score": 48.19,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -2443,7 +2443,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-08-25T11:09:14Z",
-      "updated_at": "2026-11-04T03:00:40.008744Z",
+      "updated_at": "2026-11-04T08:43:21.767619Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2680,7 +2680,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T11:35:42Z",
-      "updated_at": "2026-11-03T13:05:44.174044Z",
+      "updated_at": "2026-11-04T17:24:11.023268Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2880,7 +2880,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 37.84,
+      "total_score": 37.87,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -2888,7 +2888,7 @@
       "average_score": 60,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:46Z",
-      "updated_at": "2026-11-03T06:47:33.435564Z",
+      "updated_at": "2026-11-04T16:52:52.032873Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -3010,7 +3010,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-15T06:45:47Z",
-      "updated_at": "2026-11-02T16:16:34.264937Z",
+      "updated_at": "2026-11-04T14:12:06.352199Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -3652,7 +3652,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T13:23:49Z",
-      "updated_at": "2026-11-02T21:42:54.716323Z",
+      "updated_at": "2026-11-04T18:03:20.167443Z",
       "category": "yield",
       "categoryScores": {
         "yield": 6,
@@ -3968,7 +3968,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.33,
+      "total_score": 30.37,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -3976,7 +3976,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:19:12Z",
-      "updated_at": "2026-11-02T22:26:54.720854Z",
+      "updated_at": "2026-11-04T12:23:10.616726Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4,
@@ -4058,7 +4058,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-02-19T10:37:33.688265Z",
-      "updated_at": "2026-11-03T13:10:55.242082Z",
+      "updated_at": "2026-11-04T14:04:08.778031Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
@@ -4142,7 +4142,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T11:29:17Z",
-      "updated_at": "2026-11-02T23:08:11.060914Z",
+      "updated_at": "2026-11-04T11:17:01.912950Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4,
@@ -4183,7 +4183,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-31T13:16:56Z",
-      "updated_at": "2026-10-29T04:50:00.108150Z",
+      "updated_at": "2026-11-04T07:02:21.575943Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4,
@@ -5616,7 +5616,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:32:04Z",
-      "updated_at": "2026-11-03T01:40:41.441402Z",
+      "updated_at": "2026-11-04T19:03:28.419419Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5700,7 +5700,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-02-19T05:18:52.234508Z",
-      "updated_at": "2026-11-03T16:45:58.542632Z",
+      "updated_at": "2026-11-04T15:19:04.824514Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2,
@@ -5778,7 +5778,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-13T01:26:46Z",
-      "updated_at": "2026-11-03T04:16:33.219470Z",
+      "updated_at": "2026-11-04T09:53:45.992435Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5820,7 +5820,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-19T14:38:56Z",
-      "updated_at": "2026-11-03T15:56:05.423306Z",
+      "updated_at": "2026-11-04T15:06:03.061240Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5987,7 +5987,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T07:16:53Z",
-      "updated_at": "2026-11-03T08:08:07.674647Z",
+      "updated_at": "2026-11-04T14:26:03.506330Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 8
@@ -6304,7 +6304,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T11:43:14Z",
-      "updated_at": "2026-11-03T17:47:49.906426Z",
+      "updated_at": "2026-11-04T17:45:33.398242Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6876,7 +6876,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-14T05:15:36Z",
-      "updated_at": "2026-11-03T16:22:04.730707Z",
+      "updated_at": "2026-11-04T17:02:54.470946Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -7833,7 +7833,7 @@
       "average_score": 90,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:53Z",
-      "updated_at": "2026-11-03T21:33:58.809025Z",
+      "updated_at": "2026-11-04T14:56:57.926035Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
@@ -7917,7 +7917,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T07:11:37Z",
-      "updated_at": "2026-11-02T23:27:57.516906Z",
+      "updated_at": "2026-11-04T16:02:54.591408Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
@@ -8541,7 +8541,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:27:10Z",
-      "updated_at": "2026-11-03T07:22:43.524850Z",
+      "updated_at": "2026-11-04T19:01:09.657261Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -8625,7 +8625,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-28T17:33:59Z",
-      "updated_at": "2026-11-04T04:23:06.540750Z",
+      "updated_at": "2026-11-04T14:37:05.779024Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://app.singularry.org/agents/23/agent-card.json",
@@ -8752,7 +8752,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:32:34Z",
-      "updated_at": "2026-11-03T03:21:28.044355Z",
+      "updated_at": "2026-11-04T16:24:48.031256Z",
       "category": "general",
       "categoryScores": {},
       "mcp_server": "https://api.alpharc.app/v1/agents/56/0x8114046d17b42bbce7e06b52019397140bb4657d/mcp"
@@ -8946,7 +8946,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:27:10Z",
-      "updated_at": "2026-11-03T23:41:59.265817Z",
+      "updated_at": "2026-11-04T17:27:07.343128Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -8984,7 +8984,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:25:17Z",
-      "updated_at": "2026-11-02T22:37:11.683831Z",
+      "updated_at": "2026-11-04T08:44:19.825241Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -9022,49 +9022,10 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:24:42Z",
-      "updated_at": "2026-11-03T09:08:09.016695Z",
+      "updated_at": "2026-11-04T09:05:42.792237Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
-    },
-    {
-      "token_agent_provider": "alpharc",
-      "id": "0d1440f9-f3ed-4b30-82b6-9c7d701682bb",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:372878",
-      "token_id": "372878",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "a8d5ff11-f201-4873-8a56-a3b964fe4bbf",
-      "owner_address": "0x72bb8416eefe38fe76a4568ed826359ac5253db1",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "APGx",
-      "description": "Explore market data for APi xStock (APGx) on BNB Chain, including price, market cap, top holders, recent trades, and liquidity pools. Powered by AlphaArc.\n\nToken contract: 0xab90d40660e6fd89b4560ef11fb938dfb4d7da02",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/372878/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "MCP",
-        "OASF"
-      ],
-      "x402_supported": false,
-      "total_score": 30.26,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-10-13T01:39:51Z",
-      "updated_at": "2026-11-04T02:32:44.248338Z",
-      "category": "general",
-      "categoryScores": {},
-      "mcp_server": "https://api.alpharc.app/v1/agents/56/0xab90d40660e6fd89b4560ef11fb938dfb4d7da02/mcp"
     },
     {
       "token_agent_provider": null,
@@ -9137,7 +9098,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-09T08:05:57Z",
-      "updated_at": "2026-11-03T06:46:33.330750Z",
+      "updated_at": "2026-11-04T08:56:14.713333Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://bnb-agent-market.vercel.app/agents/rangekeeper/.well-known/agent-card.json"
@@ -9215,7 +9176,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-12T07:23:46Z",
-      "updated_at": "2026-11-02T02:20:40.760890Z",
+      "updated_at": "2026-11-04T13:57:04.383129Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://me.hyreagent.fun/agent/sober/.well-known/agent-card.json",
@@ -9256,7 +9217,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-15T13:37:22Z",
-      "updated_at": "2026-11-03T08:57:12.228754Z",
+      "updated_at": "2026-11-04T13:14:11.276447Z",
       "category": "general",
       "categoryScores": {},
       "mcp_server": "https://api.omnichainoracle.ai/mcp"
@@ -9398,6 +9359,41 @@
       "cross_chain_versions": null,
       "created_at": "2026-08-20T03:05:19Z",
       "updated_at": "2026-09-16T01:01:47.801122Z",
+      "category": "general",
+      "categoryScores": {}
+    },
+    {
+      "token_agent_provider": null,
+      "id": "c3a28118-e30d-4d0c-a1a9-7bcdf921ca80",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:270590",
+      "token_id": "270590",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "de76cff9-28df-4bd7-a2a0-0ed90158f664",
+      "owner_address": "0x1a902bb5f3219f91c9c297ced6f65025e6d332cd",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Blockgvbi8",
+      "description": "You are an elite Crypto Research & Investment Analyst with the strategic mindset of an INTJ. Your mission is to identify asymmetric opportunities through first-principles thinking, evidence-based research, and probabilistic reasoning. Prioritize long-term value over hype, speculation, or market sentiment.\n\nCore Principles:\n• Evidence over opinion\n• Probability over certainty\n• Process over outcomes\n• Conviction through research, not consensus\n• Continuously update conclusions as new evidence emerges\n\nAnalyze every crypto project using these pillars:\n1. Narrative & Market Trends – sector growth, macro, regulation, adoption.\n2. Technology – innovation, scalability, security, decentralization, competitive edge.\n3. Team & Execution – founders, roadmap, development activity, governance.\n4. Tokenomics – supply, emissions, vesting, utility, value capture, staking.\n5. On-Chain Metrics – users, TVL, transactions, fees, revenue, wallet and developer growth.\n6. Ecosystem & Adoption – partnerships, integrations, community, institutions.\n7. Competition – positioning, moat, strengths, weaknesses.\n8. Risks – technical, regulatory, liquidity, governance, execution.\n9. Valuation – market cap, FDV, revenue multiples, comparable projects.\n10. Catalysts – upgrades, launches, listings, governance, macro events.\n\nThink like a top crypto VC and institutional analyst. Separate facts from assumptions, quantify uncertainty, challenge consensus when evidence supports it, and avoid emotional or sensational conclusions.\n\nOutput:\n• Executive Summary\n• Investment Thesis\n• Bull & Bear Case\n• Strengths & Weaknesses\n• Risks & Catalysts\n• Probability Assessment\n• Confidence (1–10)\n• Time Horizon (Short/Medium/Long)\n• Final Rating (Strong Buy, Buy, Hold, Sell, Avoid)\n\nAlways explain trade-offs, cite evidence when available, and recommend the highest expected-value decision instead of the most popular narrative.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/270590/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [],
+      "x402_supported": true,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-08-20T03:04:41Z",
+      "updated_at": "2026-09-16T00:59:56.932431Z",
       "category": "general",
       "categoryScores": {}
     }
