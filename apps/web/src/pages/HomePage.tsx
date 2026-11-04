@@ -371,7 +371,48 @@ export function HomePage() {
         <section className="py-16 md:py-18">
           <Stack surface pad={[20, 22, 18, 22]} gap={14}>
             <SectionHead title="On-chain proof" note="RECORDED" />
-            <div className="overflow-x-auto">
+            <div className="md:hidden">
+              <div className="flex flex-col gap-3">
+                {settlementEvidence.map((e) => {
+                  const asset = settlementAssetFor(e.chainId)
+                  return (
+                    <div key={`${e.chainId}-${e.txHash}`} className="border border-souk-hair p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <Txt size={12} lead={18} weight="semibold" tone="slate">
+                          {chainLabel(e.chainId)} · chain {e.chainId}
+                        </Txt>
+                        <Txt size={12} lead={18} mono tone={e.amount !== null ? 'data' : 'steel'}>
+                          {e.amount !== null ? `${e.amount} ${asset?.symbol ?? ''}` : asset?.symbol ?? 'pending'}
+                        </Txt>
+                      </div>
+                      <Txt size={13} lead={20} tone={e.agent ? 'ink' : 'muted'} className="mt-2 block">
+                        {e.agent ?? 'pending'}
+                      </Txt>
+                      <div className="mt-2 flex flex-col gap-1">
+                        {e.txHash ? (
+                          <a
+                            href={`${explorerTxBase(e.chainId)}/tx/${e.txHash}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="break-all font-mono text-[11px] leading-4 text-souk-data underline decoration-souk-data/40 underline-offset-2"
+                          >
+                            {e.txHash.slice(0, 18)}...{e.txHash.slice(-8)}
+                          </a>
+                        ) : (
+                          <Txt size={11} lead={16} mono tone="steel">
+                            no settlement yet
+                          </Txt>
+                        )}
+                        <Txt size={11} lead={16} mono tone="steel" className="break-all">
+                          {e.payer ? `${e.payer.slice(0, 10)}...${e.payer.slice(-6)}` : 'not yet'}
+                        </Txt>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full border-collapse" style={{ minWidth: 900 }}>
                 <colgroup>
                   <col style={{ width: 430 }} />

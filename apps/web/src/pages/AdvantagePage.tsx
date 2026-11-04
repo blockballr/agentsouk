@@ -142,7 +142,7 @@ function Report({ report }: { report: AdvantageReport }) {
 
       <div className="mt-6 border hairline border-slate-verdant/40 p-8">
         <p className="micro text-newsprint-gray">Methodology</p>
-        <p className="mt-3 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px]">
+        <p className="mt-3 max-w-3xl text-[18px] font-extralight leading-snug tracking-[-0.36px] [overflow-wrap:anywhere]">
           {report.methodology}
         </p>
         {report.capture ? null : (
@@ -180,9 +180,9 @@ function NetworkPanel({ report }: { report: AdvantageReport }) {
         <div className="min-w-0 border hairline border-slate-verdant/40 p-8">
           <p className="micro text-newsprint-gray">Network</p>
           <p className="mt-3 font-serif text-2xl font-medium">{network.name}</p>
-          <p className="mt-1 text-sm text-newsprint-gray">{networkLine(network)}</p>
+          <p className="mt-1 text-sm text-newsprint-gray [overflow-wrap:anywhere]">{networkLine(network)}</p>
           {capture ? (
-            <p className="mt-5 max-w-3xl text-sm leading-snug text-press-black">
+            <p className="mt-5 max-w-3xl text-sm leading-snug text-press-black [overflow-wrap:anywhere]">
               {captureLead(capture.measuredAt ?? report.generatedAt)} This deployment settles real
               sUSD on BSC testnet chain 97, so for current evidence see the{' '}
               <Link

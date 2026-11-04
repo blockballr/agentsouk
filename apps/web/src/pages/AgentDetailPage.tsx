@@ -1223,7 +1223,7 @@ export function AgentDetailPage() {
               type="button"
               onClick={() => setChainOpen((open) => !open)}
               aria-expanded={chainOpen}
-              className="flex w-full items-start justify-between gap-4 text-left lg:cursor-default"
+              className="flex w-full flex-col items-start gap-3 text-left sm:flex-row sm:items-start sm:justify-between sm:gap-4 lg:cursor-default"
             >
               <Stack gap={3}>
                 <Txt size={18} lead={27} weight="bold" tone="ink">
@@ -1233,7 +1233,7 @@ export function AgentDetailPage() {
                   Registry record, reputation, endpoints and metadata
                 </Txt>
               </Stack>
-              <div className="flex shrink-0 flex-col items-end gap-2">
+              <div className="flex w-full shrink-0 flex-row items-center justify-between gap-2 sm:w-auto sm:flex-col sm:items-end">
                 <SoukRow align="center" gap={10}>
                   {detail.created_block_number != null ? (
                     <Txt size={11} lead={16} mono tone="muted">

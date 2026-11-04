@@ -229,7 +229,7 @@ export function QuestPage() {
             justify="between"
             className="flex-wrap gap-y-3"
           >
-            <Row gap={10} align="center" className="min-w-[320px] flex-1">
+            <Row gap={10} align="center" className="min-w-0 flex-1">
               <Dot tone="good" size={8} />
               {/* the band is indigo in both registers, so its ink and sky would
                   land as navy and teal on paper: the line and its link wear white */}
