@@ -113,7 +113,6 @@ data/altana-sessions.json
 /scripts/fund-agent-wallets.mjs
 /scripts/update-agent-wallets.mjs
 /scripts/sync-altana-to-db.mjs
-/scripts/write-coverage.mjs
 /scripts/test-db.mjs
 /scripts/check-sessions.mjs
 
