@@ -36,6 +36,7 @@ function openWallet(url: string) {
 // and the pair is stored so a settlement can find the chat. No transaction.
 export function TelegramLinkPage() {
   const [initData, setInitData] = useState('')
+  const [code] = useState(() => new URLSearchParams(window.location.search).get('code') ?? '')
   const [wallet, setWallet] = useState<string | null>(null)
   const [wcUri, setWcUri] = useState<string | null>(null)
   const [linked, setLinked] = useState<string | null>(null)
@@ -68,7 +69,7 @@ export function TelegramLinkPage() {
     setBusy('connect')
     setError(null)
     try {
-      if (!telegramApp()?.initData) {
+      if (code || !telegramApp()?.initData) {
         setWallet(await connectProvider())
         return
       }
@@ -84,21 +85,21 @@ export function TelegramLinkPage() {
     } finally {
       setBusy(null)
     }
-  }, [])
+  }, [code])
 
   const link = useCallback(async () => {
     if (!wallet) return
     setBusy('sign')
     setError(null)
     try {
-      const telegramId = telegramIdFrom(initData)
+      const telegramId = code ? `code:${code}` : telegramIdFrom(initData)
       if (!telegramId) throw new Error('Open this page from the Agent Souk bot in Telegram.')
       const message = telegramLinkMessage({ telegramId, wallet })
       const signature = await signPersonalMessage(wallet, message)
       const res = await fetch(`${BASE}/telegram/link`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ initData, wallet, signature }),
+        body: JSON.stringify(code ? { code, wallet, signature } : { initData, wallet, signature }),
       })
       const body = (await res.json().catch(() => null)) as { success?: boolean; wallet?: string; error?: string } | null
       if (!res.ok || !body?.success) throw new Error(body?.error ?? 'Could not link the wallet.')
@@ -108,7 +109,7 @@ export function TelegramLinkPage() {
     } finally {
       setBusy(null)
     }
-  }, [initData, wallet])
+  }, [initData, wallet, code])
 
   const telegramId = telegramIdFrom(initData)
 
@@ -132,8 +133,12 @@ export function TelegramLinkPage() {
           <Txt size={11} lead={14} mono upper tone="muted">
             Telegram
           </Txt>
-          <Txt size={13} lead={20} tone={telegramId ? 'ink' : 'peach'}>
-            {telegramId ? `account ${telegramId}` : 'Open this page from the Agent Souk bot in Telegram.'}
+          <Txt size={13} lead={20} tone={telegramId || code ? 'ink' : 'peach'}>
+            {code
+              ? `link code ${code}`
+              : telegramId
+                ? `account ${telegramId}`
+                : 'Open this page from the Agent Souk bot in Telegram.'}
           </Txt>
           <Txt size={11} lead={14} mono upper tone="muted" className="mt-2">
             Wallet
@@ -160,7 +165,7 @@ export function TelegramLinkPage() {
                   {busy === 'connect' ? 'Opening' : 'Connect wallet'}
                 </Btn>
               )}
-              <Btn kind="primary" onClick={() => void link()} disabled={busy !== null || !telegramId || !wallet}>
+              <Btn kind="primary" onClick={() => void link()} disabled={busy !== null || (!telegramId && !code) || !wallet}>
                 {busy === 'sign' ? 'Waiting for the signature' : 'Sign and link'}
               </Btn>
             </div>
