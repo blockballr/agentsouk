@@ -39,6 +39,8 @@ export function TelegramLinkPage() {
   const [code] = useState(() => new URLSearchParams(window.location.search).get('code') ?? '')
   const [wallet, setWallet] = useState<string | null>(null)
   const [wcUri, setWcUri] = useState<string | null>(null)
+  const [browserLink, setBrowserLink] = useState<string | null>(null)
+  const [browserBusy, setBrowserBusy] = useState(false)
   const [linked, setLinked] = useState<string | null>(null)
   const [busy, setBusy] = useState<'connect' | 'sign' | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -65,6 +67,26 @@ export function TelegramLinkPage() {
     }
   }, [])
 
+  const requestBrowserLink = useCallback(async () => {
+    if (!initData) return
+    setBrowserBusy(true)
+    setError(null)
+    try {
+      const res = await fetch(`${BASE}/telegram/link-code`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ initData }),
+      })
+      const body = (await res.json().catch(() => null)) as { success?: boolean; url?: string; error?: string } | null
+      if (!res.ok || !body?.success || !body.url) throw new Error(body?.error ?? 'Could not create a link.')
+      setBrowserLink(body.url)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not create a link.')
+    } finally {
+      setBrowserBusy(false)
+    }
+  }, [initData])
+
   const connect = useCallback(async () => {
     setBusy('connect')
     setError(null)
@@ -82,10 +104,11 @@ export function TelegramLinkPage() {
       setWcUri(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not connect the wallet.')
+      if (initData) void requestBrowserLink()
     } finally {
       setBusy(null)
     }
-  }, [code])
+  }, [code, initData, requestBrowserLink])
 
   const link = useCallback(async () => {
     if (!wallet) return
@@ -193,6 +216,31 @@ export function TelegramLinkPage() {
                     Copy link
                   </Btn>
                 </div>
+              </Stack>
+            ) : null}
+
+            {!code && initData ? (
+              <Stack surface pad={[14, 16, 14, 16]} gap={10}>
+                <Txt size={12} lead={18} tone="slate">
+                  If the wallet app does not open from Telegram, get a link and open it in Safari or
+                  Chrome.
+                </Txt>
+                {browserLink ? (
+                  <>
+                    <Txt size={11} lead={16} mono tone="ink" className="break-all">
+                      {browserLink}
+                    </Txt>
+                    <div className="flex flex-wrap gap-3">
+                      <Btn kind="primary" onClick={() => void navigator.clipboard?.writeText(browserLink)}>
+                        Copy link
+                      </Btn>
+                    </div>
+                  </>
+                ) : (
+                  <Btn kind="off" onClick={() => void requestBrowserLink()} disabled={browserBusy}>
+                    {browserBusy ? 'Creating link' : 'Get a browser link'}
+                  </Btn>
+                )}
               </Stack>
             ) : null}
           </Stack>
