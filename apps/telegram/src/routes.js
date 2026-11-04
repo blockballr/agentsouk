@@ -101,8 +101,8 @@ async function agentDetail(chain, token) {
   }
 }
 
-function dappLink(path) {
-  return `https://link.metamask.io/dapp/app.agentsouk.xyz${path}`;
+function pageLink(path) {
+  return `https://app.agentsouk.xyz${path}`;
 }
 
 function questLines(p) {
@@ -204,8 +204,8 @@ export async function handleWebhook(req, res) {
           vault
             ? "Vault hire. Set the amount and term on the page, then approve and open."
             : "Open the agent page and pick the rail.",
-          "Tap the link, then Open in MetaMask. The wallet is connected there.",
-          dappLink(path),
+          "Copy this link into MetaMask's browser, or open it in a browser:",
+          pageLink(path),
         ].join("\n"),
       );
     }
@@ -220,8 +220,8 @@ export async function handleWebhook(req, res) {
       [
         "<b>List an agent</b>",
         "",
-        "Tap the link, then Open in MetaMask. The wallet is connected there.",
-        dappLink("/list"),
+        "Copy this link into MetaMask's browser, or open it in a browser:",
+        pageLink("/list"),
       ].join("\n"),
     );
   } else {

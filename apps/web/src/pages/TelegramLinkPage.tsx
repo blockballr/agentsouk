@@ -27,6 +27,10 @@ function telegramIdFrom(initData: string): string | null {
 }
 
 function openWallet(url: string) {
+  if (url.startsWith('intent://')) {
+    window.location.href = url
+    return
+  }
   const app = telegramApp()
   if (app?.openLink) app.openLink(url)
   else window.location.href = url
@@ -144,8 +148,16 @@ export function TelegramLinkPage() {
   }, [initData, wallet, code])
 
   const telegramId = telegramIdFrom(initData)
+  const android = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
+  const metamaskLink = (uri: string) =>
+    android
+      ? `intent://wc?uri=${encodeURIComponent(uri)}#Intent;scheme=metamask;package=io.metamask;end`
+      : `metamask://wc?uri=${encodeURIComponent(uri)}`
+  const trustLink = (uri: string) =>
+    android
+      ? `intent://wc?uri=${encodeURIComponent(uri)}#Intent;scheme=trust;package=com.wallet.crypto.trustapp;end`
+      : `trust://wc?uri=${encodeURIComponent(uri)}`
   const pageUrl = typeof window === 'undefined' ? '' : window.location.href
-  const dappUrl = pageUrl ? `https://link.metamask.io/dapp/${pageUrl.replace(/^https?:\/\//, '')}` : ''
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[560px] flex-col justify-center px-6 py-12">
@@ -229,20 +241,13 @@ export function TelegramLinkPage() {
             {wcUri ? (
               <Stack surface pad={[14, 16, 14, 16]} gap={10}>
                 <Txt size={12} lead={18} tone="slate">
-                  Open this page in Safari, then tap the wallet you use. Safari is the only iOS browser
-                  that hands the pairing to the wallet app.
+                  If the wallet app does not open, copy the link and open it in your wallet's browser.
                 </Txt>
                 <div className="flex flex-wrap gap-3">
-                  <Btn
-                    kind="primary"
-                    onClick={() => openWallet(`metamask://wc?uri=${encodeURIComponent(wcUri)}`)}
-                  >
+                  <Btn kind="primary" onClick={() => openWallet(metamaskLink(wcUri))}>
                     Open MetaMask
                   </Btn>
-                  <Btn
-                    kind="off"
-                    onClick={() => openWallet(`https://link.trustwallet.com/wc?uri=${encodeURIComponent(wcUri)}`)}
-                  >
+                  <Btn kind="off" onClick={() => openWallet(trustLink(wcUri))}>
                     Open Trust Wallet
                   </Btn>
                   <Btn kind="off" onClick={() => void navigator.clipboard?.writeText(wcUri)}>
@@ -255,13 +260,10 @@ export function TelegramLinkPage() {
             {!wallet && !linked && !telegramApp()?.initData ? (
               <Stack surface pad={[14, 16, 14, 16]} gap={10}>
                 <Txt size={12} lead={18} tone="slate">
-                  On iOS, Brave and Chrome do not hand the pairing to a wallet app. Open this page in
-                  MetaMask's browser instead, where the wallet is already connected.
+                  Some mobile browsers do not hand the pairing to a wallet app. If the wallet does not
+                  open, copy this page link and open it in MetaMask's browser.
                 </Txt>
                 <div className="flex flex-wrap gap-3">
-                  <Btn kind="off" onClick={() => openWallet(dappUrl)}>
-                    Open in MetaMask
-                  </Btn>
                   <Btn kind="off" onClick={() => void navigator.clipboard?.writeText(pageUrl)}>
                     Copy page link
                   </Btn>
