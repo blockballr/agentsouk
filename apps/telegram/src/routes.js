@@ -149,7 +149,7 @@ export async function handleWebhook(req, res) {
         "<b>Link a wallet</b>",
         "",
         link
-          ? "Open this link in Safari or Chrome, connect the wallet you hire with, and sign:"
+          ? "Open this link in Safari, connect the wallet you hire with, and sign:"
           : "Could not create a link. Try again in a moment.",
         ...(link ? ["", link, "", "The code expires in 15 minutes."] : []),
         "",

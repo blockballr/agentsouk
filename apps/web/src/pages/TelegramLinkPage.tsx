@@ -198,13 +198,13 @@ export function TelegramLinkPage() {
             {wcUri ? (
               <Stack surface pad={[14, 16, 14, 16]} gap={10}>
                 <Txt size={12} lead={18} tone="slate">
-                  Telegram cannot open a wallet app directly. Tap the wallet you use, approve the connection,
-                  then come back here to sign.
+                  Open this page in Safari, then tap the wallet you use. Safari is the only iOS browser
+                  that hands the pairing to the wallet app.
                 </Txt>
                 <div className="flex flex-wrap gap-3">
                   <Btn
                     kind="primary"
-                    onClick={() => openWallet(`https://metamask.app.link/wc?uri=${encodeURIComponent(wcUri)}`)}
+                    onClick={() => openWallet(`metamask://wc?uri=${encodeURIComponent(wcUri)}`)}
                   >
                     Open MetaMask
                   </Btn>
