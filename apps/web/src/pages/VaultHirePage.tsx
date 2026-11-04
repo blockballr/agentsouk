@@ -228,6 +228,8 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   const [hires, setHires] = useState<VaultHire[] | null>(null)
   const [hiresError, setHiresError] = useState<string | null>(null)
   const [venues, setVenues] = useState<VenueInfo[] | null>(null)
+  // null means the best rate decides; an address means the buyer picked it
+  const [venueChoice, setVenueChoice] = useState<string | null>(null)
   const [vaultAgents, setVaultAgents] = useState<AgentBadge[] | null>(null)
   const [positions, setPositions] = useState<Record<string, { value: number | null; pnl: number | null; realized: number | null; pnlKind: string; deposit: number }>>({})
   const [positionsBlock, setPositionsBlock] = useState<number | null>(null)
@@ -249,6 +251,11 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   const token = tokenChoice === 'WBNB' ? vaultTokenA(requestedChain) : vaultTokenB(requestedChain)
   const vault = vaultFor(requestedChain)
   const agentAddress = prefill?.wallet && prefill.wallet !== '0x0000000000000000000000000000000000000000' ? prefill.wallet : manualAgent.trim()
+
+  // a venue pick belongs to one agent, so changing the agent clears it
+  useEffect(() => {
+    setVenueChoice(null)
+  }, [agentAddress, tokenId])
 
   const autoFee = pickFeeTier(feeOptions)
   const selectedFee = feeOverride === 'auto'
@@ -670,12 +677,16 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   // the buyer names the venue at open. a buffer hire must name one; a trading
   // hire names zero and can never supply anywhere.
   const agentPolicy = badgeFor(agentAddress)?.policy ?? null
-  const venueTarget = (() => {
-    if (agentPolicy !== 'buffer') return null
-    const usable = (venues ?? []).filter((v) => v.addresses.length > 0)
-    const best = usable.sort((a, b) => (b.rateBps ?? 0) - (a.rateBps ?? 0))[0]
-    return best?.addresses[0] ?? null
-  })()
+  const usableVenues = (venues ?? []).filter((v) => v.addresses.length > 0)
+  const bestVenue =
+    [...usableVenues].sort((a, b) => (b.rateBps ?? 0) - (a.rateBps ?? 0))[0] ?? null
+  const chosenVenue = venueChoice
+    ? usableVenues.find((v) =>
+        v.addresses.some((a) => a.toLowerCase() === venueChoice.toLowerCase()),
+      ) ?? null
+    : null
+  const activeVenue = chosenVenue ?? bestVenue
+  const venueTarget = agentPolicy === 'buffer' ? activeVenue?.addresses[0] ?? null : null
   const venueMissing = agentPolicy === 'buffer' && venues !== null && !venueTarget
 
   const openCount = (hires ?? []).filter((h) => h.open).length
@@ -1029,9 +1040,35 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                 </Txt>
               ) : null}
               {agentPolicy === 'buffer' ? (
-                <Txt size={10} lead={14} mono tone={venueMissing ? 'peach' : 'data'}>
-                  {venueTarget ? `venue ${short(venueTarget)}` : 'no venue configured for this chain'}
-                </Txt>
+                <Stack gap={6}>
+                  <Row justify="between" align="center" gap={8}>
+                    <Label tone="muted">Venue</Label>
+                    <Txt size={10} lead={12} mono tone="steel">
+                      {chosenVenue ? 'chosen' : 'best rate'}
+                    </Txt>
+                  </Row>
+                  <div className="flex flex-wrap gap-2">
+                    <Btn kind={chosenVenue ? 'off' : 'keep'} onClick={() => setVenueChoice(null)}>
+                      Best rate
+                    </Btn>
+                    {usableVenues.map((v) => (
+                      <Btn
+                        key={v.id}
+                        kind={chosenVenue && chosenVenue.id === v.id ? 'keep' : 'off'}
+                        onClick={() => setVenueChoice(v.addresses[0])}
+                      >
+                        {v.name}
+                      </Btn>
+                    ))}
+                  </div>
+                  <Txt size={10} lead={14} mono tone={venueMissing ? 'peach' : 'data'}>
+                    {activeVenue
+                      ? `${venueLine(activeVenue)} · ${short(activeVenue.addresses[0])}`
+                      : venues === null
+                        ? 'reading venues'
+                        : 'no venue configured for this chain'}
+                  </Txt>
+                </Stack>
               ) : null}
             </Stack>
             {rail.ui.showsSlippage ? (
