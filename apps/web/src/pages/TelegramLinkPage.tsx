@@ -36,7 +36,8 @@ function openWallet(url: string) {
 // and the pair is stored so a settlement can find the chat. No transaction.
 export function TelegramLinkPage() {
   const [initData, setInitData] = useState('')
-  const [code] = useState(() => new URLSearchParams(window.location.search).get('code') ?? '')
+  const [code, setCode] = useState(() => new URLSearchParams(window.location.search).get('code') ?? '')
+  const [codeInput, setCodeInput] = useState('')
   const [wallet, setWallet] = useState<string | null>(null)
   const [wcUri, setWcUri] = useState<string | null>(null)
   const [browserLink, setBrowserLink] = useState<string | null>(null)
@@ -138,7 +139,7 @@ export function TelegramLinkPage() {
 
   const telegramId = telegramIdFrom(initData)
   const pageUrl = typeof window === 'undefined' ? '' : window.location.href
-  const dappUrl = pageUrl ? `https://metamask.app.link/dapp/${pageUrl.replace(/^https?:\/\//, '')}` : ''
+  const dappUrl = pageUrl ? `https://link.metamask.io/dapp/${pageUrl.replace(/^https?:\/\//, '')}` : ''
 
   return (
     <div className="mx-auto flex min-h-screen max-w-[560px] flex-col justify-center px-6 py-12">
@@ -174,6 +175,28 @@ export function TelegramLinkPage() {
             {wallet ?? 'not connected'}
           </Txt>
         </Stack>
+
+        {!code ? (
+          <Stack surface pad={[16, 18, 16, 18]} gap={10}>
+            <Txt size={11} lead={14} mono upper tone="muted">
+              Link code
+            </Txt>
+            <Txt size={12} lead={18} tone="slate">
+              If the bot gave you a code, enter it here.
+            </Txt>
+            <div className="flex flex-wrap gap-2">
+              <input
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value)}
+                placeholder="a94d2223"
+                className="h-10 min-w-0 flex-1 border border-souk-hair bg-souk-surface2 px-3 font-mono text-[13px] text-souk-ink outline-none focus:border-souk-data"
+              />
+              <Btn kind="off" onClick={() => setCode(codeInput.trim())} disabled={!codeInput.trim()}>
+                Use code
+              </Btn>
+            </div>
+          </Stack>
+        ) : null}
 
         {linked ? (
           <Stack surface pad={[16, 18, 16, 18]} gap={6}>

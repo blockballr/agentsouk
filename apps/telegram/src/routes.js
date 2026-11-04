@@ -90,6 +90,21 @@ async function questProgress(wallet) {
   }
 }
 
+async function agentDetail(chain, token) {
+  const base = process.env.PUBLIC_API_URL?.trim() || "https://api.agentsouk.xyz";
+  try {
+    const res = await fetch(`${base}/api/agents/${chain}/${token}`);
+    const body = await res.json().catch(() => null);
+    return body?.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function dappLink(path) {
+  return `https://link.metamask.io/dapp/app.agentsouk.xyz${path}`;
+}
+
 function questLines(p) {
   const categories = Object.entries(p.categories ?? {})
     .map(([key, done]) => `${done ? "done" : "open"} ${key}`)
@@ -151,7 +166,7 @@ export async function handleWebhook(req, res) {
         link
           ? "Open this link in Safari, or in MetaMask's browser, connect the wallet you hire with, and sign:"
           : "Could not create a link. Try again in a moment.",
-        ...(link ? ["", link, "", "The code expires in 15 minutes."] : []),
+        ...(link ? ["", link, "", `Code: <code>${created.code}</code>`, "", "The code expires in 15 minutes."] : []),
         "",
         linkedLine,
       ].join("\n"),
@@ -177,13 +192,20 @@ export async function handleWebhook(req, res) {
     if (!token) {
       await sendTelegramMessage(chatId, "Send /hire <tokenId>, for example /hire 376593.");
     } else {
+      const detail = await agentDetail(chain, token);
+      const skills = detail?.skills ?? [];
+      const vault = skills.some((s) => /vault/i.test(`${s.id ?? ""} ${s.name ?? ""}`));
+      const path = vault ? `/vault/${chain}/${token}` : `/agents/${chain}/${token}`;
       await sendTelegramMessage(
         chatId,
         [
-          `<b>Hire ${token}</b>`,
+          `<b>Hire ${detail?.name ?? token}</b>`,
           "",
-          "Open this in Safari or Chrome to connect a wallet and sign:",
-          `https://app.agentsouk.xyz/agents/${chain}/${token}`,
+          vault
+            ? "Vault hire. Set the amount and term on the page, then approve and open."
+            : "Open the agent page and pick the rail.",
+          "Tap the link, then Open in MetaMask. The wallet is connected there.",
+          dappLink(path),
         ].join("\n"),
       );
     }
@@ -198,8 +220,8 @@ export async function handleWebhook(req, res) {
       [
         "<b>List an agent</b>",
         "",
-        "Open this in Safari or Chrome to connect a wallet and sign:",
-        "https://app.agentsouk.xyz/list",
+        "Tap the link, then Open in MetaMask. The wallet is connected there.",
+        dappLink("/list"),
       ].join("\n"),
     );
   } else {
