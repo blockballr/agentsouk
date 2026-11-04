@@ -310,7 +310,7 @@ export function MarketplacePage() {
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
                 aria-expanded={showFilters}
-                className="cursor-pointer border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate transition hover:text-souk-ink"
+                className="inline-flex min-h-[32px] cursor-pointer items-center border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate transition hover:text-souk-ink"
               >
                 Filters{pcs || hide || verifiedOnly ? ' ·' : ''}
               </button>
@@ -319,7 +319,7 @@ export function MarketplacePage() {
                 onClick={() => setShowLegend((v) => !v)}
                 aria-expanded={showLegend}
                 title="The five states, in the order they cost you"
-                className="grid h-6 w-6 cursor-pointer place-items-center border border-souk-hair font-mono text-[10px] text-souk-muted transition hover:text-souk-ink"
+                className="grid h-8 w-8 cursor-pointer place-items-center border border-souk-hair font-mono text-[10px] text-souk-muted transition hover:text-souk-ink"
               >
                 ?
               </button>

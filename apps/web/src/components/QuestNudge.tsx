@@ -251,7 +251,7 @@ export function QuestNudge() {
             type="button"
             aria-label="Minimize quest card"
             onClick={minimize}
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-none border border-souk-ink/30 text-[14px] font-bold leading-none text-souk-ink/60 transition hover:bg-souk-ink/10 hover:text-souk-ink"
+            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-none border border-souk-ink/30 text-[14px] font-bold leading-none text-souk-ink/60 transition hover:bg-souk-ink/10 hover:text-souk-ink"
           >
             -
           </button>

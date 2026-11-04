@@ -119,10 +119,17 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
       </aside>
 
       <div className="min-w-0 flex-1">
-        <nav className="mb-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:hidden">
-          {RAIL.flatMap((g) => g.items).map((item) => (
-            <RailLink key={item.to} item={item} chip />
-          ))}
+        <nav className="relative mb-4 md:hidden">
+          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {RAIL.flatMap((g) => g.items).map((item) => (
+              <RailLink key={item.to} item={item} chip />
+            ))}
+          </div>
+          {/* the right-edge fade is the affordance that the strip keeps scrolling */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-souk-canvas to-transparent"
+          />
         </nav>
         {!account && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-none border border-souk-hair px-4 py-3 md:hidden">
@@ -149,7 +156,7 @@ function RailLink({ item, chip }: { item: RailItem; chip?: boolean }) {
       className={({ isActive }) =>
         [
           chip
-            ? 'shrink-0 rounded-full border px-3 py-1.5 text-[12px]'
+            ? 'inline-flex min-h-[36px] shrink-0 items-center rounded-full border px-3 py-1.5 text-[12px]'
             : 'rounded-none border px-3 py-2 text-[13px]',
           item.accent === 'indigo'
             ? isActive

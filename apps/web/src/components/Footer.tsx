@@ -97,7 +97,7 @@ export function Footer() {
                         href={explorerAddressUrl(target.chainId, String(address))}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-mono text-[10px] leading-[15px] text-souk-labels transition hover:text-souk-ink"
+                        className="inline-flex min-h-[32px] items-center font-mono text-[10px] leading-[15px] text-souk-labels transition hover:text-souk-ink md:min-h-0"
                       >
                         {label} {String(address)}
                       </a>
@@ -109,7 +109,7 @@ export function Footer() {
                   href="https://t.me/agentsouk"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[13px] leading-[18px] text-souk-sky transition hover:text-souk-ink"
+                  className="inline-flex min-h-[32px] items-center text-[13px] leading-[18px] text-souk-sky transition hover:text-souk-ink md:min-h-0"
                 >
                   {t('footer.telegram')}
                 </a>
@@ -126,7 +126,7 @@ export function Footer() {
                     <Link
                       key={l.label}
                       to={l.to}
-                      className="text-[14px] leading-[20px] text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
+                      className="inline-flex min-h-[36px] items-center text-[14px] leading-[20px] text-souk-slate transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data md:min-h-0"
                     >
                       {t(l.label)}
                     </Link>

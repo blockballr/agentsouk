@@ -612,7 +612,7 @@ function CompareTable({
                         type="button"
                         onClick={() => onRemove(`${a.chain_id}/${a.token_id}`)}
                         aria-label={`Remove ${a.name} from comparison`}
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-none border border-souk-hair text-[13px] leading-none text-souk-muted transition hover:border-souk-peach/40 hover:text-souk-peach focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none border border-souk-hair text-[13px] leading-none text-souk-muted transition hover:border-souk-peach/40 hover:text-souk-peach focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
                       >
                         ×
                       </button>

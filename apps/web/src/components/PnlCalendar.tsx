@@ -144,7 +144,7 @@ export function PnlCalendar({
             aria-label="Previous month"
             disabled={!canBack}
             onClick={() => setMonthOffset((o) => Math.min(currentMonth, o + 1))}
-            className="flex h-7 w-7 items-center justify-center rounded-none border border-souk-hair bg-souk-surface2/50 text-souk-steel transition-colors duration-150 hover:bg-souk-surface2 hover:text-souk-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-souk-data/60 disabled:pointer-events-none disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-none border border-souk-hair bg-souk-surface2/50 text-souk-steel transition-colors duration-150 hover:bg-souk-surface2 hover:text-souk-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-souk-data/60 disabled:pointer-events-none disabled:opacity-30"
           >
             <svg
               viewBox="0 0 16 16"
@@ -164,7 +164,7 @@ export function PnlCalendar({
             aria-label="Next month"
             disabled={!canForward}
             onClick={() => setMonthOffset((o) => Math.max(0, o - 1))}
-            className="flex h-7 w-7 items-center justify-center rounded-none border border-souk-hair bg-souk-surface2/50 text-souk-steel transition-colors duration-150 hover:bg-souk-surface2 hover:text-souk-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-souk-data/60 disabled:pointer-events-none disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-none border border-souk-hair bg-souk-surface2/50 text-souk-steel transition-colors duration-150 hover:bg-souk-surface2 hover:text-souk-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-souk-data/60 disabled:pointer-events-none disabled:opacity-30"
           >
             <svg
               viewBox="0 0 16 16"

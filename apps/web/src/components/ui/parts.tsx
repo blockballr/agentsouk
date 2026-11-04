@@ -98,7 +98,7 @@ export function RatingBoxes({
   size?: 'sm' | 'md'
   label: string
 }) {
-  const box = size === 'md' ? 'h-8 w-8 text-sm' : 'h-7 w-7 text-[12px]'
+  const box = size === 'md' ? 'h-8 w-8 text-sm' : 'h-8 w-8 text-[12px]'
   const lit = 'border-highlighter-green/70 bg-highlighter-green/15 text-press-black'
   const dim = 'border-slate-verdant/40 text-newsprint-gray'
   return (
