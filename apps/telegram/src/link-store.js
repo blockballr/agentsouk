@@ -106,6 +106,18 @@ export async function telegramForWallet(wallet) {
   return null;
 }
 
+export async function listTelegramLinks() {
+  if (sql && (await ensureTables())) {
+    try {
+      const rows = await sql`select telegram_id, wallet from telegram_link`;
+      return rows.map((row) => ({ telegramId: row.telegram_id, wallet: row.wallet }));
+    } catch {
+      // fall through
+    }
+  }
+  return [...memory.values()].map((row) => ({ telegramId: row.telegramId, wallet: row.wallet }));
+}
+
 // a short code lets the wallet be linked from a normal browser, where the
 // WalletConnect handoff is not blocked by Telegram's webview
 export async function createLinkCode(telegramId) {

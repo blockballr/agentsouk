@@ -13,6 +13,7 @@ export function linkTelegram(input: {
 
 export function walletForTelegram(telegramId: string): Promise<string | null>;
 export function telegramForWallet(wallet: string): Promise<string | null>;
+export function listTelegramLinks(): Promise<Array<{ telegramId: string; wallet: string }>>;
 
 export function createLinkCode(
   telegramId: string,

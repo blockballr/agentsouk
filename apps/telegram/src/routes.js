@@ -3,7 +3,7 @@
 
 import { getAddress, verifyMessage } from "viem";
 import { telegramBotToken, verifyInitData, sendTelegramMessage, webAppUrl } from "./telegram.js";
-import { linkTelegram, walletForTelegram, createLinkCode, consumeLinkCode } from "./link-store.js";
+import { linkTelegram, walletForTelegram, createLinkCode, consumeLinkCode, listTelegramLinks } from "./link-store.js";
 import { telegramLinkMessage } from "./link-message.js";
 
 const MAX_BODY = 64 * 1024;
@@ -285,6 +285,36 @@ export async function handleLinkCode(req, res) {
     },
     origin,
   );
+}
+
+// A daily touch for every linked wallet: one message with the live quest rows
+// for the attached wallet, so no one has to wonder whether they are behind.
+export async function handleRemind(req, res) {
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
+  if (!telegramBotToken() || !secret) {
+    return json(res, 503, { ok: false, error: "telegram is not configured" });
+  }
+  if (req.headers["x-telegram-bot-api-secret-token"] !== secret) {
+    return json(res, 401, { ok: false, error: "unauthorized" });
+  }
+  const links = await listTelegramLinks().catch(() => []);
+  let notified = 0;
+  let skipped = 0;
+  let failed = 0;
+  for (const row of links) {
+    try {
+      const progress = await questProgress(row.wallet);
+      if (!progress || progress.team || progress.completed) {
+        skipped += 1;
+        continue;
+      }
+      await sendTelegramMessage(row.telegramId, questLines(progress));
+      notified += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  return json(res, 200, { ok: true, total: links.length, notified, skipped, failed });
 }
 
 export async function handleLink(req, res) {

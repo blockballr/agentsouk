@@ -1,9 +1,13 @@
 {
   "framework": null,
+  "crons": [
+    { "path": "/cron/remind", "schedule": "0 13 * * *" }
+  ],
   "rewrites": [
     { "source": "/telegram/webhook", "destination": "/api/webhook" },
     { "source": "/telegram/link", "destination": "/api/link" },
     { "source": "/telegram/link-code", "destination": "/api/link-code" },
+    { "source": "/cron/remind", "destination": "/api/remind" },
     { "source": "/health", "destination": "/api/health" }
   ],
   "functions": {
