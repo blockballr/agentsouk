@@ -77,7 +77,7 @@ export function MarketplacePage() {
   // no sort named reads as score, the chain's first metric; reachability is not
   // a choice here, it settles the ties underneath whichever metric is picked,
   // and job capability leads every one of them
-  const type = (sp.get('type') ?? 'jobs') as 'all' | 'jobs' | 'x402' | 'vault'
+  const type = (sp.get('type') ?? 'vault') as 'all' | 'jobs' | 'x402' | 'vault'
   const metric = (sp.get('metric') ?? 'score') as 'score' | 'newest' | 'feedback' | 'health'
   const pcs = sp.get('pcs') === '1'
   // first-party agents, the same owner fact the cards disclose
