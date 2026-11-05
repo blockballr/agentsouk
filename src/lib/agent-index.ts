@@ -113,6 +113,30 @@ export function recentAdmissions(
     .slice(0, Math.max(0, limit));
 }
 
+// a disclosed first-party placement: one agent we operate, newest admission
+// first, only while it belongs to the filtered set and answered a probe. it
+// rides above the ranking and never changes it.
+export function selectFeatured(
+  items: AgentSummary[],
+  verifications: Map<string, { status?: string }> | undefined,
+  options: { houseOperator: string; queryPresent: boolean; limit?: number },
+): AgentSummary[] {
+  if (options.queryPresent) return [];
+  const house = options.houseOperator.toLowerCase();
+  return items
+    .filter((a) => a.owner_address?.toLowerCase() === house)
+    .filter((a) => {
+      const status = verifications?.get(String(a.token_id))?.status;
+      return status === "online" || status === "delivered";
+    })
+    .sort((a, b) => {
+      const admitted = (x: AgentSummary) =>
+        Date.parse((x as { admitted_at?: string }).admitted_at ?? "") || Date.parse(x.created_at);
+      return admitted(b) - admitted(a);
+    })
+    .slice(0, options.limit ?? 1);
+}
+
 export function isShelfReady(a: {
   a2a_endpoint?: string | null;
   mcp_server?: string | null;

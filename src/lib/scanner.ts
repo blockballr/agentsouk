@@ -33,6 +33,7 @@ import {
   snapshotEndpointRegime,
   summaryFromDetail,
   recentAdmissions,
+  selectFeatured,
 } from "./agent-index";
 import {
   deleteShelfAgent,
@@ -1224,8 +1225,7 @@ export async function refreshIndexFromLive(
         if (!index.agents.has(key)) added += 1;
         index.agents.set(key, summary);
       }
-      fetched += body.data.length;
-      done = page;
+      fetched += body.data.length;      done = page;
       if (!body.meta.pagination.hasMore) break;
     }
     // persist the admitted entries so the whole fleet, and the next process,
@@ -1351,6 +1351,8 @@ export interface QueryResult {
   limit: number;
   // bounded exposure for listings admitted in the last week that answered a probe
   justListed: AgentSummary[];
+  // one first-party agent, disclosed, only inside the filtered set
+  featured: AgentSummary[];
   // the sectors any served agent carries, so the shelf can offer a sector
   // filter exactly when one applies
   sectors?: string[];
@@ -1521,12 +1523,17 @@ export async function queryAgents(
     liveUpstreamTotal: index.liveUpstreamTotal,
   });
 
-  // bounded exposure for listings the ranking cannot carry yet
+  // a disclosed placement above the ranking, and bounded exposure for new listings
+  const featured = selectFeatured(items, verifications, {
+    houseOperator: HOUSE_OPERATOR,
+    queryPresent: Boolean(q && q.trim()),
+  });
   const justListed = recentAdmissions(items, verifications, Date.now(), 4);
 
   return {
     items: paged,
     total,
+    featured,
     justListed,
     page,
     limit,

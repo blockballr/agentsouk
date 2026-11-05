@@ -98,6 +98,7 @@ export function MarketplacePage() {
     counts: Record<string, number>
     onlineCounts: Record<string, number>
     justListed: AgentSummary[]
+    featured: AgentSummary[]
     // the joined sector list, only present when the server's summary carries it
     sectors: string[]
     total: number
@@ -141,6 +142,7 @@ export function MarketplacePage() {
             counts: r.counts,
             onlineCounts: r.onlineCounts,
             justListed: r.justListed,
+            featured: r.featured,
             sectors: r.sectors,
             total: r.total,
           })
@@ -502,6 +504,19 @@ export function MarketplacePage() {
             cards start directly under it and the pagination closes the same band */}
         <Section pad="pt-6 pb-16">
         <Stack gap={24}>
+        {result && result.featured.length > 0 ? (
+          <Stack gap={12}>
+            <Row align="center" gap={12} className="flex-wrap">
+              <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                Featured by Agent Souk
+              </Txt>
+              <Txt size={11} lead={16} tone="slate">
+                operated by us, shown here for that reason, not by rank
+              </Txt>
+            </Row>
+            <AgentGrid items={result.featured} shortlist={shortlist} onToggle={handleToggle} />
+          </Stack>
+        ) : null}
         {result && result.justListed.length > 0 ? (
           <Stack gap={12}>
             <Row align="center" gap={12} className="flex-wrap">

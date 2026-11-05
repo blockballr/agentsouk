@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
   // the detail route asks the same durable question, so a revoke recorded
   // elsewhere cannot leave a dead session showing live on the shelf
   const sessions = ranked.map((a) => findActiveSession(a.chain_id, a.token_id));
-  const listedSessions = (result.justListed ?? []).map((a) => findActiveSession(a.chain_id, a.token_id));
+  const listedSessions = [...(result.featured ?? []), ...(result.justListed ?? [])].map((a) => findActiveSession(a.chain_id, a.token_id));
   // revoked and edits are independent of each other and of the items mapping, so
   // read them together instead of one after the other
   const [revoked, edits] = await Promise.all([
@@ -149,7 +149,8 @@ export async function GET(req: NextRequest) {
   };
 
   const items = ranked.map((a, i) => enrich(a, sessions[i]));
-  const justListed = (result.justListed ?? []).map((a, i) => enrich(a, listedSessions[i]));
+  const featured = (result.featured ?? []).map((a, i) => enrich(a, listedSessions[i]));
+  const justListed = (result.justListed ?? []).map((a, i) => enrich(a, listedSessions[(result.featured ?? []).length + i]));
 
   const tEnd = performance.now();
   const tDeps = Math.max(tVerify, tCustom);
@@ -181,7 +182,8 @@ export async function GET(req: NextRequest) {
     // whether the store or the committed snapshot is serving
     indexStatus: result.indexStatus,
     items,
-    // new listings ride in their own bounded strip; the ranked page is unchanged
+    // placements above the ranking; the ranked page itself is unchanged
+    featured,
     justListed,
     // the proof strip reads both: snapshotTotal is how many agents the committed
     // snapshot holds, registryTotal how many the registry reports for this chain
