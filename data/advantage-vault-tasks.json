@@ -1,0 +1,136 @@
+{
+  "assembledAt": "2026-11-05T15:24:15.054Z",
+  "kind": "retrospective",
+  "network": {
+    "key": "testnet",
+    "status": "current",
+    "chainId": 97,
+    "name": "BSC testnet",
+    "asset": {
+      "symbol": "sUSD",
+      "name": "Agent Souk Test USD",
+      "address": "0x9332b1AA9B3d5826F0b9b9e1659D962d2dA13A53"
+    },
+    "explorer": "https://testnet.bscscan.com"
+  },
+  "methodology": "The two x402 agent captures are the delivered chain-97 hires recorded in data/advantage-tasks.json; their manual sides were re-run live on 5 November 2026. The vault capture is the real chain-56 HireVault hire 2, read from the receipt store and the on-chain trade rows. No new hire or transaction was created for this report. Manual cost is wall-clock time at 50 USD per hour.",
+  "tasks": [
+    {
+      "id": "task-1-health-factor",
+      "category": "health-factor",
+      "prompt": "Read the Venus Core position for BSC account 0xa09991fc5D8637bb4245737C3ebF26E24D653962\nand report the health factor to three decimals, the per-market collateral factor and the\nliquidation price, at a stated block. If the account carries no debt, say so plainly.",
+      "agent": {
+        "tokenId": "2238",
+        "name": "Keel",
+        "category": "health-factor",
+        "chainId": 97,
+        "settleMode": "prod",
+        "paymentId": "req_0xdb3247cccc07c7cf",
+        "txHash": "0x9960d82fdbfbbe81f2699e5b45cc6baf39b88e1068a49b7e9cd57eddbb39d77b",
+        "statedFeeUsd": 2
+      },
+      "quality": {
+        "grade": "good",
+        "score": 0.88,
+        "reason": "completed with 1 artifact part"
+      },
+      "agentOutput": "{\"healthFactor\":null,\"note\":\"this account carries no debt, so it has no health factor\",\"blockNumber\":\"124326683\"}",
+      "agentSeconds": 0.79,
+      "manualSeconds": 17.478,
+      "manualCostUsd": 0.2428,
+      "manualOutput": "rpc used: https://bsc-dataseed.binance.org\nvenus core comptroller (diamond): 0xfD36E2c2a6789Db23113685031d7F16329158384\nvenus oracle: 0x6592b5DE802159F3E74B2486b091D11a8256ab8A\nvBNB: cash=523365.833908 borrows=46735.913907 underlying=native BNB (18 dec) oraclePrice=$693.84 TVL=$395557610.14 exchangeRate=249470973836645337829825706\nvUSDT: cash=29556609.425844 borrows=142950016.342051 underlying=0x55d398326f99059fF775485246999027B3197955 (18 dec) oraclePrice=$1.00 TVL=$172329741.14 exchangeRate=266193640744855042058240959\nvUSDC: cash=4841771.246656 borrows=28518726.558650 underlying=0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d (18 dec) oraclePrice=$1.00 TVL=$33355375.97 exchangeRate=268207903186844666178401999\nvETH: cash=7179.042112 borrows=11311.474991 underlying=0x2170Ed0880ac9A755fd29B2688956BD959F933F8 (18 dec) oraclePrice=$2281.92 TVL=$42193837.70 exchangeRate=210632888707933754720719265\nvBTC: cash=4163.440498 borrows=1108.250892 underlying=0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c (18 dec) oraclePrice=$76799.12 TVL=$404861266.38 exchangeRate=203885099937188727758368667\nlargest real Venus Core market of the five probed (computed from the live reads above): vBTC at $404861266.38 TVL. Note: the Venus Core pool is in wind-down, so these TVLs are small by historical standards.\nvBTC listed=true collateralFactor=0.8 isComped=true\ncomptroller closeFactorMantissa: 500000000000000000 (0.5000 of debt repayable per liquidation)\nvBTC getAccountSnapshot(0xa09991fc5D8637bb4245737C3ebF26E24D653962): tokenBalance=0 (=0.00000000 underlying at exchangeRate 203885099937188727758368667) borrowBalance(raw)=0\nvBNB getAccountSnapshot(0xa09991fc5D8637bb4245737C3ebF26E24D653962): tokenBalance=0 (=0.00000000 underlying at exchangeRate 249470973836645337829825706) borrowBalance(raw)=0\nvUSDT getAccountSnapshot(0xa09991fc5D8637bb4245737C3ebF26E24D653962): tokenBalance=0 (=0.00000000 underlying at exchangeRate 266193643818943546278813922) borrowBalance(raw)=0\nvETH getAccountSnapshot(0xa09991fc5D8637bb4245737C3ebF26E24D653962): tokenBalance=0 (=0.00000000 underlying at exchangeRate 210632888707933754720719265) borrowBalance(raw)=0\nvUSDC getAccountSnapshot(0xa09991fc5D8637bb4245737C3ebF26E24D653962): tokenBalance=0 (=0.00000000 underlying at exchangeRate 268207903186844666178401999) borrowBalance(raw)=0\ncomptroller.getAccountLiquidity(0xa09991fc5D8637bb4245737C3ebF26E24D653962): err=0 liquidity=0 shortfall=0\nNO FUNDED VENUS POSITION FOUND at probed account 0xa09991fc5D8637bb4245737C3ebF26E24D653962: all probed vToken balances and borrows are zero and account liquidity is flat.\nASSESSING MARKET PARAMETERS, NOT A LIVE POSITION: the parameters above are for vBTC, the largest real Venus Core market of the five probed.\nHF formula: HF = (collateral value * collateralFactor) / debt value. Worked example on the real vBTC parameters above: supply 1 unit of collateral, borrow 0.3 units -> HF = (1 * 0.8) / 0.3 = 2.6667. Close factor 0.5000 limits liquidation repayment per pass.",
+      "verdict": {
+        "winner": "agent",
+        "notes": "Keel returned a direct Venus Core read for the probed account in 0.79s from the real settled hire req_0xdb3247cccc07c7cf on chain 97, ending at either a health factor and restore amount or an explicit no-debt verdict; the manual on-chain pass read the same account over public BSC RPC and, finding it empty, fell back to real market parameters (TVL ranking, exchange rate, collateral factor, close factor) with a worked health-factor formula in 12.49s. The agent answers the question that was asked; the manual pass wins on raw-value transparency."
+      },
+      "manualError": false
+    },
+    {
+      "id": "task-2-yield",
+      "category": "yield",
+      "prompt": "Quote the net supply APR for lending USDT on Venus on BNB Smart Chain at a 1000 USD\nsize, and name the block you read.",
+      "agent": {
+        "tokenId": "2162",
+        "name": "Sluicegate",
+        "category": "yield",
+        "chainId": 97,
+        "settleMode": "prod",
+        "paymentId": "req_0x9145abf29b877542",
+        "txHash": "0x2ee4a29a6dc3f1bf7df4999a25ea23f73d35f6fb94850e023d14ddaaddd9228a",
+        "statedFeeUsd": 2
+      },
+      "quality": {
+        "grade": "good",
+        "score": 0.65,
+        "reason": "completed with 1 artifact part"
+      },
+      "agentOutput": "{\"error\":\"the task does not state the asset, the size in USD\",\"need\":\"net APR depends on the asset and the size being moved, so neither can be assumed\"}",
+      "agentSeconds": 0.57,
+      "manualSeconds": 3.113,
+      "manualCostUsd": 0.0432,
+      "manualOutput": "source: https://yields.llama.fi/pools (DefiLlama public API), captured live; 25 BSC stablecoin pools with TVL >= 1,000,000 USD\ntop BSC stablecoin pools by APY (live):\nrank | project | pool | APY % | TVL USD\n1 | unitas-usdu | SUSDU | 11.64 | 35,245,723\n2 | lista-lending | SATUSDT | 10.08 | 1,531,567\n3 | zerobase-cedefi | USDT | 8.76 | 16,431,133\n4 | zerobase-cedefi | USDC | 8.76 | 1,804,011\n5 | aegis-yusd | YUSD | 8.14 | 1,229,178\nproposed allocation (max 30% per venue, stablecoin-only, TVL floor 1M USD as risk parameters):\n30% -> unitas-usdu SUSDU (11.64% APY)\n25% -> lista-lending SATUSDT (10.08% APY)\n20% -> zerobase-cedefi USDT (8.76% APY)\n15% -> zerobase-cedefi USDC (8.76% APY)\n10% -> aegis-yusd YUSD (8.14% APY)\nblended APY at proposed weights: 9.89%",
+      "verdict": {
+        "winner": "manual",
+        "notes": "Sluicegate's delivered hire on chain 97 returned no APY figure, so it does not answer the yield question and the manual DefiLlama pass wins. agent 0.57s running to delivered vs manual 3.11s ($0.04 at 50 USD/h)."
+      },
+      "manualError": false
+    },
+    {
+      "id": "task-3-vault-grid",
+      "category": "grid-trading",
+      "kind": "vault",
+      "agent": {
+        "tokenId": "376593",
+        "name": "Souk Grid Pilot",
+        "category": "grid-trading",
+        "chainId": 56,
+        "policy": "grid",
+        "wallet": "0x5d328e476f9d81bb52dbaa37895804775e49731f"
+      },
+      "vault": {
+        "address": "0x028129c230123a46f4305ce0d2b29f8ac5255149",
+        "hireId": "2",
+        "depositUsd": 10,
+        "openedAt": "2026-10-26T21:19:18.995Z",
+        "lastAt": "2026-10-26T22:06:33.492Z",
+        "windowSeconds": 2834.5,
+        "receipts": 7,
+        "traded": 2,
+        "refused": 2,
+        "skipped": 3,
+        "startValueUsd": 10,
+        "endValueUsd": 9.996202,
+        "realizedPnlUsd": -0.003798,
+        "pnlPct": -0.038,
+        "txHashes": [
+          "0x31c31f4543c697e06e1c293b7bffd3513a5569fbe783ef225330b3bf7dd018f4",
+          "0xdecac4060bd6bbe599913a55b374ddf65f8f4804adb42263a42a0a3dcab396f5"
+        ]
+      },
+      "agentOutput": "{\n  \"policy\": \"Grid\",\n  \"hireId\": \"2\",\n  \"depositUsd\": 10,\n  \"startValueUsd\": 10,\n  \"endValueUsd\": 9.996202,\n  \"realizedPnlUsd\": -0.003798,\n  \"trades\": 2,\n  \"refused\": 2,\n  \"skipped\": 3\n}",
+      "agentSeconds": 2834.5,
+      "manualSeconds": 4.27,
+      "manualCostUsd": 0.0593,
+      "manualOutput": "source: https://data-api.binance.vision/api/v3/klines BNBUSDT 1d x30, captured live\nlast close: 693.81 USDT; 30d observed range: 680 - 779.68\ndaily log-return stdev: 0.023051 (2.31%/day); 30d scaled sigma: 12.63%\ngrid bounds (last close +- 1.28 * sigma30, ~80% band): lower=581.69 upper=805.93\nlevels: 8 evenly spaced\nspacing between levels: 4.617% of price per level\nrisk parameters: taker fee 0.1% per side (0.2% per completed grid trade); profit per completed grid trade = 4.417% before slippage; stop if price closes outside [581.69, 805.93]",
+      "manualError": false,
+      "verdict": {
+        "winner": "manual",
+        "notes": "The vault agent executed inside a 47m 15s window and returned 9.996202 USDT from a 10 USDT deposit, a realized execution cost of 0.003798 USDT. The manual pass computed a grid plan in 4.27s at $0.06. Manual wins on time and cost; the vault is the only side that actually executed."
+      }
+    }
+  ],
+  "notCaptured": [
+    {
+      "category": "yield",
+      "reason": "No live hire of the first-party Souk Yield Lens vault agent exists on chain 56; the agent is listed and executor-ready, but no funded hire has executed."
+    },
+    {
+      "category": "health-factor",
+      "reason": "No health-factor vault lane is wired. The Porter sweep is not called by /api/vault/execute, and the first-party health agent is an escrow seller, not a vault agent."
+    },
+    {
+      "category": "grid-trading",
+      "reason": "No third-party grid agent has a delivered paid hire in the current marketplace. Chain-97 grid agents quote an ERC-8183 job rather than deliver a plan."
+    }
+  ]
+}
