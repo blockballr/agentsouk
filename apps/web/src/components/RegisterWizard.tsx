@@ -296,12 +296,21 @@ export function RegisterWizard({
       const res = await fetch(`${base}/agents/${chainId}/${id}`)
       const body = (await res.json()) as Record<string, unknown>
       const agent = ((body?.data ?? body) ?? {}) as Record<string, unknown>
-      const url = String(agent.a2a_endpoint ?? agent.agent_url ?? agent.mcp_server ?? '').trim()
-      if (!url) {
+      // the card itself declares how the agent can be called, so the protocol
+      // checkboxes follow the card instead of the lister re-checking by memory
+      const a2a = String(agent.a2a_endpoint ?? agent.agent_url ?? '').trim()
+      const mcp = String(agent.mcp_server ?? '').trim()
+      if (!a2a && !mcp) {
         setImportErr('That listing has no callable endpoint.')
         return
       }
-      set('endpoint', url)
+      const kinds = [
+        ...(a2a ? ['A2A' as const] : []),
+        ...(mcp ? ['MCP' as const] : []),
+        ...(Array.isArray(draft.endpointKinds) && draft.endpointKinds.includes('web') ? ['web' as const] : []),
+      ]
+      set('endpoint', a2a || mcp)
+      set('endpointKinds', kinds)
     } catch {
       setImportErr('Could not read that token.')
     } finally {
