@@ -7,8 +7,8 @@
 import { recoverMessageAddress } from 'viem'
 import {
   changeWallet as changeProvider,
-  clearWalletChoice,
   connectProvider,
+  disconnectProvider,
   getActiveAccount,
   getProvider,
   watchActiveAccount,
@@ -90,6 +90,9 @@ async function verified(address: string): Promise<SignIn | null> {
 let active: string | null = null
 let watching = false
 let pending: Promise<void> | null = null
+// set by an explicit disconnect, cleared by an explicit connect: a report that
+// was already in flight when the user disconnected must not restore the session
+let suspended = false
 const watchers = new Set<(account: string | null) => void>()
 
 function emit(): void {
@@ -113,12 +116,18 @@ function endSession(): void {
 // list, another chain) ends it too; the promise resolves once decided, so a
 // restore read cannot answer before the record has been checked
 function adopt(account: string | null): Promise<void> {
-  if (!account) {
+  if (!account || suspended) {
     endSession()
     pending = Promise.resolve()
     return pending
   }
   pending = verified(account).then((record) => {
+    // the wallet may have answered while the user was disconnecting: the
+    // disconnect wins, even if the signature still verifies
+    if (suspended) {
+      endSession()
+      return
+    }
     if (record) setSession(account)
     else endSession()
   })
@@ -185,6 +194,9 @@ async function signIn(address: string): Promise<void> {
 // must sign, and a refusal stores nothing
 export async function connectWallet(): Promise<string> {
   const account = await connectProvider()
+  // the account request succeeded, so this is a deliberate reconnect: the
+  // stored record can be adopted again and the disconnect is over
+  suspended = false
   if (!(await verified(account))) await signIn(account)
   setSession(account)
   return account
@@ -217,21 +229,28 @@ export async function changeWallet(): Promise<string | null> {
   endSession()
   const account = await changeProvider()
   if (!account) return null
+  // a picked wallet is a deliberate reconnect, even if the picker replaced a
+  // wallet the user had disconnected
+  suspended = false
   if (!(await verified(account))) await signIn(account)
   setSession(account)
   return account
 }
 
-// the page forgets the session and the wallet choice; the records stay, so the
-// same address signing in again adopts without a new signature
+// the page forgets the session and the wallet choice, and remembers the
+// disconnect so a reload stays disconnected; the records stay, so the same
+// address signing in again adopts without a new signature
 export function disconnectWallet(): void {
+  suspended = true
   endSession()
-  clearWalletChoice()
+  disconnectProvider()
 }
 
 // forget this browser entirely for the active address: its record is cleared,
 // so nothing re-adopts it on a later switch or reload until it signs in again
 export function signOut(): void {
   if (active) drop(active)
+  suspended = true
   endSession()
+  disconnectProvider()
 }

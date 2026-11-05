@@ -7,6 +7,7 @@ const m = vi.hoisted(() => ({
   connectProvider: vi.fn(),
   changeWallet: vi.fn(),
   clearWalletChoice: vi.fn(),
+  disconnectProvider: vi.fn(),
   getActiveAccount: vi.fn(),
   getProvider: vi.fn(),
   watchActiveAccount: vi.fn(),

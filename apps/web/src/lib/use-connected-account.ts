@@ -1,14 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useActiveAccount } from './use-active-account'
 import { watchSession } from './wallet-session'
 
-// Who the page is acting for: the wallet's live account when it has one, and
-// otherwise the address this browser signed in with. The two disagree in
-// practice, because an extension does not always report accounts back on a
-// fresh tab while the session record still stands.
+// Who the page is acting for: the address this browser signed in with, never
+// whatever the wallet happens to expose. An extension can keep answering
+// eth_accounts after a disconnect, and a switch to an address with no record
+// must read as disconnected instead of becoming the new identity.
 export function useConnectedAccount(): string | null {
-  const active = useActiveAccount()
   const [session, setSession] = useState<string | null>(null)
   useEffect(() => watchSession(setSession), [])
-  return active ?? session
+  return session
 }

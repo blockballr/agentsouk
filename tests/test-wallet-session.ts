@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
   connectProvider: vi.fn(),
   changeWallet: vi.fn(),
   clearWalletChoice: vi.fn(),
+  disconnectProvider: vi.fn(),
   getActiveAccount: vi.fn(),
   getProvider: vi.fn(),
   watchActiveAccount: vi.fn(),
@@ -96,6 +97,7 @@ beforeEach(() => {
   m.declined = false;
   m.changeWallet.mockResolvedValue(null);
   m.clearWalletChoice.mockReset();
+  m.disconnectProvider.mockReset();
   storage.clear();
 });
 
@@ -216,7 +218,7 @@ describe("a switch adopts or disconnects, never impersonates", () => {
 });
 
 describe("forgetting", () => {
-  it("disconnect keeps the record, so signing in again adopts without a prompt", async () => {
+  it("disconnect keeps the record but stays disconnected until a deliberate connect", async () => {
     m.account = A;
     await connectWallet();
 
@@ -224,9 +226,15 @@ describe("forgetting", () => {
 
     expect(await sessionAccount()).toBeNull();
     expect(Object.keys(stored())).toEqual([A.toLowerCase()]);
-    expect(m.clearWalletChoice).toHaveBeenCalledTimes(1);
+    expect(m.disconnectProvider).toHaveBeenCalledTimes(1);
 
+    // a late wallet report must not bring the session back
     report(A);
+    expect(await sessionAccount()).toBeNull();
+
+    // the deliberate connect adopts the remembered record without a new prompt
+    const addr = await connectWallet();
+    expect(addr).toBe(A);
     expect(await sessionAccount()).toBe(A);
     expect(m.signCalls).toBe(1);
   });
@@ -238,10 +246,14 @@ describe("forgetting", () => {
     signOut();
     expect(await sessionAccount()).toBeNull();
     expect(stored()).toEqual({});
+    expect(m.disconnectProvider).toHaveBeenCalledTimes(1);
 
     report(A);
     expect(await sessionAccount()).toBeNull();
-    expect(m.signCalls).toBe(1);
+
+    // a deliberate connect after sign-out is a fresh sign-in
+    await connectWallet();
+    expect(m.signCalls).toBe(2);
   });
 });
 

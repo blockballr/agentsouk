@@ -146,6 +146,7 @@ export interface WalletOption {
 const LEGACY_RDNS = "legacy";
 const WALLETCONNECT_RDNS = "walletconnect";
 const STORAGE_KEY = "agora.wallet.rdns";
+const DISCONNECTED_KEY = "agora.wallet.disconnected";
 
 const announced = new Map<string, Eip6963ProviderDetail>();
 
@@ -185,6 +186,30 @@ function storeRdns(rdns: string | null): void {
 
 export function hasChosenWallet(): boolean {
   return readStoredRdns() !== null;
+}
+
+// an explicit disconnect has to outlive the wallet's own memory: an extension
+// that keeps answering eth_accounts would otherwise re-adopt the address on the
+// next read or reload, so the intent is stored beside the wallet choice
+function readDisconnected(): boolean {
+  try {
+    return localStorage.getItem(DISCONNECTED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function storeDisconnected(disconnected: boolean): void {
+  try {
+    if (disconnected) localStorage.setItem(DISCONNECTED_KEY, "1");
+    else localStorage.removeItem(DISCONNECTED_KEY);
+  } catch {
+    // private mode: the disconnect lasts until this page closes
+  }
+}
+
+export function isWalletDisconnected(): boolean {
+  return readDisconnected();
 }
 
 // wait for late announcers before trusting the legacy fallback or a single
@@ -401,6 +426,34 @@ export function clearWalletChoice(): void {
   }
 }
 
+// explicit disconnect: ask the wallet to drop this site's permission (best
+// effort, not every wallet implements revoking) and remember the decision, so
+// a wallet that keeps reporting eth_accounts cannot re-adopt the address on a
+// reload. the stored sign-in records stay for a deliberate reconnect.
+export function disconnectProvider(): void {
+  const chosen = readStoredRdns();
+  // resolve before clearing the choice: the choice is what tells getProvider
+  // which wallet to ask. walletconnect is ended by clearWalletChoice itself,
+  // and a fresh pairing must not be started just to revoke it.
+  const provider =
+    chosen && chosen !== WALLETCONNECT_RDNS
+      ? getProvider().catch(() => null)
+      : Promise.resolve(null);
+  storeDisconnected(true);
+  emitActiveAccount(null);
+  clearWalletChoice();
+  void provider.then((p) => {
+    try {
+      void p?.request({
+        method: "wallet_revokePermissions",
+        params: [{ eth_accounts: {} }],
+      }).catch(() => {});
+    } catch {
+      // wallet refused or does not implement revoking
+    }
+  });
+}
+
 // --- EIP-1193 account/chain change handling ---
 // an empty accountsChanged array (or leaving BSC) invalidates the stored connection
 
@@ -426,7 +479,9 @@ function handleAccountsChanged(accounts: unknown): void {
   // a switch inside the wallet invalidates the stored choice, so the next
   // connect re-discovers instead of reusing the wallet the user left
   clearWalletChoice();
-  emitActiveAccount(list[0]);
+  // a disconnect stays in force until an explicit connect, so an extension
+  // that re-announces its account cannot bring the page back on its own
+  emitActiveAccount(readDisconnected() ? null : list[0]);
 }
 
 function handleChainChanged(chainId: unknown): void {
@@ -489,6 +544,9 @@ export async function activeAccountMatches(address: string): Promise<boolean> {
 // the wallet's own active account at call time: eth_accounts returns permitted accounts
 // and the first is the active one, so signing self-corrects on account switch
 export async function getActiveAccount(): Promise<string | null> {
+  // a disconnect is the page's decision, not the wallet's: until an explicit
+  // connect clears it, no provider report may bring the account back
+  if (readDisconnected()) return null;
   try {
     const accounts = (await (await getProvider()).request({ method: "eth_accounts" })) as string[];
     return Array.isArray(accounts) && accounts.length > 0 ? accounts[0] : null;
@@ -515,6 +573,9 @@ export async function getChainTimestamp(): Promise<number | null> {
 async function requestAccounts(provider: Eip1193Provider): Promise<string> {
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   if (!accounts?.length) throw new Error("No account authorized.");
+  // an explicit connect is what ends a disconnect; only a successful account
+  // request gets here, so a dismissed picker leaves the disconnect in force
+  storeDisconnected(false);
   attachProviderListeners(provider);
   // a request does not always emit accountsChanged, so the connection's own
   // account is pushed to the watchers here; every surface follows it

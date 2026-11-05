@@ -39,7 +39,7 @@ import {
   setTargetChain,
 } from '../lib/wallet'
 import { changeWallet, connectWallet, disconnectWallet } from '../lib/wallet-session'
-import { useActiveAccount } from '../lib/use-active-account'
+import { useConnectedAccount } from '../lib/use-connected-account'
 import {
   deliveryErrorText,
   fetchHireRequirements,
@@ -284,9 +284,10 @@ export function AgentDetailPage() {
   const [chainOpen, setChainOpen] = useState(false)
   const [descOpen, setDescOpen] = useState(false)
 
-  // the viewer's wallet, watched rather than read once: a switch inside the
-  // wallet re-points the session controls at the new account
-  const viewer = useActiveAccount()
+  // the viewer's session, watched rather than read once: a switch inside the
+  // wallet adopts a recorded address or disconnects instead of reading the
+  // wallet's raw account as the viewer
+  const viewer = useConnectedAccount()
   const [viewerKnown, setViewerKnown] = useState(false)
   useEffect(() => {
     if (viewer !== null) setViewerKnown(true)
@@ -1763,9 +1764,9 @@ function BoostPanel({
     missing: string[]
   } | null>(null)
 
-  // the owner's wallet, watched: the boost card is the owner's affordance and a
-  // switch inside the wallet hands it to the other account without a reload
-  const account = useActiveAccount()
+  // the owner's session, watched: the boost card is the owner's affordance and
+  // a switch inside the wallet adopts a recorded account without a reload
+  const account = useConnectedAccount()
   useEffect(() => {
     void getBoostStatus(Number(chainId), tokenId)
       .then((s) => setStatus({ eligible: s.eligible, checks: s.checks, missing: s.missing }))

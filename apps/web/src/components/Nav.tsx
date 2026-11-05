@@ -6,7 +6,7 @@ import { QuickSearch } from './QuickSearch'
 import { NotificationBell } from './NotificationBell'
 import { Wordmark } from './Wordmark'
 import { connectWallet, disconnectWallet, signOut } from '../lib/wallet-session'
-import { useActiveAccount } from '../lib/use-active-account'
+import { useConnectedAccount } from '../lib/use-connected-account'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { useLocalProfile } from '../lib/profile'
@@ -59,7 +59,7 @@ export function Nav() {
   // the profile chip says the signed-in address rather than spelling out Profile:
   // the session is watched, so a switch inside the wallet adopts a recorded
   // address or disconnects rather than moving the chip to whoever is active
-  const wallet = useActiveAccount()
+  const wallet = useConnectedAccount()
   return (
     <header className="relative z-10 border-b border-souk-hair bg-souk-canvas">
       <div className="site-frame flex h-[62px] items-center justify-between">

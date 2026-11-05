@@ -142,3 +142,48 @@ describe("connectProvider against a stale walletconnect choice", () => {
     expect(storage.get(KEY)).toBe("io.rabby.test");
   });
 });
+
+describe("explicit disconnect", () => {
+  it("keeps the provider's account out until a deliberate connect", async () => {
+    announce("io.rabby.disconnect", "Rabby Disconnect");
+    storage.set(KEY, "legacy");
+    fakeWindow.ethereum = stubWallet();
+
+    wallet.disconnectProvider();
+
+    expect(storage.has(KEY)).toBe(false);
+    expect(wallet.isWalletDisconnected()).toBe(true);
+    // the extension still answers eth_accounts with the account, but the page
+    // must not adopt it after the disconnect
+    expect(await wallet.getActiveAccount()).toBeNull();
+
+    pickerPick = "io.rabby.disconnect";
+    const account = await wallet.connectProvider();
+
+    expect(account).toBe(ACCOUNT);
+    expect(storage.get(KEY)).toBe("io.rabby.disconnect");
+    expect(wallet.isWalletDisconnected()).toBe(false);
+    expect(await wallet.getActiveAccount()).toBe(ACCOUNT);
+  });
+
+  it("asks the provider to revoke the site permission, best effort", async () => {
+    const calls: string[] = [];
+    fakeWindow.ethereum = {
+      request: async ({ method }) => {
+        calls.push(method);
+        if (method === "eth_requestAccounts" || method === "eth_accounts") return [ACCOUNT];
+        if (method === "wallet_revokePermissions") return null;
+        throw new Error(`unexpected method ${method}`);
+      },
+      on: () => {},
+      removeListener: () => {},
+      isMetaMask: true,
+    };
+    storage.set(KEY, "legacy");
+
+    wallet.disconnectProvider();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(calls).toContain("wallet_revokePermissions");
+  });
+});
