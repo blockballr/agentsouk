@@ -1125,6 +1125,7 @@ function skillsAreStale(entry: { skills?: unknown[]; skillsAt?: string }): boole
 // time; a failed pull leaves the snapshot untouched rather than emptying the shelf.
 export async function refreshIndexFromLive(
   maxPages = SHELF_REFRESH_PAGES,
+  startPage = 1,
 ): Promise<RefreshReport> {
   if (index.refreshing) {
     return {
@@ -1140,6 +1141,7 @@ export async function refreshIndexFromLive(
   index.lastRefreshAt = Date.now();
   const chainId = targetChainId();
   const pages = Math.max(1, Math.min(10, maxPages));
+  const firstPage = Math.max(1, Math.floor(startPage));
   let fetched = 0;
   let added = 0;
   let done = 0;
@@ -1150,7 +1152,7 @@ export async function refreshIndexFromLive(
   let hydrated = 0;
   try {
     await loadSnapshot();
-    for (let page = 1; page <= pages; page++) {
+    for (let page = firstPage; page < firstPage + pages; page++) {
       let body: ListResponse;
       try {
         body = await fetchAgentsPage(
@@ -1254,6 +1256,18 @@ export async function refreshIndexFromLive(
   };
 }
 
+// The newest page is not enough on its own: registrations arrive faster than a
+// minute, so an agent can fall past page one before any top up reads it, and a
+// listing that is never re-checked then stays off the shelf forever. Successive
+// top ups walk the first pages instead, deterministically across instances, so
+// coverage is complete within the span without costing more upstream calls.
+const REFRESH_PAGE_SPAN = 40;
+
+export function rotatingRefreshPage(now: number = Date.now()): number {
+  const slot = Math.floor(now / REFRESH_COOLDOWN_MS);
+  return 1 + (slot % REFRESH_PAGE_SPAN);
+}
+
 async function maybeRefreshShelf(): Promise<void> {
   if (!dueForRefresh(index.lastRefreshAt, Date.now(), REFRESH_COOLDOWN_MS)) return;
   // A due refresh is also the cadence at which this instance re-reads the fleet's
@@ -1261,7 +1275,7 @@ async function maybeRefreshShelf(): Promise<void> {
   // the database read; they write the same shelf shape, so the last writer wins.
   await Promise.all([
     mergeDurableShelf(true),
-    refreshIndexFromLive(SHELF_REFRESH_PAGES),
+    refreshIndexFromLive(SHELF_REFRESH_PAGES, rotatingRefreshPage()),
   ]);
   // The top up wrote the total it observed; this re-reads it, and any other
   // instance's write, on the same cadence as the shelf re-read.
