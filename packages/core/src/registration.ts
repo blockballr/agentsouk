@@ -30,4 +30,8 @@ export interface RegistrationDraft {
   // where a hire pays the agent, written into the registration document the
   // lister signs; absent means the document states no wallet
   agentWallet?: string
+  // the lister serves the registration document at their own domain: prepare
+  // reads it once and the chain carries that uri, so nothing is hosted here
+  selfHosted?: boolean
+  ownUri?: string
 }

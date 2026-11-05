@@ -250,6 +250,8 @@ export async function POST(req: NextRequest) {
       registry: registryAddress(confirmed.chainId),
       draft: confirmed.draft,
       createdAt: confirmed.confirmedAt ?? new Date().toISOString(),
+      // the uri the chain verified is what the shelf rebuild reads
+      agentUri: confirmed.agentUri,
     });
     admission = await admitConfirmedAgent(summary);
     // A fresh listing jumps the sweep queue so its badge reflects a real probe

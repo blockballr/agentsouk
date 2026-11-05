@@ -198,6 +198,9 @@ export interface AgentSummary {
   categoryScores?: Partial<Record<CategoryKey, number>>;
   verification?: Verification;
   pcs?: boolean;
+  // the uri the chain carries: a claim link or the lister's own domain, which
+  // the refresh re-reads when the lister hosts the document
+  offchainUri?: string;
   skills?: AgentCardSkill[];
   // when the card's skills were last read, so a changed card refreshes the shelf
   // instead of leaving a stale skill list that hides job capability
@@ -260,6 +263,9 @@ export interface AgentDetail {
   pcs?: boolean;
   sector?: "stocks";
   skills?: AgentCardSkill[];
+  // the agentUri the chain carries; the rebuild re-derives the summary from
+  // the document it serves, whether that is our claim or the lister's domain
+  offchainUri?: string;
   // the card declares its own access: the seller issues the credentials
   accessGated?: boolean;
 }

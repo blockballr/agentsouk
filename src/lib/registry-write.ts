@@ -122,6 +122,17 @@ function isZeroAddress(value: string): boolean {
 // Brief item 4: what it does, how it is invoked, and an endpoint, since an agent nobody can call is not a listing.
 export function validateDraft(draft: RegistrationDraft): DraftValidation {
   const errors: string[] = [];
+  // a self hosted link's failures travel with the shared doc reader's checks
+  if (draft.selfHosted) {
+    const ownUri = (draft.ownUri ?? "").trim();
+    if (!ownUri) {
+      errors.push("Hosting your own document needs its link.");
+    } else if (!/^https:\/\//i.test(ownUri)) {
+      errors.push("Your document link must be https.");
+    } else if (ownUri.length > 300) {
+      errors.push("Your document link must be 300 characters or fewer.");
+    }
+  }
 
   const name = (draft.name ?? "").trim();
   if (!name) errors.push("Name is required.");

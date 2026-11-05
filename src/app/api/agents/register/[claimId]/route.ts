@@ -16,6 +16,14 @@ export async function GET(
   if (!claim) {
     return NextResponse.json({ error: "claim not found" }, { status: 404 });
   }
+  // a self hosted claim hosts nothing here: the uri the chain carries is the
+  // lister's own domain, so a document at a claim url would be a second copy
+  if (claim.selfHosted) {
+    return NextResponse.json(
+      { error: "this listing serves its registration document itself" },
+      { status: 410 },
+    );
+  }
   // 410, not 404: the url was published as a permanent agentURI, so the document is retired, not guessed
   if (isClaimExpired(claim)) {
     return NextResponse.json(

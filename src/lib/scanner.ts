@@ -51,6 +51,8 @@ import {
   type ShelfStoreMode,
   summaryFromRow,
 } from "./shelf-store";
+import { draftFromSelfHostedFile, readSelfHostedDocumentCached } from "@/lib/self-hosted-doc";
+import type { ListableCategory } from "@agora/core";
 
 const BASE = "https://8004scan.io/api/v1/public";
 
@@ -382,6 +384,9 @@ export function summaryFromRegistration(input: {
   registry: string;
   draft: RegistrationDraft;
   createdAt: string;
+  // the agentUri the chain carries: a claim link or a linker's own domain, so
+  // the rebuild can re-read the document instead of freezing the draft
+  agentUri?: string;
 }): AgentSummary {
   const draft = input.draft;
   const name = (draft.name ?? "").trim();
@@ -425,6 +430,7 @@ export function summaryFromRegistration(input: {
     created_at: input.createdAt,
     category,
     categoryScores: classified.scores,
+    ...(input.agentUri ? { offchainUri: input.agentUri } : {}),
     ...(declared ? { declared_category: declared } : {}),
   };
 }
@@ -1043,6 +1049,8 @@ export interface RefreshReport {
   total: number;
   upstreamTotal: number | null;
   error: string | null;
+  // how many listings were re-derived from the document the chain carries
+  docsReread?: number;
 }
 
 // How many newly admitted agents to inspect for their declared interface per top
@@ -1054,6 +1062,55 @@ const CAPTURE_PER_TOPUP = 24;
 // must stop being shelved as a direct-only listing. Re-read the card after this
 // window so the shelf follows the card rather than freezing its first reading.
 const SKILLS_TTL_MS = 6 * 60 * 60 * 1000;
+
+// How many foreign documents one refresh may re-read, so a dead host cannot
+// stall the top up behind sequential timeouts.
+const DOC_REREAD_PER_REFRESH = 6;
+
+// The uri the chain carries can be a lister's own domain, whose document edits
+// after confirm: re-read it per refresh and re-derive the summary from the
+// document as it stands, keeping everything the document does not carry from
+// the existing entry. Bounded and served through the ttl cache the shared doc
+// reader keeps, so two refreshes in one window fetch once.
+async function rereadSelfHostedDocs(chainId: number): Promise<number> {
+  const candidates = [...index.agents.values()].filter(
+    (s) =>
+      s.chain_id === chainId &&
+      s.offchainUri &&
+      !s.offchainUri.includes("/api/agents/register/"),
+  );
+  if (candidates.length === 0) return 0;
+  let updated = 0;
+  for (const existing of candidates.slice(0, DOC_REREAD_PER_REFRESH)) {
+    const read = await readSelfHostedDocumentCached(existing.offchainUri!);
+    if (!read.ok) continue;
+    const category = (LISTABLE_CATEGORIES as readonly string[]).includes(
+      existing.declared_category ?? existing.category ?? "",
+    )
+      ? ((existing.declared_category ?? existing.category) as ListableCategory)
+      : "";
+    const checked = draftFromSelfHostedFile(read.file, {
+      name: "",
+      description: "",
+      category,
+    });
+    if (!checked.ok) continue;
+    const refreshed = summaryFromRegistration({
+      chainId: existing.chain_id,
+      tokenId: existing.token_id,
+      owner: existing.owner_address,
+      registry: existing.contract_address,
+      draft: checked.draft,
+      createdAt: existing.created_at,
+      agentUri: existing.offchainUri,
+    });
+    const entry: AgentSummary = { ...existing, ...refreshed };
+    index.agents.set(indexKey(entry.chain_id, entry.token_id), entry);
+    await saveShelfAgents([entry]).catch(() => {});
+    updated += 1;
+  }
+  return updated;
+}
 
 function skillsAreStale(entry: { skills?: unknown[]; skillsAt?: string }): boolean {
   if (!entry.skills?.length) return true;
@@ -1086,6 +1143,7 @@ export async function refreshIndexFromLive(
   let done = 0;
   let error: string | null = null;
   let observedTotal: number | null = null;
+  let docsReread = 0;
   const admitted: AgentSummary[] = [];
   let hydrated = 0;
   try {
@@ -1171,6 +1229,7 @@ export async function refreshIndexFromLive(
     // the registry total this pull observed is shared too, so the denominator is
     // the same on an instance that just topped up and one that never did
     await observeRegistryTotal(chainId, observedTotal);
+    docsReread = await rereadSelfHostedDocs(chainId).catch(() => 0);
   } finally {
     index.refreshing = false;
     index.lastWarmAt = Date.now();
@@ -1189,6 +1248,7 @@ export async function refreshIndexFromLive(
     total: index.agents.size,
     upstreamTotal: index.liveUpstreamTotal,
     error,
+    ...(docsReread ? { docsReread } : {}),
   };
 }
 

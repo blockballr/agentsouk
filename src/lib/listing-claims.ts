@@ -18,6 +18,9 @@ export interface ListingClaim {
   createdAt: string;
   confirmedAt: string | null;
   expiresAt: number;
+  // set when the lister serves the document at their own domain: nothing is
+  // hosted at a claim url for this listing, and confirm verifies the foreign uri
+  selfHosted?: true;
 }
 
 const memory = new Map<string, ListingClaim>();
@@ -168,6 +171,7 @@ export async function createClaim(input: {
   owner: string;
   agentUri: string;
   draft: RegistrationDraft;
+  selfHosted?: boolean;
 }): Promise<ListingClaim> {
   const claim: ListingClaim = {
     claimId: input.claimId,
@@ -181,6 +185,7 @@ export async function createClaim(input: {
     createdAt: new Date().toISOString(),
     confirmedAt: null,
     expiresAt: Date.now() + CLAIM_TTL_MS,
+    ...(input.selfHosted ? { selfHosted: true as const } : {}),
   };
   memory.set(claim.claimId, claim);
   await persist(claim);

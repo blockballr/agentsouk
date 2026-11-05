@@ -1015,6 +1015,48 @@ export function RegisterWizard({
               </button>
             </details>
 
+            <div className="mt-5 rounded-[10px] border border-souk-hair bg-souk-surface2/60 p-3 sm:p-4">
+              <span className="block text-sm font-medium text-souk-ink">Who hosts the registration file?</span>
+              <label className="mt-2 flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={draft.selfHosted === true}
+                  disabled={busy || step !== 'form'}
+                  onChange={(e) => {
+                    set('selfHosted', e.target.checked)
+                    if (!e.target.checked) set('ownUri', '')
+                  }}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-souk-hair text-souk-sky focus:ring-souk-sky"
+                />
+                <span>
+                  <span className="block text-sm text-souk-ink">Host my registration file myself</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-souk-muted">
+                    Off by default: the server mints the document and serves it at its own address,
+                    which is the normal flow. On: the document lives at your own https address, and
+                    the registration records that address. It stays yours to edit; edits show on the
+                    shelf after the next refresh.
+                  </span>
+                </span>
+              </label>
+              {draft.selfHosted === true && (
+                <label className="mt-3 block">
+                  <span className="micro text-souk-muted">Your document link</span>
+                  <input
+                    value={(draft.ownUri ?? '').trim()}
+                    onChange={(e) => set('ownUri', e.target.value)}
+                    disabled={busy || step !== 'form'}
+                    className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
+                    placeholder="https://your-domain.example/agent.json"
+                  />
+                  <span className="mt-1.5 block text-xs leading-relaxed text-souk-muted">
+                    The server reads it when you continue: it must be registration-v1, its name and
+                    a2a endpoint must match this listing, and the transaction signs over your link.
+                    Nothing is hosted here for it.
+                  </span>
+                </label>
+              )}
+            </div>
+
             <div className="mt-4 grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
               <div className="flex flex-col items-start gap-2">
                 {imageRaw && imageUsable ? (

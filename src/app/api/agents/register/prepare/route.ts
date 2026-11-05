@@ -8,6 +8,7 @@ import {
   validateDraft,
   type RegistrationDraft,
 } from "@/lib/registry-write";
+import { readSelfHostedDocument, readSelfHostedFileAgainst } from "@/lib/self-hosted-doc";
 import { claimsMode, createClaim, isWalletAddress, newClaimId } from "@/lib/listing-claims";
 import { normaliseDeclaration } from "@/lib/authority-declaration";
 import { claimKey, saveDeclaration } from "@/lib/authority-store";
@@ -129,6 +130,28 @@ export async function POST(req: NextRequest) {
     draft.x402Support = mode === "both";
   }
 
+  // a lister serving the document at their own domain registers that link:
+  // the doc is read once here, shape-checked, and confirm verifies that exact uri
+  const selfHosted = draft.selfHosted === true;
+  let agentUri = "";
+  if (selfHosted) {
+    const ownUri = (draft.ownUri ?? "").trim();
+    if (!/^https:\/\//i.test(ownUri)) {
+      return NextResponse.json(
+        { success: false, error: "Hosting your own document needs its https link." },
+        { status: 400 },
+      );
+    }
+    const read = await readSelfHostedDocument(ownUri);
+    if (!read.ok) {
+      return NextResponse.json({ success: false, error: read.error }, { status: 400 });
+    }
+    const checked = readSelfHostedFileAgainst(read.file, draft);
+    if (!checked.ok) {
+      return NextResponse.json({ success: false, error: checked.error }, { status: 400 });
+    }
+  }
+
   let registry: Address;
   try {
     registry = registryAddress(chainId);
@@ -153,12 +176,14 @@ export async function POST(req: NextRequest) {
   }
 
   const claimId = newClaimId();
+  agentUri = selfHosted ? (draft.ownUri ?? "").trim() : registrationUrl(publicApiUrl(req), claimId);
   const claim = await createClaim({
     claimId,
     chainId,
     owner,
-    agentUri: registrationUrl(publicApiUrl(req), claimId),
+    agentUri,
     draft,
+    selfHosted,
   });
 
   if (declared?.ok) {
