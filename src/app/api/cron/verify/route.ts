@@ -5,6 +5,7 @@ import {
   fetchJson,
   baseUrl,
   verifyAndRecord,
+  shouldRetryProbe,
   type SweepCandidate,
 } from "@/lib/verify-candidate";
 
@@ -34,7 +35,7 @@ export function sweepBudget() {
 // exceeds the limit, so a new listing is swept within a run or two while the
 // per-run spend stays bounded.
 export function mergeSweepCandidates(
-  queued: { tokenId: string; name: string; category: string }[],
+  queued: { tokenId: string; name: string; category: string; attempts?: number }[],
   agents: { token_id: number; name: string; category?: string; chain_id?: number; average_score?: number }[],
   chainId: number,
   limit: number,
@@ -57,7 +58,13 @@ export function mergeSweepCandidates(
       category: a.category ?? "general",
     }));
   return [
-    ...queued.map((q) => ({ chainId, tokenId: q.tokenId, name: q.name, category: q.category })),
+    ...queued.map((q) => ({
+      chainId,
+      tokenId: q.tokenId,
+      name: q.name,
+      category: q.category,
+      attempts: q.attempts,
+    })),
     ...fill,
   ];
 }
@@ -88,7 +95,7 @@ async function sweep(req: NextRequest): Promise<NextResponse> {
     const { startedAt, outOfTime } = sweepBudget();
     // Fresh listings go first, capped per run so a listing flood cannot spend the
     // relay dry: at most three priority hires plus the score-ranked fill below.
-    const { takeSweepQueue, loadVerifiedTokenIds } = await import("@/lib/verifications-store");
+    const { takeSweepQueue, enqueueSweep, loadVerifiedTokenIds } = await import("@/lib/verifications-store");
     const queued = await takeSweepQueue(3);
     const verifiedIds = await loadVerifiedTokenIds();
     const snapshotRes = await fetchJson(`${baseUrl()}/api/agents?limit=200&house=all`, {}, 45000);
@@ -107,6 +114,10 @@ async function sweep(req: NextRequest): Promise<NextResponse> {
         const verdict = await verifyAndRecord(cand);
         const ms = Date.now() - t0;
         if (verdict.persisted) persisted += 1;
+        // a failure goes back on the queue while attempts remain
+        if (shouldRetryProbe(verdict.status, cand.attempts ?? 0)) {
+          await enqueueSweep(cand.tokenId, cand.name, cand.category, (cand.attempts ?? 0) + 1).catch(() => false);
+        }
         results.push({ tokenId: cand.tokenId, name: cand.name, status: verdict.status, responseMs: ms, detail: verdict.detail });
       } catch (e) {
         const ms = Date.now() - t0;

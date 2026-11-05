@@ -16,10 +16,21 @@ export interface VerifyCandidate {
   tokenId: string;
   name: string;
   category: string;
+  // how many probes this listing has already had from the queue
+  attempts?: number;
 }
 
 // The scheduled sweep names the same shape SweepCandidate; one type, two names.
 export type SweepCandidate = VerifyCandidate;
+
+// A failed probe is retried a bounded number of times, so one transient error
+// does not leave a listing unbadged until its owner forces a check by hand.
+export const MAX_PROBE_ATTEMPTS = 3;
+
+export function shouldRetryProbe(status: string, attempts: number): boolean {
+  if (status === "online" || status === "delivered") return false;
+  return attempts < MAX_PROBE_ATTEMPTS;
+}
 
 export interface VerifyVerdict {
   status: "online" | "gated" | "dead" | "unreachable" | "unresponsive" | "restricted" | "not_checked";

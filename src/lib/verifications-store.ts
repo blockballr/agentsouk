@@ -230,13 +230,21 @@ export interface SweepQueueEntry {
   tokenId: string;
   name: string;
   category: string;
+  attempts: number;
 }
 
 // Fresh listings jump the sweep queue so a new badge reflects a real probe within
 // a sweep or two instead of waiting for a scheduled pass to notice the token.
 // The table is tiny by design: one row per token, drained oldest-first with a
 // per-run cap at the call site, so a listing flood cannot spend the relay dry.
-export async function enqueueSweep(tokenId: string, name: string, category: string): Promise<boolean> {
+// A failed probe goes back on the queue a bounded number of times, because one
+// transient error should not leave a listing unbadged until its owner intervenes.
+export async function enqueueSweep(
+  tokenId: string,
+  name: string,
+  category: string,
+  attempts = 0,
+): Promise<boolean> {
   if (!(await ensureTable()) || !sql) return false;
   try {
     await sql`
@@ -244,12 +252,14 @@ export async function enqueueSweep(tokenId: string, name: string, category: stri
         token_id text primary key,
         name text not null default '',
         category text not null default '',
+        attempts integer not null default 0,
         created_at timestamptz not null default now()
       )
     `;
+    await sql`alter table sweep_queue add column if not exists attempts integer not null default 0`;
     await sql`
-      insert into sweep_queue (token_id, name, category)
-      values (${tokenId}, ${name}, ${category})
+      insert into sweep_queue (token_id, name, category, attempts)
+      values (${tokenId}, ${name}, ${category}, ${attempts})
       on conflict (token_id) do nothing
     `;
     return true;
@@ -268,9 +278,14 @@ export async function takeSweepQueue(limit: number): Promise<SweepQueueEntry[]> 
       where token_id in (
         select token_id from sweep_queue order by created_at asc limit ${capped}
       )
-      returning token_id, name, category
-    `) as { token_id: string; name: string; category: string }[];
-    return rows.map((r) => ({ tokenId: r.token_id, name: r.name, category: r.category }));
+      returning token_id, name, category, attempts
+    `) as { token_id: string; name: string; category: string; attempts: number }[];
+    return rows.map((r) => ({
+      tokenId: r.token_id,
+      name: r.name,
+      category: r.category,
+      attempts: r.attempts,
+    }));
   } catch (e) {
     console.error("[verifications] sweep dequeue failed", (e as Error).message);
     return [];
