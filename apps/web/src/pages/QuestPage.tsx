@@ -382,9 +382,9 @@ export function QuestPage() {
             stays in the contract until you withdraw it.
           </Txt>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {CATEGORIES.map((c) => (
+            {CATEGORIES.map((c, i) => (
               <Link key={c.key} to={`/vault/c/${c.key}`} className="group block">
-                <HireInAction category={c.key} compact cta="Open the vault" />
+                <HireInAction category={c.key} compact cta="Open the vault" motion delay={i * 1.6} />
               </Link>
             ))}
           </div>
