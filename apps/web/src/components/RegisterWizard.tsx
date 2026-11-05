@@ -791,9 +791,31 @@ export function RegisterWizard({
               </span>
             ) : (
               <span className="mt-1.5 block text-xs leading-relaxed text-souk-muted">
-                A reachable https URL. The card it serves fills the next step.
+                Paste the messaging endpoint buyers call, usually /a2a, not the card link. The card fills the next step either way.
               </span>
             )}
+            {(draft.endpoint ?? '').trim().match(/\/(\.well-known\/)?agent-card\.json$/i) ? (
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 border border-souk-peach/40 bg-souk-peach/5 px-2.5 py-1.5">
+                {/* a card link answers html, and the verifier grades it dead; the
+                    messaging link lives beside the card on the same host */}
+                <span className="text-[11px] leading-4 text-souk-peach">
+                  That is a card link: buyers call the messaging endpoint instead. Paste the /a2a link beside it.
+                </span>
+                <button
+                  type="button"
+                  disabled={busy || step !== 'form'}
+                  onClick={() => {
+                    const cardUrl = String(new URL(draft.endpoint!.trim()))
+                    const base = cardUrl.replace(/\/(\.well-known\/)?agent-card\.json/i, '')
+                    set('endpoint', `${base}/a2a`)
+                    setProbe(null)
+                  }}
+                  className="micro rounded-[6px] border border-souk-peach/40 px-2 py-0.5 text-souk-peach transition hover:border-souk-peach"
+                >
+                  Use the /a2a link beside it
+                </button>
+              </div>
+            ) : null}
           </label>
 
           <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-souk-hair pt-3">
