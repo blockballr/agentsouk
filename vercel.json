@@ -115,6 +115,10 @@
     {
       "path": "/api/cron/reconcile",
       "schedule": "3 21 * * *"
+    },
+    {
+      "path": "/api/cron/registry-sync",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

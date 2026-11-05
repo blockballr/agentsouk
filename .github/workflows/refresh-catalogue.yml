@@ -33,3 +33,19 @@ jobs:
             echo "the catalogue refresh did not succeed"
             exit 1
           fi
+      - name: Ask the API to sync the registry from chain
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          # our own indexer: decode the ERC-8004 events off chain 56 and admit
+          # what passes the shelf gate, independent of any third party index
+          code=$(curl -sS -o sync.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --max-time 280 \
+            "https://api.agentsouk.xyz/api/cron/registry-sync?blocks=4000")
+          echo "http $code"
+          cat sync.json
+          if [ "$code" != "200" ]; then
+            echo "the registry sync did not succeed"
+            exit 1
+          fi
