@@ -241,6 +241,30 @@ export function draftFromSelfHostedFile(
   if (Array.isArray(file.registrations) && file.registrations.length > 0) {
     return { ok: false, error: "The document claims registrations this rebuild cannot re-mint." };
   }
+  return draftFromFields(file, base);
+}
+
+// same reading without the rebuild restriction: an on-chain document carries registrations
+export function draftFromSelfHostedFileForDisplay(
+  file: RegistrationFile,
+  base: RegistrationDraft,
+): SelfHostedCheck {
+  if (typeof file.type !== "string" || file.type.trim() !== REGISTRATION_DOC_TYPE) {
+    return { ok: false, error: "The document is not registration-v1." };
+  }
+  if (typeof file.name !== "string" || !file.name.trim() || file.name.trim().length > 80) {
+    return { ok: false, error: "The document carries no usable name." };
+  }
+  if (typeof file.description !== "string" || !file.description.trim() || file.description.trim().length > 1000) {
+    return { ok: false, error: "The document carries no usable description." };
+  }
+  if (!Array.isArray(file.services) || file.services.length === 0) {
+    return { ok: false, error: "The document has no services." };
+  }
+  return draftFromFields(file, base);
+}
+
+function draftFromFields(file: RegistrationFile, base: RegistrationDraft): SelfHostedCheck {
   const services = (file.services ?? []).map((s) => ({
     name: String((s as { name?: unknown })?.name ?? "").toLowerCase(),
     url: String((s as { url?: unknown })?.url ?? (s as { endpoint?: unknown })?.endpoint ?? ""),

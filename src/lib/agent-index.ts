@@ -39,9 +39,17 @@ export function summaryFromDetail(detail: AgentDetail): AgentSummary {
     created_at: detail.created_at,
     category,
     categoryScores: scores,
+    // the chain's pointer to the registration document, for the periodic re-read
+    ...(offchainUriOf(detail) ? { offchainUri: offchainUriOf(detail) } : {}),
     ...(detail.verification ? { verification: detail.verification } : {}),
     ...(detail.pcs ? { pcs: true } : {}),
   };
+}
+
+function offchainUriOf(detail: AgentDetail): string | undefined {
+  const raw = (detail as { raw_metadata?: { offchain_uri?: unknown } }).raw_metadata;
+  const uri = raw?.offchain_uri;
+  return typeof uri === "string" && /^https:\/\//.test(uri) ? uri : undefined;
 }
 
 // cached only for the target chain, so foreign probes cannot grow the map

@@ -51,7 +51,7 @@ import {
   type ShelfStoreMode,
   summaryFromRow,
 } from "./shelf-store";
-import { draftFromSelfHostedFile, readSelfHostedDocumentCached } from "@/lib/self-hosted-doc";
+import { draftFromSelfHostedFile, draftFromSelfHostedFileForDisplay, readSelfHostedDocumentCached } from "@/lib/self-hosted-doc";
 import type { ListableCategory } from "@agora/core";
 
 const BASE = "https://8004scan.io/api/v1/public";
@@ -949,13 +949,40 @@ export interface ShelfAdmission {
   reason?: string;
 }
 
+// prefer the registration document over the registry index's cached parse
+export async function summaryFromDetailWithDocument(detail: AgentDetail): Promise<AgentSummary> {
+  const base = summaryFromDetail(detail);
+  const uri = base.offchainUri;
+  if (!uri) return base;
+  const read = await readSelfHostedDocumentCached(uri);
+  if (!read.ok) return base;
+  const category = (LISTABLE_CATEGORIES as readonly string[]).includes(
+    base.declared_category ?? base.category ?? "",
+  )
+    ? ((base.declared_category ?? base.category) as ListableCategory)
+    : "";
+  const checked = draftFromSelfHostedFileForDisplay(read.file, {
+    name: "",
+    description: "",
+    category,
+  });
+  if (!checked.ok) return base;
+  return summaryFromRegistration({
+    chainId: base.chain_id,
+    tokenId: base.token_id,
+    owner: base.owner_address,
+    registry: base.contract_address,
+    draft: checked.draft,
+    createdAt: base.created_at,
+    agentUri: uri,
+  });
+}
+
 // Admit a proven registration at once. The snapshot is loaded first so a later
 // browse does not clear an entry the snapshot never carried, then the memory
 // shelf serves it on this instance and the durable store carries it to the
 // fleet. Refusal is a sentence, never a thrown error, because the registration
 // is a chain fact and the shelf decision must not fail it.
-// whether a token is on the shelf at all, so a reconciler can tell a listing
-// that was never admitted from one that is merely filtered out of a view
 export async function shelfHasToken(chainId: number, tokenId: string): Promise<boolean> {
   await loadSnapshot();
   return index.agents.has(indexKey(chainId, String(tokenId)));
@@ -963,8 +990,7 @@ export async function shelfHasToken(chainId: number, tokenId: string): Promise<b
 
 export async function admitConfirmedAgent(
   summary: AgentSummary,
-): Promise<ShelfAdmission> {
-  if (!isShelfReady(summary)) {
+): Promise<ShelfAdmission> {  if (!isShelfReady(summary)) {
     return { admitted: false, reason: shelfRefusalReason(summary) };
   }
   const captured = await captureAgentSkills(summary).catch(() => null);
@@ -1091,7 +1117,7 @@ async function rereadSelfHostedDocs(chainId: number): Promise<number> {
     )
       ? ((existing.declared_category ?? existing.category) as ListableCategory)
       : "";
-    const checked = draftFromSelfHostedFile(read.file, {
+    const checked = draftFromSelfHostedFileForDisplay(read.file, {
       name: "",
       description: "",
       category,
@@ -1256,11 +1282,7 @@ export async function refreshIndexFromLive(
   };
 }
 
-// The newest page is not enough on its own: registrations arrive faster than a
-// minute, so an agent can fall past page one before any top up reads it, and a
-// listing that is never re-checked then stays off the shelf forever. Successive
-// top ups walk the first pages instead, deterministically across instances, so
-// coverage is complete within the span without costing more upstream calls.
+// walk the first pages across refreshes: the newest page alone misses older listings
 const REFRESH_PAGE_SPAN = 40;
 
 export function rotatingRefreshPage(now: number = Date.now()): number {

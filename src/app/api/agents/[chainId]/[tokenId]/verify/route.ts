@@ -3,7 +3,7 @@ import { targetChainId } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
 import { baseUrl, fetchJson, verifyAndRecord } from "@/lib/verify-candidate";
 import { isAgentOwner, verifyBoostOwnership } from "@/lib/boost-auth";
-import { admitConfirmedAgent } from "@/lib/scanner";
+import { admitConfirmedAgent, summaryFromDetailWithDocument } from "@/lib/scanner";
 import { summaryFromDetail } from "@/lib/agent-index";
 import { clientIpFrom, enforceRateLimit } from "@/lib/rate-limit";
 
@@ -102,12 +102,10 @@ export async function POST(
     category: detail.category ?? "general",
   });
 
-  // a passing probe is also the admission event. the queue probes listings the
-  // shelf never saw, and the background top up only reads the newest page, so
-  // without this a proven registration could stay off the shelf forever.
+  // a pass admits at once; the queue probes listings the top up has not reached
   if (verdict.status === "online") {
     const admission = await admitConfirmedAgent(
-      summaryFromDetail(detail as Parameters<typeof summaryFromDetail>[0]),
+      await summaryFromDetailWithDocument(detail as Parameters<typeof summaryFromDetail>[0]),
     ).catch(() => ({ admitted: false, reason: "admission failed" }));
     return NextResponse.json({
       success: true,
