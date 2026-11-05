@@ -60,13 +60,16 @@ interface AdvantageTask {
     settleMode: string
     settlementRef?: string
     txHash?: string
-    statedFeeUsd?: number
+    statedFeeUsd?: number | null
   }
   agentOutput: string
   agentSeconds: number
   manualSeconds: number
   manualCostUsd: number
+  manualPlanSeconds?: number
+  manualPlanCostUsd?: number
   manualOutput: string
+  payoff?: { netUsd: number | null; winner: string; note: string }
   verdict: { winner: 'agent' | 'manual' | 'tie'; notes: string }
 }
 
@@ -183,13 +186,13 @@ function NetworkPanel({ report }: { report: AdvantageReport }) {
           <p className="mt-1 text-sm text-newsprint-gray [overflow-wrap:anywhere]">{networkLine(network)}</p>
           {capture ? (
             <p className="mt-5 max-w-3xl text-sm leading-snug text-press-black [overflow-wrap:anywhere]">
-              {captureLead(capture.measuredAt ?? report.generatedAt)} This deployment settles real
-              sUSD on BSC testnet chain 97, so for current evidence see the{' '}
+              {captureLead(capture.measuredAt ?? report.generatedAt, new Date(), capture.settledOnChain === true, capture.rail)} This deployment settles real
+              {` ${network.asset?.symbol ?? 'the settlement asset'} on ${network.name} chain ${network.chainId}, so for current evidence see the `}
               <Link
-                to="/agents/97/2173"
+                to={`/agents/${network.chainId}/${network.chainId === 56 ? '376593' : '2173'}`}
                 className="underline decoration-highlighter-green decoration-1 underline-offset-2 hover:text-highlighter-green"
               >
-                settled hire to Grid Runner on chain 97
+                {network.chainId === 56 ? 'Souk Grid Pilot listing' : 'settled hire to Grid Runner'}
               </Link>
               , or browse the{' '}
               <Link
@@ -282,9 +285,11 @@ export function captureAgeWords(measuredAt?: string, now: Date = new Date()): st
 
 // The lead sentence for the capture block: which rail measured these, and how
 // long ago. Kept as a string so the no-funds claim and the age can be tested.
-export function captureLead(measuredAt?: string, now: Date = new Date()): string {
+export function captureLead(measuredAt?: string, now: Date = new Date(), settled = false, rail?: string): string {
   const age = captureAgeWords(measuredAt, now)
   const when = age ? `, and the capture is ${age} old` : ''
+  if (rail && /live/i.test(rail)) return `These captures were measured live on their own date${when}.`
+  if (settled) return `These captures were measured on their own date${when}.`
   return `These captures were measured on the sandbox rail on their own date, so no funds moved in them${when}.`
 }
 
@@ -366,8 +371,17 @@ function TaskDetail({ task, report }: { task: AdvantageTask; report: AdvantageRe
 function SettleBadge({ task, explorer }: { task: AdvantageTask; explorer?: string }) {
   const ref = task.agent.settlementRef ?? task.agent.txHash
   const isProd = task.agent.settleMode === 'prod'
-  const label = isProd ? 'settled on-chain' : 'sandbox session, no funds moved'
-  const tone = isProd ? 'border-highlighter-green/50 text-green-ink' : 'border-slate-verdant/40 text-slate-verdant'
+  const isProbe = task.agent.settleMode === 'probe'
+  const label = isProbe
+    ? 'liveness probe, no hire'
+    : isProd
+      ? 'settled on-chain'
+      : 'sandbox session, no funds moved'
+  const tone = isProbe
+    ? 'border-slate-verdant/40 text-slate-verdant'
+    : isProd
+      ? 'border-highlighter-green/50 text-green-ink'
+      : 'border-slate-verdant/40 text-slate-verdant'
 
   if (isProd && ref && explorer) {
     return (
@@ -384,6 +398,7 @@ function SettleBadge({ task, explorer }: { task: AdvantageTask; explorer?: strin
   return <span className={`micro rounded-full border hairline px-2.5 py-1 ${tone}`}>{label}</span>
 }
 
-function formatUsd(usd?: number) {
-  return typeof usd === 'number' ? `$${usd.toFixed(2)}` : '·'
+function formatUsd(usd?: number | null) {
+  if (typeof usd !== 'number') return '·'
+  return usd > 0 && usd < 0.01 ? `$${usd.toFixed(4)}` : `$${usd.toFixed(2)}`
 }
