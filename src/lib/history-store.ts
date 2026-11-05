@@ -65,6 +65,13 @@ async function ensureTables(): Promise<boolean> {
           )
         `;
         await sql!`create index if not exists cron_runs_name_at on cron_runs (name, started_at desc)`;
+        await sql!`
+          create table if not exists pipeline_state (
+            key text primary key,
+            value text not null,
+            updated_at timestamptz not null default now()
+          )
+        `;
         return true;
       } catch {
         tablesReady = null;
@@ -216,9 +223,47 @@ export function recordCronRun(run: CronRun): Promise<boolean> {
   );
 }
 
-// the latest run of each job, so a panel can say what ran and what did not
-export async function latestCronRuns(): Promise<CronRun[]> {
+// pipeline_state is the one durable keyvalue the crons share: a syncer stores
+// its watermark here so a cold instance resumes where the fleet left off
+const pipelineMemory = new Map<string, string>();
+
+export async function readPipelineState(key: string): Promise<string | null> {
+  if (pipelineMemory.has(key)) return pipelineMemory.get(key) ?? null;
   if ((await ensureTables()) && sql) {
+    try {
+      const rows = (await sql`
+        select value from pipeline_state where key = ${key}
+      `) as { value: string }[];
+      if (rows[0]) {
+        pipelineMemory.set(key, String(rows[0].value));
+        return String(rows[0].value);
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+export async function writePipelineState(key: string, value: string): Promise<boolean> {
+  pipelineMemory.set(key, value);
+  if ((await ensureTables()) && sql) {
+    try {
+      await sql`
+        insert into pipeline_state (key, value, updated_at) values (${key}, ${value}, now())
+        on conflict (key) do update set value = excluded.value, updated_at = now()
+      `;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+// the latest run of each job, so a panel can say what ran and what did not
+export async function latestCronRuns(): Promise<CronRun[]> {  if ((await ensureTables()) && sql) {
     try {
       const rows = (await sql`
         select distinct on (name) name, started_at, finished_at, ok, note

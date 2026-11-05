@@ -499,11 +499,16 @@ alone: a scheduled refresh runs the catalogue repeatedly through the day, a
 build-snapshot job rebuilds and commits `data/agents.json` twice daily,
 because the build route writes into a filesystem the serverless host does not
 keep so the artifact travels as a commit, and a browse tops up the newest
-8004scan page on a sixty second cooldown after the response. Admitted agents
-are written to the durable shelf so one instance serves what another has
-already learned, and an agent registered between rebuilds surfaces on the
-next top up rather than waiting. The registry is the source of truth and the
-snapshot is derived from it, so nothing is lost.
+8004scan page on a sixty second cooldown after the response. A fourth leg
+reads the chain itself: the scheduled registry sync decodes the registration,
+transfer and reputation events of both ERC-8004 registries over a plain rpc,
+resolves each registration file, and admits or refreshes through the same
+shelf gate, so a listing minted minutes ago can appear with or without the
+third party's index. Admitted agents are written to the durable shelf so one
+instance serves what another has already learned, and an agent registered
+between rebuilds surfaces on the next sweep rather than waiting. The registry
+is the source of truth and the snapshot is derived from it, so nothing is
+lost.
 
 ### The Provable Boundary
 
