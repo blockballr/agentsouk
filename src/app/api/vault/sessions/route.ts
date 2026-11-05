@@ -1,9 +1,12 @@
 // Session sync for the per-agent executor. The sessions live in the database,
 // and a re-granted session only reaches the deployment when it is written there.
-// The operator posts the re-granted records once; reads never return a key, only
-// the token, the wallet, the expiry and the targets the session may call.
+// The operator posts the records once; reads never return a key, only the token,
+// the wallet, the expiry and the scope the session carries.
 import { NextRequest, NextResponse } from "next/server";
-import { loadAltanaSessionsFromDb, saveAltanaSession } from "@/lib/altana-store";
+import { saveAltanaSession } from "@/lib/altana-store";
+import { readSessionScope } from "@/lib/session-scope";
+import { loadSessionsWithAdmin } from "@/lib/session-renewal";
+import { vaultFor } from "@/lib/vault";
 
 export const dynamic = "force-dynamic";
 
@@ -20,31 +23,23 @@ function allowed(req: NextRequest): boolean {
   return secrets.includes(header.replace(/^Bearer\s+/i, ""));
 }
 
-// what the session may call, read from the serialized grant it was issued with
-function permittedTargets(blob: string): string[] {
-  try {
-    const parsed = JSON.parse(blob) as { permissions?: { calls?: { to?: unknown }[] } };
-    return (parsed.permissions?.calls ?? [])
-      .map((call) => (typeof call?.to === "string" ? call.to : ""))
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
 export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!allowed(req)) return json({ error: "unauthorized" }, 401);
   const chainId = Number(req.nextUrl.searchParams.get("chainId")) || 56;
-  const rows = await loadAltanaSessionsFromDb(chainId);
+  const vault = vaultFor(chainId);
+  const rows = await loadSessionsWithAdmin(chainId);
   return json({
     success: true,
     chainId,
-    sessions: rows.map((row) => ({
-      tokenId: row.tokenId,
-      walletAddress: row.walletAddress,
-      expiry: row.expiry ?? null,
-      calls: permittedTargets(row.sessionBlob),
-    })),
+    vault,
+    sessions: rows.map((row) =>
+      readSessionScope(row.tokenId, row.walletAddress, row.sessionBlob, row.expiry ?? null, vault),
+    ),
+    // one flag for a scheduler: a session that cannot call the live vault needs
+    // a re-grant, and a session near expiry needs one before it lapses
+    stale: rows
+      .filter((row) => readSessionScope(row.tokenId, row.walletAddress, row.sessionBlob, row.expiry ?? null, vault).stale)
+      .map((row) => row.tokenId),
   });
 }
 
@@ -74,7 +69,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       walletAddress,
       sessionBlob,
       sessionKey,
-      // the executor never needs the admin key, so it is not accepted here
+      // renewal re-grants from the admin key, so the stored record keeps it
+      adminKey: typeof record.adminKey === "string" && record.adminKey.length > 0 ? record.adminKey : undefined,
       expiry: record.expiry != null ? Number(record.expiry) : undefined,
       createdAt: String(record.createdAt ?? new Date().toISOString()),
     });

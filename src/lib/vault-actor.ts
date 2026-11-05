@@ -20,10 +20,11 @@ export interface VaultActor {
 export interface AltanaSessionRecord {
   chainId: number;
   label?: string;
-  tokenId?: string;
+  tokenId: string;
   walletAddress: string;
   sessionBlob: string;
   sessionKey: string;
+  expiry?: number;
 }
 
 function chainFor(chainId: number) {
@@ -130,12 +131,13 @@ export async function loadAltanaSessions(chainId: number): Promise<AltanaSession
         walletAddress?: string;
         sessionBlob?: string;
         sessionKey?: string;
+        expiry?: number;
       }>;
       const out: AltanaSessionRecord[] = [];
       for (const [tokenId, rec] of Object.entries(raw)) {
         if (!rec || rec.chainId !== chainId) continue;
         if (!rec.walletAddress || !rec.sessionBlob || !rec.sessionKey) continue;
-        out.push({ chainId, label: rec.label ?? tokenId, tokenId, walletAddress: rec.walletAddress, sessionBlob: rec.sessionBlob, sessionKey: rec.sessionKey });
+        out.push({ chainId, label: rec.label ?? tokenId, tokenId, walletAddress: rec.walletAddress, sessionBlob: rec.sessionBlob, sessionKey: rec.sessionKey, expiry: rec.expiry });
       }
       if (out.length > 0) return out;
     }
@@ -145,7 +147,7 @@ export async function loadAltanaSessions(chainId: number): Promise<AltanaSession
       if (raw?.serialized && raw?.sessionKey) {
         const addr = raw.walletAddress ?? (raw.serialized as { walletAddress?: string })?.walletAddress;
         if (addr && (raw.chainId ?? chainId) === chainId) {
-          return [{ chainId, label: "legacy", walletAddress: addr, sessionBlob: JSON.stringify(raw.serialized), sessionKey: raw.sessionKey }];
+          return [{ chainId, label: "legacy", tokenId: "legacy", walletAddress: addr, sessionBlob: JSON.stringify(raw.serialized), sessionKey: raw.sessionKey }];
         }
       }
     }

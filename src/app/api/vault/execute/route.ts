@@ -7,7 +7,9 @@ import { rpcTransport } from "@/lib/rpc";
 import { sweepOwnHires } from "@/lib/vault-executor";
 import { sweepBandHires } from "@/lib/band-sweep";
 import { sweepBufferVault } from "@/lib/buffer-sweep";
-import { resolveActors, type VaultActor } from "@/lib/vault-actor";
+import { resolveActors, loadAltanaSessions, type VaultActor } from "@/lib/vault-actor";
+import { readSessionScope } from "@/lib/session-scope";
+import { vaultFor } from "@/lib/vault";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -70,6 +72,30 @@ async function run(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // a grant that cannot call the live vault fails inside the relay as an opaque
+  // UnauthorizedCall. read the scope first: name the stale sessions, and stop
+  // before a sweep when every session is out of scope, so a vault redeploy shows
+  // at the top of the response instead of hidden in a refused report.
+  const vault = vaultFor(CHAIN_ID);
+  const scopeRows = await loadAltanaSessions(CHAIN_ID).catch(() => []);
+  const scopes = scopeRows.map((row) =>
+    readSessionScope(row.tokenId, row.walletAddress, row.sessionBlob, row.expiry ?? null, vault),
+  );
+  const staleSessions = scopes.filter((scope) => scope.stale).map((scope) => scope.tokenId);
+  if (scopeRows.length > 0 && staleSessions.length === scopeRows.length) {
+    return NextResponse.json(
+      {
+        success: false,
+        mode: EXECUTE ? "execute" : "dry",
+        chainId: CHAIN_ID,
+        error: "every executor session permits a different contract than the live vault",
+        vault,
+        staleSessions,
+      },
+      { status: 409 },
+    );
+  }
+
   try {
     const client = createPublicClient({ chain: CHAIN_ID === BSC_TESTNET_CHAIN_ID ? bscTestnet : bsc, transport: rpcTransport(CHAIN_ID) });
     const allReports: any[] = [];
@@ -108,6 +134,8 @@ async function run(req: NextRequest): Promise<NextResponse> {
       actorAddress: actorAddresses.length === 1 ? actorAddresses[0] : actorAddresses,
       actorCount: actors.length,
       executed: EXECUTE,
+      vault,
+      staleSessions,
       reports: allReports,
       traded: traded.length,
     });
