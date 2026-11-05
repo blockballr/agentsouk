@@ -108,6 +108,7 @@ describe("connectProvider against a stale walletconnect choice", () => {
   it("steps aside for a legacy injected wallet and swaps in the real choice", async () => {
     storage.set(KEY, "walletconnect");
     fakeWindow.ethereum = stubWallet();
+    pickerPick = "legacy";
 
     const account = await wallet.connectProvider();
 
@@ -120,6 +121,7 @@ describe("connectProvider against a stale walletconnect choice", () => {
   it("steps aside for an announced extension the same way", async () => {
     storage.set(KEY, "walletconnect");
     const { calls } = announce("io.rabby.test", "Rabby");
+    pickerPick = "io.rabby.test";
 
     const account = await wallet.connectProvider();
 
@@ -136,7 +138,7 @@ describe("connectProvider against a stale walletconnect choice", () => {
     const account = await wallet.connectProvider();
 
     expect(account).toBe(ACCOUNT);
-    expect(calls).toEqual(["eth_requestAccounts"]);
+    expect(calls).toEqual(["eth_accounts", "eth_requestAccounts"]);
     expect(storage.get(KEY)).toBe("io.rabby.test");
   });
 });

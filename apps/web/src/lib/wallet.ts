@@ -187,14 +187,17 @@ export function hasChosenWallet(): boolean {
   return readStoredRdns() !== null;
 }
 
-// wait once for late announcers before trusting the legacy fallback
+// wait for late announcers before trusting the legacy fallback or a single
+// announced wallet: Chrome often announces one extension before a second lands,
+// so this second nudge catches those before a wrong wallet gets auto-extended
 let discoveryWait: Promise<void> | null = null;
 function waitForDiscovery(): Promise<void> {
   if (!discoveryWait) {
     discoveryWait = new Promise<void>((resolve) => setTimeout(resolve, 250)).then(() => {
-      if (announced.size === 0 && typeof window !== "undefined") {
+      if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("eip6963:requestProvider"));
       }
+      return new Promise<void>((resolve) => setTimeout(resolve, 250));
     });
   }
   return discoveryWait;
@@ -519,6 +522,20 @@ async function requestAccounts(provider: Eip1193Provider): Promise<string> {
   return accounts[0];
 }
 
+// the extension the lister chose last time is only honored when this page can
+// already see it: a choice remembered in another browser is stale here, and
+// auto-popping a wallet the picker was never shown for hides the real choice
+async function storedChoiceStillPermitted(option: WalletOption): Promise<boolean> {
+  const provider = await resolveProvider(option).catch(() => null);
+  if (!provider) return false;
+  try {
+    const accounts = (await provider.request({ method: "eth_accounts" })) as string[];
+    return Array.isArray(accounts) && accounts.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 // provider connect only (picker, discovery, stored choice); the sign-in step
 // lives in wallet-session.ts, whose connectWallet wraps this
 export async function connectProvider(): Promise<string> {
@@ -545,13 +562,20 @@ export async function connectProvider(): Promise<string> {
       storeRdns(null);
     } else {
       const detail = announced.get(rdns);
-      if (detail) return requestAccounts(detail.provider);
+      const option: WalletOption = {
+        kind: "injected",
+        rdns,
+        name: detail?.info.name ?? rdns,
+      };
+      if (detail && (await storedChoiceStillPermitted(option))) {
+        return requestAccounts(resolveInjected(option));
+      }
       storeRdns(null);
     }
   }
-  // 2. discovery: one wallet connects directly, several open the picker. With
-  // none injected, WalletConnect is the path, which is how a phone inside
-  // Telegram reaches MetaMask, Trust or Binance without a browser extension.
+  // discovery: the picker always opens, even for one announced wallet, because
+  // an auto-extended single extension is exactly where a late second wallet
+  // never gets a chance to be chosen at all
   const injected = await listInjectedWallets();
   if (injected.length === 0) {
     if (!wcProjectId()) throw new WalletUnavailableError();
@@ -562,14 +586,9 @@ export async function connectProvider(): Promise<string> {
     }
     return account;
   }
-  let option: WalletOption;
-  if (injected.length === 1) {
-    option = injected[0];
-  } else {
-    const picked = await openWalletPicker();
-    if (!picked) throw new WalletUnavailableError();
-    option = picked;
-  }
+  const picked = await openWalletPicker(); // one extension or many, the picker is shown either way
+  if (!picked) throw new WalletUnavailableError();
+  const option = picked;
   if (option.kind === "walletconnect") {
     const { uri, account } = await beginWalletConnect();
     storeRdns(WALLETCONNECT_RDNS);
