@@ -807,10 +807,10 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
               </Txt>
             </div>
             <Row gap={8} align="center" className="shrink-0 flex-wrap">
-              <Pill variant={vault ? 'keep' : 'warn'}>{vault ? t('vault.vaultLive') : t('vault.vaultMissing')}</Pill>
-              <Pill variant="off">{t('vault.dayCap', { days: termDays })}</Pill>
-              {chooser ? null : <Pill variant="off">{rail.label}</Pill>}
-              {!chooser && rail.deposit === 'pair' ? <Pill variant="off">pancakeswap v3</Pill> : null}
+              {showForm ? <Pill variant={vault ? 'keep' : 'warn'}>{vault ? t('vault.vaultLive') : t('vault.vaultMissing')}</Pill> : null}
+              {showForm ? <Pill variant="off">{t('vault.dayCap', { days: termDays })}</Pill> : null}
+              {showForm ? <Pill variant="off">{rail.label}</Pill> : null}
+              {showForm && rail.deposit === 'pair' ? <Pill variant="off">pancakeswap v3</Pill> : null}
             </Row>
           </div>
         </Stack>
