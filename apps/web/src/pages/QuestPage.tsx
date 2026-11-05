@@ -169,26 +169,22 @@ export function QuestPage() {
             price: a.price ?? null,
           }))
       })
-  const pinnedIds = new Set(writtenPicks.map((p) => p.tokenId))
-  // other working vault agents from the shelf, but never a third-party pick
-  // ahead of the ones pinned for the quest
+  // other working agents from the shelf, across the four categories; the hire
+  // step cards stay vault-only, but this table is the wider market
   const shelfPicks = shelf
     ? Object.entries(shelf).flatMap(([cat, s]) =>
-        (s?.working ?? [])
-          .filter((a) => takesVault(a.skills))
-          .filter((a) => pinnedIds.size === 0 || pinnedIds.has(a.tokenId))
-          .map((a) => ({
-            key: `shelf-${a.tokenId}`,
-            stepTitle: 'Other pick',
-            name: a.name,
-            tokenId: a.tokenId,
-            slot: 'primary' as const,
-            task: undefined,
-            category: cat,
-            chainId: chainId ?? 97,
-            imageUrl: a.imageUrl,
-            price: a.price ?? null,
-          })),
+        (s?.working ?? []).map((a) => ({
+          key: `shelf-${a.tokenId}`,
+          stepTitle: 'Other pick',
+          name: a.name,
+          tokenId: a.tokenId,
+          slot: 'primary' as const,
+          task: undefined,
+          category: cat,
+          chainId: chainId ?? 97,
+          imageUrl: a.imageUrl,
+          price: a.price ?? null,
+        })),
       )
     : []
   const otherPicks = [...shelfPicks, ...writtenPicks.filter((w) => !shelfPicks.some((s) => s.tokenId === w.tokenId))]
