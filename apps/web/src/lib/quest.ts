@@ -1,4 +1,4 @@
-import type { CategoryKey } from '@agora/core'
+import { takesVault, type CategoryKey } from '@agora/core'
 import { readJsonBody } from './api'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
@@ -163,8 +163,9 @@ export const QUEST_STEPS: QuestStep[] = [
         primary: {
           tokenId: '2521',
           name: 'Souk Yield Lens',
-          task: 'Project the earnings on 5000 USD at a gross APY of 8 percent.',
-          input: { principalUsd: 5000, grossApyPercent: 8 },
+          task: 'Fund a vault hire with 100 USDT and let the agent route to the highest yield.',
+          // the step names a funded vault hire, so the card sends this pick to the vault rail
+          skills: [{ id: 'vault-execution' }],
         },
         alternate: {
           tokenId: '2237',
@@ -216,10 +217,10 @@ export function questStepFor(
   return { step, agent: known ?? { tokenId, name: '' } }
 }
 
-// who a hire step offers: one agent, never the visitor's own and never one already hired.
-// Agents a job has completed on come first, in the shelf's rotated order, so any listing can
-// be featured once it is proven. A category with no escrow agent is left empty rather than
-// falling back to a direct-only seller: the card says so instead of sending a buyer elsewhere.
+// who a hire step offers: only the vault agents pinned for the step, never a
+// third-party pick from the shelf. An agent a job has completed on still enriches
+// the pinned entry when the shelf has it, so the card reads live owner and price.
+// A step without a pinned vault agent falls back to the shelf's vault-only rows.
 export function questPicks(
   step: QuestStep,
   chainId: number,
@@ -230,11 +231,15 @@ export function questPicks(
   const pair = step.agents?.[chainId]
   const written = [pair?.primary, pair?.alternate].filter((a): a is QuestAgent => Boolean(a))
   const writtenById = new Map(written.map((a) => [a.tokenId, a]))
+  const pinned = written.filter((a) => takesVault(a.skills))
+  const pinnedIds = new Set(pinned.map((a) => a.tokenId))
   const me = wallet?.toLowerCase() ?? null
+  const available = (a: { tokenId: string; owner?: string | null }): boolean =>
+    (!me || a.owner?.toLowerCase() !== me) && !exclude.has(String(a.tokenId))
   const offer = (list: QuestCandidate[]): QuestAgent[] =>
     list
-      .filter((a) => !me || a.owner?.toLowerCase() !== me)
-      .filter((a) => !exclude.has(String(a.tokenId)))
+      .filter(available)
+      .filter((a) => takesVault(a.skills) || pinnedIds.has(String(a.tokenId)))
       .map((a) => {
         const known = writtenById.get(a.tokenId)
         return {
@@ -249,8 +254,15 @@ export function questPicks(
           skills: a.skills?.length ? a.skills : known?.skills,
         }
       })
-  // an unread shelf falls back to the written picks; a read one that offers nothing is believed
-  if (!shelf) return written.filter((a) => !exclude.has(String(a.tokenId))).slice(0, 1)
+  // a pinned vault agent is the whole point of the step: serve it even when the
+  // shelf has not indexed it yet, and never let a third-party row take its place
+  if (pinned.length > 0) {
+    if (!shelf) return pinned.filter(available).slice(0, 1)
+    const live = offer([...shelf.confirmed, ...shelf.working]).filter((a) => pinnedIds.has(a.tokenId))
+    return (live.length ? live : pinned.filter(available)).slice(0, 1)
+  }
+  // a step with no pinned vault agent falls back to the shelf's own vault rows
+  if (!shelf) return []
   const confirmed = offer(shelf.confirmed)
   const working = offer(shelf.working)
   return (confirmed.length ? confirmed : working).slice(0, 1)

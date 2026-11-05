@@ -70,57 +70,77 @@ describe("quest links", () => {
     expect(questStepFor(null, 97, "2504")).toBeNull();
   });
 
-  it("fill in the structured input for the agents that need it", () => {
+  it("fill in the vault task for each pinned hire", () => {
     const first = QUEST_STEPS.find((s) => s.key === "first")!;
     const second = QUEST_STEPS.find((s) => s.key === "second")!;
     expect(first.agents?.[97]?.primary.task).toBeTruthy();
-    expect(second.agents?.[97]?.primary.input).toBeTruthy();
+    expect(second.agents?.[97]?.primary.task).toBeTruthy();
   });
 });
 
 describe("quest picks", () => {
   const health = QUEST_STEPS.find((s) => s.key === "first")!;
-  const agent = (tokenId: string, name: string, owner = "0xowner") => ({ tokenId, name, owner });
-  const guard = agent("2504", "Souk Health Guard");
-  const keel = agent("2238", "Keel");
-
-  it("offers the agent a job has completed on first, in the shelf's order", () => {
-    const picks = questPicks(health, 97, { confirmed: [agent("7001", "Newcomer"), guard], working: [guard, keel] }, null);
-    expect(picks.map((p) => p.tokenId)).toEqual(["7001"]);
-    // the featured pick is the confirmed one the shelf rotated to the front
-    expect(questPicks(health, 97, { confirmed: [keel, agent("7001", "Newcomer")], working: [] }, null)[0].tokenId).toBe("2238");
+  const vaultAgent = (tokenId: string, name: string, owner = "0xowner") => ({
+    tokenId,
+    name,
+    owner,
+    skills: [{ id: "vault-execution" }],
+  });
+  const jobAgent = (tokenId: string, name: string, owner = "0xowner") => ({
+    tokenId,
+    name,
+    owner,
   });
 
-  it("serves one agent per card, not a pair", () => {
+  it("offers the pinned vault agent before a third-party shelf pick", () => {
     const picks = questPicks(
       health,
       97,
-      { confirmed: [agent("7001", "A"), agent("7002", "B")], working: [agent("7001", "A"), guard] },
+      {
+        confirmed: [jobAgent("7001", "Newcomer"), vaultAgent("9999", "Other vault")],
+        working: [vaultAgent("9999", "Other vault")],
+      },
       null,
     );
-    expect(picks.map((p) => p.tokenId)).toEqual(["7001"]);
+    expect(picks.map((p) => p.tokenId)).toEqual(["2524"]);
   });
 
-  it("offers the first working agent while none is confirmed", () => {
-    const picks = questPicks(health, 97, { confirmed: [], working: [agent("7001", "Unproven"), keel, guard] }, null);
-    expect(picks.map((p) => p.tokenId)).toEqual(["7001"]);
+  it("serves one agent per card", () => {
+    const picks = questPicks(
+      health,
+      97,
+      { confirmed: [vaultAgent("7001", "A"), vaultAgent("7002", "B")], working: [] },
+      null,
+    );
+    expect(picks).toHaveLength(1);
   });
 
-  it("never offers the visitor's own agent", () => {
-    const picks = questPicks(health, 97, { confirmed: [agent("7001", "Mine", "0xME"), keel], working: [] }, "0xme");
-    expect(picks.map((p) => p.tokenId)).toEqual(["2238"]);
+  it("skips a pinned agent the wallet has already hired", () => {
+    const picks = questPicks(
+      health,
+      97,
+      { confirmed: [], working: [vaultAgent("2524", "Souk Drift Guard")] },
+      null,
+      new Set(["2524"]),
+    );
+    expect(picks).toEqual([]);
   });
 
-  it("skips an agent the wallet has already hired", () => {
-    const picks = questPicks(health, 97, { confirmed: [keel, guard], working: [guard] }, null, new Set(["2238"]));
-    expect(picks.map((p) => p.tokenId)).toEqual(["2504"]);
+  it("never offers a non-vault shelf pick when the step has no pinned vault agent", () => {
+    const noPin = { key: "first" as const, title: "First hire", category: "yield" as const };
+    const picks = questPicks(
+      noPin,
+      97,
+      { confirmed: [jobAgent("7001", "Newcomer")], working: [jobAgent("7002", "Another")] },
+      null,
+    );
+    expect(picks).toEqual([]);
   });
 
-  it("falls back to the written picks only when the shelf cannot be read", () => {
+  it("falls back to the pinned vault agent when the shelf cannot be read", () => {
     expect(questPicks(health, 97, undefined, null).map((p) => p.tokenId)).toEqual(["2524"]);
     expect(questPicks(health, 56, undefined, null).map((p) => p.tokenId)).toEqual(["368655"]);
-    // a shelf that was read and offers nothing is believed, so no dead agent is suggested
-    expect(questPicks(health, 97, { confirmed: [], working: [] }, null)).toEqual([]);
+    expect(questPicks(health, 97, { confirmed: [], working: [] }, null).map((p) => p.tokenId)).toEqual(["2524"]);
   });
 });
 

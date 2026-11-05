@@ -149,32 +149,47 @@ export function QuestPage() {
     : null
   const stripAction = strip?.actions[0] ?? null
 
-  const writtenPicks = chainId === 97
-    ? QUEST_STEPS.flatMap((step) => {
-        const pair = step.agents?.[97]
+  const writtenPicks = chainId === null
+    ? []
+    : QUEST_STEPS.flatMap((step) => {
+        const pair = step.agents?.[chainId]
         if (!pair) return []
-        return [
-          { key: `${step.key}-primary`, stepTitle: step.title, name: pair.primary.name, tokenId: pair.primary.tokenId, slot: 'primary', task: pair.primary.task, category: step.category ?? 'general', chainId: 97, imageUrl: undefined, price: pair.primary.price ?? null },
-          ...(pair.alternate
-            ? [{ key: `${step.key}-alternate`, stepTitle: step.title, name: pair.alternate.name, tokenId: pair.alternate.tokenId, slot: 'alternate', task: pair.alternate.task, category: step.category ?? 'general', chainId: 97, imageUrl: undefined, price: pair.alternate.price ?? null }]
-            : []),
-        ]
+        return [pair.primary, ...(pair.alternate ? [pair.alternate] : [])]
+          .filter((a) => takesVault(a.skills))
+          .map((a, i) => ({
+            key: `${step.key}-${i === 0 ? 'primary' : 'alternate'}`,
+            stepTitle: step.title,
+            name: a.name,
+            tokenId: a.tokenId,
+            slot: i === 0 ? ('primary' as const) : ('alternate' as const),
+            task: a.task,
+            category: step.category ?? 'general',
+            chainId,
+            imageUrl: undefined,
+            price: a.price ?? null,
+          }))
       })
-    : []
-  // other working hirable agents from the shelf across the four categories
+  const pinnedIds = new Set(writtenPicks.map((p) => p.tokenId))
+  // other working vault agents from the shelf, but never a third-party pick
+  // ahead of the ones pinned for the quest
   const shelfPicks = shelf
-    ? Object.entries(shelf).flatMap(([cat, s]) => (s?.working ?? []).map((a) => ({
-        key: `shelf-${a.tokenId}`,
-        stepTitle: 'Other pick',
-        name: a.name,
-        tokenId: a.tokenId,
-        slot: 'primary' as const,
-        task: undefined,
-        category: cat,
-        chainId: chainId ?? 97,
-        imageUrl: a.imageUrl,
-        price: a.price ?? null,
-      })))
+    ? Object.entries(shelf).flatMap(([cat, s]) =>
+        (s?.working ?? [])
+          .filter((a) => takesVault(a.skills))
+          .filter((a) => pinnedIds.size === 0 || pinnedIds.has(a.tokenId))
+          .map((a) => ({
+            key: `shelf-${a.tokenId}`,
+            stepTitle: 'Other pick',
+            name: a.name,
+            tokenId: a.tokenId,
+            slot: 'primary' as const,
+            task: undefined,
+            category: cat,
+            chainId: chainId ?? 97,
+            imageUrl: a.imageUrl,
+            price: a.price ?? null,
+          })),
+      )
     : []
   const otherPicks = [...shelfPicks, ...writtenPicks.filter((w) => !shelfPicks.some((s) => s.tokenId === w.tokenId))]
   // arrange into the four categories, one pick per category (job-capable preferred)
