@@ -1439,8 +1439,14 @@ export async function queryAgents(
     categoryCounts,
     onlineCounts,
     // which sectors exist on this shelf, read over the whole shelf not the
-    // page, so the filter chip shows itself the moment a tagged agent exists
-    sectors: Array.from(new Set(shelf.filter((a) => a.sector).map((a) => a.sector))) as string[],
+    // page, so the filter chip shows itself the moment a tagged agent exists;
+    // the computed reading mirrors the filter, so the live top up path and the
+    // stamped builder path agree on one answer
+    sectors: shelf.some((a) =>
+      a.sector ? true : deriveAgentSector(`${a.name} ${a.description ?? ""}`) === "stocks",
+    )
+      ? ["stocks"]
+      : [],
   };
 }
 
