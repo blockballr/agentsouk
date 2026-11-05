@@ -153,7 +153,6 @@ export const QUEST_STEPS: QuestStep[] = [
       },
     },
   },
-  { key: 'stall', title: 'Your stall' },
   {
     key: 'second',
     title: 'Second hire',
@@ -183,6 +182,7 @@ export const QUEST_STEPS: QuestStep[] = [
       },
     },
   },
+  { key: 'stall', title: 'Your stall' },
 ]
 
 // hire stamps go by how many different agents were hired, not by which category they were in
