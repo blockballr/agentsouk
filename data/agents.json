@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "snapshotTime": "2026-11-05T05:50:09.168Z",
+  "snapshotTime": "2026-11-05T19:42:26.196Z",
   "source": {
-    "fetched": 2707,
-    "upstreamTotal": 372911,
-    "deduped": 1042,
-    "registryTotal": 372911,
-    "declarers": 130,
-    "endpointsRecovered": 130,
+    "fetched": 2713,
+    "upstreamTotal": 373924,
+    "deduped": 1017,
+    "registryTotal": 373924,
+    "declarers": 131,
+    "endpointsRecovered": 131,
     "seededApplied": 0
   },
   "counts": {
@@ -425,13 +425,54 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T07:11:31Z",
-      "updated_at": "2026-11-04T10:48:45.931723Z",
+      "updated_at": "2026-11-05T06:57:39.239119Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
       },
       "a2a_endpoint": "https://assay-ten-iota.vercel.app/api/agents/range",
       "web_endpoint": "https://assay-ten-iota.vercel.app/api/agents/range"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "1671ed3b-06e7-49fc-b39b-31d230cefefb",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:406220",
+      "token_id": "406220",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "34d30a8a-fba1-4d50-9f47-7dc463c982f3",
+      "owner_address": "0x84fedabd1b83443ad86796c15619494878b64180",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "Flux LP",
+      "description": "Liquidity agent for tokenized stock pools on BNB Chain. It rebalances LP ranges: reads a concentrated position against the market session and the pool tick, then returns hold, widen or exit with reasons. It does not sign or move funds.",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "x402_supported": false,
+      "total_score": 0,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-11-05T08:16:24Z",
+      "updated_at": "2026-11-05T09:09:57.096761Z",
+      "category": "rebalancing",
+      "categoryScores": {
+        "rebalancing": 4
+      },
+      "sector": "stocks",
+      "a2a_endpoint": "https://fluxlp.agentsouk.xyz/a2a"
     },
     {
       "token_agent_provider": null,
@@ -584,7 +625,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T15:16:36Z",
-      "updated_at": "2026-11-04T15:06:03.061240Z",
+      "updated_at": "2026-11-05T16:07:35.019268Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -745,7 +786,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:26:55Z",
-      "updated_at": "2026-11-03T21:49:58.812838Z",
+      "updated_at": "2026-11-05T14:24:03.973218Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -988,7 +1029,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-07T14:56:29Z",
-      "updated_at": "2026-11-04T12:42:10.601471Z",
+      "updated_at": "2026-11-05T18:56:09.156101Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -1085,6 +1126,49 @@
     },
     {
       "token_agent_provider": null,
+      "id": "e9ab9198-3a04-4564-ac86-1ec8fec2526a",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:337849",
+      "token_id": "337849",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "f243e596-1e41-4c85-aded-7ec8f81f4361",
+      "owner_address": "0xd7e004cbda24e079aa3a657ba7f8e2915192a966",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "LP Agent 1 by 4LPHA",
+      "description": "Routes liquidity to the best APR or fee opportunities with auto-rebalancing, compounding, and risk exits using PancakeSwap V3 on BNB Chain.",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/337849/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "MCP",
+        "Web"
+      ],
+      "x402_supported": false,
+      "total_score": 30.37,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-09-07T03:20:58Z",
+      "updated_at": "2026-11-05T06:17:36.758644Z",
+      "category": "rebalancing",
+      "categoryScores": {
+        "rebalancing": 2,
+        "yield": 2
+      },
+      "mcp_server": "https://4lpha.tech/mcp",
+      "web_endpoint": "https://4lpha.tech"
+    },
+    {
+      "token_agent_provider": null,
       "id": "64894941-b120-4c37-96e3-42605d96fd08",
       "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:153818",
       "token_id": "153818",
@@ -1108,7 +1192,7 @@
         "A2A"
       ],
       "x402_supported": false,
-      "total_score": 30.31,
+      "total_score": 30.32,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -1116,7 +1200,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-06-29T23:27:10Z",
-      "updated_at": "2026-11-02T03:32:39.191595Z",
+      "updated_at": "2026-11-05T11:59:50.649981Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2,
@@ -1429,49 +1513,6 @@
       "categoryScores": {
         "rebalancing": 2
       }
-    },
-    {
-      "token_agent_provider": null,
-      "id": "e9ab9198-3a04-4564-ac86-1ec8fec2526a",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:337849",
-      "token_id": "337849",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "f243e596-1e41-4c85-aded-7ec8f81f4361",
-      "owner_address": "0xd7e004cbda24e079aa3a657ba7f8e2915192a966",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "LP Agent 1 by 4LPHA",
-      "description": "Routes liquidity to the best APR or fee opportunities with auto-rebalancing, compounding, and risk exits using PancakeSwap V3 on BNB Chain.",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/337849/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "MCP",
-        "Web"
-      ],
-      "x402_supported": false,
-      "total_score": 5.01,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-09-07T03:20:58Z",
-      "updated_at": "2026-11-02T02:11:37.548365Z",
-      "category": "rebalancing",
-      "categoryScores": {
-        "rebalancing": 2,
-        "yield": 2
-      },
-      "mcp_server": "https://4lpha.tech/mcp",
-      "web_endpoint": "https://4lpha.tech"
     },
     {
       "token_agent_provider": null,
@@ -2350,43 +2391,6 @@
     },
     {
       "token_agent_provider": null,
-      "id": "131a5a2e-22a3-405c-ac4a-2f68646846f7",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:10975",
-      "token_id": "10975",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "74e07f8e-721e-4bdd-b681-0934e08c5ad8",
-      "owner_address": "0xd3835d1d042bc374c04e1508f0d5279081954e0a",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "LambdaAI_6E4A22",
-      "description": "Risk management AI for DeFi protocols and automated rebalancing.",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/10975/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [],
-      "x402_supported": false,
-      "total_score": 0,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-03-01T18:26:46Z",
-      "updated_at": "2026-06-06T06:09:19.853002Z",
-      "category": "rebalancing",
-      "categoryScores": {
-        "rebalancing": 2
-      }
-    },
-    {
-      "token_agent_provider": null,
       "id": "bf69c332-8918-485e-a67a-8f405815ceaf",
       "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:269233",
       "token_id": "269233",
@@ -2582,7 +2586,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-02T12:01:35Z",
-      "updated_at": "2026-11-02T11:45:35.065914Z",
+      "updated_at": "2026-11-05T14:29:03.941487Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2987,7 +2991,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-06T07:54:56Z",
-      "updated_at": "2026-11-02T19:44:54.569679Z",
+      "updated_at": "2026-11-05T06:32:41.239724Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -3706,7 +3710,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.31,
+      "total_score": 30.3,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -3714,7 +3718,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-09T15:51:45Z",
-      "updated_at": "2026-11-02T19:56:54.598031Z",
+      "updated_at": "2026-11-05T15:35:24.711279Z",
       "category": "yield",
       "categoryScores": {
         "yield": 6
@@ -4203,7 +4207,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-02-19T09:14:23.280669Z",
-      "updated_at": "2026-11-02T13:26:54.231050Z",
+      "updated_at": "2026-11-05T17:46:08.436848Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
@@ -4245,7 +4249,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T11:29:17Z",
-      "updated_at": "2026-11-04T11:17:01.912950Z",
+      "updated_at": "2026-11-05T15:14:03.988064Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4,
@@ -5681,7 +5685,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:32:04Z",
-      "updated_at": "2026-11-04T19:03:28.419419Z",
+      "updated_at": "2026-11-05T16:11:04.134908Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5925,7 +5929,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-19T14:38:56Z",
-      "updated_at": "2026-11-04T15:06:03.061240Z",
+      "updated_at": "2026-11-05T16:07:35.019268Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -6165,15 +6169,15 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 70.63,
+      "total_score": 70.86,
       "rank": null,
       "network_rank": null,
       "health_score": null,
-      "total_feedbacks": 8,
-      "average_score": 92.5,
+      "total_feedbacks": 9,
+      "average_score": 91.11,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T20:09:04Z",
-      "updated_at": "2026-11-04T21:32:20.156205Z",
+      "updated_at": "2026-11-05T14:48:03.960721Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 7
@@ -6409,7 +6413,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T11:43:14Z",
-      "updated_at": "2026-11-04T17:45:33.398242Z",
+      "updated_at": "2026-11-05T18:25:21.098123Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6450,7 +6454,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:33:09Z",
-      "updated_at": "2026-11-03T00:54:33.214729Z",
+      "updated_at": "2026-11-05T16:16:28.270042Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6490,7 +6494,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:19:16Z",
-      "updated_at": "2026-11-03T23:45:59.231476Z",
+      "updated_at": "2026-11-05T10:16:37.170149Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -7023,7 +7027,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-02T12:45:42Z",
-      "updated_at": "2026-11-02T23:24:57.508020Z",
+      "updated_at": "2026-11-05T17:48:08.412305Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -8526,7 +8530,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.27,
+      "total_score": 30.3,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -8534,7 +8538,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-11T01:59:25Z",
-      "updated_at": "2026-11-03T04:11:33.269202Z",
+      "updated_at": "2026-11-05T16:27:03.988262Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks",
@@ -8616,7 +8620,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-10T03:23:35Z",
-      "updated_at": "2026-11-04T09:23:41.238129Z",
+      "updated_at": "2026-11-05T17:21:08.248640Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks",
@@ -8810,7 +8814,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-15T15:11:59Z",
-      "updated_at": "2026-11-03T10:58:59.548922Z",
+      "updated_at": "2026-11-05T15:41:14.001684Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -9186,7 +9190,7 @@
         "Email"
       ],
       "x402_supported": false,
-      "total_score": 30.42,
+      "total_score": 30.39,
       "rank": null,
       "network_rank": null,
       "health_score": 76.67,
@@ -9194,7 +9198,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-28T20:51:45Z",
-      "updated_at": "2026-11-05T04:43:27.984770Z",
+      "updated_at": "2026-11-05T10:44:43.745464Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://app.singularry.org/agents/24/agent-card.json",
@@ -9280,7 +9284,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-28T16:34:26Z",
-      "updated_at": "2026-11-02T01:58:39.179378Z",
+      "updated_at": "2026-11-05T14:36:07.166493Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://app.singularry.org/agents/22/agent-card.json",
@@ -9445,7 +9449,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:34:23Z",
-      "updated_at": "2026-11-03T22:46:59.019062Z",
+      "updated_at": "2026-11-05T16:41:10.959175Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks",
@@ -9485,7 +9489,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:21:31Z",
-      "updated_at": "2026-11-04T05:42:03.384260Z",
+      "updated_at": "2026-11-05T16:23:03.979637Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks",
