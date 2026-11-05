@@ -860,6 +860,9 @@ export function RegisterWizard({
               {cardState === 'read' && (
                 <span className="micro text-souk-data">Prefilled from the card, edit anything</span>
               )}
+              {cardState === 'unread' && (
+                <span className="micro text-souk-peach">That link serves no readable card; the fields below stay as you typed them</span>
+              )}
             </div>
 
             <div className="mt-3 grid gap-4 sm:grid-cols-2">

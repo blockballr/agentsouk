@@ -267,11 +267,11 @@ export function endpointRefusal(raw: string): string | null {
 }
 
 /**
- * The card's own words and face, read from the browser so a pasted endpoint can
- * fill the form: the name, description and picture the agent already serves,
- * never guessed. The picture is read from whichever image field the card
- * carries, and only from a public https address. A card that will not serve
- * this origin answers nothing here; the verification loop is what reports that.
+ * The card's own words and face, so a pasted endpoint can fill the form: the
+ * name, description and picture the agent already serves, never guessed. The
+ * picture is read from whichever image field the card carries, and only from a
+ * public https address. A link that serves no readable card answers null here,
+ * and the form stays exactly as the lister typed it.
  */
 export async function readAgentCard(
   raw: string,
@@ -279,29 +279,28 @@ export async function readAgentCard(
   const url = raw.trim()
   if (!url || endpointRefusal(url)) return null
   try {
-    const res = await fetch(url, {
-      method: 'GET',
-      mode: 'cors',
+    // the card read goes through the marketplace's own proxy, so a card the
+    // agent's host will not serve cross-origin still fills the form; the proxy
+    // derives the well-known card path for a messaging link like /a2a
+    const base = import.meta.env.VITE_API_URL ?? '/api'
+    const res = await fetch(`${base}/agent-card?url=${encodeURIComponent(url)}`, {
       cache: 'no-store',
-      signal: AbortSignal.timeout(6000),
+      signal: AbortSignal.timeout(9000),
     })
     if (!res.ok) return null
     const body = (await res.json()) as {
       name?: unknown
       description?: unknown
-      icon?: unknown
       image?: unknown
-      avatar?: unknown
     }
-    const icon = [body.icon, body.image, body.avatar].find(
-      (v): v is string => typeof v === 'string' && v.trim().startsWith('https://'),
-    )
+    const icon = typeof body.image === 'string' && body.image.trim().startsWith('https://') ? body.image.trim() : null
+    const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : null
+    const description = typeof body.description === 'string' && body.description.trim() ? body.description.trim() : null
+    if (!name && !description && !icon) return null
     return {
-      ...(typeof body.name === 'string' && body.name.trim() ? { name: body.name.trim() } : {}),
-      ...(typeof body.description === 'string' && body.description.trim()
-        ? { description: body.description.trim() }
-        : {}),
-      ...(icon ? { image: icon.trim() } : {}),
+      ...(name ? { name } : {}),
+      ...(description ? { description } : {}),
+      ...(icon ? { image: icon } : {}),
     }
   } catch {
     return null
