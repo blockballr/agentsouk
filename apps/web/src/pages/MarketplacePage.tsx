@@ -97,6 +97,7 @@ export function MarketplacePage() {
     source: 'store' | 'snapshot' | 'unavailable'
     counts: Record<string, number>
     onlineCounts: Record<string, number>
+    justListed: AgentSummary[]
     // the joined sector list, only present when the server's summary carries it
     sectors: string[]
     total: number
@@ -139,6 +140,7 @@ export function MarketplacePage() {
             source: r.indexStatus.catalogueSource,
             counts: r.counts,
             onlineCounts: r.onlineCounts,
+            justListed: r.justListed,
             sectors: r.sectors,
             total: r.total,
           })
@@ -218,6 +220,14 @@ export function MarketplacePage() {
             <Txt size={11} lead={16} mono upper tone="data" className="line-clamp-2 sm:line-clamp-none">
               {strap}
             </Txt>
+            {result ? (
+              <span
+                className="inline-flex h-8 shrink-0 items-center border border-souk-hair bg-souk-surface1 px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-muted"
+                title={result.source === 'snapshot' ? 'The shared store did not answer, so the committed snapshot is serving the shelf' : 'The shelf is reading the shared catalogue store'}
+              >
+                {catalogueSourceLabel(result.source)}
+              </span>
+            ) : null}
             {/* the live stamp: whether the shelf has answered, and how fresh the
                 data behind it is. the dot pulses only while the data is fresh */}
             <span
@@ -492,6 +502,19 @@ export function MarketplacePage() {
             cards start directly under it and the pagination closes the same band */}
         <Section pad="pt-6 pb-16">
         <Stack gap={24}>
+        {result && result.justListed.length > 0 ? (
+          <Stack gap={12}>
+            <Row align="center" gap={12} className="flex-wrap">
+              <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                Just listed
+              </Txt>
+              <Txt size={11} lead={16} tone="slate">
+                admitted this week and answered a probe
+              </Txt>
+            </Row>
+            <AgentGrid items={result.justListed} shortlist={shortlist} onToggle={handleToggle} />
+          </Stack>
+        ) : null}
         <Stack>
           {result?.source === 'unavailable' ? (
             <UnavailableState onRetry={() => setSp(new URLSearchParams(sp))} />
@@ -563,6 +586,16 @@ export function catalogueFreshnessLabel(
     ? relativeAgeLabel(catalogueRefreshedAt, now)
     : null
   return relative ? `catalogue refreshed ${relative}` : null
+}
+
+// The shelf's source is a fact, not a mood: the shared store is the live
+// catalogue, the snapshot is the committed fallback, and unavailable means
+// neither answered.
+export function catalogueSourceLabel(source?: 'store' | 'snapshot' | 'unavailable'): string {
+  if (source === 'store') return 'shared store'
+  if (source === 'snapshot') return 'snapshot fallback'
+  if (source === 'unavailable') return 'catalogue unavailable'
+  return 'reading source'
 }
 
 function relativeAgeLabel(iso: string, now: number): string | null {

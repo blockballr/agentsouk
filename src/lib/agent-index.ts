@@ -88,6 +88,31 @@ export function canExecute(a: {
  * marketplace can call. The shelf sells work a hire can execute, so a listing
  * that only answers in a browser, or only talks, is not admitted.
  */
+// a new listing has no score, so the ranked page alone can hide it on page two
+// forever. the strip is bounded and only carries agents whose probe answered.
+export const JUST_LISTED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function recentAdmissions(
+  items: AgentSummary[],
+  verifications: Map<string, { status?: string }> | undefined,
+  now: number,
+  limit = 4,
+): AgentSummary[] {
+  return items
+    .filter((a) => {
+      const admitted = Date.parse((a as { admitted_at?: string }).admitted_at ?? "");
+      if (!Number.isFinite(admitted) || admitted > now || now - admitted > JUST_LISTED_WINDOW_MS) return false;
+      const status = verifications?.get(String(a.token_id))?.status;
+      return status === "online" || status === "delivered";
+    })
+    .sort(
+      (a, b) =>
+        Date.parse((b as { admitted_at?: string }).admitted_at ?? "") -
+        Date.parse((a as { admitted_at?: string }).admitted_at ?? ""),
+    )
+    .slice(0, Math.max(0, limit));
+}
+
 export function isShelfReady(a: {
   a2a_endpoint?: string | null;
   mcp_server?: string | null;

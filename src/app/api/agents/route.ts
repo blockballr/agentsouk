@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryAgents } from "@/lib/scanner";
 import { targetChainId } from "@/lib/types";
+import type { AgentSummary } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
 import { isPancakeSwapAgent, readsPancakeSwap } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
@@ -122,14 +123,15 @@ export async function GET(req: NextRequest) {
   // the detail route asks the same durable question, so a revoke recorded
   // elsewhere cannot leave a dead session showing live on the shelf
   const sessions = ranked.map((a) => findActiveSession(a.chain_id, a.token_id));
+  const listedSessions = (result.justListed ?? []).map((a) => findActiveSession(a.chain_id, a.token_id));
   // revoked and edits are independent of each other and of the items mapping, so
   // read them together instead of one after the other
   const [revoked, edits] = await Promise.all([
-    revokedAmong(sessions.flatMap((s) => (s ? [s.paymentId] : []))),
+    revokedAmong([...sessions, ...listedSessions].flatMap((s) => (s ? [s.paymentId] : []))),
     loadListingEdits(),
   ]);
 
-  const items = ranked.map((a, i) => {
+  const enrich = (a: AgentSummary, found: ReturnType<typeof findActiveSession>) => {
     const verification = verifications.get(a.token_id);
     const shown = withListingEdit(a, edits.get(editKey(a.chain_id, a.token_id)));
     const withPcs =
@@ -139,13 +141,15 @@ export async function GET(req: NextRequest) {
     const custom = customByToken.get(String(a.token_id));
     const withCustom = custom ? { ...withPcs, isCustom: true, customAgentId: custom.id, customOnline: custom.deployment?.ok === true } : withPcs;
     const withVerification = verification ? { ...withCustom, verification } : withCustom;
-    const found = sessions[i];
     const activeSession = found && !revoked.has(found.paymentId) ? found : undefined;
     const withSession = activeSession
       ? { ...withVerification, activeSession }
       : withVerification;
     return isBoosted(a.chain_id, a.token_id) ? { ...withSession, boosted: true } : withSession;
-  });
+  };
+
+  const items = ranked.map((a, i) => enrich(a, sessions[i]));
+  const justListed = (result.justListed ?? []).map((a, i) => enrich(a, listedSessions[i]));
 
   const tEnd = performance.now();
   const tDeps = Math.max(tVerify, tCustom);
@@ -177,6 +181,8 @@ export async function GET(req: NextRequest) {
     // whether the store or the committed snapshot is serving
     indexStatus: result.indexStatus,
     items,
+    // new listings ride in their own bounded strip; the ranked page is unchanged
+    justListed,
     // the proof strip reads both: snapshotTotal is how many agents the committed
     // snapshot holds, registryTotal how many the registry reports for this chain
     // (null when the snapshot never recorded one), and the timestamps are the

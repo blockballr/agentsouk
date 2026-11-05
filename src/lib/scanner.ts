@@ -32,6 +32,7 @@ import {
   isShelfReady,
   snapshotEndpointRegime,
   summaryFromDetail,
+  recentAdmissions,
 } from "./agent-index";
 import {
   deleteShelfAgent,
@@ -1348,6 +1349,8 @@ export interface QueryResult {
   total: number;
   page: number;
   limit: number;
+  // bounded exposure for listings admitted in the last week that answered a probe
+  justListed: AgentSummary[];
   // the sectors any served agent carries, so the shelf can offer a sector
   // filter exactly when one applies
   sectors?: string[];
@@ -1518,9 +1521,13 @@ export async function queryAgents(
     liveUpstreamTotal: index.liveUpstreamTotal,
   });
 
+  // bounded exposure for listings the ranking cannot carry yet
+  const justListed = recentAdmissions(items, verifications, Date.now(), 4);
+
   return {
     items: paged,
     total,
+    justListed,
     page,
     limit,
     indexStatus: {

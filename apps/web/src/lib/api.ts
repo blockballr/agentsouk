@@ -22,6 +22,7 @@ export interface AgentsQuery {
 
 export interface AgentsResult {
   items: AgentSummary[]
+  justListed: AgentSummary[]
   total: number
   // agents held in the committed snapshot
   snapshotTotal: number | null
@@ -75,6 +76,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   if (!res.ok) throw new Error(`agents ${res.status}`)
   const body = await readJsonBody<{
     items?: AgentSummary[]
+    justListed?: AgentSummary[]
     total?: number
     snapshotTotal?: number | null
     shelved?: number | null
@@ -117,6 +119,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   }
   return {
     items,
+    justListed: Array.isArray(body.justListed) ? body.justListed : [],
     total: body.total ?? 0,
     snapshotTotal: body.snapshotTotal ?? null,
     shelved:
