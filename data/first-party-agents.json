@@ -1,4 +1,5 @@
 {
+  "note": "Agent Souk owned listings. This is the curated first-party registry, not marketplace discovery data.",
   "agents": [
     {
       "chainId": 97,

@@ -30,7 +30,7 @@ let sidecarRead: Promise<void> | null = null;
 // Without a database the durable copy is a committed sidecar, so a rebuild keeps
 // the endpoints an operator published and a reviewer can see every change to them
 // in a diff. It is read once per process and is never written at runtime.
-const SIDECAR = path.join("data", "seeded-endpoints.json");
+const SIDECAR = path.join("data", "recovered-endpoints.json");
 
 function loadSidecar(): Promise<void> {
   if (sidecarRead) return sidecarRead;

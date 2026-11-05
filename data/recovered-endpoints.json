@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "a2a endpoints an operator published on its own agent card, for shelf listings the registry's list payload carries no endpoint for. A rebuild reads this so the seeds survive it. source is the card each endpoint was read from.",
+  "note": "Recovered a2a endpoints read from the operator's own agent card, for shelf listings whose registry list payload carries no endpoint. A rebuild re-applies them. source is the card each endpoint was read from.",
   "entries": [
     {
       "chainId": 56,
