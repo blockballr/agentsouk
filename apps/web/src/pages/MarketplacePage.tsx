@@ -27,6 +27,13 @@ const jobSorts = [
 
 const defaultSorts = [
   {
+    // vault leads the sort options: a funded HireVault hire is the deploy the
+    // campaign rewards, so the shelf offers it before every metric
+    key: 'vault',
+    label: 'Vault hire',
+    title: 'Vault-capable agents only, ranked by reputation. The rail filter composes with the metric once picked.',
+  },
+  {
     key: 'score',
     label: 'Reputation',
     title: 'Registry reputation leads, then most reviewed, then health, then newest. Reachability only settles what those cannot, and job sellers lead each group.',
@@ -396,21 +403,32 @@ export function MarketplacePage() {
               <Txt size={10} lead={12} tone="muted" className="uppercase tracking-wide">
                 Sort
               </Txt>
-              {defaultSorts.map((s) => (
-                <SortButton
-                  key={s.key}
-                  active={metric === s.key}
-                  title={'title' in s ? s.title : undefined}
-                  onClick={() => setParam('metric', s.key)}
-                >
-                  {s.label}
-                </SortButton>
-              ))}
+              {defaultSorts.map((s) =>
+                s.key === 'vault' ? (
+                  <SortButton
+                    key="vault"
+                    active={type === 'vault'}
+                    title={s.title}
+                    onClick={() => setParam('type', type === 'vault' ? 'jobs' : 'vault')}
+                  >
+                    {s.label}
+                  </SortButton>
+                ) : (
+                  <SortButton
+                    key={s.key}
+                    active={metric === s.key}
+                    title={'title' in s ? s.title : undefined}
+                    onClick={() => setParam('metric', s.key)}
+                  >
+                    {s.label}
+                  </SortButton>
+                ),
+              )}
             </Row>
             <select
               aria-label="Sort agents"
-              value={metric}
-              onChange={(e) => setParam('metric', e.target.value)}
+              value={type === 'vault' ? 'vault' : metric}
+              onChange={(e) => setParam(e.target.value === 'vault' ? 'type' : 'metric', e.target.value)}
               className="h-9 min-w-0 flex-1 border border-souk-hair bg-souk-surface1 px-2 font-mono text-[10px] uppercase tracking-[0.06em] text-souk-slate sm:hidden"
             >
               {defaultSorts.map((s) => (
