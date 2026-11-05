@@ -1,5 +1,5 @@
 import "server-only";
-import { CATEGORY_KEYS, takesVault } from "@agora/core";
+import { CATEGORY_KEYS, takesJobs, takesVault } from "@agora/core";
 import { durableMode, loadJobsByToken } from "./durable-store";
 import { asksForSecrets, hasConfirmedCompletion } from "./quest-eligibility";
 import { answeringPick, declaredPrice } from "./quest-pick-health";
@@ -41,8 +41,8 @@ async function confirmed(chainId: number, tokenId: string, owner: string): Promi
   return ok;
 }
 
-// the picks follow the shelf's vault-capable listings, so an agent listed tomorrow
-// is offered as soon as it answers its check; nothing here names an agent
+// the picks follow the shelf's vault and escrow listings, so an agent listed
+// tomorrow is offered as soon as it answers its check; nothing here names an agent
 export async function loadQuestShelf(
   seed: string | null,
 ): Promise<{ chainId: number; observed: boolean; picks: Record<string, QuestShelf> }> {
@@ -55,8 +55,9 @@ export async function loadQuestShelf(
   const shelf = await queryAgents({ limit: 5000, verifications, seed });
   const picks: Record<string, QuestShelf> = {};
   for (const category of CATEGORY_KEYS) {
-    // only vault agents are offered now: the quest steps are funded vault hires,
-    // so a job-only or direct-only seller is not a usable pick even if it answers
+    // the shelf returns the agents a quest card can use: vault agents for the
+    // pinned hire steps, and escrow sellers for the wider picks table. A
+    // direct-call or x402-only seller is not a quest hire, so it stays out.
     const working = shelf.items
       .filter((a) => {
         // the sweep's own row first, then the verdict the catalogue row carries, so a
@@ -65,7 +66,7 @@ export async function loadQuestShelf(
         const detail = check && "detail" in check ? (check as { detail?: string }).detail : undefined;
         return (
           a.category === category &&
-          takesVault(a.skills) &&
+          (takesJobs(a.skills) || takesVault(a.skills)) &&
           answeringPick(check) &&
           (!detail || !asksForSecrets(detail))
         );
