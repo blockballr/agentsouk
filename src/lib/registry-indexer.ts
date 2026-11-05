@@ -201,20 +201,37 @@ export async function syncRegistryFromChain(options: {
     watermark: head,
   };
 
-  let logs: Array<{ data?: string; topics?: string[]; blockNumber?: string; transactionHash?: string; removed?: boolean }> = [];
-  try {
-    const raw = (await rpc("eth_getLogs", [
-      {
-        fromBlock: "0x" + fromBlock.toString(16),
-        toBlock: "0x" + head.toString(16),
-        address: REGISTRY,
-        topics: [[REGISTERED_TOPIC, URI_UPDATED_TOPIC]],
-      },
-    ])) as typeof logs;
-    logs = (raw ?? []).filter((l) => !l.removed);
-  } catch (e) {
-    report.error = (e as Error).message;
-    return report;
+  // public endpoints cap the getLogs range and result size, so the window is
+  // walked in small slices; the watermark keeps the coverage continuous even
+  // when a slice fails mid-run
+  const slice = 400;
+  const logs: Array<{ data?: string; topics?: string[]; blockNumber?: string; transactionHash?: string; removed?: boolean }> = [];
+  let scannedTo = fromBlock;
+  for (let lo = fromBlock; lo <= head; lo += slice) {
+    const hi = Math.min(lo + slice - 1, head);
+    try {
+      const raw = (await rpc("eth_getLogs", [
+        {
+          fromBlock: "0x" + lo.toString(16),
+          toBlock: "0x" + hi.toString(16),
+          address: REGISTRY,
+          topics: [[REGISTERED_TOPIC, URI_UPDATED_TOPIC]],
+        },
+      ])) as typeof logs;
+      for (const l of raw ?? []) if (!l.removed) logs.push(l);
+      scannedTo = hi;
+      report.scannedBlocks = scannedTo - fromBlock;
+    } catch (e) {
+      if (scannedTo > fromBlock) {
+        // resume from the last full slice on the next run instead of failing all
+        report.watermark = scannedTo;
+        report.toBlock = scannedTo;
+        report.error = `resumed at block ${lo}: ${(e as Error).message}`;
+        break;
+      }
+      report.error = (e as Error).message;
+      return report;
+    }
   }
   report.events = logs.length;
 
@@ -255,6 +272,8 @@ export async function syncRegistryFromChain(options: {
     else report.refused.push({ tokenId, reason: admission.reason ?? "refused" });
   }
   report.admitted = admitted;
-  watermark = head;
+  report.watermark = scannedTo;
+  report.toBlock = scannedTo;
+  watermark = scannedTo;
   return report;
 }
