@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CATEGORIES, shortAddress, takesVault } from '@agora/core'
+import { CATEGORIES, shortAddress, takesJobs, takesVault } from '@agora/core'
 import { HireInAction } from '../components/HireInAction'
 import { visitSeed } from '../lib/rotation'
 import { isOperatedByAgentSouk } from '../lib/first-party'
@@ -169,22 +169,24 @@ export function QuestPage() {
             price: a.price ?? null,
           }))
       })
-  // other working agents from the shelf, across the four categories; the hire
-  // step cards stay vault-only, but this table is the wider market
+  // other third-party escrow agents from the shelf, across the four categories;
+  // the hire step cards stay vault-only, and direct-call agents stay out
   const shelfPicks = shelf
     ? Object.entries(shelf).flatMap(([cat, s]) =>
-        (s?.working ?? []).map((a) => ({
-          key: `shelf-${a.tokenId}`,
-          stepTitle: 'Other pick',
-          name: a.name,
-          tokenId: a.tokenId,
-          slot: 'primary' as const,
-          task: undefined,
-          category: cat,
-          chainId: chainId ?? 97,
-          imageUrl: a.imageUrl,
-          price: a.price ?? null,
-        })),
+        (s?.working ?? [])
+          .filter((a) => takesJobs(a.skills) && !isOperatedByAgentSouk(a.owner))
+          .map((a) => ({
+            key: `shelf-${a.tokenId}`,
+            stepTitle: 'Other pick',
+            name: a.name,
+            tokenId: a.tokenId,
+            slot: 'primary' as const,
+            task: undefined,
+            category: cat,
+            chainId: chainId ?? 97,
+            imageUrl: a.imageUrl,
+            price: a.price ?? null,
+          })),
       )
     : []
   const otherPicks = [...shelfPicks, ...writtenPicks.filter((w) => !shelfPicks.some((s) => s.tokenId === w.tokenId))]
