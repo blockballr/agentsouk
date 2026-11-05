@@ -90,8 +90,9 @@ export function firstPartyVaultOnly(chainId: number, tokenId: string): boolean {
   return byToken(chainId, tokenId)?.vaultOnly === true;
 }
 
-// an agent may set a higher entry than the vault's floor; the page reads this so
-// the buyer sees the real minimum before signing, not a revert
+// an agent names the size at which its strategy is worth the gas. the vault's
+// own floor is the only gate, so the page shows this as a recommendation and
+// lets a smaller hire open
 export function firstPartyMinDeposit(chainId: number, tokenId: string): number | null {
   const value = byToken(chainId, tokenId)?.minDepositUsd;
   return typeof value === "number" && value > 0 ? value : null;

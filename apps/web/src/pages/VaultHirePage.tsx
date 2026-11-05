@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { createPublicClient, decodeFunctionResult, encodeFunctionData, formatUnits, http, parseUnits } from 'viem'
 import {
   approveCalldata,
+  belowRecommendedSize,
   checkAmount,
   checkSlippage,
   expiryFor,
@@ -11,6 +12,7 @@ import {
   MAX_TERM_SECONDS,
   openCalldata,
   tagHirePolicy,
+  underVaultFloor,
   vaultFor,
   vaultTokenA,
   vaultTokenB,
@@ -601,12 +603,10 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
     if (slErr || amErr) return setFormError(slErr ?? amErr ?? 'Check the form.')
     // USDT is token0 on both live pairs, so the contract's floor is a direct
     // comparison for this choice. a WBNB deposit is valued at the open price and
-    // the contract refuses it if it lands under the same floor.
-    if (tokenChoice === 'USDT' && requiredMin != null) {
-      const asked = Number(amount)
-      if (Number.isFinite(asked) && asked < requiredMin) {
-        return setFormError(`This hire takes at least ${requiredMin} USDT.`)
-      }
+    // the contract refuses it if it lands under the same floor. the agent's
+    // recommended size is not a gate: a smaller hire still runs.
+    if (tokenChoice === 'USDT' && underVaultFloor(amount, contractMin)) {
+      return setFormError(`The vault refuses a deposit under ${contractMin} USDT.`)
     }
     if (!agentAddress) return setFormError('Name the agent wallet, or open this page from the agent card.')
     if (agentPolicy === 'buffer' && !venueTarget) {
@@ -721,9 +721,12 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
   const openCount = (hires ?? []).filter((h) => h.open).length
   const atQueueCap = maxOpen !== null && openCount >= maxOpen
 
-  // the agent may ask for more than the vault's floor; the buyer sees the larger
-  // of the two before signing
-  const requiredMin = Math.max(minDeposit ?? 0, prefill?.minDepositUsd ?? 0) || null
+  // two different numbers: the contract refuses anything under its own floor,
+  // and the agent names a size at which its strategy is worth the gas. only the
+  // floor is a gate. the recommendation seeds the field and explains the trade.
+  const contractMin = minDeposit ?? null
+  const recommendedMin = prefill?.minDepositUsd ?? null
+  const belowRecommended = tokenChoice === 'USDT' && belowRecommendedSize(amount, recommendedMin)
   const chooser = !tokenId && !isCategoryMode
   const categoryAgents = (vaultAgents ?? []).filter((a) => policyMatchesCategory(a.policy, categoryParam))
   const agentNeedle = agentQuery.trim().toLowerCase()
@@ -751,11 +754,12 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
       to: card.supported ? `/vault/c/${key}` : `/agents?category=${key}`,
     }
   })
-  // an agent may ask for more than the vault minimum, so the field starts at the
-  // larger of the two rather than opening with a number the form will reject
+  // the recommendation seeds an empty field, so the buyer starts at a size the
+  // strategy is built for without being forced back up after lowering it
   useEffect(() => {
-    if (requiredMin != null && Number(amount) < requiredMin) setAmount(String(requiredMin))
-  }, [requiredMin])
+    if (recommendedMin == null) return
+    setAmount((current) => (Number(current) > 0 ? current : String(recommendedMin)))
+  }, [recommendedMin])
   const depositUsd = (() => {
     const n = Number(amount)
     if (!Number.isFinite(n) || n <= 0) return null
@@ -1056,9 +1060,24 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
               <Txt size={12} lead={18} tone="steel">
                 The approval is scoped to this amount.
               </Txt>
-              {requiredMin != null ? (
+              {recommendedMin != null ? (
                 <Txt size={11} lead={16} mono tone="data">
-                  minimum {requiredMin} USDT{tokenChoice === 'WBNB' ? ' of value at the open price' : ''}
+                  {recommendedMin} USDT recommended{tokenChoice === 'WBNB' ? ' in value at the open price' : ''}
+                </Txt>
+              ) : null}
+              {recommendedMin != null ? (
+                <Txt size={12} lead={18} tone="steel">
+                  The size at which the strategy is worth its gas. Not a limit: the vault opens any deposit above its floor.
+                </Txt>
+              ) : null}
+              {contractMin != null ? (
+                <Txt size={11} lead={16} mono tone="steel">
+                  vault floor {contractMin} USDT{tokenChoice === 'WBNB' ? ' in value at the open price' : ''}
+                </Txt>
+              ) : null}
+              {belowRecommended ? (
+                <Txt size={10} lead={14} mono tone="peach">
+                  Below the recommended size. It still runs, but gas and fees can outweigh the result.
                 </Txt>
               ) : null}
               {gasNote && agentPolicy === 'buffer' ? (

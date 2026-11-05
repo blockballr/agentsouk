@@ -190,6 +190,22 @@ export function checkAmount(amount: string, cap: string | null): string | null {
   return null
 }
 
+// Two numbers decide a hire's size, and only one of them blocks. The contract
+// refuses a deposit valued under minDepositInToken0. The agent names the size at
+// which its strategy is worth the gas; that is advice, so a smaller hire opens
+// and the page says what the buyer gives up rather than stopping them.
+export function underVaultFloor(amount: string, contractMin: number | null): boolean {
+  const n = Number(amount)
+  if (contractMin == null || contractMin <= 0) return false
+  return Number.isFinite(n) && n > 0 && n < contractMin
+}
+
+export function belowRecommendedSize(amount: string, recommendedMin: number | null): boolean {
+  const n = Number(amount)
+  if (recommendedMin == null || recommendedMin <= 0) return false
+  return Number.isFinite(n) && n > 0 && n < recommendedMin
+}
+
 export function readHire(raw: readonly unknown[]): VaultHire {
   return {
     buyer: raw[0] as string,
