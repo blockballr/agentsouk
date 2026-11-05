@@ -118,7 +118,7 @@
     },
     {
       "path": "/api/cron/registry-sync",
-      "schedule": "*/30 * * * *"
+      "schedule": "3 3 * * *"
     }
   ]
 }
