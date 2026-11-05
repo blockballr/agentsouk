@@ -135,10 +135,11 @@ export const QUEST_STEPS: QuestStep[] = [
     agents: {
       97: {
         primary: {
-          tokenId: '2504',
-          name: 'Souk Health Guard',
-          task: 'Compute the health factor for collateral 1000 USD and debt 500 USD at a liquidation threshold of 0.8.',
-          input: { collateral: 1000, debt: 500, liquidationThreshold: 0.8 },
+          tokenId: '2524',
+          name: 'Souk Drift Guard',
+          task: 'Fund a vault hire with 100 USDT and let the guard keep the position in range.',
+          // the step names a funded vault hire, so the card sends this pick to the vault rail
+          skills: [{ id: 'vault-execution' }],
         },
         alternate: { tokenId: '2238', name: 'Keel' },
       },
@@ -160,15 +161,15 @@ export const QUEST_STEPS: QuestStep[] = [
     agents: {
       97: {
         primary: {
-          tokenId: '2237',
-          name: 'Sluicegate',
-          task: 'What is the net APR for moving 10000 USD of USDT into Venus on BNB Smart Chain?',
-        },
-        alternate: {
           tokenId: '2521',
           name: 'Souk Yield Lens',
           task: 'Project the earnings on 5000 USD at a gross APY of 8 percent.',
           input: { principalUsd: 5000, grossApyPercent: 8 },
+        },
+        alternate: {
+          tokenId: '2237',
+          name: 'Sluicegate',
+          task: 'What is the net APR for moving 10000 USD of USDT into Venus on BNB Smart Chain?',
         },
       },
       56: {

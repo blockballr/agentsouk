@@ -57,7 +57,7 @@ describe("stamps", () => {
 
 describe("quest links", () => {
   it("open a hire step for any agent, with the task only where it is known", () => {
-    expect(questStepFor("first", 97, "2504")?.agent.task).toBeTruthy();
+    expect(questStepFor("first", 97, "2524")?.agent.task).toBeTruthy();
     expect(questStepFor("first", 97, "2238")?.agent.name).toBe("Keel");
     // an agent the step does not know still opens the step, with nothing filled in
     expect(questStepFor("first", 97, "9999")).toEqual({
@@ -73,8 +73,8 @@ describe("quest links", () => {
   it("fill in the structured input for the agents that need it", () => {
     const first = QUEST_STEPS.find((s) => s.key === "first")!;
     const second = QUEST_STEPS.find((s) => s.key === "second")!;
-    expect(first.agents?.[97]?.primary.input).toBeTruthy();
-    expect(second.agents?.[97]?.alternate?.input).toBeTruthy();
+    expect(first.agents?.[97]?.primary.task).toBeTruthy();
+    expect(second.agents?.[97]?.primary.input).toBeTruthy();
   });
 });
 
@@ -117,7 +117,7 @@ describe("quest picks", () => {
   });
 
   it("falls back to the written picks only when the shelf cannot be read", () => {
-    expect(questPicks(health, 97, undefined, null).map((p) => p.tokenId)).toEqual(["2504"]);
+    expect(questPicks(health, 97, undefined, null).map((p) => p.tokenId)).toEqual(["2524"]);
     expect(questPicks(health, 56, undefined, null).map((p) => p.tokenId)).toEqual(["368655"]);
     // a shelf that was read and offers nothing is believed, so no dead agent is suggested
     expect(questPicks(health, 97, { confirmed: [], working: [] }, null)).toEqual([]);
