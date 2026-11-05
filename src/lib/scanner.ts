@@ -244,7 +244,9 @@ export async function fetchAgentDetail(
   const canonical = firstPartyDescription(chainId, tokenId);
   if (canonical && !data.description) data.description = canonical;
   const canonicalWallet = firstPartyWallet(chainId, tokenId);
-  if (canonicalWallet && !data.agent_wallet) data.agent_wallet = canonicalWallet;
+  // the registry record can carry the owner address in agent_wallet; the
+  // first-party file is the canonical executor wallet, so it wins when present
+  if (canonicalWallet) data.agent_wallet = canonicalWallet;
   const canonicalSkills = firstPartySkills(chainId, tokenId);
   if (canonicalSkills && (!data.skills || data.skills.length === 0)) data.skills = canonicalSkills;
   const str = (v: unknown) => (typeof v === "string" ? v : null);
