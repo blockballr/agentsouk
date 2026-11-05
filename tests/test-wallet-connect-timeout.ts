@@ -27,6 +27,7 @@ const TIMEOUT_COPY = "we reached no wallet: check the wallet popup or click conn
 
 beforeEach(() => {
   storage.clear();
+  m.clearWalletChoice.mockReset();
   vi.unstubAllGlobals();
   vi.stubGlobal("localStorage", {
     getItem: (k: string) => storage.get(k) ?? null,
@@ -40,6 +41,9 @@ describe("connectWalletWithTimeout", () => {
     m.connectProvider.mockImplementation(() => new Promise(() => {}));
 
     await expect(connectWalletWithTimeout(50)).rejects.toThrow(TIMEOUT_COPY);
+
+    // the dead choice goes with the timeout, so the next click reopens the picker
+    expect(m.clearWalletChoice).toHaveBeenCalledTimes(1);
   });
 
   it("gives up exactly on the default 20 second bound", async () => {
@@ -80,6 +84,7 @@ describe("connectWalletWithTimeout", () => {
     const address = await connectWalletWithTimeout(5_000);
 
     expect(address).toBe(A);
+    expect(m.clearWalletChoice).not.toHaveBeenCalled();
     expect(JSON.parse(storage.get(KEY) ?? "{}")[A.toLowerCase()]).toBeTruthy();
   });
 

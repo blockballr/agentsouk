@@ -143,6 +143,24 @@ describe("connectProvider against a stale walletconnect choice", () => {
   });
 });
 
+describe("a failed account request", () => {
+  it("does not leave the picked wallet behind as a dead choice", async () => {
+    const { provider } = announce("io.rabby.fail", "Rabby Fail");
+    provider.request = async ({ method }) => {
+      if (method === "eth_requestAccounts") {
+        throw Object.assign(new Error("User rejected the request."), { code: 4001 });
+      }
+      return [ACCOUNT];
+    };
+    pickerPick = "io.rabby.fail";
+
+    await expect(wallet.connectProvider()).rejects.toThrow(/rejected/i);
+
+    // the next connect must reopen the picker instead of reusing this wallet
+    expect(storage.has(KEY)).toBe(false);
+  });
+});
+
 describe("explicit disconnect", () => {
   it("keeps the provider's account out until a deliberate connect", async () => {
     announce("io.rabby.disconnect", "Rabby Disconnect");

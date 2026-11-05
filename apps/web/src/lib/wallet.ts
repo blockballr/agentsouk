@@ -659,8 +659,12 @@ export async function connectProvider(): Promise<string> {
     return account;
   }
   const provider = await resolveProvider(option);
+  // store the choice only after the wallet answers: a request that hangs or is
+  // declined must not leave a dead choice behind, or the next connect skips the
+  // picker and asks the same unresponsive extension again
+  const account = await requestAccounts(provider);
   storeRdns(option.rdns);
-  return requestAccounts(provider);
+  return account;
 }
 
 // change-wallet affordance: drop the current choice, reopen the picker, and
@@ -670,8 +674,9 @@ export async function changeWallet(): Promise<string | null> {
   const picked = await openWalletPicker();
   if (!picked) return null;
   const provider = await resolveProvider(picked);
+  const account = await requestAccounts(provider);
   storeRdns(picked.rdns);
-  return requestAccounts(provider);
+  return account;
 }
 
 // returns the active chain id after switching if needed

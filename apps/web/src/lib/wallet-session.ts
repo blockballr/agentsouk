@@ -7,6 +7,7 @@
 import { recoverMessageAddress } from 'viem'
 import {
   changeWallet as changeProvider,
+  clearWalletChoice,
   connectProvider,
   disconnectProvider,
   getActiveAccount,
@@ -219,8 +220,15 @@ export function connectWalletWithTimeout(timeoutMs = CONNECT_TIMEOUT_MS): Promis
     timer = setTimeout(() => reject(new ConnectTimeoutError()), timeoutMs)
   })
   // the underlying connect keeps running: a late answer still lands through the
-  // wallet events, the bound only frees the surface that was waiting on it
-  return Promise.race([connectWallet(), bound]).finally(() => clearTimeout(timer))
+  // wallet events, the bound only frees the surface that was waiting on it.
+  // the dead choice is dropped on timeout, so the next click reopens the picker
+  // instead of asking the same unresponsive extension again
+  return Promise.race([connectWallet(), bound])
+    .catch((e) => {
+      if (e instanceof ConnectTimeoutError) clearWalletChoice()
+      throw e
+    })
+    .finally(() => clearTimeout(timer))
 }
 
 // switch wallet: the session ends first, the picked wallet signs in as its own
