@@ -33,25 +33,33 @@ export interface RegistrySyncReport {
   error?: string;
 }
 
-function rpcUrl(): string {
-  return (
-    process.env.REGISTRY_RPC_URL?.trim() ||
-    process.env.BSC_RPC_URL?.trim() ||
-    "https://bsc-dataseed.bnbchain.org"
-  );
-}
+// the bnbchain seed nodes refuse filtered getLogs outright, so the provider
+// list leads with one that answers; an explicit env still wins when set
+const PROVIDERS = [
+  process.env.REGISTRY_RPC_URL?.trim() || process.env.BSC_RPC_URL?.trim() || "",
+  "https://bsc.publicnode.com",
+  "https://bsc-dataseed.bnbchain.org",
+].filter(Boolean);
 
 async function rpc(method: string, params: unknown[]): Promise<unknown> {
-  const res = await fetch(rpcUrl(), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!res.ok) throw new Error(`rpc ${method} answered ${res.status}`);
-  const body = (await res.json()) as { result?: unknown; error?: { message?: string } };
-  if (body.error) throw new Error(`rpc ${method}: ${body.error.message ?? "error"}`);
-  return body.result;
+  let lastError: Error | null = null;
+  for (const url of PROVIDERS) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) throw new Error(`rpc ${method} answered ${res.status}`);
+      const body = (await res.json()) as { result?: unknown; error?: { message?: string } };
+      if (body.error) throw new Error(`rpc ${method}: ${body.error.message ?? "error"}`);
+      return body.result;
+    } catch (e) {
+      lastError = e as Error;
+    }
+  }
+  throw lastError ?? new Error(`rpc ${method} had no provider`);
 }
 
 // a registered or uri-updated event carries one dynamic string; the abi word
