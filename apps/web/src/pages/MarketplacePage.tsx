@@ -72,7 +72,7 @@ export function MarketplacePage() {
   }, [sp])
   const category = sp.get('category') ?? 'all'
   const q = sp.get('q') ?? ''
-  // the sector chip rides the same url as its platform shelf
+  // the sector filter rides the same url as its platform shelf
   const sector = sp.get('sector') ?? ''
   // no sort named reads as score, the chain's first metric; reachability is not
   // a choice here, it settles the ties underneath whichever metric is picked,
@@ -322,13 +322,6 @@ export function MarketplacePage() {
                   ) : null}
                 </Tab>
               ))}
-              {/* the sector chip composes with the category, and exists only
-                  while at least one agent on the shelf carries the tag */}
-              {result?.sectors?.includes('stocks') ? (
-                <Tab active={sector === 'stocks'} onClick={() => setParam('sector', sector === 'stocks' ? '' : 'stocks')}>
-                  Tokenized stocks
-                </Tab>
-              ) : null}
             </div>
             <Row align="center" gap={16} className="shrink-0">
               <button
@@ -337,7 +330,7 @@ export function MarketplacePage() {
                 aria-expanded={showFilters}
                 className="inline-flex min-h-[32px] cursor-pointer items-center border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate transition hover:text-souk-ink"
               >
-                Filters{pcs || owned || hide || verifiedOnly ? ' ·' : ''}
+                Filters{pcs || owned || hide || verifiedOnly || sector === 'stocks' ? ' ·' : ''}
               </button>
               <button
                 type="button"
@@ -432,6 +425,17 @@ export function MarketplacePage() {
               >
                 PancakeSwap
               </Switch>
+              {/* the sector tag composes with the category, and exists only
+                  while at least one agent on the shelf carries it */}
+              {result?.sectors?.includes('stocks') ? (
+                <Switch
+                  checked={sector === 'stocks'}
+                  label="Show only tokenized stocks"
+                  onChange={() => setParam('sector', sector === 'stocks' ? '' : 'stocks')}
+                >
+                  Tokenized stocks
+                </Switch>
+              ) : null}
               <Switch
                 checked={owned}
                 label="Show only agents Agent Souk runs: the operator wallet owns these on chain, disclosed the same way on every card"
