@@ -58,16 +58,17 @@ cryptographic, not claimed.
 The backend renders from a committed snapshot, `data/agents.json`, so it works
 with no API key and no warm-up. The in-memory index loads the snapshot on first
 query and falls back to pulling recent pages live only when no snapshot exists.
-A snapshot is rebuilt against live data by the build route and committed, so
-the numbers on screen are a reproducible artifact a judge can regenerate.
+A snapshot is rebuilt against live data by the build route and committed on a
+schedule, so the numbers on screen are a reproducible artifact a judge can
+regenerate.
 
 **Honest sparse categories**
 
-A category the registry genuinely lacks stays small. The grid trading category
-on BSC chain 56 holds 13 agents, and the pipeline reports that instead of
-padding the bucket with unrelated listings. Backfill into a thin category only
-accepts agents with a real classifier signal for that category, so coverage is
-real or it is absent, never invented.
+A category the registry genuinely lacks stays small. Grid trading on BSC
+chain 56 is the case in point, and the pipeline reports the category at its
+real size instead of padding the bucket with unrelated listings. Backfill into
+a thin category only accepts agents with a real classifier signal for that
+category, so coverage is real or it is absent, never invented.
 
 ### System Architecture
 
@@ -201,9 +202,13 @@ least 1 for that category, relabeled accordingly.
 
 The result is written as version 2 of the snapshot: a timestamp, the fetch
 source counts, the per-category counts, and the selected agents. The shipped
-snapshot holds 172 chain-56 agents: 51 rebalancing, 44 yield, 34 health-factor,
-13 grid-trading, 30 general. A `general` agent is never served: the shelf gate
-refuses that category, so those rows wait in the snapshot for a better reading.
+snapshot covers chain 56 only and holds what the selection rules produce,
+with a cap per category rather than a target, so growth in the registry grows
+the shelf and a thin category stays thin. A `general` agent is never served:
+the shelf gate refuses that category, so those rows wait in the snapshot for a
+better reading. The inventory itself is `data/agents.json`: the artifact a
+judge counts and regenerates rather than a headline to copy into prose, so
+this document states the rules and leaves the live numbers to the file.
 
 ### Classification and Ranking
 
@@ -489,16 +494,16 @@ and the hire path in it signs through a connected wallet, settles through the
 facilitator, and shows the receipt on the detail page.
 
 What remains is the agent index. The catalogue still opens from the committed
-snapshot for the configured chain, but freshness is no longer bounded by the
-deploy alone: a scheduled workflow calls the refresh route every fifteen
-minutes, inert until its repository variable is set, a browse tops up the
-newest 8004scan page on a sixty second cooldown after the response, and
-admitted agents are written to the durable shelf so one instance serves what
-another has already learned. The snapshot file itself is still rebuilt by
-hand, because the build route writes to a filesystem the serverless host does
-not keep, and an agent registered since the last read waits for the next top
-up. The registry is the source of truth and the snapshot is derived from it,
-so nothing is lost.
+snapshot for the configured chain, but freshness is not bounded by the deploy
+alone: a scheduled refresh runs the catalogue repeatedly through the day, a
+build-snapshot job rebuilds and commits `data/agents.json` twice daily,
+because the build route writes into a filesystem the serverless host does not
+keep so the artifact travels as a commit, and a browse tops up the newest
+8004scan page on a sixty second cooldown after the response. Admitted agents
+are written to the durable shelf so one instance serves what another has
+already learned, and an agent registered between rebuilds surfaces on the
+next top up rather than waiting. The registry is the source of truth and the
+snapshot is derived from it, so nothing is lost.
 
 ### The Provable Boundary
 
