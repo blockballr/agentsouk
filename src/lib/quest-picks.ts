@@ -1,5 +1,5 @@
 import "server-only";
-import { CATEGORY_KEYS, classifyExecution, takesJobs, takesVault } from "@agora/core";
+import { CATEGORY_KEYS, takesVault } from "@agora/core";
 import { durableMode, loadJobsByToken } from "./durable-store";
 import { asksForSecrets, hasConfirmedCompletion } from "./quest-eligibility";
 import { answeringPick, declaredPrice } from "./quest-pick-health";
@@ -41,8 +41,8 @@ async function confirmed(chainId: number, tokenId: string, owner: string): Promi
   return ok;
 }
 
-// the picks follow the shelf, so an agent listed tomorrow is offered as soon as it answers its
-// check and a job has completed on it; nothing here names an agent
+// the picks follow the shelf's vault-capable listings, so an agent listed tomorrow
+// is offered as soon as it answers its check; nothing here names an agent
 export async function loadQuestShelf(
   seed: string | null,
 ): Promise<{ chainId: number; observed: boolean; picks: Record<string, QuestShelf> }> {
@@ -50,39 +50,25 @@ export async function loadQuestShelf(
   const observed = durableMode() === "postgres";
   const verifications = await loadVerifications();
   // no sort named: the default order is job capability, then the metric chain,
-  // with reachability settling the ties. The filter below wants delivered
-  // listings only and re-sorts by job capability anyway, so what matters here
-  // is that the whole shelf is in hand.
+  // with reachability settling the ties. The filter below keeps only vault
+  // listings, so what matters here is that the whole shelf is in hand.
   const shelf = await queryAgents({ limit: 5000, verifications, seed });
-  // the hire task serves agents whose own registration claims an action, because the
-  // campaign discounts agents that respond but never execute; the probe verdict alone
-  // cannot tell the two apart, since a delivered read looks the same from both
-  const executionText = (a: (typeof shelf.items)[number]): string =>
-    [a.name, a.description, ...(a.skills ?? []).map((s) => `${s.name} ${s.description ?? ""}`)].join(" ");
   const picks: Record<string, QuestShelf> = {};
   for (const category of CATEGORY_KEYS) {
-    // only agents that can be hired through escrow or the vault, and that answered
-    // their last check. A category with none stays empty, so the quest never sends
-    // a buyer to a direct-only, x402-only or unreachable agent
+    // only vault agents are offered now: the quest steps are funded vault hires,
+    // so a job-only or direct-only seller is not a usable pick even if it answers
     const working = shelf.items
       .filter((a) => {
         // the sweep's own row first, then the verdict the catalogue row carries, so a
         // cold or empty store does not read as "every listing is dead"
         const check = verifications.get(a.token_id) ?? a.verification;
         const detail = check && "detail" in check ? (check as { detail?: string }).detail : undefined;
-        const vault = takesVault(a.skills);
         return (
           a.category === category &&
-          (takesJobs(a.skills) || vault) &&
+          takesVault(a.skills) &&
           answeringPick(check) &&
-          (!detail || !asksForSecrets(detail)) &&
-          (vault || classifyExecution(executionText(a)).executes)
+          (!detail || !asksForSecrets(detail))
         );
-      })
-      .sort((a, b) => {
-        const rank = (x: (typeof shelf.items)[number]) =>
-          takesJobs(x.skills) ? 0 : takesVault(x.skills) ? 1 : 2;
-        return rank(a) - rank(b);
       });
     const proven: typeof working = [];
     // without the durable store no job can be read back, so nothing is claimed as confirmed
