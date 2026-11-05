@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
   const q = sp.get("q") ?? "";
   // the sector filter composes with the category in the same request
   const sector = sp.get("sector") ?? "";
+  // first-party agents, singled out by the same owner fact the cards disclose
+  const owned = sp.get("owned") === "1";
   // no sort named reads as score: the chain's first metric, with reachability
   // settling the ties underneath it and job tiering leading everything
   const type = sp.get("type") as "all" | "jobs" | "x402" | "vault" | null;
@@ -54,6 +56,7 @@ export async function GET(req: NextRequest) {
     category,
     q,
     sector: sector || undefined,
+    owned,
     type: type ?? undefined,
     metric: metric ?? undefined,
     sort: (sort as "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability" | undefined) ?? undefined,

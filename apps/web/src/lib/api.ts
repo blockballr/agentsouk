@@ -10,6 +10,7 @@ export interface AgentsQuery {
   category?: string
   q?: string
   sector?: string
+  owned?: boolean
   type?: 'all' | 'jobs' | 'x402' | 'vault' | 'others'
   metric?: 'score' | 'newest' | 'feedback' | 'health'
   page?: number
@@ -69,6 +70,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   if (query.page && query.page > 1) sp.set('page', String(query.page))
   if (query.limit) sp.set('limit', String(query.limit))
   if (query.pcs) sp.set('pcs', '1')
+  if (query.owned) sp.set('owned', '1')
   const res = await fetch(`${BASE}/agents?${sp}`)
   if (!res.ok) throw new Error(`agents ${res.status}`)
   const body = await readJsonBody<{

@@ -87,6 +87,8 @@ export function MarketplacePage() {
   const type = (sp.get('type') ?? 'jobs') as 'all' | 'jobs' | 'x402' | 'vault'
   const metric = (sp.get('metric') ?? 'score') as 'score' | 'newest' | 'feedback' | 'health'
   const pcs = sp.get('pcs') === '1'
+  // first-party agents, the same owner fact the cards disclose
+  const owned = sp.get('owned') === '1'
   const hide = sp.get('hide') === '1'
   const verifiedOnly = sp.get('verified') === '1'
   const page = Math.max(1, Number(sp.get('page') ?? 1) || 1)
@@ -131,7 +133,7 @@ export function MarketplacePage() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getAgents({ category, q, sector: sector || undefined, type, metric, page, limit: PAGE_SIZE, pcs })
+    getAgents({ category, q, sector: sector || undefined, owned, type, metric, page, limit: PAGE_SIZE, pcs })
       .then((r) => {
         if (!cancelled) {
           setResult({
@@ -159,7 +161,7 @@ export function MarketplacePage() {
     return () => {
       cancelled = true
     }
-  }, [category, q, sector, type, metric, pcs, page])
+  }, [category, q, sector, owned, type, metric, pcs, page])
 
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(sp)
@@ -342,7 +344,7 @@ export function MarketplacePage() {
                 aria-expanded={showFilters}
                 className="inline-flex min-h-[32px] cursor-pointer items-center border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate transition hover:text-souk-ink"
               >
-                Filters{pcs || hide || verifiedOnly ? ' ·' : ''}
+                Filters{pcs || owned || hide || verifiedOnly ? ' ·' : ''}
               </button>
               <button
                 type="button"
@@ -447,6 +449,13 @@ export function MarketplacePage() {
                 onChange={() => setParam('pcs', pcs ? '' : '1')}
               >
                 PancakeSwap
+              </Switch>
+              <Switch
+                checked={owned}
+                label="Show only agents Agent Souk runs: the operator wallet owns these on chain, disclosed the same way on every card"
+                onChange={() => setParam('owned', owned ? '' : '1')}
+              >
+                Agent Souk owned
               </Switch>
               <Switch
                 checked={hide}

@@ -10,6 +10,7 @@ import {
   targetChainId,
 } from "./types";
 import { classifyAgent, relevanceScore, deriveAgentSector } from "./categories";
+import { HOUSE_OPERATOR } from "./house";
 import { isPancakeSwapAgent, readsPancakeSwap } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
@@ -1224,6 +1225,7 @@ export interface QueryOptions {
   category?: string;
   q?: string;
   sector?: string;
+  owned?: boolean;
   type?: "all" | "jobs" | "x402" | "vault";
   metric?: "score" | "newest" | "feedback" | "health";
   sort?: "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability";
@@ -1369,6 +1371,11 @@ export async function queryAgents(
     items = items.filter(
       (a) => readsPancakeSwap(a.chain_id, a.token_id) || isPancakeSwapAgent(a.name, a.description ?? ""),
     );
+  }
+  if (opts.owned) {
+    // first-party only: the owner is an on-chain fact, so the filter cannot
+    // drift from what the cards already disclose on the detail page
+    items = items.filter((a) => a.owner_address?.toLowerCase() === HOUSE_OPERATOR.toLowerCase());
   }
 
   // the job-type leg of the double sort: a chosen group keeps only its own
