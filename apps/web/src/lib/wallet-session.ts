@@ -190,6 +190,27 @@ export async function connectWallet(): Promise<string> {
   return account
 }
 
+// a connect that nobody answers must still end: the wallet popup can sit in a
+// dead pairing without ever prompting, so the caller gets an outcome it can
+// show instead of a button stuck on connecting
+export class ConnectTimeoutError extends Error {
+  constructor() {
+    super('we reached no wallet: check the wallet popup or click connect again')
+  }
+}
+
+const CONNECT_TIMEOUT_MS = 20_000
+
+export function connectWalletWithTimeout(timeoutMs = CONNECT_TIMEOUT_MS): Promise<string> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const bound = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new ConnectTimeoutError()), timeoutMs)
+  })
+  // the underlying connect keeps running: a late answer still lands through the
+  // wallet events, the bound only frees the surface that was waiting on it
+  return Promise.race([connectWallet(), bound]).finally(() => clearTimeout(timer))
+}
+
 // switch wallet: the session ends first, the picked wallet signs in as its own
 // account, and a dismissed picker leaves the page disconnected
 export async function changeWallet(): Promise<string | null> {

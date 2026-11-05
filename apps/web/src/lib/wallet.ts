@@ -526,10 +526,19 @@ export async function connectProvider(): Promise<string> {
   const rdns = readStoredRdns();
   if (rdns) {
     if (rdns === WALLETCONNECT_RDNS) {
-      const provider = await initWalletConnect();
-      const session = (provider as unknown as { session?: unknown }).session;
-      if (session) return requestAccounts(provider);
-      storeRdns(null);
+      // a stored walletconnect choice is a hint, never a bypass: on a desktop
+      // that earlier ran the Telegram flow, the old pairing can sit there
+      // forever without an approval prompt, so when a real extension exists
+      // here the stale entry is dropped and discovery gets the connect
+      const injected = await listInjectedWallets();
+      if (injected.length > 0) {
+        storeRdns(null);
+      } else {
+        const provider = await initWalletConnect();
+        const session = (provider as unknown as { session?: unknown }).session;
+        if (session) return requestAccounts(provider);
+        storeRdns(null);
+      }
     } else if (rdns === LEGACY_RDNS) {
       const legacy = legacyProvider();
       if (legacy) return requestAccounts(legacy);

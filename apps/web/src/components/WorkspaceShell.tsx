@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { chainLabel } from '../lib/contracts'
 import { shortAddress } from '@agora/core'
-import { connectWallet } from '../lib/wallet-session'
+import { ConnectTimeoutError, connectWalletWithTimeout } from '../lib/wallet-session'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { Btn, Txt } from './souk'
 import { useI18n } from '../lib/i18n'
@@ -56,13 +56,19 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
   const { t } = useI18n()
   const account = useConnectedAccount()
   const [connecting, setConnecting] = useState(false)
+  // what a dead connect has to say for itself; set only by the connect timeout,
+  // so the rail never claims a wallet it did not see
+  const [connectNote, setConnectNote] = useState<string | null>(null)
 
   async function onConnect() {
     setConnecting(true)
+    setConnectNote(null)
     try {
-      await connectWallet()
-    } catch {
-      // the wallet's own refusal is the useful message; the page stays as it was
+      await connectWalletWithTimeout()
+    } catch (e) {
+      // the wallet's own refusal is the useful message; the page stays as it
+      // was, and a connect that reached nobody says so rather than hanging
+      if (e instanceof ConnectTimeoutError) setConnectNote(e.message)
     } finally {
       setConnecting(false)
     }
@@ -107,7 +113,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
             ) : (
               <>
                 <Txt size={11} lead={16} tone="muted">
-                  {t('rail.noWallet')}
+                  {connectNote ?? t('rail.noWallet')}
                 </Txt>
                 <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting} className="mt-2 w-full">
                   {connecting ? t('rail.connecting') : t('rail.connect')}
@@ -134,7 +140,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
         {!account && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-none border border-souk-hair px-4 py-3 md:hidden">
             <Txt size={12} lead={18} tone="muted">
-              {t('rail.noWallet')}
+              {connectNote ?? t('rail.noWallet')}
             </Txt>
             <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting}>
               {connecting ? t('rail.connecting') : t('rail.connect')}
