@@ -950,7 +950,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             </Row>
             <Row gap={6} align="center" className="shrink-0 flex-wrap">
               {strategy ? <Pill variant="off">{strategy}</Pill> : null}
-              {rail.deposit === 'pair' ? (
+              {pairing !== 'none' ? (
                 <Pill
                   variant={
                     pairing === 'match'
