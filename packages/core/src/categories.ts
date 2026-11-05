@@ -3,6 +3,7 @@ import type {
   CategoryKey,
   CategoryDef,
   AgentSummary,
+  AgentSector,
 } from "./types";
 
 // keyword signals per category: precise phrases carry weight 2 because one
@@ -117,6 +118,34 @@ export function classifyExecution(text: string): { executes: boolean; score: num
 export interface Classification {
   category: CategoryKey | "general";
   scores: Partial<Record<CategoryKey, number>>;
+}
+
+// sector tagging reads the same haystack the classifier reads, but answers a
+// different question: not how the agent trades, only what. a dedicated phrase
+// claims the sector on its own, while a bare stock word or a ticker-shaped
+// identifier needs one more stocky signal beside it, so "aave token" never
+// reads as a stock and an allcaps word that merely ends in b never counts
+const STOCK_SECTOR_TERMS: { t: string; w: number }[] = [
+  { t: "tokenized stock", w: 2 },
+  { t: "tokenized stocks", w: 2 },
+  { t: "tokenized equity", w: 2 },
+  { t: "stock", w: 1 },
+  { t: "stocks", w: 1 },
+  { t: "rwa", w: 1 },
+];
+const TICKER_RE = /\b[A-Z]{2,4}B\b/;
+const TICKER_SUFFIX_RE = /\b[A-Z]{2,5}[- ]B\b/;
+
+export function deriveAgentSector(text: string): AgentSector | null {
+  const hay = text.toLowerCase();
+  let score = 0;
+  for (const { t, w } of STOCK_SECTOR_TERMS) {
+    if (!new RegExp(`(^|[^a-z0-9])${t}([^a-z0-9]|$)`, "i").test(hay)) continue;
+    score += w;
+    if (score >= 2) return "stocks";
+  }
+  if (TICKER_RE.test(text) || TICKER_SUFFIX_RE.test(text)) score += 1;
+  return score >= 2 ? "stocks" : null;
 }
 
 export function classifyAgent(text: string): Classification {

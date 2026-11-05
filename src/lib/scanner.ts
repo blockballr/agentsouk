@@ -9,7 +9,7 @@ import {
   snapshotFileFor,
   targetChainId,
 } from "./types";
-import { classifyAgent, relevanceScore } from "./categories";
+import { classifyAgent, relevanceScore, deriveAgentSector } from "./categories";
 import { isPancakeSwapAgent, readsPancakeSwap } from "./pancakeswap";
 import { privateEndpointReason } from "./endpoint";
 import { captureAgentSkills } from "./agent-interface";
@@ -1223,6 +1223,7 @@ function scheduleShelfTopUp(): void {
 export interface QueryOptions {
   category?: string;
   q?: string;
+  sector?: string;
   type?: "all" | "jobs" | "x402" | "vault";
   metric?: "score" | "newest" | "feedback" | "health";
   sort?: "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability";
@@ -1247,6 +1248,9 @@ export interface QueryResult {
   total: number;
   page: number;
   limit: number;
+  // the sectors any served agent carries, so the shelf can offer a sector
+  // filter exactly when one applies
+  sectors?: string[];
   indexStatus: {
     totalFetched: number;
     snapshotTotal: number | null;
@@ -1282,7 +1286,7 @@ export interface QueryResult {
 export async function queryAgents(
   opts: QueryOptions = {},
 ): Promise<QueryResult> {
-  const { category, q, type, metric, sort, page = 1, limit = 24, verifications } = opts;
+  const { category, q, sector, type, metric, sort, page = 1, limit = 24, verifications } = opts;
   const resolvedType =
     type ??
     (sort === "x402"
@@ -1341,6 +1345,14 @@ export async function queryAgents(
 
   if (category && category !== "all") {
     items = items.filter((a) => a.category === category);
+  }
+  // the sector filter composes with the category: it removes only what the tag
+  // says, and an unstamped summary reads its own text so the live top up path
+  // matches the builder's tag without waiting for a rebuild
+  if (sector && sector !== "all") {
+    items = items.filter((a) =>
+      a.sector ? a.sector === sector : deriveAgentSector(`${a.name} ${a.description ?? ""}`) === sector,
+    );
   }
   if (q && q.trim()) {
     const needle = q.trim().toLowerCase();
@@ -1426,6 +1438,9 @@ export async function queryAgents(
     },
     categoryCounts,
     onlineCounts,
+    // which sectors exist on this shelf, read over the whole shelf not the
+    // page, so the filter chip shows itself the moment a tagged agent exists
+    sectors: Array.from(new Set(shelf.filter((a) => a.sector).map((a) => a.sector))) as string[],
   };
 }
 

@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const category = sp.get("category") ?? "all";
   const q = sp.get("q") ?? "";
+  // the sector filter composes with the category in the same request
+  const sector = sp.get("sector") ?? "";
   // no sort named reads as score: the chain's first metric, with reachability
   // settling the ties underneath it and job tiering leading everything
   const type = sp.get("type") as "all" | "jobs" | "x402" | "vault" | null;
@@ -51,6 +53,7 @@ export async function GET(req: NextRequest) {
   const result = await queryAgents({
     category,
     q,
+    sector: sector || undefined,
     type: type ?? undefined,
     metric: metric ?? undefined,
     sort: (sort as "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability" | undefined) ?? undefined,
@@ -180,6 +183,8 @@ export async function GET(req: NextRequest) {
     registryTotal: result.indexStatus.registryTotal,
     counts: result.categoryCounts,
     onlineCounts: result.onlineCounts,
+    // the sector filter chip composes with the category only when one exists
+    sectors: result.sectors,
     snapshotTime: result.indexStatus.snapshotTime,
     lastTopUpAt: result.indexStatus.lastTopUpAt,
   }, { headers });

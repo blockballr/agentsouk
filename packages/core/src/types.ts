@@ -33,9 +33,12 @@ export interface CategoryDef {
   blurb: string;
 }
 
+// a sector cuts across categories: it says what the agent trades, the
+// category says how it trades. optional and derived, so snapshots keep load.
+export type AgentSector = "stocks";
+
 // the four hackathon categories, surfaced equally deep
-export const CATEGORIES: CategoryDef[] = [
-  {
+export const CATEGORIES: CategoryDef[] = [  {
     key: "rebalancing",
     label: "Rebalancing",
     short: "LP Ranges",
@@ -147,6 +150,7 @@ export interface AgentDetail {
   updated_at: string;
   verification?: Verification;
   pcs?: boolean;
+  sector?: AgentSector;
   // PancakeSwap v3 positions the agent's wallet holds or has staked, read on chain
   pancakeswapPositions?: { wallet: string; held: number; staked: number; positionManager: string; checkedAt: string };
 }

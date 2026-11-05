@@ -206,6 +206,8 @@ export interface AgentSummary {
   accessGated?: boolean;
   // set when a confirmed registration is shelved ahead of the index
   admitted_at?: string;
+  // what the agent trades, said across categories; optional and derived
+  sector?: "stocks";
 }
 
 export interface AgentDetail {
@@ -256,6 +258,7 @@ export interface AgentDetail {
   updated_at: string;
   verification?: Verification;
   pcs?: boolean;
+  sector?: "stocks";
   skills?: AgentCardSkill[];
   // the card declares its own access: the seller issues the credentials
   accessGated?: boolean;

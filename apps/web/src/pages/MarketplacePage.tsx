@@ -72,6 +72,8 @@ export function MarketplacePage() {
   }, [sp])
   const category = sp.get('category') ?? 'all'
   const q = sp.get('q') ?? ''
+  // the sector chip rides the same url as its platform shelf
+  const sector = sp.get('sector') ?? ''
   // no sort named reads as score, the chain's first metric; reachability is not
   // a choice here, it settles the ties underneath whichever metric is picked,
   // and job capability leads every one of them
@@ -93,6 +95,8 @@ export function MarketplacePage() {
     source: 'store' | 'snapshot' | 'unavailable'
     counts: Record<string, number>
     onlineCounts: Record<string, number>
+    // the joined sector list, only present when the server's summary carries it
+    sectors: string[]
     total: number
   } | null>(null)
   // the network is unknown until the market answers; do not paint the compiled
@@ -120,7 +124,7 @@ export function MarketplacePage() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    getAgents({ category, q, type, metric, page, limit: PAGE_SIZE, pcs })
+    getAgents({ category, q, sector: sector || undefined, type, metric, page, limit: PAGE_SIZE, pcs })
       .then((r) => {
         if (!cancelled) {
           setResult({
@@ -133,6 +137,7 @@ export function MarketplacePage() {
             source: r.indexStatus.catalogueSource,
             counts: r.counts,
             onlineCounts: r.onlineCounts,
+            sectors: r.sectors,
             total: r.total,
           })
           setChainId(r.chainId)
@@ -147,7 +152,7 @@ export function MarketplacePage() {
     return () => {
       cancelled = true
     }
-  }, [category, q, type, metric, pcs, page])
+  }, [category, q, sector, type, metric, pcs, page])
 
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(sp)
@@ -315,6 +320,13 @@ export function MarketplacePage() {
                   ) : null}
                 </Tab>
               ))}
+              {/* the sector chip composes with the category, and exists only
+                  while at least one agent on the shelf carries the tag */}
+              {result?.sectors?.includes('stocks') ? (
+                <Tab active={sector === 'stocks'} onClick={() => setParam('sector', sector === 'stocks' ? '' : 'stocks')}>
+                  Tokenized stocks
+                </Tab>
+              ) : null}
             </div>
             <Row align="center" gap={16} className="shrink-0">
               <button

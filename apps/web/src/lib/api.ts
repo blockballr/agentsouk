@@ -9,6 +9,7 @@ import { listingControlMessage, type ListingAction } from './listing-control'
 export interface AgentsQuery {
   category?: string
   q?: string
+  sector?: string
   type?: 'all' | 'jobs' | 'x402' | 'vault' | 'others'
   metric?: 'score' | 'newest' | 'feedback' | 'health'
   page?: number
@@ -35,6 +36,8 @@ export interface AgentsResult {
   lastTopUpAt: number | null
   counts: Record<string, number>
   onlineCounts: Record<string, number>
+  // the sectors any served agent carries, so the sector chip exists only when one does
+  sectors: string[]
   chainId: number | null
   // the catalogue's own state, from the shared store rather than the committed file
   indexStatus: IndexStatus
@@ -78,6 +81,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
     lastTopUpAt?: number | null
     counts?: Record<string, number>
     onlineCounts?: Record<string, number>
+    sectors?: string[]
     chainId?: number
     indexStatus?: {
       catalogueRefreshedAt?: string | null
@@ -125,6 +129,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
         : null,
     counts: body.counts ?? {},
     onlineCounts: body.onlineCounts ?? {},
+    sectors: Array.isArray(body.sectors) ? body.sectors : [],
     chainId,
     indexStatus,
   }

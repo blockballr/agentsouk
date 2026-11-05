@@ -7,7 +7,7 @@ import {
   resolveIndexBuildTarget,
   searchAgents,
 } from "@/lib/scanner";
-import { classifyAgent, relevanceScore } from "@/lib/categories";
+import { classifyAgent, relevanceScore, deriveAgentSector } from "@/lib/categories";
 import { AgentDetail, AgentSummary, CATEGORY_KEYS, CategoryKey } from "@/lib/types";
 import { applySeededEndpoints } from "@/lib/seeded-endpoints";
 import { loadSeededEndpoints } from "@/lib/endpoint-store";
@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 // results/search) to 500 req/min
 
 const CATEGORY_TERMS: Record<CategoryKey, string[]> = {
-  rebalancing: ["rebalanc", "liquidity range", "concentrated liquidity", "LP range"],
+  rebalancing: ["rebalanc", "liquidity range", "concentrated liquidity", "LP range", "tokenized stock", "stocks", "RWA"],
   "grid-trading": ["grid trading", "grid bot", "dca bot", "grid strategy", "spot grid", "trading bot", "automated trading", "quant bot"],
   yield: ["yield", "yield optimizer", "staking", "farming", "APY"],
   "health-factor": ["health factor", "liquidation", "lending", "borrow", "liquidation protection", "aave", "venus", "collateral", "risk monitor"],
@@ -331,5 +331,8 @@ interface RawLike {
 function buildSummary(raw: RawLike): AgentSummary {
   const text = [raw.name, raw.description ?? "", (raw.supported_trust_models ?? []).join(" ")].join(" ");
   const { category, scores } = classifyAgent(text);
-  return { ...raw, category, categoryScores: scores };
+  // the sector rides the same reading the classifier got, so an agent built
+  // from a tokenized stock names its sector without a second pass
+  const sector = deriveAgentSector(text);
+  return { ...raw, category, categoryScores: scores, ...(sector ? { sector } : {}) };
 }
