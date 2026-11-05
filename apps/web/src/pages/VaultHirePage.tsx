@@ -51,6 +51,24 @@ import {
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
 
+// the small mark that identifies the Altana executor beside its name
+function AltanaMark({ size = 11 }: { size?: number }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width={size}
+      height={size}
+      viewBox="-4.737 -26.701 449.183 449.183"
+      fill="none"
+      className="inline-block shrink-0 align-[-1px]"
+    >
+      <path d="M298.4 361.864L156.979 220.442L298.4 79.0211L383.253 163.874C414.495 195.116 414.495 245.769 383.253 277.011L298.4 361.864Z" fill="#E2622E" />
+      <path d="M141.421 361.45L56.5686 276.597C25.3266 245.355 25.3266 194.702 56.5686 163.46L141.421 78.6075L282.843 220.029L141.421 361.45Z" fill="#F2CB45" />
+      <path d="M163.617 56.7248C194.858 25.4828 245.512 25.4828 276.754 56.7248L361.96 141.931L220.066 283.825L78.2908 142.051L163.617 56.7248Z" fill="#3665E4" />
+    </svg>
+  )
+}
+
 const CHAINS: Record<number, { id: number; label: string; rpc: string; explorer: string }> = {
   56: { id: 56, label: 'BNB Smart Chain', rpc: 'https://bsc-dataseed.bnbchain.org', explorer: 'https://bscscan.com/tx/' },
   97: { id: 97, label: 'BSC testnet', rpc: 'https://bsc-testnet-rpc.publicnode.com', explorer: 'https://testnet.bscscan.com/tx/' },
@@ -1646,7 +1664,17 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                     : executorUnread
                       ? 'unread'
                       : executor
-                        ? `${short(pairing === 'match' ? agentAddress : executor.address)} (${executor.kind})`
+                        ? (
+                            <span className="inline-flex items-center justify-end gap-1.5">
+                              <span>{short(pairing === 'match' ? agentAddress : executor.address)}</span>
+                              <span className="inline-flex items-center gap-1">
+                                <span>(</span>
+                                {executor.kind === 'altana' ? <AltanaMark size={10} /> : null}
+                                <span>{executor.kind}</span>
+                                <span>)</span>
+                              </span>
+                            </span>
+                          )
                         : 'not configured'}
                 </Txt>
               </Row>
