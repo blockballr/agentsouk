@@ -60,7 +60,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       );
       if (!name && !description && !icon) continue;
       return NextResponse.json(
-        { success: true, url: candidate, ...(name ? { name } : {}), ...(description ? { description } : {}), ...(icon ? { image: icon.trim() } : {}) },
+        {
+          success: true,
+          url: candidate,
+          ...(name ? { name } : {}),
+          ...(description ? { description } : {}),
+          ...(icon ? { image: icon.trim() } : {}),
+          // what the card alone can say about how the agent sells: an explicit
+          // x402 signal, or a skill that names the job protocol. absent keys
+          // mean the card is silent, so the wizard keeps the question open
+          ...(typeof body.x402Support === "boolean" ? { x402Support: body.x402Support } : {}),
+          ...((Array.isArray(body.skills) ? body.skills : []).some((s) =>
+            /job|erc-8183|escrow/i.test(`${s?.id ?? ""} ${s?.name ?? ""}`),
+          )
+            ? { jobCapable: true }
+            : {}),
+        },
       );
     } catch {
       // the next candidate answers, or the wizard reports the card unread

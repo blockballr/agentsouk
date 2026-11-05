@@ -275,7 +275,7 @@ export function endpointRefusal(raw: string): string | null {
  */
 export async function readAgentCard(
   raw: string,
-): Promise<{ name?: string; description?: string; image?: string } | null> {
+): Promise<{ name?: string; description?: string; image?: string; x402Support?: boolean; jobCapable?: boolean } | null> {
   const url = raw.trim()
   if (!url || endpointRefusal(url)) return null
   try {
@@ -292,15 +292,20 @@ export async function readAgentCard(
       name?: unknown
       description?: unknown
       image?: unknown
+      x402Support?: unknown
+      jobCapable?: unknown
     }
     const icon = typeof body.image === 'string' && body.image.trim().startsWith('https://') ? body.image.trim() : null
     const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : null
     const description = typeof body.description === 'string' && body.description.trim() ? body.description.trim() : null
+    const x402Support = typeof body.x402Support === 'boolean' ? body.x402Support : undefined
+    const jobCapable = body.jobCapable === true
     if (!name && !description && !icon) return null
     return {
       ...(name ? { name } : {}),
       ...(description ? { description } : {}),
       ...(icon ? { image: icon } : {}),
+      ...(x402Support === undefined && !jobCapable ? {} : { x402Support, jobCapable }),
     }
   } catch {
     return null

@@ -228,11 +228,16 @@ export function RegisterWizard({
   // the card a pasted endpoint serves carries the agent's own name, words and
   // face; they fill the empty fields after the url settles, so the lister
   // confirms what the agent already says instead of retyping it. A filled field
-  // is never touched again: whatever the lister typed outranks the card.
+  // is never touched again: whatever the lister typed outranks the card. when
+  // the card states how it sells, that becomes the suggested rail too, unless
+  // the lister already picked one by hand
+  const modeTouched = useRef(false)
+  const [cardSellSilent, setCardSellSilent] = useState(false)
   useEffect(() => {
     const endpoint = (draft.endpoint ?? '').trim()
     if (!endpoint || endpointRefusal(endpoint)) {
       setCardState('idle')
+      setCardSellSilent(false)
       return
     }
     let cancelled = false
@@ -251,6 +256,18 @@ export function RegisterWizard({
           description: d.description?.trim() ? d.description : card.description ?? d.description,
           image: d.image?.trim() ? d.image : card.image ?? d.image,
         }))
+        const cardSuggested: 'job' | 'call' | 'both' | null =
+          card.jobCapable && card.x402Support === false
+            ? 'job'
+            : card.jobCapable && card.x402Support === true
+              ? 'both'
+              : card.jobCapable
+                ? 'job'
+                : card.x402Support === true
+                  ? 'call'
+                  : null
+        if (cardSuggested && !modeTouched.current) chooseMode(cardSuggested)
+        setCardSellSilent(!cardSuggested)
       })
     }, 700)
     return () => {
@@ -912,6 +929,9 @@ export function RegisterWizard({
                   {declaredModel === 'job-scoped'
                     ? 'The cap is one quoted price and the loss stops at the job escrow.'
                     : 'The owner bond is checked against the balance held when a buyer asks.'}
+                  <span className="mt-0.5 block text-souk-steel">
+                    Governs the escrow job rail only: a direct call never opens one.
+                  </span>
                 </span>
               </label>
               {declaredModel === 'underwritten' && (
@@ -1025,11 +1045,21 @@ export function RegisterWizard({
 
             <div className="mt-5">
               <p className="micro text-souk-muted">How does this agent sell?</p>
+              {cardSellSilent && (
+                <span className="micro text-souk-labels">
+                  {/* the card said nothing about rails: the decision is genuinely
+                      open, so the copy here says why rather than implying a guess */}
+                  The card does not state how it sells, so pick a rail below.
+                </span>
+              )}
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 <button
                   type="button"
                   disabled={busy || step !== 'form'}
-                  onClick={() => chooseMode('job')}
+                  onClick={() => {
+                    modeTouched.current = true
+                    chooseMode('job')
+                  }}
                   aria-pressed={mode === 'job'}
                   className={cx(
                     'rounded-[10px] border p-3 text-left transition',
@@ -1052,7 +1082,10 @@ export function RegisterWizard({
                 <button
                   type="button"
                   disabled={busy || step !== 'form'}
-                  onClick={() => chooseMode('call')}
+                  onClick={() => {
+                    modeTouched.current = true
+                    chooseMode('call')
+                  }}
                   aria-pressed={mode === 'call'}
                   className={cx(
                     'rounded-[10px] border p-3 text-left transition',
@@ -1070,7 +1103,10 @@ export function RegisterWizard({
                 <button
                   type="button"
                   disabled={busy || step !== 'form'}
-                  onClick={() => chooseMode('both')}
+                  onClick={() => {
+                    modeTouched.current = true
+                    chooseMode('both')
+                  }}
                   aria-pressed={mode === 'both'}
                   className={cx(
                     'rounded-[10px] border p-3 text-left transition sm:col-span-2',
