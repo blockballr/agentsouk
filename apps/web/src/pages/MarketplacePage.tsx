@@ -20,10 +20,9 @@ import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../compo
 // capability leads all of it. Picking a metric names what leads the chain, not
 // what replaces that order.
 const jobSorts = [
-  { key: 'all', label: 'ALL' },
+  { key: 'direct', label: 'DIRECT' },
   { key: 'vault', label: 'VAULT' },
   { key: 'jobs', label: 'ESCROW' },
-  { key: 'x402', label: 'x402' },
 ] as const
 
 const defaultSorts = [
@@ -78,9 +77,9 @@ export function MarketplacePage() {
   // no sort named reads as score, the chain's first metric; reachability is not
   // a choice here, it settles the ties underneath whichever metric is picked,
   // and job capability leads every one of them
-  // every listing is reachable through ALL, but the shelf still opens on the
-  // vault rail, which is the product's default view
-  const type = (sp.get('type') ?? 'vault') as 'all' | 'jobs' | 'x402' | 'vault'
+  // every listing is reachable through ALL, but the shelf opens on the direct
+  // rail: the agents a buyer can call right now, paid or free
+  const type = (sp.get('type') ?? 'direct') as 'all' | 'direct' | 'jobs' | 'x402' | 'vault'
   const metric = (sp.get('metric') ?? 'score') as 'score' | 'newest' | 'feedback' | 'health'
   const pcs = sp.get('pcs') === '1'
   // first-party agents, the same owner fact the cards disclose
@@ -166,10 +165,7 @@ export function MarketplacePage() {
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(sp)
     if (key !== 'page') next.delete('page')
-    // the rail is explicit, so ALL is a real choice rather than the absence of
-    // one; every other parameter treats "all" as clearing it
-    if (key === 'type') next.set(key, value)
-    else if (!value || value === 'all') next.delete(key)
+    if (!value || value === 'all') next.delete(key)
     else next.set(key, value)
     setSp(next, { replace: true })
   }
@@ -507,17 +503,22 @@ export function MarketplacePage() {
             cards start directly under it and the pagination closes the same band */}
         <Section pad="pt-6 pb-16">
         <Stack gap={24}>
-        {result && result.featured.length > 0 ? (
+        {result ? (
           <Stack gap={12}>
             <Row align="center" gap={12} className="flex-wrap">
-              <Txt size={10} lead={14} weight="bold" upper tone="muted">
-                Featured by Agent Souk
-              </Txt>
-              <Txt size={11} lead={16} tone="slate">
-                operated by us, shown here for that reason, not by rank
-              </Txt>
+              {result.featured.length > 0 ? (
+                <>
+                  <Txt size={10} lead={14} weight="bold" upper tone="muted">
+                    Featured by Agent Souk
+                  </Txt>
+                  <Txt size={11} lead={16} tone="slate">
+                    operated by us, shown here for that reason, not by rank
+                  </Txt>
+                </>
+              ) : null}
               {/* new admissions moved to their own page, so the shelf keeps one
-                  disclosed placement and the strip has room to grow */}
+                  disclosed placement and the strip has room to grow. the link
+                  stays even when there is no placement to show */}
               <Link
                 to="/discover"
                 className="ml-auto font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate underline decoration-souk-hair underline-offset-4 hover:text-souk-ink"
@@ -525,7 +526,9 @@ export function MarketplacePage() {
                 Discover new listings
               </Link>
             </Row>
-            <AgentGrid items={result.featured} shortlist={shortlist} onToggle={handleToggle} />
+            {result.featured.length > 0 ? (
+              <AgentGrid items={result.featured} shortlist={shortlist} onToggle={handleToggle} />
+            ) : null}
           </Stack>
         ) : null}
         <Stack>
@@ -819,6 +822,11 @@ function AgentCard({
           <span className="whitespace-nowrap font-mono text-[13px] text-souk-ink" title={price}>
             {priceLabel}
           </span>
+          {agent.x402_supported ? (
+            <span className="ml-2 border border-souk-hair px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-souk-muted">
+              x402
+            </span>
+          ) : null}
           <OnChainBadge
             online={takesVault(agent.skills) || classifyExecution(agent.description ?? '').executes}
             className="shrink-0"

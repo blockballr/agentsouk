@@ -33,7 +33,9 @@ import {
   snapshotEndpointRegime,
   summaryFromDetail,
   recentAdmissions,
+  isRecentAdmission,
   selectFeatured,
+  excludeAgents,
 } from "./agent-index";
 import {
   deleteShelfAgent,
@@ -1325,7 +1327,7 @@ export interface QueryOptions {
   q?: string;
   sector?: string;
   owned?: boolean;
-  type?: "all" | "jobs" | "x402" | "vault";
+  type?: "all" | "direct" | "jobs" | "x402" | "vault";
   metric?: "score" | "newest" | "feedback" | "health";
   sort?: "jobs" | "x402" | "score" | "newest" | "feedback" | "health" | "reachability";
   page?: number;
@@ -1342,6 +1344,8 @@ export interface QueryOptions {
   includeDelisted?: boolean;
   // the browse shelf pages only listings whose probe answered
   liveOnly?: boolean;
+  // the dedicated new-listings page: admitted inside the window and answered
+  recent?: boolean;
 }
 
 export interface QueryResult {
@@ -1483,7 +1487,10 @@ export async function queryAgents(
 
   // the job-type leg of the double sort: a chosen group keeps only its own
   // agents, so the shelf shows that group rather than the whole tiered list
-  if (resolvedType === "jobs") {
+  if (resolvedType === "direct") {
+    // callable now, outside the vault and job modes; payment state is a badge, not the rail
+    items = items.filter((a) => !takesVault(a.skills) && !takesJobs(a.skills) && Boolean(a.a2a_endpoint || a.mcp_server || a.web_endpoint));
+  } else if (resolvedType === "jobs") {
     items = items.filter((a) => takesJobs(a.skills));
   } else if (resolvedType === "x402") {
     items = items.filter((a) => a.x402_supported && !takesJobs(a.skills));
@@ -1491,6 +1498,11 @@ export async function queryAgents(
     // the skill the card declares, so a listing that never published it is not
     // offered here on the strength of a vault address alone
     items = items.filter((a) => takesVault(a.skills));
+  }
+
+  if (opts.recent) {
+    // the page that replaces the strip: same rule as the strip, no four item cap
+    items = items.filter((a) => isRecentAdmission(a, verifications, Date.now()));
   }
 
   const categoryCounts: Record<string, number> = {
@@ -1528,7 +1540,7 @@ export async function queryAgents(
     houseOperator: HOUSE_OPERATOR,
     queryPresent: Boolean(q && q.trim()),
   });
-  const justListed = recentAdmissions(items, verifications, Date.now(), 4);
+  const justListed = recentAdmissions(excludeAgents(items, featured), verifications, Date.now(), 4);
 
   return {
     items: paged,
