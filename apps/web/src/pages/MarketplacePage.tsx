@@ -20,6 +20,7 @@ import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../compo
 // capability leads all of it. Picking a metric names what leads the chain, not
 // what replaces that order.
 const jobSorts = [
+  { key: 'all', label: 'ALL' },
   { key: 'vault', label: 'VAULT' },
   { key: 'jobs', label: 'ESCROW' },
   { key: 'x402', label: 'x402' },
@@ -77,6 +78,8 @@ export function MarketplacePage() {
   // no sort named reads as score, the chain's first metric; reachability is not
   // a choice here, it settles the ties underneath whichever metric is picked,
   // and job capability leads every one of them
+  // every listing is reachable through ALL, but the shelf still opens on the
+  // vault rail, which is the product's default view
   const type = (sp.get('type') ?? 'vault') as 'all' | 'jobs' | 'x402' | 'vault'
   const metric = (sp.get('metric') ?? 'score') as 'score' | 'newest' | 'feedback' | 'health'
   const pcs = sp.get('pcs') === '1'
@@ -163,7 +166,10 @@ export function MarketplacePage() {
   function setParam(key: string, value: string) {
     const next = new URLSearchParams(sp)
     if (key !== 'page') next.delete('page')
-    if (!value || value === 'all') next.delete(key)
+    // the rail is explicit, so ALL is a real choice rather than the absence of
+    // one; every other parameter treats "all" as clearing it
+    if (key === 'type') next.set(key, value)
+    else if (!value || value === 'all') next.delete(key)
     else next.set(key, value)
     setSp(next, { replace: true })
   }
@@ -393,10 +399,7 @@ export function MarketplacePage() {
             </select>
             <Txt size={12} lead={16} mono tone="steel" className="hidden sm:block">
               {result
-                ? `${visibleItems.filter((a) => {
-                    const v = verdictFor(a.chain_id, a.verification)
-                    return v.label === 'Verified' || v.label === 'Online'
-                  }).length} hireable of ${visibleItems.length}`
+                ? `${result.total.toLocaleString('en-US')} matching`
                 : 'reading the shelf'}
             </Txt>
             <Row align="center" gap={4} className="ml-auto hidden flex-wrap sm:flex">
@@ -513,21 +516,16 @@ export function MarketplacePage() {
               <Txt size={11} lead={16} tone="slate">
                 operated by us, shown here for that reason, not by rank
               </Txt>
+              {/* new admissions moved to their own page, so the shelf keeps one
+                  disclosed placement and the strip has room to grow */}
+              <Link
+                to="/discover"
+                className="ml-auto font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate underline decoration-souk-hair underline-offset-4 hover:text-souk-ink"
+              >
+                Discover new listings
+              </Link>
             </Row>
             <AgentGrid items={result.featured} shortlist={shortlist} onToggle={handleToggle} />
-          </Stack>
-        ) : null}
-        {result && result.justListed.length > 0 ? (
-          <Stack gap={12}>
-            <Row align="center" gap={12} className="flex-wrap">
-              <Txt size={10} lead={14} weight="bold" upper tone="muted">
-                Just listed
-              </Txt>
-              <Txt size={11} lead={16} tone="slate">
-                admitted this week and answered a probe
-              </Txt>
-            </Row>
-            <AgentGrid items={result.justListed} shortlist={shortlist} onToggle={handleToggle} />
           </Stack>
         ) : null}
         <Stack>
@@ -723,7 +721,7 @@ function Switch({
   )
 }
 
-function AgentGrid({
+export function AgentGrid({
   items,
   shortlist,
   onToggle,
