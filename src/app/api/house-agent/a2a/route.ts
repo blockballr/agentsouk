@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { HOUSE_AGENT_CATEGORY, HOUSE_AGENT_NAME, houseAgentTokenId, decideHouseAgentTask, type HouseAgentReply } from "@/lib/house-agent";
 import { sellerConfigFromEnv, sellerHook } from "@/lib/seller8183";
+import { parseDefenceTask, runHealthDefence, type DefenceProof } from "@/lib/health-defence";
 import { targetChainId } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,35 @@ const SELLER8183 = sellerConfigFromEnv(targetChainId(), houseAgentTokenId(target
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+// a defence job runs the buyer's mandate: read it, rank the positions, repay the
+// worst one, and return the proof. a failure still answers with a proof object,
+// so the deliverable says what happened instead of a bare refusal.
+async function maybeDefend(task: string): Promise<DefenceProof | null> {
+  const operator = process.env.HEALTH_OPERATOR_ADDRESS as `0x${string}` | undefined;
+  const request = parseDefenceTask(task, operator);
+  if (!request) return null;
+  const refusal: DefenceProof = {
+    action: "none",
+    chainId: targetChainId(),
+    operator: request.operator,
+    buyer: request.buyer,
+    positionIndex: null,
+    account: null,
+    amount: "0",
+    txHash: null,
+    coverageBefore: null,
+    coverageAfter: null,
+    debtUsd: null,
+  };
+  const key = process.env.AGENT_EXECUTOR_KEY;
+  if (!key) return { ...refusal, reason: "the agent key is not configured" };
+  try {
+    return await runHealthDefence(request, { agentKey: key as `0x${string}` });
+  } catch (error) {
+    return { ...refusal, reason: (error as Error).message.slice(0, 200) };
+  }
 }
 
 function rpcId(value: unknown): RpcId {
@@ -128,7 +158,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     isRecord(request.params) && isRecord(request.params.message) && Array.isArray(request.params.message.parts)
       ? request.params.message.parts
       : [];
-  const seller = await sellerHook(SELLER8183, rawParts, (task) => {
+  const seller = await sellerHook(SELLER8183, rawParts, async (task) => {
+    const defence = await maybeDefend(task);
+    if (defence) return { text: JSON.stringify(defence) };
     const reply = decideHouseAgentTask(task, message.input);
     return { text: reply.text };
   });

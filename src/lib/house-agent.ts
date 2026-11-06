@@ -10,7 +10,7 @@ export const HOUSE_AGENT_NAME = "Souk Health Guard";
 export const HOUSE_AGENT_VERSION = "1.1.0";
 export const HOUSE_AGENT_CATEGORY = "health-factor";
 export const HOUSE_AGENT_DESCRIPTION =
-  "Defends a lending position on-chain. Reads the hire's collateral and debt, computes the health factor, and when it reaches the defend band sells collateral to repay debt through HireVault, aiming at the target health factor. Refuses to trade when the position is already liquidatable or the price read is stale. The vault enforces the floor, drawdown budget and slippage on chain, and the hire carries a performance fee capped by the contract.";
+  "Defends a lending position on-chain. Reads the positions in the buyer's HealthOperator mandate, ranks them by collateral coverage, and repays the one closest to liquidation inside the per-call and per-day caps the buyer wrote. The position stays in the buyer's wallet, the agent can only repay debt, and the buyer can revoke at any time. The ERC-8183 deliverable carries the repay transaction and the coverage before and after.";
 export const HOUSE_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const HOUSE_AGENT_CARD_PATH = "/api/house-agent/.well-known/agent-card.json";
 export const HOUSE_AGENT_MESSAGING_PATH = "/api/house-agent/a2a";
@@ -79,7 +79,7 @@ const NEGOTIATE_SKILL: HouseAgentSkill = {
   id: "negotiate",
   name: "Quote an ERC-8183 job",
   description:
-    "ERC-8183 job selling: answers a negotiate step with a wallet-signed quote priced in the kernel's payment token, naming this listing's registered wallet as provider. The job buys this agent's health factor read; the endpoint never repays a loan.",
+    "ERC-8183 job selling: answers a negotiate step with a wallet-signed quote priced in the kernel's payment token, naming this listing's registered wallet as provider. The job buys a health factor read, or a defence executed inside the buyer's own mandate.",
   tags: ["erc-8183", "job", "negotiate", "quote"],
   examples: [],
   inputModes: ["application/json"],
@@ -90,10 +90,21 @@ const NOTIFY_SKILL: HouseAgentSkill = {
   id: "notify_funded",
   name: "Answer a funded ERC-8183 job",
   description:
-    "ERC-8183 job selling: on notify_funded the kernel's own row is read back to confirm this listing is the funded job's provider, the health factor read is produced from the job's own description, and the deliverable is submitted on chain for the optimistic dispute window to release.",
+    "ERC-8183 job selling: on notify_funded the kernel's own row is read back to confirm this listing is the funded job's provider, the work is produced from the job's own description, and the deliverable is submitted on chain for the optimistic dispute window to release. A defence job names the buyer and the operator, and the deliverable carries the repay transaction.",
   tags: ["erc-8183", "job", "notify-f"],
   examples: [],
   inputModes: ["application/json"],
+  outputModes: ["application/json"],
+};
+
+const DEFEND_SKILL: HouseAgentSkill = {
+  id: "defend-position",
+  name: "Repay a position under a mandate",
+  description:
+    "Reads the positions the buyer registered in their HealthOperator mandate, ranks them by collateral coverage, repays the one closest to liquidation inside the per-call and per-day caps, and returns the transaction hash with the coverage before and after. The mandate, not this endpoint, bounds what the agent may do, and the buyer can revoke it at any time.",
+  tags: ["health-factor", "repay", "mandate", "on-chain"],
+  examples: ["Defend my Venus portfolio. buyer 0x0000000000000000000000000000000000000001 operator 0x0000000000000000000000000000000000000002"],
+  inputModes: ["text/plain", "application/json"],
   outputModes: ["application/json"],
 };
 
@@ -166,6 +177,7 @@ export function houseAgentCard(origin: string): HouseAgentCard {
       },
       NEGOTIATE_SKILL,
       NOTIFY_SKILL,
+      DEFEND_SKILL,
     ],
     supportedInterfaces: [{ url: messagingUrl, transport: "JSONRPC" }],
   };
