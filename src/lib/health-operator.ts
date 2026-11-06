@@ -26,6 +26,51 @@ export interface RankedPosition extends MandatePosition {
   index: number;
   // the health factor as a decimal, higher is safer
   healthFactor: number;
+  // the account's debt in 1e18 dollars, used to size the repay
+  debt: bigint;
+  // the same debt as a decimal, for display
+  debtUsd: number;
+}
+
+// Venus Core reads the collateral factor rather than the liquidation threshold,
+// so this coverage is the conservative lower bound of the health factor: the
+// agent defends a little earlier than the protocol's own number.
+const VENUS_COMPTROLLER: Record<number, Address> = {
+  56: "0xfD36E2c2a6789Db23113685031d7F16329158384",
+};
+
+const VENUS_READ_ABI = [
+  { name: "getAssetsIn", type: "function", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "address[]" }] },
+  {
+    name: "getAccountLiquidity",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "uint256" }, { type: "uint256" }, { type: "uint256" }],
+  },
+  { name: "oracle", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+] as const;
+
+const VTOKEN_READ_ABI = [
+  {
+    name: "getAccountSnapshot",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "uint256" }, { type: "uint256" }, { type: "uint256" }, { type: "uint256" }],
+  },
+] as const;
+
+const ORACLE_READ_ABI = [
+  { name: "getUnderlyingPrice", type: "function", stateMutability: "view", inputs: [{ name: "vToken", type: "address" }], outputs: [{ type: "uint256" }] },
+] as const;
+
+// collateral value at the collateral factor, over debt, both in 1e18 dollars.
+// a shortfall replaces the liquidity term, so the ratio stays below one.
+export function coverageFrom(liquidity: bigint, shortfall: bigint, debtValue: bigint): number {
+  if (debtValue <= 0n) return Number.POSITIVE_INFINITY;
+  const collateral = liquidity > 0n ? liquidity + debtValue : debtValue > shortfall ? debtValue - shortfall : 0n;
+  return Number((collateral * 1_000_000n) / debtValue) / 1_000_000;
 }
 
 const MANDATE_ABI = [
@@ -128,6 +173,71 @@ export function repayAmount(healthFactor: number, debt: bigint, cap: bigint, tar
   const bps = BigInt(Math.round(share * 10_000));
   const wanted = (debt * bps + 9_999n) / 10_000n;
   return wanted > cap ? cap : wanted;
+}
+
+export async function readVenusCoverage(
+  chainId: number,
+  account: Address,
+): Promise<{ coverage: number; debt: bigint }> {
+  const comptroller = VENUS_COMPTROLLER[chainId];
+  if (!comptroller) throw new Error(`no Venus comptroller is configured for chain ${chainId}`);
+  const c = client();
+  const assets = (await c.readContract({
+    address: comptroller,
+    abi: VENUS_READ_ABI,
+    functionName: "getAssetsIn",
+    args: [account],
+  })) as readonly Address[];
+  const oracle = await c.readContract({
+    address: comptroller,
+    abi: VENUS_READ_ABI,
+    functionName: "oracle",
+  });
+
+  let debt = 0n;
+  for (const asset of assets) {
+    const snapshot = await c.readContract({
+      address: asset,
+      abi: VTOKEN_READ_ABI,
+      functionName: "getAccountSnapshot",
+      args: [account],
+    });
+    const borrowBalance = snapshot[2];
+    if (borrowBalance === 0n) continue;
+    const price = await c.readContract({
+      address: oracle,
+      abi: ORACLE_READ_ABI,
+      functionName: "getUnderlyingPrice",
+      args: [asset],
+    });
+    // the oracle scales by 1e(36 - decimals), so this lands in 1e18 dollars
+    debt += (borrowBalance * price) / 10n ** 18n;
+  }
+
+  const [, liquidity, shortfall] = await c.readContract({
+    address: comptroller,
+    abi: VENUS_READ_ABI,
+    functionName: "getAccountLiquidity",
+    args: [account],
+  });
+
+  return { coverage: coverageFrom(liquidity, shortfall, debt), debt };
+}
+
+export async function rankPositions(chainId: number, positions: MandatePosition[]): Promise<RankedPosition[]> {
+  const ranked: RankedPosition[] = [];
+  for (let index = 0; index < positions.length; index++) {
+    const position = positions[index];
+    const { coverage, debt } = await readVenusCoverage(chainId, position.account);
+    ranked.push({
+      ...position,
+      index,
+      healthFactor: coverage,
+      debt,
+      debtUsd: Number(debt) / 1e18,
+    });
+  }
+  return ranked;
 }
 
 export async function repayPosition(
