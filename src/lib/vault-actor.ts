@@ -93,7 +93,14 @@ function altanaActorFromSession(sessionBlob: string, sessionKey: string, chainId
       const hash =
         (result as { transactionHash?: string }).transactionHash
         ?? (result as { receipts?: { transactionHash?: string }[] }).receipts?.[0]?.transactionHash;
-      if (status === "FAILED") throw new Error(`the relay returned FAILED for the trade${hash ? ` (${hash})` : ""}`);
+      if (status === "FAILED") {
+        // the relay's numeric status is the only reason it gives back, so keep
+        // it in the message instead of a bare FAILED
+        const code = (result as { statusCode?: number }).statusCode;
+        throw new Error(
+          `the relay returned FAILED for the trade${hash ? ` (${hash})` : ""}${code != null ? `, status ${code}` : ""}`,
+        );
+      }
       if (!hash) {
         throw new Error(
           `the relay returned no transaction hash for the trade (status ${status ?? "unknown"}); a callsId is not a tx`,

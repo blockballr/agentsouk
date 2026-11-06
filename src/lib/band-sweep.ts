@@ -42,7 +42,9 @@ export async function sweepBandHires(
   const reports: BandTradeReport[] = [];
   const nowSec = () => Math.floor(Date.now() / 1000);
 
-  for (const id of ids.slice(0, limit)) {
+  // newest first: a settled hire keeps its id forever, so reading from the
+  // oldest end let five closed hires take every slot and starve a fresh one
+  for (const id of [...ids].reverse().slice(0, limit)) {
     if (outOfTime()) break;
     const lease = await acquireLease(chainId, id.toString(), holder, 25 * 60 * 1000);
     if (!lease) {
