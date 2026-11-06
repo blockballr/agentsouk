@@ -20,9 +20,9 @@ import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../compo
 // capability leads all of it. Picking a metric names what leads the chain, not
 // what replaces that order.
 const jobSorts = [
-  { key: 'direct', label: 'DIRECT' },
-  { key: 'vault', label: 'VAULT' },
   { key: 'jobs', label: 'ESCROW' },
+  { key: 'vault', label: 'VAULT' },
+  { key: 'direct', label: 'DIRECT' },
 ] as const
 
 const defaultSorts = [
@@ -531,6 +531,7 @@ export function MarketplacePage() {
             ) : null}
           </Stack>
         ) : null}
+        {result ? <Rule /> : null}
         <Stack>
           {result?.source === 'unavailable' ? (
             <UnavailableState onRetry={() => setSp(new URLSearchParams(sp))} />
