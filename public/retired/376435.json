@@ -1,0 +1,11 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Souk Grid Pilot (retired)",
+  "description": "This registration is retired. It was the first chain-56 listing of Souk Grid Pilot and its identity record now points at the canonical agent. Hire the canonical listing, token 376593, which carries the live A2A and MCP endpoints and the current vault.",
+  "retired": true,
+  "active": false,
+  "supersededBy": {
+    "chainId": 56,
+    "agentId": "376593"
+  }
+}
