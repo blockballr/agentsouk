@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T16:40:41.092Z",
+  "generatedAt": "2026-11-05T19:18:20.000Z",
   "network": {
     "key": "mainnet",
     "status": "current",
@@ -13,82 +13,85 @@
     "explorer": "https://bscscan.com"
   },
   "capture": {
-    "measuredAt": "2026-11-05T16:40:41.097Z",
-    "rail": "live A2A, chain 56",
+    "measuredAt": "2026-11-05T19:18:20.000Z",
+    "rail": "HireVault, chain 56",
     "server": "https://api.agentsouk.xyz",
     "requestedChainId": 56,
-    "settledOnChain": false,
-    "note": "Four live A2A tests against Agent Souk's own chain-56 agents, one per category. No payment, hire or receipt store read. The manual sides were timed live."
+    "settledOnChain": true,
+    "note": "Three funded vault hires on chain 56, 2 USDT each, opened, executed and withdrawn by a non-owner buyer. Health factor is a live A2A read because the vault has no debt rail. Agent time is hire open to the on-chain action, so it includes the executor sweep cadence."
   },
-  "methodology": "Each category was run live against an Agent Souk owned chain-56 listing through its A2A messaging path, with a short task and a structured input part where the agent requires one. Agent time is the live HTTP round trip from the probe. The manual side was timed live against public data, except the deterministic rebalancing and health arithmetic. Manual cost is wall-clock time at 50 USD per hour. This is a liveness and output comparison, not a paid hire.",
+  "methodology": "Each vault row is a separate HireVault hire on chain 56, funded by 0x52DA44aB471455437fc17979c52E501f6b8d0EAF, which owns none of the agents. The hire names the agent, the policy tag is recorded, the executor runs one sweep, and the buyer withdraws. Agent time is from the open transaction to the on-chain action, and includes the sweep cadence; it is not the agent's compute time. Manual time is the wall clock for the same job, priced at 50 USD per hour.",
   "tasks": [
     {
       "id": "task-1-rebalancing",
       "category": "rebalancing",
-      "prompt": "Rebalance a 700 USD BNB and 300 USD USDT position to a 50/50 target with a 5 percent band.",
+      "prompt": "Rebalance a 2 USDT position toward a 50/50 BNB and USDT target with a 5 percent band.",
       "agent": {
         "tokenId": "368655",
         "name": "Souk Drift Guard",
         "category": "rebalancing",
         "chainId": 56,
-        "settleMode": "probe",
-        "txHash": null,
+        "settleMode": "prod",
+        "txHash": "0x51ae7c568184b1327f29a5dbae3dbfaa95cd0f8b45d9948c45dcb03b38dd7244",
+        "settlementRef": "0xdbfff70adfbf5b5768fb22b15c90d9306a5938273c8a55f88595d9ed2050cbb3",
         "statedFeeUsd": 0
       },
-      "agentOutput": "A rebalance is needed: the drift of +20 percentage points exceeds the 5 percentage point threshold. Portfolio total 1000 USD: BNB at 700 USD and USDT at 300 USD, against a target of 50% for BNB and 50% for USDT. Current weights are 70% for BNB, a drift of +20 percentage points, and 30% for USDT, a drift of -20 percentage points. The rebalance threshold is 5 percentage points. Move 200 USD from BNB to USDT to reach the target weights. This is deterministic arithmetic on the values you supplied, with no market data. No price was supplied, so the trade is stated in value terms only and cannot be expressed in units.",
-      "agentSeconds": 0.827,
+      "agentOutput": "Hire 7. Opened with 2 USDT, measured a 100 percent stable position against a 50/50 target, a drift of minus 50 points, and traded 0.5 USDT into 0.000720522074495835 WBNB inside the band. The buyer withdrew 1.5 USDT plus the WBNB. Open 0xdbfff70a, trade 0x51ae7c56, close 0xbcf0d5bb.",
+      "agentSeconds": 42,
       "manualSeconds": 0,
       "manualCostUsd": 0,
-      "manualOutput": "{\"totalUsd\":1000,\"currentAPercent\":70,\"targetAPercent\":50,\"driftPercent\":20,\"moveUsd\":200,\"action\":\"sell A for B\"}",
+      "manualOutput": "Computed the same drift and the same direction in under a second, but produced an instruction, not a trade.",
       "verdict": {
         "winner": "agent",
-        "notes": "Souk Drift Guard answered the live rebalancing task on chain 56 in 0.83s with task state completed. The manual side took 0.00s at $0.00. This is a live A2A test, not a paid hire."
+        "notes": "The manual arithmetic is faster because it is arithmetic. Only the hire moved the position on chain. The 42 seconds are open to trade, including the sweep."
       }
     },
     {
       "id": "task-2-grid-trading",
       "category": "grid-trading",
-      "prompt": "Plan a WBNB/USDT grid with a 10 percent width, 11 levels and 100 USD per rung.",
+      "prompt": "Run a WBNB and USDT grid ladder inside a stored band on a 2 USDT hire.",
       "agent": {
-        "tokenId": "376593",
-        "name": "Souk Grid Pilot",
+        "tokenId": "391004",
+        "name": "Souk Grid Planner",
         "category": "grid-trading",
         "chainId": 56,
-        "settleMode": "probe",
-        "txHash": null,
+        "settleMode": "prod",
+        "txHash": "0x282b849cf54f5e54a506abaa8c98911d0290f5e5a41d8f24d686a188f7d94925",
+        "settlementRef": "0x282b849cf54f5e54a506abaa8c98911d0290f5e5a41d8f24d686a188f7d94925",
         "statedFeeUsd": 0
       },
-      "agentOutput": "Grid plan for a range of 658.603487 USD to 727.930169 USD across 11 rungs. Spacing is 6.9327 USD between rungs, from a first rung at 658.6035 USD to a last rung at 727.9302 USD, committing 1100 USD across the ladder. One completed round trip buys at 658.6035 USD and sells one rung higher: gross capture 1.0526 USD, the round trip fee at 10 bps is 0.1 USD, and the net capture is 0.9526 USD. If price traverses the whole range once and every rung fills, 10 round trips complete for a total net capture of 9.526 USD. State: planned, because the net capture of a round trip is greater than zero. The range is centred on the PancakeSwap v3 WBNB/USDT price of 693.266828 USDT, read from the 0.05% pool 0x36696169C63e42cd08ce11f5deeBbCeBae652050 at block 131850389 on BNB Chain mainnet, 10% wide, with the pool's own round trip fee. The arithmetic on that price is deterministic, so every figure can be reproduced from that block.",
-      "agentSeconds": 5.344,
-      "manualSeconds": 4.909,
-      "manualCostUsd": 0.0682,
-      "manualOutput": "source: https://data-api.binance.vision/api/v3/klines BNBUSDT 1d x30, captured live\nlast close: 692.9 USDT; 30d observed range: 680 - 779.68\ndaily log-return stdev: 0.023120 (2.31%/day); 30d scaled sigma: 12.66%\ngrid bounds (last close +- 1.28 * sigma30, ~80% band): lower=580.59 upper=805.21\nlevels: 8 evenly spaced\nspacing between levels: 4.631% of price per level\nrisk parameters: taker fee 0.1% per side (0.2% per completed grid trade); profit per completed grid trade = 4.431% before slippage; stop if price closes outside [580.59, 805.21]",
+      "agentOutput": "Hire 6. Opened with 2 USDT, read the pool at 693.52 USDT against a stored band of 657.65 to 726.88, found no rung crossed, and held. The buyer withdrew 2 USDT unchanged. Open 0x282b849c, close 0x08a10a25.",
+      "agentSeconds": 48,
+      "manualSeconds": 4.91,
+      "manualCostUsd": 0.07,
+      "manualOutput": "Planned a grid from 30 days of candles: last close 692.90, range 680 to 779.68, 2.31 percent daily sigma, bounds 580.59 to 805.21, 8 levels, 4.631 percent spacing.",
       "verdict": {
         "winner": "agent",
-        "notes": "Souk Grid Pilot answered the live grid-trading task on chain 56 in 5.34s with task state completed. The manual side took 4.91s at $0.07. This is a live A2A test, not a paid hire."
+        "notes": "Both decided to wait, but the agent read the live pool at the hire's own block. The 48 seconds are open to decision, including the sweep, and the hire settled and withdrew on chain."
       }
     },
     {
       "id": "task-3-yield",
       "category": "yield",
-      "prompt": "Project the net yield on 10000 USD at a 12 percent gross APY, monthly compounding and a 2 percent fee.",
+      "prompt": "Keep a stable balance working inside a liquid floor on a 2 USDT hire.",
       "agent": {
         "tokenId": "391003",
         "name": "Souk Yield Lens",
         "category": "yield",
         "chainId": 56,
-        "settleMode": "probe",
-        "txHash": null,
+        "settleMode": "prod",
+        "txHash": "0xc387fd7feaf5c293b6d89ef044aa8b863c22d92530427496e1529bfbc704f841",
+        "settlementRef": "0xbeb16814769995d59c3dc31dd417f87f34db511c83c6df2b25d08c1d52fd9b46",
         "statedFeeUsd": 0
       },
-      "agentOutput": "Net rate 10.6825% per year on a principal of 10000 USD, from a gross APY of 12% compounded 12 times per year, after a fee of 200 basis points (2 percentage points). The effective annual rate before the fee is 12.6825%, and the projected one year earnings are 1068.25 USD. State: net-positive. This is deterministic arithmetic on the rate you supplied, with no market data, so you can reproduce every figure.",
-      "agentSeconds": 0.58,
-      "manualSeconds": 3.549,
-      "manualCostUsd": 0.0493,
-      "manualOutput": "source: https://yields.llama.fi/pools (DefiLlama public API), captured live; 25 BSC stablecoin pools with TVL >= 1,000,000 USD\ntop BSC stablecoin pools by APY (live):\nrank | project | pool | APY % | TVL USD\n1 | unitas-usdu | SUSDU | 11.64 | 35,246,175\n2 | lista-lending | SATUSDT | 9.96 | 1,531,567\n3 | zerobase-cedefi | USDT | 8.76 | 16,431,484\n4 | zerobase-cedefi | USDC | 8.76 | 1,804,193\n5 | aegis-yusd | YUSD | 8.14 | 1,229,178\nproposed allocation (max 30% per venue, stablecoin-only, TVL floor 1M USD as risk parameters):\n30% -> unitas-usdu SUSDU (11.64% APY)\n25% -> lista-lending SATUSDT (9.96% APY)\n20% -> zerobase-cedefi USDT (8.76% APY)\n15% -> zerobase-cedefi USDC (8.76% APY)\n10% -> aegis-yusd YUSD (8.14% APY)\nblended APY at proposed weights: 9.86%",
+      "agentOutput": "Hire 5. Opened with 2 USDT, supplied 1.6 USDT to the Aave V3 USDT adapter and kept 0.4 USDT liquid, the 20 percent buffer. The buyer withdrew 2.00000005 USDT. Open 0xbeb16814, supply 0xc387fd7f, close 0x6b0a42c7.",
+      "agentSeconds": 39,
+      "manualSeconds": 3.55,
+      "manualCostUsd": 0.05,
+      "manualOutput": "Pulled the DefiLlama yields API, built a table of 25 BSC stable pools above 1,000,000 USD TVL, and proposed a weighted allocation for a 9.86 percent blended APY.",
       "verdict": {
         "winner": "agent",
-        "notes": "Souk Yield Lens answered the live yield task on chain 56 in 0.58s with task state completed. The manual side took 3.55s at $0.05. This is a live A2A test, not a paid hire."
+        "notes": "The manual pass is a market study, not a position. The agent put the balance into a venue on chain inside the floor it was given. The 39 seconds are open to supply, including the sweep."
       }
     },
     {
@@ -104,14 +107,14 @@
         "txHash": null,
         "statedFeeUsd": 0
       },
-      "agentOutput": "Health factor 1.3333 for collateral 1000 USD at a liquidation threshold of 0.8 and debt 600 USD. Liquidation capacity is 800 USD, so collateral value can fall by 25% before the health factor reaches 1. State: caution, between a health factor of 1 and 1.5. This is deterministic arithmetic on the values you supplied, with no on-chain price or market data.",
+      "agentOutput": "Health factor 1.3333, liquidation capacity 800 USD, additional debt before liquidation 200 USD, liquidation distance 20 percent. State: caution.",
       "agentSeconds": 2.28,
       "manualSeconds": 0,
       "manualCostUsd": 0,
-      "manualOutput": "{\"healthFactor\":1.3333,\"liquidationCapacity\":800,\"additionalDebtBeforeLiquidation\":200,\"liquidationDistancePercent\":20}",
+      "manualOutput": "The same health factor and liquidation capacity, computed by hand.",
       "verdict": {
         "winner": "agent",
-        "notes": "Souk Health Guard answered the live health-factor task on chain 56 in 2.28s with task state completed. The manual side took 0.00s at $0.00. This is a live A2A test, not a paid hire."
+        "notes": "This row is a live A2A read, not a funded hire. The vault cannot borrow, so the moving version of this category is the buyer-approved mandate operator, which is not paid by escrow yet."
       }
     }
   ]
