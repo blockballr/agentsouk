@@ -6,8 +6,8 @@ name: Liveness sweep
 # be frequent without a budget attached to it.
 
 on:
-  schedule:
-    - cron: "20 */6 * * *"
+  # the clock for this sweep is the agentsouk-cron worker; this stays as a
+  # manual lever, so the route is never probed by two schedules at once
   workflow_dispatch: {}
 
 jobs:
