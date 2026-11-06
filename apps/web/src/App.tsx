@@ -13,6 +13,7 @@ import { WorkspaceShell } from './components/WorkspaceShell'
 // detail are the pages a visitor waits on, so they must not carry the builder,
 // the consoles and the settings screens in the same first chunk
 const MarketplacePage = lazy(() => import('./pages/MarketplacePage').then((m) => ({ default: m.MarketplacePage })))
+const DiscoverPage = lazy(() => import('./pages/DiscoverPage').then((m) => ({ default: m.DiscoverPage })))
 const AgentDetailPage = lazy(() => import('./pages/AgentDetailPage').then((m) => ({ default: m.AgentDetailPage })))
 const ComparePage = lazy(() => import('./pages/ComparePage').then((m) => ({ default: m.ComparePage })))
 const AdvantagePage = lazy(() => import('./pages/AdvantagePage').then((m) => ({ default: m.AdvantagePage })))
@@ -71,6 +72,7 @@ function App() {
             />
             <Route path="/about" element={<HomePage />} />
             <Route path="/agents" element={<MarketplacePage />} />
+            <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/telegram/link" element={<TelegramLinkPage />} />
         <Route path="/judge" element={<JudgePage />} />
             <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />

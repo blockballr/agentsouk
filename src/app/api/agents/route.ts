@@ -70,6 +70,7 @@ export async function GET(req: NextRequest) {
     seed: sp.get("seed"),
     includeHouse: sp.get("house") === "all",
     liveOnly: sp.get("all") !== "1",
+    recent: sp.get("recent") === "1",
   });
 
   const tQuery = performance.now();

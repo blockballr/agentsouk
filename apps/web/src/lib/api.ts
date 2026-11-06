@@ -11,11 +11,13 @@ export interface AgentsQuery {
   q?: string
   sector?: string
   owned?: boolean
-  type?: 'all' | 'jobs' | 'x402' | 'vault' | 'others'
+  type?: 'all' | 'direct' | 'jobs' | 'x402' | 'vault' | 'others'
   metric?: 'score' | 'newest' | 'feedback' | 'health'
   page?: number
   limit?: number
   pcs?: boolean
+  // the dedicated new-listings page: admitted inside the window and answered
+  recent?: boolean
   // the visit's rotation seed, which orders the working agents under "Working first"
   seed?: string
 }
@@ -73,6 +75,7 @@ export async function getAgents(query: AgentsQuery = {}): Promise<AgentsResult> 
   if (query.limit) sp.set('limit', String(query.limit))
   if (query.pcs) sp.set('pcs', '1')
   if (query.owned) sp.set('owned', '1')
+  if (query.recent) sp.set('recent', '1')
   const res = await fetch(`${BASE}/agents?${sp}`)
   if (!res.ok) throw new Error(`agents ${res.status}`)
   const body = await readJsonBody<{
