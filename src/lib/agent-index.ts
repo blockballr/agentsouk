@@ -92,6 +92,20 @@ export function canExecute(a: {
 // forever. the strip is bounded and only carries agents whose probe answered.
 export const JUST_LISTED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
+// one rule for both the strip and the dedicated page: admitted inside the
+// window, and the probe answered, so a fresh listing with no score is still
+// reachable without being ranked.
+export function isRecentAdmission(
+  agent: AgentSummary,
+  verifications: Map<string, { status?: string }> | undefined,
+  now: number,
+): boolean {
+  const admitted = Date.parse((agent as { admitted_at?: string }).admitted_at ?? "");
+  if (!Number.isFinite(admitted) || admitted > now || now - admitted > JUST_LISTED_WINDOW_MS) return false;
+  const status = verifications?.get(String(agent.token_id))?.status;
+  return status === "online" || status === "delivered";
+}
+
 export function recentAdmissions(
   items: AgentSummary[],
   verifications: Map<string, { status?: string }> | undefined,
@@ -99,12 +113,7 @@ export function recentAdmissions(
   limit = 4,
 ): AgentSummary[] {
   return items
-    .filter((a) => {
-      const admitted = Date.parse((a as { admitted_at?: string }).admitted_at ?? "");
-      if (!Number.isFinite(admitted) || admitted > now || now - admitted > JUST_LISTED_WINDOW_MS) return false;
-      const status = verifications?.get(String(a.token_id))?.status;
-      return status === "online" || status === "delivered";
-    })
+    .filter((a) => isRecentAdmission(a, verifications, now))
     .sort(
       (a, b) =>
         Date.parse((b as { admitted_at?: string }).admitted_at ?? "") -
@@ -123,6 +132,9 @@ export function selectFeatured(
 ): AgentSummary[] {
   if (options.queryPresent) return [];
   const house = options.houseOperator.toLowerCase();
+  // a placement separates one listing from the rest, so it says nothing on a
+  // rail where every listing is ours: the vault rail is house only today
+  if (items.length > 0 && items.every((a) => a.owner_address?.toLowerCase() === house)) return [];
   return items
     .filter((a) => a.owner_address?.toLowerCase() === house)
     .filter((a) => {
@@ -135,6 +147,16 @@ export function selectFeatured(
       return admitted(b) - admitted(a);
     })
     .slice(0, options.limit ?? 1);
+}
+
+// The featured slot rides above the ranking, so the strip beneath it must not
+// repeat that listing. Identity is the chain plus token the index is keyed by.
+export function excludeAgents<T extends { chain_id: number; token_id: string }>(
+  list: readonly T[],
+  exclude: readonly { chain_id: number; token_id: string }[],
+): T[] {
+  const keys = new Set(exclude.map((a) => indexKey(a.chain_id, a.token_id)));
+  return list.filter((a) => !keys.has(indexKey(a.chain_id, a.token_id)));
 }
 
 export function isShelfReady(a: {
