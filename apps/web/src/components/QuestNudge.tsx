@@ -203,7 +203,9 @@ export function QuestNudge() {
   // the way back in belongs to the wallet that started; anyone else is still invited
   const started = wallet !== null && (mode === 'active' || mode === 'quit')
   const hidden = pathname.startsWith('/quest') || pathname.startsWith('/agents/')
-  const onShelf = pathname === '/agents'
+  // the pages that open on a grid of agent cards: the invitation docks at the
+  // foot instead of hanging over the first row
+  const onGrid = pathname === '/agents' || pathname === '/discover'
 
   // a started quest shows how far it has got, read again as the visitor moves between pages,
   // at most every half minute, so a fresh hire shows without a reload
@@ -228,7 +230,7 @@ export function QuestNudge() {
     return (
       <aside
         aria-label="Set and Earn Quest"
-        className={cx(onShelf ? INVITE_SHELF : INVITE, minimizing ? 'z-[60]' : 'z-40')}
+        className={cx(onGrid ? INVITE_SHELF : INVITE, minimizing ? 'z-[60]' : 'z-40')}
         style={{ '--quest-top': `${band}px` } as CSSProperties}
       >
         <motion.div
@@ -277,7 +279,7 @@ export function QuestNudge() {
   return (
     <aside
       aria-label="Set and Earn Quest"
-      className={cx(onShelf ? INVITE_SHELF : INVITE, minimizing ? 'z-[60]' : 'z-40')}
+      className={cx(onGrid ? INVITE_SHELF : INVITE, minimizing ? 'z-[60]' : 'z-40')}
       style={{ '--quest-top': `${band}px` } as CSSProperties}
     >
       <motion.div
