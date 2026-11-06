@@ -249,6 +249,21 @@ export async function rankPositions(chainId: number, positions: MandatePosition[
   return ranked;
 }
 
+// the whole decision in one place, so the funded job and the watcher cannot
+// disagree about when a position is worth defending
+export function planDefence(
+  ranked: RankedPosition[],
+  trigger: number,
+  target: number,
+  cap: bigint,
+): { position: RankedPosition; amount: bigint } | null {
+  const worst = pickWorst(ranked);
+  if (!worst || worst.healthFactor >= trigger) return null;
+  const amount = repayAmount(worst.healthFactor, worst.debt, cap, target);
+  if (amount === 0n) return null;
+  return { position: worst, amount };
+}
+
 export async function repayPosition(
   operator: Address,
   buyer: Address,

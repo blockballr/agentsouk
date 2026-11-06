@@ -2,13 +2,7 @@ import "server-only";
 
 import type { Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import {
-  pickWorst,
-  rankPositions,
-  readMandate,
-  repayAmount,
-  repayPosition,
-} from "./health-operator";
+import { planDefence, rankPositions, readMandate, repayPosition } from "./health-operator";
 import { targetChainId } from "./types";
 
 // The funded defence: a buyer writes a mandate, hires the agent through an
@@ -80,33 +74,23 @@ export async function runHealthDefence(
   }
 
   const ranked = await rankPositions(chainId, mandate.positions);
-  const worst = pickWorst(ranked);
-  if (!worst) return { ...base, reason: "the mandate carries no readable position" };
-
-  const target = options.target ?? mandate.target;
-  if (worst.healthFactor >= mandate.trigger) {
+  const plan = planDefence(ranked, mandate.trigger, mandate.target, mandate.maxRepayPerCall);
+  if (!plan) {
+    const worst = ranked.length > 0 ? ranked.reduce((a, b) => (a.healthFactor <= b.healthFactor ? a : b)) : null;
     return {
       ...base,
-      positionIndex: worst.index,
-      account: worst.account,
-      coverageBefore: worst.healthFactor,
-      coverageAfter: worst.healthFactor,
-      debtUsd: worst.debtUsd,
-      reason: `coverage ${worst.healthFactor.toFixed(3)} is above the ${mandate.trigger} trigger`,
+      positionIndex: worst?.index ?? null,
+      account: worst?.account ?? null,
+      coverageBefore: worst?.healthFactor ?? null,
+      coverageAfter: worst?.healthFactor ?? null,
+      debtUsd: worst?.debtUsd ?? null,
+      reason: worst
+        ? `coverage ${worst.healthFactor.toFixed(3)} is above the ${mandate.trigger} trigger`
+        : "the mandate carries no readable position",
     };
   }
-  const amount = repayAmount(worst.healthFactor, worst.debt, mandate.maxRepayPerCall, target);
-  if (amount === 0n) {
-    return {
-      ...base,
-      positionIndex: worst.index,
-      account: worst.account,
-      coverageBefore: worst.healthFactor,
-      coverageAfter: worst.healthFactor,
-      debtUsd: worst.debtUsd,
-      reason: `coverage ${worst.healthFactor.toFixed(3)} is already above the ${target} target`,
-    };
-  }
+  const worst = plan.position;
+  const amount = plan.amount;
 
   const txHash = await repayPosition(request.operator, request.buyer, worst.index, amount, options.agentKey);
   const after = await rankPositions(chainId, [mandate.positions[worst.index]]);

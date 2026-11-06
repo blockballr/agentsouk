@@ -56,10 +56,10 @@ describe("agent card", () => {
     expect(card.name).toBe(HOUSE_AGENT_NAME);
     expect(card.version).toBe(HOUSE_AGENT_VERSION);
     expect(card.description).toBe(HOUSE_AGENT_DESCRIPTION);
-    // one work skill and the two ERC-8183 protocol steps, negotiate and
-    // notify_funded, that sell through the shared kernel
-    expect(card.skills).toHaveLength(3);
-    expect(card.skills.map((s) => s.id)).toEqual(["compute-health-factor", "negotiate", "notify_funded"]);
+    // two work skills, the health factor read and the mandate defence, plus
+    // the two ERC-8183 protocol steps that sell through the shared kernel
+    expect(card.skills).toHaveLength(4);
+    expect(card.skills.map((s) => s.id)).toEqual(["compute-health-factor", "negotiate", "notify_funded", "defend-position"]);
 
     const messagingUrl = houseAgentMessagingUrl(HOUSE_AGENT_PUBLIC_ORIGIN);
     expect(messagingUrl).toBe(`${HOUSE_AGENT_PUBLIC_ORIGIN}${HOUSE_AGENT_MESSAGING_PATH}`);
