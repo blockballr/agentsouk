@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { JUST_LISTED_WINDOW_MS, recentAdmissions } from "@/lib/agent-index";
+import { JUST_LISTED_WINDOW_MS, isRecentAdmission, recentAdmissions } from "@/lib/agent-index";
 
 const now = Date.parse("2026-11-05T18:00:00Z");
 
@@ -70,5 +70,35 @@ describe("just listed strip", () => {
     const picked = recentAdmissions(items, verifications, now, 3);
     expect(picked).toHaveLength(3);
     expect(now - Date.parse((picked[0] as { admitted_at: string }).admitted_at)).toBeLessThan(JUST_LISTED_WINDOW_MS);
+  });
+});
+
+// the dedicated page applies the strip's rule without the four item cap, so the
+// predicate is what both the strip and the page share
+describe("recent admission predicate", () => {
+  it("accepts a fresh admission whose probe answered", () => {
+    expect(isRecentAdmission(agent("1", "2026-11-05T12:00:00Z"), online(["1"]), now)).toBe(true);
+  });
+
+  it("rejects a listing admitted outside the window", () => {
+    expect(isRecentAdmission(agent("1", "2026-10-01T00:00:00Z"), online(["1"]), now)).toBe(false);
+  });
+
+  it("rejects a listing with no admission time", () => {
+    expect(isRecentAdmission(agent("1"), online(["1"]), now)).toBe(false);
+  });
+
+  it("rejects a fresh listing whose probe did not answer", () => {
+    const verifications = new Map([["1", { status: "dead" }]]);
+    expect(isRecentAdmission(agent("1", "2026-11-05T12:00:00Z"), verifications, now)).toBe(false);
+  });
+
+  it("accepts a delivered probe, not only online", () => {
+    const verifications = new Map([["1", { status: "delivered" }]]);
+    expect(isRecentAdmission(agent("1", "2026-11-05T12:00:00Z"), verifications, now)).toBe(true);
+  });
+
+  it("rejects an admission stamped in the future", () => {
+    expect(isRecentAdmission(agent("1", "2026-11-06T00:00:00Z"), online(["1"]), now)).toBe(false);
   });
 });

@@ -65,4 +65,22 @@ describe("featured placement", () => {
     const items = [agent("1", stranger, "2026-11-05T12:00:00Z")];
     expect(selectFeatured(items, online(["1"]), { houseOperator: house, queryPresent: false })).toHaveLength(0);
   });
+
+  it("shows nothing on a rail where every listing is ours", () => {
+    // the vault rail is house only today, so a placement would separate nothing
+    const items = [
+      agent("1", house, "2026-11-04T00:00:00Z"),
+      agent("2", house, "2026-11-05T12:00:00Z"),
+    ];
+    expect(selectFeatured(items, online(["1", "2"]), { houseOperator: house, queryPresent: false })).toHaveLength(0);
+  });
+
+  it("still features a house agent while the set is mixed", () => {
+    const items = [
+      agent("1", house, "2026-11-05T12:00:00Z"),
+      agent("2", stranger, "2026-11-05T13:00:00Z"),
+    ];
+    const picked = selectFeatured(items, online(["1", "2"]), { houseOperator: house, queryPresent: false });
+    expect(picked.map((a) => a.token_id)).toEqual(["1"]);
+  });
 });
