@@ -17,8 +17,8 @@ const nextConfig: NextConfig = {
     ];
   },
   outputFileTracingIncludes: {
-    "/*": ["./data/agents.json", "./data/agents-97.json", "./data/scout-97/verifications.json", "./data/advantage-tasks.json", "./data/delivery-matrix.json", "./data/verifications.json", "./data/performance.json", "./data/recovered-endpoints.json", "./packages/vault-sdk/dist/**"],
-    "/api/*": ["./data/agents.json", "./data/agents-97.json", "./data/scout-97/verifications.json", "./data/advantage-tasks.json", "./data/delivery-matrix.json", "./data/verifications.json", "./data/performance.json", "./data/recovered-endpoints.json", "./packages/vault-sdk/dist/**"],
+    "/*": ["./data/agents.json", "./data/agents-97.json", "./data/scout-97/verifications.json", "./data/advantage.json", "./data/delivery-matrix.json", "./data/verifications.json", "./data/performance.json", "./data/recovered-endpoints.json", "./packages/vault-sdk/dist/**"],
+    "/api/*": ["./data/agents.json", "./data/agents-97.json", "./data/scout-97/verifications.json", "./data/advantage.json", "./data/delivery-matrix.json", "./data/verifications.json", "./data/performance.json", "./data/recovered-endpoints.json", "./packages/vault-sdk/dist/**"],
   },
 };
 

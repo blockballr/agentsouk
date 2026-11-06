@@ -1,0 +1,118 @@
+{
+  "generatedAt": "2026-11-05T16:40:41.092Z",
+  "network": {
+    "key": "mainnet",
+    "status": "current",
+    "chainId": 56,
+    "name": "BNB Smart Chain",
+    "asset": {
+      "symbol": "USDT",
+      "name": "Tether USD",
+      "address": "0x55d398326f99059fF775485246999027B3197955"
+    },
+    "explorer": "https://bscscan.com"
+  },
+  "capture": {
+    "measuredAt": "2026-11-05T16:40:41.097Z",
+    "rail": "live A2A, chain 56",
+    "server": "https://api.agentsouk.xyz",
+    "requestedChainId": 56,
+    "settledOnChain": false,
+    "note": "Four live A2A tests against Agent Souk's own chain-56 agents, one per category. No payment, hire or receipt store read. The manual sides were timed live."
+  },
+  "methodology": "Each category was run live against an Agent Souk owned chain-56 listing through its A2A messaging path, with a short task and a structured input part where the agent requires one. Agent time is the live HTTP round trip from the probe. The manual side was timed live against public data, except the deterministic rebalancing and health arithmetic. Manual cost is wall-clock time at 50 USD per hour. This is a liveness and output comparison, not a paid hire.",
+  "tasks": [
+    {
+      "id": "task-1-rebalancing",
+      "category": "rebalancing",
+      "prompt": "Rebalance a 700 USD BNB and 300 USD USDT position to a 50/50 target with a 5 percent band.",
+      "agent": {
+        "tokenId": "368655",
+        "name": "Souk Drift Guard",
+        "category": "rebalancing",
+        "chainId": 56,
+        "settleMode": "probe",
+        "txHash": null,
+        "statedFeeUsd": 0
+      },
+      "agentOutput": "A rebalance is needed: the drift of +20 percentage points exceeds the 5 percentage point threshold. Portfolio total 1000 USD: BNB at 700 USD and USDT at 300 USD, against a target of 50% for BNB and 50% for USDT. Current weights are 70% for BNB, a drift of +20 percentage points, and 30% for USDT, a drift of -20 percentage points. The rebalance threshold is 5 percentage points. Move 200 USD from BNB to USDT to reach the target weights. This is deterministic arithmetic on the values you supplied, with no market data. No price was supplied, so the trade is stated in value terms only and cannot be expressed in units.",
+      "agentSeconds": 0.827,
+      "manualSeconds": 0,
+      "manualCostUsd": 0,
+      "manualOutput": "{\"totalUsd\":1000,\"currentAPercent\":70,\"targetAPercent\":50,\"driftPercent\":20,\"moveUsd\":200,\"action\":\"sell A for B\"}",
+      "verdict": {
+        "winner": "agent",
+        "notes": "Souk Drift Guard answered the live rebalancing task on chain 56 in 0.83s with task state completed. The manual side took 0.00s at $0.00. This is a live A2A test, not a paid hire."
+      }
+    },
+    {
+      "id": "task-2-grid-trading",
+      "category": "grid-trading",
+      "prompt": "Plan a WBNB/USDT grid with a 10 percent width, 11 levels and 100 USD per rung.",
+      "agent": {
+        "tokenId": "376593",
+        "name": "Souk Grid Pilot",
+        "category": "grid-trading",
+        "chainId": 56,
+        "settleMode": "probe",
+        "txHash": null,
+        "statedFeeUsd": 0
+      },
+      "agentOutput": "Grid plan for a range of 658.603487 USD to 727.930169 USD across 11 rungs. Spacing is 6.9327 USD between rungs, from a first rung at 658.6035 USD to a last rung at 727.9302 USD, committing 1100 USD across the ladder. One completed round trip buys at 658.6035 USD and sells one rung higher: gross capture 1.0526 USD, the round trip fee at 10 bps is 0.1 USD, and the net capture is 0.9526 USD. If price traverses the whole range once and every rung fills, 10 round trips complete for a total net capture of 9.526 USD. State: planned, because the net capture of a round trip is greater than zero. The range is centred on the PancakeSwap v3 WBNB/USDT price of 693.266828 USDT, read from the 0.05% pool 0x36696169C63e42cd08ce11f5deeBbCeBae652050 at block 131850389 on BNB Chain mainnet, 10% wide, with the pool's own round trip fee. The arithmetic on that price is deterministic, so every figure can be reproduced from that block.",
+      "agentSeconds": 5.344,
+      "manualSeconds": 4.909,
+      "manualCostUsd": 0.0682,
+      "manualOutput": "source: https://data-api.binance.vision/api/v3/klines BNBUSDT 1d x30, captured live\nlast close: 692.9 USDT; 30d observed range: 680 - 779.68\ndaily log-return stdev: 0.023120 (2.31%/day); 30d scaled sigma: 12.66%\ngrid bounds (last close +- 1.28 * sigma30, ~80% band): lower=580.59 upper=805.21\nlevels: 8 evenly spaced\nspacing between levels: 4.631% of price per level\nrisk parameters: taker fee 0.1% per side (0.2% per completed grid trade); profit per completed grid trade = 4.431% before slippage; stop if price closes outside [580.59, 805.21]",
+      "verdict": {
+        "winner": "agent",
+        "notes": "Souk Grid Pilot answered the live grid-trading task on chain 56 in 5.34s with task state completed. The manual side took 4.91s at $0.07. This is a live A2A test, not a paid hire."
+      }
+    },
+    {
+      "id": "task-3-yield",
+      "category": "yield",
+      "prompt": "Project the net yield on 10000 USD at a 12 percent gross APY, monthly compounding and a 2 percent fee.",
+      "agent": {
+        "tokenId": "391003",
+        "name": "Souk Yield Lens",
+        "category": "yield",
+        "chainId": 56,
+        "settleMode": "probe",
+        "txHash": null,
+        "statedFeeUsd": 0
+      },
+      "agentOutput": "Net rate 10.6825% per year on a principal of 10000 USD, from a gross APY of 12% compounded 12 times per year, after a fee of 200 basis points (2 percentage points). The effective annual rate before the fee is 12.6825%, and the projected one year earnings are 1068.25 USD. State: net-positive. This is deterministic arithmetic on the rate you supplied, with no market data, so you can reproduce every figure.",
+      "agentSeconds": 0.58,
+      "manualSeconds": 3.549,
+      "manualCostUsd": 0.0493,
+      "manualOutput": "source: https://yields.llama.fi/pools (DefiLlama public API), captured live; 25 BSC stablecoin pools with TVL >= 1,000,000 USD\ntop BSC stablecoin pools by APY (live):\nrank | project | pool | APY % | TVL USD\n1 | unitas-usdu | SUSDU | 11.64 | 35,246,175\n2 | lista-lending | SATUSDT | 9.96 | 1,531,567\n3 | zerobase-cedefi | USDT | 8.76 | 16,431,484\n4 | zerobase-cedefi | USDC | 8.76 | 1,804,193\n5 | aegis-yusd | YUSD | 8.14 | 1,229,178\nproposed allocation (max 30% per venue, stablecoin-only, TVL floor 1M USD as risk parameters):\n30% -> unitas-usdu SUSDU (11.64% APY)\n25% -> lista-lending SATUSDT (9.96% APY)\n20% -> zerobase-cedefi USDT (8.76% APY)\n15% -> zerobase-cedefi USDC (8.76% APY)\n10% -> aegis-yusd YUSD (8.14% APY)\nblended APY at proposed weights: 9.86%",
+      "verdict": {
+        "winner": "agent",
+        "notes": "Souk Yield Lens answered the live yield task on chain 56 in 0.58s with task state completed. The manual side took 3.55s at $0.05. This is a live A2A test, not a paid hire."
+      }
+    },
+    {
+      "id": "task-4-health-factor",
+      "category": "health-factor",
+      "prompt": "Collateral value is 1000 USD, debt value is 600 USD, liquidation threshold is 0.8. What is the health factor?",
+      "agent": {
+        "tokenId": "404603",
+        "name": "Souk Health Guard",
+        "category": "health-factor",
+        "chainId": 56,
+        "settleMode": "probe",
+        "txHash": null,
+        "statedFeeUsd": 0
+      },
+      "agentOutput": "Health factor 1.3333 for collateral 1000 USD at a liquidation threshold of 0.8 and debt 600 USD. Liquidation capacity is 800 USD, so collateral value can fall by 25% before the health factor reaches 1. State: caution, between a health factor of 1 and 1.5. This is deterministic arithmetic on the values you supplied, with no on-chain price or market data.",
+      "agentSeconds": 2.28,
+      "manualSeconds": 0,
+      "manualCostUsd": 0,
+      "manualOutput": "{\"healthFactor\":1.3333,\"liquidationCapacity\":800,\"additionalDebtBeforeLiquidation\":200,\"liquidationDistancePercent\":20}",
+      "verdict": {
+        "winner": "agent",
+        "notes": "Souk Health Guard answered the live health-factor task on chain 56 in 2.28s with task state completed. The manual side took 0.00s at $0.00. This is a live A2A test, not a paid hire."
+      }
+    }
+  ]
+}
