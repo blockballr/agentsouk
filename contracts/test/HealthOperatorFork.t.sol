@@ -60,7 +60,7 @@ contract HealthOperatorForkTest {
         require(IERC20Like(USDT).approve(address(operator), type(uint256).max), "approve operator");
         HealthOperator.Position[] memory positions = new HealthOperator.Position[](1);
         positions[0] = HealthOperator.Position({account: address(this), vTokenDebt: V_USDT});
-        operator.setMandate(AGENT, USDT, 20e18, 40e18, uint64(block.timestamp + 7 days), positions);
+        operator.setMandate(AGENT, USDT, 12_000, 15_000, 20e18, 40e18, uint64(block.timestamp + 7 days), positions);
 
         vm.prank(AGENT);
         operator.repay(address(this), 0, 10e18);

@@ -83,7 +83,18 @@ export async function runHealthDefence(
   const worst = pickWorst(ranked);
   if (!worst) return { ...base, reason: "the mandate carries no readable position" };
 
-  const target = options.target ?? 1.5;
+  const target = options.target ?? mandate.target;
+  if (worst.healthFactor >= mandate.trigger) {
+    return {
+      ...base,
+      positionIndex: worst.index,
+      account: worst.account,
+      coverageBefore: worst.healthFactor,
+      coverageAfter: worst.healthFactor,
+      debtUsd: worst.debtUsd,
+      reason: `coverage ${worst.healthFactor.toFixed(3)} is above the ${mandate.trigger} trigger`,
+    };
+  }
   const amount = repayAmount(worst.healthFactor, worst.debt, mandate.maxRepayPerCall, target);
   if (amount === 0n) {
     return {

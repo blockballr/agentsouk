@@ -15,9 +15,10 @@ interface IVTokenDebt {
 
 /// @notice A buyer's lending positions stay in the buyer's own wallets. This
 /// contract is the only thing an agent may touch, and only within the mandate
-/// the buyer wrote: the defence asset, the positions, how much per call and per
-/// day, and until when. The agent can repay debt on any of those positions, and
-/// nothing else. The buyer can revoke in one transaction.
+/// the buyer wrote: the defence asset, the positions, the trigger it acts under,
+/// the target it aims for, how much per call and per day, and until when. The
+/// agent can repay debt on those positions, and nothing else. The buyer can
+/// revoke in one transaction.
 ///
 /// Portfolio scope is the point: one mandate covers several accounts, so the
 /// agent defends the worst health factor instead of being hired per account.
@@ -30,6 +31,10 @@ contract HealthOperator {
     struct Mandate {
         address agent;
         address asset;
+        // act when coverage falls under triggerBps / 10_000
+        uint32 triggerBps;
+        // repay until coverage reaches targetBps / 10_000
+        uint32 targetBps;
         uint128 maxRepayPerCall;
         uint128 maxRepayPerDay;
         uint64 expiry;
@@ -40,8 +45,13 @@ contract HealthOperator {
     uint256 public constant DAY = 1 days;
     uint64 public constant MAX_TERM = 90 days;
     uint256 public constant MAX_POSITIONS = 8;
+    uint32 public constant MAX_TARGET_BPS = 100_000;
 
     mapping(address => Mandate) private _mandates;
+    // the active buyers, so a watcher can find every portfolio to check. a buyer
+    // leaves the list on revoke, so a mandate never outlives the buyer's consent.
+    address[] private _buyers;
+    mapping(address => uint256) private _buyerSlot;
     // repayment spent today, keyed by buyer, so two calls cannot add up past the
     // daily bound the buyer wrote
     mapping(address => uint256) private _spentDay;
@@ -53,6 +63,8 @@ contract HealthOperator {
         address indexed buyer,
         address indexed agent,
         address asset,
+        uint32 triggerBps,
+        uint32 targetBps,
         uint128 maxRepayPerCall,
         uint128 maxRepayPerDay,
         uint64 expiry,
@@ -68,6 +80,7 @@ contract HealthOperator {
     error BadExpiry();
     error BadMandate();
     error BadPosition();
+    error BadTrigger();
     error OverCap();
     error TokenCallFailed();
     error Reentered();
@@ -84,6 +97,8 @@ contract HealthOperator {
     function setMandate(
         address agent,
         address asset,
+        uint32 triggerBps,
+        uint32 targetBps,
         uint128 maxRepayPerCall,
         uint128 maxRepayPerDay,
         uint64 expiry,
@@ -93,11 +108,14 @@ contract HealthOperator {
         if (positions.length == 0 || positions.length > MAX_POSITIONS) revert BadPosition();
         if (expiry <= block.timestamp || expiry > block.timestamp + MAX_TERM) revert BadExpiry();
         if (maxRepayPerCall == 0 || maxRepayPerDay < maxRepayPerCall) revert BadAmount();
+        if (triggerBps == 0 || targetBps <= triggerBps || targetBps > MAX_TARGET_BPS) revert BadTrigger();
 
         Mandate storage m = _mandates[msg.sender];
         delete m.positions;
         m.agent = agent;
         m.asset = asset;
+        m.triggerBps = triggerBps;
+        m.targetBps = targetBps;
         m.maxRepayPerCall = maxRepayPerCall;
         m.maxRepayPerDay = maxRepayPerDay;
         m.expiry = expiry;
@@ -107,13 +125,30 @@ contract HealthOperator {
             m.positions.push(positions[i]);
         }
 
-        emit MandateSet(msg.sender, agent, asset, maxRepayPerCall, maxRepayPerDay, expiry, positions.length);
+        if (_buyerSlot[msg.sender] == 0) {
+            _buyers.push(msg.sender);
+            _buyerSlot[msg.sender] = _buyers.length;
+        }
+
+        emit MandateSet(
+            msg.sender,
+            agent,
+            asset,
+            triggerBps,
+            targetBps,
+            maxRepayPerCall,
+            maxRepayPerDay,
+            expiry,
+            positions.length
+        );
     }
 
-    /// @notice the buyer ends the agent's authority at once
+    /// @notice the buyer ends the agent's authority at once, and leaves the
+    /// watcher's list
     function revoke() external {
         if (!_mandates[msg.sender].active) revert NoMandate();
         delete _mandates[msg.sender];
+        _removeBuyer(msg.sender);
         emit MandateRevoked(msg.sender);
     }
 
@@ -146,6 +181,18 @@ contract HealthOperator {
         return _mandates[buyer];
     }
 
+    function buyerCount() external view returns (uint256) {
+        return _buyers.length;
+    }
+
+    function buyerAt(uint256 index) external view returns (address) {
+        return _buyers[index];
+    }
+
+    function activeBuyers() external view returns (address[] memory) {
+        return _buyers;
+    }
+
     function positionCount(address buyer) external view returns (uint256) {
         return _mandates[buyer].positions.length;
     }
@@ -153,6 +200,17 @@ contract HealthOperator {
     function spentToday(address buyer) external view returns (uint256) {
         if (_spentDay[buyer] != block.timestamp / DAY) return 0;
         return _spentToday[buyer];
+    }
+
+    function _removeBuyer(address buyer) internal {
+        uint256 slot = _buyerSlot[buyer];
+        if (slot == 0) return;
+        uint256 last = _buyers.length - 1;
+        address moved = _buyers[last];
+        _buyers[slot - 1] = moved;
+        _buyerSlot[moved] = slot;
+        _buyers.pop();
+        delete _buyerSlot[buyer];
     }
 
     function _rollDay(address buyer) internal {

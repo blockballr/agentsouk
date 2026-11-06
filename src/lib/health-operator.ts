@@ -15,6 +15,9 @@ export interface MandatePosition {
 export interface Mandate {
   agent: Address;
   asset: Address;
+  // act when coverage falls under this, repay until it reaches the target
+  trigger: number;
+  target: number;
   maxRepayPerCall: bigint;
   maxRepayPerDay: bigint;
   expiry: number;
@@ -85,6 +88,8 @@ const MANDATE_ABI = [
         components: [
           { name: "agent", type: "address" },
           { name: "asset", type: "address" },
+          { name: "triggerBps", type: "uint32" },
+          { name: "targetBps", type: "uint32" },
           { name: "maxRepayPerCall", type: "uint128" },
           { name: "maxRepayPerDay", type: "uint128" },
           { name: "expiry", type: "uint64" },
@@ -132,6 +137,8 @@ export async function readMandate(operator: Address, buyer: Address): Promise<Ma
   })) as {
     agent: Address;
     asset: Address;
+    triggerBps: number;
+    targetBps: number;
     maxRepayPerCall: bigint;
     maxRepayPerDay: bigint;
     expiry: number | bigint;
@@ -142,6 +149,8 @@ export async function readMandate(operator: Address, buyer: Address): Promise<Ma
   return {
     agent: raw.agent,
     asset: raw.asset,
+    trigger: Number(raw.triggerBps) / 10_000,
+    target: Number(raw.targetBps) / 10_000,
     maxRepayPerCall: raw.maxRepayPerCall,
     maxRepayPerDay: raw.maxRepayPerDay,
     expiry: Number(raw.expiry),

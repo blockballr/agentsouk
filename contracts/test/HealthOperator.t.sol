@@ -83,7 +83,7 @@ contract HealthOperatorTest {
 
     function _mandate(uint128 repayCap, uint128 dailyCap, uint64 expiry) internal {
         vm.prank(BUYER);
-        operator.setMandate(AGENT, address(usdt), repayCap, dailyCap, expiry, _positions());
+        operator.setMandate(AGENT, address(usdt), 12_000, 15_000, repayCap, dailyCap, expiry, _positions());
     }
 
     function _approve() internal {
@@ -193,29 +193,56 @@ contract HealthOperatorTest {
     function testMandateCannotOutliveTheTerm() public {
         vm.prank(BUYER);
         vm.expectRevert(HealthOperator.BadExpiry.selector);
-        operator.setMandate(AGENT, address(usdt), 100e18, 300e18, uint64(block.timestamp + 91 days), _positions());
+        operator.setMandate(AGENT, address(usdt), 12_000, 15_000, 100e18, 300e18, uint64(block.timestamp + 91 days), _positions());
     }
 
     function testZeroAgentIsRefused() public {
         vm.prank(BUYER);
         vm.expectRevert(HealthOperator.BadMandate.selector);
-        operator.setMandate(address(0), address(usdt), 1e18, 1e18, uint64(block.timestamp + 1 days), _positions());
+        operator.setMandate(address(0), address(usdt), 12_000, 15_000, 1e18, 1e18, uint64(block.timestamp + 1 days), _positions());
     }
 
     function testAnEmptyPortfolioIsRefused() public {
         HealthOperator.Position[] memory none = new HealthOperator.Position[](0);
         vm.prank(BUYER);
         vm.expectRevert(HealthOperator.BadPosition.selector);
-        operator.setMandate(AGENT, address(usdt), 1e18, 1e18, uint64(block.timestamp + 1 days), none);
+        operator.setMandate(AGENT, address(usdt), 12_000, 15_000, 1e18, 1e18, uint64(block.timestamp + 1 days), none);
     }
 
     function testTheDailyCapMustNotBeBelowTheCallCap() public {
         vm.prank(BUYER);
         vm.expectRevert(HealthOperator.BadAmount.selector);
-        operator.setMandate(AGENT, address(usdt), 100e18, 50e18, uint64(block.timestamp + 1 days), _positions());
+        operator.setMandate(AGENT, address(usdt), 12_000, 15_000, 100e18, 50e18, uint64(block.timestamp + 1 days), _positions());
     }
 
-    function testBuyerKeepsCustody() public {
+    function testTheBuyerJoinsTheWatchListOnce() public {
+        _mandate(100e18, 300e18, uint64(block.timestamp + 7 days));
+        assert(operator.buyerCount() == 1);
+        assert(operator.buyerAt(0) == BUYER);
+
+        // writing the mandate again must not duplicate the buyer
+        _mandate(100e18, 300e18, uint64(block.timestamp + 7 days));
+        assert(operator.buyerCount() == 1);
+    }
+
+    function testRevokeLeavesTheWatchList() public {
+        _mandate(100e18, 300e18, uint64(block.timestamp + 7 days));
+        vm.prank(BUYER);
+        operator.revoke();
+        assert(operator.buyerCount() == 0);
+    }
+
+    function testTheTriggerMustSitUnderTheTarget() public {
+        vm.prank(BUYER);
+        vm.expectRevert(HealthOperator.BadTrigger.selector);
+        operator.setMandate(AGENT, address(usdt), 15_000, 12_000, 1e18, 1e18, uint64(block.timestamp + 1 days), _positions());
+
+        vm.prank(BUYER);
+        vm.expectRevert(HealthOperator.BadTrigger.selector);
+        operator.setMandate(AGENT, address(usdt), 0, 15_000, 1e18, 1e18, uint64(block.timestamp + 1 days), _positions());
+    }
+
+    function testTheBuyerKeepsCustody() public {
         _mandate(100e18, 300e18, uint64(block.timestamp + 7 days));
         _approve();
 
