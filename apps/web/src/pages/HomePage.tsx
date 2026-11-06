@@ -361,8 +361,9 @@ export function HomePage() {
                 hireable agents across the four categories: {categoryBreakdown}.
               </>
             ) : null}
-            {' '}We also proved the hiring advantage: three real tasks run
-            both ways, with the raw outputs attached.
+            {' '}We also proved the hiring advantage: four categories
+            compared agent against manual, three of them as funded vault
+            hires, with the raw outputs attached.
           </p>
           <div className="mt-6">
             <Link to="/advantage" className="inline-block">
