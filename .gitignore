@@ -121,3 +121,6 @@ data/altana-sessions.json
 /brag-output/
 brag-output/
 brag-output-*/
+
+# cli build output
+/packages/cli/dist

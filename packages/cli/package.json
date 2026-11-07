@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepack": "node build.mjs"
   },
   "engines": {
     "node": ">=20"
