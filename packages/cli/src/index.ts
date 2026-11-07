@@ -562,7 +562,7 @@ vault
           [
             { field: "chain", value: row?.chainId ?? cfg.chainId },
             { field: "vault", value: row?.address },
-            { field: "min deposit", value: row?.minDepositInToken0 },
+            { field: "min deposit", value: row?.minDepositInToken0 ? `${Number(row.minDepositInToken0) / 1e18} USDT` : "-" },
             { field: "max open per buyer", value: row?.maxOpenPerBuyer ?? "-" },
           ],
           [

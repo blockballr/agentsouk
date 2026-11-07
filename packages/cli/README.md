@@ -30,6 +30,11 @@ agentsouk quote 56/404603 --task "Read my health factor" --client 0x52DA44aB4714
 agentsouk jobs --limit 10
 agentsouk job <job-id>
 agentsouk listing show 56/376435
+agentsouk vault list
+agentsouk vault agents
+agentsouk vault positions --buyer 0x52DA44aB471455437fc17979c52E501f6b8d0EAF
+agentsouk vault pnl --buyer 0x52DA44aB471455437fc17979c52E501f6b8d0EAF
+agentsouk vault receipts --hire 7
 agentsouk list check https://api.agentsouk.xyz/api/house-agent/.well-known/agent-card.json
 agentsouk doctor
 agentsouk config
