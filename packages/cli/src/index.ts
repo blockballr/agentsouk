@@ -1,10 +1,14 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
 import { Command } from "commander";
 import { configPath, readConfigFile, resolveConfig, type CliConfig } from "./core/config";
 import { report } from "./core/errors";
 import { pickFormat, renderJson, renderTable, type Format } from "./core/output";
 import { runDoctor } from "./core/doctor";
 import { parseAgentRef, railsOf, searchAgents, showAgent, verifyAgent } from "./marketplace/agents";
+import { callAgent } from "./marketplace/call";
+import { listJobs, quoteJob, showJob } from "./marketplace/jobs";
+import { checkListing, confirmListing, prepareListing, type ListingDraft } from "./marketplace/listing";
 
 const VERSION = "0.1.0";
 
@@ -159,6 +163,231 @@ program
       const ms = result.verification?.responseMs;
       const detail = result.verification?.detail ?? result.error ?? "";
       process.stdout.write(`${status}${ms === undefined ? "" : ` ${ms}ms`}${detail ? ` ${detail}` : ""}\n`);
+    }),
+  );
+
+
+program
+  .command("call <agent>")
+  .description("call an agent's A2A endpoint with one task")
+  .requiredOption("--task <text>", "the task text")
+  .option("--timeout <seconds>", "call timeout in seconds", "30")
+  .action(
+    guard(async (ref: string, options: { task: string; timeout?: string }) => {
+      const cfg = config();
+      const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
+      const result = await callAgent(cfg, chainId, tokenId, options.task, {
+        timeoutMs: (Number(options.timeout) || 30) * 1000,
+      });
+      if (format() === "json") {
+        process.stdout.write(
+          `${renderJson(
+            {
+              agent: result.agent.name,
+              tokenId,
+              endpoint: result.endpoint,
+              latencyMs: result.latencyMs,
+              text: result.text,
+              result: result.result,
+            },
+            { chainId, tokenId },
+          )}\n`,
+        );
+        return;
+      }
+      process.stdout.write(`${result.text}\n`);
+      if (format() === "table") {
+        process.stderr.write(`${result.agent.name ?? tokenId} · ${result.latencyMs}ms · ${result.endpoint}\n`);
+      }
+    }),
+  );
+
+program
+  .command("quote <agent>")
+  .description("quote an ERC-8183 job, read-only")
+  .requiredOption("--task <text>", "the task text")
+  .option("--client <wallet>", "the buyer wallet")
+  .action(
+    guard(async (ref: string, options: { task: string; client?: string }) => {
+      const cfg = config();
+      const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
+      const result = await quoteJob(cfg, chainId, tokenId, options.task, options.client);
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(result, { chainId, tokenId })}\n`);
+        return;
+      }
+      const quote = result.quote ?? {};
+      const fee = quote.envelope?.fee_usd;
+      const capital = quote.envelope?.capital_usd;
+      process.stdout.write(
+        `${renderTable(
+          [
+            { field: "agent", value: result.agent?.name ?? tokenId },
+            { field: "price", value: fee !== undefined ? `${fee} U` : quote.price },
+            { field: "currency", value: quote.currency },
+            { field: "provider", value: quote.providerAddress },
+            { field: "capital", value: capital ?? "-" },
+            { field: "valid until", value: quote.validUntil ? new Date(quote.validUntil * 1000).toISOString() : "-" },
+            { field: "commerce", value: result.stack?.commerce },
+            { field: "router", value: result.stack?.router },
+          ],
+          [
+            { key: "field", label: "field" },
+            { key: "value", label: "value", width: 80 },
+          ],
+        )}\n`,
+      );
+    }),
+  );
+
+program
+  .command("jobs")
+  .description("recent ERC-8183 jobs")
+  .option("--limit <n>", "how many to read", "20")
+  .option("--wallet <addr>", "only jobs whose client is this wallet")
+  .option("--payee <addr>", "only jobs whose payee is this wallet")
+  .action(
+    guard(async (options: { limit?: string; wallet?: string; payee?: string }) => {
+      const cfg = config();
+      const page = await listJobs(cfg, Number(options.limit) || 20);
+      let jobs = page.jobs ?? [];
+      if (options.wallet) {
+        const wanted = options.wallet.toLowerCase();
+        jobs = jobs.filter((job) => String(job.client ?? "").toLowerCase() === wanted);
+      }
+      if (options.payee) {
+        const wanted = options.payee.toLowerCase();
+        jobs = jobs.filter((job) => String(job.provider ?? "").toLowerCase() === wanted);
+      }
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(jobs, { chainId: cfg.chainId, count: jobs.length })}\n`);
+        return;
+      }
+      process.stdout.write(
+        `${renderTable(
+          jobs.map((job) => ({
+            id: job.id ?? job.paymentId,
+            chain: job.chainId,
+            token: job.tokenId,
+            agent: job.agentName,
+            status: job.status,
+            budget: job.budgetUsd ?? "-",
+            created: job.createdAt,
+          })),
+          [
+            { key: "id", label: "id", width: 26 },
+            { key: "chain", label: "chain" },
+            { key: "token", label: "token" },
+            { key: "agent", label: "agent", width: 26 },
+            { key: "status", label: "status" },
+            { key: "budget", label: "budget" },
+            { key: "created", label: "created" },
+          ],
+        )}\n`,
+      );
+    }),
+  );
+
+program
+  .command("job <id>")
+  .description("one job, in full")
+  .action(
+    guard(async (id: string) => {
+      const cfg = config();
+      const job = await showJob(cfg, id);
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(job, { chainId: cfg.chainId })}\n`);
+        return;
+      }
+      process.stdout.write(
+        `${renderTable(
+          [
+            { field: "id", value: job.id ?? job.paymentId },
+            { field: "chain", value: job.chainId },
+            { field: "token", value: job.tokenId },
+            { field: "agent", value: job.agentName },
+            { field: "status", value: job.status },
+            { field: "client", value: job.client },
+            { field: "provider", value: job.provider },
+            { field: "budget", value: job.budgetUsd ?? "-" },
+            { field: "created", value: job.createdAt },
+            { field: "description", value: job.description },
+          ],
+          [
+            { key: "field", label: "field" },
+            { key: "value", label: "value", width: 96 },
+          ],
+        )}\n`,
+      );
+    }),
+  );
+
+const listing = program.command("list").description("seller listing flow");
+
+listing
+  .command("check <endpoint>")
+  .description("fetch the card the marketplace would read")
+  .action(
+    guard(async (endpoint: string) => {
+      const result = await checkListing(endpoint);
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(result)}\n`);
+      } else {
+        process.stdout.write(`${result.ok ? "ok" : "refused"}  ${result.detail}\n`);
+      }
+      if (!result.ok) process.exitCode = 1;
+    }),
+  );
+
+listing
+  .command("prepare")
+  .description("validate a draft and mint a registration claim")
+  .requiredOption("--draft <file>", "the draft JSON")
+  .option("--owner <wallet>", "the listing owner")
+  .option("--mode <mode>", "call, job or both", "call")
+  .action(
+    guard(async (options: { draft: string; owner?: string; mode?: string }) => {
+      const cfg = config();
+      const draft = JSON.parse(readFileSync(options.draft, "utf8")) as ListingDraft;
+      const result = await prepareListing(cfg, draft, { owner: options.owner, mode: options.mode });
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(result)}\n`);
+        return;
+      }
+      const rows = [
+        { field: "claim", value: result.claimId },
+        { field: "document", value: result.agentUri },
+        { field: "chain", value: result.chainId },
+        { field: "registry", value: result.registryAddress },
+        { field: "calldata", value: result.registerCalldata },
+        { field: "persistence", value: result.persistence },
+      ];
+      process.stdout.write(
+        `${renderTable(rows, [
+          { key: "field", label: "field" },
+          { key: "value", label: "value", width: 120 },
+        ])}\n`,
+      );
+    }),
+  );
+
+listing
+  .command("confirm")
+  .description("confirm the mined registration and admit the listing")
+  .requiredOption("--claim-id <id>")
+  .requiredOption("--agent-id <id>")
+  .requiredOption("--tx <hash>")
+  .action(
+    guard(async (options: { claimId: string; agentId: string; tx: string }) => {
+      const cfg = config();
+      const result = await confirmListing(cfg, options.claimId, options.agentId, options.tx);
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(result)}\n`);
+        return;
+      }
+      process.stdout.write(
+        `${result.success === false ? "refused" : "admitted"}  ${result.listingUrl ?? result.agentId ?? ""}  ${result.error ?? ""}\n`,
+      );
     }),
   );
 
