@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, http, parseAbi } from "viem";
+import { createPublicClient, parseAbi } from "viem";
 import { bsc, bscTestnet } from "viem/chains";
 import { vaultFor } from "@/lib/vault";
 import { BSC_TESTNET_CHAIN_ID } from "@/lib/types";
+import { rpcTransport } from "@/lib/rpc";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ const READ_ABI = parseAbi([
 async function readConfig(chainId: number, address: string) {
   const client = createPublicClient({
     chain: chainId === BSC_TESTNET_CHAIN_ID ? bscTestnet : bsc,
-    transport: http(),
+    transport: rpcTransport(chainId),
   });
   let minDeposit: string | null = null;
   let maxOpen: number | null = null;
