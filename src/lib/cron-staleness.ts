@@ -23,6 +23,7 @@ export const ROUTE_BUDGETS: readonly RouteBudget[] = [
   { name: "liveness", allowedGapMs: 26 * 3_600_000, label: "liveness sweep" },
   { name: "pancake", allowedGapMs: 26 * 3_600_000, label: "pancake sweep" },
   { name: "maintenance", allowedGapMs: 30 * 3_600_000, label: "maintenance pass" },
+  { name: "health-watch", allowedGapMs: 30 * 60_000, label: "health watch" },
 ];
 
 export interface StaleRoute {

@@ -98,6 +98,28 @@ interface PlanView {
   lastCharge: bigint
 }
 
+interface WatchStatus {
+  lastRunAt: string | null
+  ageMs: number | null
+  stale: boolean
+  ok: boolean
+  consecutiveFailures: number
+  degraded: boolean
+  note: string | null
+}
+
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
+
+function ago(ms: number | null): string {
+  if (ms === null) return 'never'
+  const minutes = Math.round(ms / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours} h ago`
+  return `${Math.round(hours / 24)} d ago`
+}
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function call(provider: Awaited<ReturnType<typeof getProvider>>, to: string, data: Hex): Promise<Hex> {
@@ -114,6 +136,7 @@ export function DefendPage() {
   const [busy, setBusy] = useState<string | null>(null)
   const [log, setLog] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [watch, setWatch] = useState<WatchStatus | null>(null)
 
   const [trigger, setTrigger] = useState('1.20')
   const [target, setTarget] = useState('1.50')
@@ -154,6 +177,23 @@ export function DefendPage() {
     void refresh()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account])
+
+  useEffect(() => {
+    let live = true
+    const read = () =>
+      fetch(`${API_BASE}/health/status`, { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((body) => {
+          if (live && body && typeof body.stale === 'boolean') setWatch(body as WatchStatus)
+        })
+        .catch(() => {})
+    void read()
+    const timer = setInterval(read, 60_000)
+    return () => {
+      live = false
+      clearInterval(timer)
+    }
+  }, [])
 
   async function send(to: string, data: Hex, label: string): Promise<string> {
     if (!account) throw new Error('connect a wallet first')
@@ -285,6 +325,26 @@ export function DefendPage() {
             The position stays on Venus in your own wallet. This screen writes the authority the agent acts under and
             the fee balance it draws from. Both are revocable here at any time.
           </Txt>
+          {watch ? (
+            watch.stale ? (
+              <Txt size={12} lead={18} mono tone="peach">
+                {watch.lastRunAt
+                  ? `The watcher last reported ${ago(watch.ageMs)}. Your mandate is not being checked right now`
+                  : 'The watcher has not reported yet. Your mandate is not being checked'}
+                {watch.note ? `: ${watch.note}` : '.'}
+              </Txt>
+            ) : watch.consecutiveFailures >= 2 ? (
+              <Txt size={12} lead={18} mono tone="peach">
+                The watcher has failed {watch.consecutiveFailures} runs in a row. Your mandate may not be defended
+                {watch.note ? `: ${watch.note}` : '.'}
+              </Txt>
+            ) : (
+              <Txt size={12} lead={18} mono tone="steel">
+                Watcher healthy · last check {ago(watch.ageMs)}
+                {watch.consecutiveFailures === 1 ? ' · one failed run since' : ''}
+              </Txt>
+            )
+          ) : null}
         </Stack>
 
         {!account ? (

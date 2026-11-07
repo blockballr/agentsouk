@@ -285,6 +285,34 @@ export async function latestCronRuns(): Promise<CronRun[]> {  if ((await ensureT
   return [...latest.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// the last few runs of one job, newest first: a single latest line cannot tell a
+// healthy job from one that has failed twice in a row
+export async function recentCronRuns(name: string, limit = 10): Promise<CronRun[]> {
+  const cap = Math.max(1, Math.min(100, limit));
+  if ((await ensureTables()) && sql) {
+    try {
+      const rows = (await sql`
+        select name, started_at, finished_at, ok, note
+        from cron_runs where name = ${name}
+        order by started_at desc limit ${cap}
+      `) as { name: string; started_at: Date | string; finished_at: Date | string; ok: boolean; note: string | null }[];
+      return rows.map((r) => ({
+        name: r.name,
+        startedAt: new Date(r.started_at).toISOString(),
+        finishedAt: new Date(r.finished_at).toISOString(),
+        ok: r.ok,
+        note: r.note,
+      }));
+    } catch {
+      return [];
+    }
+  }
+  return runs
+    .filter((r) => r.name === name)
+    .slice(-cap)
+    .reverse();
+}
+
 // wraps a scheduled route so each real run leaves one line. A caller without the secret, or
 // a deployment where the job is not configured, never ran the job and so leaves none
 export async function loggedCronRun(name: string, run: () => Promise<NextResponse>): Promise<NextResponse> {
