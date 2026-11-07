@@ -68,3 +68,16 @@ export async function showJob(config: CliConfig, id: string): Promise<JobRecord>
   if (!job) throw new Error(`no job ${id} in the recent list`);
   return job;
 }
+
+// the marketplace verifies the kernel job against its own row and calls the
+// seller's notify_funded step, so the CLI does not dial the seller directly
+export async function notifyJob(
+  config: CliConfig,
+  body: { chainId: number; tokenId: string; kernelJobId: string; client: string; task: string },
+): Promise<Record<string, unknown>> {
+  return apiRequest<Record<string, unknown>>(config.apiUrl, "/api/jobs8183/jobs", {
+    method: "POST",
+    body,
+    timeoutMs: 90_000,
+  });
+}

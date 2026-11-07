@@ -6,6 +6,7 @@ import { cardUrlFor, validateDraft } from "../packages/cli/src/marketplace/listi
 import { agentIdFromReceipt } from "../packages/cli/src/marketplace/register";
 import { ratingMessage } from "../packages/cli/src/marketplace/ratings";
 import { listingControlMessage } from "../packages/cli/src/marketplace/control";
+import { descriptionWithProof, hireCalls, type HirePlan } from "../packages/cli/src/marketplace/hire";
 
 describe("endpoint validation", () => {
   it("accepts https", () => {
@@ -112,5 +113,54 @@ describe("signed messages", () => {
     const message = listingControlMessage(56, "376435", "0x2222222222222222222222222222222222222222", "delist");
     expect(message).toContain("owner: 0x2222222222222222222222222222222222222222");
     expect(message).toContain("action: delist");
+  });
+});
+
+describe("escrow hire plan", () => {
+  const quote = {
+    quote: {
+      price: "50000000000000000",
+      currency: "0xcE24439F2D9C6a2289F741120FE202248B666666",
+      providerAddress: "0x84FEDaBd1B83443Ad86796C15619494878B64180",
+      validUntil: 1793999340,
+      envelope: { provider_sig: "0xsig", negotiation_hash: "0xhash" },
+    },
+  } as never;
+
+  it("carries the signed quote with the task", () => {
+    const text = descriptionWithProof("read my health factor", quote);
+    expect(text).toContain("read my health factor");
+    expect(text).toContain("signed quote:");
+    expect(text).toContain("0xsig");
+  });
+
+  it("cuts a long task to fit the kernel's description bound", () => {
+    const text = descriptionWithProof("x".repeat(6000), quote);
+    expect(new TextEncoder().encode(text).length).toBeLessThanOrEqual(4096);
+    expect(text).toContain("[task cut to fit]");
+  });
+
+  it("builds the five calls in order", () => {
+    const plan = {
+      commerce: "0xEa4DAa3100A767e86FDed867729ae7446476EBA6",
+      router: "0x51895229E12F9876011789B04f8698af06cCD6DA",
+      policy: "0x9C01845705b3078Aa2e8cfF7520a6376FD766dE5",
+      currency: "0xcE24439F2D9C6a2289F741120FE202248B666666",
+      provider: "0x84FEDaBd1B83443Ad86796C15619494878B64180",
+      expiredAt: 1n,
+      description: "task",
+      price: 1n,
+      jobId: 1n,
+    } as HirePlan;
+    const calls = hireCalls(plan);
+    expect(calls.map((call) => call.label)).toEqual([
+      "create the job",
+      "bind the dispute policy",
+      "set the agreed price",
+      "approve the price",
+      "lock the price into escrow",
+    ]);
+    expect(calls[1].to).toBe(plan.router);
+    expect(calls[3].to).toBe(plan.currency);
   });
 });

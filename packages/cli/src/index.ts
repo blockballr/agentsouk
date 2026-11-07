@@ -7,7 +7,8 @@ import { pickFormat, renderJson, renderTable, type Format } from "./core/output"
 import { runDoctor } from "./core/doctor";
 import { ownedAgentState, parseAgentRef, railsOf, searchAgents, showAgent, verifyAgent } from "./marketplace/agents";
 import { callAgent } from "./marketplace/call";
-import { listJobs, quoteJob, showJob } from "./marketplace/jobs";
+import { listJobs, notifyJob, quoteJob, showJob } from "./marketplace/jobs";
+import { fundHire, hireCalls, planHire } from "./marketplace/hire";
 import { checkListing, confirmListing, prepareListing, type ListingDraft } from "./marketplace/listing";
 import { previewRegister, sendRegister } from "./marketplace/register";
 import { loadSigner } from "./core/wallet";
@@ -688,6 +689,72 @@ vault
       const cfg = config();
       const body = await vaultReceipts(cfg, options.hire);
       process.stdout.write(`${renderJson(body, { chainId: cfg.chainId, hireId: options.hire })}\n`);
+    }),
+  );
+
+
+program
+  .command("hire <agent>")
+  .description("quote an ERC-8183 job, and fund it with --fund --yes")
+  .requiredOption("--task <text>", "the task text")
+  .option("--max-usd <n>", "refuse a quote above this fee, in U")
+  .option("--client <wallet>", "the buyer wallet, when not signing here")
+  .option("--fund", "create and fund the job on chain")
+  .option("--key-file <path>", "the buyer key")
+  .option("--yes", "confirm the spend")
+  .action(
+    guard(async (ref: string, options: { task: string; maxUsd?: string; client?: string; fund?: boolean; keyFile?: string; yes?: boolean }) => {
+      const cfg = config();
+      const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
+      const signer = options.keyFile ? loadSigner({ keyFile: options.keyFile }) : process.env.AGENTSOUK_KEY ? loadSigner({}) : null;
+      const client = options.client ?? signer?.address;
+      if (!client) throw new CliError("pass --client, or --key-file to sign as the buyer", "usage", 2);
+
+      const plan = await planHire(cfg, chainId, tokenId, options.task, {
+        client,
+        maxUsd: options.maxUsd === undefined ? undefined : Number(options.maxUsd),
+      });
+      const rows = [
+        { field: "agent", value: plan.agent },
+        { field: "fee", value: plan.feeUsd === null ? "-" : `${plan.feeUsd} U` },
+        { field: "price", value: plan.price.toString() },
+        { field: "currency", value: plan.currency },
+        { field: "provider", value: plan.provider },
+        { field: "job", value: plan.jobId.toString() },
+        { field: "expires", value: new Date(Number(plan.expiredAt) * 1000).toISOString() },
+        { field: "calls", value: hireCalls(plan).map((call) => call.label).join(", ") },
+      ];
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(plan, { chainId, tokenId, price: plan.price.toString(), jobId: plan.jobId.toString() })}\n`);
+      } else {
+        process.stdout.write(
+          `${renderTable(rows, [
+            { key: "field", label: "field" },
+            { key: "value", label: "value", width: 100 },
+          ])}\n`,
+        );
+      }
+      if (!options.fund) return;
+      if (!options.yes) throw new CliError("this funds an escrow job: pass --yes to confirm", "confirm_required", 2);
+      if (!signer) throw new CliError("pass --key-file or set AGENTSOUK_KEY to sign", "key_missing", 2);
+
+      const sent = await fundHire(cfg, signer, plan);
+      const notified = await notifyJob(cfg, {
+        chainId,
+        tokenId,
+        kernelJobId: sent.jobId,
+        client: signer.address,
+        task: plan.description,
+      }).catch((error) => ({ error: (error as Error).message }));
+      if (format() === "json") {
+        process.stdout.write(`${renderJson({ ...sent, notified }, { chainId, tokenId })}\n`);
+        return;
+      }
+      for (const tx of sent.txs) process.stdout.write(`${tx.label}  ${tx.hash}\n`);
+      process.stdout.write(`job ${sent.jobId}\n`);
+      if (typeof notified === "object" && notified && "error" in notified) {
+        process.stderr.write(`the seller was not notified: ${String((notified as { error: unknown }).error)}\n`);
+      }
     }),
   );
 

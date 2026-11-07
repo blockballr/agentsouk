@@ -27,6 +27,7 @@ agentsouk show 404603 --json
 agentsouk verify 56/404603
 agentsouk call 56/404603 --task "Collateral 1000 USD, debt 600 USD, threshold 0.8. What is the health factor?"
 agentsouk quote 56/404603 --task "Read my health factor" --client 0x1111111111111111111111111111111111111111
+agentsouk hire 56/404603 --task "Collateral 1000 USD, debt 600 USD. Health factor?" --client 0x1111111111111111111111111111111111111111
 agentsouk jobs --limit 10
 agentsouk job <job-id>
 agentsouk listing show 56/376435
@@ -54,6 +55,7 @@ These mint a real claim or send a transaction, so they have not been run against
 production:
 
 ```sh
+agentsouk hire 56/404603 --task "..." --key-file key.txt --fund --yes
 agentsouk list --draft draft.json --key-file key.txt --yes
 agentsouk list --draft draft.json --owner 0x... --prepare-only
 agentsouk list prepare --draft draft.json --owner 0x...
@@ -88,9 +90,9 @@ then the built-in default. A file that is group or world readable is refused.
 
 ## Not built yet
 
-`hire` (creating and funding an ERC-8183 job on chain), `listing update`, `call`
-over MCP, x402 payments, and the vault commands. Those carry a spend or a larger
-contract surface and need the spend preview and tests before they ship.
+`listing update`, `call`
+over MCP, x402 payments, the vault hire, and `receipt`. Those carry a spend or a
+larger contract surface and need the preview and tests before they ship.
 
 ## Signing
 
