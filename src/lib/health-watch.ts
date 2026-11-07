@@ -1,9 +1,11 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { createPublicClient, createWalletClient, http, type Address } from "viem";
 import { bsc } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { planDefence, rankPositions, readMandate, repayPosition } from "./health-operator";
+import { defaultLeaseStore, type LeaseStore } from "./lease-store";
 import { targetChainId } from "./types";
 
 // The standing watch. Every run it walks the operator's active mandates, checks
@@ -108,6 +110,7 @@ export async function watchMandates(options: {
   agentKey: `0x${string}`;
   limit?: number;
   budgetMs?: number;
+  lease?: LeaseStore;
 }): Promise<WatchRun> {
   const chainId = targetChainId();
   const agent = privateKeyToAccount(options.agentKey);
@@ -115,6 +118,11 @@ export async function watchMandates(options: {
   const budgetMs = options.budgetMs ?? 120_000;
   const startedAt = Date.now();
   const client = publicClient();
+  const lease = options.lease ?? defaultLeaseStore();
+  const runId = randomUUID();
+  // longer than the route's five minute ceiling, short enough that a crashed
+  // run delays the next check by one interval rather than a day
+  const leaseMs = 5 * 60_000;
 
   const buyers = (await client.readContract({
     address: options.operator,
@@ -125,46 +133,56 @@ export async function watchMandates(options: {
   const outcomes: WatchOutcome[] = [];
   for (const buyer of buyers.slice(0, limit)) {
     if (Date.now() - startedAt > budgetMs) break;
-    const nowSec = Math.floor(Date.now() / 1000);
+    const key = buyer.toLowerCase();
+    const holder = `${runId}:${key}`;
+    if (!(await lease.acquire(key, holder, leaseMs))) {
+      outcomes.push({ buyer, coverage: null, action: "skipped", reason: "another watcher holds this buyer" });
+      continue;
+    }
     try {
-      const mandate = await readMandate(options.operator, buyer);
-      if (!mandate) {
-        outcomes.push({ buyer, coverage: null, action: "skipped", reason: "no live mandate" });
-        continue;
-      }
-      if (mandate.expiry <= nowSec) {
-        outcomes.push({ buyer, coverage: null, action: "skipped", reason: "the mandate has expired" });
-        continue;
-      }
-      if (mandate.agent.toLowerCase() !== agent.address.toLowerCase()) {
-        outcomes.push({ buyer, coverage: null, action: "skipped", reason: `the mandate names ${mandate.agent}` });
-        continue;
-      }
+      const nowSec = Math.floor(Date.now() / 1000);
+      try {
+        const mandate = await readMandate(options.operator, buyer);
+        if (!mandate) {
+          outcomes.push({ buyer, coverage: null, action: "skipped", reason: "no live mandate" });
+          continue;
+        }
+        if (mandate.expiry <= nowSec) {
+          outcomes.push({ buyer, coverage: null, action: "skipped", reason: "the mandate has expired" });
+          continue;
+        }
+        if (mandate.agent.toLowerCase() !== agent.address.toLowerCase()) {
+          outcomes.push({ buyer, coverage: null, action: "skipped", reason: `the mandate names ${mandate.agent}` });
+          continue;
+        }
 
-      const ranked = await rankPositions(chainId, mandate.positions);
-      const plan = planDefence(ranked, mandate.trigger, mandate.target, mandate.maxRepayPerCall);
-      if (!plan) {
-        const coverage = ranked.length > 0 ? Math.min(...ranked.map((p) => p.healthFactor)) : null;
-        outcomes.push({ buyer, coverage, action: "none" });
-      } else {
-        const txHash = await repayPosition(options.operator, buyer, plan.position.index, plan.amount, options.agentKey);
-        const after = await rankPositions(chainId, [mandate.positions[plan.position.index]]);
-        outcomes.push({
-          buyer,
-          coverage: plan.position.healthFactor,
-          action: "repaid",
-          amount: plan.amount.toString(),
-          txHash,
-          reason: `coverage ${plan.position.healthFactor.toFixed(3)} -> ${(after[0]?.healthFactor ?? 0).toFixed(3)}`,
-        });
-      }
+        const ranked = await rankPositions(chainId, mandate.positions);
+        const plan = planDefence(ranked, mandate.trigger, mandate.target, mandate.maxRepayPerCall);
+        if (!plan) {
+          const coverage = ranked.length > 0 ? Math.min(...ranked.map((p) => p.healthFactor)) : null;
+          outcomes.push({ buyer, coverage, action: "none" });
+        } else {
+          const txHash = await repayPosition(options.operator, buyer, plan.position.index, plan.amount, options.agentKey);
+          const after = await rankPositions(chainId, [mandate.positions[plan.position.index]]);
+          outcomes.push({
+            buyer,
+            coverage: plan.position.healthFactor,
+            action: "repaid",
+            amount: plan.amount.toString(),
+            txHash,
+            reason: `coverage ${plan.position.healthFactor.toFixed(3)} -> ${(after[0]?.healthFactor ?? 0).toFixed(3)}`,
+          });
+        }
 
-      if (options.subscription) {
-        const charged = await chargeIfDue(options.subscription, buyer, agent.address, options.agentKey, nowSec).catch(() => null);
-        if (charged) outcomes[outcomes.length - 1].charged = charged;
+        if (options.subscription) {
+          const charged = await chargeIfDue(options.subscription, buyer, agent.address, options.agentKey, nowSec).catch(() => null);
+          if (charged) outcomes[outcomes.length - 1].charged = charged;
+        }
+      } catch (error) {
+        outcomes.push({ buyer, coverage: null, action: "skipped", reason: (error as Error).message.slice(0, 160) });
       }
-    } catch (error) {
-      outcomes.push({ buyer, coverage: null, action: "skipped", reason: (error as Error).message.slice(0, 160) });
+    } finally {
+      await lease.release(key, holder);
     }
   }
 
