@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { assertCallableEndpoint, textFromResult } from "../packages/cli/src/marketplace/call";
 import { cardUrlFor, validateDraft } from "../packages/cli/src/marketplace/listing";
 import { agentIdFromReceipt } from "../packages/cli/src/marketplace/register";
+import { ratingMessage } from "../packages/cli/src/marketplace/ratings";
+import { listingControlMessage } from "../packages/cli/src/marketplace/control";
 
 describe("endpoint validation", () => {
   it("accepts https", () => {
@@ -94,5 +96,21 @@ describe("registration receipt", () => {
       ],
     } as never;
     expect(agentIdFromReceipt(wrongContract, registry, owner)).toBeNull();
+  });
+});
+
+describe("signed messages", () => {
+  it("builds the rating message the route verifies", () => {
+    expect(
+      ratingMessage({ chainId: 56, tokenId: "404603", paymentId: "pay_1", score: 5, comment: "good", verifierScore: 0 }),
+    ).toBe(
+      "Agent Souk rating\nchainId: 56\ntokenId: 404603\npaymentId: pay_1\nscore: 5\ncomment: good\nverifierScore: 0",
+    );
+  });
+
+  it("builds the listing control message with a lower-case owner", () => {
+    const message = listingControlMessage(56, "376435", "0x84FEDaBd1B83443Ad86796C15619494878B64180", "delist");
+    expect(message).toContain("owner: 0x84fedabd1b83443ad86796c15619494878b64180");
+    expect(message).toContain("action: delist");
   });
 });

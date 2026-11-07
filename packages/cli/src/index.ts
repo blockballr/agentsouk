@@ -5,12 +5,14 @@ import { configPath, readConfigFile, resolveConfig, type CliConfig } from "./cor
 import { report } from "./core/errors";
 import { pickFormat, renderJson, renderTable, type Format } from "./core/output";
 import { runDoctor } from "./core/doctor";
-import { parseAgentRef, railsOf, searchAgents, showAgent, verifyAgent } from "./marketplace/agents";
+import { ownedAgentState, parseAgentRef, railsOf, searchAgents, showAgent, verifyAgent } from "./marketplace/agents";
 import { callAgent } from "./marketplace/call";
 import { listJobs, quoteJob, showJob } from "./marketplace/jobs";
 import { checkListing, confirmListing, prepareListing, type ListingDraft } from "./marketplace/listing";
 import { previewRegister, sendRegister } from "./marketplace/register";
 import { loadSigner } from "./core/wallet";
+import { rateAgent } from "./marketplace/ratings";
+import { controlListing } from "./marketplace/control";
 import { CliError } from "./core/errors";
 
 const VERSION = "0.1.0";
@@ -474,6 +476,70 @@ listing
       );
     }),
   );
+
+
+program
+  .command("rate <agent>")
+  .description("rate a completed hire, signed by the buyer")
+  .requiredOption("--payment-id <id>", "the payment the rating belongs to")
+  .requiredOption("--score <n>", "1 to 5")
+  .option("--comment <text>")
+  .option("--verifier-score <n>", "the verifier's score, when one exists")
+  .option("--key-file <path>", "the buyer key")
+  .action(
+    guard(async (ref: string, options: { paymentId: string; score: string; comment?: string; verifierScore?: string; keyFile?: string }) => {
+      const cfg = config();
+      const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
+      const signer = loadSigner({ keyFile: options.keyFile });
+      const result = await rateAgent(cfg, signer, chainId, tokenId, {
+        paymentId: options.paymentId,
+        score: Number(options.score),
+        comment: options.comment,
+        verifierScore: options.verifierScore === undefined ? 0 : Number(options.verifierScore),
+      });
+      process.stdout.write(`${format() === "json" ? renderJson(result, { chainId, tokenId }) : result.success === false ? `refused  ${result.error ?? ""}` : "rated"}\n`);
+    }),
+  );
+
+const listingControl = program.command("listing").description("take a listing off the market, or put it back");
+
+listingControl
+  .command("show <agent>")
+  .description("the listing state, including whether it is delisted")
+  .action(
+    guard(async (ref: string) => {
+      const cfg = config();
+      const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
+      const agent = await showAgent(cfg, chainId, tokenId);
+      const owned = agent.owner_address
+        ? await ownedAgentState(cfg, chainId, agent.owner_address, tokenId).catch(() => null)
+        : null;
+      const delisted = owned?.delisted ?? null;
+      if (format() === "json") {
+        process.stdout.write(`${renderJson({ agent, delisted }, { chainId, tokenId })}\n`);
+        return;
+      }
+      process.stdout.write(`${agent.name ?? tokenId}  ${delisted ? `delisted ${delisted.reason ?? ""} ${delisted.at ?? ""}` : "listed"}\n`);
+    }),
+  );
+
+for (const action of ["delist", "relist"] as const) {
+  listingControl
+    .command(`${action} <agent>`)
+    .description(action === "delist" ? "take the listing off the market" : "put the listing back")
+    .option("--key-file <path>", "the owner key")
+    .action(
+      guard(async (ref: string, options: { keyFile?: string }) => {
+        const cfg = config();
+        const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
+        const signer = loadSigner({ keyFile: options.keyFile });
+        const result = await controlListing(cfg, signer, chainId, tokenId, action);
+        process.stdout.write(
+          `${format() === "json" ? renderJson(result, { chainId, tokenId }) : result.success === false ? `refused  ${result.error ?? ""}` : `${action}ed ${tokenId}`}\n`,
+        );
+      }),
+    );
+}
 
 program
   .command("doctor")

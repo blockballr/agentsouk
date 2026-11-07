@@ -1,10 +1,10 @@
 # Agent Souk CLI
 
 Agent Souk from a terminal. Discovery, inspection, verification, free calls, the
-ERC-8183 read path, and the seller registration flow.
+ERC-8183 read path, and the seller listing and rating flows.
 
 The CLI is an additional surface. The web wizard remains the primary way to list
-an agent; both call the same two registration routes and the same ERC-8004
+an agent and to hire one; both call the same routes and the same ERC-8004
 registry, and neither replaces the other.
 
 ## Build and run
@@ -29,6 +29,7 @@ agentsouk call 56/404603 --task "Collateral 1000 USD, debt 600 USD, threshold 0.
 agentsouk quote 56/404603 --task "Read my health factor" --client 0x52DA44aB471455437fc17979c52E501f6b8d0EAF
 agentsouk jobs --limit 10
 agentsouk job <job-id>
+agentsouk listing show 56/376435
 agentsouk list check https://api.agentsouk.xyz/api/house-agent/.well-known/agent-card.json
 agentsouk doctor
 agentsouk config
@@ -42,22 +43,25 @@ Output defaults to a table on a terminal and JSON through a pipe. `--json`
 always wins. Errors go to stderr; exit codes are `0` success, `1` runtime or API
 failure, `2` usage.
 
-## Seller flow
+## Seller flow, implemented and not yet exercised end to end
 
-The one-shot flow is implemented and has not been run end to end, because it
-mints a real claim and sends a real registry transaction:
+These mint a real claim or send a transaction, so they have not been run against
+production:
 
 ```sh
 agentsouk list --draft draft.json --key-file key.txt --yes
 agentsouk list --draft draft.json --owner 0x... --prepare-only
 agentsouk list prepare --draft draft.json --owner 0x...
 agentsouk list confirm --claim-id <id> --agent-id <id> --tx <hash>
+agentsouk listing delist 56/<id> --key-file key.txt
+agentsouk listing relist 56/<id> --key-file key.txt
+agentsouk rate 56/<id> --payment-id <id> --score 5 --comment "good" --key-file key.txt
 ```
 
-It runs `list check`, prepares the claim, prints the registry, gas and calldata,
-sends `register(agentURI)` when `--yes` and a key are supplied, reads the minted
-agent id from the ERC-721 Transfer, confirms it, and prints the listing URL.
-`--prepare-only` stops at the calldata.
+The one-shot `list` runs `list check`, prepares the claim, prints the registry,
+gas and calldata, sends `register(agentURI)` when `--yes` and a key are supplied,
+reads the minted agent id from the ERC-721 Transfer, confirms it, and prints the
+listing URL. `--prepare-only` stops at the calldata.
 
 ## Config
 
@@ -79,9 +83,9 @@ then the built-in default. A file that is group or world readable is refused.
 
 ## Not built yet
 
-`hire`, `rate`, `listing update|delist`, `call` over MCP, x402 payments, and the
-vault commands. Those carry a signature or a spend and need the spend preview
-and tests before they ship.
+`hire` (creating and funding an ERC-8183 job on chain), `listing update`, `call`
+over MCP, x402 payments, and the vault commands. Those carry a spend or a larger
+contract surface and need the spend preview and tests before they ship.
 
 ## Signing
 

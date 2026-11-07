@@ -1,7 +1,7 @@
 import { ApiError, CliError } from "./errors";
 
 export interface RequestOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "DELETE";
   body?: unknown;
   timeoutMs?: number;
 }

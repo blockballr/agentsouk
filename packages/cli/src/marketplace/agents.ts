@@ -116,3 +116,23 @@ export function parseAgentRef(ref: string, defaultChain: number): { chainId: num
   const chainId = match[1] ? Number(match[1]) : defaultChain;
   return { chainId, tokenId: match[2] };
 }
+
+export interface OwnedAgentState {
+  tokenId?: string;
+  delisted?: { reason?: string; at?: string } | null;
+}
+
+// the detail route does not carry the delist state; the owner view does, so the
+// listing commands read it from there
+export async function ownedAgentState(
+  config: CliConfig,
+  chainId: number,
+  owner: string,
+  tokenId: string,
+): Promise<OwnedAgentState | null> {
+  const body = await apiRequest<{ agents?: OwnedAgentState[] }>(
+    config.apiUrl,
+    `/api/agents/by-owner${query({ chainId, owner })}`,
+  );
+  return (body.agents ?? []).find((agent) => String(agent.tokenId) === tokenId) ?? null;
+}
