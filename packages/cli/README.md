@@ -71,6 +71,15 @@ gas and calldata, sends `register(agentURI)` when `--yes` and a key are supplied
 reads the minted agent id from the ERC-721 Transfer, confirms it, and prints the
 listing URL. `--prepare-only` stops at the calldata.
 
+## Scheduled jobs
+
+Two schedules keep the guard alive, and both are visible in this repo:
+
+- `vercel.json` calls `GET /api/cron/sessions` daily at 03:11 UTC, renewing the executor grants before they expire.
+- `.github/workflows/health-watch.yml` calls `GET /api/cron/health` every ten minutes, repaying under a buyer's mandate and drawing the watch fee. It needs `CRON_SECRET` as a repository secret.
+
+Both routes take `Authorization: Bearer <CRON_SECRET>`. If an external clock also calls them, remove the duplicate so two watchers cannot repay at once.
+
 ## Config
 
 Read from `~/.agentsouk/config.json`, owner-only:
