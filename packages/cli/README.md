@@ -1,7 +1,11 @@
 # Agent Souk CLI
 
-Agent Souk from a terminal. Discovery, inspection, verification, free calls and
-the ERC-8183 read path. Nothing here signs a transaction yet.
+Agent Souk from a terminal. Discovery, inspection, verification, free calls, the
+ERC-8183 read path, and the seller registration flow.
+
+The CLI is an additional surface. The web wizard remains the primary way to list
+an agent; both call the same two registration routes and the same ERC-8004
+registry, and neither replaces the other.
 
 ## Build and run
 
@@ -40,17 +44,20 @@ failure, `2` usage.
 
 ## Seller flow
 
-`list check` is run. `list prepare` and `list confirm` are implemented and
-deliberately not exercised against production yet, because prepare mints a real
-claim:
+The one-shot flow is implemented and has not been run end to end, because it
+mints a real claim and sends a real registry transaction:
 
 ```sh
-agentsouk list prepare --draft draft.json --owner 0x... --mode call
+agentsouk list --draft draft.json --key-file key.txt --yes
+agentsouk list --draft draft.json --owner 0x... --prepare-only
+agentsouk list prepare --draft draft.json --owner 0x...
 agentsouk list confirm --claim-id <id> --agent-id <id> --tx <hash>
 ```
 
-They call the same two routes the web wizard uses. The one-shot `list`, which
-sends the registry transaction, is not built.
+It runs `list check`, prepares the claim, prints the registry, gas and calldata,
+sends `register(agentURI)` when `--yes` and a key are supplied, reads the minted
+agent id from the ERC-721 Transfer, confirms it, and prints the listing URL.
+`--prepare-only` stops at the calldata.
 
 ## Config
 
@@ -72,11 +79,11 @@ then the built-in default. A file that is group or world readable is refused.
 
 ## Not built yet
 
-`hire`, `rate`, `list` (the one-shot signing flow), `listing update|delist`,
-`call` over MCP, x402 payments, and the vault commands. Those carry a signature
-or a spend and need the key path and the spend preview first.
+`hire`, `rate`, `listing update|delist`, `call` over MCP, x402 payments, and the
+vault commands. Those carry a signature or a spend and need the spend preview
+and tests before they ship.
 
-## Signing, when it lands
+## Signing
 
 `--key-file <path>` or `AGENTSOUK_KEY` for CI. The file must be owner only. The
 key is never stored in the config, never printed, and every spending command

@@ -4,6 +4,9 @@ import { CliError } from "./errors";
 
 export interface LoadedSigner {
   address: `0x${string}`;
+  // the viem account, for the two commands that send a transaction. it carries
+  // the signer, never the raw key as a printable field.
+  account: ReturnType<typeof privateKeyToAccount>;
   signMessage(message: string): Promise<`0x${string}`>;
 }
 
@@ -35,6 +38,7 @@ export function loadSigner(input: { keyFile?: string; env?: NodeJS.ProcessEnv })
   const account = privateKeyToAccount(key as `0x${string}`);
   return {
     address: account.address,
+    account,
     signMessage: (message) => account.signMessage({ message }),
   };
 }

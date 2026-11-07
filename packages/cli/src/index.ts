@@ -9,6 +9,9 @@ import { parseAgentRef, railsOf, searchAgents, showAgent, verifyAgent } from "./
 import { callAgent } from "./marketplace/call";
 import { listJobs, quoteJob, showJob } from "./marketplace/jobs";
 import { checkListing, confirmListing, prepareListing, type ListingDraft } from "./marketplace/listing";
+import { previewRegister, sendRegister } from "./marketplace/register";
+import { loadSigner } from "./core/wallet";
+import { CliError } from "./core/errors";
 
 const VERSION = "0.1.0";
 
@@ -322,7 +325,88 @@ program
     }),
   );
 
-const listing = program.command("list").description("seller listing flow");
+const listing = program
+  .command("list")
+  .description("seller listing flow")
+  .option("--draft <file>", "the one-shot flow: check, prepare, register, confirm")
+  .option("--owner <wallet>", "the listing owner")
+  .option("--mode <mode>", "call, job or both", "call")
+  .option("--key-file <path>", "the owner key for the registry transaction")
+  .option("--prepare-only", "stop after the transaction preview")
+  .option("--yes", "send the registry transaction")
+  .action(
+    guard(async (options: {
+      draft?: string;
+      owner?: string;
+      mode?: string;
+      keyFile?: string;
+      prepareOnly?: boolean;
+      yes?: boolean;
+    }) => {
+      if (!options.draft) {
+        throw new CliError("the one-shot flow needs --draft <file>", "usage", 2);
+      }
+      const cfg = config();
+      const draft = JSON.parse(readFileSync(options.draft, "utf8")) as ListingDraft;
+      const check = await checkListing(draft.endpoint);
+      if (!check.ok) throw new CliError(`the endpoint is not listable: ${check.detail}`, "endpoint_refused");
+      if (format() === "table") process.stderr.write(`endpoint ok: ${check.detail}\n`);
+
+      // the owner signs the registry transaction, so a key is needed unless the
+      // caller only wants the preview and names the owner explicitly
+      let signer = null;
+      if (options.keyFile) signer = loadSigner({ keyFile: options.keyFile });
+      else if (process.env.AGENTSOUK_KEY) signer = loadSigner({});
+      const owner = options.owner ?? signer?.address;
+      if (!owner) throw new CliError("pass --owner, or --key-file to sign as the owner", "usage", 2);
+
+      const prepared = await prepareListing(cfg, draft, { owner, mode: options.mode });
+      if (!prepared.registryAddress || !prepared.registerCalldata) {
+        throw new CliError("the marketplace did not return a registry transaction", "prepare_incomplete");
+      }
+      const preview = await previewRegister(
+        cfg,
+        owner as `0x${string}`,
+        prepared.registryAddress as `0x${string}`,
+        prepared.registerCalldata as `0x${string}`,
+      );
+      const previewRows = [
+        { field: "claim", value: prepared.claimId },
+        { field: "document", value: prepared.agentUri },
+        { field: "chain", value: prepared.chainId },
+        { field: "registry", value: prepared.registryAddress },
+        { field: "gas", value: preview.gas.toString() },
+        { field: "calldata", value: prepared.registerCalldata },
+      ];
+      if (format() === "json" && (options.prepareOnly || !options.yes)) {
+        process.stdout.write(`${renderJson(prepared, { gas: preview.gas.toString(), chainId: cfg.chainId })}\n`);
+        return;
+      }
+      process.stdout.write(
+        `${renderTable(previewRows, [
+          { key: "field", label: "field" },
+          { key: "value", label: "value", width: 120 },
+        ])}\n`,
+      );
+      if (options.prepareOnly) return;
+      if (!options.yes) throw new CliError("this sends a registry transaction: pass --yes to confirm", "confirm_required", 2);
+      if (!signer) throw new CliError("pass --key-file or set AGENTSOUK_KEY to sign", "key_missing", 2);
+
+      const sent = await sendRegister(
+        cfg,
+        signer,
+        prepared.registryAddress as `0x${string}`,
+        prepared.registerCalldata as `0x${string}`,
+      );
+      const confirmed = await confirmListing(cfg, prepared.claimId, sent.agentId, sent.txHash);
+      const url = `https://app.agentsouk.xyz/agents/${cfg.chainId}/${sent.agentId}`;
+      if (format() === "json") {
+        process.stdout.write(`${renderJson({ ...confirmed, agentId: sent.agentId, txHash: sent.txHash, listingUrl: url })}\n`);
+        return;
+      }
+      process.stdout.write(`listed  ${url}\n`);
+    }),
+  );
 
 listing
   .command("check <endpoint>")

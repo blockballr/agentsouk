@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { assertCallableEndpoint, textFromResult } from "../packages/cli/src/marketplace/call";
 import { cardUrlFor, validateDraft } from "../packages/cli/src/marketplace/listing";
+import { agentIdFromReceipt } from "../packages/cli/src/marketplace/register";
 
 describe("endpoint validation", () => {
   it("accepts https", () => {
@@ -52,5 +53,46 @@ describe("listing helpers", () => {
   it("refuses a draft that is missing the contract fields", () => {
     const errors = validateDraft({});
     expect(errors.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe("registration receipt", () => {
+  const registry = "0x" + "ab".repeat(20);
+  const owner = "0x" + "11".repeat(20);
+  const transfer = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+  const topic = (address: string) => `0x${address.slice(2).padStart(64, "0")}`;
+
+  it("reads the minted id from the transfer to the owner", () => {
+    const receipt = {
+      logs: [
+        {
+          address: registry,
+          topics: [transfer, topic("0x" + "00".repeat(20)), topic(owner), `0x${(42).toString(16).padStart(64, "0")}`],
+        },
+      ],
+    } as never;
+    expect(agentIdFromReceipt(receipt, registry, owner)).toBe("42");
+  });
+
+  it("ignores a transfer to another address or another contract", () => {
+    const wrongOwner = {
+      logs: [
+        {
+          address: registry,
+          topics: [transfer, topic(owner), topic("0x" + "22".repeat(20)), `0x${"1".padStart(64, "0")}`],
+        },
+      ],
+    } as never;
+    expect(agentIdFromReceipt(wrongOwner, registry, owner)).toBeNull();
+
+    const wrongContract = {
+      logs: [
+        {
+          address: "0x" + "cd".repeat(20),
+          topics: [transfer, topic(owner), topic(owner), `0x${"1".padStart(64, "0")}`],
+        },
+      ],
+    } as never;
+    expect(agentIdFromReceipt(wrongContract, registry, owner)).toBeNull();
   });
 });
