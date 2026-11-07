@@ -7,6 +7,7 @@ import { agentIdFromReceipt } from "../packages/cli/src/marketplace/register";
 import { ratingMessage } from "../packages/cli/src/marketplace/ratings";
 import { listingControlMessage } from "../packages/cli/src/marketplace/control";
 import { descriptionWithProof, hireCalls, type HirePlan } from "../packages/cli/src/marketplace/hire";
+import { findTransfer, verdict, type Check } from "../packages/cli/src/marketplace/receipt";
 
 describe("endpoint validation", () => {
   it("accepts https", () => {
@@ -162,5 +163,41 @@ describe("escrow hire plan", () => {
     ]);
     expect(calls[1].to).toBe(plan.router);
     expect(calls[3].to).toBe(plan.currency);
+  });
+});
+
+describe("receipt verification", () => {
+  const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+  const pad = (address: string) => `0x${address.slice(2).padStart(64, "0")}`;
+  const token = "0x" + "33".repeat(20);
+  const payer = "0x" + "11".repeat(20);
+  const payee = "0x" + "22".repeat(20);
+  const amount = 50000000000000000n;
+
+  it("finds the transfer that carries the payment", () => {
+    const logs = [
+      { address: token, topics: [transferTopic, pad(payer), pad(payee)], data: "0x" + amount.toString(16).padStart(64, "0") },
+    ];
+    const hit = findTransfer(logs, payer, payee, amount);
+    expect(hit?.token).toBe(token);
+    expect(hit?.value).toBe(amount);
+  });
+
+  it("ignores a transfer of the wrong amount or between other wallets", () => {
+    const wrongAmount = [
+      { address: token, topics: [transferTopic, pad(payer), pad(payee)], data: "0x" + "1".padStart(64, "0") },
+    ];
+    expect(findTransfer(wrongAmount, payer, payee, amount)).toBeNull();
+    const wrongPair = [
+      { address: token, topics: [transferTopic, pad(payee), pad(payer)], data: "0x" + amount.toString(16).padStart(64, "0") },
+    ];
+    expect(findTransfer(wrongPair, payer, payee, amount)).toBeNull();
+  });
+
+  it("turns the checks into one outcome", () => {
+    const good: Check[] = [{ name: "status", ok: true, expected: "success", observed: "success" }];
+    expect(verdict(good)).toBe("verified");
+    expect(verdict([...good, { name: "payer", ok: false, expected: "a", observed: "b" }])).toBe("mismatch");
+    expect(verdict([...good, { name: "chain", ok: null, expected: "a", observed: "b" }])).toBe("unverifiable");
   });
 });

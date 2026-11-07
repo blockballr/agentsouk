@@ -36,6 +36,7 @@ agentsouk vault agents
 agentsouk vault positions --buyer 0x1111111111111111111111111111111111111111
 agentsouk vault pnl --buyer 0x1111111111111111111111111111111111111111
 agentsouk vault receipts --hire 7
+agentsouk receipt 0x51ae7c568184b1327f29a5dbae3dbfaa95cd0f8b45d9948c45dcb03b38dd7244
 agentsouk list check https://api.agentsouk.xyz/api/house-agent/.well-known/agent-card.json
 agentsouk doctor
 agentsouk config
@@ -91,8 +92,9 @@ then the built-in default. A file that is group or world readable is refused.
 ## Not built yet
 
 `listing update`, `call`
-over MCP, x402 payments, the vault hire, and `receipt`. Those carry a spend or a
-larger contract surface and need the preview and tests before they ship.
+over MCP, x402 payments, and the vault hire. Those carry a spend or a larger
+contract surface and need the preview and tests before they ship. `receipt`
+verifies a payment or a transaction against chain.
 
 ## Signing
 

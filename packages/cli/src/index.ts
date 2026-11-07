@@ -9,6 +9,7 @@ import { ownedAgentState, parseAgentRef, railsOf, searchAgents, showAgent, verif
 import { callAgent } from "./marketplace/call";
 import { listJobs, notifyJob, quoteJob, showJob } from "./marketplace/jobs";
 import { fundHire, hireCalls, planHire } from "./marketplace/hire";
+import { isTxHash, verifyPayment, verifyTransaction } from "./marketplace/receipt";
 import { checkListing, confirmListing, prepareListing, type ListingDraft } from "./marketplace/listing";
 import { previewRegister, sendRegister } from "./marketplace/register";
 import { loadSigner } from "./core/wallet";
@@ -755,6 +756,32 @@ program
       if (typeof notified === "object" && notified && "error" in notified) {
         process.stderr.write(`the seller was not notified: ${String((notified as { error: unknown }).error)}\n`);
       }
+    }),
+  );
+
+
+program
+  .command("receipt <id>")
+  .description("verify a payment or a transaction against BNB Chain")
+  .action(
+    guard(async (id: string) => {
+      const cfg = config();
+      const result = isTxHash(id) ? await verifyTransaction(cfg, id) : await verifyPayment(cfg, id);
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(result, { chainId: cfg.chainId, outcome: result.outcome })}\n`);
+      } else {
+        process.stdout.write(
+          `${renderTable(result.checks, [
+            { key: "name", label: "check", width: 24 },
+            { key: "ok", label: "ok" },
+            { key: "expected", label: "expected", width: 52 },
+            { key: "observed", label: "observed", width: 60 },
+          ])}\n`,
+        );
+        process.stdout.write(`${result.outcome}  ${result.explorer}\n`);
+      }
+      if (result.outcome === "mismatch") process.exitCode = 1;
+      if (result.outcome === "unverifiable") process.exitCode = 3;
     }),
   );
 
