@@ -109,8 +109,8 @@ describe("signed messages", () => {
   });
 
   it("builds the listing control message with a lower-case owner", () => {
-    const message = listingControlMessage(56, "376435", "0x84FEDaBd1B83443Ad86796C15619494878B64180", "delist");
-    expect(message).toContain("owner: 0x84fedabd1b83443ad86796c15619494878b64180");
+    const message = listingControlMessage(56, "376435", "0x2222222222222222222222222222222222222222", "delist");
+    expect(message).toContain("owner: 0x2222222222222222222222222222222222222222");
     expect(message).toContain("action: delist");
   });
 });
