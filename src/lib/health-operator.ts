@@ -264,6 +264,8 @@ export function planDefence(
   return { position: worst, amount };
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function repayPosition(
   operator: Address,
   buyer: Address,
@@ -272,14 +274,32 @@ export async function repayPosition(
   agentKey: `0x${string}`,
 ): Promise<`0x${string}`> {
   const account = privateKeyToAccount(agentKey);
+  const c = client();
+  const args = [buyer, BigInt(index), amount] as const;
+
+  // a doomed repay should cost nothing: simulate first, and report the revert
+  // the contract itself raised instead of a bare receipt status
+  try {
+    await c.simulateContract({ address: operator, abi: REPAY_ABI, functionName: "repay", args, account });
+  } catch (error) {
+    const reason = (error as { shortMessage?: string }).shortMessage ?? (error as Error).message;
+    throw new Error(`the repay would revert: ${reason.split("\n")[0].slice(0, 160)}`);
+  }
+
   const wallet = createWalletClient({ account, chain: bsc, transport: http(RPC, { timeout: 20_000 }) });
-  const hash = await wallet.writeContract({
-    address: operator,
-    abi: REPAY_ABI,
-    functionName: "repay",
-    args: [buyer, BigInt(index), amount],
-  });
-  const receipt = await client().waitForTransactionReceipt({ hash, confirmations: 1 });
-  if (receipt.status !== "success") throw new Error(`the repay transaction ${hash} reverted`);
-  return hash;
+  let lastHash: `0x${string}` | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const hash = await wallet.writeContract({
+      address: operator,
+      abi: REPAY_ABI,
+      functionName: "repay",
+      args,
+    });
+    const receipt = await c.waitForTransactionReceipt({ hash, confirmations: 1 });
+    if (receipt.status === "success") return hash;
+    lastHash = hash;
+    // one retry covers the transient case seen on the first live defence
+    if (attempt === 0) await sleep(3_000);
+  }
+  throw new Error(`the repay transaction ${lastHash} reverted twice`);
 }
