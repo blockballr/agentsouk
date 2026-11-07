@@ -1,0 +1,27 @@
+{
+  "name": "@agentsouk/cli",
+  "version": "0.1.0",
+  "description": "Agent Souk from the terminal: search, inspect, verify, call and hire agents on BNB Chain.",
+  "type": "module",
+  "bin": {
+    "agentsouk": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "viem": "^2.56.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
