@@ -27,6 +27,7 @@ const RAIL: { title: string; items: RailItem[] }[] = [
     title: 'rail.hires',
     items: [
       { to: '/vault', key: 'rail.vault' },
+      { to: '/defend', key: 'rail.defend' },
       { to: '/ongoing', key: 'rail.ongoing' },
     ],
   },

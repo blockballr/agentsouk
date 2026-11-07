@@ -37,6 +37,7 @@ const ManageAccountPage = lazy(() => import('./pages/ManageAccountPage').then((m
 const VaultHirePage = lazy(() => import('./pages/VaultHirePage'))
 const DesignPnlPage = lazy(() => import('./pages/DesignPnlPage').then((m) => ({ default: m.DesignPnlPage })))
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
+const DefendPage = lazy(() => import('./pages/DefendPage').then((m) => ({ default: m.DefendPage })))
 
 // each surface has its own address; there it opens on its own page rather than
 // the market. The apex keeps only the homepage.
@@ -87,6 +88,7 @@ function App() {
               <Route path="/vault" element={<VaultHirePage />} />
               <Route path="/vault/c/:category" element={<VaultHirePage categoryMode />} />
               <Route path="/vault/:chainId/:tokenId" element={<VaultHirePage />} />
+              <Route path="/defend" element={<DefendPage />} />
               <Route path="/profile" element={<Navigate to="/seller" replace />} />
               <Route path="/studio" element={<StudioPage />} />
               <Route path="/docs" element={DOCS_HOST ? <Navigate to="/" replace /> : <DocsRedirect />} />
