@@ -28,6 +28,10 @@ export interface Column {
 function cell(value: unknown): string {
   if (value === null || value === undefined) return "-";
   if (Array.isArray(value)) return value.length > 0 ? value.join(",") : "-";
+  if (typeof value === "object") {
+    const text = JSON.stringify(value);
+    return text && text !== "{}" ? text : "-";
+  }
   return String(value);
 }
 

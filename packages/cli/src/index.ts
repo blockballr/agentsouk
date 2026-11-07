@@ -13,6 +13,7 @@ import { previewRegister, sendRegister } from "./marketplace/register";
 import { loadSigner } from "./core/wallet";
 import { rateAgent } from "./marketplace/ratings";
 import { controlListing } from "./marketplace/control";
+import { vaultAgents, vaultFor, vaultInfo, vaultPnl, vaultPositions, vaultReceipts } from "./marketplace/vault";
 import { CliError } from "./core/errors";
 
 const VERSION = "0.1.0";
@@ -540,6 +541,155 @@ for (const action of ["delist", "relist"] as const) {
       }),
     );
 }
+
+
+const vault = program.command("vault").description("the HireVault rail, read-only");
+
+vault
+  .command("list")
+  .description("the vault address, minimum deposit and open-hire cap")
+  .action(
+    guard(async () => {
+      const cfg = config();
+      const info = await vaultInfo(cfg);
+      const row = vaultFor(info.vaults, cfg.chainId);
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(row ?? info, { chainId: cfg.chainId })}\n`);
+        return;
+      }
+      process.stdout.write(
+        `${renderTable(
+          [
+            { field: "chain", value: row?.chainId ?? cfg.chainId },
+            { field: "vault", value: row?.address },
+            { field: "min deposit", value: row?.minDepositInToken0 },
+            { field: "max open per buyer", value: row?.maxOpenPerBuyer ?? "-" },
+          ],
+          [
+            { key: "field", label: "field" },
+            { key: "value", label: "value", width: 80 },
+          ],
+        )}\n`,
+      );
+    }),
+  );
+
+vault
+  .command("agents")
+  .description("agents that declare a vault hire")
+  .action(
+    guard(async () => {
+      const cfg = config();
+      const page = await vaultAgents(cfg);
+      const agents = page.agents ?? [];
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(agents, { chainId: cfg.chainId, count: agents.length })}\n`);
+        return;
+      }
+      process.stdout.write(
+        `${renderTable(
+          agents.map((agent) => ({
+            token: agent.tokenId,
+            name: agent.name,
+            wallet: agent.wallet,
+            category: agent.category,
+            policy: agent.policy,
+          })),
+          [
+            { key: "token", label: "token" },
+            { key: "name", label: "name", width: 26 },
+            { key: "wallet", label: "wallet", width: 44 },
+            { key: "category", label: "category" },
+            { key: "policy", label: "policy" },
+          ],
+        )}\n`,
+      );
+    }),
+  );
+
+vault
+  .command("positions")
+  .description("open and closed hires for a buyer")
+  .requiredOption("--buyer <wallet>")
+  .action(
+    guard(async (options: { buyer: string }) => {
+      const cfg = config();
+      const page = await vaultPositions(cfg, options.buyer);
+      const positions = page.positions ?? [];
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(page, { chainId: cfg.chainId, count: positions.length })}\n`);
+        return;
+      }
+      process.stdout.write(
+        `${renderTable(
+          positions.map((position) => ({
+            id: position.id,
+            agent: position.agent,
+            open: position.open,
+            deposit: position.deposit,
+            value: position.value,
+            pnl: position.pnl,
+            expiry: position.expiry,
+          })),
+          [
+            { key: "id", label: "id" },
+            { key: "agent", label: "agent", width: 44 },
+            { key: "open", label: "open" },
+            { key: "deposit", label: "deposit" },
+            { key: "value", label: "value" },
+            { key: "pnl", label: "pnl" },
+            { key: "expiry", label: "expiry" },
+          ],
+        )}\n`,
+      );
+    }),
+  );
+
+vault
+  .command("pnl")
+  .description("receipts and realized deltas per agent")
+  .requiredOption("--buyer <wallet>")
+  .action(
+    guard(async (options: { buyer: string }) => {
+      const cfg = config();
+      const page = await vaultPnl(cfg, options.buyer);
+      const agents = page.agents ?? [];
+      if (format() === "json") {
+        process.stdout.write(`${renderJson(page, { chainId: cfg.chainId })}\n`);
+        return;
+      }
+      process.stdout.write(
+        `${renderTable(
+          agents.map((agent) => ({
+            wallet: agent.wallet,
+            label: agent.label,
+            decisions: agent.decisions,
+            traded: agent.traded,
+            realized: agent.realized,
+          })),
+          [
+            { key: "wallet", label: "wallet", width: 44 },
+            { key: "label", label: "label", width: 24 },
+            { key: "decisions", label: "decisions" },
+            { key: "traded", label: "traded" },
+            { key: "realized", label: "realized" },
+          ],
+        )}\n`,
+      );
+    }),
+  );
+
+vault
+  .command("receipts")
+  .description("the receipts for one hire")
+  .requiredOption("--hire <id>")
+  .action(
+    guard(async (options: { hire: string }) => {
+      const cfg = config();
+      const body = await vaultReceipts(cfg, options.hire);
+      process.stdout.write(`${renderJson(body, { chainId: cfg.chainId, hireId: options.hire })}\n`);
+    }),
+  );
 
 program
   .command("doctor")
