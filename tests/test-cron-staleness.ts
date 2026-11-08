@@ -68,4 +68,19 @@ describe("stalenessBreaches", () => {
     expect(alertLine(stale)).toContain("40h");
     expect(alertLine(stale)).toContain("failed");
   });
+
+  it("shows a sub-hour budget in minutes rather than rounding it to an hour", () => {
+    const stale: StaleRoute = {
+      name: "health-watch",
+      label: "health watch",
+      lastRunAt: new Date(now - 2 * HOUR).toISOString(),
+      ok: true,
+      note: null,
+      age: 2 * HOUR,
+      allowedGapMs: 30 * 60_000,
+    };
+    const line = alertLine(stale);
+    expect(line).toContain("allowed 30 min");
+    expect(line).toContain("silence 2h");
+  });
 });

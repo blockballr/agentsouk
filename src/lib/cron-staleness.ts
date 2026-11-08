@@ -66,9 +66,15 @@ export function stalenessBreaches(runs: readonly CronRun[], now = Date.now()): S
 
 export function alertLine(stale: StaleRoute): string {
   const at = stale.lastRunAt ? new Date(stale.lastRunAt).toISOString() : "never";
-  const age = stale.age !== null ? `${Math.round(stale.age / 3_600_000)}h` : "no run recorded";
+  const age = stale.age !== null ? span(stale.age) : "no run recorded";
   const note = stale.note ? `, last note: ${stale.note}` : "";
-  return `${stale.name} (${stale.label}): last run ${at}, silence ${age}, allowed ${Math.round(stale.allowedGapMs / 3_600_000)}h, last result ${stale.ok ? "ok" : "failed"}${note}`;
+  return `${stale.name} (${stale.label}): last run ${at}, silence ${age}, allowed ${span(stale.allowedGapMs)}, last result ${stale.ok ? "ok" : "failed"}${note}`;
+}
+
+// a budget of thirty minutes should not print as "1h"; hourly jobs stay in hours
+function span(ms: number): string {
+  if (ms < 3_600_000) return `${Math.max(1, Math.round(ms / 60_000))} min`;
+  return `${Math.round(ms / 3_600_000)}h`;
 }
 
 // the dedupe store: one alert per route per half budget, so a stopped runner
