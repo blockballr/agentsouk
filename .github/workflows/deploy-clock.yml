@@ -1,0 +1,39 @@
+name: Deploy health clock
+
+# The worker holds the ten minute cron. GitHub's own scheduler is too slow on
+# this repo, so the schedule lives on Cloudflare and this workflow ships it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/health-clock/**"
+      - ".github/workflows/deploy-clock.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: health-clock-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/health-clock
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy the worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy
+      - name: Set the bearer
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: printf '%s' "$CRON_SECRET" | npx --yes wrangler@4 secret put CRON_SECRET

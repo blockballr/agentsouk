@@ -1,0 +1,10 @@
+name = "agentsouk-health-clock"
+main = "src/index.js"
+compatibility_date = "2026-11-08"
+
+[vars]
+WATCH_URL = "https://api.agentsouk.xyz/api/cron/health"
+
+# every ten minutes, the same cadence the watch promises the buyer
+[triggers]
+crons = ["*/10 * * * *"]
