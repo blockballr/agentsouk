@@ -9,7 +9,7 @@ import type { PayeeHire } from '../lib/api'
 const DAY = 86_400_000
 const NOW = Date.now()
 const AGENT = '0xe0b0C4e84efc42e8D91410A14a125a8759c782Fd'
-const BUYER = '0x84fedaBd1b83443aD86796C15619494878B64180'
+const BUYER = '0x84FEDaBd1B83443Ad86796C15619494878B64180'
 
 const RECEIPTS: { days: number; amount: number; active?: boolean }[] = [
   { days: 41, amount: 0.22 },

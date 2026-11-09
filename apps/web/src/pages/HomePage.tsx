@@ -85,7 +85,7 @@ const settlementEvidence = [
     txHash: '0x6d5c3de6016ed3cf4e5671447e7fa82066396d8a22a131890d3d64ea706d59a6',
     agent: 'Grid Runner',
     amount: 2,
-    payer: '0x84fedaBd1b83443aD86796C15619494878B64180',
+    payer: '0x84FEDaBd1B83443Ad86796C15619494878B64180',
     note: "authorised by our agent-owner wallet, paid to Grid Runner's own wallet, a third-party agent",
   },
 ] as const

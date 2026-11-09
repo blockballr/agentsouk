@@ -8,7 +8,7 @@ export const BSC_REGISTRY_ADDRESS =
 export const BSC_TOKENS = {
   USDC: {
     symbol: "USDC",
-    address: "0x8AC76a51cc950d9822d68b83fe1ad97b32cd580d",
+    address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
     decimals: 18,
   },
   USDT: {
