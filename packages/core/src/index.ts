@@ -9,4 +9,4 @@ export * from "./rpc";
 export * from "./job-seller";
 export * from "./vault-seller";
 export * from "./telegram";
-export * from "./machines/defence";
+export * from "./machines";

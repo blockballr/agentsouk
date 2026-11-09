@@ -1,4 +1,5 @@
 import type { ActiveHireSession, Erc8183Job, EscrowStatus, HireTask, OngoingBundle } from './api'
+import { deriveEscrow } from '@souk/machines/escrow'
 
 // one plain state per hire, so the page says what happened and what the buyer does
 // next instead of stacking the session, job and task statuses side by side
@@ -34,31 +35,32 @@ export interface EscrowLifecycle {
 
 export function escrowLifecycle(escrow: EscrowStatus | null | undefined, now: number = Date.now()): EscrowLifecycle | null {
   if (!escrow) return null
-  if (escrow.status === 1) {
-    return { stage: 'released', label: 'Released to the agent', money: 'paid to the agent', autoReleaseAt: null, actions: [] }
-  }
-  if (escrow.status === 2) {
-    return { stage: 'refunded', label: 'Refunded to your wallet', money: 'back with you', autoReleaseAt: null, actions: [] }
-  }
-  if (escrow.verifiedAt === 0) {
-    return {
-      stage: 'held',
-      label: 'Held in escrow, waiting on delivery',
-      money: 'held in escrow',
-      autoReleaseAt: null,
-      // the refund is the buyer's free exit before any verified delivery
-      actions: ['refund'],
-    }
-  }
-  const autoReleaseAt = escrow.windowEndsAt !== null ? escrow.windowEndsAt * 1000 : null
-  const open = autoReleaseAt === null || autoReleaseAt > now
-  return {
-    stage: 'verifiedWindow',
-    label: open ? 'Delivered verified, dispute window open' : 'Ready to release',
-    money: 'held in escrow',
-    autoReleaseAt,
-    actions: open ? ['release', 'dispute'] : ['release'],
-  }
+  const view = deriveEscrow({
+    now,
+    status: escrow.status,
+    verifiedAt: escrow.verifiedAt,
+    windowEndsAt: escrow.windowEndsAt,
+  })
+  if (view.phase === 'unfunded') return null
+  const stage: EscrowLifecycleStage = view.released
+    ? 'released'
+    : view.refunded
+      ? 'refunded'
+      : view.verified
+        ? 'verifiedWindow'
+        : 'held'
+  const label =
+    view.phase === 'released'
+      ? 'Released to the agent'
+      : view.phase === 'refunded'
+        ? 'Refunded to your wallet'
+        : view.phase === 'releasable'
+          ? 'Ready to release'
+          : view.phase === 'window-open'
+            ? 'Delivered verified, dispute window open'
+            : 'Held in escrow, waiting on delivery'
+  const money = view.released ? 'paid to the agent' : view.refunded ? 'back with you' : 'held in escrow'
+  return { stage, label, money, autoReleaseAt: view.autoReleaseAt, actions: view.actions }
 }
 
 // the card's horizontal flow: which of the five dots the money stands on. A
@@ -158,13 +160,17 @@ export interface EscrowChip {
 
 export function escrowChip(escrow: EscrowStatus | null | undefined, now: number = Date.now()): EscrowChip | null {
   if (!escrow) return null
-  if (escrow.status === 1) return { text: 'Released to the agent', tone: 'done' }
-  if (escrow.status === 2) return { text: 'Refunded to your wallet', tone: 'done' }
-  if (escrow.verifiedAt === 0) return { text: 'Held in escrow, waiting on delivery', tone: 'hold' }
-  if (escrow.windowEndsAt !== null && escrow.windowEndsAt * 1000 <= now) {
-    return { text: 'Ready to release from escrow', tone: 'ready' }
-  }
-  return { text: 'Held in escrow, dispute window open', tone: 'hold' }
+  const view = deriveEscrow({
+    now,
+    status: escrow.status,
+    verifiedAt: escrow.verifiedAt,
+    windowEndsAt: escrow.windowEndsAt,
+  })
+  if (view.phase === 'released') return { text: 'Released to the agent', tone: 'done' }
+  if (view.phase === 'refunded') return { text: 'Refunded to your wallet', tone: 'done' }
+  if (view.phase === 'releasable') return { text: 'Ready to release from escrow', tone: 'ready' }
+  if (view.phase === 'window-open') return { text: 'Held in escrow, dispute window open', tone: 'hold' }
+  return { text: 'Held in escrow, waiting on delivery', tone: 'hold' }
 }
 
 // what a rejection has to do to the money before the record may read rejected:
@@ -177,15 +183,26 @@ export interface EscrowRejectMove {
 }
 
 export function escrowRejectMove(escrow: EscrowStatus | null | undefined, now: number = Date.now()): EscrowRejectMove {
-  if (!escrow || escrow.status === 2) return { kind: 'plain' }
-  if (escrow.status === 1) {
-    return { kind: 'refuse', reason: 'This payment was already released to the agent; the hire can no longer be rejected.' }
+  if (!escrow) return { kind: 'plain' }
+  const view = deriveEscrow({
+    now,
+    status: escrow.status,
+    verifiedAt: escrow.verifiedAt,
+    windowEndsAt: escrow.windowEndsAt,
+  })
+  if (view.rejectMove === 'refuse') {
+    if (view.phase === 'released') {
+      return { kind: 'refuse', reason: 'This payment was already released to the agent; the hire can no longer be rejected.' }
+    }
+    if (view.phase === 'releasable') {
+      return {
+        kind: 'refuse',
+        reason: 'The dispute window has passed. The payment releases to the agent and the hire can no longer be rejected.',
+      }
+    }
+    return { kind: 'refuse', reason: view.reason }
   }
-  if (escrow.verifiedAt === 0) return { kind: 'refund' }
-  if (escrow.windowEndsAt !== null && escrow.windowEndsAt * 1000 <= now) {
-    return { kind: 'refuse', reason: 'The dispute window has passed. The payment releases to the agent and the hire can no longer be rejected.' }
-  }
-  return { kind: 'reject' }
+  return { kind: view.rejectMove }
 }
 
 // sessions and ended-session tasks as one list, one entry per payment, newest first

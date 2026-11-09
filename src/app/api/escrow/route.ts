@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { deriveEscrow } from "@agora/core";
 import { escrowFunder, escrowStatuses } from "@/lib/escrow";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,17 @@ export async function GET(req: NextRequest) {
   if (!funder || ids.length === 0) {
     return NextResponse.json({ funder, jobs: [] });
   }
-  const jobs = await escrowStatuses(ids);
+  const now = Date.now();
+  const jobs = (await escrowStatuses(ids)).map((job) => ({
+    ...job,
+    // one derived phase and action list, so an agent does not have to combine
+    // status, verifiedAt and the clock itself
+    state: deriveEscrow({
+      now,
+      status: job.status,
+      verifiedAt: job.verifiedAt,
+      windowEndsAt: job.windowEndsAt,
+    }),
+  }));
   return NextResponse.json({ funder, jobs });
 }

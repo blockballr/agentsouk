@@ -96,7 +96,7 @@ describe("escrow status route", () => {
     const res = await get(["req_held"]);
     const body = await res.json();
     expect(body.funder).toBe(FUNDER);
-    expect(body.jobs).toEqual([
+    expect(body.jobs).toMatchObject([
       {
         paymentId: "req_held",
         buyer: BUYER,
@@ -108,6 +108,7 @@ describe("escrow status route", () => {
         windowEndsAt: null,
       },
     ]);
+    expect(body.jobs[0].state).toMatchObject({ phase: "held", actions: ["refund"] });
   });
 
   it("counts the dispute window from the verified delivery", async () => {
@@ -138,6 +139,7 @@ describe("escrow status route", () => {
       ["req_released", 1],
       ["req_refunded", 2],
     ]);
+    expect(body.jobs.map((j: { state: { phase: string } }) => j.state.phase)).toEqual(["released", "refunded"]);
   });
 
   it("gives a payment that never entered escrow no row", async () => {

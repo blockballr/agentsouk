@@ -35,6 +35,7 @@ export default defineConfig({
   resolve: {
     alias: [
       ...aliasesFromTsconfig(resolve(root, "tsconfig.json")),
+      { find: "@souk/machines", replacement: resolve(root, "packages/core/src/machines") },
       { find: "server-only", replacement: resolve(root, "tests", "server-only-stub.ts") },
     ],
   },
