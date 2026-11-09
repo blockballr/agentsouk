@@ -52,10 +52,11 @@ Output defaults to a table on a terminal and JSON through a pipe. `--json`
 always wins. Errors go to stderr; exit codes are `0` success, `1` runtime or API
 failure, `2` usage.
 
-## Seller flow, implemented and not yet exercised end to end
+## Flows that write
 
-These mint a real claim or send a transaction, so they have not been run against
-production:
+These mint a claim, move escrow or send a transaction. The listing edit and the
+delist and relist pair have been exercised against production; the hire,
+register and job actions have not:
 
 ```sh
 agentsouk hire 56/404603 --task "..." --key-file key.txt --fund --yes
@@ -67,6 +68,10 @@ agentsouk listing delist 56/<id> --key-file key.txt
 agentsouk listing relist 56/<id> --key-file key.txt
 agentsouk listing edit 56/<id> --edit edit.json --key-file key.txt --yes
 agentsouk listing edit 56/<id> --clear --key-file key.txt --yes
+agentsouk jobs submit <job-id> --deliverable "ipfs://..." --key-file seller.txt
+agentsouk jobs complete <job-id> --reason "the report matches the ledger" --key-file buyer.txt
+agentsouk jobs reject <job-id> --reason "the numbers did not reconcile" --key-file buyer.txt
+agentsouk jobs refund <job-id> --key-file buyer.txt --yes
 agentsouk rate 56/<id> --payment-id <id> --score 5 --comment "good" --key-file key.txt
 ```
 

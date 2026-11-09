@@ -9,6 +9,7 @@ import { ownedAgentState, parseAgentRef, railsOf, searchAgents, showAgent, verif
 import { callAgent } from "./marketplace/call";
 import { callMcpTool, listMcpTools, parseMcpArgs } from "./marketplace/mcp";
 import { listJobs, notifyJob, quoteJob, showJob } from "./marketplace/jobs";
+import { actOnJob, type JobActionName } from "./marketplace/job-actions";
 import { fundHire, hireCalls, planHire } from "./marketplace/hire";
 import { isTxHash, verifyPayment, verifyTransaction } from "./marketplace/receipt";
 import { checkListing, confirmListing, prepareListing, type ListingDraft } from "./marketplace/listing";
@@ -315,9 +316,9 @@ program
     }),
   );
 
-program
+const jobs = program
   .command("jobs")
-  .description("recent ERC-8183 jobs")
+  .description("recent ERC-8183 jobs, and the signed actions a job takes")
   .option("--limit <n>", "how many to read", "20")
   .option("--wallet <addr>", "only jobs whose client is this wallet")
   .option("--payee <addr>", "only jobs whose payee is this wallet")
@@ -362,6 +363,79 @@ program
       );
     }),
   );
+
+const JOB_ACTIONS: {
+  name: string;
+  action: JobActionName;
+  done: string;
+  describe: string;
+  needs: "deliverable" | "reason" | "none";
+  confirm?: string;
+}[] = [
+  {
+    name: "submit",
+    action: "submit",
+    done: "submitted",
+    describe: "the seller delivers the finished work",
+    needs: "deliverable",
+  },
+  {
+    name: "complete",
+    action: "complete",
+    done: "completed",
+    describe: "the evaluator accepts a submitted job and releases the escrow",
+    needs: "reason",
+  },
+  {
+    name: "reject",
+    action: "reject",
+    done: "rejected",
+    describe: "the buyer or evaluator refuses the job",
+    needs: "reason",
+  },
+  {
+    name: "refund",
+    action: "claimRefund",
+    done: "refunded",
+    describe: "the buyer claims the escrow after an expired job, once the chain agrees",
+    needs: "none",
+    confirm: "this claims the escrow refund: pass --yes to confirm",
+  },
+];
+
+for (const spec of JOB_ACTIONS) {
+  const action = jobs.command(`${spec.name} <id>`).description(spec.describe);
+  if (spec.needs === "deliverable") action.requiredOption("--deliverable <text>", "what the seller delivered");
+  if (spec.needs === "reason") action.option("--reason <text>", "why, recorded on the job");
+  action.option("--key-file <path>", "the key of the party this action allows");
+  if (spec.confirm) action.option("--yes", "confirm the escrow movement");
+  action.action(
+    guard(
+      async (
+        id: string,
+        options: { deliverable?: string; reason?: string; keyFile?: string; yes?: boolean },
+      ) => {
+        const cfg = config();
+        const signer = loadSigner({ keyFile: options.keyFile });
+        if (spec.confirm && !options.yes) throw new CliError(spec.confirm, "confirm_required", 2);
+
+        const result = await actOnJob(cfg, signer, id, spec.action, {
+          reason: options.reason,
+          deliverable: options.deliverable,
+        });
+        if (format() === "json") {
+          process.stdout.write(`${renderJson(result, { chainId: cfg.chainId, jobId: id })}\n`);
+          return;
+        }
+        if (result.success === false) {
+          process.stdout.write(`refused  ${result.error ?? result.job?.status ?? ""}\n`);
+          return;
+        }
+        process.stdout.write(`${spec.done}  ${result.job?.id ?? id}  ${result.job?.status ?? ""}\n`);
+      },
+    ),
+  );
+}
 
 program
   .command("job <id>")
