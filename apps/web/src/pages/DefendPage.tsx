@@ -106,6 +106,7 @@ interface WatchStatus {
   consecutiveFailures: number
   degraded: boolean
   note: string | null
+  gas?: { wei: string | null; low: boolean; checkedAt: string } | null
 }
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api'
@@ -344,6 +345,11 @@ export function DefendPage() {
                 {watch.consecutiveFailures === 1 ? ' · one failed run since' : ''}
               </Txt>
             )
+          ) : null}
+          {watch?.gas?.low ? (
+            <Txt size={12} lead={18} mono tone="peach">
+              The guard cannot pay network fees right now, so a repayment may fail until the operator tops up.
+            </Txt>
           ) : null}
         </Stack>
 

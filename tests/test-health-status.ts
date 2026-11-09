@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { watchStatus, WATCH_STALE_AFTER_MS } from "../src/lib/health-status";
+import { watchStatus, parseGasState, WATCH_STALE_AFTER_MS } from "../src/lib/health-status";
 import type { CronRun } from "../src/lib/history-store";
 
 const NOW = Date.parse("2026-11-07T12:00:00.000Z");
@@ -63,5 +63,16 @@ describe("the watch status", () => {
     const status = watchStatus([run(30, false), run(2, true)], NOW);
     expect(status.ok).toBe(true);
     expect(status.consecutiveFailures).toBe(0);
+  });
+
+  it("reads the gas state the watch parked", () => {
+    const gas = parseGasState(JSON.stringify({ wei: "14914483865409", low: true, checkedAt: "2026-11-09T04:15:00.000Z" }));
+    expect(gas).toEqual({ wei: "14914483865409", low: true, checkedAt: "2026-11-09T04:15:00.000Z" });
+  });
+
+  it("ignores a gas state it cannot trust", () => {
+    expect(parseGasState(null)).toBeNull();
+    expect(parseGasState("not json")).toBeNull();
+    expect(parseGasState(JSON.stringify({ low: "yes" }))).toBeNull();
   });
 });

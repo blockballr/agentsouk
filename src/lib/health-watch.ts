@@ -1,10 +1,14 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import { createPublicClient, createWalletClient, http, type Address } from "viem";
+import { createPublicClient, createWalletClient, formatUnits, http, type Address } from "viem";
 import { bsc } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { planDefence, rankPositions, readMandate, repayPosition } from "./health-operator";
+import { writePipelineState } from "./history-store";
+import { shouldEmail, markAlerted } from "./cron-staleness";
+import { notifyTeamAlert } from "./notify";
+import { emitNotification } from "./notifications";
 import { defaultLeaseStore, type LeaseStore } from "./lease-store";
 import { targetChainId } from "./types";
 
@@ -12,6 +16,10 @@ import { targetChainId } from "./types";
 // each portfolio, repays the worst position when the buyer's trigger is crossed,
 // and draws the daily fee the buyer's subscription earned. No job is needed for
 // the agent to look; the funded window only settles the result.
+
+// below this the agent can still read but not reliably send a repay or a charge
+export const GAS_FLOOR_WEI = 300_000_000_000_000n;
+const GAS_STATE_KEY = "health:gas";
 
 export interface WatchOutcome {
   buyer: Address;
@@ -21,12 +29,22 @@ export interface WatchOutcome {
   txHash?: string;
   charged?: string;
   reason?: string;
+  /** a skip that is a fault rather than a normal no-op, e.g. a wrong agent */
+  error?: boolean;
+}
+
+export interface GasState {
+  wei: string | null;
+  low: boolean;
+  checkedAt: string;
 }
 
 export interface WatchRun {
   chainId: number;
   buyers: number;
   outcomes: WatchOutcome[];
+  errors: number;
+  gas: GasState;
 }
 
 const RPC = "https://bsc-dataseed.bnbchain.org";
@@ -70,7 +88,7 @@ async function chargeIfDue(
   agent: Address,
   agentKey: `0x${string}`,
   nowSec: number,
-): Promise<string | null> {
+): Promise<{ hash: string; amount: bigint } | null> {
   const client = publicClient();
   const plan = (await client.readContract({
     address: subscription,
@@ -101,7 +119,7 @@ async function chargeIfDue(
   });
   const receipt = await client.waitForTransactionReceipt({ hash, confirmations: 1 });
   if (receipt.status !== "success") throw new Error(`the charge transaction ${hash} reverted`);
-  return hash;
+  return { hash, amount: accrued as bigint };
 }
 
 export async function watchMandates(options: {
@@ -130,6 +148,29 @@ export async function watchMandates(options: {
     functionName: "activeBuyers",
   })) as readonly Address[];
 
+  // gas is read once per run and parked in the shared state table, so the
+  // buyer screen can warn without every page load hitting the chain
+  const gasWei = await client.getBalance({ address: agent.address }).catch(() => null);
+  const gas: GasState = {
+    wei: gasWei === null ? null : gasWei.toString(),
+    low: gasWei !== null && gasWei < GAS_FLOOR_WEI,
+    checkedAt: new Date().toISOString(),
+  };
+  await writePipelineState(GAS_STATE_KEY, JSON.stringify(gas)).catch(() => false);
+  if (gas.low && (await shouldEmail("health-gas", 12 * 3_600_000).catch(() => false))) {
+    const sent = await notifyTeamAlert(
+      "[agentsouk] health watch gas is low",
+      [
+        "The watcher can read positions but may not be able to send a repay or a charge.",
+        `Agent wallet: ${agent.address}`,
+        `Balance: ${(Number(gasWei) / 1e18).toFixed(6)} BNB`,
+        `Floor: ${(Number(GAS_FLOOR_WEI) / 1e18).toFixed(4)} BNB`,
+        `Checked at: ${gas.checkedAt}`,
+      ].join("\n"),
+    ).catch(() => null);
+    if (sent?.ok) await markAlerted("health-gas").catch(() => false);
+  }
+
   const outcomes: WatchOutcome[] = [];
   for (const buyer of buyers.slice(0, limit)) {
     if (Date.now() - startedAt > budgetMs) break;
@@ -152,7 +193,13 @@ export async function watchMandates(options: {
           continue;
         }
         if (mandate.agent.toLowerCase() !== agent.address.toLowerCase()) {
-          outcomes.push({ buyer, coverage: null, action: "skipped", reason: `the mandate names ${mandate.agent}` });
+          outcomes.push({
+            buyer,
+            coverage: null,
+            action: "skipped",
+            reason: `the mandate names ${mandate.agent}`,
+            error: true,
+          });
           continue;
         }
 
@@ -164,27 +211,71 @@ export async function watchMandates(options: {
         } else {
           const txHash = await repayPosition(options.operator, buyer, plan.position.index, plan.amount, options.agentKey);
           const after = await rankPositions(chainId, [mandate.positions[plan.position.index]]);
+          const recovered = after[0]?.healthFactor ?? 0;
           outcomes.push({
             buyer,
             coverage: plan.position.healthFactor,
             action: "repaid",
             amount: plan.amount.toString(),
             txHash,
-            reason: `coverage ${plan.position.healthFactor.toFixed(3)} -> ${(after[0]?.healthFactor ?? 0).toFixed(3)}`,
+            reason: `coverage ${plan.position.healthFactor.toFixed(3)} -> ${recovered.toFixed(3)}`,
           });
+          // the buyer sees their own defence in their own bell; the row is keyed
+          // by the tx, so a retried run cannot write it twice
+          await emitNotification({
+            wallet: buyer,
+            kind: "health_repaid",
+            eventKey: txHash,
+            title: "Position defended",
+            body: `The guard repaid ${formatUnits(plan.amount, 18)} USDT on Venus, moving coverage from ${plan.position.healthFactor.toFixed(3)} to ${recovered.toFixed(3)}.`,
+            href: "/defend",
+            txHash,
+          }).catch(() => null);
         }
 
         if (options.subscription) {
           const charged = await chargeIfDue(options.subscription, buyer, agent.address, options.agentKey, nowSec).catch(() => null);
-          if (charged) outcomes[outcomes.length - 1].charged = charged;
+          if (charged) {
+            outcomes[outcomes.length - 1].charged = charged.hash;
+            await emitNotification({
+              wallet: buyer,
+              kind: "watch_fee_charged",
+              eventKey: charged.hash,
+              title: "Watch fee charged",
+              body: `The prepaid watch drew ${formatUnits(charged.amount, 18)} USDT for the elapsed term. The rest of your balance stays withdrawable.`,
+              href: "/defend",
+              txHash: charged.hash,
+            }).catch(() => null);
+          }
         }
       } catch (error) {
-        outcomes.push({ buyer, coverage: null, action: "skipped", reason: (error as Error).message.slice(0, 160) });
+        outcomes.push({
+          buyer,
+          coverage: null,
+          action: "skipped",
+          reason: (error as Error).message.slice(0, 160),
+          error: true,
+        });
       }
     } finally {
       await lease.release(key, holder);
     }
   }
 
-  return { chainId, buyers: buyers.length, outcomes };
+  const errors = outcomes.filter((outcome) => outcome.error).length;
+  if (errors > 0 && (await shouldEmail("health-fail", 6 * 3_600_000).catch(() => false))) {
+    // counts only: a buyer's address, position or reason never leaves the run
+    const sent = await notifyTeamAlert(
+      "[agentsouk] health watch had a failed run",
+      [
+        `${errors} of ${buyers.length} active mandates were not checked cleanly.`,
+        "No buyer details are included here. Open the run response or the status panel to reproduce.",
+        `Status: https://api.agentsouk.xyz/api/health/status`,
+        `Checked at: ${new Date().toISOString()}`,
+      ].join("\n"),
+    ).catch(() => null);
+    if (sent?.ok) await markAlerted("health-fail").catch(() => false);
+  }
+
+  return { chainId, buyers: buyers.length, outcomes, errors, gas };
 }

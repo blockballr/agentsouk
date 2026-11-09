@@ -32,7 +32,10 @@ async function run(req: NextRequest): Promise<NextResponse> {
   const subscription = process.env.HEALTH_SUBSCRIPTION_ADDRESS as Address | undefined;
   const limit = Number(req.nextUrl.searchParams.get("limit")) || 25;
   const result = await watchMandates({ operator, subscription, agentKey: agentKey as `0x${string}`, limit });
-  return json({ success: true, ...result });
+  // a buyer skipped because of a fault is a failed run, not a healthy one that
+  // happened to do nothing; the status endpoint counts these in a row
+  const ok = result.errors === 0;
+  return json({ success: ok, ...result }, ok ? 200 : 500);
 }
 
 export function GET(req: NextRequest) {

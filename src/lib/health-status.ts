@@ -23,6 +23,29 @@ export interface WatchStatus {
   degraded: boolean;
 }
 
+export interface GasReading {
+  wei: string | null;
+  low: boolean;
+  checkedAt: string;
+}
+
+// the watch parks its gas reading as JSON in the shared state table, so both
+// the status route and a test read one shape
+export function parseGasState(value: string | null): GasReading | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as Partial<GasReading> | null;
+    if (!parsed || typeof parsed.low !== "boolean" || typeof parsed.checkedAt !== "string") return null;
+    return {
+      wei: typeof parsed.wei === "string" ? parsed.wei : null,
+      low: parsed.low,
+      checkedAt: parsed.checkedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function watchStatus(runs: readonly CronRun[], now = Date.now()): WatchStatus {
   const ordered = [...runs].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt));
   const last = ordered[0] ?? null;
