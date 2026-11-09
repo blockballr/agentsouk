@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { deriveAvailability } from "@agora/core";
 import { queryAgents } from "@/lib/scanner";
 import { targetChainId } from "@/lib/types";
 import type { AgentSummary } from "@/lib/types";
 import { loadVerifications } from "@/lib/verifications";
+import { loadDelisted } from "@/lib/delist-store";
+import { canExecute } from "@/lib/agent-index";
 import { isPancakeSwapAgent, readsPancakeSwap } from "@/lib/pancakeswap";
 import { findActiveSession } from "@/lib/x402";
 import { revokedAmong } from "@/lib/receipts-store";
@@ -36,7 +39,7 @@ export async function GET(req: NextRequest) {
   const tStart = performance.now();
   let tVerify = tStart;
   let tCustom = tStart;
-  const [verifications, customAgents] = await Promise.all([
+  const [verifications, customAgents, offMarket] = await Promise.all([
     loadVerifications().then((value) => {
       tVerify = performance.now();
       return value;
@@ -47,6 +50,7 @@ export async function GET(req: NextRequest) {
         tCustom = performance.now();
         return value;
       }),
+    loadDelisted().catch(() => new Set<string>()),
   ]);
   const customByToken = new Map<string, (typeof customAgents)[number]>();
   for (const ca of customAgents) {
@@ -146,7 +150,17 @@ export async function GET(req: NextRequest) {
     const withSession = activeSession
       ? { ...withVerification, activeSession }
       : withVerification;
-    return isBoosted(a.chain_id, a.token_id) ? { ...withSession, boosted: true } : withSession;
+    const availability = deriveAvailability({
+      status: verification?.status ?? null,
+      quotable: verification?.quotable ?? null,
+      failingSince: verification?.failing_since ?? null,
+      delisted: offMarket.has(a.token_id),
+      admitted: true,
+      canExecute: canExecute(a),
+      category: a.category ?? null,
+    });
+    const withAvailability = { ...withSession, availability };
+    return isBoosted(a.chain_id, a.token_id) ? { ...withAvailability, boosted: true } : withAvailability;
   };
 
   const items = ranked.map((a, i) => enrich(a, sessions[i]));
