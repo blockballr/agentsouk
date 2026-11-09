@@ -32,6 +32,30 @@ const stats = [
   { value: '4', label: 'kinds of work' },
 ]
 
+const housePreview = [
+  {
+    name: 'Flux LP',
+    category: 'Rebalancing and LP ranges',
+    tagline: 'LP agent for tokenized stocks on PancakeSwap V3 and Uniswap V3.',
+    mark: 'https://fluxlp.agentsouk.xyz/brand/mark.svg',
+    action: 'Open',
+  },
+  {
+    name: 'Souk Yield Lens',
+    category: 'Yield',
+    tagline: "Keeps a stable balance working above the hire's liquid floor, on chain.",
+    mark: '/brand/house-yield.svg',
+    action: 'Hire',
+  },
+  {
+    name: 'Souk Health Guard',
+    category: 'Health factor',
+    tagline: 'Defends a lending position when its health factor reaches the band.',
+    mark: '/brand/house-health.svg',
+    action: 'Hire',
+  },
+]
+
 const steps = [
   {
     title: 'Build and deploy',
@@ -353,36 +377,10 @@ export function HomePage() {
         <section className="py-6 md:py-8">
           <a
             href="https://agents.agentsouk.xyz"
-            className="flex flex-col gap-5 border border-souk-hair bg-souk-surface1 p-6 transition-colors hover:border-souk-data/40 hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data md:flex-row md:items-center md:justify-between md:p-7"
+            className="block border border-souk-hair bg-souk-surface1 p-5 transition-colors hover:border-souk-data/40 hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data md:p-6"
           >
-            <div className="flex min-w-0 items-center gap-4">
-              <div className="flex -space-x-2" aria-hidden="true">
-                <img
-                  src="https://fluxlp.agentsouk.xyz/brand/mark.svg"
-                  alt=""
-                  width={36}
-                  height={36}
-                  loading="lazy"
-                  className="h-9 w-9 rounded-[10px] border border-souk-hair bg-souk-surface2"
-                />
-                <img
-                  src="/brand/house-yield.svg"
-                  alt=""
-                  width={36}
-                  height={36}
-                  loading="lazy"
-                  className="h-9 w-9 rounded-[10px] border border-souk-hair bg-souk-surface2"
-                />
-                <img
-                  src="/brand/house-health.svg"
-                  alt=""
-                  width={36}
-                  height={36}
-                  loading="lazy"
-                  className="h-9 w-9 rounded-[10px] border border-souk-hair bg-souk-surface2"
-                />
-              </div>
-              <div className="min-w-0">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
                 <Txt size={10} lead={14} mono upper tone="muted">
                   House agents
                 </Txt>
@@ -390,10 +388,52 @@ export function HomePage() {
                   The agents we build and run.
                 </Txt>
               </div>
+              <Txt size={13} lead={20} weight="semibold" tone="ink" className="inline-flex shrink-0 items-center gap-2">
+                View all agents <span aria-hidden="true">&#8594;</span>
+              </Txt>
             </div>
-            <Txt size={13} lead={20} weight="semibold" tone="ink" className="inline-flex shrink-0 items-center gap-2">
-              View all agents <span aria-hidden="true">&#8594;</span>
-            </Txt>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {housePreview.map((agent) => (
+                <div
+                  key={agent.name}
+                  className="flex min-w-0 flex-col border border-souk-hair bg-souk-surface2 p-4"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <img
+                      src={agent.mark}
+                      alt=""
+                      width={40}
+                      height={40}
+                      loading="lazy"
+                      className="h-10 w-10 shrink-0 rounded-[10px]"
+                    />
+                    <div className="min-w-0">
+                      <Txt size={9} lead={12} mono upper tone="muted">
+                        {agent.category}
+                      </Txt>
+                      <Txt size={15} lead={20} weight="bold" tone="ink" className="mt-1">
+                        {agent.name}
+                      </Txt>
+                    </div>
+                  </div>
+                  <Txt size={12} lead={18} tone="slate" className="mt-3 line-clamp-2">
+                    {agent.tagline}
+                  </Txt>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5">
+                      <Dot tone="good" size={7} />
+                      <Txt size={9} lead={12} mono upper tone="steel">
+                        live
+                      </Txt>
+                    </span>
+                    <Txt size={10} lead={14} mono upper tone="steel">
+                      {agent.action} <span aria-hidden="true">&#8594;</span>
+                    </Txt>
+                  </div>
+                </div>
+              ))}
+            </div>
           </a>
         </section>
       </Reveal>
