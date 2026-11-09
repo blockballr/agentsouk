@@ -81,10 +81,13 @@ describe("the log of scheduled jobs", () => {
     ]);
   });
 
-  it("leaves no line for a caller without the secret or a job that is not configured", async () => {
+  it("leaves no line for an unauthorized caller, but records an unconfigured job", async () => {
     await loggedCronRun("verify", async () => NextResponse.json({ error: "unauthorized" }, { status: 401 }));
-    await loggedCronRun("verify", async () => NextResponse.json({ error: "not configured" }, { status: 503 }));
     expect(await latestCronRuns()).toEqual([]);
+    await loggedCronRun("verify", async () => NextResponse.json({ error: "not configured" }, { status: 503 }));
+    expect(await latestCronRuns()).toMatchObject([
+      { name: "verify", ok: false, outcome: "not-configured", note: "answered 503" },
+    ]);
   });
 
   it("logs a run that threw, and lets the error through", async () => {

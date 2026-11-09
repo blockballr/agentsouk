@@ -5,6 +5,7 @@
 import "server-only";
 import postgres from "postgres";
 import type { NextResponse } from "next/server";
+import { cronOutcomeForStatus, type CronOutcome } from "./cron-outcome";
 
 let sql: ReturnType<typeof postgres> | null = null;
 if (process.env.DATABASE_URL) {
@@ -27,6 +28,7 @@ export interface CronRun {
   startedAt: string;
   finishedAt: string;
   ok: boolean;
+  outcome?: CronOutcome;
   note: string | null;
 }
 
@@ -61,10 +63,14 @@ async function ensureTables(): Promise<boolean> {
             started_at timestamptz not null,
             finished_at timestamptz not null,
             ok boolean not null,
+            outcome text,
             note text
           )
         `;
         await sql!`create index if not exists cron_runs_name_at on cron_runs (name, started_at desc)`;
+        // deployments that predate the outcome column keep their history; the
+        // reader maps a missing value from ok
+        await sql!`alter table cron_runs add column if not exists outcome text`;
         await sql!`
           create table if not exists pipeline_state (
             key text primary key,
@@ -209,8 +215,8 @@ export function recordCronRun(run: CronRun): Promise<boolean> {
           return true;
         }
         await db`
-          insert into cron_runs (name, started_at, finished_at, ok, note)
-          values (${run.name}, ${run.startedAt}, ${run.finishedAt}, ${run.ok}, ${run.note})
+          insert into cron_runs (name, started_at, finished_at, ok, outcome, note)
+          values (${run.name}, ${run.startedAt}, ${run.finishedAt}, ${run.ok}, ${run.outcome ?? (run.ok ? "ok" : "failed")}, ${run.note})
         `;
         return true;
       } catch (e) {
@@ -266,14 +272,15 @@ export async function writePipelineState(key: string, value: string): Promise<bo
 export async function latestCronRuns(): Promise<CronRun[]> {  if ((await ensureTables()) && sql) {
     try {
       const rows = (await sql`
-        select distinct on (name) name, started_at, finished_at, ok, note
+        select distinct on (name) name, started_at, finished_at, ok, outcome, note
         from cron_runs order by name, started_at desc
-      `) as { name: string; started_at: Date | string; finished_at: Date | string; ok: boolean; note: string | null }[];
+      `) as { name: string; started_at: Date | string; finished_at: Date | string; ok: boolean; outcome: string | null; note: string | null }[];
       return rows.map((r) => ({
         name: r.name,
         startedAt: new Date(r.started_at).toISOString(),
         finishedAt: new Date(r.finished_at).toISOString(),
         ok: r.ok,
+        ...(r.outcome ? { outcome: r.outcome as CronOutcome } : {}),
         note: r.note,
       }));
     } catch {
@@ -292,15 +299,16 @@ export async function recentCronRuns(name: string, limit = 10): Promise<CronRun[
   if ((await ensureTables()) && sql) {
     try {
       const rows = (await sql`
-        select name, started_at, finished_at, ok, note
+        select name, started_at, finished_at, ok, outcome, note
         from cron_runs where name = ${name}
         order by started_at desc limit ${cap}
-      `) as { name: string; started_at: Date | string; finished_at: Date | string; ok: boolean; note: string | null }[];
+      `) as { name: string; started_at: Date | string; finished_at: Date | string; ok: boolean; outcome: string | null; note: string | null }[];
       return rows.map((r) => ({
         name: r.name,
         startedAt: new Date(r.started_at).toISOString(),
         finishedAt: new Date(r.finished_at).toISOString(),
         ok: r.ok,
+        ...(r.outcome ? { outcome: r.outcome as CronOutcome } : {}),
         note: r.note,
       }));
     } catch {
@@ -321,12 +329,13 @@ export async function loggedCronRun(name: string, run: () => Promise<NextRespons
   try {
     res = await run();
   } catch (e) {
-    await recordCronRun({ name, startedAt, finishedAt: new Date().toISOString(), ok: false, note: reason(e).slice(0, 200) });
+    await recordCronRun({ name, startedAt, finishedAt: new Date().toISOString(), ok: false, outcome: "failed", note: reason(e).slice(0, 200) });
     throw e;
   }
-  if (res.status !== 401 && res.status !== 503) {
-    const ok = res.status < 400;
-    await recordCronRun({ name, startedAt, finishedAt: new Date().toISOString(), ok, note: ok ? null : `answered ${res.status}` });
+  if (res.status !== 401) {
+    const outcome = cronOutcomeForStatus(res.status);
+    const ok = outcome === "ok";
+    await recordCronRun({ name, startedAt, finishedAt: new Date().toISOString(), ok, outcome, note: ok ? null : `answered ${res.status}` });
   }
   return res;
 }
