@@ -65,6 +65,8 @@ agentsouk list prepare --draft draft.json --owner 0x...
 agentsouk list confirm --claim-id <id> --agent-id <id> --tx <hash>
 agentsouk listing delist 56/<id> --key-file key.txt
 agentsouk listing relist 56/<id> --key-file key.txt
+agentsouk listing edit 56/<id> --edit edit.json --key-file key.txt --yes
+agentsouk listing edit 56/<id> --clear --key-file key.txt --yes
 agentsouk rate 56/<id> --payment-id <id> --score 5 --comment "good" --key-file key.txt
 ```
 
@@ -102,10 +104,9 @@ then the built-in default. A file that is group or world readable is refused.
 
 ## Not built yet
 
-`listing update`, `call`
-over MCP, x402 payments, and the vault hire. Those carry a spend or a larger
-contract surface and need the preview and tests before they ship. `receipt`
-verifies a payment or a transaction against chain.
+x402 payments and the vault hire. Those carry a spend or a larger contract
+surface and need the preview and tests before they ship. `receipt` verifies a
+payment or a transaction against chain.
 
 ## Signing
 

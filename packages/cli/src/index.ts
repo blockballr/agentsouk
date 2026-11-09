@@ -16,6 +16,7 @@ import { previewRegister, sendRegister } from "./marketplace/register";
 import { loadSigner } from "./core/wallet";
 import { rateAgent } from "./marketplace/ratings";
 import { controlListing } from "./marketplace/control";
+import { editListing, prepareEdit } from "./marketplace/listing-edit";
 import { vaultAgents, vaultFor, vaultInfo, vaultPnl, vaultPositions, vaultReceipts } from "./marketplace/vault";
 import { CliError } from "./core/errors";
 
@@ -610,6 +611,70 @@ for (const action of ["delist", "relist"] as const) {
       }),
     );
 }
+
+listingControl
+  .command("edit <agent>")
+  .description("rewrite the description, examples and image a listing shows")
+  .option("--edit <file>", "a JSON file with description, examples and imageUrl")
+  .option("--clear", "drop the edit and show the registry text again")
+  .option("--key-file <path>", "the owner key")
+  .option("--yes", "sign and send; without it the exact signed text is only shown")
+  .action(
+    guard(async (ref: string, options: { edit?: string; clear?: boolean; keyFile?: string; yes?: boolean }) => {
+      const cfg = config();
+      const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
+      if (!options.edit && !options.clear) throw new CliError("pass --edit <file> or --clear", "usage", 2);
+      if (options.edit && options.clear) throw new CliError("pass either --edit or --clear, not both", "usage", 2);
+
+      const signer = options.yes ? loadSigner({ keyFile: options.keyFile }) : null;
+      const owner = signer?.address ?? (await showAgent(cfg, chainId, tokenId)).owner_address;
+      if (!owner) throw new CliError("this listing has no owner to sign for", "no_owner", 2);
+
+      let raw: unknown = {};
+      if (options.edit) {
+        try {
+          raw = JSON.parse(readFileSync(options.edit, "utf8"));
+        } catch (error) {
+          throw new CliError(
+            `cannot read the edit file: ${error instanceof Error ? error.message : String(error)}`,
+            "bad_file",
+            2,
+          );
+        }
+      }
+
+      const prepared = await prepareEdit(chainId, tokenId, owner, raw);
+      if (!options.yes) {
+        if (format() === "json") {
+          process.stdout.write(
+            `${renderJson(
+              {
+                owner,
+                clear: prepared.clear,
+                issuedAt: prepared.issuedAt,
+                digest: prepared.digest,
+                message: prepared.message,
+              },
+              { chainId, tokenId },
+            )}\n`,
+          );
+          return;
+        }
+        process.stdout.write(`${prepared.message}\n\npass --yes to sign and save it\n`);
+        return;
+      }
+
+      if (!signer) throw new CliError("pass --key-file or set AGENTSOUK_KEY to sign", "key_missing", 2);
+      const result = await editListing(cfg, signer, chainId, tokenId, prepared);
+      if (format() === "json") {
+        process.stdout.write(`${renderJson({ ...result, owner, digest: prepared.digest }, { chainId, tokenId })}\n`);
+        return;
+      }
+      process.stdout.write(
+        `${result.success === false ? `refused  ${result.error ?? ""}` : `${prepared.clear ? "cleared" : "edited"}  ${tokenId}`}\n`,
+      );
+    }),
+  );
 
 
 const vault = program.command("vault").description("the HireVault rail, read-only");
