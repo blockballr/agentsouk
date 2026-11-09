@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T19:18:20.000Z",
+  "generatedAt": "2026-11-09T04:20:00.000Z",
   "network": {
     "key": "mainnet",
     "status": "current",
@@ -13,14 +13,14 @@
     "explorer": "https://bscscan.com"
   },
   "capture": {
-    "measuredAt": "2026-11-05T19:18:20.000Z",
-    "rail": "HireVault, chain 56",
+    "measuredAt": "2026-11-09T04:20:00.000Z",
+    "rail": "HireVault, chain 56, plus a buyer health mandate",
     "server": "https://api.agentsouk.xyz",
     "requestedChainId": 56,
     "settledOnChain": true,
-    "note": "Three funded vault hires on chain 56, 2 USDT each, opened, executed and withdrawn by a non-owner buyer. Health factor is a live A2A read because the vault has no debt rail. Agent time is hire open to the on-chain action, so it includes the executor sweep cadence."
+    "note": "Three funded vault hires on chain 56, 2 USDT each, opened, executed and withdrawn by a non-owner buyer. Health factor is a fourth funded action on a different rail: the buyer wrote a mandate, the watcher repaid 0.1798 USDT on Venus, and the prepaid watch drew its first daily fee. Agent time is open to action for the vault rows and one watch interval for the mandate."
   },
-  "methodology": "Each vault row is a separate HireVault hire on chain 56, funded by 0x52DA44aB471455437fc17979c52E501f6b8d0EAF, which owns none of the agents. The hire names the agent, the policy tag is recorded, the executor runs one sweep, and the buyer withdraws. Agent time is from the open transaction to the on-chain action, and includes the sweep cadence; it is not the agent's compute time. Manual time is the wall clock for the same job, priced at 50 USD per hour.",
+  "methodology": "Each vault row is a separate HireVault hire on chain 56, funded by 0x52DA44aB471455437fc17979c52E501f6b8d0EAF, which owns none of the agents. The hire names the agent, the policy tag is recorded, the executor runs one sweep, and the buyer withdraws. The health row uses the mandate rail: the buyer writes the agent, the trigger, the target and the caps, keeps the position in their own wallet, and prepays 0.01 USDT per day. Agent time is from the open transaction to the on-chain action for the vault rows, and bounded by one watch interval for the mandate; it is not the agent's compute time. Manual time is the wall clock for the same job, priced at 50 USD per hour.",
   "tasks": [
     {
       "id": "task-1-rebalancing",
@@ -97,24 +97,25 @@
     {
       "id": "task-4-health-factor",
       "category": "health-factor",
-      "prompt": "Collateral value is 1000 USD, debt value is 600 USD, liquidation threshold is 0.8. What is the health factor?",
+      "prompt": "Defend a Venus position under a buyer-written mandate: repay debt when coverage falls under 4.0, recover to 5.0, within 1 USDT per call and per day.",
       "agent": {
         "tokenId": "404603",
         "name": "Souk Health Guard",
         "category": "health-factor",
         "chainId": 56,
-        "settleMode": "probe",
-        "txHash": null,
+        "settleMode": "prod",
+        "txHash": "0x4b6402947044a8f8c492303b6775cc93ac708d145fcdc6e19cb61156157109c3",
+        "settlementRef": "0x4b6402947044a8f8c492303b6775cc93ac708d145fcdc6e19cb61156157109c3",
         "statedFeeUsd": 0
       },
-      "agentOutput": "Health factor 1.3333, liquidation capacity 800 USD, additional debt before liquidation 200 USD, liquidation distance 20 percent. State: caution.",
-      "agentSeconds": 2.28,
+      "agentOutput": "Coverage fell to 3.200. The watcher ranked the position, sized the repay inside the per-call cap, simulated it, and repaid 0.1798 USDT on Venus. Coverage recovered to 4.997 and the borrow fell from 0.5 to 0.3202 USDT. Repay 0x4b64...109c3. The prepaid watch then drew 0.011867 USDT for the elapsed term, 0x2a4b...4646, leaving a 0.03813 USDT balance.",
+      "agentSeconds": 600,
       "manualSeconds": 0,
       "manualCostUsd": 0,
-      "manualOutput": "The same health factor and liquidation capacity, computed by hand.",
+      "manualOutput": "A person has to watch the health factor and send the repay by hand. The manual reading is faster; the manual action is the same transaction, sent only when someone is looking.",
       "verdict": {
         "winner": "agent",
-        "notes": "This row is a live A2A read, not a funded hire. The vault cannot borrow, so the moving version of this category is the buyer-approved mandate operator, which is not paid by escrow yet."
+        "notes": "Funded mandate, not a vault hire. The agent acted inside one watch interval of the trigger, from the buyer's own balance, under a 1 USDT per-call and per-day cap the buyer can revoke. The 600 seconds are the watch interval bound, not compute time. The fee rail then drew its first prepaid day."
       }
     }
   ]

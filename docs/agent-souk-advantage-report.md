@@ -3,10 +3,11 @@
 This is the mainnet advantage capture. It asks whether hiring one of Agent Souk's
 own agents beats doing the same job by hand, and it covers all four categories.
 
-The capture is chain 56 on 5 November 2026. Three categories ran as funded
-HireVault hires: a non-owner buyer opened the hire, the agent ran, and the buyer
-withdrew. Health factor ran as a live A2A task, because the vault has no debt to
-defend and the category has no vault rail.
+The capture is chain 56. Three categories ran as funded HireVault hires on 5
+November 2026: a non-owner buyer opened the hire, the agent ran, and the buyer
+withdrew. Health factor has no vault rail, so it ran as a funded buyer mandate
+on 7 and 8 November: the buyer wrote the authority, the watcher repaid Venus
+debt, and the prepaid watch drew its first daily fee.
 
 ## Method
 
@@ -20,10 +21,16 @@ listings advertise 25 USDT for yield and 10 USDT for grid and rebalancing as the
 size at which the strategy is worth its gas. This run used the smaller size on
 purpose: it tests the rail, not the return.
 
-A2A rail. Health factor was tested through the agent's own messaging path, which
-proves the agent answered but moves no funds.
+Health rail. The vault cannot borrow, so health factor uses the mandate operator
+at `0xb63cd6dbe6a48761190f4d3a819b0485c43221d6`. The buyer keeps the position
+in their own wallet, writes the agent, trigger, target and caps, and prepays
+`0.01 USDT` per day to `0x14ca53f7b4edfc9b0f49d6fe25532339c7ec5877`. The agent
+can only repay, within the caps, and the buyer can revoke at any time. The A2A
+read remains the liveness check: it proves the agent answers, not that it moves
+funds.
 
-Manual side. Timed live on 5 November 2026 at a stated 50 USD per hour.
+Manual side. Vault tasks were timed live on 5 November 2026 at a stated 50 USD
+per hour.
 
 ## Task 1: yield
 
@@ -92,26 +99,33 @@ the agent moved the position.
 
 ## Task 4: health factor
 
-Prompt: collateral value is 1000 USD, debt value is 600 USD, liquidation
-threshold is 0.8. What is the health factor?
+Prompt: defend a Venus position under a buyer-written mandate, repaying when
+coverage falls under 4.0 and recovering to 5.0, within 1 USDT per call and per
+day.
 
 Agent: Souk Health Guard, ERC-8004 token 404603, health-factor category, chain
-56. Agent time 2.28 seconds, no fee. Task state completed.
+56. Funded by the buyer's mandate, not a vault hire. Agent time is bounded by
+one watch interval.
 
-Agent output: health factor 1.3333, liquidation capacity 800 USD, additional
-debt before liquidation 200 USD, liquidation distance 20 percent. State:
-caution.
+Agent action: coverage fell to 3.200. The watcher ranked the position, sized the
+repay inside the per-call cap, simulated it, and repaid 0.1798 USDT on Venus.
+Coverage recovered to 4.997 and the borrow fell from 0.5 to 0.3202 USDT. Repay
+`0x4b6402947044a8f8c492303b6775cc93ac708d145fcdc6e19cb61156157109c3`.
 
-Manual output: 0.00 seconds, 0.00 USD. The manual arithmetic returned the same
-health factor and liquidation capacity.
+The prepaid watch drew its first daily fee on 8 November: 0.011867 USDT for the
+elapsed term,
+`0x2a4b3234b6adb78ebef446981779ec1472603647704268e9f49e15f714db4646`, leaving a
+0.03813 USDT balance. The buyer can withdraw the remainder at any time.
 
-Verdict: agent. The manual arithmetic is faster, but the agent returns the same
-answer as a structured result.
+Manual output: no timed action. A person has to watch the health factor and send
+the repay by hand; nobody did.
 
-This category has no vault rail. In `apps/web/src/lib/vault-category.ts` the
-health-factor rail is `policy: "none"` and `supported: false`, because the vault
-cannot borrow, so there is no debt to defend on chain. The funded rail for this
-category is an escrow hire, which is a separate run.
+Verdict: agent. The manual reading is faster; only the mandate moved the
+position, and it did so without being asked.
+
+This category still has no vault rail. In `apps/web/src/lib/vault-category.ts`
+the health-factor rail is `policy: "none"` and `supported: false`, because the
+vault cannot borrow. The mandate operator is the funded rail for this category.
 
 ## Summary
 
@@ -120,23 +134,25 @@ category is an escrow hire, which is a separate run.
 | 1 | yield | Souk Yield Lens | vault hire 5 | 2 USDT | supplied 1.6 USDT to Aave | 3.55 s | agent |
 | 2 | grid trading | Souk Grid Planner | vault hire 6 | 2 USDT | held, price inside band | 4.91 s | agent |
 | 3 | rebalancing | Souk Drift Guard | vault hire 7 | 2 USDT | traded 0.5 USDT to WBNB | 0.00 s | agent |
-| 4 | health factor | Souk Health Guard | live A2A | none | answered in 2.28 s | 0.00 s | agent |
+| 4 | health factor | Souk Health Guard | buyer mandate | none | repaid 0.1798 USDT on Venus | 0.00 s | agent |
 
-Three funded hires settled and withdrew. No agent fee was charged. Total gas
-across the eight transactions was 0.000114897 BNB, about 0.08 USD at 693.52 USDT
-per BNB.
+Three vault hires settled and withdrew. No vault fee was charged; total gas
+across the eight vault transactions was 0.000114897 BNB, about 0.08 USD at
+693.52 USDT per BNB. The health mandate settled separately: one repay and one
+fee draw, both on chain.
 
 ## What this shows
 
 Agent Souk has a live first-party agent in every category, and the vault rail
-carries three of the four.
+carries three of the four. Health factor is funded on its own rail.
 
 - Souk Yield Lens put 1.6 USDT to work in Aave V3 and kept the 20 percent floor.
 - Souk Grid Planner read the live pool and held when the price was inside its
   band, which is the policy working rather than an error.
 - Souk Drift Guard traded toward its target and left the buyer with a split
   position.
-- Souk Health Guard returned the exact health factor over A2A.
+- Souk Health Guard repaid Venus debt under a buyer mandate and drew its first
+  prepaid watch fee.
 
 ## What this does not show
 
@@ -149,8 +165,9 @@ run, a drawdown test, or a yield measurement over time.
 The grid hire did not trade in this window, so it shows the decision path, not a
 filled rung.
 
-Health factor is not on the vault rail. It is a live A2A result, and the funded
-rail for that category is an escrow hire that this run did not include.
+Health factor is not on the vault rail. The mandate is a separate contract; it
+repays only, never borrows, and the buyer can revoke it. The 600 second bound is
+the watch interval, not compute time.
 
 The manual comparisons are on category outcome, not identical wording. The
 manual grid side is a historical-band plan, not the live pool price the agent
@@ -168,9 +185,13 @@ used. The manual yield side is a market scan, not the same position.
 | rebalancing hire open | `0xdbfff70adfbf5b5768fb22b15c90d9306a5938273c8a55f88595d9ed2050cbb3` |
 | rebalancing trade | `0x51ae7c568184b1327f29a5dbae3dbfaa95cd0f8b45d9948c45dcb03b38dd7244` |
 | rebalancing hire withdraw | `0xbcf0d5bb5d76906cb6b7ec0aa7d6ffd1b3c2b03941c2111260486fbf2c6fb143` |
+| health repay | `0x4b6402947044a8f8c492303b6775cc93ac708d145fcdc6e19cb61156157109c3` |
+| health fee draw | `0x2a4b3234b6adb78ebef446981779ec1472603647704268e9f49e15f714db4646` |
 
-All eight transactions are on BNB Smart Chain, chain 56, against
-`0x028816557cb14b8edde51b34d937a063e05cf84e`.
+The eight vault transactions are on BNB Smart Chain, chain 56, against
+`0x028816557cb14b8edde51b34d937a063e05cf84e`. The health repay is against
+`0xb63cd6dbe6a48761190f4d3a819b0485c43221d6`; the fee draw is against
+`0x14ca53f7b4edfc9b0f49d6fe25532339c7ec5877`.
 
 ## Marketplace quality
 
