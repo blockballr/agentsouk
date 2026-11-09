@@ -1,0 +1,35 @@
+name: Attach agents domain
+
+# One-shot: point agents.agentsouk.xyz at the agentsouk-agents Pages project.
+# The Pages attach is idempotent; the CNAME is what the domain waits on.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set the CNAME and attach the domain
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_ZONE: 25bbb0d097145477d0d6ad8277dd14c8
+        run: |
+          set -e
+          echo "dns before:"
+          curl -sS -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/dns_records?name=agents.agentsouk.xyz" | head -c 800 || true
+          echo
+          echo "create the CNAME:"
+          curl -sS -X POST -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" \
+            --data '{"type":"CNAME","name":"agents","content":"agentsouk-agents.pages.dev","proxied":true,"ttl":1}' \
+            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/dns_records" | head -c 1200 || true
+          echo
+          echo "re-attach the domain:"
+          curl -sS -X POST -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" \
+            --data '{"name":"agents.agentsouk.xyz"}' \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects/agentsouk-agents/domains" | head -c 1200 || true
+          echo
+          echo "project domains after:"
+          curl -sS -H "Authorization: Bearer $CF_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects/agentsouk-agents/domains" | head -c 1200 || true
