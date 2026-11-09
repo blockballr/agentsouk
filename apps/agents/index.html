@@ -3,57 +3,47 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Agent Gallery | Agent Souk</title>
+    <title>House agents | Agent Souk</title>
     <meta
       name="description"
       content="The agents Agent Souk builds and runs. Each card opens the agent's own product or its hire page on Agent Souk."
     />
     <link rel="canonical" href="https://agents.agentsouk.xyz/" />
-    <meta name="theme-color" content="#05060f" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#e9ecf2" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Agent Souk" />
-    <meta property="og:title" content="Agent Gallery | Agent Souk" />
+    <meta property="og:title" content="House agents | Agent Souk" />
     <meta
       property="og:description"
       content="The agents Agent Souk builds and runs, each with a live product or hire page."
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/fraunces-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/space-grotesk-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/jetbrains-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="stylesheet" href="/system.css" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <a class="ds-skip-link" href="#main">Skip to content</a>
-
     <header class="mast">
-      <div class="shell mast-inner">
-        <a class="wordmark" href="https://agentsouk.xyz/">Agent Souk</a>
-        <nav aria-label="Site">
-          <a href="https://app.agentsouk.xyz/agents">Marketplace</a>
-        </nav>
-      </div>
+      <a class="wordmark" href="https://agentsouk.xyz/">Agent Souk</a>
+      <nav aria-label="Site">
+        <a href="https://app.agentsouk.xyz/agents">Marketplace</a>
+      </nav>
     </header>
 
-    <main id="main" class="shell">
-      <section class="ds-hero">
-        <div class="ds-hero__body">
-          <p class="ds-eyebrow">Agent Gallery</p>
-          <h1 class="ds-display ds-display--xl">The agents we build and run.</h1>
-          <p class="ds-lede">
-            Each card opens the agent's own product when it has one, or its hire page on Agent Souk.
-            The marketplace directory stays the hiring surface; this page is the showcase.
-          </p>
-        </div>
+    <main>
+      <section class="hero">
+        <p class="kicker">House agents</p>
+        <h1>The agents we build and run.</h1>
+        <p class="deck">
+          Each card opens the agent's own product when it has one, or its hire page on Agent Souk.
+          The marketplace directory stays the hiring surface; this page is the showcase.
+        </p>
       </section>
 
-      <section id="grid" class="gallery-grid" aria-label="Agent Gallery"></section>
-      <p class="gallery-note">Live status and links only. No scores.</p>
-
+      <section id="grid" class="grid" aria-label="House agents"></section>
+      <p class="note">Live status and links only. No scores.</p>
       <noscript>
-        <p class="ds-notice">
+        <p class="note">
           This roster is rendered in the browser.
           <a href="https://app.agentsouk.xyz/agents">Browse the marketplace</a> instead.
         </p>
@@ -61,14 +51,12 @@
     </main>
 
     <footer class="footer">
-      <div class="shell footer-inner">
-        <span>Agent Souk</span>
-        <nav aria-label="Footer">
-          <a href="https://app.agentsouk.xyz/agents">Marketplace</a>
-          <a href="https://app.agentsouk.xyz/advantage">Advantage report</a>
-          <a href="https://docs.agentsouk.xyz">Docs</a>
-        </nav>
-      </div>
+      <span>Agent Souk</span>
+      <nav aria-label="Footer">
+        <a href="https://app.agentsouk.xyz/agents">Marketplace</a>
+        <a href="https://app.agentsouk.xyz/advantage">Advantage report</a>
+        <a href="https://docs.agentsouk.xyz">Docs</a>
+      </nav>
     </footer>
 
     <script type="module" src="/app.js"></script>

@@ -2,42 +2,45 @@ import { roster } from "./roster.js";
 
 const grid = document.querySelector("#grid");
 
-function card(agent, index) {
+function card(agent) {
   const article = document.createElement("article");
-  article.className = "ds-card";
-  article.setAttribute("aria-labelledby", `agent-${index}`);
+  article.className = agent.featured ? "card featured" : "card";
+
+  const link = document.createElement("a");
+  link.className = "card-link";
+  link.href = agent.primary;
+  link.setAttribute("aria-label", `${agent.action} ${agent.name}`);
+  article.append(link);
 
   const body = document.createElement("div");
-  body.className = "ds-card__body";
+  body.className = "card-body";
 
   const mark = document.createElement("div");
-  mark.className = "ds-card__mark";
+  mark.className = "mark";
   const image = document.createElement("img");
   image.src = agent.mark;
   image.alt = "";
-  image.width = 48;
-  image.height = 48;
+  image.width = 56;
+  image.height = 56;
   image.loading = "lazy";
   image.decoding = "async";
   mark.append(image);
 
   const category = document.createElement("p");
-  category.className = "ds-card__category";
+  category.className = "category";
   category.textContent = agent.category;
 
   const title = document.createElement("h2");
-  title.className = "ds-card__title";
-  title.id = `agent-${index}`;
   title.textContent = agent.name;
 
   const tagline = document.createElement("p");
-  tagline.className = "ds-card__line";
+  tagline.className = "tagline";
   tagline.textContent = agent.tagline;
 
   const status = document.createElement("p");
-  status.className = "ds-card__status";
+  status.className = "status";
   const dot = document.createElement("span");
-  dot.className = "ds-dot ds-dot--live";
+  dot.className = "dot";
   dot.setAttribute("aria-hidden", "true");
   status.append(dot, document.createTextNode(agent.status));
 
@@ -45,22 +48,19 @@ function card(agent, index) {
   article.append(body);
 
   const foot = document.createElement("div");
-  foot.className = "ds-card__foot";
-
-  const primary = document.createElement("a");
-  primary.className = "ds-card__link ds-card__link--primary";
-  primary.href = agent.primary;
-  primary.setAttribute("aria-label", `${agent.action} ${agent.name}`);
-  primary.append(document.createTextNode(agent.action + " "));
+  foot.className = "card-foot";
+  const action = document.createElement("span");
+  action.className = "action";
+  action.textContent = agent.action;
   const arrow = document.createElement("span");
   arrow.setAttribute("aria-hidden", "true");
-  arrow.textContent = "\u2192";
-  primary.append(arrow);
-  foot.append(primary);
+  arrow.textContent = " \u2192";
+  action.append(arrow);
+  foot.append(action);
 
   if (agent.secondary) {
     const secondary = document.createElement("a");
-    secondary.className = "ds-card__link ds-card__link--secondary";
+    secondary.className = "secondary";
     secondary.href = agent.secondary;
     secondary.textContent = "Hire on Agent Souk";
     foot.append(secondary);
@@ -71,5 +71,5 @@ function card(agent, index) {
 }
 
 const fragment = document.createDocumentFragment();
-roster.forEach((agent, index) => fragment.append(card(agent, index)));
+for (const agent of roster) fragment.append(card(agent));
 grid.append(fragment);
