@@ -8,7 +8,7 @@ PancakeSwap V3 (BSC mainnet 56 / testnet 97):
   SwapRouter: 0x13f4EA83D0bd40E75C8222255bc855a974568Dd4 (both chains)
   PositionManager (NFPM): 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364 (testnet 97), 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364 (mainnet 56)
   Factory: 0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865 (both chains)
-  QuoterV2: 0xB048Bbc1Ee6b733FFfCF101C56A5e5e3C758BbB3 (testnet), 0xB048Bbc1Ee6b733FFfCF101C56A5e5e3C758BbB3 (mainnet)
+  QuoterV2: 0xB048bbc1ee6b733fffcF101c56a5e5e3C758BBb3 (testnet), 0xB048bbc1ee6b733fffcF101c56a5e5e3C758BBb3 (mainnet)
   V3 Swap ABI: exactInputSingle, exactOutputSingle (NOT swapExactTokensForTokens - that is V2)
   V3 exactInputSingle params: { tokenIn, tokenOut, fee, recipient, deadline, amountIn, amountOutMinimum, sqrtPriceLimitX96 }
   Fee tiers: 100 (0.01%), 500 (0.05%), 2500 (0.25%), 10000 (1%)
