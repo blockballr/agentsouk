@@ -7,6 +7,7 @@ import {
   PreviewResult,
   ResourceInfo,
   randomNonce,
+  x402PriceEndpoint,
 } from "@/lib/x402";
 import { parseUnits } from "@/lib/format";
 import { JOB_SELLER_NOTE, sellsByJob } from "@agora/core";
@@ -14,8 +15,18 @@ import { fetchAgentCardSkills } from "@/lib/delivery";
 import { loadDelisted } from "@/lib/delist-store";
 import { isAgentOwner } from "@/lib/boost-auth";
 import { escrowFunder } from "@/lib/escrow";
+import { clientIpFrom, enforceRateLimit, type RateLimitVerdict } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
+
+// a preview reads the registry and may call the agent's own price endpoint, so an
+// unauthenticated caller is bounded before either happens. A buyer opens one per
+// hire; the cap sits far above that and below a script's appetite.
+const PREVIEW_RATE = {
+  table: "x402_preview_rate_limits",
+  limit: 300,
+  windowMs: 60 * 60 * 1000,
+};
 
 export const DEFAULT_HIRE_PRICE_USD = 0.02;
 
@@ -26,22 +37,14 @@ export const MAX_HIRE_USD = 2;
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
 // read the price the agent itself asks for, from its published x402 requirements
-// endpoint. returns null when the agent has no such endpoint, the fetch fails, or
-// the response carries no usable amount. token mismatch is handled by the caller.
+// endpoint. returns null when the agent has no such endpoint, the endpoint is one
+// the marketplace must not call, the fetch fails, or the response carries no
+// usable amount. token mismatch is handled by the caller.
 export async function fetchAgentPrice(
   chainId: number,
   detail: { services: unknown | null },
 ): Promise<{ priceUsd: number; asset: string } | null> {
-  const svc = detail.services;
-  let endpoint: string | null = null;
-  if (svc && typeof svc === "object" && !Array.isArray(svc)) {
-    const x = (svc as Record<string, unknown>).x402;
-    if (typeof x === "string") endpoint = x;
-    else if (x && typeof x === "object") {
-      const e = (x as { endpoint?: unknown }).endpoint;
-      if (typeof e === "string") endpoint = e;
-    }
-  }
+  const endpoint = x402PriceEndpoint(detail.services);
   if (!endpoint) return null;
   try {
     const res = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
@@ -70,6 +73,22 @@ export async function fetchAgentPrice(
 // With the funder deployed the payTo is the funder instead, and the agent's wallet
 // travels in extra.agentPayTo for the settle step to re-bind to the registry
 export async function POST(req: NextRequest) {
+  let rate: RateLimitVerdict;
+  try {
+    rate = await enforceRateLimit(PREVIEW_RATE, { keys: [`ip:${clientIpFrom(req.headers)}`] });
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "Payment previews are temporarily unavailable, please try again shortly." },
+      { status: 503 },
+    );
+  }
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { success: false, error: "Too many payment previews. Try again later." },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } },
+    );
+  }
+
   const body = (await req.json().catch(() => null)) as {
     chainId?: number;
     tokenId?: string;

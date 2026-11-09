@@ -2,8 +2,26 @@
 // requirements, the buyer previews and signs a transfer authorization, a facilitator verifies and settles. On BNB the facilitator is Binance x402 (B402); this project ships a sandbox one.
 
 import { getAddress } from "viem";
+import { privateEndpointReason } from "./endpoint";
 
 export const X402_VERSION = 2;
+
+// A listing may point its price endpoint anywhere. The marketplace fetches it
+// from a serverless function, so a private or loopback address is refused before
+// the request: reaching it would mean probing our own network, and the price it
+// would return is not one a buyer could pay.
+export function x402PriceEndpoint(services: unknown): string | null {
+  if (!services || typeof services !== "object" || Array.isArray(services)) return null;
+  const x = (services as Record<string, unknown>).x402;
+  let endpoint: string | null = null;
+  if (typeof x === "string") endpoint = x;
+  else if (x && typeof x === "object") {
+    const e = (x as { endpoint?: unknown }).endpoint;
+    if (typeof e === "string") endpoint = e;
+  }
+  if (!endpoint) return null;
+  return privateEndpointReason(endpoint) ? null : endpoint;
+}
 
 export interface PaymentRequirements {
   scheme: "exact";
