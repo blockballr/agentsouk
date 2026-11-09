@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Souk Grid Pilot">
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14" fill="#111a4a" stroke="rgba(186,215,247,0.18)"/>
+  <circle cx="32" cy="32" r="12" fill="none" stroke="#8fb2d9" stroke-opacity="0.5" stroke-width="2.5"/>
+  <path d="M32 16V22M32 42V48M16 32H22M42 32H48" stroke="#88deeb" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="32" cy="32" r="3" fill="#c8ced9"/>
+</svg>

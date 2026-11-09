@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Souk Health Guard">
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14" fill="#111a4a" stroke="rgba(186,215,247,0.18)"/>
+  <path d="M32 16L46 21V32C46 40 40 45 32 48C24 45 18 40 18 32V21L32 16Z" fill="none" stroke="#8fb2d9" stroke-opacity="0.55" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M22 33H28L31 27L35 39L38 33H42" fill="none" stroke="#88deeb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

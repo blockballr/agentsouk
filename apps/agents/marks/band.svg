@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Souk Band Keeper">
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14" fill="#111a4a" stroke="rgba(186,215,247,0.18)"/>
+  <path d="M16 24H48M16 40H48" stroke="#8fb2d9" stroke-opacity="0.5" stroke-width="3" stroke-linecap="round"/>
+  <path d="M16 32C24 22 30 42 38 32S46 26 48 30" fill="none" stroke="#88deeb" stroke-width="4" stroke-linecap="round"/>
+</svg>

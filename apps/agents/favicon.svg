@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Agent Souk">
+  <rect width="32" height="32" rx="8" fill="#111a4a"/>
+  <path d="M9 21C13 21 13 11 17 11S21 16 23 16" fill="none" stroke="#88deeb" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="17" cy="11" r="2" fill="#c8ced9"/>
+</svg>

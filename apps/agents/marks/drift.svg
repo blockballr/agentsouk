@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Souk Drift Guard">
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14" fill="#111a4a" stroke="rgba(186,215,247,0.18)"/>
+  <path d="M18 24H40M40 24L34 18M40 24L34 30" fill="none" stroke="#88deeb" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M46 40H24M24 40L30 34M24 40L30 46" fill="none" stroke="#c8ced9" stroke-opacity="0.65" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Souk Yield Lens">
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14" fill="#111a4a" stroke="rgba(186,215,247,0.18)"/>
+  <path d="M18 44V36M27 44V30M36 44V24M45 44V18" stroke="#88deeb" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="45" cy="18" r="3" fill="#c8ced9"/>
+</svg>
