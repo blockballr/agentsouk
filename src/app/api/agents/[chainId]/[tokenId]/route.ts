@@ -7,7 +7,9 @@ import { sessionRevoked } from "@/lib/receipts-store";
 import { getBoost, hydrateBoostsFromDb } from "@/lib/boosts";
 import { captureAgentSkills } from "@/lib/agent-interface";
 import { firstPartyCategory, firstPartyImage, firstPartyMinDeposit, firstPartySkills } from "@/lib/first-party-copy";
-import type { AgentSummary } from "@agora/core";
+import { deriveAvailability, type AgentSummary } from "@agora/core";
+import { canExecute } from "@/lib/agent-index";
+import { loadDelisted } from "@/lib/delist-store";
 import { readPancakePositions } from "@/lib/pancake-positions";
 import { withListingEdit } from "@/lib/listing-edit";
 import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
@@ -60,7 +62,18 @@ export async function GET(
       ? { ...agent, category: shelved.category }
       : agent;
   const withImage = canonicalImage ? { ...categorised, image_url: canonicalImage } : categorised;
-  const data = verification ? { ...withImage, verification } : withImage;
+  const delisted = (await loadDelisted()).has(agent.token_id);
+  const availability = deriveAvailability({
+    status: verification?.status ?? null,
+    quotable: verification?.quotable ?? null,
+    failingSince: verification?.failing_since ?? null,
+    delisted,
+    admitted: Boolean(shelved),
+    canExecute: canExecute(agent),
+    category: canonicalCategory ?? shelved?.category ?? null,
+  });
+  const withAvailability = { ...withImage, availability };
+  const data = verification ? { ...withAvailability, verification } : withAvailability;
   const withSkills = skills ? { ...data, skills } : data;
   const withAccess = accessGated ? { ...withSkills, accessGated: true } : withSkills;
   const withPcs =

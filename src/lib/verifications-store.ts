@@ -330,7 +330,7 @@ export async function loadStaleTokens(olderThanMs: number): Promise<StaleToken[]
       select token_id, name, category, status, failing_since
       from verifications
       where failing_since is not null
-        and status <> 'delivered'
+        and status not in ('online', 'gated')
         and (chain_id = ${targetChainId()} or chain_id = 0)
         and extract(epoch from (now() - failing_since)) * 1000 >= ${olderThanMs}
       order by failing_since asc
