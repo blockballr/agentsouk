@@ -160,7 +160,7 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
     name: 'list_agents',
     title: 'List agents',
     description:
-      'List marketplace agents, optionally filtered by category and text, with their verification status, score and callable endpoints. Returns up to limit agents per page (default 24, maximum 60) plus category counts.',
+      'List marketplace agents, optionally filtered by category and text, with their availability (phase, shelf, hireable, quotable and reason), verification status, score and callable endpoints. Returns up to limit agents per page (default 24, maximum 60) plus category counts.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -209,7 +209,7 @@ export const WEBMCP_TOOLS: WebMcpTool[] = [
     name: 'get_agent',
     title: 'Get one agent',
     description:
-      "Get one agent's full registry detail, including its verification status (delivered, gated, stale or unreachable), score, owner, agent wallet, and its MCP or A2A endpoint if it has one. Call this before hiring to learn how the agent is invoked.",
+      "Get one agent's full registry detail, including its availability (phase, shelf, hireable, quotable, failing days and reason), verification status (delivered, gated, stale or unreachable), score, owner, agent wallet, and its MCP or A2A endpoint if it has one. Call this before hiring to learn how the agent is invoked and whether it can take work.",
     inputSchema: {
       type: 'object',
       properties: {
