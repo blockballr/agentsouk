@@ -4,7 +4,8 @@ import type { PublicClient } from "viem";
 import { pancakeToken } from "./pancake";
 import { vaultFor, VAULT_READ_ABI, tradeCallFor, type HireView } from "./vault";
 import { porterPolicyFromEnv, decidePorter, initialPorterState, type PorterHireFacts } from "./porter-policy";
-import { acquireLease, getStrategyState, releaseLease, saveStrategyState } from "./strategy-store";
+import { getStrategyState, saveStrategyState } from "./strategy-store";
+import { defaultLeaseStore, vaultLeaseKey, VAULT_LEASE_TTL_MS } from "./lease-store";
 import { writeReceipt } from "./receipt-store";
 import { hireValue0 } from "./vault-value";
 import { getHirePolicy } from "./policy-registry";
@@ -34,6 +35,7 @@ export async function sweepPorterHires(
   const policy = porterPolicyFromEnv(process.env);
   const kill = process.env.VAULT_KILL === "1";
   const holder = `${agent}:${randomUUID()}`;
+  const leaseStore = defaultLeaseStore();
   const ids = await (await import("./vault-executor")).agentHireIds(client, chainId, agent);
   const reports: PorterTradeReport[] = [];
   const nowSec = () => Math.floor(Date.now() / 1000);
@@ -47,8 +49,9 @@ export async function sweepPorterHires(
 
   for (const id of ids.slice(0, limit)) {
     if (outOfTime()) break;
-    const lease = await acquireLease(chainId, id.toString(), holder, 25 * 60 * 1000);
-    if (!lease) {
+    const leaseKey = vaultLeaseKey(chainId, id.toString());
+    const owned = await leaseStore.acquire(leaseKey, holder, VAULT_LEASE_TTL_MS);
+    if (!owned) {
       reports.push({ id: id.toString(), buyer: "", status: "skipped", reason: "another runner holds the lease", txHash: null, healthFactor: null, band: null });
       continue;
     }
@@ -150,7 +153,7 @@ export async function sweepPorterHires(
         }
       }
     } finally {
-      await releaseLease(chainId, id.toString(), holder);
+      await leaseStore.release(leaseKey, holder);
     }
   }
   return reports;

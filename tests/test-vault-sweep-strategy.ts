@@ -22,7 +22,8 @@ vi.mock("../src/lib/pancake-read", () => ({
 import type { PublicClient } from "viem";
 import { readPancakePrice } from "../src/lib/pancake-read";
 import { sweepOwnHires } from "../src/lib/vault-executor";
-import { acquireLease, saveStrategyState } from "../src/lib/strategy-store";
+import { defaultLeaseStore, vaultLeaseKey, VAULT_LEASE_TTL_MS } from "../src/lib/lease-store";
+import { saveStrategyState } from "../src/lib/strategy-store";
 import { setHirePolicy } from "../src/lib/policy-registry";
 import { vaultFor } from "../src/lib/vault";
 
@@ -217,7 +218,7 @@ describe("the sweep on one open hire", () => {
   });
 
   it("leaves a hire alone when another runner holds the lease", async () => {
-    await acquireLease(97, "14", "another-runner", 60_000);
+    await defaultLeaseStore().acquire(vaultLeaseKey(97, "14"), "another-runner", VAULT_LEASE_TTL_MS);
     const { actor, trade } = fakeActor();
 
     const reports = await sweepOwnHires(fakeClient([14n], hireTuple()), 97, actor, 5, () => false, true);

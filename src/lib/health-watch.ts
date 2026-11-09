@@ -9,7 +9,7 @@ import { writePipelineState } from "./history-store";
 import { shouldEmail, markAlerted } from "./cron-staleness";
 import { notifyTeamAlert } from "./notify";
 import { emitNotification } from "./notifications";
-import { defaultLeaseStore, type LeaseStore } from "./lease-store";
+import { defaultLeaseStore, healthLeaseKey, HEALTH_LEASE_TTL_MS, type LeaseStore } from "./lease-store";
 import { targetChainId } from "./types";
 
 // The standing watch. Every run it walks the operator's active mandates, checks
@@ -140,7 +140,7 @@ export async function watchMandates(options: {
   const runId = randomUUID();
   // longer than the route's five minute ceiling, short enough that a crashed
   // run delays the next check by one interval rather than a day
-  const leaseMs = 5 * 60_000;
+  const leaseMs = HEALTH_LEASE_TTL_MS;
 
   const buyers = (await client.readContract({
     address: options.operator,
@@ -174,7 +174,7 @@ export async function watchMandates(options: {
   const outcomes: WatchOutcome[] = [];
   for (const buyer of buyers.slice(0, limit)) {
     if (Date.now() - startedAt > budgetMs) break;
-    const key = buyer.toLowerCase();
+    const key = healthLeaseKey(buyer);
     const holder = `${runId}:${key}`;
     if (!(await lease.acquire(key, holder, leaseMs))) {
       outcomes.push({ buyer, coverage: null, action: "skipped", reason: "another watcher holds this buyer" });

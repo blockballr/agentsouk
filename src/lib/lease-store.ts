@@ -12,6 +12,20 @@ export interface LeaseStore {
   release(key: string, holder: string): Promise<void>;
 }
 
+// one vocabulary for the two families of work: the health watch holds a buyer,
+// the vault sweeps hold a hire. The scope is in the key so the two can never
+// collide in the one table.
+export const HEALTH_LEASE_TTL_MS = 5 * 60_000;
+export const VAULT_LEASE_TTL_MS = 25 * 60_000;
+
+export function healthLeaseKey(buyer: string): string {
+  return `health:${buyer.toLowerCase()}`;
+}
+
+export function vaultLeaseKey(chainId: number, hireId: string): string {
+  return `vault:${chainId}:${hireId}`;
+}
+
 // The in-process store stands in where there is no database. It only orders
 // callers inside one instance, which is the common collision; a deployment with
 // several instances needs the table below.

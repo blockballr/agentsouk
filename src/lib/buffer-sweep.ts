@@ -5,7 +5,8 @@ import { encodeFunctionData } from "viem";
 import { vaultFor, VAULT_ABI, type HireView } from "./vault";
 import { agentHireIds, readHire } from "./vault-executor";
 import { bufferPolicyFromEnv, decideBuffer, initialBufferState, type BufferHireFacts, type BufferVenue } from "./buffer-policy";
-import { acquireLease, getStrategyState, releaseLease } from "./strategy-store";
+import { getStrategyState } from "./strategy-store";
+import { defaultLeaseStore, vaultLeaseKey, VAULT_LEASE_TTL_MS } from "./lease-store";
 import { writeReceipt } from "./receipt-store";
 import { hireValue0 } from "./vault-value";
 import { getHirePolicy } from "./policy-registry";
@@ -59,6 +60,7 @@ export async function sweepBufferVault(
   const policy = bufferPolicyFromEnv(process.env);
   const kill = process.env.VAULT_KILL === "1";
   const holder = `${agent}:${randomUUID()}`;
+  const leaseStore = defaultLeaseStore();
   const ids = await agentHireIds(client, chainId, agent);
   const reports: BufferTradeReport[] = [];
   const nowSec = () => Math.floor(Date.now() / 1000);
@@ -76,8 +78,9 @@ export async function sweepBufferVault(
   // oldest end let five closed hires take every slot and starve a fresh one
   for (const id of [...ids].reverse().slice(0, limit)) {
     if (outOfTime()) break;
-    const lease = await acquireLease(chainId, id.toString(), holder, 25 * 60 * 1000);
-    if (!lease) {
+    const leaseKey = vaultLeaseKey(chainId, id.toString());
+    const owned = await leaseStore.acquire(leaseKey, holder, VAULT_LEASE_TTL_MS);
+    if (!owned) {
       reports.push({ id: id.toString(), buyer: "", status: "skipped", reason: "another runner holds the lease", txHash: null, liquid: null, deployed: null });
       continue;
     }
@@ -257,7 +260,7 @@ export async function sweepBufferVault(
         }
       }
     } finally {
-      await releaseLease(chainId, id.toString(), holder);
+      await leaseStore.release(leaseKey, holder);
     }
   }
   return reports;

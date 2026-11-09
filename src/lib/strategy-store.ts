@@ -3,10 +3,10 @@ import "server-only";
 import postgres from "postgres";
 import type { StrategyState } from "./grid-strategy";
 
-// The layer's cache and its lease: one row per hire, and a lease so two runners
-// cannot decide the same hire at once. Nothing here outranks the chain; it is
-// the same cache the layer treats every entry as. With no database both live in
-// process memory, the history-store shape.
+// The layer's cache: one row per hire. The lease that keeps two runners off the
+// same hire lives in lease-store.ts, shared with the health watch. Nothing here
+// outranks the chain; it is the same cache the layer treats every entry as.
+// With no database the state lives in process memory, the history-store shape.
 
 let sql: ReturnType<typeof postgres> | null = null;
 if (process.env.DATABASE_URL) {
@@ -36,14 +36,6 @@ async function ensureTables(): Promise<boolean> {
           last_price double precision not null,
           crossed jsonb not null default '[]'::jsonb,
           updated_at timestamptz not null default now(),
-          primary key (chain_id, hire_id)
-        )`;
-      await sql!`
-        create table if not exists strategy_lease (
-          chain_id integer not null,
-          hire_id text not null,
-          holder text not null,
-          until timestamptz not null,
           primary key (chain_id, hire_id)
         )`;
       return true;
@@ -118,57 +110,6 @@ export async function clearStrategyState(chainId: number, hireId: string): Promi
       await sql`delete from strategy_state where chain_id = ${chainId} and hire_id = ${hireId}`;
     } catch {
       // the memory row is gone; the durable one is retried on the next pass
-    }
-  }
-}
-
-// a lease is advisory between runners of the same fleet: the vault's on-chain
-// refusal is the last line either way, and a stale lease expires on its clock
-export async function acquireLease(
-  chainId: number,
-  hireId: string,
-  holder: string,
-  ttlMs: number,
-  now = Date.now(),
-): Promise<boolean> {
-  const k = key(chainId, hireId);
-  if (sql && (await ensureTables())) {
-    try {
-      const until = new Date(now + ttlMs).toISOString();
-      const updated = await sql`
-        update strategy_lease set holder = ${holder}, until = ${until}
-        where chain_id = ${chainId} and hire_id = ${hireId} and until < now()`;
-      if (Array.isArray(updated) && updated.count > 0) return true;
-      const inserted = await sql`
-        insert into strategy_lease (chain_id, hire_id, holder, until)
-        values (${chainId}, ${hireId}, ${holder}, ${until})
-        on conflict (chain_id, hire_id) do nothing`;
-      return Array.isArray(inserted) && inserted.count > 0;
-    } catch {
-      // fall through to memory: one instance is still protected from itself
-    }
-  }
-  const held = leases.get(k);
-  if (held && held.until > now) return false;
-  leases.set(k, { holder, until: now + ttlMs });
-  return true;
-}
-
-export async function releaseLease(
-  chainId: number,
-  hireId: string,
-  holder: string,
-): Promise<void> {
-  const k = key(chainId, hireId);
-  const held = leases.get(k);
-  if (held && held.holder === holder) leases.delete(k);
-  if (sql && (await ensureTables())) {
-    try {
-      await sql`
-        delete from strategy_lease
-        where chain_id = ${chainId} and hire_id = ${hireId} and holder = ${holder}`;
-    } catch {
-      // the ttl is the backstop when a release is lost
     }
   }
 }

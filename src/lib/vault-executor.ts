@@ -7,7 +7,8 @@ import { pancakeToken } from "./pancake";
 import { readPancakePrice } from "./pancake-read";
 import { vaultFor, VAULT_READ_ABI, tradeCallFor, type HireView } from "./vault";
 import { decideHire, policyFromEnv, refQuotePerBase, type HireFacts } from "./grid-strategy";
-import { acquireLease, clearStrategyState, getStrategyState, releaseLease, saveStrategyState } from "./strategy-store";
+import { clearStrategyState, getStrategyState, saveStrategyState } from "./strategy-store";
+import { defaultLeaseStore, vaultLeaseKey, VAULT_LEASE_TTL_MS } from "./lease-store";
 import { getHirePolicy } from "./policy-registry";
 import { writeReceipt } from "./receipt-store";
 import { hireValue0 } from "./vault-value";
@@ -97,7 +98,7 @@ export async function readHire(
 
 // a runner holds one hire this long; the ttl outlives any sweep, so a crashed
 // runner releases the hire on the clock rather than on its exit
-const LEASE_TTL_MS = 25 * 60 * 1000;
+const LEASE_TTL_MS = VAULT_LEASE_TTL_MS;
 
 function factsOf(h: HireView, baseIsToken0: boolean): HireFacts {
   return {
@@ -135,6 +136,7 @@ export async function sweepOwnHires(
   const baseIsToken0 = tokenA.address.toLowerCase() < tokenB.address.toLowerCase();
   // one holder name per runner, so two instances can never share a lease
   const holder = `${agent}:${randomUUID()}`;
+  const leaseStore = defaultLeaseStore();
   const ids = await agentHireIds(client, chainId, agent);
   const reports: TradeReport[] = [];
   const nowSec = () => Math.floor(Date.now() / 1000);
@@ -143,13 +145,14 @@ export async function sweepOwnHires(
   // oldest end let five closed hires take every slot and starve a fresh one
   for (const id of [...ids].reverse().slice(0, limit)) {
     if (outOfTime()) break;
-    const lease = await acquireLease(chainId, id.toString(), holder, LEASE_TTL_MS);
-    if (!lease) {
+    const leaseKey = vaultLeaseKey(chainId, id.toString());
+    const owned = await leaseStore.acquire(leaseKey, holder, LEASE_TTL_MS);
+    if (!owned) {
       reports.push({
         id: id.toString(),
         buyer: "",
         status: "skipped",
-        reason: "another runner holds the lease for this hire",
+        reason: "another runner holds this lease",
         txHash: null,
       });
       continue;
@@ -277,7 +280,7 @@ export async function sweepOwnHires(
         }
       }
     } finally {
-      await releaseLease(chainId, id.toString(), holder);
+      await leaseStore.release(leaseKey, holder);
     }
   }
   return reports;
