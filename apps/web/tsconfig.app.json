@@ -10,7 +10,8 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "paths": {
-      "@agora/core": ["./src/core/index.ts"]
+      "@agora/core": ["./src/core/index.ts"],
+      "@souk/machines/*": ["../../packages/core/src/machines/*"]
     },
 
     /* Bundler mode */

@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@agora/core': fileURLToPath(new URL('./src/core', import.meta.url)),
+        // one pure machine shared with the server, without changing the web's
+        // own core alias and its deliberately different verification types
+        '@souk/machines': fileURLToPath(new URL('../../packages/core/src/machines', import.meta.url)),
       },
     },
     server: {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { decodeFunctionResult, encodeFunctionData, formatUnits, parseUnits, type Hex } from 'viem'
+import { deriveDefence } from '@souk/machines/defence'
 import { getProvider, ensureBscChain } from '../lib/wallet'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { Section, Stack, Row, Txt, Btn, Label, Rule } from '../components/souk'
@@ -146,6 +147,21 @@ export function DefendPage() {
   const [days, setDays] = useState('7')
   const [dailyRate, setDailyRate] = useState('0.01')
   const [deposit, setDeposit] = useState('0.05')
+
+  // one derivation for the page, the API and the CLI; the detailed cards below
+  // still show each contract, but this is the state a buyer reads first
+  const defence = account
+    ? deriveDefence({
+        now: Math.floor(Date.now() / 1000),
+        mandate: mandate
+          ? { active: true, expiry: Number(mandate.expiry), positions: mandate.positions.length }
+          : null,
+        plan: plan ? { agent: plan.agent, expiry: Number(plan.expiry) } : null,
+        feeBalance: fee ?? 0n,
+        watch: watch ? { stale: watch.stale, consecutiveFailures: watch.consecutiveFailures, ok: watch.ok } : null,
+        gasLow: watch?.gas ? watch.gas.low : null,
+      })
+    : null
 
   const say = (line: string) => setLog((lines) => [...lines.slice(-8), line])
 
@@ -326,29 +342,40 @@ export function DefendPage() {
             The position stays on Venus in your own wallet. This screen writes the authority the agent acts under and
             the fee balance it draws from. Both are revocable here at any time.
           </Txt>
-          {watch ? (
-            watch.stale ? (
-              <Txt size={12} lead={18} mono tone="peach">
-                {watch.lastRunAt
-                  ? `The watcher last reported ${ago(watch.ageMs)}. Your mandate is not being checked right now`
-                  : 'The watcher has not reported yet. Your mandate is not being checked'}
-                {watch.note ? `: ${watch.note}` : '.'}
+          {account && defence ? (
+            <Stack gap={3}>
+              <Row gap={8} className="items-baseline">
+                <Txt size={10} lead={14} mono upper tone="muted">
+                  Defence
+                </Txt>
+                <Txt
+                  size={13}
+                  lead={20}
+                  weight="semibold"
+                  tone={defence.phase === 'protected' ? 'ink' : 'peach'}
+                >
+                  {defence.phase}
+                </Txt>
+              </Row>
+              <Txt size={12} lead={18} tone="slate">
+                {defence.reason}
               </Txt>
-            ) : watch.consecutiveFailures >= 2 ? (
-              <Txt size={12} lead={18} mono tone="peach">
-                The watcher has failed {watch.consecutiveFailures} runs in a row. Your mandate may not be defended
-                {watch.note ? `: ${watch.note}` : '.'}
-              </Txt>
-            ) : (
-              <Txt size={12} lead={18} mono tone="steel">
-                Watcher healthy · last check {ago(watch.ageMs)}
-                {watch.consecutiveFailures === 1 ? ' · one failed run since' : ''}
-              </Txt>
-            )
-          ) : null}
-          {watch?.gas?.low ? (
-            <Txt size={12} lead={18} mono tone="peach">
-              The guard cannot pay network fees right now, so a repayment may fail until the operator tops up.
+              {watch ? (
+                <Txt size={10} lead={14} mono tone="steel">
+                  Watcher {defence.watch} · last check {ago(watch.ageMs)}
+                  {defence.nextEvent.at
+                    ? ` · next ${defence.nextEvent.kind.replace('-', ' ')} ${new Date(defence.nextEvent.at * 1000).toISOString().slice(0, 10)}`
+                    : ''}
+                </Txt>
+              ) : null}
+            </Stack>
+          ) : watch ? (
+            <Txt size={12} lead={18} mono tone={watch.stale || watch.consecutiveFailures >= 2 ? 'peach' : 'steel'}>
+              {watch.stale
+                ? `The watcher last reported ${ago(watch.ageMs)}. Nothing is checking positions right now.`
+                : watch.consecutiveFailures >= 2
+                  ? `The watcher has failed ${watch.consecutiveFailures} runs in a row.`
+                  : `Watcher healthy · last check ${ago(watch.ageMs)}`}
             </Txt>
           ) : null}
         </Stack>

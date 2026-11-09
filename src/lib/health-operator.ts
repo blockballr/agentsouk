@@ -128,6 +128,61 @@ function client() {
   return createPublicClient({ chain: bsc, transport: http(RPC, { timeout: 20_000 }) });
 }
 
+const SUBSCRIPTION_ABI = [
+  {
+    name: "planOf",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "buyer", type: "address" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "agent", type: "address" },
+          { name: "dailyRate", type: "uint128" },
+          { name: "expiry", type: "uint64" },
+          { name: "lastCharge", type: "uint64" },
+        ],
+      },
+    ],
+  },
+  { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ name: "buyer", type: "address" }], outputs: [{ type: "uint256" }] },
+] as const;
+
+export interface PlanView {
+  agent: Address;
+  dailyRate: bigint;
+  expiry: number;
+  lastCharge: number;
+}
+
+// the fee plan is a separate contract from the mandate, but one buyer reads as
+// one relationship; this is the read the defence machine consumes
+export async function readPlan(subscription: Address, buyer: Address): Promise<PlanView | null> {
+  const raw = (await client().readContract({
+    address: subscription,
+    abi: SUBSCRIPTION_ABI,
+    functionName: "planOf",
+    args: [buyer],
+  })) as { agent: Address; dailyRate: bigint; expiry: number | bigint; lastCharge: number | bigint };
+  if (!raw?.agent || /^0x0{40}$/i.test(raw.agent)) return null;
+  return {
+    agent: raw.agent,
+    dailyRate: raw.dailyRate,
+    expiry: Number(raw.expiry),
+    lastCharge: Number(raw.lastCharge),
+  };
+}
+
+export async function readFeeBalance(subscription: Address, buyer: Address): Promise<bigint> {
+  return (await client().readContract({
+    address: subscription,
+    abi: SUBSCRIPTION_ABI,
+    functionName: "balanceOf",
+    args: [buyer],
+  })) as bigint;
+}
+
 export async function readMandate(operator: Address, buyer: Address): Promise<Mandate | null> {
   const raw = (await client().readContract({
     address: operator,
