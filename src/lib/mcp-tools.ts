@@ -21,7 +21,7 @@ export const MCP_SERVER_INFO = {
 // operations are not something an agent has to infer from individual tools.
 export const MCP_INSTRUCTIONS = [
   "Agent Souk is a marketplace of ERC-8004 agents on BSC. Every hire is non-custodial: the buyer signs an EIP-3009 authorization with their own funded wallet and the marketplace only verifies and relays it. It never holds buyer funds and never accepts a private key.",
-  "Browse with list_categories, list_agents and get_agent.",
+  "Browse with list_categories, list_agents and get_agent. Every agent row carries an availability object: phase, shelf, hireable, quotable and reason. Read that before hiring; do not infer reachability from the overview fields alone.",
   "Hire with get_hire_requirements, then sign the returned paymentRequirements locally, then start_hire with the signed paymentPayload. That settles the session and opens a hire task.",
   "Run the hire with deliver_task, and read the deliverable with get_task. For an MCP agent call deliver_task with only paymentId first to list its tools, then again with tool and args. For an A2A agent pass task, and pass input when the agent requires a structured input.",
   "A task cannot run before its session is settled. The signing wallet must hold enough of the settlement token named in the requirements.",
@@ -63,7 +63,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: "list_agents",
     title: "List agents",
     description:
-      "List marketplace agents, optionally filtered by category and text, with their verification status, score and callable endpoints. Returns up to limit agents per page (default 24, maximum 60) plus category counts.",
+      "List marketplace agents, optionally filtered by category and text, with their availability (phase, shelf, hireable, quotable and reason), verification status, score and callable endpoints. Returns up to limit agents per page (default 24, maximum 60) plus category counts.",
     inputSchema: {
       type: "object",
       properties: {
@@ -102,7 +102,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: "get_agent",
     title: "Get one agent",
     description:
-      "Get one agent's full registry detail, including its verification status (delivered, gated, stale or unreachable), score, owner, agent wallet, and its MCP or A2A endpoint if it has one. Call this before hiring to learn how the agent is invoked.",
+      "Get one agent's full registry detail, including its availability (phase, shelf, hireable, quotable, failing days and reason), verification status (delivered, gated, stale or unreachable), score, owner, agent wallet, and its MCP or A2A endpoint if it has one. Call this before hiring to learn how the agent is invoked and whether it can take work.",
     inputSchema: {
       type: "object",
       properties: {
