@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMessage } from "viem";
+import { deriveJobMirror } from "@agora/core";
 import {
   claimRefund,
   completeJob,
@@ -10,7 +11,8 @@ import {
   submitJob,
   type Job,
 } from "@/lib/jobs";
-import { releaseEscrowIfDue } from "@/lib/escrow";
+import { escrowStatuses, releaseEscrowIfDue } from "@/lib/escrow";
+import { kernelJob } from "@/lib/jobs8183";
 
 export const dynamic = "force-dynamic";
 
@@ -140,6 +142,34 @@ export async function POST(
     });
     if (!next) return NextResponse.json({ error: "submit rejected" }, { status: 403 });
     return NextResponse.json({ success: true, job: await persistJob(next) });
+  }
+  // the record may only say refunded after the money moved on its own rail.
+  // the marketplace cannot sign for the kernel or the escrow, so it verifies
+  // the on-chain result before writing the mirror.
+  if (job.onchainJobId !== undefined) {
+    const onchain = await kernelJob(job.chainId, job.onchainJobId).catch(() => null);
+    const chain = onchain ? deriveJobMirror({ mirrorStatus: null, chainStatus: onchain.status }) : null;
+    if (!chain || chain.status !== "Expired") {
+      return NextResponse.json(
+        {
+          error: "The kernel still holds this job. Claim the refund on chain first.",
+          chainStatus: onchain?.status ?? null,
+        },
+        { status: 409 },
+      );
+    }
+  } else if (job.paymentId) {
+    const rows = await escrowStatuses([job.paymentId]).catch(() => []);
+    const escrow = rows[0];
+    if (escrow && escrow.status !== 2) {
+      return NextResponse.json(
+        {
+          error: "The escrow has not refunded this payment. Claim it on chain first.",
+          escrowStatus: escrow.status,
+        },
+        { status: 409 },
+      );
+    }
   }
   const next = claimRefund(jobId, by);
   if (!next) return NextResponse.json({ error: "refund not allowed yet" }, { status: 409 });

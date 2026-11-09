@@ -248,8 +248,7 @@ export async function recordOnchainJob(input: {
       createdAt: nowIso(),
       updatedAt: nowIso(),
       history: [
-        { at: nowIso(), status: "Open", by: input.client },
-        { at: nowIso(), status: "Funded", by: input.client, reason: "ERC-8183 kernel escrow" },
+        { at: nowIso(), status: "Funded", by: input.client, reason: "ERC-8183 kernel escrow observed" },
       ],
     }),
   );
