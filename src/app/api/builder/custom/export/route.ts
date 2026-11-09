@@ -87,7 +87,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         })),
     supportedInterfaces: [{ url: "https://YOUR_HOST/a2a", transport: "JSONRPC" }],
     x402Support: manifest.payment === "x402",
-    ...(manifest.wallet !== "none" ? { agentWallet: "set via AGENT_PRIVATE_KEY env" } : {}),
+    ...(manifest.agentWallet
+      ? { agentWallet: manifest.agentWallet }
+      : manifest.wallet !== "none"
+        ? { agentWallet: "set via AGENT_PRIVATE_KEY env" }
+        : {}),
   };
   files.push({ path: "agent-card.json", content: JSON.stringify(card, null, 2) + "\n" });
 
@@ -149,6 +153,7 @@ function card() {
     })),
     supportedInterfaces: [{ url: o ? o + "/a2a" : "/a2a", transport: "JSONRPC" }],
     x402Support: manifest.payment === "x402",
+    ...(manifest.agentWallet ? { agentWallet: manifest.agentWallet } : {}),
   };
 }
 
@@ -283,6 +288,8 @@ This repo has no build step. Any Node 20 host works.
 Set \`PUBLIC_ORIGIN\` to the public URL so the card resolves. Set \`RPC_URL\` only
 if you want a private RPC. Set \`AGENT_PRIVATE_KEY\` only if an action writes on
 chain.
+${manifest.agentWallet ? `\nThis build names \`${manifest.agentWallet}\` as its agent wallet. Run it with the
+key for that address; the card advertises it so buyers pay the right wallet.\n` : ""}
 
 ## Make it execute
 

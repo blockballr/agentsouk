@@ -196,9 +196,24 @@ describe("the custom export branches without touching the job path", () => {
     const card = JSON.parse(body.files.find((f: { path: string }) => f.path === "agent-card.json").content);
     expect(card.skills.map((s: { id: string }) => s.id)).toEqual(["open-range"]);
     expect(card.x402Support).toBe(false);
+    // no address was named, so the card says the runtime's key decides
+    expect(card.agentWallet).toBe("set via AGENT_PRIVATE_KEY env");
     expect(body.files.map((f: { path: string }) => f.path)).not.toContain("vault.mjs");
     const server = body.files.find((f: { path: string }) => f.path === "server.mjs").content;
     expect(server).toContain("actions");
+  });
+
+  it("publishes the wallet the owner named, never a held key", async () => {
+    const wallet = "0x4444444444444444444444444444444444444444";
+    const res = await customExport(customPost({ ...CUSTOM, agentWallet: wallet }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    const card = JSON.parse(body.files.find((f: { path: string }) => f.path === "agent-card.json").content);
+    expect(card.agentWallet).toBe(wallet);
+    const manifest = JSON.parse(body.files.find((f: { path: string }) => f.path === "manifest.json").content);
+    expect(manifest.agentWallet).toBe(wallet);
+    const readme = body.files.find((f: { path: string }) => f.path === "README.md").content;
+    expect(readme).toContain(wallet);
   });
 
   it("a vault build gets a vault card, a runner and the SDK", async () => {
