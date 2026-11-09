@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getNotifications, markNotificationsRead, type NotificationRow } from '../lib/api'
+import {
+  dismissNotifications,
+  getNotifications,
+  markNotificationsRead,
+  type NotificationRow,
+} from '../lib/api'
 import { useActiveAccount } from '../lib/use-active-account'
 import { timeAgo } from '@agora/core'
 import { IconBell } from './souk'
@@ -12,7 +17,6 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [rows, setRows] = useState<NotificationRow[]>([])
   const [unread, setUnread] = useState(0)
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const wallet = useActiveAccount()
   const box = useRef<HTMLDivElement | null>(null)
 
@@ -71,6 +75,20 @@ export function NotificationBell() {
     }
   }
 
+  async function onDismiss(row: NotificationRow) {
+    setRows((prev) => prev.filter((r) => r.id !== row.id))
+    if (!row.read) setUnread((prev) => Math.max(0, prev - 1))
+    if (!wallet) return
+    await dismissNotifications(wallet, row.id)
+  }
+
+  async function onClear() {
+    setRows([])
+    setUnread(0)
+    if (!wallet) return
+    await dismissNotifications(wallet)
+  }
+
   return (
     <div className="relative" ref={box}>
       <button
@@ -96,14 +114,25 @@ export function NotificationBell() {
         <div className="absolute right-0 z-40 mt-2 w-[340px] overflow-hidden bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] p-1 shadow-lg backdrop-blur-md ring-1 ring-white/10">
           {/* the outbox panel wears the account panel's shell: indigo navy under one
               rim, the hairline dividing the head from the rows without a box */}
-          <p className="micro px-3 pb-1 pt-2 text-souk-slate">Activity</p>
-          {rows.filter((r) => !dismissed.has(r.id)).length === 0 ? (
+          <div className="flex items-center justify-between px-3 pb-1 pt-2">
+            <p className="micro text-souk-slate">Activity</p>
+            {rows.length > 0 && (
+              <button
+                type="button"
+                onClick={onClear}
+                className="text-[11px] text-souk-slate hover:text-souk-ink"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {rows.length === 0 ? (
             <p className="px-3 pb-3 pt-1 text-[13px] text-souk-slate">
               Nothing yet. Releases, funded jobs and seller replies land here.
             </p>
           ) : (
             <ul className="max-h-[420px] overflow-y-auto">
-              {rows.filter((r) => !dismissed.has(r.id)).map((r) => (
+              {rows.map((r) => (
                 <li key={r.id} className={r.read ? 'opacity-70' : ''}>
                   <div className="flex items-start gap-2 px-3 py-2 hover:bg-souk-surface2">
                     <Link
@@ -119,7 +148,7 @@ export function NotificationBell() {
                     </Link>
                     <button
                       type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDismissed((prev) => new Set(prev).add(r.id)) }}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); void onDismiss(r) }}
                       className="shrink-0 text-[11px] text-souk-slate hover:text-souk-ink"
                       aria-label="Dismiss"
                     >

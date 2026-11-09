@@ -990,6 +990,16 @@ export async function markNotificationsRead(wallet: string, id?: string): Promis
   }).catch(() => {})
 }
 
+// A dismissed row is deleted on the server, so a later poll cannot bring it
+// back. Omitting the id clears the whole outbox.
+export async function dismissNotifications(wallet: string, id?: string): Promise<void> {
+  await fetch(`${BASE}/notifications`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ wallet, dismiss: true, ...(id ? { id } : {}) }),
+  }).catch(() => {})
+}
+
 export async function getJobs8183Jobs(wallet: string): Promise<Jobs8183Row[]> {
   const res = await fetch(`${BASE}/jobs8183/jobs?wallet=${encodeURIComponent(wallet)}`)
   if (!res.ok) return []

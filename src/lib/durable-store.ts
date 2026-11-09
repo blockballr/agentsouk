@@ -555,3 +555,24 @@ export async function markAllNotificationsRead(wallet: string): Promise<void> {
   }
 }
 
+// dismissal is a delete: a row the reader has thrown away is history they no
+// longer want, and the bell must not pull it back on the next poll
+export async function deleteNotification(wallet: string, id: string): Promise<void> {
+  if (!(await init()) || !sql) return;
+  try {
+    await sql`
+      delete from notifications
+      where wallet = lower(${wallet}) and id = ${id}
+    `;
+  } catch {
+  }
+}
+
+export async function deleteAllNotifications(wallet: string): Promise<void> {
+  if (!(await init()) || !sql) return;
+  try {
+    await sql`delete from notifications where wallet = lower(${wallet})`;
+  } catch {
+  }
+}
+

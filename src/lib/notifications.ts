@@ -7,6 +7,8 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import {
+  deleteAllNotifications,
+  deleteNotification,
   loadNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -32,7 +34,9 @@ export type NotificationKind =
   | "custom_listed"
   | "build_minutes_low"
   | "trial_expiring"
-  | "plan_changed";
+  | "plan_changed"
+  | "health_repaid"
+  | "watch_fee_charged";
 
 export interface Notification {
   id: string;
@@ -85,6 +89,11 @@ export async function readNotification(wallet: string, id: string): Promise<void
 
 export async function readAllNotifications(wallet: string): Promise<void> {
   await markAllNotificationsRead(wallet);
+}
+
+export async function dismissNotification(wallet: string, id?: string): Promise<void> {
+  if (id) await deleteNotification(wallet, id);
+  else await deleteAllNotifications(wallet);
 }
 
 export function randomNotificationId(): string {

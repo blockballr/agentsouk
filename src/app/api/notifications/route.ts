@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAddress } from "viem";
 import {
+  dismissNotification,
   notificationsFor,
   readAllNotifications,
   readNotification,
@@ -29,12 +30,14 @@ export async function GET(req: NextRequest) {
   return json({ success: true, notifications: rows, unread });
 }
 
-// POST /api/notifications  { wallet, id? }
-// Marking one row read, or every row when no id is given.
+// POST /api/notifications  { wallet, id?, dismiss? }
+// Marking one row read, or every row when no id is given. dismiss removes the
+// row instead, so the bell's clear action survives the next poll.
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as {
     wallet?: string;
     id?: string;
+    dismiss?: boolean;
   } | null;
   const wallet = typeof body?.wallet === "string" ? body.wallet : "";
   if (!/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
@@ -44,6 +47,10 @@ export async function POST(req: NextRequest) {
     getAddress(wallet);
   } catch {
     return json({ success: false, error: "wallet required" }, 400);
+  }
+  if (body?.dismiss === true) {
+    await dismissNotification(getAddress(wallet), typeof body.id === "string" && body.id ? body.id : undefined);
+    return json({ success: true });
   }
   if (typeof body?.id === "string" && body.id) {
     await readNotification(getAddress(wallet), body.id);
