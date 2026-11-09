@@ -4,7 +4,7 @@ const grid = document.querySelector("#grid");
 
 function card(agent) {
   const article = document.createElement("article");
-  article.className = "card";
+  article.className = agent.featured ? "card featured" : "card";
 
   const link = document.createElement("a");
   link.className = "card-link";

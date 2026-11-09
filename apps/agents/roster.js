@@ -11,6 +11,7 @@ export const roster = [
     secondary: "https://app.agentsouk.xyz/agents/56/406220",
     status: "live",
     action: "Open",
+    featured: true,
     chainId: 56,
     tokenId: "406220",
   },

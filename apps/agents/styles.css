@@ -131,15 +131,15 @@ h1 {
   padding: 26px 24px 8px;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 18px;
+  gap: 16px;
 }
 
 .card {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 252px;
-  padding: 24px;
+  min-height: 190px;
+  padding: 20px;
   background: var(--surface);
   border: 1px solid var(--hair);
   transition: background-color 0.18s ease, border-color 0.18s ease;
@@ -173,13 +173,13 @@ h1 {
 
 .mark img {
   display: block;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 14px;
 }
 
 .category {
-  margin: 18px 0 6px;
+  margin: 14px 0 5px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -190,7 +190,7 @@ h1 {
 h2 {
   margin: 0;
   font-family: var(--serif);
-  font-size: 26px;
+  font-size: 23px;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -198,14 +198,14 @@ h2 {
 
 .tagline {
   max-width: 44ch;
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   color: var(--slate);
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.55;
 }
 
 .status {
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -232,7 +232,7 @@ h2 {
   justify-content: space-between;
   gap: 16px;
   margin-top: auto;
-  padding-top: 18px;
+  padding-top: 14px;
   border-top: 1px solid var(--hair);
   pointer-events: none;
 }
@@ -301,7 +301,49 @@ h2 {
 @media (min-width: 820px) {
   .grid {
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 16px;
+  }
+
+  .card.featured {
+    grid-column: 1 / -1;
+    padding: 22px 24px;
+  }
+
+  .card.featured .tagline {
+    max-width: 68ch;
+  }
+
+}
+
+@media (min-width: 620px) {
+  .card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 16px;
+    min-height: 160px;
+  }
+
+  .card .card-foot {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+    justify-content: flex-end;
+  }
+
+  .card-body {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    column-gap: 14px;
+    align-items: start;
+  }
+
+  .card .mark {
+    grid-row: 1 / span 4;
+  }
+
+  .card .category {
+    margin-top: 0;
   }
 }
 
@@ -324,7 +366,7 @@ h2 {
   }
 
   .card {
-    padding: 20px;
+    padding: 18px;
   }
 }
 
