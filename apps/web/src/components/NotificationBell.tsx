@@ -7,6 +7,7 @@ import {
   type NotificationRow,
 } from '../lib/api'
 import { useActiveAccount } from '../lib/use-active-account'
+import { sessionProof } from '../lib/wallet-session'
 import { timeAgo } from '@agora/core'
 import { IconBell } from './souk'
 
@@ -27,8 +28,16 @@ export function NotificationBell() {
       return
     }
     let cancelled = false
-    const pull = () => {
-      getNotifications(wallet)
+    const pull = async () => {
+      const proof = await sessionProof(wallet)
+      if (!proof) {
+        if (!cancelled) {
+          setRows([])
+          setUnread(0)
+        }
+        return
+      }
+      getNotifications(wallet, proof)
         .then((r) => {
           if (!cancelled) {
             setRows(r.rows)
@@ -37,9 +46,9 @@ export function NotificationBell() {
         })
         .catch(() => {})
     }
-    pull()
+    void pull()
     const tick = () => {
-      if (document.visibilityState !== 'hidden') pull()
+      if (document.visibilityState !== 'hidden') void pull()
     }
     const id = window.setInterval(tick, 60_000)
     const onVisible = () => {
@@ -68,8 +77,10 @@ export function NotificationBell() {
     if (next && wallet && unread > 0) {
       setUnread(0)
       setRows((prev) => prev.map((r) => ({ ...r, read: true })))
-      await markNotificationsRead(wallet)
-      const fresh = await getNotifications(wallet)
+      const proof = await sessionProof(wallet)
+      if (!proof) return
+      await markNotificationsRead(wallet, proof)
+      const fresh = await getNotifications(wallet, proof)
       setRows(fresh.rows)
       setUnread(fresh.unread)
     }
@@ -79,14 +90,16 @@ export function NotificationBell() {
     setRows((prev) => prev.filter((r) => r.id !== row.id))
     if (!row.read) setUnread((prev) => Math.max(0, prev - 1))
     if (!wallet) return
-    await dismissNotifications(wallet, row.id)
+    const proof = await sessionProof(wallet)
+    if (proof) await dismissNotifications(wallet, proof, row.id)
   }
 
   async function onClear() {
     setRows([])
     setUnread(0)
     if (!wallet) return
-    await dismissNotifications(wallet)
+    const proof = await sessionProof(wallet)
+    if (proof) await dismissNotifications(wallet, proof)
   }
 
   return (

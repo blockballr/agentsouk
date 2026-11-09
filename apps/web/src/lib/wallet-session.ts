@@ -23,6 +23,15 @@ interface SignIn {
   issued: string
 }
 
+export interface SessionProof {
+  message: string
+  signature: string
+}
+
+// a signed record is a session, not a permanent key: the server rejects it after
+// the same window, so a stale browser is sent through sign-in again
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+
 // a fixed four-line message naming this site, the address and the time: the
 // signature is verified against exactly these bytes later, so the text that
 // was shown in the wallet is the text that decides the record
@@ -77,6 +86,8 @@ function drop(address: string): void {
 async function verified(address: string): Promise<SignIn | null> {
   const record = records()[address.toLowerCase()]
   if (!record?.message || !record?.signature) return null
+  const issued = Date.parse(record.issued)
+  if (!Number.isFinite(issued) || Date.now() - issued > MAX_AGE_MS) return null
   try {
     const recovered = await recoverMessageAddress({
       message: record.message,
@@ -86,6 +97,13 @@ async function verified(address: string): Promise<SignIn | null> {
   } catch {
     return null
   }
+}
+
+// the proof the notification API asks for: the same signed statement this
+// browser already holds, never a fresh prompt on every poll
+export async function sessionProof(address: string): Promise<SessionProof | null> {
+  const record = await verified(address)
+  return record ? { message: record.message, signature: record.signature } : null
 }
 
 let active: string | null = null

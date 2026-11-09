@@ -4,6 +4,7 @@ import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 import { getProvider, setTargetChain } from './wallet'
 import { sessionAccount } from './wallet-session'
+import type { SessionProof } from './wallet-session'
 import { listingControlMessage, type ListingAction } from './listing-control'
 
 export interface AgentsQuery {
@@ -975,27 +976,42 @@ export interface NotificationRow {
   createdAt: string
 }
 
-export async function getNotifications(wallet: string): Promise<{ rows: NotificationRow[]; unread: number }> {
-  const res = await fetch(`${BASE}/notifications?wallet=${encodeURIComponent(wallet)}`)
+export async function getNotifications(
+  wallet: string,
+  proof?: SessionProof | null,
+): Promise<{ rows: NotificationRow[]; unread: number }> {
+  const res = await fetch(`${BASE}/notifications?wallet=${encodeURIComponent(wallet)}`, {
+    headers: proofHeaders(proof),
+  })
   if (!res.ok) return { rows: [], unread: 0 }
   const body = (await res.json().catch(() => null)) as { notifications?: NotificationRow[]; unread?: number } | null
   return { rows: body?.notifications ?? [], unread: body?.unread ?? 0 }
 }
 
-export async function markNotificationsRead(wallet: string, id?: string): Promise<void> {
+// The signed statement the wallet made at sign-in, replayed so the server can
+// check the caller actually holds the address before returning its feed.
+function proofHeaders(proof?: SessionProof | null): Record<string, string> {
+  if (!proof) return {}
+  return {
+    'x-agentsouk-message': btoa(proof.message),
+    'x-agentsouk-signature': proof.signature,
+  }
+}
+
+export async function markNotificationsRead(wallet: string, proof?: SessionProof | null, id?: string): Promise<void> {
   await fetch(`${BASE}/notifications`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...proofHeaders(proof) },
     body: JSON.stringify({ wallet, ...(id ? { id } : {}) }),
   }).catch(() => {})
 }
 
 // A dismissed row is deleted on the server, so a later poll cannot bring it
 // back. Omitting the id clears the whole outbox.
-export async function dismissNotifications(wallet: string, id?: string): Promise<void> {
+export async function dismissNotifications(wallet: string, proof?: SessionProof | null, id?: string): Promise<void> {
   await fetch(`${BASE}/notifications`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...proofHeaders(proof) },
     body: JSON.stringify({ wallet, dismiss: true, ...(id ? { id } : {}) }),
   }).catch(() => {})
 }

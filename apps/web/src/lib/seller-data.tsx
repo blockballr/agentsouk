@@ -24,6 +24,7 @@ import {
   type OwnedAgentsResult,
   type PayeeHire,
 } from './api'
+import { sessionProof } from './wallet-session'
 import { hireErrorText } from './hire'
 
 export type HiresSource = 'postgres' | 'memory' | null
@@ -123,6 +124,8 @@ export function SellerDataProvider({ account, children }: { account: string | nu
     setOwnedError(null)
     setHiresError(null)
     setFeedError(false)
+    // the feed is private, so the console replays the browser's signed session
+    const proof = await sessionProof(account).catch(() => null)
     // independent reads, so a receipts outage never hides the listings and a
     // catalogue outage never hides the money
     const [ownedResult, ownerHiresResult, jobsResult, feedResult, catResult] =
@@ -130,7 +133,7 @@ export function SellerDataProvider({ account, children }: { account: string | nu
         getAgentsByOwner(account),
         getHiresByPayee(account),
         getJobs8183Jobs(account),
-        getNotifications(account),
+        getNotifications(account, proof),
         getAgents({ limit: 1 }),
       ])
     const owned = ownedResult.status === 'fulfilled' ? ownedResult.value : null
