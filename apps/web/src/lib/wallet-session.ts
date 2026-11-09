@@ -109,6 +109,10 @@ export async function sessionProof(address: string): Promise<SessionProof | null
 let active: string | null = null
 let watching = false
 let pending: Promise<void> | null = null
+// every intent takes a ticket; a verification that returns after a newer
+// intent is stale and may not set, end, or overwrite the session. This is the
+// rule the session machine names; here it is the monotonic counter itself.
+let sequence = 0
 // set by an explicit disconnect, cleared by an explicit connect: a report that
 // was already in flight when the user disconnected must not restore the session
 let suspended = false
@@ -140,13 +144,12 @@ function adopt(account: string | null): Promise<void> {
     pending = Promise.resolve()
     return pending
   }
+  const ticket = sequence
   pending = verified(account).then((record) => {
+    // a newer intent (connect, switch, disconnect) owns the session now
+    if (suspended || ticket !== sequence) return
     // the wallet may have answered while the user was disconnecting: the
     // disconnect wins, even if the signature still verifies
-    if (suspended) {
-      endSession()
-      return
-    }
     if (record) setSession(account)
     else endSession()
   })
@@ -212,12 +215,13 @@ async function signIn(address: string): Promise<void> {
 // browser already holds a record for adopts without a prompt, anything else
 // must sign, and a refusal stores nothing
 export async function connectWallet(): Promise<string> {
+  const ticket = ++sequence
   const account = await connectProvider()
   // the account request succeeded, so this is a deliberate reconnect: the
   // stored record can be adopted again and the disconnect is over
   suspended = false
   if (!(await verified(account))) await signIn(account)
-  setSession(account)
+  if (ticket === sequence && !suspended) setSession(account)
   return account
 }
 
@@ -243,7 +247,12 @@ export function connectWalletWithTimeout(timeoutMs = CONNECT_TIMEOUT_MS): Promis
   // instead of asking the same unresponsive extension again
   return Promise.race([connectWallet(), bound])
     .catch((e) => {
-      if (e instanceof ConnectTimeoutError) clearWalletChoice()
+      if (e instanceof ConnectTimeoutError) {
+        // the connect that is still in flight no longer owns the session: a
+        // late answer must not authorize a request the user has already seen time out
+        sequence += 1
+        clearWalletChoice()
+      }
       throw e
     })
     .finally(() => clearTimeout(timer))
@@ -252,14 +261,16 @@ export function connectWalletWithTimeout(timeoutMs = CONNECT_TIMEOUT_MS): Promis
 // switch wallet: the session ends first, the picked wallet signs in as its own
 // account, and a dismissed picker leaves the page disconnected
 export async function changeWallet(): Promise<string | null> {
+  sequence += 1
   endSession()
   const account = await changeProvider()
   if (!account) return null
   // a picked wallet is a deliberate reconnect, even if the picker replaced a
   // wallet the user had disconnected
   suspended = false
+  const ticket = sequence
   if (!(await verified(account))) await signIn(account)
-  setSession(account)
+  if (ticket === sequence && !suspended) setSession(account)
   return account
 }
 
@@ -267,6 +278,7 @@ export async function changeWallet(): Promise<string | null> {
 // disconnect so a reload stays disconnected; the records stay, so the same
 // address signing in again adopts without a new signature
 export function disconnectWallet(): void {
+  sequence += 1
   suspended = true
   endSession()
   disconnectProvider()
@@ -275,6 +287,7 @@ export function disconnectWallet(): void {
 // forget this browser entirely for the active address: its record is cleared,
 // so nothing re-adopts it on a later switch or reload until it signs in again
 export function signOut(): void {
+  sequence += 1
   if (active) drop(active)
   suspended = true
   endSession()
