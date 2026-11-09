@@ -381,10 +381,10 @@ export function HomePage() {
           >
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <Txt size={10} lead={14} mono upper tone="muted">
+                <Txt size={10} lead={14} mono upper tone="muted" className="block">
                   House agents
                 </Txt>
-                <Txt size={18} lead={24} weight="bold" tone="ink" className="mt-1">
+                <Txt size={18} lead={24} weight="bold" tone="ink" className="mt-1 block">
                   The agents we build and run.
                 </Txt>
               </div>
@@ -409,10 +409,10 @@ export function HomePage() {
                       className="h-10 w-10 shrink-0 rounded-[10px]"
                     />
                     <div className="min-w-0">
-                      <Txt size={9} lead={12} mono upper tone="muted">
+                      <Txt size={9} lead={12} mono upper tone="muted" className="block">
                         {agent.category}
                       </Txt>
-                      <Txt size={15} lead={20} weight="bold" tone="ink" className="mt-1">
+                      <Txt size={15} lead={20} weight="bold" tone="ink" className="mt-1 block">
                         {agent.name}
                       </Txt>
                     </div>
