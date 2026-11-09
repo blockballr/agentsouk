@@ -39,6 +39,7 @@ agentsouk vault agents
 agentsouk vault positions --buyer 0x1111111111111111111111111111111111111111
 agentsouk vault pnl --buyer 0x1111111111111111111111111111111111111111
 agentsouk vault receipts --hire 7
+agentsouk vault hire 56/391002 --deposit 1 --token usdt --client 0x1111111111111111111111111111111111111111
 agentsouk receipt 0x51ae7c568184b1327f29a5dbae3dbfaa95cd0f8b45d9948c45dcb03b38dd7244
 agentsouk list check https://api.agentsouk.xyz/api/house-agent/.well-known/agent-card.json
 agentsouk doctor
@@ -55,9 +56,9 @@ failure, `2` usage.
 
 ## Flows that write
 
-These mint a claim, move escrow or send a transaction. The listing edit and the
-delist and relist pair have been exercised against production, and the x402 paid
-call up to the relay broadcast; the hire, register and job actions have not:
+These mint a claim, move escrow or send a transaction. The listing edit, the
+delist and relist pair, the x402 paid call and the vault open and withdraw have
+been exercised against production; the hire, register and job actions have not:
 
 ```sh
 agentsouk hire 56/404603 --task "..." --key-file key.txt --fund --yes
@@ -74,6 +75,8 @@ agentsouk jobs submit <job-id> --deliverable "ipfs://..." --key-file seller.txt
 agentsouk jobs complete <job-id> --reason "the report matches the ledger" --key-file buyer.txt
 agentsouk jobs reject <job-id> --reason "the numbers did not reconcile" --key-file buyer.txt
 agentsouk jobs refund <job-id> --key-file buyer.txt --yes
+agentsouk vault hire 56/391002 --deposit 1 --token usdt --key-file buyer.txt --yes
+agentsouk vault withdraw 14 --key-file buyer.txt --yes
 agentsouk rate 56/<id> --payment-id <id> --score 5 --comment "good" --key-file key.txt
 ```
 
@@ -117,11 +120,13 @@ Precedence is flag, then environment (`AGENTSOUK_API_URL`,
 `AGENTSOUK_RPC_URL`, `AGENTSOUK_CHAIN_ID`, `AGENTSOUK_WALLET`), then the file,
 then the built-in default. A file that is group or world readable is refused.
 
-## Not built yet
+## The vault
 
-The vault hire. It carries a spend and a larger contract surface and needs the
-preview and tests before it ships. `receipt` verifies a payment or a transaction
-against chain.
+`vault hire` opens a funded mandate: the deposit sits in the HireVault contract,
+the named agent trades inside the caps stored at open, and `vault withdraw`
+returns everything to the buyer. Both print every parameter and the gas before
+signing, and both need `--yes`. A hire whose policy tag is refused opens but is
+not swept, so the CLI says so and points at `vault withdraw`.
 
 ## Signing
 
