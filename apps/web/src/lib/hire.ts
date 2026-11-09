@@ -2,6 +2,7 @@
 
 import type { PaymentRequirements, PreviewResult, Receipt, SettleResult } from '../core/x402'
 import { X402_VERSION, randomNonce, x402Domain } from '../core/x402'
+import { checkoutTransition, initialCheckout, type CheckoutEvent } from '@souk/machines/checkout'
 import { HireRefusedError, getHireRequirements, getReceipt, settleHire, type X402Requirements } from './api'
 import { activeAccountMatches, chainIdToHex, ensureBscChain, getChainTimestamp, setTargetChain, WalletUnavailableError, WrongSignerError, signTransferAuthorization } from './wallet'
 import { sessionAccount } from './wallet-session'
@@ -276,7 +277,9 @@ export async function signAndSettleHire(
       throw refused ? new HireRefusedError(String(settle.error).slice(0, 400)) : new Error(settle.error ?? 'Settlement failed.')
     }
     onPhase('hired')
-    const receipt = await getReceipt(settle.paymentId)
+    // a receipt read failure happens after the money moved, so it must not turn
+    // a settled hire into a failed one; the caller can refetch it
+    const receipt = await getReceipt(settle.paymentId).catch(() => null)
     return {
       success: true,
       paymentId: settle.paymentId,
@@ -302,21 +305,44 @@ export async function runHire(
   wallet: { address: string },
   onStep: (s: HireStep) => void,
 ): Promise<HireOutcome> {
+  let state = initialCheckout()
+  const move = (event: CheckoutEvent) => {
+    const next = checkoutTransition(state, event)
+    if (!next.ok) throw new Error(next.reason ?? "The hire reached an unexpected state.")
+    state = next.state
+  }
   try {
-    onStep({ phase: 'requirements' })
+    move({ type: "connect" })
+    move({ type: "requirements" })
     const data = await fetchHireRequirements(agent, wallet)
+    move({ type: "preview" })
+    onStep({ phase: "requirements" })
     const outcome = await signAndSettleHire(data, (phase) => {
-      if (phase !== 'hired') onStep({ phase })
+      // the checkout machine orders the phases; a phase the machine refuses is
+      // a real sequencing fault, not something to paint over
+      if (phase === "signing") {
+        move({ type: "sign" })
+        onStep({ phase: "signing" })
+      } else if (phase === "settling") {
+        move({ type: "settle" })
+        onStep({ phase: "settling" })
+      }
     })
     if (outcome.success) {
-      onStep({ phase: 'done' })
+      move({ type: "hired", paymentId: outcome.paymentId, txHash: outcome.txHash })
+      onStep({ phase: "done" })
     } else {
-      onStep({ phase: 'failed', error: outcome.error })
+      move({ type: "fail", error: outcome.error ?? "The hire did not settle.", cancelled: outcome.cancelled })
+      onStep({ phase: "failed", error: outcome.error })
     }
     return outcome
   } catch (e) {
     const error = hireErrorText(e)
-    onStep({ phase: 'failed', error })
+    // a settled payment cannot be failed by a later error: the money moved
+    if (state.phase === "hired") {
+      return { success: true, paymentId: state.paymentId ?? undefined, txHash: state.txHash ?? undefined, error }
+    }
+    onStep({ phase: "failed", error })
     return { success: false, error, cancelled: isUserRejection(e) }
   }
 }
