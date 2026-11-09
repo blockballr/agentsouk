@@ -85,9 +85,10 @@ listing URL. `--prepare-only` stops at the calldata.
 `call ... --pay` is the x402 buyer: it asks the marketplace for terms, prints the
 amount, token and payee, and without `--yes` stops there. With `--yes` it signs
 an EIP-3009 authorization anchored to chain time, settles it, and delivers the
-task through the marketplace. `--max-usd` refuses a hire above the cap. Settlement
-is broadcast by the marketplace relay, which needs BNB for gas; when it is dry the
-CLI says so and nothing is charged.
+task through the marketplace. `--max-usd` refuses a hire above the cap. An MCP
+agent given a `--task` but no `--tool` answers with its tool list; pass `--tool`
+to run one. Settlement is broadcast by the marketplace relay, which needs BNB for
+gas; when it is dry the CLI says so and nothing is charged.
 
 ## Scheduled jobs
 

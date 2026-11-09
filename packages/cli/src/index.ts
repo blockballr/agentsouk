@@ -305,6 +305,10 @@ program
             return;
           }
           if (result.delivery?.text) process.stdout.write(`${result.delivery.text}\n`);
+          if (result.delivery?.kind === "capabilities" && result.delivery.tools?.length) {
+            process.stdout.write(`tools: ${result.delivery.tools.map((tool) => tool.name).join(", ")}\n`);
+            process.stderr.write("the agent answered with its tool list; pass --tool to run one\n");
+          }
           if (result.deliveryError) {
             process.stderr.write(`paid, but delivery failed: ${result.deliveryError}\n`);
             process.exitCode = 1;
