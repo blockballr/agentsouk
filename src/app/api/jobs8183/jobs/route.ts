@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { formatUnits } from "viem";
+import { deriveJobMirror } from "@agora/core";
 import { fetchAgentDetail } from "@/lib/scanner";
 import { loadDelisted } from "@/lib/delist-store";
 import { targetChainId } from "@/lib/types";
@@ -129,6 +130,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "job not found on chain" }, { status: 404 });
     }
     const result = await kernelJobResult(chainId, jobId, onchain).catch(() => null);
+    const expiredAt = new Date(Number(onchain.expiredAt) * 1000).toISOString();
+    const mirror = deriveJobMirror({
+      mirrorStatus: null,
+      chainStatus: onchain.status,
+      expiredAt,
+      now: Date.now(),
+    });
     return NextResponse.json({
       success: true,
       jobs: [
@@ -139,8 +147,11 @@ export async function GET(req: NextRequest) {
           tokenId: null,
           agentName: null,
           budgetUsd: Number(formatUnits(onchain.budget, 18)),
-          expiredAt: new Date(Number(onchain.expiredAt) * 1000).toISOString(),
+          expiredAt,
           status: onchain.status,
+          chainStatus: onchain.status,
+          mirrorStatus: null,
+          mirror,
           submittedAt: onchain.submittedAt > 0n
             ? new Date(Number(onchain.submittedAt) * 1000).toISOString()
             : null,
@@ -162,6 +173,12 @@ export async function GET(req: NextRequest) {
     const result = onchain
       ? await kernelJobResult(Number(row.chainId), Number(row.onchainJobId), onchain).catch(() => null)
       : null;
+    const mirror = deriveJobMirror({
+      mirrorStatus: row.status,
+      chainStatus: onchain ? onchain.status : null,
+      expiredAt: row.expiredAt,
+      now: Date.now(),
+    });
     out.push({
       id: row.id,
       onchainJobId: row.onchainJobId,
@@ -171,6 +188,9 @@ export async function GET(req: NextRequest) {
       budgetUsd: row.budgetUsd,
       expiredAt: row.expiredAt,
       status: onchain ? onchain.status : null,
+      chainStatus: onchain ? onchain.status : null,
+      mirrorStatus: row.status,
+      mirror,
       submittedAt: onchain && onchain.submittedAt > 0n
         ? new Date(Number(onchain.submittedAt) * 1000).toISOString()
         : null,
