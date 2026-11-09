@@ -5,8 +5,7 @@ import { liveReader } from "@/lib/builder/sources";
 import { getBuiltAgent } from "@/lib/builder/store";
 import { clientIpFrom, enforceRateLimit } from "@/lib/rate-limit";
 import { targetChainId } from "@/lib/types";
-import { sellerConfigFromEnv, isNegotiateData, isNotifyData, quoteEnvelope, verifyNotify, submitDeliverable } from "@/lib/seller8183";
-import { kernelJob } from "@/lib/jobs8183";
+import { isNegotiateData, isNotifyData, quoteEnvelope, verifyNotify, submitDeliverable } from "@/lib/seller8183";import { kernelJob } from "@/lib/jobs8183";
 import { builtSellerConfig, isRevoked } from "@/lib/builder/keys";
 
 export const dynamic = "force-dynamic";
@@ -43,8 +42,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     if (hireMode === "job" || hireMode === "both") {
       if (!(await isRevoked(id))) {
-        const cfg = (await builtSellerConfig(id, built.blueprint.name, targetChainId())) ??
-          sellerConfigFromEnv(targetChainId(), null, built.blueprint.name, "");
+        // a built agent signs its own quotes with the key stored for it. Falling
+        // back to the house key would sell as someone else, so an agent with no
+        // key answers that it is not hosted here instead
+        const cfg = await builtSellerConfig(id, built.blueprint.name, targetChainId());
+        if (!cfg) {
+          return answer(
+            {
+              jsonrpc: "2.0",
+              id: send.id,
+              status: "refused",
+              unsigned_reason:
+                "This agent is not hosted with a seller key here. Export it and run it with your own key, or enable hosting.",
+            } as Record<string, unknown>,
+            200,
+          );
+        }
 
         for (const part of Array.isArray(parts) ? parts : []) {
           if (!part || typeof part !== "object") continue;

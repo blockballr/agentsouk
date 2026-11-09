@@ -32,6 +32,10 @@ interface SaveResult {
   description?: string
   card?: string
   endpoint?: string
+  // held: this marketplace signs for the agent with a seller key it stores for
+  // the owner. none: nothing is held, the card names the owner's own wallet.
+  custody?: 'held' | 'none' | 'exported' | 'revoked'
+  agentWallet?: string | null
   error?: string
 }
 
@@ -212,6 +216,12 @@ export function BuildPage() {
           <Txt size={12} lead={18} tone="slate">
             Its card and endpoint are live. Register it on chain to list it on the marketplace.
           </Txt>
+          {saved.custody === 'held' && (
+            <Txt size={12} lead={18} tone="slate">
+              Hosted: for job selling we sign quotes with a seller key stored for this agent. Export it
+              from your profile to run it yourself with a key only you hold.
+            </Txt>
+          )}
           <Stack gap={6}>
             <Txt size={10} lead={14} upper tone="muted">
               Card

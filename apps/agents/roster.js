@@ -1,4 +1,4 @@
-// The curated house roster. The marketplace directory is the hiring surface;
+// The curated gallery roster. The marketplace directory is the hiring surface;
 // this page is the product showcase, so each entry opens its own domain when it
 // has one and its hire page otherwise.
 export const roster = [

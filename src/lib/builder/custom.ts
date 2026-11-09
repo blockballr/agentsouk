@@ -21,6 +21,10 @@ export interface CustomManifest {
   entrypoint: string;
   endpoint: string;
   wallet: CustomWalletModel;
+  // the agent's own receiving wallet, as an address. The key is the owner's and
+  // never passes through here; when it is absent the registry falls back to the
+  // owner's address.
+  agentWallet?: string;
   payment: CustomPayment;
   deliverable: string;
   release: string;
@@ -63,6 +67,13 @@ export function validateCustomManifest(input: unknown): { ok: true; manifest: Cu
   // fields have to agree
   if (m.payment === "vault" && m.wallet !== "vault") errors.push("payment vault requires wallet vault");
   if (m.payment !== "vault" && m.wallet === "vault") errors.push("wallet vault requires payment vault");
+  // the builder may name the agent's own wallet, but only as an address: a key
+  // pasted here would be a secret it must never store
+  if (m.agentWallet !== undefined && m.agentWallet !== null && m.agentWallet !== "") {
+    if (typeof m.agentWallet !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(m.agentWallet.trim())) {
+      errors.push("agentWallet must be a wallet address, never a private key");
+    }
+  }
   if (!isString(m.deliverable)) errors.push("deliverable is required");
   if (!isString(m.release)) errors.push("release is required");
   if (!isString(m.healthcheck)) errors.push("healthcheck is required");
@@ -93,6 +104,9 @@ export function validateCustomManifest(input: unknown): { ok: true; manifest: Cu
     entrypoint: (m.entrypoint as string).trim(),
     endpoint: (m.endpoint as string).trim(),
     wallet: m.wallet as CustomWalletModel,
+    ...(typeof m.agentWallet === "string" && m.agentWallet.trim()
+      ? { agentWallet: m.agentWallet.trim() }
+      : {}),
     payment: m.payment as CustomPayment,
     deliverable: (m.deliverable as string).trim(),
     release: (m.release as string).trim(),
@@ -134,6 +148,10 @@ export interface CustomManifest {
   entrypoint: string;
   endpoint: string;
   wallet: CustomWalletModel;
+  // the agent's own receiving wallet, as an address. The key is the owner's and
+  // never passes through here; when it is absent the registry falls back to the
+  // owner's address.
+  agentWallet?: string;
   payment: CustomPayment;
   deliverable: string;
   release: string;
@@ -153,6 +171,34 @@ export interface CustomAgent {
   deployment: { ok: boolean; projectId?: string | null; url?: string | null; error?: string | null } | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// The card an agentURI serves. It names the wallet and the endpoint the owner
+// runs, never ours: a custom agent is deployed on the owner's host, so a card
+// that pointed back at this marketplace would advertise an endpoint with no
+// agent behind it. The registry falls back to the owner when no agent wallet is
+// named.
+export function customCardMetadata(
+  agent: CustomAgent,
+  input: { origin: string; image?: string | null },
+): Record<string, unknown> {
+  const image =
+    input.image ??
+    `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(agent.id)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=gradientLinear`;
+  const endpoint = agent.deployment?.url ?? null;
+  const agentWallet =
+    agent.manifest.agentWallet ?? (agent.manifest.wallet === "agent" ? agent.owner : null);
+  return {
+    name: agent.manifest.name,
+    description: agent.manifest.description,
+    image,
+    ...(endpoint ? { endpoint } : {}),
+    wallet: agent.manifest.wallet,
+    ...(agentWallet ? { agentWallet } : {}),
+    category: agent.manifest.category,
+    actions: agent.manifest.actions,
+    updatedAt: agent.updatedAt,
+  };
 }
 
 const ID = /^[0-9a-f]{16}$/;

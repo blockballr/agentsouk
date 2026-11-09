@@ -18,13 +18,17 @@ const json = (body: Record<string, unknown>, status = 200) =>
 // replacing the fenced browser-agent fallback with the real API thread.
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const id = req.nextUrl.searchParams.get("id") ?? "";
+  const wallet = req.nextUrl.searchParams.get("wallet") ?? "";
   const deploy = req.nextUrl.searchParams.get("deploy") === "1";
   if (!id) return json({ success: false, error: "id is required" }, 400);
+  if (wallet && !/^0x[0-9a-fA-F]{40}$/.test(wallet)) {
+    return json({ success: false, error: "wallet must be a wallet address" }, 400);
+  }
   try {
     const built = await getBuiltAgent(id);
     if (!built) return json({ success: false, error: "No agent is hosted at this address." }, 404);
     const origin = pickPublicOrigin([process.env.PUBLIC_API_URL, process.env.BASE_URL]);
-    const result = exportBuiltAgent(built, origin);
+    const result = exportBuiltAgent(built, origin, { agentWallet: wallet || null });
 
     let deployment: unknown = null;
     if (deploy) {

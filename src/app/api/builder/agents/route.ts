@@ -50,7 +50,7 @@ const json = (body: Record<string, unknown>, status = 200) => NextResponse.json(
 // POST /api/builder/agents  { owner, blueprint }
 // hosts a built agent, so its card and endpoint exist before the owner registers it
 export async function POST(req: NextRequest) {
-  const body = (await req.json().catch(() => null)) as { owner?: unknown; blueprint?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { owner?: unknown; blueprint?: unknown; hosted?: unknown } | null;
   if (typeof body?.owner !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(body.owner)) {
     return json({ success: false, error: "owner must be a wallet address" }, 400);
   }
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       return json({ success: false, error: "This wallet has already listed an agent built here. One per wallet for now.", upsell: true, checkout: "/billing/yearly" }, 409);
     }
 
-    const built = await saveBuiltAgent(owner, check.blueprint);
+    const built = await saveBuiltAgent(owner, check.blueprint, { hosted: body.hosted !== false });
     const origin = pickPublicOrigin([process.env.PUBLIC_API_URL, process.env.BASE_URL]);
     void enqueue("deploy_live", owner, { id: built.id, name: built.blueprint.name });
     return json({
@@ -88,6 +88,10 @@ export async function POST(req: NextRequest) {
       name: built.blueprint.name,
       category: built.blueprint.category,
       description: built.blueprint.description,
+      // held means this marketplace signs for the agent; none means the owner
+      // runs it and the card names their address instead
+      custody: built.sellerKeyAddress ? "held" : "none",
+      agentWallet: built.sellerKeyAddress,
       ...builtAgentAddresses(origin, built.id),
     });
   } catch (e) {

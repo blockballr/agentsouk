@@ -22,8 +22,9 @@ export interface ExportResult {
 
 // the runtime the exported repo runs: a small http server that serves the card
 // and answers message/send by running the blueprint's first skill. The blueprint
-// is shipped beside it as blueprint.json.
-function runtimeSource(id: string, origin: string, sellerKeyAddress: string | null, hireMode: string): string {
+// is shipped beside it as blueprint.json, and the card names only the wallet the
+// owner asked for: a key this marketplace holds is never written into an export.
+function runtimeSource(id: string, origin: string, agentWallet: string | null, hireMode: string): string {
   return `// standalone runtime for a built agent. reads blueprint.json beside it.
 import http from "node:http";
 import fs from "node:fs";
@@ -46,7 +47,7 @@ function card() {
     defaultOutputModes: ["text/plain", "application/json"],
     skills: (blueprint.skills ?? []).map((s) => ({ id: s.id, name: s.name, description: s.description, tags: s.steps?.map((x) => x.block) ?? [], examples: [], inputModes: ["text/plain", "application/json"], outputModes: ["text/plain", "application/json"] })),
     supportedInterfaces: [{ url: \`\${ORIGIN}/a2a\`, transport: "JSONRPC" }],
-    agentWallet: ${sellerKeyAddress ? `"${sellerKeyAddress}"` : "undefined"},
+    agentWallet: ${agentWallet ? `"${agentWallet}"` : "undefined"},
     x402Support: ${hireMode === "direct" || hireMode === "both" || hireMode === undefined},
   };
 }
@@ -97,7 +98,17 @@ server.listen(port, () => console.log(\`built agent listening on :\${port}\`));
 `;
 }
 
-export function exportBuiltAgent(built: BuiltAgent, origin: string): ExportResult {
+export interface ExportOptions {
+  // the wallet the owner runs the agent with, as an address. Not a key: the
+  // exported runtime reads its own AGENT_PRIVATE_KEY when it needs to sign.
+  agentWallet?: string | null;
+}
+
+export function exportBuiltAgent(
+  built: BuiltAgent,
+  origin: string,
+  options: ExportOptions = {},
+): ExportResult {
   const id = built.id;
   const hireMode = built.blueprint.hireMode ?? "direct";
   const vault = hireMode === "vault";
@@ -111,7 +122,7 @@ export function exportBuiltAgent(built: BuiltAgent, origin: string): ExportResul
       path: "server.mjs",
       content: vault
         ? vaultServerSource(built.blueprint.category, origin)
-        : runtimeSource(id, origin, built.sellerKeyAddress, hireMode),
+        : runtimeSource(id, origin, options.agentWallet ?? null, hireMode),
     },
     {
       path: "Dockerfile",

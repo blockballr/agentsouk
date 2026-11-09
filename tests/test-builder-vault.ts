@@ -147,6 +147,21 @@ describe("the export keeps both runtimes", () => {
     const pkg = JSON.parse(out.files.find((f) => f.path === "package.json")!.content);
     expect(pkg.dependencies).toBeUndefined();
   });
+
+  it("never writes a key this marketplace holds into the exported card", () => {
+    const held = "0x2222222222222222222222222222222222222222";
+    const out = exportBuiltAgent({ ...built("job"), sellerKeyAddress: held }, "https://api.example");
+    const server = out.files.find((f) => f.path === "server.mjs")!.content;
+    expect(server).not.toContain(held);
+    expect(server).toContain("agentWallet: undefined");
+  });
+
+  it("names the wallet the owner asked for", () => {
+    const wallet = "0x3333333333333333333333333333333333333333";
+    const out = exportBuiltAgent(built("job"), "https://api.example", { agentWallet: wallet });
+    const server = out.files.find((f) => f.path === "server.mjs")!.content;
+    expect(server).toContain(`agentWallet: "${wallet}"`);
+  });
 });
 
 const CUSTOM = {

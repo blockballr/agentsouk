@@ -74,8 +74,19 @@ function fromRow(row: Row): BuiltAgent | undefined {
   return { id: row.id, owner: row.owner, blueprint: check.blueprint, sellerKeyAddress: null, createdAt: new Date(row.created_at).toISOString() };
 }
 
-export async function saveBuiltAgent(owner: string, blueprint: Blueprint): Promise<BuiltAgent> {
-  const needsKey = blueprint.hireMode === "job" || blueprint.hireMode === "both";
+export interface SaveBuiltOptions {
+  // hosting is the only reason this marketplace would hold a seller key, so a
+  // build that will be exported and run by its owner asks for no key at all
+  hosted?: boolean;
+}
+
+export async function saveBuiltAgent(
+  owner: string,
+  blueprint: Blueprint,
+  options: SaveBuiltOptions = {},
+): Promise<BuiltAgent> {
+  const needsKey =
+    (blueprint.hireMode === "job" || blueprint.hireMode === "both") && options.hosted !== false;
   const id = randomBytes(8).toString("hex");
   const sellerKeyAddress = needsKey ? await generateSellerKey(owner, id) : null;
   const built: BuiltAgent = { id, owner: owner.toLowerCase(), blueprint, sellerKeyAddress, createdAt: new Date().toISOString() };

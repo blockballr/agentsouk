@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCustomAgent } from "@/lib/builder/custom";
+import { customCardMetadata, getCustomAgent } from "@/lib/builder/custom";
 import { pickPublicOrigin } from "@/lib/house-agent";
 
 export const dynamic = "force-dynamic";
@@ -16,19 +16,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     if (!agent) return NextResponse.json({ error: "not found" }, { status: 404 });
 
     const origin = pickPublicOrigin([process.env.PUBLIC_API_URL, process.env.BASE_URL]);
-    const endpoint = `${origin.replace(/\/+$/, "")}/api/built/${agent.id}/a2a`;
     const storedImage = (agent as { image?: string | null }).image ?? null;
-    const image = storedImage ?? `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(`${agent.id}`)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=gradientLinear`;
-    const metadata = {
-      name: agent.manifest.name,
-      description: agent.manifest.description,
-      image,
-      endpoint,
-      wallet: agent.manifest.wallet,
-      category: agent.manifest.category,
-      actions: agent.manifest.actions,
-      updatedAt: agent.updatedAt,
-    };
+    const metadata = customCardMetadata(agent, { origin, image: storedImage });
 
     return NextResponse.json(metadata, {
       headers: { "cache-control": "no-store", "content-type": "application/json" },

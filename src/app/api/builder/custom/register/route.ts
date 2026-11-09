@@ -67,7 +67,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     sendsTransaction: false,
     manifest,
     image,
-    endpoint: `${origin.replace(/\/+$/, "")}/api/built/${agent.id}/a2a`,
+    endpoint: agent.deployment?.url ?? null,
     agentUri: metadataUrl,
     chainId,
     registryAddress: regAddress,

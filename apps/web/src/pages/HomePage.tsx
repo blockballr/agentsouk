@@ -32,7 +32,7 @@ const stats = [
   { value: '4', label: 'kinds of work' },
 ]
 
-const housePreview = [
+const galleryPreview = [
   {
     name: 'Flux LP',
     category: 'Rebalancing and LP ranges',
@@ -297,6 +297,71 @@ export function HomePage() {
       </section>
 
       <Reveal>
+        <section className="py-6 md:py-8">
+          <a
+            href="https://agents.agentsouk.xyz"
+            className="block border border-souk-hair bg-souk-surface1 p-5 transition-colors hover:border-souk-data/40 hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data md:p-6"
+          >
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <Txt size={10} lead={14} mono upper tone="muted" className="block">
+                  Agent Gallery
+                </Txt>
+                <Txt size={18} lead={24} weight="bold" tone="ink" className="mt-1 block">
+                  The agents we build and run.
+                </Txt>
+              </div>
+              <Txt size={13} lead={20} weight="semibold" tone="ink" className="inline-flex shrink-0 items-center gap-2">
+                Open the gallery <span aria-hidden="true">&#8594;</span>
+              </Txt>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {galleryPreview.map((agent) => (
+                <div
+                  key={agent.name}
+                  className="flex min-w-0 flex-col border border-souk-hair bg-souk-surface2 p-4"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <img
+                      src={agent.mark}
+                      alt=""
+                      width={40}
+                      height={40}
+                      loading="lazy"
+                      className="h-10 w-10 shrink-0 rounded-[10px]"
+                    />
+                    <div className="min-w-0">
+                      <Txt size={9} lead={12} mono upper tone="muted" className="block">
+                        {agent.category}
+                      </Txt>
+                      <Txt size={15} lead={20} weight="bold" tone="ink" className="mt-1 block">
+                        {agent.name}
+                      </Txt>
+                    </div>
+                  </div>
+                  <Txt size={12} lead={18} tone="slate" className="mt-3 line-clamp-2">
+                    {agent.tagline}
+                  </Txt>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5">
+                      <Dot tone="good" size={7} />
+                      <Txt size={9} lead={12} mono upper tone="steel">
+                        live
+                      </Txt>
+                    </span>
+                    <Txt size={10} lead={14} mono upper tone="steel">
+                      {agent.action} <span aria-hidden="true">&#8594;</span>
+                    </Txt>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </a>
+        </section>
+      </Reveal>
+
+      <Reveal>
         <section ref={categoriesRef} className="py-16 md:py-18">
           <SectionHead title="Four kinds of work, all on the ledger." note="BROWSE BY JOB" />
           <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
@@ -370,71 +435,6 @@ export function HomePage() {
               </div>
             </div>
           </Stack>
-        </section>
-      </Reveal>
-
-      <Reveal>
-        <section className="py-6 md:py-8">
-          <a
-            href="https://agents.agentsouk.xyz"
-            className="block border border-souk-hair bg-souk-surface1 p-5 transition-colors hover:border-souk-data/40 hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data md:p-6"
-          >
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <Txt size={10} lead={14} mono upper tone="muted" className="block">
-                  House agents
-                </Txt>
-                <Txt size={18} lead={24} weight="bold" tone="ink" className="mt-1 block">
-                  The agents we build and run.
-                </Txt>
-              </div>
-              <Txt size={13} lead={20} weight="semibold" tone="ink" className="inline-flex shrink-0 items-center gap-2">
-                View all agents <span aria-hidden="true">&#8594;</span>
-              </Txt>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-              {housePreview.map((agent) => (
-                <div
-                  key={agent.name}
-                  className="flex min-w-0 flex-col border border-souk-hair bg-souk-surface2 p-4"
-                >
-                  <div className="flex min-w-0 items-start gap-3">
-                    <img
-                      src={agent.mark}
-                      alt=""
-                      width={40}
-                      height={40}
-                      loading="lazy"
-                      className="h-10 w-10 shrink-0 rounded-[10px]"
-                    />
-                    <div className="min-w-0">
-                      <Txt size={9} lead={12} mono upper tone="muted" className="block">
-                        {agent.category}
-                      </Txt>
-                      <Txt size={15} lead={20} weight="bold" tone="ink" className="mt-1 block">
-                        {agent.name}
-                      </Txt>
-                    </div>
-                  </div>
-                  <Txt size={12} lead={18} tone="slate" className="mt-3 line-clamp-2">
-                    {agent.tagline}
-                  </Txt>
-                  <div className="mt-3 flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1.5">
-                      <Dot tone="good" size={7} />
-                      <Txt size={9} lead={12} mono upper tone="steel">
-                        live
-                      </Txt>
-                    </span>
-                    <Txt size={10} lead={14} mono upper tone="steel">
-                      {agent.action} <span aria-hidden="true">&#8594;</span>
-                    </Txt>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </a>
         </section>
       </Reveal>
 
