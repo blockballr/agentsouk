@@ -7,6 +7,7 @@ import { pickFormat, renderJson, renderTable, type Format } from "./core/output"
 import { runDoctor } from "./core/doctor";
 import { ownedAgentState, parseAgentRef, railsOf, searchAgents, showAgent, verifyAgent } from "./marketplace/agents";
 import { callAgent } from "./marketplace/call";
+import { callMcpTool, listMcpTools, parseMcpArgs } from "./marketplace/mcp";
 import { listJobs, notifyJob, quoteJob, showJob } from "./marketplace/jobs";
 import { fundHire, hireCalls, planHire } from "./marketplace/hire";
 import { isTxHash, verifyPayment, verifyTransaction } from "./marketplace/receipt";
@@ -177,37 +178,102 @@ program
 
 program
   .command("call <agent>")
-  .description("call an agent's A2A endpoint with one task")
-  .requiredOption("--task <text>", "the task text")
+  .description("call an agent's A2A endpoint, or one of its MCP tools")
+  .option("--task <text>", "the task text for an A2A call")
+  .option("--mcp", "call the agent's MCP server")
+  .option("--list-tools", "list the MCP tools and exit")
+  .option("--tool <name>", "the MCP tool to call")
+  .option("--args <json>", "JSON arguments for the MCP tool", "{}")
   .option("--timeout <seconds>", "call timeout in seconds", "30")
   .action(
-    guard(async (ref: string, options: { task: string; timeout?: string }) => {
-      const cfg = config();
-      const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
-      const result = await callAgent(cfg, chainId, tokenId, options.task, {
-        timeoutMs: (Number(options.timeout) || 30) * 1000,
-      });
-      if (format() === "json") {
-        process.stdout.write(
-          `${renderJson(
-            {
-              agent: result.agent.name,
-              tokenId,
-              endpoint: result.endpoint,
-              latencyMs: result.latencyMs,
-              text: result.text,
-              result: result.result,
-            },
-            { chainId, tokenId },
-          )}\n`,
-        );
-        return;
-      }
-      process.stdout.write(`${result.text}\n`);
-      if (format() === "table") {
-        process.stderr.write(`${result.agent.name ?? tokenId} · ${result.latencyMs}ms · ${result.endpoint}\n`);
-      }
-    }),
+    guard(
+      async (
+        ref: string,
+        options: { task?: string; mcp?: boolean; listTools?: boolean; tool?: string; args?: string; timeout?: string },
+      ) => {
+        const cfg = config();
+        const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
+        const timeoutMs = (Number(options.timeout) || 30) * 1000;
+
+        if (options.listTools) {
+          const result = await listMcpTools(cfg, chainId, tokenId, { timeoutMs });
+          if (format() === "json") {
+            process.stdout.write(
+              `${renderJson(
+                { agent: result.agent.name, tokenId, endpoint: result.endpoint, tools: result.tools },
+                { chainId, tokenId },
+              )}\n`,
+            );
+            return;
+          }
+          const rows = result.tools.length
+            ? result.tools.map((tool) => ({ name: tool.name, description: (tool.description ?? "").slice(0, 100) }))
+            : [{ name: "(none)", description: "the server returned no tools" }];
+          process.stdout.write(
+            `${renderTable(rows, [
+              { key: "name", label: "tool" },
+              { key: "description", label: "description", width: 80 },
+            ])}\n`,
+          );
+          return;
+        }
+
+        if (options.mcp || options.tool) {
+          if (!options.tool) {
+            throw new CliError("--tool is required for an MCP call; use --list-tools first", "usage");
+          }
+          const args = parseMcpArgs(options.args);
+          const result = await callMcpTool(cfg, chainId, tokenId, options.tool, args, { timeoutMs });
+          if (format() === "json") {
+            process.stdout.write(
+              `${renderJson(
+                {
+                  agent: result.agent.name,
+                  tokenId,
+                  endpoint: result.endpoint,
+                  tool: result.tool,
+                  latencyMs: result.latencyMs,
+                  text: result.text,
+                  result: result.result,
+                },
+                { chainId, tokenId },
+              )}\n`,
+            );
+            return;
+          }
+          process.stdout.write(`${result.text}\n`);
+          if (format() === "table") {
+            process.stderr.write(`${result.agent.name ?? tokenId} · ${result.latencyMs}ms · ${result.endpoint}#${result.tool}\n`);
+          }
+          return;
+        }
+
+        if (!options.task) {
+          throw new CliError("a task is required for an A2A call; pass --task or use --mcp --tool", "usage");
+        }
+        const result = await callAgent(cfg, chainId, tokenId, options.task, { timeoutMs });
+        if (format() === "json") {
+          process.stdout.write(
+            `${renderJson(
+              {
+                agent: result.agent.name,
+                tokenId,
+                endpoint: result.endpoint,
+                latencyMs: result.latencyMs,
+                text: result.text,
+                result: result.result,
+              },
+              { chainId, tokenId },
+            )}\n`,
+          );
+          return;
+        }
+        process.stdout.write(`${result.text}\n`);
+        if (format() === "table") {
+          process.stderr.write(`${result.agent.name ?? tokenId} · ${result.latencyMs}ms · ${result.endpoint}\n`);
+        }
+      },
+    ),
   );
 
 program
@@ -396,6 +462,7 @@ const listing = program
       if (options.prepareOnly) return;
       if (!options.yes) throw new CliError("this sends a registry transaction: pass --yes to confirm", "confirm_required", 2);
       if (!signer) throw new CliError("pass --key-file or set AGENTSOUK_KEY to sign", "key_missing", 2);
+      if (!prepared.claimId) throw new CliError("the marketplace did not return a claim id", "prepare_incomplete");
 
       const sent = await sendRegister(
         cfg,

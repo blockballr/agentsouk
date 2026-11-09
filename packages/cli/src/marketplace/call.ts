@@ -30,7 +30,7 @@ export function textFromResult(result: unknown): string {
     if (typeof value !== "object") return;
     const record = value as Record<string, unknown>;
     if (typeof record.text === "string" && record.text.trim()) texts.push(record.text.trim());
-    for (const key of ["parts", "status", "message", "artifacts", "task"]) {
+    for (const key of ["parts", "content", "status", "message", "artifacts", "task"]) {
       if (key in record) visit(record[key], depth + 1);
     }
   };
@@ -60,7 +60,7 @@ export async function callAgent(
   const endpoint = agent.a2a_endpoint;
   if (!endpoint) {
     throw new CliError(
-      `${agent.name ?? tokenId} declares no A2A endpoint; MCP calls are not built yet`,
+      `${agent.name ?? tokenId} declares no A2A endpoint; use call --mcp --tool when it publishes an MCP server`,
       "no_endpoint",
     );
   }

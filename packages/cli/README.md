@@ -26,6 +26,8 @@ agentsouk show 56/404603
 agentsouk show 404603 --json
 agentsouk verify 56/404603
 agentsouk call 56/404603 --task "Collateral 1000 USD, debt 600 USD, threshold 0.8. What is the health factor?"
+agentsouk call 56/367904 --mcp --list-tools
+agentsouk call 56/367904 --mcp --tool venus_health_factor --args "{\"address\":\"0x1111111111111111111111111111111111111111\"}"
 agentsouk quote 56/404603 --task "Read my health factor" --client 0x1111111111111111111111111111111111111111
 agentsouk hire 56/404603 --task "Collateral 1000 USD, debt 600 USD. Health factor?" --client 0x1111111111111111111111111111111111111111
 agentsouk jobs --limit 10
