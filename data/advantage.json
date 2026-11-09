@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T04:20:00.000Z",
+  "generatedAt": "2026-11-09T06:21:00.000Z",
   "network": {
     "key": "mainnet",
     "status": "current",
@@ -13,7 +13,7 @@
     "explorer": "https://bscscan.com"
   },
   "capture": {
-    "measuredAt": "2026-11-09T04:20:00.000Z",
+    "measuredAt": "2026-11-09T06:21:00.000Z",
     "rail": "HireVault, chain 56, plus a buyer health mandate",
     "server": "https://api.agentsouk.xyz",
     "requestedChainId": 56,
@@ -49,25 +49,25 @@
     {
       "id": "task-2-grid-trading",
       "category": "grid-trading",
-      "prompt": "Run a WBNB and USDT grid ladder inside a stored band on a 2 USDT hire.",
+      "prompt": "Run a WBNB and USDT grid ladder inside a stored band on a 2 USDT hire, and trade when price crosses a rung.",
       "agent": {
         "tokenId": "391004",
         "name": "Souk Grid Planner",
         "category": "grid-trading",
         "chainId": 56,
         "settleMode": "prod",
-        "txHash": "0x282b849cf54f5e54a506abaa8c98911d0290f5e5a41d8f24d686a188f7d94925",
-        "settlementRef": "0x282b849cf54f5e54a506abaa8c98911d0290f5e5a41d8f24d686a188f7d94925",
+        "txHash": "0x5fd472c7f21487a555a0a8e943afc129cfaf25c689cdb66afc0d763eac5c0fb2",
+        "settlementRef": "0x8f3ac296003c920724306ff4343f51b0af26d700acbdb15ec21b1abf85d3f861",
         "statedFeeUsd": 0
       },
-      "agentOutput": "Hire 6. Opened with 2 USDT, read the pool at 693.52 USDT against a stored band of 657.65 to 726.88, found no rung crossed, and held. The buyer withdrew 2 USDT unchanged. Open 0x282b849c, close 0x08a10a25.",
-      "agentSeconds": 48,
+      "agentOutput": "Hire 13. Opened with 2 USDT and an eleven-rung ladder. The executor reads the pool every ten minutes. When price crossed a rung it sold 0.0000219 WBNB for USDT, leaving 1.8496 USDT and 0.0002193 WBNB. The buyer withdrew both. Open 0x5fd472, trade 0x8f3a, close 0x3b73.",
+      "agentSeconds": 2946,
       "manualSeconds": 4.91,
       "manualCostUsd": 0.07,
       "manualOutput": "Planned a grid from 30 days of candles: last close 692.90, range 680 to 779.68, 2.31 percent daily sigma, bounds 580.59 to 805.21, 8 levels, 4.631 percent spacing.",
       "verdict": {
         "winner": "agent",
-        "notes": "Both decided to wait, but the agent read the live pool at the hire's own block. The 48 seconds are open to decision, including the sweep, and the hire settled and withdrew on chain."
+        "notes": "The agent waited 49 minutes for the market to reach the rung, then traded inside the hire's bounds; the wait is market time, not compute. The manual pass is a historical plan, not a live fill."
       }
     },
     {
