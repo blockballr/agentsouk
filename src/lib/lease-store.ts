@@ -61,6 +61,13 @@ function postgresLeaseStore(databaseUrl: string): LeaseStore {
             expires_at timestamptz not null
           )
         `;
+        // the unified lease retires the per-hire table the vault sweeps used
+        // before; the drop is idempotent and best effort on a migration-only user
+        try {
+          await sql`drop table if exists strategy_lease`;
+        } catch {
+          // the table is unused either way; a role without DDL leaves it dormant
+        }
         return true;
       } catch {
         ready = null;
