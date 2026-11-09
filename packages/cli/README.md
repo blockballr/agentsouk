@@ -28,6 +28,7 @@ agentsouk verify 56/404603
 agentsouk call 56/404603 --task "Collateral 1000 USD, debt 600 USD, threshold 0.8. What is the health factor?"
 agentsouk call 56/367904 --mcp --list-tools
 agentsouk call 56/367904 --mcp --tool venus_health_factor --args "{\"address\":\"0x1111111111111111111111111111111111111111\"}"
+agentsouk call 56/404603 --pay --task "Read my health factor" --client 0x1111111111111111111111111111111111111111 --max-usd 0.05
 agentsouk quote 56/404603 --task "Read my health factor" --client 0x1111111111111111111111111111111111111111
 agentsouk hire 56/404603 --task "Collateral 1000 USD, debt 600 USD. Health factor?" --client 0x1111111111111111111111111111111111111111
 agentsouk jobs --limit 10
@@ -55,11 +56,12 @@ failure, `2` usage.
 ## Flows that write
 
 These mint a claim, move escrow or send a transaction. The listing edit and the
-delist and relist pair have been exercised against production; the hire,
-register and job actions have not:
+delist and relist pair have been exercised against production, and the x402 paid
+call up to the relay broadcast; the hire, register and job actions have not:
 
 ```sh
 agentsouk hire 56/404603 --task "..." --key-file key.txt --fund --yes
+agentsouk call 56/404603 --pay --task "Read my health factor" --key-file buyer.txt --max-usd 0.05 --yes
 agentsouk list --draft draft.json --key-file key.txt --yes
 agentsouk list --draft draft.json --owner 0x... --prepare-only
 agentsouk list prepare --draft draft.json --owner 0x...
@@ -79,6 +81,13 @@ The one-shot `list` runs `list check`, prepares the claim, prints the registry,
 gas and calldata, sends `register(agentURI)` when `--yes` and a key are supplied,
 reads the minted agent id from the ERC-721 Transfer, confirms it, and prints the
 listing URL. `--prepare-only` stops at the calldata.
+
+`call ... --pay` is the x402 buyer: it asks the marketplace for terms, prints the
+amount, token and payee, and without `--yes` stops there. With `--yes` it signs
+an EIP-3009 authorization anchored to chain time, settles it, and delivers the
+task through the marketplace. `--max-usd` refuses a hire above the cap. Settlement
+is broadcast by the marketplace relay, which needs BNB for gas; when it is dry the
+CLI says so and nothing is charged.
 
 ## Scheduled jobs
 
@@ -109,9 +118,9 @@ then the built-in default. A file that is group or world readable is refused.
 
 ## Not built yet
 
-x402 payments and the vault hire. Those carry a spend or a larger contract
-surface and need the preview and tests before they ship. `receipt` verifies a
-payment or a transaction against chain.
+The vault hire. It carries a spend and a larger contract surface and needs the
+preview and tests before it ships. `receipt` verifies a payment or a transaction
+against chain.
 
 ## Signing
 

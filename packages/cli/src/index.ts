@@ -8,6 +8,7 @@ import { runDoctor } from "./core/doctor";
 import { ownedAgentState, parseAgentRef, railsOf, searchAgents, showAgent, verifyAgent } from "./marketplace/agents";
 import { callAgent } from "./marketplace/call";
 import { callMcpTool, listMcpTools, parseMcpArgs } from "./marketplace/mcp";
+import { paidCall, preparePayment } from "./marketplace/x402";
 import { listJobs, notifyJob, quoteJob, showJob } from "./marketplace/jobs";
 import { actOnJob, type JobActionName } from "./marketplace/job-actions";
 import { fundHire, hireCalls, planHire } from "./marketplace/hire";
@@ -180,22 +181,141 @@ program
 
 program
   .command("call <agent>")
-  .description("call an agent's A2A endpoint, or one of its MCP tools")
-  .option("--task <text>", "the task text for an A2A call")
-  .option("--mcp", "call the agent's MCP server")
+  .description("call an agent's A2A endpoint or MCP tool, or hire it over x402")
+  .option("--task <text>", "the task text to deliver")
+  .option("--mcp", "call the agent's MCP server directly, without paying")
   .option("--list-tools", "list the MCP tools and exit")
   .option("--tool <name>", "the MCP tool to call")
   .option("--args <json>", "JSON arguments for the MCP tool", "{}")
+  .option("--pay", "hire the agent over x402, then deliver the result")
+  .option("--max-usd <n>", "refuse a hire above this amount")
+  .option("--client <wallet>", "the buyer wallet, for a preview without a key")
+  .option("--key-file <path>", "the buyer key, for a paid call")
+  .option("--yes", "confirm the payment")
   .option("--timeout <seconds>", "call timeout in seconds", "30")
   .action(
     guard(
       async (
         ref: string,
-        options: { task?: string; mcp?: boolean; listTools?: boolean; tool?: string; args?: string; timeout?: string },
+        options: {
+          task?: string;
+          mcp?: boolean;
+          listTools?: boolean;
+          tool?: string;
+          args?: string;
+          pay?: boolean;
+          maxUsd?: string;
+          client?: string;
+          keyFile?: string;
+          yes?: boolean;
+          timeout?: string;
+        },
       ) => {
         const cfg = config();
         const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
         const timeoutMs = (Number(options.timeout) || 30) * 1000;
+
+        if (options.pay) {
+          if (options.mcp || options.listTools) {
+            throw new CliError("--pay delivers through the marketplace; drop --mcp and --list-tools", "usage", 2);
+          }
+          if (!options.task && !options.tool) {
+            throw new CliError("--pay needs --task or --tool to say what to deliver", "usage", 2);
+          }
+          const signer = options.keyFile || process.env.AGENTSOUK_KEY ? loadSigner({ keyFile: options.keyFile }) : null;
+          const client = options.client ?? signer?.address ?? "";
+          if (!client) throw new CliError("pass --client to preview, or --key-file to sign", "usage", 2);
+          if (signer && options.client && options.client.toLowerCase() !== signer.address.toLowerCase()) {
+            throw new CliError(`--client ${options.client} is not the key's address ${signer.address}`, "usage", 2);
+          }
+          const prepared = await preparePayment(
+            cfg,
+            chainId,
+            tokenId,
+            client,
+            options.maxUsd === undefined ? undefined : Number(options.maxUsd),
+          );
+          const { data, option } = prepared;
+          const work = options.tool
+            ? { tool: options.tool, args: parseMcpArgs(options.args) }
+            : { task: options.task };
+
+          if (!options.yes) {
+            if (format() === "json") {
+              process.stdout.write(
+                `${renderJson(
+                  {
+                    agent: data.agent.name,
+                    tokenId,
+                    paymentId: data.preview.paymentId,
+                    amount: option.amount,
+                    amountUsd: option.amountUsd,
+                    symbol: option.tokenSymbol,
+                    payTo: option.payTo,
+                    agentPayTo: data.paymentRequirements.extra.agentPayTo ?? null,
+                    resource: data.preview.resource,
+                  },
+                  { chainId, tokenId },
+                )}\n`,
+              );
+              return;
+            }
+            process.stdout.write(
+              `${renderTable(
+                [
+                  { field: "agent", value: data.agent.name },
+                  { field: "amount", value: `${option.amountUsd} ${option.tokenSymbol}` },
+                  { field: "pay to", value: option.payTo },
+                  { field: "agent wallet", value: data.paymentRequirements.extra.agentPayTo ?? "-" },
+                  { field: "method", value: data.paymentRequirements.extra.assetTransferMethod ?? "-" },
+                  { field: "resource", value: data.preview.resource.url },
+                  { field: "payment", value: data.preview.paymentId },
+                ],
+                [
+                  { key: "field", label: "field" },
+                  { key: "value", label: "value", width: 100 },
+                ],
+              )}\n\npass --yes to sign and pay\n`,
+            );
+            return;
+          }
+
+          if (!signer) {
+            throw new CliError("pass --key-file or set AGENTSOUK_KEY to sign the payment", "key_missing", 2);
+          }
+          const result = await paidCall(cfg, signer, prepared, work);
+          if (format() === "json") {
+            process.stdout.write(
+              `${renderJson(
+                {
+                  agent: result.data.agent.name,
+                  tokenId,
+                  paymentId: result.settle.paymentId,
+                  txHash: result.settle.txHash ?? null,
+                  mode: result.settle.details?.mode ?? result.receipt?.mode ?? null,
+                  amount: result.option.amountUsd,
+                  symbol: result.option.tokenSymbol,
+                  receipt: result.receipt,
+                  delivery: result.delivery ?? null,
+                  deliveryError: result.deliveryError ?? null,
+                },
+                { chainId, tokenId, paymentId: result.settle.paymentId },
+              )}\n`,
+            );
+            return;
+          }
+          if (result.delivery?.text) process.stdout.write(`${result.delivery.text}\n`);
+          if (result.deliveryError) {
+            process.stderr.write(`paid, but delivery failed: ${result.deliveryError}\n`);
+            process.exitCode = 1;
+          }
+          if (format() === "table") {
+            process.stderr.write(
+              `${result.data.agent.name} · paid ${result.option.amountUsd} ${result.option.tokenSymbol} · ${result.settle.paymentId}${result.settle.txHash ? ` · ${result.settle.txHash}` : ""}\n`,
+            );
+          }
+          return;
+        }
 
         if (options.listTools) {
           const result = await listMcpTools(cfg, chainId, tokenId, { timeoutMs });
