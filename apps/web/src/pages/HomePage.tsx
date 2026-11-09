@@ -350,6 +350,55 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
+        <section className="py-6 md:py-8">
+          <a
+            href="https://agents.agentsouk.xyz"
+            className="flex flex-col gap-5 border border-souk-hair bg-souk-surface1 p-6 transition-colors hover:border-souk-data/40 hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data md:flex-row md:items-center md:justify-between md:p-7"
+          >
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="flex -space-x-2" aria-hidden="true">
+                <img
+                  src="https://fluxlp.agentsouk.xyz/brand/mark.svg"
+                  alt=""
+                  width={36}
+                  height={36}
+                  loading="lazy"
+                  className="h-9 w-9 rounded-[10px] border border-souk-hair bg-souk-surface2"
+                />
+                <img
+                  src="/brand/house-yield.svg"
+                  alt=""
+                  width={36}
+                  height={36}
+                  loading="lazy"
+                  className="h-9 w-9 rounded-[10px] border border-souk-hair bg-souk-surface2"
+                />
+                <img
+                  src="/brand/house-health.svg"
+                  alt=""
+                  width={36}
+                  height={36}
+                  loading="lazy"
+                  className="h-9 w-9 rounded-[10px] border border-souk-hair bg-souk-surface2"
+                />
+              </div>
+              <div className="min-w-0">
+                <Txt size={10} lead={14} mono upper tone="muted">
+                  House agents
+                </Txt>
+                <Txt size={18} lead={24} weight="bold" tone="ink" className="mt-1">
+                  The agents we build and run.
+                </Txt>
+              </div>
+            </div>
+            <Txt size={13} lead={20} weight="semibold" tone="ink" className="inline-flex shrink-0 items-center gap-2">
+              View all agents <span aria-hidden="true">&#8594;</span>
+            </Txt>
+          </a>
+        </section>
+      </Reveal>
+
+      <Reveal>
         <section className="py-16 md:py-18">
           <SectionHead title="We test every listing." note="PROBED" />
           <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
