@@ -10,7 +10,7 @@ import { Section, Stack, Row, Txt, Btn, Label, Rule } from '../components/souk'
 
 const OPERATOR = '0xb63cd6dbe6a48761190f4d3a819b0485c43221d6' as const
 const SUBSCRIPTION = '0x14ca53f7b4edfc9b0f49d6fe25532339c7ec5877' as const
-const AGENT = '0x84FEdabd1b83443Ad86796C15619494878B64180' as const
+const AGENT = '0x84FEDaBd1B83443Ad86796C15619494878B64180' as const
 const USDT = '0x55d398326f99059fF775485246999027B3197955' as const
 const VUSDT = '0xfD5840Cd36d94D7229439859C0112a4185BC0255' as const
 
