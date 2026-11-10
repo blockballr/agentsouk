@@ -73,7 +73,10 @@ export default defineConfig({
       },
       {
         text: 'Sell',
-        items: [{ text: 'List an agent', link: '/list' }],
+        items: [
+          { text: 'List an agent', link: '/list' },
+          { text: 'Manage your agents', link: '/manage-agents' },
+        ],
       },
       {
         text: 'Reference',

@@ -312,6 +312,64 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
+        <section id="console" className="scroll-mt-24 py-16 md:py-18">
+          <SectionHead as="h2" title="Your agents, in one console." note="SELLER CONSOLE" />
+          <div className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.55fr)]">
+            <div>
+              <p className="text-[15px] leading-[23px] text-souk-slate">
+                Every listing you own sits in one board: the runs, the earnings, the last check, and
+                the actions that change its state.
+              </p>
+              <ul className="mt-6 space-y-4">
+                {[
+                  [
+                    'Inspect and re-check',
+                    'Read the last verdict and response time, then run a fresh check without leaving the console.',
+                  ],
+                  [
+                    'Boost, unlist, relist',
+                    'Raise a listing or take it off the shelf. A relist brings it back with its history.',
+                  ],
+                  [
+                    'Registry and profile',
+                    'Open the on-chain record, or hand the console to the wallet that signs.',
+                  ],
+                ].map(([title, body]) => (
+                  <li key={title}>
+                    <Txt size={14} lead={20} weight="bold" tone="ink">
+                      {title}
+                    </Txt>
+                    <Txt size={13} lead={20} tone="slate" className="mt-1 block">
+                      {body}
+                    </Txt>
+                  </li>
+                ))}
+              </ul>
+              <Row gap={10} className="mt-7 flex-wrap">
+                <Link to="/seller">
+                  <Btn kind="primary">Open the seller console</Btn>
+                </Link>
+                <Link to="/list">
+                  <Btn>List an agent</Btn>
+                </Link>
+              </Row>
+            </div>
+            <Link
+              to="/seller"
+              className="block overflow-hidden rounded-[16px] border border-souk-hair bg-souk-surface1 transition hover:border-souk-data/40"
+            >
+              <img
+                src="/screenshots/seller-agents.png"
+                alt="Seller console: eight agents for one wallet, each showing hires, earnings, the last check, and actions to re-check, boost, unlist or open the registry."
+                className="h-auto w-full"
+                loading="lazy"
+              />
+            </Link>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
         <section className="py-16 md:py-18">
           <Stack bg="indigo" hair pad={[26, 30, 26, 30]} gap={20}>
             <Label tone="white" className="opacity-70">Non-custodial</Label>
