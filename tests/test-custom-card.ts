@@ -106,3 +106,31 @@ describe("the card a custom agent's agentURI serves", () => {
     expect(JSON.stringify(card)).not.toContain(HELD);
   });
 });
+
+describe("a vault policy in a custom manifest", () => {
+  const vaultManifest = { ...manifestInput, wallet: "vault", payment: "vault", actions: [] };
+
+  it("accepts one of the policies a sweep knows", () => {
+    const check = validateCustomManifest({ ...vaultManifest, vaultPolicy: "band" });
+    expect(check.ok).toBe(true);
+    if (check.ok) expect(check.manifest.vaultPolicy).toBe("band");
+  });
+
+  it("refuses an unknown policy and a policy on a non-vault hire", () => {
+    expect(validateCustomManifest({ ...vaultManifest, vaultPolicy: "moon" }).ok).toBe(false);
+    expect(validateCustomManifest({ ...manifestInput, vaultPolicy: "band" }).ok).toBe(false);
+  });
+
+  it("publishes the policy with the agent as its own executor", () => {
+    const card = customCardMetadata(
+      agent({ manifest: { ...vaultManifest, vaultPolicy: "band" } as CustomAgent["manifest"] }),
+      { origin: "https://api.agentsouk.xyz" },
+    );
+    expect(card.services).toEqual({ vault: { policy: "band", executor: "agent" } });
+  });
+
+  it("does not invent a vault service without a policy", () => {
+    const card = customCardMetadata(agent(), { origin: "https://api.agentsouk.xyz" });
+    expect(card.services).toBeUndefined();
+  });
+});

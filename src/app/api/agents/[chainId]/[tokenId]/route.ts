@@ -13,6 +13,7 @@ import { loadDelisted } from "@/lib/delist-store";
 import { readPancakePositions } from "@/lib/pancake-positions";
 import { withListingEdit } from "@/lib/listing-edit";
 import { editKey, loadListingEdits } from "@/lib/listing-edit-store";
+import { readVaultService } from "@/lib/vault-service";
 
 export const dynamic = "force-dynamic";
 
@@ -98,9 +99,13 @@ export async function GET(
   // agent's card supplies the term when it publishes one
   const minDeposit = firstPartyMinDeposit(Number(chainId), tokenId) ?? captured?.vaultMinDepositUsd ?? null;
   const withVault = minDeposit != null ? { ...withPositions, vaultMinDepositUsd: minDeposit } : withPositions;
+  // a card may declare which vault policy it runs and that it runs it itself;
+  // the client shows who executes before a buyer opens a hire
+  const vaultService = readVaultService((withVault as { services?: unknown }).services);
+  const withVaultRails = vaultService ? { ...withVault, vault: vaultService } : withVault;
   return NextResponse.json(
     {
-      data: activeSession ? { ...withVault, activeSession } : withVault,
+      data: activeSession ? { ...withVaultRails, activeSession } : withVaultRails,
     },
     { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" } },
   );

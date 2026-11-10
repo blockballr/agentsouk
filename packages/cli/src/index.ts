@@ -1080,6 +1080,7 @@ vault
                 agent: plan.agentName,
                 tokenId,
                 agentWallet: plan.agentWallet,
+                executor: plan.executor,
                 vault: plan.vault,
                 buyer: plan.client,
                 token: plan.token.symbol,
@@ -1106,6 +1107,7 @@ vault
               [
                 { field: "agent", value: plan.agentName },
                 { field: "agent wallet", value: plan.agentWallet },
+                { field: "executor", value: plan.executor },
                 { field: "vault", value: plan.vault },
                 { field: "deposit", value: `${plan.amountText} ${plan.token.symbol}` },
                 { field: "expiry", value: plan.expiryIso },
@@ -1150,7 +1152,9 @@ vault
           return;
         }
         process.stdout.write(
-          `opened  ${result.hireId ?? "(id not read)"}  ${result.openHash}  ${result.policy ?? "untagged"}\n`,
+          `opened  ${result.hireId ?? "(id not read)"}  ${result.openHash}  ${result.policy ?? "untagged"}  ${
+            result.swept === false ? "self-run" : result.swept ? "swept here" : "untagged"
+          }\n`,
         );
         if (result.tagError) {
           process.stderr.write(`the hire opened but was not tagged: ${result.tagError}\n`);

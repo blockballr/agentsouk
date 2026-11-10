@@ -4,6 +4,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import postgres from "postgres";
+import { isVaultPolicy, type VaultPolicy } from "@/lib/vault-service";
 
 export interface CustomAction {
   name: string;
@@ -25,6 +26,9 @@ export interface CustomManifest {
   // never passes through here; when it is absent the registry falls back to the
   // owner's address.
   agentWallet?: string;
+  // a vault agent declares which policy runs a hire; it runs it itself, because
+  // the vault lets only the named agent trade
+  vaultPolicy?: VaultPolicy;
   payment: CustomPayment;
   deliverable: string;
   release: string;
@@ -74,6 +78,15 @@ export function validateCustomManifest(input: unknown): { ok: true; manifest: Cu
       errors.push("agentWallet must be a wallet address, never a private key");
     }
   }
+  // a vault policy is only meaningful on a vault hire, and the agent runs it
+  // itself: this marketplace only sweeps its own executor wallets
+  if (m.vaultPolicy !== undefined && m.vaultPolicy !== null && m.vaultPolicy !== "") {
+    if (!isVaultPolicy(String(m.vaultPolicy).trim().toLowerCase())) {
+      errors.push("vaultPolicy must be porter, band, buffer, or grid");
+    } else if (m.payment !== "vault") {
+      errors.push("vaultPolicy requires payment vault");
+    }
+  }
   if (!isString(m.deliverable)) errors.push("deliverable is required");
   if (!isString(m.release)) errors.push("release is required");
   if (!isString(m.healthcheck)) errors.push("healthcheck is required");
@@ -106,6 +119,9 @@ export function validateCustomManifest(input: unknown): { ok: true; manifest: Cu
     wallet: m.wallet as CustomWalletModel,
     ...(typeof m.agentWallet === "string" && m.agentWallet.trim()
       ? { agentWallet: m.agentWallet.trim() }
+      : {}),
+    ...(typeof m.vaultPolicy === "string" && m.vaultPolicy.trim()
+      ? { vaultPolicy: m.vaultPolicy.trim().toLowerCase() as VaultPolicy }
       : {}),
     payment: m.payment as CustomPayment,
     deliverable: (m.deliverable as string).trim(),
@@ -152,6 +168,9 @@ export interface CustomManifest {
   // never passes through here; when it is absent the registry falls back to the
   // owner's address.
   agentWallet?: string;
+  // a vault agent declares which policy runs a hire; it runs it itself, because
+  // the vault lets only the named agent trade
+  vaultPolicy?: VaultPolicy;
   payment: CustomPayment;
   deliverable: string;
   release: string;
@@ -195,6 +214,9 @@ export function customCardMetadata(
     ...(endpoint ? { endpoint } : {}),
     wallet: agent.manifest.wallet,
     ...(agentWallet ? { agentWallet } : {}),
+    ...(agent.manifest.vaultPolicy
+      ? { services: { vault: { policy: agent.manifest.vaultPolicy, executor: "agent" } } }
+      : {}),
     category: agent.manifest.category,
     actions: agent.manifest.actions,
     updatedAt: agent.updatedAt,

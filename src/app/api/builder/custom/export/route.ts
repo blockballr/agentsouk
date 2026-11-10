@@ -92,6 +92,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       : manifest.wallet !== "none"
         ? { agentWallet: "set via AGENT_PRIVATE_KEY env" }
         : {}),
+    ...(manifest.vaultPolicy
+      ? { services: { vault: { policy: manifest.vaultPolicy, executor: "agent" } } }
+      : {}),
   };
   files.push({ path: "agent-card.json", content: JSON.stringify(card, null, 2) + "\n" });
 
@@ -154,6 +157,9 @@ function card() {
     supportedInterfaces: [{ url: o ? o + "/a2a" : "/a2a", transport: "JSONRPC" }],
     x402Support: manifest.payment === "x402",
     ...(manifest.agentWallet ? { agentWallet: manifest.agentWallet } : {}),
+    ...(manifest.vaultPolicy
+      ? { services: { vault: { policy: manifest.vaultPolicy, executor: "agent" } } }
+      : {}),
   };
 }
 

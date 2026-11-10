@@ -125,8 +125,14 @@ then the built-in default. A file that is group or world readable is refused.
 `vault hire` opens a funded mandate: the deposit sits in the HireVault contract,
 the named agent trades inside the caps stored at open, and `vault withdraw`
 returns everything to the buyer. Both print every parameter and the gas before
-signing, and both need `--yes`. A hire whose policy tag is refused opens but is
-not swept, so the CLI says so and points at `vault withdraw`.
+signing, and both need `--yes`.
+
+Only the agent named at open can trade a hire, so the preview names the
+executor. `soukdio` means this marketplace's sweep runs it (our own agents).
+`agent` means its owner runs the vault SDK itself, which a card declares with
+`services.vault = { policy, executor: "agent" }`. An agent that declares neither
+is refused before anything is signed, because the hire would never be traded.
+`vault withdraw` is always available if a hire still opens but is not tagged.
 
 ## Signing
 

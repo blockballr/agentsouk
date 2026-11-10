@@ -5,6 +5,8 @@ import { rpcTransport } from "@/lib/rpc";
 import { vaultFor } from "@/lib/vault";
 import { setHirePolicy } from "@/lib/policy-registry";
 import { policyForWallet } from "@/lib/agent-policy";
+import { readVaultService } from "@/lib/vault-service";
+import { fetchAgentDetail } from "@/lib/scanner";
 import { targetChainId, BSC_TESTNET_CHAIN_ID } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +19,9 @@ const json = (body: Record<string, unknown>, status = 200) =>
   NextResponse.json(body, { status, headers: { "cache-control": "no-store" } });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const body = (await req.json().catch(() => null)) as { txHash?: unknown; chainId?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { txHash?: unknown; chainId?: unknown; tokenId?: unknown } | null;
   const txHash = typeof body?.txHash === "string" ? body.txHash : "";
+  const tokenId = typeof body?.tokenId === "string" || typeof body?.tokenId === "number" ? String(body.tokenId) : "";
   if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) return json({ success: false, error: "txHash required" }, 400);
 
   const chainId = Number(body?.chainId) || targetChainId();
@@ -49,7 +52,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const agent = getAddress(`0x${log.topics[3].slice(26)}`);
 
   const match = policyForWallet(chainId, agent);
-  if (!match) return json({ success: false, error: "the hire does not name a configured agent wallet" }, 403);
+  // A third-party agent runs its own executor, because the vault lets only the
+  // named agent trade. Its card says which policy it runs, and the tag records
+  // it so PnL and quests can classify the hire, while `swept: false` tells the
+  // caller this marketplace will not place a trade for it.
+  let tag: { policy: string; tokenId: string; executor: "soukdio" | "agent" } | null = match
+    ? { ...match, executor: "soukdio" }
+    : null;
+  if (!tag && /^\d+$/.test(tokenId)) {
+    const detail = await fetchAgentDetail(chainId, tokenId).catch(() => null);
+    const declared = readVaultService(detail?.services ?? null);
+    const detailWallet = detail?.agent_wallet ?? detail?.owner_address ?? "";
+    if (declared && detailWallet.toLowerCase() === agent.toLowerCase()) {
+      tag = { policy: declared.policy, tokenId, executor: "agent" };
+    }
+  }
+  if (!tag) {
+    return json(
+      { success: false, error: "the agent does not declare a vault service, or its token id was not sent" },
+      403,
+    );
+  }
 
   const hire = await client.readContract({ address: vault as `0x${string}`, abi: HIRE_ABI, functionName: "hire", args: [BigInt(hireId)] });
   const onchainAgent = getAddress(`0x${BigInt(hire[1] as bigint).toString(16).padStart(40, "0")}`);
@@ -59,6 +82,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // a closed hire still counts for the quest, so the tag records it either way
   const block = await client.getBlock({ blockNumber: receipt.blockNumber }).catch(() => null);
   const openedAt = block ? new Date(Number(block.timestamp) * 1000).toISOString() : null;
-  await setHirePolicy(chainId, hireId, match.policy, { txHash, openedAt });
-  return json({ success: true, ok: true, chainId, hireId, policy: match.policy, tokenId: match.tokenId, agent });
+  await setHirePolicy(chainId, hireId, tag.policy, { txHash, openedAt, executor: tag.executor });
+  return json({
+    success: true,
+    ok: true,
+    chainId,
+    hireId,
+    policy: tag.policy,
+    tokenId: tag.tokenId,
+    agent,
+    executor: tag.executor,
+    swept: tag.executor === "soukdio",
+  });
 }

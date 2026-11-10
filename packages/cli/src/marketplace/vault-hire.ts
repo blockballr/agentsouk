@@ -5,6 +5,7 @@ import { apiRequest, query } from "../core/http";
 import type { CliConfig } from "../core/config";
 import type { LoadedSigner } from "../core/wallet";
 import { showAgent } from "./agents";
+import { vaultAgents } from "./vault";
 
 // The buyer's side of a HireVault hire: the deposit sits in the vault contract,
 // the agent trades inside the caps the contract stores at open, and withdraw is
@@ -137,6 +138,8 @@ export interface VaultHirePlan {
   tokenId: string;
   agentName: string;
   agentWallet: `0x${string}`;
+  // soukdio: this marketplace sweeps it. agent: its owner runs the vault SDK.
+  executor: "soukdio" | "agent";
   vault: `0x${string}`;
   client: `0x${string}`;
   token: VaultToken;
@@ -305,6 +308,25 @@ export async function planVaultHire(
   if (!/^0x[0-9a-fA-F]{40}$/.test(walletRaw)) throw new CliError(`${detail.name ?? tokenId} names no agent wallet to hire`, "no_agent_wallet");
   const agentWallet = walletRaw as `0x${string}`;
 
+  // who trades the hire: a first-party agent is in our sweep, a third-party one
+  // has to run the vault SDK itself. A hire with neither would sit idle, so the
+  // open is refused before any money moves.
+  const declared = (detail as { vault?: { policy?: string; executor?: string } }).vault;
+  let firstParty = false;
+  try {
+    const listed = await vaultAgents(config);
+    firstParty = (listed.agents ?? []).some((a) => String(a.tokenId) === tokenId);
+  } catch {
+    // a listing read failure must not hide a declared service
+  }
+  const executor: "soukdio" | "agent" | null = firstParty ? "soukdio" : declared?.policy ? "agent" : null;
+  if (!executor) {
+    throw new CliError(
+      `${detail.name ?? tokenId} declares no vault service, so a hire would open and no one would trade it`,
+      "not_vault",
+    );
+  }
+
   const vault = await vaultAddress(config);
   const pub = publicClient(config);
 
@@ -381,6 +403,7 @@ export async function planVaultHire(
     tokenId,
     agentName: detail.name ?? tokenId,
     agentWallet,
+    executor,
     vault,
     client,
     token,
@@ -413,6 +436,8 @@ export interface VaultHireResult {
   openHash: string;
   hireId: string | null;
   policy: string | null;
+  executor?: "soukdio" | "agent";
+  swept?: boolean;
   tagError: string | null;
 }
 
@@ -451,14 +476,26 @@ export async function sendVaultHire(
   // the policy tag is what tells the sweep which strategy runs this hire; a hire
   // that is not tagged waits, so the result says so rather than looking done
   try {
-    const tag = await apiRequest<{ success?: boolean; hireId?: string; policy?: string; error?: string }>(
+    const tag = await apiRequest<{
+      success?: boolean;
+      hireId?: string;
+      policy?: string;
+      executor?: string;
+      swept?: boolean;
+      error?: string;
+    }>(
       config.apiUrl,
       "/api/vault/policy-tag/register",
-      { method: "POST", body: { txHash: hash, chainId: config.chainId }, timeoutMs: 60_000 },
+      { method: "POST", body: { txHash: hash, chainId: config.chainId, tokenId: plan.tokenId }, timeoutMs: 60_000 },
     );
     sent.hireId = tag.hireId ?? null;
     sent.policy = tag.policy ?? null;
-    if (!tag.success) sent.tagError = tag.error ?? "the policy tag was refused";
+    if (tag.success) {
+      sent.executor = tag.executor === "agent" ? "agent" : "soukdio";
+      sent.swept = tag.swept !== false;
+    } else {
+      sent.tagError = tag.error ?? "the policy tag was refused";
+    }
   } catch (error) {
     sent.tagError = error instanceof Error ? error.message : String(error);
   }
