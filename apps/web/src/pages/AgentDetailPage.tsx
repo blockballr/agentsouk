@@ -202,6 +202,11 @@ function sessionModeLabel(mode: ActiveSession['mode']): string {
 // word large and the check time as a caption instead of clipping a sentence.
 function statusFor(detail: AgentDetail): { value: string; note?: string } {
   const v = detail.verification
+  // a card-declared gate is the state the buyer acts on, even when the last
+  // probe came back online
+  if (detail.availability?.phase === 'gated' || v?.status === 'gated') {
+    return v?.checkedAt ? { value: 'gated', note: `checked ${formatDate(v.checkedAt)}` } : { value: 'gated' }
+  }
   if (v?.status) {
     return v.checkedAt ? { value: v.status, note: `checked ${formatDate(v.checkedAt)}` } : { value: v.status }
   }
@@ -755,13 +760,15 @@ export function AgentDetailPage() {
               <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] leading-[18px] text-souk-slate">
                 <Dot
                   tone={
-                    detail.verification?.status === 'delivered'
-                      ? 'good'
-                      : detail.verification?.status === 'gated'
-                        ? 'held'
-                        : detail.verification?.status
-                          ? 'bad'
-                          : 'quiet'
+                    detail.availability?.phase === 'gated'
+                      ? 'held'
+                      : detail.verification?.status === 'delivered'
+                        ? 'good'
+                        : detail.verification?.status === 'gated'
+                          ? 'held'
+                          : detail.verification?.status
+                            ? 'bad'
+                            : 'quiet'
                   }
                   size={7}
                 />
@@ -770,6 +777,11 @@ export function AgentDetailPage() {
                   <span className="text-souk-muted">checked {timeAgo(detail.verification.checkedAt)}</span>
                 ) : null}
               </div>
+              {detail.availability?.reason && detail.availability.phase !== 'live' ? (
+                <Txt size={12} lead={18} tone="muted" className="mt-2 block">
+                  {detail.availability.reason}
+                </Txt>
+              ) : null}
               <Txt size={11} lead={16} mono upper tone="steel" className="mt-3 block">
                 <a href={ownerScan} target="_blank" rel="noreferrer" className="hover:text-souk-ink">
                   {firstParty ? OPERATED_BY_LABEL : `Seller ${shortAddress(detail.owner_address)}`}
@@ -1537,7 +1549,7 @@ function AgentActionPanel({
             ? 'The seller gates this listing behind its own credentials. A call or job would reach that wall, so the marketplace does not sell one.'
             : rails.length > 0
               ? 'The listing is public. Choose a rail and connect when you are ready to start.'
-              : 'The listing is public, but it has not published an action the marketplace can run.'}
+              : detail.availability?.reason ?? 'The listing is public, but it has not published an action the marketplace can run.'}
         </Txt>
         {rails.length > 0 || !gated ? (
           <RailChooser

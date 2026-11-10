@@ -22,6 +22,11 @@ export interface AgentInterface {
   vaultMinDepositUsd: number | null;
 }
 
+// the sentence a gated listing answers with wherever a hire would be sold. the
+// seller issues the credentials, so the marketplace cannot complete the call
+export const GATED_HIRE_NOTE =
+  "This listing gates its endpoint behind credentials its seller issues. The marketplace holds none, so a paid call or job would stop at that wall. Ask the seller for access at its endpoint instead.";
+
 export async function captureAgentSkills(agent: {
   mcp_server?: string | null;
   a2a_endpoint?: string | null;

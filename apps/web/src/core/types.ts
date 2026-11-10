@@ -68,6 +68,29 @@ export const CATEGORY_KEYS: CategoryKey[] = CATEGORIES.map((c) => c.key);
 
 export type VerificationStatus = "delivered" | "gated" | "dead" | "unreachable" | "online" | "restricted" | "not_checked" | "unresponsive";
 
+// one verdict assembled by the server from verification, admission, delist and
+// the card's access declaration. the shelf and detail page read this instead of
+// re-deriving the same state from separate fields.
+export interface Availability {
+  phase:
+    | "unknown"
+    | "live"
+    | "gated"
+    | "failing"
+    | "delisted"
+    | "dead"
+    | "unreachable"
+    | "unresponsive"
+    | "restricted"
+    | "not-checked";
+  shelf: boolean;
+  hireable: boolean;
+  quotable: boolean;
+  failingSince: string | null;
+  failingDays: number | null;
+  reason: string;
+}
+
 export interface Verification {
   status: VerificationStatus;
   responseMs: number;
@@ -103,6 +126,7 @@ export interface AgentSummary {
   category?: CategoryKey | "general";
   categoryScores?: Partial<Record<CategoryKey, number>>;
   verification?: Verification;
+  availability?: Availability;
   pcs?: boolean;
   // the seller gates its endpoint behind credentials it issues; the marketplace
   // holds none, so the card says so and the detail page explains how to ask
@@ -160,6 +184,7 @@ export interface AgentDetail {
   created_at: string;
   updated_at: string;
   verification?: Verification;
+  availability?: Availability;
   pcs?: boolean;
   // the seller gates its endpoint behind credentials it issues; the marketplace
   // holds none, so no rail that dials the endpoint is offered

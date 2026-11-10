@@ -67,6 +67,18 @@ export function agentRails(detail: AgentDetail, house: boolean): AgentRail[] {
   // marketplace holds none, so a call or job would be paid and reach a wall;
   // the vault still runs because the seller's executor does the trading
   const gated = detail.accessGated === true
+  // a listing the server has already ruled out (failing, delisted, dead or a
+  // no-answer verdict) sells nothing here; gated is the one exception because
+  // the seller's own executor can still run a vault hire
+  const phase = detail.availability?.phase
+  const unavailable =
+    phase === 'failing' ||
+    phase === 'delisted' ||
+    phase === 'dead' ||
+    phase === 'unreachable' ||
+    phase === 'unresponsive' ||
+    phase === 'restricted'
+  if (unavailable) return []
   const namesOurEscrow = house || mentions(text, ESCROW_FUNDER_BY_CHAIN[detail.chain_id])
 
   // the shelf leads with the vault, then the job, then the call, and every

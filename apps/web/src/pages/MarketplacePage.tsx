@@ -682,17 +682,30 @@ function AgentCard({
     : agent.image_url ?? defaultAvatarFor(agent.chain_id, String(agent.token_id))
   const key = `${agent.chain_id}/${agent.token_id}`
   const verdict = verdictFor(agent.chain_id, agent.verification)
-  // a card that declares its own access is gated even when the last probe came
-  // back online: the marketplace holds no credentials, so it cannot be hired here
-  const gated = agent.accessGated === true || agent.verification?.status === 'gated'
+  // the server already assembled the verdict; read it rather than rebuilding the
+  // same state from verification + the card. gated keeps its own label because
+  // the listing is reachable, just not hireable here
+  const availability = agent.availability
+  const phase = availability?.phase
+  const gated = phase === 'gated' || agent.accessGated === true || agent.verification?.status === 'gated'
+  const ruledOut =
+    phase === 'failing' ||
+    phase === 'delisted' ||
+    phase === 'dead' ||
+    phase === 'unreachable' ||
+    phase === 'unresponsive' ||
+    phase === 'restricted'
   const shown = gated
     ? {
         label: 'Gated',
         tone: 'held' as const,
         explain:
+          availability?.reason ??
           'The seller gates this listing behind credentials it issues. The marketplace holds none, so open the listing to ask for access.',
       }
-    : verdict
+    : ruledOut && availability
+      ? { label: 'Restricted', tone: 'held' as const, explain: availability.reason }
+      : verdict
   const jobOnly = sellsByJob(agent.skills)
   const score = agent.total_score > 0 ? formatScore(agent.total_score) : null
   const reviews = agent.total_feedbacks

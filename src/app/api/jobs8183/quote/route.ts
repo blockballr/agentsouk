@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { takesJobs } from "@agora/core";
 import { fetchAgentDetail } from "@/lib/scanner";
-import { captureAgentSkills } from "@/lib/agent-interface";
+import { captureAgentSkills, GATED_HIRE_NOTE } from "@/lib/agent-interface";
 import { loadDelisted } from "@/lib/delist-store";
 import { isAgentOwner } from "@/lib/boost-auth";
 import { targetChainId } from "@/lib/types";
@@ -75,6 +75,14 @@ export async function POST(req: NextRequest) {
   if (!takesJobs(skills)) {
     return NextResponse.json(
       { success: false, notAJobSeller: true, error: `${detail.name} does not take ERC-8183 jobs on its card.` },
+      { status: 409 },
+    );
+  }
+  // a gated seller's quote endpoint answers with its own auth wall, so refuse
+  // here instead of dialing it and returning a 502 the buyer cannot act on
+  if (detail.accessGated) {
+    return NextResponse.json(
+      { success: false, accessGated: true, error: `${detail.name}: ${GATED_HIRE_NOTE}` },
       { status: 409 },
     );
   }

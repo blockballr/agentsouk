@@ -16,6 +16,7 @@ import { loadDelisted } from "@/lib/delist-store";
 import { isAgentOwner } from "@/lib/boost-auth";
 import { escrowFunder } from "@/lib/escrow";
 import { clientIpFrom, enforceRateLimit, type RateLimitVerdict } from "@/lib/rate-limit";
+import { GATED_HIRE_NOTE } from "@/lib/agent-interface";
 
 export const dynamic = "force-dynamic";
 
@@ -146,6 +147,15 @@ export async function POST(req: NextRequest) {
   if (sellsByJob(skills)) {
     return NextResponse.json(
       { success: false, sellsByJob: true, error: `${detail.name}: ${JOB_SELLER_NOTE}` },
+      { status: 409 },
+    );
+  }
+  // a gated listing answers only behind its seller's credentials, so a paid
+  // call would settle and stop at that wall. the refusal sits here for the same
+  // reason the job refusal does: every hire path passes here before a signature
+  if (detail.accessGated) {
+    return NextResponse.json(
+      { success: false, accessGated: true, error: `${detail.name}: ${GATED_HIRE_NOTE}` },
       { status: 409 },
     );
   }
