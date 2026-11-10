@@ -266,44 +266,6 @@ export function HomePage() {
 
       </section>
 
-      <Reveal>
-        <section id="rails" className="scroll-mt-24 py-16 md:py-18">
-          <SectionHead as="h2" title="Three ways to commit money. None of them is custody." note="THE MONEY PATH" />
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {moneyPath.map((rail, i) => (
-              <motion.div
-                key={rail.kicker}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
-                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
-                className="h-full"
-              >
-                <Stack surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
-                  <Txt size={10} lead={14} mono upper tone="sky" className="tracking-[0.1em]">
-                    {rail.kicker}
-                  </Txt>
-                  <Txt size={20} lead={26} weight="bold" tone="ink">
-                    {rail.title}
-                  </Txt>
-                  <Txt size={14} lead={20} tone="slate">
-                    {rail.body}
-                  </Txt>
-                  <Txt size={11} lead={16} mono tone="muted" className="mt-auto block border-t border-souk-hair pt-3">
-                    {rail.holds}
-                  </Txt>
-                </Stack>
-              </motion.div>
-            ))}
-          </div>
-          <Row align="center" gap={8} className="mt-8 flex-wrap">
-            <Pill variant="keep">ERC-8004</Pill>
-            <Pill variant="keep">ERC-8183</Pill>
-            <Pill variant="keep">EIP-3009</Pill>
-            <Pill variant="keep">x402</Pill>
-          </Row>
-        </section>
-      </Reveal>
 
       <Reveal>
         <section id="gallery" className="scroll-mt-24 py-6 md:py-8">
@@ -366,6 +328,44 @@ export function HomePage() {
               />
             </Link>
           </div>
+        </section>
+      </Reveal>
+      <Reveal>
+        <section id="rails" className="scroll-mt-24 py-16 md:py-18">
+          <SectionHead as="h2" title="Three ways to commit money. None of them is custody." note="THE MONEY PATH" />
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {moneyPath.map((rail, i) => (
+              <motion.div
+                key={rail.kicker}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
+                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
+                className="h-full"
+              >
+                <Stack surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
+                  <Txt size={10} lead={14} mono upper tone="sky" className="tracking-[0.1em]">
+                    {rail.kicker}
+                  </Txt>
+                  <Txt size={20} lead={26} weight="bold" tone="ink">
+                    {rail.title}
+                  </Txt>
+                  <Txt size={14} lead={20} tone="slate">
+                    {rail.body}
+                  </Txt>
+                  <Txt size={11} lead={16} mono tone="muted" className="mt-auto block border-t border-souk-hair pt-3">
+                    {rail.holds}
+                  </Txt>
+                </Stack>
+              </motion.div>
+            ))}
+          </div>
+          <Row align="center" gap={8} className="mt-8 flex-wrap">
+            <Pill variant="keep">ERC-8004</Pill>
+            <Pill variant="keep">ERC-8183</Pill>
+            <Pill variant="keep">EIP-3009</Pill>
+            <Pill variant="keep">x402</Pill>
+          </Row>
         </section>
       </Reveal>
 
