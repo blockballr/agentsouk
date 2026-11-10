@@ -12,13 +12,14 @@ Built for the BNB Chain hackathon "The Smart Money Era: Build the Era".
 
 ## What you can do today
 
-- Browse and compare. Four categories: rebalancing and LP ranges, grid trading, yield, and health factor. Each page shows declared skills, reachability, reputation and hire terms.
-- Hire by call. An x402 payment with a gasless EIP-3009 signature, settled by our relay. The agent answers at its own endpoint.
+- Browse and compare. Four categories: rebalancing and LP ranges, grid trading, yield, and health factor. Each page shows declared skills, availability, reputation and hire terms.
+- Plan first. `get_runbook` (or `agentsouk runbook <intent>`) returns the live steps for browse, hire, jobs, vault or publish, with the agent's availability, rails and executor when a token id is given.
+- Hire by call. An x402 payment with a gasless EIP-3009 signature, settled through the escrow funder by our relay and released to the agent after the delivery is verified. The agent answers at its own endpoint.
 - Hire by job. An ERC-8183 job quoted through the kernel, funded on chain, delivered, and released after the dispute window. The card must declare the negotiation steps.
 - Fund a vault hire. The deposit stays in HireVault, and the named agent trades the bound pair inside the stored-price floor, the drawdown budget and the slippage cap. The buyer names the venue and can withdraw at any time; the guard pulls the position if the reserve turns paused, frozen, below the rate floor or short of liquidity.
 - Build and list. List an agent you already run, or describe a new one in the builder, export a Node 20 repo, deploy it anywhere, attach the endpoint, and register on ERC-8004.
 
-Agents set their own x402 price; the marketplace does not impose one. Our defaults are 0.01 $U for a grid plan, 0.05 $U for rebalancing, 0.05 $U for yield and 0.02 $U for a health check. ERC-8183 sellers set their own price, and a vault hire is funded by the buyer. Managed-trade jobs price at 50 bps of the capital they name, between 0.01 and 0.05 $U.
+Agents may publish their own x402 price; the marketplace clamps it to a 0.02 $U floor and a 2 $U ceiling per call, and the same bounds apply to a requested amount. The default is 0.02 $U. ERC-8183 sellers set their own price, and a vault hire is funded by the buyer. Managed-trade jobs price at 50 bps of the capital they name, between 0.01 and 0.05 $U.
 
 ## Proof
 
@@ -39,10 +40,11 @@ Agents set their own x402 price; the marketplace does not impose one. Our defaul
 
 ## For builders
 
-- List an agent. The wizard takes the name, description, category, endpoint, card skills and the agent wallet. The card is the authority on how the agent sells, and the marketplace checks it at read time.
-- Build an agent. Prompt-to-code compose writes a manifest and code, export produces a runnable Node 20 repo, and you can deploy it anywhere, attach the endpoint and register. CreateOS is retired.
+- List an agent. The wizard takes the name, description, category, endpoint, card skills and the agent wallet. The wallet is the owner's; the key never reaches the marketplace. The card is the authority on how the agent sells, and the marketplace checks it at read time.
+- Build an agent. Prompt-to-code compose writes a manifest and code, export produces a runnable Node 20 repo, and you can deploy it anywhere, attach the endpoint and register. CreateOS is retired. A vault agent declares its policy and executor in the same manifest.
 - Use the SDK. `packages/vault-sdk` carries the ABIs, guard math, calldata and runner. `examples/vault-agent` is a runnable agent that targets a weight, simulates before it sends, and writes a receipt.
-- Call from an agent. The marketplace serves eight MCP tools at `POST /api/mcp`, with the written contract in [skill/SKILL.md](skill/SKILL.md) and [skill/reference/tools.md](skill/reference/tools.md). The read tools are live; the spend path needs the caller's own funded wallet.
+- Call from an agent. The marketplace serves fourteen MCP tools at `POST /api/mcp`, starting with `get_runbook`, which returns the live plan for one intent and one agent. `/.well-known/agentsouk.json` is the discovery root: chain, settlement token, tools and intents in one fetch. The fallback reference is [skill/SKILL.md](skill/SKILL.md) with [skill/reference/tools.md](skill/reference/tools.md).
+- Call from a terminal. `packages/cli` is `agentsouk`: search, show, call (A2A, MCP, x402), quote and hire jobs, the signed job actions, listing edit, vault hire and withdraw, and the runbook. Every write is previewed and needs `--yes`.
 
 ## How it works
 
