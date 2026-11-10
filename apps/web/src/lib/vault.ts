@@ -360,13 +360,13 @@ export function feeLabel(fee: number): string {
   return `${(fee / 10000).toFixed(2)}%`
 }
 
-export async function tagHirePolicy(txHash: string): Promise<{ hireId: string; policy: string } | null> {
+export async function tagHirePolicy(txHash: string, tokenId?: string): Promise<{ hireId: string; policy: string } | null> {
   const base = import.meta.env.VITE_API_URL ?? '/api'
   try {
     const res = await fetch(`${base}/vault/policy-tag/register`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ txHash }),
+      body: JSON.stringify({ txHash, ...(tokenId ? { tokenId } : {}) }),
     })
     if (!res.ok) return null
     const body = await res.json()

@@ -18,7 +18,7 @@ if (process.env.DATABASE_URL) {
 }
 
 const MEMORY_CAP = 5000;
-type PolicyRow = { policy: string; txHash: string | null; openedAt: string | null };
+type PolicyRow = { policy: string; executor: string; txHash: string | null; openedAt: string | null };
 const policies = new Map<string, PolicyRow>();
 let tablesReady: Promise<boolean> | null = null;
 
@@ -41,11 +41,13 @@ async function ensureTables(): Promise<boolean> {
           vault text not null default '',
           hire_id text not null,
           policy text not null,
+          executor text not null default 'soukdio',
           updated_at timestamptz not null default now(),
           primary key (chain_id, vault, hire_id)
         )`;
       await sql!`alter table hire_policy add column if not exists vault text not null default ''`;
       await sql!`alter table hire_policy add column if not exists tx_hash text`;
+      await sql!`alter table hire_policy add column if not exists executor text not null default 'soukdio'`;
       await sql!`alter table hire_policy add column if not exists opened_at timestamptz`;
       await sql!`alter table hire_policy drop constraint if exists hire_policy_pkey`;
       await sql!`alter table hire_policy add primary key (chain_id, vault, hire_id)`;
@@ -76,12 +78,13 @@ export async function setHirePolicy(
   chainId: number,
   hireId: string,
   policy: string,
-  meta?: { txHash?: string | null; openedAt?: string | null },
+  meta?: { txHash?: string | null; openedAt?: string | null; executor?: string | null },
 ): Promise<void> {
   const k = key(chainId, hireId);
   const vault = vaultKey(chainId);
   const row: PolicyRow = {
     policy,
+    executor: meta?.executor === "agent" ? "agent" : "soukdio",
     txHash: meta?.txHash ?? null,
     openedAt: meta?.openedAt ?? null,
   };
@@ -93,10 +96,11 @@ export async function setHirePolicy(
   if (sql && (await ensureTables())) {
     try {
       await sql`
-        insert into hire_policy (chain_id, vault, hire_id, policy, tx_hash, opened_at)
-        values (${chainId}, ${vault}, ${hireId}, ${policy}, ${row.txHash}, ${row.openedAt})
+        insert into hire_policy (chain_id, vault, hire_id, policy, executor, tx_hash, opened_at)
+        values (${chainId}, ${vault}, ${hireId}, ${policy}, ${row.executor}, ${row.txHash}, ${row.openedAt})
         on conflict (chain_id, vault, hire_id) do update set
           policy = excluded.policy,
+          executor = excluded.executor,
           tx_hash = coalesce(excluded.tx_hash, hire_policy.tx_hash),
           opened_at = coalesce(excluded.opened_at, hire_policy.opened_at),
           updated_at = now()`;
@@ -106,16 +110,17 @@ export async function setHirePolicy(
   }
 }
 
-export async function listHirePolicies(chainId: number): Promise<Array<{ hireId: string; policy: string; txHash: string | null; openedAt: string | null }>> {
-  const out: Array<{ hireId: string; policy: string; txHash: string | null; openedAt: string | null }> = [];
+export async function listHirePolicies(chainId: number): Promise<Array<{ hireId: string; policy: string; executor: string; txHash: string | null; openedAt: string | null }>> {
+  const out: Array<{ hireId: string; policy: string; executor: string; txHash: string | null; openedAt: string | null }> = [];
   const vault = vaultKey(chainId);
   if (sql && (await ensureTables())) {
     try {
-      const rows = await sql`select hire_id, policy, tx_hash, opened_at from hire_policy where chain_id = ${chainId} and vault = ${vault}`;
-      for (const r of rows as unknown as Array<{ hire_id: string; policy: string; tx_hash: string | null; opened_at: string | Date | null }>) {
+      const rows = await sql`select hire_id, policy, executor, tx_hash, opened_at from hire_policy where chain_id = ${chainId} and vault = ${vault}`;
+      for (const r of rows as unknown as Array<{ hire_id: string; policy: string; executor: string; tx_hash: string | null; opened_at: string | Date | null }>) {
         out.push({
           hireId: r.hire_id,
           policy: r.policy,
+          executor: r.executor ?? "soukdio",
           txHash: r.tx_hash,
           openedAt: r.opened_at ? new Date(r.opened_at).toISOString() : null,
         });
@@ -128,7 +133,7 @@ export async function listHirePolicies(chainId: number): Promise<Array<{ hireId:
   for (const [k, v] of policies) {
     const [c, va, id] = k.split(":");
     if (Number(c) === chainId && va === vault) {
-      out.push({ hireId: id, policy: v.policy, txHash: v.txHash, openedAt: v.openedAt });
+      out.push({ hireId: id, policy: v.policy, executor: v.executor, txHash: v.txHash, openedAt: v.openedAt });
     }
   }
   return out;

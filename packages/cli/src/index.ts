@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import { formatUnits } from "viem";
 import { Command } from "commander";
 import { configPath, readConfigFile, resolveConfig, type CliConfig } from "./core/config";
 import { report } from "./core/errors";
@@ -9,6 +10,7 @@ import { ownedAgentState, parseAgentRef, railsOf, searchAgents, showAgent, verif
 import { callAgent } from "./marketplace/call";
 import { callMcpTool, listMcpTools, parseMcpArgs } from "./marketplace/mcp";
 import { paidCall, preparePayment } from "./marketplace/x402";
+import { getRunbook } from "./marketplace/runbook";
 import { listJobs, notifyJob, quoteJob, showJob } from "./marketplace/jobs";
 import { actOnJob, type JobActionName } from "./marketplace/job-actions";
 import { fundHire, hireCalls, planHire } from "./marketplace/hire";
@@ -20,6 +22,7 @@ import { rateAgent } from "./marketplace/ratings";
 import { controlListing } from "./marketplace/control";
 import { editListing, prepareEdit } from "./marketplace/listing-edit";
 import { vaultAgents, vaultFor, vaultInfo, vaultPnl, vaultPositions, vaultReceipts } from "./marketplace/vault";
+import { gasCost, planVaultHire, planVaultWithdraw, sendVaultHire, sendVaultWithdraw } from "./marketplace/vault-hire";
 import { CliError } from "./core/errors";
 
 const VERSION = "0.1.0";
@@ -156,6 +159,30 @@ program
           { key: "value", label: "value", width: 90 },
         ])}\n`,
       );
+    }),
+  );
+
+program
+  .command("runbook <intent> [agent]")
+  .description("the live plan for browse, hire, jobs, vault or publish")
+  .action(
+    guard(async (intent: string, ref: string | undefined) => {
+      const cfg = config();
+      let chainId = cfg.chainId;
+      let tokenId: string | undefined;
+      if (ref) {
+        const parsed = parseAgentRef(ref, cfg.chainId);
+        chainId = parsed.chainId;
+        tokenId = parsed.tokenId;
+      }
+      const book = await getRunbook(cfg, intent, tokenId, chainId);
+      if (format() === "json") {
+        process.stdout.write(
+          `${renderJson(book, { chainId, ...(tokenId ? { tokenId } : {}) })}\n`,
+        );
+        return;
+      }
+      process.stdout.write(`${book.markdown}\n`);
     }),
   );
 
@@ -1020,6 +1047,194 @@ vault
       const cfg = config();
       const body = await vaultReceipts(cfg, options.hire);
       process.stdout.write(`${renderJson(body, { chainId: cfg.chainId, hireId: options.hire })}\n`);
+    }),
+  );
+
+vault
+  .command("hire <agent>")
+  .description("open a HireVault hire: the deposit stays in the vault, the agent trades inside its caps")
+  .requiredOption("--deposit <amount>", "the amount to place in the vault")
+  .option("--token <token>", "wbnb, usdt, or the bound token address", "wbnb")
+  .option("--days <n>", "the term in days, 1 to 90", "1")
+  .option("--slippage <percent>", "the trade slippage ceiling", "5")
+  .option("--fee <tier>", "100, 500, 2500, 10000, or auto", "auto")
+  .option("--agent-fee <percent>", "the agent's performance fee", "0")
+  .option("--max-loss <percent>", "the loss the agent may not cross", "20")
+  .option("--venue <address>", "a venue to supply to, or none", "none")
+  .option("--client <wallet>", "the buyer wallet, for a preview without a key")
+  .option("--key-file <path>", "the buyer key")
+  .option("--yes", "sign and send")
+  .action(
+    guard(
+      async (
+        ref: string,
+        options: {
+          deposit: string;
+          token: string;
+          days: string;
+          slippage: string;
+          fee: string;
+          agentFee: string;
+          maxLoss: string;
+          venue: string;
+          client?: string;
+          keyFile?: string;
+          yes?: boolean;
+        },
+      ) => {
+        const cfg = config();
+        const { chainId, tokenId } = parseAgentRef(ref, cfg.chainId);
+        const signer = options.keyFile || process.env.AGENTSOUK_KEY ? loadSigner({ keyFile: options.keyFile }) : null;
+        const client = options.client ?? signer?.address ?? "";
+        if (!client) throw new CliError("pass --client to preview, or --key-file to sign", "usage", 2);
+        if (!/^0x[0-9a-fA-F]{40}$/.test(client)) throw new CliError("--client must be a wallet address", "usage", 2);
+        if (signer && options.client && options.client.toLowerCase() !== signer.address.toLowerCase()) {
+          throw new CliError(`--client ${options.client} is not the key's address ${signer.address}`, "usage", 2);
+        }
+
+        const plan = await planVaultHire(cfg, client as `0x${string}`, chainId, tokenId, options);
+        const gas = {
+          wrap: gasCost(plan.gas.wrap, plan.gas.gasPrice),
+          approve: gasCost(plan.gas.approve, plan.gas.gasPrice),
+          open: gasCost(plan.gas.open, plan.gas.gasPrice),
+        };
+        if (format() === "json" && !options.yes) {
+          process.stdout.write(
+            `${renderJson(
+              {
+                agent: plan.agentName,
+                tokenId,
+                agentWallet: plan.agentWallet,
+                executor: plan.executor,
+                vault: plan.vault,
+                buyer: plan.client,
+                token: plan.token.symbol,
+                deposit: plan.amountText,
+                expiry: plan.expiryIso,
+                slippage: `${plan.slippageBps / 100}%`,
+                fee: plan.feeLabel,
+                agentFee: `${plan.agentFeeBps / 100}%`,
+                maxLoss: `${plan.maxLossBps / 100}%`,
+                venue: plan.venue,
+                cap: plan.capText,
+                floor: plan.floorText,
+                openHires: plan.maxOpen === null ? plan.openCount : `${plan.openCount}/${plan.maxOpen}`,
+                needsApprove: plan.needsApprove,
+                wrapBnb: String(plan.wrapWei),
+                gas,
+              },
+              { chainId, tokenId },
+            )}\n`,
+          );
+        } else if (!options.yes) {
+          process.stdout.write(
+            `${renderTable(
+              [
+                { field: "agent", value: plan.agentName },
+                { field: "agent wallet", value: plan.agentWallet },
+                { field: "executor", value: plan.executor },
+                { field: "vault", value: plan.vault },
+                { field: "deposit", value: `${plan.amountText} ${plan.token.symbol}` },
+                { field: "expiry", value: plan.expiryIso },
+                { field: "slippage", value: `${plan.slippageBps / 100}%` },
+                { field: "fee tier", value: plan.feeLabel },
+                { field: "agent fee", value: `${plan.agentFeeBps / 100}%` },
+                { field: "max loss", value: `${plan.maxLossBps / 100}%` },
+                { field: "venue", value: plan.venue },
+                { field: "cap", value: plan.capText },
+                { field: "floor", value: plan.floorText ?? "-" },
+                { field: "open hires", value: plan.maxOpen === null ? `${plan.openCount}` : `${plan.openCount}/${plan.maxOpen}` },
+                { field: "approve", value: plan.needsApprove ? "needed" : "already approved" },
+                { field: "wrap", value: plan.wrapWei > 0n ? `${formatUnits(plan.wrapWei, 18)} BNB` : "none" },
+                { field: "gas", value: `wrap ${gas.wrap}, approve ${gas.approve}, open ${gas.open}` },
+              ],
+              [
+                { key: "field", label: "field" },
+                { key: "value", label: "value", width: 100 },
+              ],
+            )}\n\npass --yes to sign and open the hire\n`,
+          );
+        }
+        if (!options.yes) return;
+        if (!signer) throw new CliError("pass --key-file or set AGENTSOUK_KEY to sign", "key_missing", 2);
+
+        const result = await sendVaultHire(cfg, signer, plan);
+        if (format() === "json") {
+          process.stdout.write(
+            `${renderJson(
+              {
+                ...result,
+                agent: plan.agentName,
+                buyer: plan.client,
+                token: plan.token.symbol,
+                deposit: plan.amountText,
+                expiry: plan.expiryIso,
+                fee: plan.feeLabel,
+              },
+              { chainId, tokenId, hireId: result.hireId ?? undefined },
+            )}\n`,
+          );
+          return;
+        }
+        process.stdout.write(
+          `opened  ${result.hireId ?? "(id not read)"}  ${result.openHash}  ${result.policy ?? "untagged"}  ${
+            result.swept === false ? "self-run" : result.swept ? "swept here" : "untagged"
+          }\n`,
+        );
+        if (result.tagError) {
+          process.stderr.write(`the hire opened but was not tagged: ${result.tagError}\n`);
+        }
+      },
+    ),
+  );
+
+vault
+  .command("withdraw <id>")
+  .description("close a hire and return every balance to the buyer")
+  .option("--key-file <path>", "the buyer key")
+  .option("--yes", "sign and send")
+  .action(
+    guard(async (id: string, options: { keyFile?: string; yes?: boolean }) => {
+      const cfg = config();
+      const signer = loadSigner({ keyFile: options.keyFile });
+      const plan = await planVaultWithdraw(cfg, signer.address, id);
+      const gas = gasCost(plan.gas, plan.gasPrice);
+      if (format() === "json" && !options.yes) {
+        process.stdout.write(
+          `${renderJson(
+            {
+              hire: plan.id,
+              vault: plan.vault,
+              buyer: plan.buyer,
+              agent: plan.agent,
+              open: plan.open,
+              value: plan.valueText,
+              gas,
+            },
+            { chainId: cfg.chainId, hireId: plan.id },
+          )}\n`,
+        );
+      } else if (!options.yes) {
+        process.stdout.write(
+          `${renderTable(
+            [
+              { field: "hire", value: plan.id },
+              { field: "vault", value: plan.vault },
+              { field: "buyer", value: plan.buyer },
+              { field: "agent", value: plan.agent },
+              { field: "value now", value: plan.valueText === null ? "-" : `${plan.valueText} USDT` },
+              { field: "gas", value: gas },
+            ],
+            [
+              { key: "field", label: "field" },
+              { key: "value", label: "value", width: 100 },
+            ],
+          )}\n\npass --yes to close it\n`,
+        );
+      }
+      if (!options.yes) return;
+      const hash = await sendVaultWithdraw(cfg, signer, plan);
+      process.stdout.write(`${format() === "json" ? renderJson({ hire: plan.id, txHash: hash }) : `closed  ${plan.id}  ${hash}`}\n`);
     }),
   );
 

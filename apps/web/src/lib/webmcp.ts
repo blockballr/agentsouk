@@ -15,6 +15,7 @@ import {
   getAgentDetail,
   getAgents,
   getHireRequirements,
+  getRunbook,
   getTask,
   settleHire,
 } from './api'
@@ -59,6 +60,8 @@ export interface WebMcpModelContextLike {
 }
 
 const CATEGORY_VALUES = ['all', ...CATEGORY_KEYS, 'general']
+// mirrors src/lib/runbook-intents.ts; tests/test-webmcp.ts keeps the schema equal
+const RUNBOOK_INTENTS = ['browse', 'hire', 'jobs', 'vault', 'publish'] as const
 // reachability is not offered as a sort: it settles the ties underneath whichever
 // metric is named, so it is part of every order rather than one of the choices
 const SORTS = ['score', 'newest', 'feedback', 'health']
@@ -129,6 +132,38 @@ function defaultChainId(): number {
 }
 
 export const WEBMCP_TOOLS: WebMcpTool[] = [
+  {
+    name: 'get_runbook',
+    title: 'Get the live runbook',
+    description:
+      'Get the live runbook for one intent: the exact steps, tool calls and CLI commands to browse, hire over x402, run an ERC-8183 job, open or close a HireVault position, or publish a listing. When tokenId is given, the plan carries that agent\'s current availability, rails, endpoint and vault executor. Call this before acting so the plan matches the live marketplace.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        intent: {
+          type: 'string',
+          enum: [...RUNBOOK_INTENTS],
+          description: 'The plan to build. Required.',
+        },
+        tokenId: {
+          type: 'string',
+          description: 'The ERC-8004 token id to tailor the plan to. Optional.',
+        },
+        chainId: {
+          type: 'integer',
+          description: 'Chain id. Defaults to the chain this deployment serves.',
+        },
+      },
+      required: ['intent'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+    execute: withError(async (args) => {
+      const intent = asString(args.intent)
+      if (!intent) return errorResult('intent is required.')
+      return jsonResult(await getRunbook(intent, asString(args.tokenId), asNumber(args.chainId)))
+    }),
+  },
   {
     name: 'list_categories',
     title: 'List agent categories',

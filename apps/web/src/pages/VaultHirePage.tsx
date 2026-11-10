@@ -628,7 +628,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
       const expiry = expiryFor(EXPIRY_PRESETS[expiryIndex].days)
       const opened = await sendAndConfirm(provider, account, { to: vault, data: openCalldata(agentAddress, token.address, amount, token.decimals, expiry, slippage * 100, selectedFee.fee, agentFeeBps, maxLossBps, venueTarget ?? ZERO_ADDRESS) }, 'open')
       logLine(`Opened. ${CHAIN.explorer}${opened}`)
-      const tag = await tagHirePolicy(opened)
+      const tag = await tagHirePolicy(opened, picked?.tokenId ?? tokenId)
       logLine(tag ? `Tagged hire ${tag.hireId} as ${tag.policy}.` : 'Opened, but the policy tag did not land. The hire waits until it is tagged.')
       await refresh()
     } catch (e) {

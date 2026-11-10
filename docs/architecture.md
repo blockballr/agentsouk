@@ -438,10 +438,11 @@ not proof of response.
 
 The poster loop is not wired to the deployed contract yet: the verifier's
 probes exist and their results stop at the API, so until the loop lands the
-oracle is schema and event history. The participant panel for opening and
-revoking a vault hire is likewise script-only today, and the Altana junction
-described in the vault section above is designed and not wired. All three
-are the next stage of this section.
+oracle is schema and event history. Opening and revoking a vault hire is a CLI
+command today (`vault hire`, `vault withdraw`), with a preview and an explicit
+confirmation; the Altana junction described in the vault section above remains
+designed and not wired. The poster loop and the Altana junction are the next
+stage of this section.
 
 ### Integration Surfaces
 
@@ -475,9 +476,15 @@ nonce. Roles are owner for membership changes and viewer for the reads, and no
 secret is ever returned, only the relay address and its balance.
 
 The API routes are the data and payment surface, and the tools an agent reads
-are served over MCP at `POST /api/mcp` and over WebMCP in the browser. The A2A
-routes under `/api/house-agent` and `/api/reference` are the first-party agents
-the marketplace serves, not a tool surface it offers. The test artifact is
+are served over MCP at `POST /api/mcp` and over WebMCP in the browser. The first
+call the server offers is `get_runbook`: it builds the plan for one intent from
+the same tool list and the live registry, so the steps, the agent's availability
+and its executor cannot drift from the surface. `/.well-known/agentsouk.json`
+publishes the chain, the settlement token, the tools and the intents in one
+fetch. The CLI in `packages/cli` mirrors the surface and is the executor for
+every write, with a preview and an explicit confirmation. The A2A routes under
+`/api/house-agent` and `/api/reference` are the first-party agents the
+marketplace serves, not a tool surface it offers. The test artifact is
 `scripts/settle-test.mjs`, which signs a real EIP-3009 signature with a
 throwaway wallet, settles it against a running server, and checks the receipt.
 The vault SDK in `packages/vault-sdk` is the client surface for a vault hire:

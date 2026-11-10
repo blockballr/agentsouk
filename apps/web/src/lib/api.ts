@@ -472,6 +472,25 @@ export async function getTask(taskId: string): Promise<TaskBundle | null> {
   return readJsonBody<TaskBundle>(res, 'task')
 }
 
+export interface RunbookResult {
+  intent: string
+  version: string
+  chainId: number
+  agent?: Record<string, unknown>
+  steps: Array<{ step: number; do: string; tool?: string; command?: string; note?: string }>
+  refusals: string[]
+  docs: string
+  markdown: string
+}
+
+export async function getRunbook(intent: string, tokenId?: string, chainId?: number): Promise<RunbookResult> {
+  const sp = new URLSearchParams({ intent })
+  if (tokenId) sp.set('tokenId', tokenId)
+  if (chainId) sp.set('chainId', String(chainId))
+  const res = await fetch(`${BASE}/runbook?${sp.toString()}`)
+  return readJsonBody<RunbookResult>(res, 'runbook')
+}
+
 export interface VaultAgentLink {
   tokenId: string
   wallet: string
