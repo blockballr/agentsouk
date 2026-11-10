@@ -1485,23 +1485,25 @@ export async function queryAgents(
     items = items.filter((a) => a.owner_address?.toLowerCase() === HOUSE_OPERATOR.toLowerCase());
   }
 
-  // the job-type leg of the double sort: a chosen group keeps only its own
-  // agents, so the shelf shows that group rather than the whole tiered list.
-  // the escrow and vault modes name work we hold, so they stay house-only: a
-  // summary carries no manifest address to prove a third-party contract is
-  // ours. the detail page still promotes a third-party manifest that names our
-  // contract, and every listing keeps its callable rail here.
+  // the job leg is any admitted seller whose card takes ERC-8183 work: the
+  // quote route dials the seller itself and funds the shared kernel, so a
+  // third-party seller belongs here as much as a house one. the vault leg stays
+  // house-only, because a summary carries no manifest address to prove a
+  // third-party executor is the one that will trade the deposit.
   const houseOwned = (a: AgentSummary) =>
     a.owner_address?.toLowerCase() === HOUSE_OPERATOR.toLowerCase();
-  const heldJob = (a: AgentSummary) => houseOwned(a) && takesJobs(a.skills);
+  const offeredJob = (a: AgentSummary) => takesJobs(a.skills);
   const heldVault = (a: AgentSummary) => houseOwned(a) && takesVault(a.skills);
   if (resolvedType === "direct") {
-    // callable now, outside the escrow and vault modes; payment state is a badge, not the rail
-    items = items.filter((a) => !heldJob(a) && !heldVault(a) && Boolean(a.a2a_endpoint || a.mcp_server || a.web_endpoint));
+    // callable now, outside the job and vault modes; payment state is a badge,
+    // not the rail. a web-only endpoint cannot be dialed, so it is not a call
+    items = items.filter(
+      (a) => !offeredJob(a) && !heldVault(a) && Boolean(a.a2a_endpoint || a.mcp_server),
+    );
   } else if (resolvedType === "jobs") {
-    items = items.filter(heldJob);
+    items = items.filter(offeredJob);
   } else if (resolvedType === "x402") {
-    items = items.filter((a) => a.x402_supported && !heldJob(a));
+    items = items.filter((a) => a.x402_supported && !offeredJob(a));
   } else if (resolvedType === "vault") {
     items = items.filter(heldVault);
   }
