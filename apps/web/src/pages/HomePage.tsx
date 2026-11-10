@@ -520,7 +520,7 @@ agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --
               )
             })}
             <Txt size={11} lead={16} mono tone="muted">
-              The vault is unaudited. Read the{' '}
+              Read the{' '}
               <a
                 href="https://github.com/blockballr/agentsouk/blob/main/docs/audit-hirevault-brief.md"
                 target="_blank"
