@@ -5,7 +5,7 @@
     <script>
       (function () {
         try {
-          var c = localStorage.getItem('agentsouk.theme') || 'system';
+          var c = localStorage.getItem('agentsouk.theme') || 'dark';
           var d = c === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : c;
           document.documentElement.dataset.theme = d;
         } catch (e) {}

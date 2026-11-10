@@ -70,7 +70,7 @@ export function VerificationLoop({
       aria-label="Verifier check"
       aria-live="polite"
       tabIndex={-1}
-      className="scroll-mt-4 border border-white/15 bg-souk-indigo p-4 outline-none transition focus-visible:ring-2 focus-visible:ring-souk-data/60"
+      className="scroll-mt-4 rounded-[16px] border border-white/15 bg-souk-indigo p-4 outline-none transition focus-visible:ring-2 focus-visible:ring-souk-data/60"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="micro text-souk-indigo-labels">Verifier check</p>
@@ -104,9 +104,9 @@ export function VerificationLoop({
 
       {/* the rail keeps a head at every value, the way the job meter does: even at
           zero the fill shows a sliver, so the track never reads as a broken control */}
-      <div className="mt-3 h-[6px] w-full overflow-hidden rounded-[3px] bg-white/15">
+      <div className="mt-3 h-[6px] w-full overflow-hidden rounded-[4px] bg-white/15">
         <div
-          className="meter-fill relative h-full overflow-hidden rounded-[3px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
+          className="meter-fill relative h-full overflow-hidden rounded-[4px] transition-[width] duration-700 ease-out motion-reduce:transition-none"
           style={{
             width: `${Math.max(pct, 2)}%`,
             minWidth: 6,
@@ -116,7 +116,7 @@ export function VerificationLoop({
           {current ? (
             <span
               aria-hidden="true"
-              className="meter-shimmer absolute inset-y-0 left-0 w-[40%] rounded-[3px] bg-gradient-to-r from-transparent via-white/70 to-transparent"
+              className="meter-shimmer absolute inset-y-0 left-0 w-[40%] rounded-[4px] bg-gradient-to-r from-transparent via-white/70 to-transparent"
             />
           ) : null}
         </div>

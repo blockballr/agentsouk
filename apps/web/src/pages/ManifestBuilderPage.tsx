@@ -292,7 +292,7 @@ export function ManifestBuilderPage() {
           onChange={(e) => setPrompt(e.target.value)}
           rows={4}
           placeholder="e.g. wrap BNB into WBNB on BSC testnet, or send a daily report of my wallet balance"
-          className="w-full rounded-[10px] border border-souk-hair bg-souk-surface1 px-3 py-2 text-[13px] text-souk-ink placeholder:text-souk-muted focus:outline-none focus:ring-2 focus:ring-souk-sky/40"
+          className="w-full rounded-[12px] border border-souk-hair bg-souk-surface1 px-3 py-2 text-[13px] text-souk-ink placeholder:text-souk-muted focus:outline-none focus:ring-2 focus:ring-souk-sky/40"
         />
         <Row gap={8} align="center">
           <Btn kind="primary" disabled={composing || !prompt.trim()} onClick={() => void generateFromPrompt()}>
@@ -320,7 +320,7 @@ export function ManifestBuilderPage() {
             value={manifestText}
             onChange={(e) => setManifestText(e.target.value)}
             rows={18}
-            className="w-full rounded-[10px] border border-souk-hair bg-souk-surface1 px-3 py-2 font-mono text-[12px] text-souk-ink focus:outline-none focus:ring-2 focus:ring-souk-sky/40"
+            className="w-full rounded-[12px] border border-souk-hair bg-souk-surface1 px-3 py-2 font-mono text-[12px] text-souk-ink focus:outline-none focus:ring-2 focus:ring-souk-sky/40"
           />
         </Stack>
       )}
@@ -331,7 +331,7 @@ export function ManifestBuilderPage() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             rows={24}
-            className="w-full rounded-[10px] border border-souk-hair bg-souk-surface1 px-3 py-2 font-mono text-[12px] text-souk-ink focus:outline-none focus:ring-2 focus:ring-souk-sky/40"
+            className="w-full rounded-[12px] border border-souk-hair bg-souk-surface1 px-3 py-2 font-mono text-[12px] text-souk-ink focus:outline-none focus:ring-2 focus:ring-souk-sky/40"
           />
         </Stack>
       )}

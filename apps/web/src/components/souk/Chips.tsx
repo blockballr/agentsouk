@@ -29,7 +29,7 @@ export function Pill({
   const { box, text } = PILL[variant];
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-[6px] border ${box}`}
+      className={`inline-flex shrink-0 items-center rounded-[8px] border ${box}`}
       style={{ padding: '4px 11px' }}
     >
       <Txt size={11} lead={16} weight="extrabold" upper tone={text}>

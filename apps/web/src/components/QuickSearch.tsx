@@ -34,7 +34,7 @@ export function QuickSearch({ large }: { large?: boolean }) {
         onClick={() => setOpen(true)}
         aria-label="Search agents"
         title="Search agents  /"
-        className={`flex items-center justify-center rounded-none border border-souk-hair text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+        className={`flex items-center justify-center rounded-[8px] border border-souk-hair text-souk-steel transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
           large ? 'h-11 w-11' : 'h-[38px] w-[38px]'
         }`}
       >
@@ -169,7 +169,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
             aria-label="Search agents"
             className="h-14 w-full bg-transparent text-base text-souk-ink placeholder:text-souk-muted focus:outline-none"
           />
-          <kbd className="micro hidden rounded-[6px] border border-souk-hair px-1.5 py-0.5 font-mono text-[11px] text-souk-slate sm:inline">
+          <kbd className="micro hidden rounded-[8px] border border-souk-hair px-1.5 py-0.5 font-mono text-[11px] text-souk-slate sm:inline">
             Esc
           </kbd>
         </div>

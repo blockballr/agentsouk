@@ -18,7 +18,7 @@ export function PhotoTile({
       src={src}
       alt={alt}
       className={cx(
-        'duotone h-auto w-56 rounded-[14px] object-cover',
+        'duotone h-auto w-56 rounded-[16px] object-cover',
         className,
       )}
     />

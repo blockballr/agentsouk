@@ -115,7 +115,7 @@ export function NetworkTicker({
               setQuestMinimized(false)
               window.dispatchEvent(new CustomEvent('agentsouk.quest.visibility', { detail: { minimized: false } }))
             }}
-            className="rounded-[5px] border border-souk-sky/40 px-2 py-1 text-[0.7rem] font-semibold text-souk-sky transition hover:bg-souk-sky/10"
+            className="rounded-[8px] border border-souk-sky/40 px-2 py-1 text-[0.7rem] font-semibold text-souk-sky transition hover:bg-souk-sky/10"
           >
             {quest.kind === 'start'
               ? t('ticker.startQuest')

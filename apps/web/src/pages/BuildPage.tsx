@@ -140,7 +140,7 @@ export function BuildPage() {
           onChange={(e) => setPrompt(e.target.value)}
           rows={4}
           placeholder="e.g. a grid ladder from 100 to 200, 10 levels, 50 per rung"
-          className="w-full rounded-[10px] border border-souk-hair bg-souk-surface1 px-3 py-2 text-[13px] text-souk-ink placeholder:text-souk-muted focus:outline-none focus:ring-2 focus:ring-souk-sky/40"
+          className="w-full rounded-[12px] border border-souk-hair bg-souk-surface1 px-3 py-2 text-[13px] text-souk-ink placeholder:text-souk-muted focus:outline-none focus:ring-2 focus:ring-souk-sky/40"
         />
         <Turnstile onToken={setTurnstileToken} />
         <Row gap={8} align="center">

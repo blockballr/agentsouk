@@ -46,7 +46,7 @@ export function FreePreview({ endpoint, skills }: FreePreviewProps) {
   }
 
   return (
-    <div className="mt-4 border border-souk-hair bg-souk-surface1 p-4">
+    <div className="mt-4 rounded-[16px] border border-souk-hair bg-souk-surface1 p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[13px] font-semibold text-souk-ink">Free preview</p>
@@ -58,7 +58,7 @@ export function FreePreview({ endpoint, skills }: FreePreviewProps) {
           type="button"
           onClick={run}
           disabled={running}
-          className="rounded-none bg-souk-data px-4 py-2 text-[13px] font-semibold text-souk-canvas transition hover:brightness-95 disabled:opacity-40"
+          className="micro font-mono rounded-[6px] bg-souk-accent px-4 py-2 text-souk-on-accent transition hover:bg-souk-accent-hover disabled:opacity-40"
         >
           {running ? 'Running...' : 'Run preview'}
         </button>

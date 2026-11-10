@@ -36,7 +36,7 @@ export function EscrowFlowCard({ spine, agentName }: { spine: EscrowLifecycle | 
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-label={open ? 'Collapse the escrow flow' : spine.label}
-        className="group flex w-full flex-col gap-1.5 rounded-[6px] py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className="group flex w-full flex-col gap-1.5 rounded-[8px] py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
       >
         <div className="flex items-center justify-between gap-2">
           <span className="truncate text-[11px] leading-4 text-newsprint-gray group-hover:text-press-black">

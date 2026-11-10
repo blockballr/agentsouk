@@ -385,9 +385,9 @@ export function OngoingPage() {
             </Txt>
             <Link
               to="/agents"
-              className="mt-2 inline-flex h-11 w-fit items-center justify-center rounded-none bg-souk-data px-5"
+              className="mt-2 inline-flex h-11 w-fit items-center justify-center rounded-[6px] bg-souk-accent px-5"
             >
-              <Txt size={14} lead={20} weight="semibold" tone="canvas">
+              <Txt size={14} lead={20} weight="semibold" tone="on-accent">
                 Browse agents
               </Txt>
             </Link>
@@ -615,7 +615,7 @@ function HireRow({
             type="button"
             onClick={onRevoke}
             disabled={busy}
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-none border border-souk-hair bg-souk-surface1 px-3 transition hover:border-souk-hair disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-3 transition hover:border-souk-hair disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Txt size={12} lead={18} weight="semibold" tone="slate">
               {revoking ? 'Revoking…' : 'Revoke session'}
@@ -808,7 +808,7 @@ function OpenTaskCard({ item, at }: { item: HireItem; at: number }) {
   const left = session ? formatExpiry(session.expiresAt) : null
   const retries = task ? task.maxAttempts - task.attempts : null
   return (
-    <article className="flex min-w-0 flex-col rounded-none border border-souk-edge bg-souk-surface1 p-[22px] pb-[18px]">
+    <article className="flex min-w-0 flex-col rounded-[8px] border border-souk-edge bg-souk-surface1 p-[22px] pb-[18px]">
       <Row justify="between" align="center" gap={12} className="flex-wrap">
         <Row align="center" gap={11} className="min-w-0">
           <AgentAvatar size={34} name={item.agentName} chainId={item.chainId} tokenId={item.tokenId} />
@@ -896,7 +896,7 @@ function EscrowFacts({
     { label: 'Status', value: held ? 'held by the funder' : released ? 'settled' : 'closed', tone: 'ink' },
   ]
   return (
-    <article className="flex min-w-0 flex-col rounded-none border border-souk-edge bg-souk-surface1 p-4 pb-[14px]">
+    <article className="flex min-w-0 flex-col rounded-[8px] border border-souk-edge bg-souk-surface1 p-4 pb-[14px]">
       <Row justify="between" align="center" className="pb-[9px]">
         <Txt size={18} lead={27} weight="bold" tone="ink">The escrow</Txt>
         <Txt size={10} lead={14} mono upper tone="labels">{`chain ${item.chainId}`}</Txt>

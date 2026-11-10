@@ -1,0 +1,17 @@
+{
+  "name": "@agora/design-system",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Midnight, the house design system extracted from Flux LP",
+  "exports": {
+    ".": "./src/index.ts",
+    "./index.css": "./src/index.css",
+    "./tokens.css": "./src/tokens.css",
+    "./components.css": "./src/components.css",
+    "./tailwind.css": "./src/tailwind.css"
+  },
+  "scripts": {
+    "check": "node check.mjs"
+  }
+}

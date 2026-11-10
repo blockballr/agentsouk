@@ -57,7 +57,7 @@ function useActiveBoard(): string {
 function BoardNav({ active }: { active: string }) {
   return (
     <nav aria-label="Seller boards" className="sticky top-3 z-20 mb-8 w-fit max-w-full">
-      <div className="flex gap-1 overflow-x-auto rounded-none border border-souk-hair bg-souk-canvas/90 p-1 backdrop-blur">
+      <div className="flex gap-1 overflow-x-auto rounded-[8px] border border-souk-hair bg-souk-canvas/90 p-1 backdrop-blur">
         {BOARDS.map((board) => {
           const on = active === board.id
           return (
@@ -65,7 +65,7 @@ function BoardNav({ active }: { active: string }) {
               key={board.id}
               href={`#${board.id}`}
               aria-current={on ? 'location' : undefined}
-              className={`flex shrink-0 items-baseline gap-2 rounded-none px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+              className={`flex shrink-0 items-baseline gap-2 rounded-[8px] px-3 py-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
                 on
                   ? 'bg-souk-surface2 text-souk-ink'
                   : 'text-souk-steel hover:text-souk-ink'

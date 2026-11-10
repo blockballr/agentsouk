@@ -170,7 +170,7 @@ export function EarningsPanel({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div className="flex h-[440px] min-h-0 flex-col rounded-none border border-souk-hair bg-souk-surface1/40 p-4 backdrop-blur-md">
+        <div className="flex h-[440px] min-h-0 flex-col souk-glass rounded-[16px] border border-souk-hair p-4">
           <div className="mb-2 flex shrink-0 flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 items-baseline gap-2">
               <Txt size={10} lead={14} mono upper tone="muted">
@@ -234,19 +234,19 @@ export function EarningsPanel({
                 </button>
 
                 {pickerOpen ? (
-                  <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[250px] rounded-none border border-white/15 bg-souk-surface1/75 p-2 shadow-2xl backdrop-blur-2xl">
+                  <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[250px] rounded-[8px] border border-white/15 bg-souk-surface1/75 p-2 shadow-2xl backdrop-blur-2xl">
                     <div className="px-2 pb-1.5 pt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-souk-muted">
                       Agents
                     </div>
                     <button
                       type="button"
                       onClick={() => setDraft([])}
-                      className="flex w-full items-center gap-2 rounded-none px-2 py-1.5 text-left transition hover:bg-white/5"
+                      className="flex w-full items-center gap-2 rounded-[8px] px-2 py-1.5 text-left transition hover:bg-white/5"
                     >
                       <span
-                        className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-none border font-mono text-[9px] leading-none ${
+                        className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[8px] border font-mono text-[9px] leading-none ${
                           draft.length === 0
-                            ? 'border-souk-data bg-souk-data text-souk-canvas'
+                            ? 'border-souk-data bg-souk-accent text-souk-on-accent'
                             : 'border-souk-hair text-transparent'
                         }`}
                       >
@@ -277,12 +277,12 @@ export function EarningsPanel({
                                     : [...current, key],
                                 )
                               }
-                              className="flex w-full items-center gap-2 rounded-none px-2 py-1.5 text-left transition hover:bg-white/5"
+                              className="flex w-full items-center gap-2 rounded-[8px] px-2 py-1.5 text-left transition hover:bg-white/5"
                             >
                               <span
-                                className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-none border font-mono text-[9px] leading-none ${
+                                className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[8px] border font-mono text-[9px] leading-none ${
                                   checked
-                                    ? 'border-souk-data bg-souk-data text-souk-canvas'
+                                    ? 'border-souk-data bg-souk-accent text-souk-on-accent'
                                     : 'border-souk-hair text-transparent'
                                 }`}
                               >
@@ -300,16 +300,16 @@ export function EarningsPanel({
                 ) : null}
               </div>
 
-              <div className="inline-flex items-center gap-0.5 rounded-none border border-souk-hair bg-souk-surface2 p-0.5">
+              <div className="inline-flex items-center gap-0.5 rounded-[8px] border border-souk-hair bg-souk-surface2 p-0.5">
                 {RANGES.map((r) => (
                   <button
                     key={r.key}
                     type="button"
                     aria-pressed={range === r.key}
                     onClick={() => setRange(r.key)}
-                    className={`h-6 rounded-none px-2 text-[9px] font-bold uppercase tracking-[0.06em] transition ${
+                    className={`h-6 rounded-[8px] px-2 text-[9px] font-bold uppercase tracking-[0.06em] transition ${
                       range === r.key
-                        ? 'bg-souk-data text-souk-canvas'
+                        ? 'bg-souk-accent text-souk-on-accent'
                         : 'text-souk-muted hover:text-souk-ink'
                     }`}
                   >

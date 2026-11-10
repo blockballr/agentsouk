@@ -108,7 +108,7 @@ export function NotificationBell() {
         type="button"
         onClick={onOpen}
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-        className="flex h-[38px] min-w-[38px] shrink-0 items-center justify-center gap-2 rounded-none border border-souk-hair px-2 text-souk-steel transition-colors hover:border-souk-data/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        className="flex h-[38px] min-w-[38px] shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair px-2 text-souk-steel transition-colors hover:border-souk-data/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         <IconBell />
         {/* the design's badge rides inside the button: the count sits in the data green

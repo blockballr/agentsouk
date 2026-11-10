@@ -6,10 +6,10 @@ export function OnChainBadge({ online, className = '' }: { online: boolean; clas
   return (
     <span
       title={online ? 'On-chain execution agent' : 'Advisory agent (read-only)'}
-      className={`inline-flex items-center truncate rounded-full border px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.06em] shadow-[0_2px_8px_rgba(2,8,40,0.12)] backdrop-blur-xl ${
+      className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.06em] shadow-[0_2px_8px_rgba(2,8,40,0.12)] backdrop-blur-xl ${
         online
-          ? 'border-emerald-500/60 bg-emerald-500/50 text-emerald-500'
-          : 'border-slate-400/60 bg-slate-400/50 text-slate-400'
+          ? 'border-souk-good/60 bg-souk-good/15 text-souk-good'
+          : 'border-souk-steel/50 bg-souk-steel/10 text-souk-steel'
       } ${className}`}
     >
       {online ? 'On-chain' : 'Read-only'}

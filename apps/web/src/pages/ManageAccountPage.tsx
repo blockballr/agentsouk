@@ -281,14 +281,14 @@ export function ManageAccountPage() {
                       <button
                         type="button"
                         onClick={() => setFundToken('native')}
-                        className={`rounded-[6px] px-3 py-1.5 text-[12px] ${fundToken === 'native' ? 'bg-souk-sky text-white' : 'border border-souk-hair text-souk-ink'}`}
+                        className={`rounded-[8px] px-3 py-1.5 text-[12px] ${fundToken === 'native' ? 'bg-souk-sky text-white' : 'border border-souk-hair text-souk-ink'}`}
                       >
                         BNB
                       </button>
                       <button
                         type="button"
                         onClick={() => setFundToken('settlement')}
-                        className={`rounded-[6px] px-3 py-1.5 text-[12px] ${fundToken === 'settlement' ? 'bg-souk-sky text-white' : 'border border-souk-hair text-souk-ink'}`}
+                        className={`rounded-[8px] px-3 py-1.5 text-[12px] ${fundToken === 'settlement' ? 'bg-souk-sky text-white' : 'border border-souk-hair text-souk-ink'}`}
                       >
                         {SETTLEMENT_ASSET_BY_CHAIN[chainId]?.symbol ?? 'Token'}
                       </button>
@@ -324,7 +324,7 @@ export function ManageAccountPage() {
                           lead={18}
                           mono
                           tone="ink"
-                          className={`flex-1 truncate rounded-[6px] border border-souk-hair bg-souk-surface2 px-3 py-2 ${blurred[agent.id] ? 'blur-sm select-none' : ''}`}
+                          className={`flex-1 truncate rounded-[8px] border border-souk-hair bg-souk-surface2 px-3 py-2 ${blurred[agent.id] ? 'blur-sm select-none' : ''}`}
                         >
                           {key}
                         </Txt>

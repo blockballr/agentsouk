@@ -83,7 +83,7 @@ export function firstPartyCategory(chainId: number, tokenId: string): string | n
 
 export function firstPartyImage(chainId: number, tokenId: string): string | null {
   if (!byToken(chainId, tokenId)) return null;
-  return `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(`${chainId}/${tokenId}`)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=gradientLinear`;
+  return `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(`${chainId}/${tokenId}`)}&backgroundColor=b6e3f4,c8ddf5,d1e4fa,e3effb,ffd5dc&backgroundType=gradientLinear`;
 }
 
 export function firstPartyVaultOnly(chainId: number, tokenId: string): boolean {

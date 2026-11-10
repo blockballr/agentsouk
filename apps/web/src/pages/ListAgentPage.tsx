@@ -395,9 +395,9 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
         )}
       </Row>
 
-      <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-souk-hair/50">
+      <div className="h-[6px] w-full overflow-hidden rounded-[4px] bg-souk-hair/50">
         <div
-          className={`h-full rounded-[3px] transition-[width] duration-500 ease-out motion-reduce:transition-none ${
+          className={`h-full rounded-[4px] transition-[width] duration-500 ease-out motion-reduce:transition-none ${
             holdsGas ? 'bg-souk-data' : 'bg-souk-peach'
           }`}
           style={{ width: `${pct}%`, minWidth: 6 }}
@@ -472,9 +472,9 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
               href="https://www.binance.com/en/buy-BNB"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-9 w-fit items-center justify-center rounded-[8px] bg-souk-data px-4"
+              className="inline-flex h-9 w-fit items-center justify-center rounded-[6px] bg-souk-accent px-4"
             >
-              <Txt size={12} lead={18} weight="semibold" tone="canvas">
+              <Txt size={12} lead={18} weight="semibold" tone="on-accent">
                 Get BNB
               </Txt>
             </a>

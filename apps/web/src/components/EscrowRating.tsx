@@ -130,7 +130,7 @@ export function EscrowRating({
         placeholder="What went well, what didn't"
         rows={3}
         disabled={alreadyRated}
-        className="w-full rounded-[6px] border border-souk-hair bg-white px-3 py-2 text-[12px] text-souk-ink"
+        className="w-full rounded-[8px] border border-souk-hair bg-white px-3 py-2 text-[12px] text-souk-ink"
       />
       <label className="flex items-center gap-2 text-[11px] text-souk-ink">
         Verifier score (0-100)
@@ -141,7 +141,7 @@ export function EscrowRating({
           value={verifierScore}
           onChange={(e) => setVerifierScore(Number(e.target.value))}
           disabled={alreadyRated}
-          className="w-20 rounded-[6px] border border-souk-hair px-2 py-1 text-[12px]"
+          className="w-20 rounded-[8px] border border-souk-hair px-2 py-1 text-[12px]"
         />
       </label>
       <Btn kind="off" onClick={submit} disabled={!account || !stars || alreadyRated || phase === 'sending'}>

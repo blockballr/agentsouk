@@ -228,7 +228,7 @@ function SelectionTray({
               type="button"
               onClick={() => onRemove(id)}
               aria-label={`Remove ${agent?.name ?? id} from comparison`}
-              className="inline-flex h-7 max-w-[210px] items-center gap-2 rounded-none border border-souk-hair bg-souk-surface1 px-2.5 text-[11px] leading-[15px] text-souk-slate transition hover:border-souk-data/40 hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+              className="inline-flex h-7 max-w-[210px] items-center gap-2 rounded-[8px] border border-souk-hair bg-souk-surface1 px-2.5 text-[11px] leading-[15px] text-souk-slate transition hover:border-souk-data/40 hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
             >
               <span className="truncate">{agent?.name ?? id}</span>
               <span aria-hidden="true" className="font-mono text-[13px] leading-none text-souk-muted">
@@ -612,7 +612,7 @@ function CompareTable({
                         type="button"
                         onClick={() => onRemove(`${a.chain_id}/${a.token_id}`)}
                         aria-label={`Remove ${a.name} from comparison`}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-none border border-souk-hair text-[13px] leading-none text-souk-muted transition hover:border-souk-peach/40 hover:text-souk-peach focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] border border-souk-hair text-[13px] leading-none text-souk-muted transition hover:border-souk-peach/40 hover:text-souk-peach focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
                       >
                         ×
                       </button>
@@ -759,7 +759,7 @@ function CompareHireButton({
         type="button"
         onClick={() => void start()}
         disabled={Boolean(disabled || busy || phase === 'hired')}
-        className="inline-flex h-8 items-center justify-center rounded-none bg-souk-data px-3 text-[11px] font-semibold leading-none text-souk-canvas transition hover:bg-souk-data/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex h-8 items-center justify-center rounded-[6px] bg-souk-accent px-3 text-[11px] font-semibold leading-none text-souk-on-accent transition hover:bg-souk-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data disabled:cursor-not-allowed disabled:opacity-40"
       >
         {label}
       </button>
@@ -814,7 +814,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="shrink-0 cursor-pointer rounded-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+      className="shrink-0 cursor-pointer rounded-[8px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
       <Pill variant={active ? 'keep' : 'off'}>{children}</Pill>
     </button>

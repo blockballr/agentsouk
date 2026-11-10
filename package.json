@@ -12,6 +12,8 @@
     "prebuild": "npm run build:sdk",
     "build:web": "npm run build -w @agora/web",
     "build:sdk": "npm run build -w @agentsouk/vault-sdk",
+    "design:build": "node packages/design-system/build.mjs",
+    "design:check": "node packages/design-system/check.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

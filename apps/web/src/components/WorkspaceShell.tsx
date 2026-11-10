@@ -79,7 +79,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
     <div className="mx-auto flex w-full gap-8 pb-24 pt-8">
       <aside className="hidden w-[236px] shrink-0 md:block">
         <div className="sticky top-24">
-          <div className="rounded-none border border-souk-hair bg-souk-surface1/60 px-3 py-3">
+          <div className="souk-glass rounded-[16px] border border-souk-hair px-3 py-3">
             <Txt size={13} lead={18} weight="bold" tone="ink">
               Agent Souk
             </Txt>
@@ -101,7 +101,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
             ))}
           </nav>
 
-          <div className="mt-8 rounded-none border border-souk-hair px-3 py-3">
+          <div className="mt-8 souk-glass rounded-[16px] border border-souk-hair px-3 py-3">
             {account ? (
               <>
                 <Txt size={10} lead={14} mono upper tone="labels">
@@ -139,7 +139,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
           />
         </nav>
         {!account && (
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-none border border-souk-hair px-4 py-3 md:hidden">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-souk-hair px-4 py-3 md:hidden">
             <Txt size={12} lead={18} tone="muted">
               {connectNote ?? t('rail.noWallet')}
             </Txt>
@@ -164,7 +164,7 @@ function RailLink({ item, chip }: { item: RailItem; chip?: boolean }) {
         [
           chip
             ? 'inline-flex min-h-[36px] shrink-0 items-center rounded-full border px-3 py-1.5 text-[12px]'
-            : 'rounded-none border px-3 py-2 text-[13px]',
+            : 'rounded-[8px] border px-3 py-2 text-[13px]',
           item.accent === 'indigo'
             ? isActive
               ? 'border-souk-indigo/40 bg-souk-indigo/15 text-souk-indigo-link'

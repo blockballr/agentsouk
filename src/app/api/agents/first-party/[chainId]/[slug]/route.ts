@@ -70,7 +70,7 @@ export async function GET(
     name: row.name,
     description: row.description,
     image: row.tokenId
-      ? `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(`${id}/${row.tokenId}`)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=gradientLinear`
+      ? `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(`${id}/${row.tokenId}`)}&backgroundColor=b6e3f4,c8ddf5,d1e4fa,e3effb,ffd5dc&backgroundType=gradientLinear`
       : "https://agentsouk.xyz/Edgy.png",
     ...(row.wallet ? { agentWallet: row.wallet } : {}),
     ...(row.category ? { category: row.category } : {}),

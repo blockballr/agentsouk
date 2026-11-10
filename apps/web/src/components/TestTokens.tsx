@@ -180,7 +180,7 @@ export function TestTokens({
         type="button"
         onClick={() => setOpen(true)}
         style={nudge ? { animation: `shake 0.45s ${nudge}` } : undefined}
-        className="micro mt-3 w-full rounded-[5px] border border-highlighter-green bg-highlighter-green/15 px-4 py-2.5 text-center text-press-black transition hover:bg-highlighter-green/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
+        className="micro font-mono mt-3 w-full rounded-[6px] border border-highlighter-green bg-highlighter-green/15 px-4 py-2.5 text-center text-press-black transition hover:bg-highlighter-green/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black"
       >
         {shortOnTokens ? (
           // .micro uppercases its text, which would rewrite the sUSD symbol
@@ -204,7 +204,7 @@ export function TestTokens({
             role="dialog"
             aria-modal="true"
             aria-labelledby="test-tokens-title"
-            className="relative w-full max-w-md rounded-[14px] border border-press-black/20 bg-bone-white p-6 text-typesetter-ink shadow-[0_24px_60px_-16px_rgba(0,0,0,0.45)]"
+            className="relative w-full max-w-md rounded-[16px] border border-press-black/20 bg-bone-white p-6 text-typesetter-ink shadow-[0_24px_60px_-16px_rgba(0,0,0,0.45)]"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 id="test-tokens-title" className="relative font-serif text-[24px] font-medium tracking-[-0.02em]">
@@ -214,7 +214,7 @@ export function TestTokens({
               Free tokens for hiring here. You sign a message and we pay the gas.
             </p>
 
-            <dl className="relative mt-4 space-y-2 rounded-[10px] border hairline border-slate-verdant/30 bg-highlighter-green/5 p-3 text-sm">
+            <dl className="relative mt-4 space-y-2 rounded-[12px] border hairline border-slate-verdant/30 bg-highlighter-green/5 p-3 text-sm">
               <div className="flex justify-between">
                 <dt className="text-newsprint-gray">Your balance</dt>
                 <dd className="font-mono">
@@ -243,7 +243,7 @@ export function TestTokens({
                 <button
                   type="button"
                   onClick={() => void mint()}
-                  className="micro w-full rounded-[5px] border hairline border-press-black/40 px-6 py-3 text-center text-press-black transition hover:bg-highlighter-green/15"
+                  className="micro font-mono w-full rounded-[6px] border hairline border-press-black/40 px-6 py-3 text-center text-press-black transition hover:bg-highlighter-green/15"
                 >
                   Mint 10 more
                 </button>

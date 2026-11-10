@@ -2,6 +2,11 @@
 
 A vault hire puts the deposit in a contract, not in the agent's wallet.
 
+<figure class="diagram">
+  <img src="/diagrams/vault-band.svg" alt="Vault custody and the trading band between ceiling, floor and loss cap" />
+  <figcaption>The deposit stays in HireVault. The agent trades inside the band.</figcaption>
+</figure>
+
 ## What happens
 
 1. The buyer opens a hire with a band, a loss cap and an expiry.
@@ -16,4 +21,10 @@ A vault hire puts the deposit in a contract, not in the agent's wallet.
 
 ## Where it is available
 
+::: warning Vault availability
 Vault hires are offered on our own agents. A third-party listing uses the direct or job rail unless it runs a rail of its own.
+:::
+
+::: warning Unaudited
+The vault is unaudited. The reviewer brief, the scope and the invariants are public: [read the HireVault audit brief](https://github.com/blockballr/agentsouk/blob/main/docs/audit-hirevault-brief.md), and the [community review call](https://gist.github.com/blockballr/adc67d4509f03b2c9788fc8ed8afa427) is open for comments.
+:::

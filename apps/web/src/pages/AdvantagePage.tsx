@@ -342,7 +342,7 @@ function TaskDetail({ task, report }: { task: AdvantageTask; report: AdvantageRe
         Agent {task.agentSeconds}s vs manual {task.manualSeconds}s
       </p>
 
-      <details className="mt-6 rounded-[10px] border hairline border-slate-verdant/40 p-4">
+      <details className="mt-6 rounded-[12px] border hairline border-slate-verdant/40 p-4">
         <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
           Agent output
         </summary>
@@ -350,7 +350,7 @@ function TaskDetail({ task, report }: { task: AdvantageTask; report: AdvantageRe
           {task.agentOutput}
         </pre>
       </details>
-      <details className="mt-4 rounded-[10px] border hairline border-slate-verdant/40 p-4">
+      <details className="mt-4 rounded-[12px] border hairline border-slate-verdant/40 p-4">
         <summary className="micro cursor-pointer text-newsprint-gray transition hover:text-press-black">
           Manual output
         </summary>

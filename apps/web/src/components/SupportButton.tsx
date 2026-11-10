@@ -36,7 +36,7 @@ export function SupportButton({
       target="_blank"
       rel="noreferrer"
       className={cx(
-        'micro inline-flex min-h-10 items-center justify-center gap-2 rounded-[5px] px-3 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data',
+        'micro font-mono inline-flex min-h-10 items-center justify-center gap-2 rounded-[6px] px-3 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data',
         // on the indigo band the peach is the dark-register value in both themes,
         // so it does not turn brown on the navy in light mode
         plain ? 'text-souk-peach hover:text-souk-ink' : 'bg-souk-indigo text-[#f2936b] hover:brightness-110',
