@@ -378,10 +378,10 @@ wcm-modal {
 .hero-wave-layer {
   animation: wave-drift 30s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
 }
-.hero-wave-1 { fill: rgba(17, 25, 74, 0.13); animation-duration: 34s; }
-.hero-wave-2 { fill: rgba(17, 25, 74, 0.09); animation-duration: 27s; }
-.hero-wave-3 { fill: rgba(136, 222, 235, 0.07); animation-duration: 20s; }
-.hero-wave-4 { fill: rgba(242, 147, 107, 0.05); animation-duration: 14s; }
+.hero-wave-1 { fill: rgba(79, 92, 255, 0.30); animation-duration: 26s; }
+.hero-wave-2 { fill: rgba(79, 92, 255, 0.20); animation-duration: 19s; }
+.hero-wave-3 { fill: rgba(136, 222, 235, 0.14); animation-duration: 14s; }
+.hero-wave-4 { fill: rgba(242, 147, 107, 0.10); animation-duration: 10s; }
 @media (prefers-reduced-motion: reduce) {
   .hero-wave-layer {
     animation: none;

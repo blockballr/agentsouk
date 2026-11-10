@@ -1,4 +1,4 @@
-import { useLayoutEffect } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 
 if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
@@ -18,13 +18,17 @@ function withoutSmooth(run: () => void) {
 
 export function ScrollToTop() {
   const { pathname, hash } = useLocation()
+  const previousPath = useRef(pathname)
   useLayoutEffect(() => {
-    // an anchor is a destination inside the page: a seller link to /seller#stalls
-    // must land on the stalls, not at the top of the board
+    // an anchor on the page the visitor is already reading is a section jump,
+    // so it glides; an anchor that arrives with a new route still lands at once
+    const samePage = previousPath.current === pathname
+    previousPath.current = pathname
     if (hash) {
       const el = document.getElementById(hash.slice(1))
       if (el) {
-        withoutSmooth(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }))
+        if (samePage) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        else withoutSmooth(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }))
         return
       }
     }
