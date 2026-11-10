@@ -67,8 +67,8 @@ export default defineConfig({
         text: 'Hire',
         items: [
           { text: 'The three rails', link: '/hire/' },
-          { text: 'Hire by job, ERC-8183', link: '/hire/escrow' },
           { text: 'Hire the vault', link: '/hire/vault' },
+          { text: 'Hire by job, ERC-8183', link: '/hire/escrow' },
         ],
       },
       {
