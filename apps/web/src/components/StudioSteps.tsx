@@ -47,7 +47,7 @@ function StepCard({ number, title, body, code, action }: StepCardProps) {
   return (
     <li className="flex h-full">
       <div className="relative h-full w-full">
-        <span className="absolute -top-2.5 left-2 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
+        <span className="absolute -top-2.5 left-2 z-10 inline-flex items-center truncate rounded-full border border-white/15 bg-souk-indigo/90 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-white shadow-[0_2px_10px_rgba(2,8,40,0.35)] backdrop-blur-md">
           Step {number}
         </span>
         <Stack surface gap={10} pad={[20, 22, 20, 22]} className="w-full h-full">
