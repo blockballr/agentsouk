@@ -13,6 +13,7 @@ import { useLocalProfile } from '../lib/profile'
 import { ThemeToggle } from './ThemeToggle'
 import { useLocation } from 'react-router-dom'
 import { useI18n } from '../lib/i18n'
+import { scrollToSection } from '../lib/scroll'
 import { Dot, Row, Rule, Stack, Txt } from './souk'
 
 const links = [
@@ -28,7 +29,8 @@ const links = [
 // jump to the part they came for instead of being sent to another surface
 const homeLinks = [
   { href: '#rails', label: 'Rails' },
-  { href: '#gallery', label: 'Agents' },
+  { href: '#gallery', label: 'Gallery' },
+  { href: '#browse', label: 'Browse' },
   { href: '#proof', label: 'Proof' },
   { href: '#build', label: 'Build' },
 ]
@@ -73,6 +75,10 @@ export function Nav() {
   // address or disconnects rather than moving the chip to whoever is active
   const wallet = useConnectedAccount()
   const onHome = location.pathname === '/' || location.pathname === '/about'
+  const jumpTo = (href: string) => {
+    scrollToSection(href.replace(/^#/, ''))
+    window.history.replaceState(null, '', href)
+  }
   return (
     <header className="relative z-10 border-b border-souk-hair bg-souk-canvas">
       <div className="site-frame flex h-[62px] items-center justify-between">
@@ -82,7 +88,15 @@ export function Nav() {
           <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
             {onHome
               ? homeLinks.map((l) => (
-                  <a key={l.href} href={l.href} className={itemClass(false)}>
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      jumpTo(l.href)
+                    }}
+                    className={itemClass(false)}
+                  >
                     {l.label}
                   </a>
                 ))
@@ -97,6 +111,11 @@ export function Nav() {
                     </NavLink>
                   ),
                 )}
+            {onHome ? (
+              <NavLink to="/quest" className={({ isActive }) => itemClass(isActive)}>
+                Quest
+              </NavLink>
+            ) : null}
             <a
               href={DOCS_HREF}
               target="_blank"
@@ -120,9 +139,15 @@ export function Nav() {
             they are a sibling of the wordmark group and the space between pins them to
             the far edge rather than to the end of the links */}
         <div className="hidden lg:flex lg:items-center lg:gap-2.5">
+          <Link
+            to="/agents"
+            className="hidden h-[38px] items-center rounded-[8px] bg-souk-accent px-4 font-mono text-[11px] uppercase tracking-[0.08em] text-souk-on-accent transition-colors hover:bg-souk-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data xl:inline-flex"
+          >
+            Enter marketplace
+          </Link>
           <QuickSearch />
           <NotificationBell />
-          {location.pathname === '/' && <ThemeToggle />}
+          <ThemeToggle />
           <ProfileChip
             wallet={wallet}
             onConnect={() => {
@@ -159,7 +184,11 @@ export function Nav() {
                   <a
                     key={l.href}
                     href={l.href}
-                    onClick={() => setMenuOpen(false)}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      jumpTo(l.href)
+                      setMenuOpen(false)
+                    }}
                     className="py-3 text-[15px] uppercase text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
                   >
                     {l.label}
@@ -190,6 +219,15 @@ export function Nav() {
                     </NavLink>
                   ),
                 )}
+            {onHome ? (
+              <NavLink
+                to="/quest"
+                onClick={() => setMenuOpen(false)}
+                className="py-3 text-[15px] uppercase text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
+              >
+                Quest
+              </NavLink>
+            ) : null}
             <a
               href={DOCS_HREF}
               target="_blank"
@@ -198,6 +236,13 @@ export function Nav() {
             >
               Docs
             </a>
+            <Link
+              to="/agents"
+              onClick={() => setMenuOpen(false)}
+              className="mt-2 flex h-11 items-center justify-center rounded-[8px] bg-souk-accent font-mono text-[12px] uppercase tracking-[0.08em] text-souk-on-accent"
+            >
+              Enter marketplace
+            </Link>
             <div className="mt-2 flex items-center gap-6 py-3">
               <ChainTag />
               {/* phones reach the account through the page; the panel is the wide bar's
