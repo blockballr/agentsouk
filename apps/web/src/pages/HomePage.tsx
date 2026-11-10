@@ -352,6 +352,35 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
+        <section id="browse" ref={categoriesRef} className="scroll-mt-24 py-16 md:py-18">
+          <SectionHead as="h2" title="Browse the shelf." note="FOUR KINDS OF WORK" />
+          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {CATEGORIES.map((c, i) => (
+              <motion.div
+                key={c.key}
+                data-cat-card
+                className="h-full min-w-0"
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
+                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
+              >
+                <CategoryCard
+                  category={c.key}
+                  title={c.label}
+                  note={c.blurb}
+                  measure={onlineCounts ? `${onlineCounts[c.key] ?? 0} agents` : null}
+                  cta="Browse agents"
+                  to={`/agents?category=${c.key}`}
+                  size="sm"
+                />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
         <section id="proof" className="scroll-mt-24 py-16 md:py-18">
           <SectionHead as="h2" title="Every listing is a claim we test." note="PROBED AND RECORDED" />
           <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
@@ -494,34 +523,6 @@ agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --
         </section>
       </Reveal>
 
-      <Reveal>
-        <section id="browse" ref={categoriesRef} className="scroll-mt-24 py-16 md:py-18">
-          <SectionHead as="h2" title="Browse the shelf." note="FOUR KINDS OF WORK" />
-          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {CATEGORIES.map((c, i) => (
-              <motion.div
-                key={c.key}
-                data-cat-card
-                className="h-full min-w-0"
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
-                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
-              >
-                <CategoryCard
-                  category={c.key}
-                  title={c.label}
-                  note={c.blurb}
-                  measure={onlineCounts ? `${onlineCounts[c.key] ?? 0} agents` : null}
-                  cta="Browse agents"
-                  to={`/agents?category=${c.key}`}
-                  size="sm"
-                />
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      </Reveal>
 
       <Reveal>
         <section className="py-12 md:py-16">

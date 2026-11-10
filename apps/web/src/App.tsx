@@ -24,9 +24,6 @@ const CustomBuilderPage = lazy(() => import('./pages/CustomBuilderPage').then((m
 const OngoingPage = lazy(() => import('./pages/OngoingPage').then((m) => ({ default: m.OngoingPage })))
 const StationPage = lazy(() => import('./pages/StationPage').then((m) => ({ default: m.StationPage })))
 const QuestPage = lazy(() => import('./pages/QuestPage').then((m) => ({ default: m.QuestPage })))
-const TelegramLinkPage = lazy(() =>
-  import('./pages/TelegramLinkPage').then((m) => ({ default: m.TelegramLinkPage })),
-)
 const SellerConsolePage = lazy(() => import('./pages/SellerConsolePage').then((m) => ({ default: m.SellerConsolePage })))
 const StudioPage = lazy(() => import('./pages/StudioPage').then((m) => ({ default: m.StudioPage })))
 const DocsPage = lazy(() => import('./pages/DocsPage').then((m) => ({ default: m.DocsPage })))
@@ -53,6 +50,15 @@ function DocsRedirect() {
   }, [pathname, search])
   return null
 }
+
+// the old bot link page is retired: a Telegram link belongs in the group, so
+// any bot message or bookmark that still points here lands there instead
+function TelegramRedirect() {
+  useEffect(() => {
+    window.location.replace('https://t.me/agentsouk')
+  }, [])
+  return null
+}
 const APP_HOST = window.location.hostname === 'app.agentsouk.xyz'
 
 function App() {
@@ -74,7 +80,7 @@ function App() {
             <Route path="/about" element={<HomePage />} />
             <Route path="/agents" element={<MarketplacePage />} />
             <Route path="/discover" element={<DiscoverPage />} />
-            <Route path="/telegram/link" element={<TelegramLinkPage />} />
+            <Route path="/telegram/link" element={<TelegramRedirect />} />
         <Route path="/judge" element={<JudgePage />} />
             <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
             <Route path="/compare" element={<ComparePage />} />
