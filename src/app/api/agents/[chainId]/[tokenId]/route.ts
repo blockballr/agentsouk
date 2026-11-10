@@ -72,6 +72,7 @@ export async function GET(
     admitted: Boolean(shelved),
     canExecute: canExecute(agent),
     category: canonicalCategory ?? shelved?.category ?? null,
+    accessGated,
   });
   const withAvailability = { ...withImage, availability };
   const data = verification ? { ...withAvailability, verification } : withAvailability;

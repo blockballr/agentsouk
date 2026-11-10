@@ -34,10 +34,18 @@ describe("the availability machine", () => {
     expect(input({ status: "delivered" }).phase).toBe("live");
   });
 
-  it("keeps a gated agent hireable behind its gate", () => {
+  it("keeps a gated agent on the shelf but stops hiring at the gate", () => {
     const view = input({ status: "gated" });
     expect(view.phase).toBe("gated");
-    expect(view.hireable).toBe(true);
+    expect(view.shelf).toBe(true);
+    expect(view.hireable).toBe(false);
+    expect(view.reason).toMatch(/access gate/);
+  });
+
+  it("reads a card-declared gate the same way as a gated verdict", () => {
+    const view = input({ status: "online", accessGated: true });
+    expect(view.phase).toBe("gated");
+    expect(view.hireable).toBe(false);
   });
 
   it("counts the failure clock and stops hireability", () => {

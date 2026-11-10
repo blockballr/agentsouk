@@ -30,6 +30,8 @@ export interface AvailabilityInput {
   canExecute: boolean;
   /** the shelf category; general and empty do not count */
   category: string | null;
+  /** the card declares its own access scheme, which the marketplace cannot satisfy */
+  accessGated?: boolean;
   /** milliseconds */
   now?: number;
 }
@@ -75,14 +77,19 @@ export function deriveAvailability(input: AvailabilityInput): AvailabilityView {
   const classified = Boolean(input.category && input.category.trim() && input.category !== "general");
   const quotable = input.quotable !== false;
   const admitted = input.admitted;
+  const accessGated = input.accessGated === true;
   const onShelf = admitted && input.canExecute && quotable && classified;
 
   let phase: AvailabilityPhase;
   if (input.delisted) phase = "delisted";
+  else if (accessGated || verdict === "gated") phase = "gated";
   else if (counts && failingSince) phase = "failing";
   else phase = verdict;
 
-  const hireable = !input.delisted && onShelf && (phase === "live" || phase === "gated");
+  // a gated listing stays on the shelf as a labelled listing, but the
+  // marketplace holds none of the seller's credentials, so it does not sell a
+  // call or job that would stop at that wall
+  const hireable = !input.delisted && onShelf && phase === "live";
 
   let reason: string;
   if (phase === "delisted") {
@@ -94,7 +101,9 @@ export function deriveAvailability(input: AvailabilityInput): AvailabilityView {
   } else if (phase === "live") {
     reason = hireable ? "Live and hireable." : onShelf ? "Live, but the shelf admission is missing." : "Live, but not shelf-ready.";
   } else if (phase === "gated") {
-    reason = hireable ? "Live behind its access gate and hireable." : "Live behind its access gate, but not shelf-ready.";
+    reason = onShelf
+      ? "Behind its access gate. The marketplace holds no credentials, so it is reached at its endpoint, not hired here."
+      : "Behind its access gate, and not shelf-ready.";
   } else if (phase === "not-checked") {
     reason = "Not checked yet.";
   } else if (phase === "unknown") {

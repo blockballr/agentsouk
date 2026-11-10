@@ -158,6 +158,7 @@ export async function GET(req: NextRequest) {
       admitted: true,
       canExecute: canExecute(a),
       category: a.category ?? null,
+      accessGated: a.accessGated === true,
     });
     const withAvailability = { ...withSession, availability };
     return isBoosted(a.chain_id, a.token_id) ? { ...withAvailability, boosted: true } : withAvailability;

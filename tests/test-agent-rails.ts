@@ -197,6 +197,26 @@ describe("agent rails", () => {
     expect(rails.map((r) => r.kind)).toEqual(["vault"]);
   });
 
+  it("sells nothing on a listing the availability machine ruled out", () => {
+    const rails = agentRails(
+      detail({
+        skills: JOB_SKILLS,
+        a2a_endpoint: "https://seller.example/a2a",
+        availability: {
+          phase: "failing",
+          shelf: false,
+          hireable: false,
+          quotable: true,
+          failingSince: null,
+          failingDays: 3,
+          reason: "The endpoint has been failing for 3 days.",
+        },
+      }),
+      false,
+    );
+    expect(rails).toEqual([]);
+  });
+
   it("offers a call only when an endpoint exists", () => {
     const withEndpoint = agentRails(
       detail({ x402_supported: true, a2a_endpoint: "https://agent.example/a2a" }),
