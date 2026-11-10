@@ -22,6 +22,11 @@ describe("the skill matches the server", () => {
     }
   });
 
+  it("names the runbook as the primary", () => {
+    expect(router).toContain("get_runbook");
+    expect(docs["reference/tools.md"]).toContain("get_runbook");
+  });
+
   it("routes to docs that exist", () => {
     const referenced = [...router.matchAll(/reference\/[a-z0-9-]+\.md/g)].map((m) => m[0]);
     expect(referenced.length).toBeGreaterThan(0);

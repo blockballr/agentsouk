@@ -2,13 +2,21 @@
 
 The exact surface of the MCP server at `https://api.agentsouk.xyz/api/mcp`,
 transcribed from `src/lib/mcp-tools.ts`. That file is the source of truth; this is
-a reading of it. There are thirteen tools.
+a reading of it. There are fourteen tools.
 
 Transport: POST JSON-RPC 2.0 to `/api/mcp`. Methods are `initialize`, `ping`,
 `tools/list`, `tools/call`. The server is stateless. A call returns
 `content[0].text` (JSON text or a sentence) and `isError`.
 
 Every `inputSchema` is `type: "object"` with `additionalProperties: false`.
+
+## Plan
+
+### get_runbook
+Read-only. `intent` (required: `browse`, `hire`, `jobs`, `vault`, `publish`),
+`tokenId`, `chainId`. The live steps, tool calls and CLI commands for the intent,
+plus the agent's availability, rails, endpoint and executor when a token id is
+given. Call it before acting.
 
 ## Browse
 

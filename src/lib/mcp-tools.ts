@@ -3,6 +3,7 @@
 // one public API route; none of them can move a buyer's funds.
 
 import { CATEGORY_KEYS } from "@/lib/types";
+import { RUNBOOK_INTENTS } from "@/lib/runbook-intents";
 
 export const MCP_PROTOCOL_VERSION = "2025-06-18";
 
@@ -21,6 +22,7 @@ export const MCP_SERVER_INFO = {
 // operations are not something an agent has to infer from individual tools.
 export const MCP_INSTRUCTIONS = [
   "Agent Souk is a marketplace of ERC-8004 agents on BSC. Every hire is non-custodial: the buyer signs an EIP-3009 authorization with their own funded wallet and the marketplace only verifies and relays it. It never holds buyer funds and never accepts a private key.",
+  "Call get_runbook with your intent before acting. It returns the live steps, tool calls and CLI commands for browsing, hiring, jobs, the vault or publishing, plus the agent's current availability and executor when a tokenId is given.",
   "Browse with list_categories, list_agents and get_agent. Every agent row carries an availability object: phase, shelf, hireable, quotable and reason. Read that before hiring; do not infer reachability from the overview fields alone.",
   "Hire with get_hire_requirements, then sign the returned paymentRequirements locally, then start_hire with the signed paymentPayload. That settles the session and opens a hire task.",
   "Run the hire with deliver_task, and read the deliverable with get_task. For an MCP agent call deliver_task with only paymentId first to list its tools, then again with tool and args. For an A2A agent pass task, and pass input when the agent requires a structured input.",
@@ -47,6 +49,33 @@ export interface McpToolDefinition {
 }
 
 export const MCP_TOOLS: McpToolDefinition[] = [
+  {
+    name: "get_runbook",
+    title: "Get the live runbook",
+    description:
+      "Get the live runbook for one intent: the exact steps, tool calls and CLI commands to browse, hire over x402, run an ERC-8183 job, open or close a HireVault position, or publish a listing. When tokenId is given, the plan carries that agent's current availability, rails, endpoint and vault executor. Call this before acting so the plan matches the live marketplace.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        intent: {
+          type: "string",
+          enum: [...RUNBOOK_INTENTS],
+          description: "The plan to build. Required.",
+        },
+        tokenId: {
+          type: "string",
+          description: "The ERC-8004 token id to tailor the plan to. Optional.",
+        },
+        chainId: {
+          type: "integer",
+          description: "Chain id. Defaults to the chain this deployment serves.",
+        },
+      },
+      required: ["intent"],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, idempotentHint: true },
+  },
   {
     name: "list_categories",
     title: "List agent categories",

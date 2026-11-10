@@ -10,6 +10,7 @@ import { ownedAgentState, parseAgentRef, railsOf, searchAgents, showAgent, verif
 import { callAgent } from "./marketplace/call";
 import { callMcpTool, listMcpTools, parseMcpArgs } from "./marketplace/mcp";
 import { paidCall, preparePayment } from "./marketplace/x402";
+import { getRunbook } from "./marketplace/runbook";
 import { listJobs, notifyJob, quoteJob, showJob } from "./marketplace/jobs";
 import { actOnJob, type JobActionName } from "./marketplace/job-actions";
 import { fundHire, hireCalls, planHire } from "./marketplace/hire";
@@ -158,6 +159,30 @@ program
           { key: "value", label: "value", width: 90 },
         ])}\n`,
       );
+    }),
+  );
+
+program
+  .command("runbook <intent> [agent]")
+  .description("the live plan for browse, hire, jobs, vault or publish")
+  .action(
+    guard(async (intent: string, ref: string | undefined) => {
+      const cfg = config();
+      let chainId = cfg.chainId;
+      let tokenId: string | undefined;
+      if (ref) {
+        const parsed = parseAgentRef(ref, cfg.chainId);
+        chainId = parsed.chainId;
+        tokenId = parsed.tokenId;
+      }
+      const book = await getRunbook(cfg, intent, tokenId, chainId);
+      if (format() === "json") {
+        process.stdout.write(
+          `${renderJson(book, { chainId, ...(tokenId ? { tokenId } : {}) })}\n`,
+        );
+        return;
+      }
+      process.stdout.write(`${book.markdown}\n`);
     }),
   );
 

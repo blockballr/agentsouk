@@ -427,12 +427,29 @@ async function getTaskTool(req: NextRequest, args: Record<string, unknown>): Pro
   return toolJson(body);
 }
 
+// The live plan is built by the public route, so the tool and the CLI answer
+// with the same object and the same live state.
+async function getRunbookTool(req: NextRequest, args: Record<string, unknown>): Promise<ToolText> {
+  const params = new URLSearchParams();
+  const intent = asString(args.intent);
+  if (intent) params.set("intent", intent);
+  const tokenId = asString(args.tokenId);
+  if (tokenId) params.set("tokenId", tokenId);
+  const chainId = asNumber(args.chainId);
+  if (chainId !== undefined) params.set("chainId", String(chainId));
+
+  const { status, body } = await apiJson(req, `/api/runbook?${params.toString()}`, { method: "GET" });
+  if (status !== 200) return toolText(apiError(body, status), true);
+  return toolJson(body);
+}
+
 function runTool(
   req: NextRequest,
   name: McpToolName,
   args: Record<string, unknown>,
-): Promise<ToolText> {
-  switch (name) {
+): Promise<ToolText> {  switch (name) {
+    case "get_runbook":
+      return getRunbookTool(req, args);
     case "list_categories":
       return listCategories(req);
     case "list_agents":

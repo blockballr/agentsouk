@@ -24,6 +24,7 @@ agentsouk search "yield" --rail direct --limit 5
 agentsouk search --category health-factor --sort newest --json
 agentsouk show 56/404603
 agentsouk show 404603 --json
+agentsouk runbook hire 56/404603
 agentsouk verify 56/404603
 agentsouk call 56/404603 --task "Collateral 1000 USD, debt 600 USD, threshold 0.8. What is the health factor?"
 agentsouk call 56/367904 --mcp --list-tools
