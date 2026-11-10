@@ -139,12 +139,14 @@ export function Nav() {
             they are a sibling of the wordmark group and the space between pins them to
             the far edge rather than to the end of the links */}
         <div className="hidden lg:flex lg:items-center lg:gap-2.5">
-          <Link
-            to="/agents"
-            className="hidden h-[38px] items-center rounded-[8px] bg-souk-accent px-4 font-mono text-[11px] uppercase tracking-[0.08em] text-souk-on-accent transition-colors hover:bg-souk-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data xl:inline-flex"
-          >
-            Enter marketplace
-          </Link>
+          {onHome ? (
+            <Link
+              to="/agents"
+              className="hidden h-[38px] items-center rounded-[8px] bg-souk-accent px-4 font-mono text-[11px] uppercase tracking-[0.08em] text-souk-on-accent transition-colors hover:bg-souk-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data xl:inline-flex"
+            >
+              Enter marketplace
+            </Link>
+          ) : null}
           <QuickSearch />
           <NotificationBell />
           <ThemeToggle />
@@ -236,13 +238,15 @@ export function Nav() {
             >
               Docs
             </a>
-            <Link
-              to="/agents"
-              onClick={() => setMenuOpen(false)}
-              className="mt-2 flex h-11 items-center justify-center rounded-[8px] bg-souk-accent font-mono text-[12px] uppercase tracking-[0.08em] text-souk-on-accent"
-            >
-              Enter marketplace
-            </Link>
+            {onHome ? (
+              <Link
+                to="/agents"
+                onClick={() => setMenuOpen(false)}
+                className="mt-2 flex h-11 items-center justify-center rounded-[8px] bg-souk-accent font-mono text-[12px] uppercase tracking-[0.08em] text-souk-on-accent"
+              >
+                Enter marketplace
+              </Link>
+            ) : null}
             <div className="mt-2 flex items-center gap-6 py-3">
               <ChainTag />
               {/* phones reach the account through the page; the panel is the wide bar's
