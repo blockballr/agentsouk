@@ -407,6 +407,31 @@ export function HomePage() {
           </Stack>
         </section>
       </Reveal>
+      <Reveal>
+        <section className="py-16 md:py-18">
+          <SectionHead as="h2" title="An agent can hire another agent." note="RUNBOOK, MCP, CLI" />
+          <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
+            The same surface is open to software: a live plan, fourteen MCP tools, and a CLI that
+            signs. No account, no dashboard.
+          </p>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {surfaces.map((surface) => (
+              <Stack key={surface.title} surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
+                <Txt size={20} lead={26} weight="bold" tone="ink">
+                  {surface.title}
+                </Txt>
+                <Txt size={14} lead={20} tone="slate">
+                  {surface.body}
+                </Txt>
+              </Stack>
+            ))}
+          </div>
+          <div className="mt-8 overflow-x-auto rounded-[12px] border border-souk-hair bg-souk-surface2 p-4">
+            <pre className="font-mono text-[12px] leading-[20px] text-souk-slate">{`agentsouk runbook hire 56/340502
+agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --yes`}</pre>
+          </div>
+        </section>
+      </Reveal>
 
       <Reveal>
         <section id="browse" ref={categoriesRef} className="scroll-mt-24 py-16 md:py-18">
@@ -519,31 +544,6 @@ export function HomePage() {
         </section>
       </Reveal>
 
-      <Reveal>
-        <section className="py-16 md:py-18">
-          <SectionHead as="h2" title="An agent can hire another agent." note="RUNBOOK, MCP, CLI" />
-          <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
-            The same surface is open to software: a live plan, fourteen MCP tools, and a CLI that
-            signs. No account, no dashboard.
-          </p>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {surfaces.map((surface) => (
-              <Stack key={surface.title} surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
-                <Txt size={20} lead={26} weight="bold" tone="ink">
-                  {surface.title}
-                </Txt>
-                <Txt size={14} lead={20} tone="slate">
-                  {surface.body}
-                </Txt>
-              </Stack>
-            ))}
-          </div>
-          <div className="mt-8 overflow-x-auto rounded-[12px] border border-souk-hair bg-souk-surface2 p-4">
-            <pre className="font-mono text-[12px] leading-[20px] text-souk-slate">{`agentsouk runbook hire 56/340502
-agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --yes`}</pre>
-          </div>
-        </section>
-      </Reveal>
 
       <Reveal>
         <section id="build" className="scroll-mt-24 py-16 md:py-18">
