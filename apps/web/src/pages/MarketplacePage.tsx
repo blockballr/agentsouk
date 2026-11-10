@@ -4,7 +4,7 @@ import type { AgentSummary } from '../core/types'
 import { defaultAvatarFor } from '../lib/default-avatar'
 import { CATEGORIES, formatNumber, formatScore, sellsByJob, takesJobs, takesVault, shortAddress, timeAgo, classifyExecution } from '@agora/core'
 import { CompareBar } from '../components/CompareBar'
-import { HireInAction } from '../components/HireInAction'
+import { AgentGalleryCard } from '../components/AgentGalleryCard'
 import { OnChainBadge } from '../components/OnChainBadge'
 import { getAgents, prefetchAgent } from '../lib/api'
 import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from '../lib/contracts'
@@ -20,8 +20,8 @@ import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../compo
 // capability leads all of it. Picking a metric names what leads the chain, not
 // what replaces that order.
 const jobSorts = [
-  { key: 'jobs', label: 'ESCROW' },
   { key: 'vault', label: 'VAULT' },
+  { key: 'jobs', label: 'ESCROW' },
   { key: 'direct', label: 'DIRECT' },
 ] as const
 
@@ -77,9 +77,10 @@ export function MarketplacePage() {
   // no sort named reads as score, the chain's first metric; reachability is not
   // a choice here, it settles the ties underneath whichever metric is picked,
   // and job capability leads every one of them
-  // every listing is reachable through ALL, but the shelf opens on the direct
-  // rail: the agents a buyer can call right now, paid or free
-  const type = (sp.get('type') ?? 'direct') as 'all' | 'direct' | 'jobs' | 'x402' | 'vault'
+  // the shelf opens on all listings. Vault, job and call are the three rails; a
+  // vault is ours or a self-run one, a job is open to any seller who can quote,
+  // and a call to any callable endpoint.
+  const type = (sp.get('type') ?? 'all') as 'all' | 'direct' | 'jobs' | 'x402' | 'vault'
   const metric = (sp.get('metric') ?? 'score') as 'score' | 'newest' | 'feedback' | 'health'
   const pcs = sp.get('pcs') === '1'
   // first-party agents, the same owner fact the cards disclose
@@ -203,112 +204,48 @@ export function MarketplacePage() {
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
       <div className="px-8 pb-[240px] xl:pb-16">
-        {/* the register's masthead: a dot grid with a few lit nodes, over the theme's
-            own wash. it reads as a network without an illustration */}
-        <div
-          className="relative -mx-8 mb-8 overflow-hidden rounded-b-[20px] border-b-[3px] border-souk-canvas px-8 shadow-[0_3px_0_-1px_var(--color-souk-hair)]"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--color-souk-data) 16%, transparent) 1px, transparent 0), linear-gradient(117deg, var(--mast-wash), transparent 70%)',
-            backgroundSize: '22px 22px, auto',
-          }}
-        >
-          <span aria-hidden="true" className="pointer-events-none absolute left-[18%] top-[68%] hidden h-1.5 w-1.5 rounded-full bg-souk-sky shadow-[0_0_12px_2px_rgba(136,222,235,0.55)] md:block" />
-          <span aria-hidden="true" className="pointer-events-none absolute left-[42%] top-[82%] hidden h-1.5 w-1.5 rounded-full bg-souk-sky shadow-[0_0_12px_2px_rgba(136,222,235,0.45)] md:block" />
-          <span aria-hidden="true" className="pointer-events-none absolute left-[63%] top-[62%] hidden h-1.5 w-1.5 rounded-full bg-souk-sky shadow-[0_0_12px_2px_rgba(136,222,235,0.35)] md:block" />
-          <span aria-hidden="true" className="pointer-events-none absolute left-[86%] top-[76%] hidden h-1.5 w-1.5 rounded-full bg-souk-muted/60 md:block" />
-        <Section pad="pt-11 pb-12 md:pb-14">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-end">
-        <Stack gap={10}>
-          <Row justify="between" align="center" gap={16} className="flex-wrap">
-            <Txt size={11} lead={16} mono upper tone="data" className="line-clamp-2 sm:line-clamp-none">
-              {strap}
-            </Txt>
-            {result ? (
-              <span
-                className="inline-flex h-8 shrink-0 items-center border border-souk-hair bg-souk-surface1 px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-muted"
-                title={result.source === 'snapshot' ? 'The shared store did not answer, so the committed snapshot is serving the shelf' : 'The shelf is reading the shared catalogue store'}
-              >
-                {catalogueSourceLabel(result.source)}
-              </span>
-            ) : null}
-            {/* the live stamp: whether the shelf has answered, and how fresh the
-                data behind it is. the dot pulses only while the data is fresh */}
-            <span
-              className="inline-flex h-8 shrink-0 items-center gap-2 border border-souk-hair bg-souk-surface1 px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-labels"
-              title="Hireable now: agents whose endpoint answered the last probe"
-            >
+        {/* the shelf bar: the facts a buyer checks before scrolling, directly
+            under the nav. no panel, no hover copy. */}
+        <div className="-mx-8 mb-6 border-b border-souk-hair px-8 py-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Txt size={10} lead={14} mono upper tone="data">{strap}</Txt>
+            <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-labels">
               <span
                 aria-hidden="true"
                 className={`h-1.5 w-1.5 rounded-full ${result ? 'bg-souk-good animate-scale-pulse' : 'bg-souk-muted'}`}
               />
-              {result ? `${(result.onlineCounts?.all ?? 0).toLocaleString('en-US')} hireable · ${freshness}` : 'reading the shelf'}
+              {result ? `${result.total.toLocaleString('en-US')} hireable · ${freshness}` : 'reading the shelf'}
             </span>
-          </Row>
-
-          {category === 'all' ? null : (
-            <Row align="baseline" gap={12} className="flex-wrap">
-              <Txt size={34} lead={42} display weight="bold" tone="ink">
-                {labelFor(category)}
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {['ERC-8004', 'ERC-8183', 'x402', 'PancakeSwap'].map((rail) => (
+                <span key={rail} className="rounded-[6px] border border-souk-hair px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-muted">
+                  {rail}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2">
+            {chainId !== null ? (
+              <Txt size={11} lead={16} mono tone="steel">
+                hires settle in {settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}
+                {result ? ` · ${result.total.toLocaleString('en-US')} shown` : ''}
               </Txt>
-              {loading && !result ? (
-                <Txt size={11} lead={16} mono upper tone="muted">
-                  loading agents
-                </Txt>
-              ) : null}
-            </Row>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
-            {['ERC-8004', 'ERC-8183', 'x402', 'PancakeSwap'].map((rail) => (
-              <span
-                key={rail}
-                className="border border-souk-hair px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-muted"
+            ) : null}
+            {chainId !== null && registry ? (
+              <a
+                href={explorerAddressUrl(chainId, registry)}
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono text-[11px] leading-4 text-souk-sky transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               >
-                {rail}
-              </span>
-            ))}
+                ERC-8004 registry ↗
+              </a>
+            ) : null}
           </div>
-        </Stack>
-        <Row align="center" gap={16} className="hidden self-end justify-end sm:flex">
-          {chainId !== null ? (
-            <Txt size={11} lead={16} mono tone="steel">
-              hires settle in {settlementAssetFor(chainId)?.symbol ?? 'the settlement asset'}
-              {result ? ` · ${result.total.toLocaleString('en-US')} shown` : ''}
-            </Txt>
-          ) : null}
-          {chainId !== null && registry ? (
-            <a
-              href={explorerAddressUrl(chainId, registry)}
-              target="_blank"
-              rel="noreferrer"
-              title={`ERC-8004 identity registry ${registry} on ${chainLabel(chainId)}`}
-              className="font-mono text-[11px] leading-4 text-souk-sky transition hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
-            >
-              ERC-8004 registry ↗
-            </a>
-          ) : null}
-        </Row>
-        </div>
-        </Section>
         </div>
 
-        <Section pad="pt-2 pb-16">
-          <Row justify="between" align="baseline" gap={12} className="flex-wrap">
-            <Txt size={10} lead={14} weight="bold" upper tone="muted">
-              Hire on vault
-            </Txt>
-            <Txt size={11} lead={16} mono tone="steel">
-              four rails, one custody contract
-            </Txt>
-          </Row>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {CATEGORIES.map((c) => (
-              <Link key={c.key} to={`/vault/c/${c.key}`} className="group block">
-                <HireInAction category={c.key} compact cta="Open the vault" />
-              </Link>
-            ))}
-          </div>
+        <Section pad="pt-2 pb-6">
+          <AgentGalleryCard />
         </Section>
 
         {/* the control band: two rows, sticky. categories first, then find, rail,
@@ -316,8 +253,8 @@ export function MarketplacePage() {
             until asked for, so the shelf is not four rows of chrome before a card */}
         <Section pad="py-0">
         <div className="sticky top-0 z-20 -mx-8 border-y border-souk-hair bg-souk-canvas/90 px-8 backdrop-blur-[14px]">
-          <Row align="center" gap={16} className="border-b border-souk-hair py-3">
-            <div className="-mx-1 flex min-w-0 flex-1 items-center gap-6 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Row align="center" gap={16} className="flex-wrap border-b border-souk-hair py-3">
+            <div className="-mx-1 flex min-w-0 basis-full items-center gap-6 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:basis-auto sm:flex-1">
               <Tab active={category === 'all'} onClick={() => setParam('category', 'all')}>
                 All
                 {result ? (
@@ -337,12 +274,12 @@ export function MarketplacePage() {
                 </Tab>
               ))}
             </div>
-            <Row align="center" gap={16} className="shrink-0">
+            <Row align="center" gap={16} className="w-full justify-end sm:w-auto">
               <button
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
                 aria-expanded={showFilters}
-                className="inline-flex min-h-[32px] cursor-pointer items-center border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate transition hover:text-souk-ink"
+                className="inline-flex min-h-[32px] cursor-pointer items-center rounded-[6px] border border-souk-hair px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate transition hover:text-souk-ink"
               >
                 Filters{pcs || owned || hide || verifiedOnly || sector === 'stocks' ? ' ·' : ''}
               </button>
@@ -351,7 +288,7 @@ export function MarketplacePage() {
                 onClick={() => setShowLegend((v) => !v)}
                 aria-expanded={showLegend}
                 title="The five states, in the order they cost you"
-                className="grid h-8 w-8 cursor-pointer place-items-center border border-souk-hair font-mono text-[10px] text-souk-muted transition hover:text-souk-ink"
+                className="grid h-8 w-8 cursor-pointer place-items-center rounded-[6px] border border-souk-hair font-mono text-[10px] text-souk-muted transition hover:text-souk-ink"
               >
                 ?
               </button>
@@ -359,7 +296,7 @@ export function MarketplacePage() {
           </Row>
 
           <Row align="center" gap={12} className="flex-wrap py-3">
-            <label className="flex h-10 w-full min-w-0 basis-full items-center gap-2 border border-souk-hair bg-souk-surface1 px-3 sm:w-auto sm:max-w-[320px] sm:flex-1">
+            <label className="flex h-10 w-full min-w-0 basis-full items-center gap-2 rounded-[6px] border border-souk-hair bg-souk-surface1 px-3 sm:w-auto sm:max-w-[320px] sm:flex-1">
               <span className="sr-only">Search agents</span>
               <input
                 id="search"
@@ -504,32 +441,17 @@ export function MarketplacePage() {
         <Section pad="pt-6 pb-16">
         <Stack gap={24}>
         {result ? (
-          <Stack gap={12}>
-            <Row align="center" gap={12} className="flex-wrap">
-              {result.featured.length > 0 ? (
-                <>
-                  <Txt size={10} lead={14} weight="bold" upper tone="muted">
-                    Featured by Agent Souk
-                  </Txt>
-                  <Txt size={11} lead={16} tone="slate">
-                    operated by us, shown here for that reason, not by rank
-                  </Txt>
-                </>
-              ) : null}
-              {/* new admissions moved to their own page, so the shelf keeps one
-                  disclosed placement and the strip has room to grow. the link
-                  stays even when there is no placement to show */}
-              <Link
-                to="/discover"
-                className="ml-auto font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate underline decoration-souk-hair underline-offset-4 hover:text-souk-ink"
-              >
-                Discover new listings
-              </Link>
-            </Row>
-            {result.featured.length > 0 ? (
-              <AgentGrid items={result.featured} shortlist={shortlist} onToggle={handleToggle} />
-            ) : null}
-          </Stack>
+          <Row align="center" gap={12} className="flex-wrap">
+            {/* new admissions moved to their own page, so the shelf keeps one
+                disclosed placement and the strip has room to grow. the link
+                stays even when there is no placement to show */}
+            <Link
+              to="/discover"
+              className="ml-auto font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate underline decoration-souk-hair underline-offset-4 hover:text-souk-ink"
+            >
+              Discover new listings
+            </Link>
+          </Row>
         ) : null}
         {result ? <Rule /> : null}
         <Stack>
@@ -627,10 +549,6 @@ function relativeAgeLabel(iso: string, now: number): string | null {
   return `${days} day${days === 1 ? '' : 's'} ago`
 }
 
-function labelFor(key: string): string {
-  return CATEGORIES.find((c) => c.key === key)?.label ?? 'All agents'
-}
-
 // the category reads as plain text with the active one ruled in data, the way the
 // old shelf ruled its tabs rather than wrapping each in a pill
 function Tab({
@@ -649,7 +567,7 @@ function Tab({
       aria-pressed={active}
       className={`shrink-0 cursor-pointer border-b-2 pb-[5px] text-[13px] uppercase leading-[18px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data ${
         active
-          ? 'border-souk-data font-semibold text-souk-ink'
+          ? 'border-souk-accent font-semibold text-souk-ink'
           : 'border-transparent text-souk-steel hover:text-souk-ink'
       }`}
     >
@@ -679,7 +597,7 @@ function SortButton({
       aria-pressed={active}
       className={`shrink-0 cursor-pointer rounded-[6px] px-3 py-[7px] text-[12px] font-bold uppercase leading-[16px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
         active
-          ? 'bg-souk-data text-souk-canvas'
+          ? 'bg-souk-accent text-souk-on-accent'
           : 'text-souk-steel hover:bg-souk-surface2 hover:text-souk-ink'
       }`}
     >
@@ -782,7 +700,7 @@ function AgentCard({
   const priceLabel = price.length > 26 ? `${price.slice(0, 25)}...` : price
   return (
     <article
-      className={`group relative flex flex-col gap-3 border border-souk-hair bg-souk-surface1 p-4 ${
+      className={`group relative flex flex-col gap-3 overflow-hidden rounded-[16px] border border-souk-hair souk-glass p-4 ${
         checked ? 'ring-1 ring-souk-data' : ''
       }`}
     >
@@ -797,7 +715,7 @@ function AgentCard({
             src={img}
             alt=""
             loading="lazy"
-            className="h-[46px] w-[46px] shrink-0 rounded-[8px] border border-souk-hair bg-souk-indigo object-cover"
+            className="h-[46px] w-[46px] shrink-0 rounded-[12px] border border-souk-hair bg-souk-indigo object-cover"
             onError={(e) => {
               const el = e.currentTarget
               if (!el.dataset.fallback) {
@@ -810,7 +728,7 @@ function AgentCard({
             <div className="truncate text-[10px] font-bold uppercase tracking-[0.1em] text-souk-muted">
               {categoryName(agent.category)}
             </div>
-            <div className="truncate font-[Fraunces_Variable,Georgia,serif] text-[19px] font-semibold leading-[26px] tracking-[-0.01em] text-souk-ink">
+            <div className="truncate font-serif text-[19px] font-semibold leading-[26px] tracking-[-0.01em] text-souk-ink">
               {agent.name}
             </div>
             <div className="truncate font-mono text-[10.5px] leading-4 text-souk-muted">
@@ -819,18 +737,18 @@ function AgentCard({
           </div>
         </div>
 
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="whitespace-nowrap font-mono text-[13px] text-souk-ink" title={price}>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          <span className="min-w-0 truncate font-mono text-[13px] text-souk-ink" title={price}>
             {priceLabel}
           </span>
           {agent.x402_supported ? (
-            <span className="ml-2 border border-souk-hair px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-souk-muted">
+            <span className="shrink-0 border border-souk-hair px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-souk-muted">
               x402
             </span>
           ) : null}
           <OnChainBadge
             online={takesVault(agent.skills) || classifyExecution(agent.description ?? '').executes}
-            className="shrink-0"
+            className="ml-auto shrink-0"
           />
         </div>
 
@@ -886,7 +804,7 @@ function AgentCard({
             ? 'This agent sells by ERC-8183 job: it quotes a price, the job is funded in escrow, and it is paid on delivery.'
             : undefined
         }
-        className="metal mt-auto flex h-9 items-center justify-center gap-1.5 border border-souk-hair bg-[#c3c9d4] text-[12px] font-semibold text-[#0b0e14] transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data" style={{ backgroundImage: 'var(--metal-face)' }}
+        className="micro font-mono mt-auto flex h-10 items-center justify-center gap-1.5 rounded-[6px] border border-souk-hair bg-souk-accent tracking-[0.08em] text-souk-on-accent transition hover:bg-souk-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         Hire
         <span
@@ -918,14 +836,14 @@ function GridSkeleton() {
           <Row align="center" gap={11}>
             <span className="h-[56px] w-[56px] shrink-0 rounded-[8px] bg-souk-surface2" />
             <Stack gap={6} className="flex-1">
-              <span className="h-3 w-20 rounded-[3px] bg-souk-surface2" />
-              <span className="h-4 w-32 rounded-[3px] bg-souk-surface2" />
+              <span className="h-3 w-20 rounded-[4px] bg-souk-surface2" />
+              <span className="h-4 w-32 rounded-[4px] bg-souk-surface2" />
             </Stack>
           </Row>
-          <span className="h-3 w-full rounded-[3px] bg-souk-surface2" />
-          <span className="h-3 w-3/4 rounded-[3px] bg-souk-surface2" />
+          <span className="h-3 w-full rounded-[4px] bg-souk-surface2" />
+          <span className="h-3 w-3/4 rounded-[4px] bg-souk-surface2" />
           <Rule />
-          <span className="h-3 w-40 rounded-[3px] bg-souk-surface2" />
+          <span className="h-3 w-40 rounded-[4px] bg-souk-surface2" />
         </Stack>
       ))}
     </div>

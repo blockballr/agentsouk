@@ -23,10 +23,10 @@ export function CategoryCard({
   size?: 'sm' | 'md'
 }) {
   return (
-    <Link to={to} className="block h-full">
-      <Stack surface pad={[18, 20, 18, 20]} gap={9} className="h-full transition hover:border-souk-sky">
+    <Link to={to} className="block h-full min-w-0">
+      <Stack surface pad={[18, 20, 18, 20]} gap={9} className="h-full min-w-0 transition hover:border-souk-sky">
         <VaultArt category={category} size={size} />
-        <Row justify="between" align="center" gap={8}>
+        <Row justify="between" align="center" gap={8} className="flex-wrap">
           <Txt size={20} lead={26} weight="bold" tone="ink">
             {title}
           </Txt>
