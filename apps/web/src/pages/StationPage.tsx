@@ -215,7 +215,7 @@ export function StationPage() {
       </Stack>
 
       {error ? (
-        <div className="mt-6 rounded-[10px] border border-souk-peach/45 p-4" role="note">
+        <div className="mt-6 rounded-[12px] border border-souk-peach/45 p-4" role="note">
           <Txt size={13} lead={20} tone="peach">
             {error}
           </Txt>
@@ -579,7 +579,7 @@ function ChangeAccess({
               type="button"
               onClick={() => setRole(r)}
               aria-pressed={role === r}
-              className={`cursor-pointer rounded-[6px] px-3 py-[7px] text-[13px] leading-[18px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+              className={`cursor-pointer rounded-[8px] px-3 py-[7px] text-[13px] leading-[18px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
                 role === r ? 'bg-souk-indigo font-semibold text-souk-white' : 'text-souk-muted hover:text-souk-ink'
               }`}
             >

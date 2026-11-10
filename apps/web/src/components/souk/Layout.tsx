@@ -58,10 +58,15 @@ function frameClass(props: BoxProps): string {
   const { surface, hair, bg, className } = props;
   const parts: string[] = [];
   if (surface) {
-    parts.push('border', 'bg-souk-surface1', EDGE, 'overflow-hidden', 'rounded-none');
+    parts.push('border', 'souk-glass', EDGE, 'overflow-hidden', 'rounded-[16px]');
   } else {
     if (bg) parts.push(BG[bg]);
     parts.push('border', hair ? HAIR : 'border-transparent');
+    // nothing is square: a filled or ruled frame is a card at the house radius
+    // unless the caller asked for its own radius or named one in className
+    if ((bg || hair) && props.radius === undefined && !/\brounded-/.test(className ?? '')) {
+      parts.push('rounded-[16px]');
+    }
   }
   if (className) parts.push(className);
   return parts.join(' ');
@@ -70,8 +75,8 @@ function frameClass(props: BoxProps): string {
 function frameStyle(props: BoxProps): CSSProperties {
   const style: CSSProperties = { ...(props.style ?? {}) };
   if (props.gap !== undefined) style.gap = props.gap;
-  // The card language is square now. A radius is still honoured on a plain
-  // frame, but never on a surface that is meant to read as a card.
+  // A surface is a card: 16px, the same radius as the gallery and the docs.
+  // A plain frame can still ask for its own radius.
   if (props.radius !== undefined && !props.surface) style.borderRadius = props.radius;
   return { ...style, ...padStyle(props.pad) };
 }

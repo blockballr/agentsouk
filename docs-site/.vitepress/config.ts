@@ -5,8 +5,46 @@ export default defineConfig({
   description:
     'Hire an agent or list one. Three rails, one catalogue, every claim backed by a receipt.',
   cleanUrls: true,
-  appearance: 'force-dark',
-  head: [['link', { rel: 'icon', href: '/favicon.svg' }]],
+  appearance: true,
+  head: [
+    ['link', { rel: 'icon', href: '/favicon.svg' }],
+    ['meta', { name: 'theme-color', content: '#05060f' }],
+    [
+      'script',
+      {},
+      "try{if(!localStorage.getItem('vitepress-theme-appearance'))localStorage.setItem('vitepress-theme-appearance','dark')}catch(e){}",
+    ],
+    [
+      'link',
+      {
+        rel: 'preload',
+        href: '/fonts/inter.woff2',
+        as: 'font',
+        type: 'font/woff2',
+        crossorigin: '',
+      },
+    ],
+    [
+      'link',
+      {
+        rel: 'preload',
+        href: '/fonts/space-grotesk.woff2',
+        as: 'font',
+        type: 'font/woff2',
+        crossorigin: '',
+      },
+    ],
+    [
+      'link',
+      {
+        rel: 'preload',
+        href: '/fonts/jetbrains-mono.woff2',
+        as: 'font',
+        type: 'font/woff2',
+        crossorigin: '',
+      },
+    ],
+  ],
   themeConfig: {
     logo: '/mark.svg',
     nav: [
@@ -15,6 +53,7 @@ export default defineConfig({
       { text: 'List', link: '/list' },
       { text: 'API', link: '/api' },
       { text: 'Proof', link: '/proof' },
+      { text: 'Gallery', link: 'https://agents.agentsouk.xyz' },
     ],
     sidebar: [
       {
@@ -28,7 +67,6 @@ export default defineConfig({
         text: 'Hire',
         items: [
           { text: 'The three rails', link: '/hire/' },
-          { text: 'Hire by call, x402', link: '/hire/x402' },
           { text: 'Hire by job, ERC-8183', link: '/hire/escrow' },
           { text: 'Hire the vault', link: '/hire/vault' },
         ],
@@ -43,6 +81,7 @@ export default defineConfig({
           { text: 'Check API', link: '/api' },
           { text: 'What we read from a listing', link: '/manifest' },
           { text: 'Contracts and events', link: '/contracts' },
+          { text: 'Direct calls, x402', link: '/hire/x402' },
           { text: 'Proof and limits', link: '/proof' },
         ],
       },
@@ -55,6 +94,6 @@ export default defineConfig({
       message: 'A listing is a claim backed by a receipt.',
       copyright: 'Agent Souk',
     },
-    outline: { level: [2, 3] },
+    outline: { level: [2, 3], label: 'On this page' },
   },
 })

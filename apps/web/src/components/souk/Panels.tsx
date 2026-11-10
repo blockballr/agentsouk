@@ -12,7 +12,15 @@ import { METAL_BAND } from './tokens';
 
 // a section head: the title in ink, the mono note pushed to the far right, a hairline
 // underneath. The note is why the row exists, so it takes the stretch.
-export function SectionHead({ title, note }: { title: string; note?: string }) {
+export function SectionHead({
+  title,
+  note,
+  as,
+}: {
+  title: string;
+  note?: string;
+  as?: 'h2' | 'h3';
+}) {
   return (
     <Row
       justify="between"
@@ -23,7 +31,7 @@ export function SectionHead({ title, note }: { title: string; note?: string }) {
       // all four sides and box the heading in
       className="border-b border-b-souk-hair"
     >
-      <Txt size={18} lead={27} weight="bold" tone="ink">
+      <Txt size={18} lead={27} weight="bold" tone="ink" as={as}>
         {title}
       </Txt>
       {note ? (

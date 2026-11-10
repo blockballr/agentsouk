@@ -47,9 +47,17 @@ const columns: { heading: string; links: FooterLink[] }[] = [
       { to: '/vault', label: 'footer.vault' },
       { to: '/quest', label: 'nav.quest' },
       { to: '/advantage', label: 'footer.advantage' },
-  { to: '/judge', label: 'footer.judge' },
+      { to: '/judge', label: 'footer.judge' },
       { to: '/profile', label: 'footer.listings' },
       { href: 'https://docs.agentsouk.xyz', label: 'footer.docs' },
+      {
+        href: 'https://github.com/blockballr/agentsouk/blob/main/docs/audit-hirevault-brief.md',
+        label: 'Vault audit brief',
+      },
+      {
+        href: 'https://gist.github.com/blockballr/adc67d4509f03b2c9788fc8ed8afa427',
+        label: 'Community review call',
+      },
     ],
   },
 ]

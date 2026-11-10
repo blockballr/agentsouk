@@ -217,12 +217,12 @@ export function QuestPage() {
             qualifying agent of your own. Mainnet and testnet hires both count; a token approval alone
             does not — the hire has to record on chain. This page tracks the Agent Souk side.
           </p>
-          <p className="mt-4 max-w-[1180px] border border-souk-peach/40 bg-souk-surface1 p-4 text-[13px] leading-[21px] text-souk-ink">
+          <p className="mt-4 max-w-[1180px] rounded-[16px] border border-souk-peach/40 bg-souk-surface1 p-4 text-[13px] leading-[21px] text-souk-ink">
             Quest rule: hires and listings signed by any wallet other than the one you registered on BNB
             Chain's campaign form cannot earn rewards or count toward finishing. Use that wallet for every
             hire and for listing your agent.
           </p>
-          <div className="max-w-[1180px] border border-souk-hair bg-souk-surface1 p-4">
+          <div className="max-w-[1180px] rounded-[16px] border border-souk-hair bg-souk-surface1 p-4">
             <Txt size={10} lead={14} weight="bold" upper tone="muted">The built agent has to meet four things</Txt>
             <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-[20px] text-souk-slate">
               <li>· Owned by your campaign wallet: registered under ERC-8004 on chain 56 or 97, and listed on a shortlisted marketplace.</li>
@@ -300,7 +300,7 @@ export function QuestPage() {
             </Row>
             {/* the bar counts the stamps, which is the only thing the passport tallies now */}
             <div
-              className="h-1.5 overflow-hidden rounded-[3px] bg-souk-hair"
+              className="h-1.5 overflow-hidden rounded-[4px] bg-souk-hair"
               role="progressbar"
               aria-label="Quest stamps"
               aria-valuemin={0}
@@ -308,13 +308,13 @@ export function QuestPage() {
               aria-valuenow={done}
             >
               <div
-                className="meter-fill relative h-full overflow-hidden rounded-[3px] bg-souk-data transition-[width] duration-700 ease-out motion-reduce:transition-none"
+                className="meter-fill relative h-full overflow-hidden rounded-[4px] bg-souk-data transition-[width] duration-700 ease-out motion-reduce:transition-none"
                 style={{ width: `${(done / 3) * 100}%` }}
               >
                 {done < 3 ? (
                   <span
                     aria-hidden="true"
-                    className="meter-shimmer absolute inset-y-0 left-0 w-[40%] rounded-[3px] bg-gradient-to-r from-transparent via-white/70 to-transparent"
+                    className="meter-shimmer absolute inset-y-0 left-0 w-[40%] rounded-[4px] bg-gradient-to-r from-transparent via-white/70 to-transparent"
                   />
                 ) : null}
               </div>
@@ -589,7 +589,7 @@ function StepCard({
   return (
     <article
       aria-label={`${title}, ${state.toLowerCase()}`}
-      className="relative flex h-full min-w-0 flex-col gap-3 overflow-hidden rounded-none border border-souk-edge bg-souk-surface1 [overflow-wrap:anywhere]"
+      className="relative flex h-full min-w-0 flex-col gap-3 overflow-hidden rounded-[8px] border border-souk-edge bg-souk-surface1 [overflow-wrap:anywhere]"
       style={{ padding: '20px 22px' }}
     >
       <QuestStamp

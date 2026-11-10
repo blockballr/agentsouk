@@ -68,7 +68,7 @@ export function ResultBox({
   className?: string
 }) {
   return (
-    <div className={cx('flex min-h-0 flex-col overflow-hidden rounded-[10px] bg-echo-green/30 p-3', className)}>
+    <div className={cx('flex min-h-0 flex-col overflow-hidden rounded-[12px] bg-echo-green/30 p-3', className)}>
       <p className={LABEL}>{label}</p>
       <p className="mt-1.5 line-clamp-4 text-[13px] leading-5 text-press-black">{preview}</p>
       {onMore && moreLabel ? (
@@ -105,7 +105,7 @@ export function RatingBoxes({
     <div className="flex gap-1" role={onPick ? 'radiogroup' : undefined} aria-label={label}>
       {[1, 2, 3, 4, 5].map((n) => {
         const on = value !== null && n <= value
-        const classes = cx('grid place-items-center rounded-[5px] border hairline', box, on ? lit : dim)
+        const classes = cx('grid place-items-center rounded-[8px] border hairline', box, on ? lit : dim)
         return onPick ? (
           <button
             key={n}
@@ -141,7 +141,7 @@ export function Dialog({ title, onClose, children }: { title: string; onClose: (
     <dialog
       ref={ref}
       onClose={onClose}
-      className="m-auto w-[min(640px,92vw)] rounded-[14px] border border-white/15 bg-souk-indigo p-0 text-white backdrop:bg-black/60"
+      className="m-auto w-[min(640px,92vw)] rounded-[16px] border border-white/15 bg-souk-indigo p-0 text-white backdrop:bg-black/60"
     >
       <div className="flex items-center justify-between gap-4 border-b border-white/15 px-5 py-3">
         <p className="micro text-souk-indigo-labels">{title}</p>
@@ -160,7 +160,7 @@ export function Dialog({ title, onClose, children }: { title: string; onClose: (
 
 export function FigureTile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="metal min-w-0 rounded-[14px] border hairline border-slate-verdant/40 p-5">
+    <div className="metal min-w-0 rounded-[16px] border hairline border-slate-verdant/40 p-5">
       <p className={LABEL}>{label}</p>
       <p className="mt-2 truncate font-serif text-[28px] leading-tight tabular-nums text-press-black" title={value}>
         {value}
@@ -215,7 +215,7 @@ export function CheckStrip({ marks, label }: { marks: CheckMark[]; label: string
           key={i}
           title={m.title}
           className={cx(
-            'h-3 w-3 rounded-[3px]',
+            'h-3 w-3 rounded-[4px]',
             m.state === 'answered' && 'bg-highlighter-green',
             m.state === 'gated' && 'bg-newsprint-gray/50',
             m.state === 'missed' && 'border hairline border-newsprint-gray',

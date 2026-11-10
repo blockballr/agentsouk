@@ -326,7 +326,7 @@ export function SwapTicker() {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-1.5 rounded-[5px] px-1.5 py-1 text-[0.75rem] transition hover:bg-souk-surface2"
+        className="flex items-center gap-1.5 rounded-[8px] px-1.5 py-1 text-[0.75rem] transition hover:bg-souk-surface2"
       >
         <span aria-hidden="true" className="text-souk-data">
           &#8646;
@@ -345,7 +345,7 @@ export function SwapTicker() {
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4, scale: 0.99 }}
           transition={{ duration: reduceMotion ? 0.08 : 0.14, ease: 'easeOut' }}
           style={{ transformOrigin: 'bottom left' }}
-          className="fixed bottom-16 left-3 z-[200] w-[min(92vw,356px)] origin-bottom rounded-none bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] p-4 text-souk-ink shadow-lg backdrop-blur-md ring-1 ring-white/10"
+          className="fixed bottom-16 left-3 z-[200] w-[min(92vw,356px)] origin-bottom rounded-[16px] bg-[linear-gradient(117deg,var(--mast-wash),var(--color-souk-surface1))] p-4 text-souk-ink shadow-lg backdrop-blur-md ring-1 ring-white/10"
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-souk-muted">
@@ -451,7 +451,7 @@ export function SwapTicker() {
             type="button"
             disabled={busy || (Boolean(account) && (!quote || !parsed || parsed <= 0n || insufficient || quoting))}
             onClick={() => void onSwap()}
-            className="mt-3 w-full rounded-none bg-souk-data px-3 py-2 text-sm font-semibold text-souk-canvas transition disabled:cursor-not-allowed disabled:opacity-45"
+            className="mt-3 w-full rounded-[6px] bg-souk-accent px-3 py-2 text-sm font-semibold text-souk-on-accent transition hover:bg-souk-accent-hover disabled:cursor-not-allowed disabled:opacity-45"
           >
             {label}
           </button>

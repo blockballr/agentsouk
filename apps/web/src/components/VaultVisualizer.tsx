@@ -77,7 +77,7 @@ export function VaultVisualizer({ state }: { state?: VaultVisualizerState }) {
             <span>{s.labelA}</span>
             <span className="font-mono text-souk-ink">{s.balanceA.toFixed(2)}</span>
           </div>
-          <div className="relative h-24 overflow-hidden rounded-[10px] border border-souk-hair bg-souk-surface2">
+          <div className="relative h-24 overflow-hidden rounded-[12px] border border-souk-hair bg-souk-surface2">
             <motion.div
               initial={{ height: 0 }}
               animate={{ height: `${pctA}%` }}
@@ -94,7 +94,7 @@ export function VaultVisualizer({ state }: { state?: VaultVisualizerState }) {
             <span>{s.labelB}</span>
             <span className="font-mono text-souk-ink">{s.balanceB.toFixed(2)}</span>
           </div>
-          <div className="relative h-24 overflow-hidden rounded-[10px] border border-souk-hair bg-souk-surface2">
+          <div className="relative h-24 overflow-hidden rounded-[12px] border border-souk-hair bg-souk-surface2">
             <motion.div
               initial={{ height: 0 }}
               animate={{ height: `${pctB}%` }}

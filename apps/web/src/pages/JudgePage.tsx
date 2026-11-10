@@ -153,7 +153,7 @@ export function JudgePage() {
         </Txt>
       </Stack>
 
-      <Stack gap={10} className="border border-souk-hair bg-souk-surface1 p-5">
+      <Stack gap={10} className="rounded-[16px] border border-souk-hair bg-souk-surface1 p-5">
         <Txt size={11} weight="bold" upper tone="muted">
           Live catalogue
         </Txt>

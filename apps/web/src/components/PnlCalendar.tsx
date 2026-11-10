@@ -122,7 +122,7 @@ export function PnlCalendar({
 
   return (
     <div
-      className={`@container flex min-h-0 flex-col rounded-none border border-souk-hair bg-souk-surface1/40 p-4 backdrop-blur-md ${className}`}
+      className={`@container flex min-h-0 flex-col souk-glass rounded-[16px] border border-souk-hair p-4 ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -144,7 +144,7 @@ export function PnlCalendar({
             aria-label="Previous month"
             disabled={!canBack}
             onClick={() => setMonthOffset((o) => Math.min(currentMonth, o + 1))}
-            className="flex h-8 w-8 items-center justify-center rounded-none border border-souk-hair bg-souk-surface2/50 text-souk-steel transition-colors duration-150 hover:bg-souk-surface2 hover:text-souk-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-souk-data/60 disabled:pointer-events-none disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface2/50 text-souk-steel transition-colors duration-150 hover:bg-souk-surface2 hover:text-souk-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-souk-data/60 disabled:pointer-events-none disabled:opacity-30"
           >
             <svg
               viewBox="0 0 16 16"
@@ -164,7 +164,7 @@ export function PnlCalendar({
             aria-label="Next month"
             disabled={!canForward}
             onClick={() => setMonthOffset((o) => Math.max(0, o - 1))}
-            className="flex h-8 w-8 items-center justify-center rounded-none border border-souk-hair bg-souk-surface2/50 text-souk-steel transition-colors duration-150 hover:bg-souk-surface2 hover:text-souk-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-souk-data/60 disabled:pointer-events-none disabled:opacity-30"
+            className="flex h-8 w-8 items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface2/50 text-souk-steel transition-colors duration-150 hover:bg-souk-surface2 hover:text-souk-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-souk-data/60 disabled:pointer-events-none disabled:opacity-30"
           >
             <svg
               viewBox="0 0 16 16"
@@ -244,7 +244,7 @@ export function PnlCalendar({
                     return (
                       <div
                         key={d}
-                        className={`flex min-h-0 flex-col justify-between rounded-none border px-1 py-1.5 ${toneFor(stat, future, inMonth[i])}`}
+                        className={`flex min-h-0 flex-col justify-between rounded-[8px] border px-1 py-1.5 ${toneFor(stat, future, inMonth[i])}`}
                         title={
                           inMonth[i] && stat
                             ? `${shortDay(d)} · ${money(stat.pnl)} · ${stat.trades} ${
@@ -280,7 +280,7 @@ export function PnlCalendar({
                     )
                   })}
                   <div
-                    className={`flex min-h-0 flex-col justify-between rounded-none border px-1 py-1.5 ${weekTone(weekStats)}`}
+                    className={`flex min-h-0 flex-col justify-between rounded-[8px] border px-1 py-1.5 ${weekTone(weekStats)}`}
                     title={`${shortDay(w)} - ${shortDay(w + (WEEKDAYS.length - 1) * DAY)}`}
                   >
                     <div className="flex items-center justify-between gap-1">

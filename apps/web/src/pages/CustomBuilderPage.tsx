@@ -17,7 +17,7 @@ export function CustomBuilderPage() {
         <button
           type="button"
           onClick={() => setStudioOpen(true)}
-          className="flex flex-col gap-2 border border-souk-hair bg-souk-surface1 p-4 text-left transition hover:border-souk-data/40"
+          className="flex flex-col gap-2 rounded-[16px] border border-souk-hair bg-souk-surface1 p-4 text-left transition hover:border-souk-data/40"
         >
           <Txt size={10} lead={14} weight="bold" upper tone="muted">No agent yet</Txt>
           <Txt size={16} lead={22} weight="bold" tone="ink">Create it in BNB Agent Studio</Txt>
@@ -29,7 +29,7 @@ export function CustomBuilderPage() {
 
         <Link
           to="/list"
-          className="flex flex-col gap-2 border border-souk-hair bg-souk-surface1 p-4 transition hover:border-souk-data/40"
+          className="flex flex-col gap-2 rounded-[16px] border border-souk-hair bg-souk-surface1 p-4 transition hover:border-souk-data/40"
         >
           <Txt size={10} lead={14} weight="bold" upper tone="muted">Already deployed</Txt>
           <Txt size={16} lead={22} weight="bold" tone="ink">List it here</Txt>
@@ -41,7 +41,7 @@ export function CustomBuilderPage() {
 
         <Link
           to="/agents"
-          className="flex flex-col gap-2 border border-souk-hair bg-souk-surface1 p-4 transition hover:border-souk-data/40"
+          className="flex flex-col gap-2 rounded-[16px] border border-souk-hair bg-souk-surface1 p-4 transition hover:border-souk-data/40"
         >
           <Txt size={10} lead={14} weight="bold" upper tone="muted">Here to hire</Txt>
           <Txt size={16} lead={22} weight="bold" tone="ink">Browse the shelf</Txt>

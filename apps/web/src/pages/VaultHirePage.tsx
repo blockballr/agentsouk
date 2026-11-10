@@ -824,7 +824,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
               </h1>
               <Txt size={14} lead={22} tone="slate" className="mt-3 block max-w-[720px]">
                 {chooser
-                  ? 'Four rails, one custody contract. Open a vault to pick its agent and name the deposit.'
+                  ? `${vaultAgents ? `${vaultAgents.length} vault agents across four rails. ` : 'Four rails, one custody contract. '}Open a vault to pick its agent and name the deposit.`
                   : 'The deposit stays in the vault. One withdraw returns it.'}
               </Txt>
             </div>
@@ -1273,7 +1273,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
             </Stack>
           ) : null}
           <Rule hair />
-          <div className="grid gap-3 rounded-[10px] bg-souk-surface2 px-3.5 py-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 rounded-[12px] bg-souk-surface2 px-3.5 py-3 sm:grid-cols-2 lg:grid-cols-4">
             <Stack gap={1}>
               <Label tone="muted">Deposit</Label>
               <Txt size={12} lead={18} mono tone="ink">
@@ -1415,7 +1415,7 @@ export default function VaultHirePage(props: VaultHireProps = {}) {
                               {' '}{priceNote ? `${priceNote}. ` : ''}Reads live from the pool; refreshes every minute.
                             </Txt>
                             {nearLimit ? (
-                              <div className="mt-2 rounded-[6px] border border-souk-peach/60 bg-souk-peach/10 p-2">
+                              <div className="mt-2 rounded-[8px] border border-souk-peach/60 bg-souk-peach/10 p-2">
                                 <Txt size={11} lead={16} weight="bold" tone="peach">
                                   {lossShare >= 1
                                     ? 'The drawdown budget is spent. The guard refuses further trades until value recovers; closing now returns what is left.'

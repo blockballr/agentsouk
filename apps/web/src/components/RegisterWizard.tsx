@@ -264,7 +264,7 @@ export function RegisterWizard({
               : card.jobCapable
                 ? 'job'
                 : card.x402Support === true
-                  ? 'call'
+                  ? 'job'
                   : null
         if (cardSuggested && !modeTouched.current) chooseMode(cardSuggested)
         setCardSellSilent(!cardSuggested)
@@ -673,7 +673,7 @@ export function RegisterWizard({
     const shelfTab = draft.category ? categoryDef(draft.category).label : 'a category you pick'
     return (
       <div
-        className={`metal rounded-[14px] border hairline p-8 ${
+        className={`metal rounded-[16px] border hairline p-8 ${
           refused
             ? 'border-souk-hair bg-souk-surface2'
             : 'border-souk-data bg-souk-data/10'
@@ -753,7 +753,7 @@ export function RegisterWizard({
             ['2', 'Confirm the card', 'name, words, category'],
             ['3', 'Register on chain', 'one transaction'],
           ].map(([n, label, detail]) => (
-            <li key={n} className="flex items-center gap-3 border border-souk-hair bg-souk-surface1 px-3 py-2">
+            <li key={n} className="flex items-center gap-3 rounded-[8px] border border-souk-hair bg-souk-surface1 px-3 py-2">
               <span className="grid h-5 w-5 shrink-0 place-items-center border border-souk-hair font-mono text-[10px] text-souk-data">
                 {n}
               </span>
@@ -765,7 +765,7 @@ export function RegisterWizard({
           ))}
         </ol>
 
-        <section className="border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
+        <section className="rounded-[16px] border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="micro text-souk-ink">1. The endpoint a buyer calls</p>
             <CardState state={cardState} />
@@ -782,7 +782,7 @@ export function RegisterWizard({
                 setProbe(null)
               }}
               disabled={busy || step !== 'form'}
-              className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
+              className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
               placeholder="https://your-agent.example/.well-known/agent-card.json"
             />
             {endpointFault ? (
@@ -810,7 +810,7 @@ export function RegisterWizard({
                     set('endpoint', `${base}/a2a`)
                     setProbe(null)
                   }}
-                  className="micro rounded-[6px] border border-souk-peach/40 px-2 py-0.5 text-souk-peach transition hover:border-souk-peach"
+                  className="micro rounded-[8px] border border-souk-peach/40 px-2 py-0.5 text-souk-peach transition hover:border-souk-peach"
                 >
                   Use the /a2a link beside it
                 </button>
@@ -845,7 +845,7 @@ export function RegisterWizard({
                   return (
                     <label
                       key={kind}
-                      className="flex cursor-pointer items-center gap-2 rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2 text-sm text-souk-ink transition hover:border-souk-sky"
+                      className="flex cursor-pointer items-center gap-2 rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2 text-sm text-souk-ink transition hover:border-souk-sky"
                     >
                       <input
                         type="checkbox"
@@ -881,7 +881,7 @@ export function RegisterWizard({
           {probe && <EndpointProbeResult probe={probe} />}
 
           {(draft.endpointKinds ?? []).length === 1 && (draft.endpointKinds ?? [])[0] === 'web' && (
-            <div className="mt-3 rounded-[10px] border border-press-black/20 bg-souk-surface2 p-3 text-xs leading-relaxed text-souk-ink">
+            <div className="mt-3 rounded-[12px] border border-press-black/20 bg-souk-surface2 p-3 text-xs leading-relaxed text-souk-ink">
               <p className="micro">Web listings appear, but the marketplace cannot call them</p>
               <p className="mt-1">
                 A browser-invoked agent is listed, but the marketplace cannot call it, so a hire
@@ -893,7 +893,7 @@ export function RegisterWizard({
         </section>
 
         {detailsOpen && (
-          <section className="border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
+          <section className="rounded-[16px] border border-souk-hair bg-souk-surface1 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="micro text-souk-ink">2. What the listing says</p>
               {cardState === 'read' && (
@@ -911,7 +911,7 @@ export function RegisterWizard({
                   value={draft.name}
                   onChange={(e) => set('name', e.target.value)}
                   disabled={busy || step !== 'form'}
-                  className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                  className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
                   placeholder="Venus Yield Router"
                 />
               </label>
@@ -921,7 +921,7 @@ export function RegisterWizard({
                   value={draft.category}
                   onChange={(e) => set('category', e.target.value as RegistrationDraft['category'])}
                   disabled={busy || step !== 'form'}
-                  className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                  className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
                 >
                   <option value="" disabled>
                     Choose a category
@@ -942,7 +942,7 @@ export function RegisterWizard({
                   value={declaredModel}
                   onChange={(e) => setDeclaredModel(e.target.value as 'job-scoped' | 'underwritten')}
                   disabled={busy || step !== 'form'}
-                  className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                  className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
                 >
                   <option value="job-scoped">One hire at a time</option>
                   <option value="underwritten">Backed by a bond</option>
@@ -964,7 +964,7 @@ export function RegisterWizard({
                     onChange={(e) => setBondUsd(e.target.value)}
                     disabled={busy || step !== 'form'}
                     inputMode="decimal"
-                    className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                    className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
                     placeholder="25"
                   />
                   <span className="mt-1 block text-[11px] leading-4 text-souk-muted">
@@ -981,13 +981,13 @@ export function RegisterWizard({
                 onChange={(e) => set('description', e.target.value)}
                 disabled={busy || step !== 'form'}
                 rows={5}
-                className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-3 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-3 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
                 placeholder="What it does, and how a buyer invokes it."
               />
             </label>
             <CategoryCheck draft={draft} />
 
-            <details className="mt-4 rounded-[10px] border border-souk-hair bg-souk-surface2/60 p-3">
+            <details className="mt-4 rounded-[12px] border border-souk-hair bg-souk-surface2/60 p-3">
               <summary className="micro cursor-pointer text-souk-muted marker:text-souk-muted">
                 What a description has to say
               </summary>
@@ -1015,7 +1015,7 @@ export function RegisterWizard({
               </button>
             </details>
 
-            <div className="mt-5 rounded-[10px] border border-souk-hair bg-souk-surface2/60 p-3 sm:p-4">
+            <div className="mt-5 rounded-[12px] border border-souk-hair bg-souk-surface2/60 p-3 sm:p-4">
               <span className="block text-sm font-medium text-souk-ink">Who hosts the registration file?</span>
               <label className="mt-2 flex cursor-pointer items-start gap-3">
                 <input
@@ -1045,7 +1045,7 @@ export function RegisterWizard({
                     value={(draft.ownUri ?? '').trim()}
                     onChange={(e) => set('ownUri', e.target.value)}
                     disabled={busy || step !== 'form'}
-                    className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
+                    className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
                     placeholder="https://your-domain.example/agent.json"
                   />
                   <span className="mt-1.5 block text-xs leading-relaxed text-souk-muted">
@@ -1064,17 +1064,17 @@ export function RegisterWizard({
                     src={imageRaw}
                     alt=""
                     onError={() => setImageOk(false)}
-                    className="h-24 w-24 rounded-[14px] border border-souk-hair object-cover"
+                    className="h-24 w-24 rounded-[16px] border border-souk-hair object-cover"
                     style={{ display: imageOk ? 'block' : 'none' }}
                   />
                 ) : null}
                 {!imageOk && imageRaw ? (
-                  <div className="grid h-24 w-24 place-items-center rounded-[14px] border border-dashed border-souk-hair text-[11px] text-souk-muted">
+                  <div className="grid h-24 w-24 place-items-center rounded-[16px] border border-dashed border-souk-hair text-[11px] text-souk-muted">
                     No picture
                   </div>
                 ) : null}
                 {!imageRaw ? (
-                  <div className="grid h-24 w-24 place-items-center rounded-[14px] border border-dashed border-souk-hair text-[11px] text-souk-muted">
+                  <div className="grid h-24 w-24 place-items-center rounded-[16px] border border-dashed border-souk-hair text-[11px] text-souk-muted">
                     No picture
                   </div>
                 ) : null}
@@ -1089,7 +1089,7 @@ export function RegisterWizard({
                       setImageOk(true)
                     }}
                     disabled={busy || step !== 'form'}
-                    className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
+                    className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-sm"
                     placeholder="https://..."
                   />
                 </label>
@@ -1097,7 +1097,7 @@ export function RegisterWizard({
                   <span className="mt-1 block text-xs text-souk-peach">{imageFault}</span>
                 )}
                 {imageRaw && !imageOk && (
-                  <span className="mt-2 block rounded-[10px] border border-souk-hair px-3 py-2 text-xs text-souk-muted">
+                  <span className="mt-2 block rounded-[12px] border border-souk-hair px-3 py-2 text-xs text-souk-muted">
                     This image did not load. The listing shows the default face until one does.
                   </span>
                 )}
@@ -1126,7 +1126,7 @@ export function RegisterWizard({
                   }}
                   aria-pressed={mode === 'job'}
                   className={cx(
-                    'rounded-[10px] border p-3 text-left transition',
+                    'rounded-[12px] border p-3 text-left transition',
                     mode === 'job'
                       ? 'border-souk-sky bg-souk-sky/5'
                       : 'border-souk-hair bg-souk-surface2 hover:border-souk-sky/60',
@@ -1148,43 +1148,22 @@ export function RegisterWizard({
                   disabled={busy || step !== 'form'}
                   onClick={() => {
                     modeTouched.current = true
-                    chooseMode('call')
-                  }}
-                  aria-pressed={mode === 'call'}
-                  className={cx(
-                    'rounded-[10px] border p-3 text-left transition',
-                    mode === 'call'
-                      ? 'border-souk-sky bg-souk-sky/5'
-                      : 'border-souk-hair bg-souk-surface2 hover:border-souk-sky/60',
-                  )}
-                >
-                  <span className="block text-sm font-medium text-souk-ink">By call</span>
-                  <span className="mt-1 block text-xs leading-relaxed text-souk-muted">
-                    Buyers call the endpoint directly, with x402 machine payment when the
-                    registration says so.
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  disabled={busy || step !== 'form'}
-                  onClick={() => {
-                    modeTouched.current = true
                     chooseMode('both')
                   }}
                   aria-pressed={mode === 'both'}
                   className={cx(
-                    'rounded-[10px] border p-3 text-left transition sm:col-span-2',
+                    'rounded-[12px] border p-3 text-left transition',
                     mode === 'both'
                       ? 'border-souk-sky bg-souk-sky/5'
                       : 'border-souk-hair bg-souk-surface2 hover:border-souk-sky/60',
                   )}
                 >
                   <span className="block text-sm font-medium text-souk-ink">
-                    Both: calls and jobs
+                    Job + optional call
                   </span>
                   <span className="mt-1 block text-xs leading-relaxed text-souk-muted">
-                    Takes paid calls with x402 and funded ERC-8183 jobs, so buyers can reach it
-                    either way. The card must declare the job protocol at continue.
+                    Takes funded ERC-8183 jobs and, when the card declares x402, also answers a
+                    direct paid call. The card must declare the job protocol at continue.
                   </span>
                 </button>
               </div>
@@ -1224,7 +1203,7 @@ export function RegisterWizard({
                 value={draft.agentWallet ?? ''}
                 onChange={(e) => set('agentWallet', e.target.value)}
                 disabled={busy || step !== 'form'}
-                className="mt-1.5 w-full rounded-[10px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
+                className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
                 placeholder="0x..."
               />
               {walletFault ? (
@@ -1249,7 +1228,7 @@ export function RegisterWizard({
 
       {errors.length > 0 && (
         <>
-          <ul className="mt-4 space-y-1 rounded-[10px] border border-press-black/20 bg-souk-surface2 p-4 text-xs text-souk-ink">
+          <ul className="mt-4 space-y-1 rounded-[12px] border border-press-black/20 bg-souk-surface2 p-4 text-xs text-souk-ink">
             {errors.map((e) => (
               <li key={e}>{e}</li>
             ))}
@@ -1259,13 +1238,13 @@ export function RegisterWizard({
       )}
 
       {message && (
-        <p className="mt-4 rounded-[10px] border border-press-black/20 bg-souk-surface2 p-4 text-xs leading-relaxed text-souk-ink">
+        <p className="mt-4 rounded-[12px] border border-press-black/20 bg-souk-surface2 p-4 text-xs leading-relaxed text-souk-ink">
           {message}
         </p>
       )}
 
       {prepared && step !== 'form' && (
-        <div className="mt-5 rounded-[10px] border hairline border-souk-hair p-4">
+        <div className="mt-5 rounded-[12px] border hairline border-souk-hair p-4">
           <p className="micro text-souk-muted">This will be published at</p>
           <p className="mt-2 break-all font-mono text-[11px] text-souk-ink">{prepared.agentUri}</p>
           <a

@@ -14,6 +14,7 @@ export type Tone =
   | 'peach'
   | 'white'
   | 'canvas'
+  | 'on-accent'
   | 'indigo-labels'
   | 'indigo-data';
 
@@ -29,6 +30,7 @@ export const TONE: Record<Tone, string> = {
   peach: 'text-souk-peach',
   white: 'text-souk-white',
   canvas: 'text-souk-canvas',
+  'on-accent': 'text-souk-on-accent',
   // labels-on-indigo: the register's one token that stays put in both modes, so
   // copy sitting on the indigo card never inverts into it
   'indigo-labels': 'text-souk-indigo-labels',
@@ -61,9 +63,9 @@ export const METAL_BAND =
 
 // radii, stated once so a bar stays 3 while a chip stays 6
 export const R = {
-  surface: 20,
-  note: 14,
-  field: 8,
+  surface: 16,
+  note: 12,
+  field: 6,
   chip: 6,
   bar: 3,
 } as const;

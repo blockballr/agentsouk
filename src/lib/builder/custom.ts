@@ -203,7 +203,7 @@ export function customCardMetadata(
 ): Record<string, unknown> {
   const image =
     input.image ??
-    `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(agent.id)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf&backgroundType=gradientLinear`;
+    `https://api.dicebear.com/9.x/bottts/svg?seed=${encodeURIComponent(agent.id)}&backgroundColor=b6e3f4,c8ddf5,d1e4fa,e3effb,ffd5dc&backgroundType=gradientLinear`;
   const endpoint = agent.deployment?.url ?? null;
   const agentWallet =
     agent.manifest.agentWallet ?? (agent.manifest.wallet === "agent" ? agent.owner : null);

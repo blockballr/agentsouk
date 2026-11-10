@@ -100,7 +100,7 @@ export function ReceiptsList({ agent, hireId, chainId = 97 }: { agent?: string; 
                 type="button"
                 onClick={() => replay(r.id)}
                 disabled={replayState === 'loading'}
-                className="rounded-[6px] border border-souk-hair px-2 py-1 text-[10px] font-semibold text-souk-slate transition hover:bg-souk-surface2 disabled:opacity-50"
+                className="rounded-[8px] border border-souk-hair px-2 py-1 text-[10px] font-semibold text-souk-slate transition hover:bg-souk-surface2 disabled:opacity-50"
               >
                 {replayState === 'loading' ? 'Replaying...' : 'Replay check'}
               </button>

@@ -11,7 +11,6 @@ import {
   shortAddress,
   timeAgo,
   isJobStepSkill,
-  takesJobs,
   takesVault,
   sellsByJob,
   CATEGORIES,
@@ -32,6 +31,8 @@ import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
 import { explorerTxBase } from '../lib/contracts'
 import { builtWithFrom, decodeMetaValue } from '../lib/onchain-meta'
 import { defaultAvatarFor } from '../lib/default-avatar'
+import { agentRails, type RailKind } from '../lib/agent-rails'
+import { RailBadge, RailChooser } from '../components/RailChooser'
 import { verdictFor, type Verdict } from '../lib/verdict'
 import {
   ensureBscChain,
@@ -503,11 +504,37 @@ export function AgentDetailPage() {
 
   if (loading) {
     return (
-      <div className="px-6 py-16" role="status" aria-label="Loading agent">
-        <div className="animate-pulse space-y-4">
-          <div className="h-3 w-24 bg-souk-surface2" />
-          <div className="h-10 w-72 bg-souk-surface2" />
-          <div className="h-4 w-1/2 bg-souk-surface2" />
+      <div
+        className="agent-detail relative mx-auto min-h-screen px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-14"
+        role="status"
+        aria-label="Loading agent"
+      >
+        <div className="h-3 w-28 rounded-[4px] bg-souk-surface2/70 animate-pulse" />
+        <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-start">
+          <div className="h-[92px] w-[92px] shrink-0 rounded-[12px] bg-souk-surface2/70 animate-pulse" />
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="h-3 w-24 rounded-[4px] bg-souk-surface2/70 animate-pulse" />
+            <div className="h-10 w-2/3 rounded-[8px] bg-souk-surface2/70 animate-pulse" />
+            <div className="h-4 w-full rounded-[4px] bg-souk-surface2/50 animate-pulse" />
+            <div className="h-4 w-4/5 rounded-[4px] bg-souk-surface2/50 animate-pulse" />
+          </div>
+        </div>
+        <div className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1fr)_520px]">
+          <div className="souk-glass rounded-[16px] border border-souk-hair p-4">
+            <div className="h-3 w-32 rounded-[4px] bg-souk-surface2/70 animate-pulse" />
+            <div className="mt-4 space-y-3">
+              <div className="h-4 w-full rounded-[4px] bg-souk-surface2/50 animate-pulse" />
+              <div className="h-4 w-5/6 rounded-[4px] bg-souk-surface2/50 animate-pulse" />
+              <div className="h-4 w-2/3 rounded-[4px] bg-souk-surface2/50 animate-pulse" />
+            </div>
+          </div>
+          <div className="souk-glass rounded-[16px] border border-souk-hair p-4">
+            <div className="h-3 w-28 rounded-[4px] bg-souk-surface2/70 animate-pulse" />
+            <div className="mt-4 space-y-3">
+              <div className="h-4 w-full rounded-[4px] bg-souk-surface2/50 animate-pulse" />
+              <div className="h-10 w-full rounded-[6px] bg-souk-surface2/70 animate-pulse" />
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -544,9 +571,6 @@ export function AgentDetailPage() {
   const mySession = heldSession && heldSession.paymentId !== closedPaymentId ? heldSession : null
   const hireWarning = preHireWarning(detail.verification)
   const jobSeller = sellsByJob(detail.skills)
-  // an agent whose card names a real skill beside negotiate takes both rails, so the
-  // job protocol is offered as well rather than hidden by the job-only test
-  const takesJobsToo = !jobSeller && takesJobs(detail.skills)
   // a link from ongoing names the job it came from; otherwise the active one is
   // the one the buyer wants to see, not a second fund form
   const addressedKernelJob = searchParams.get('job')
@@ -649,17 +673,16 @@ export function AgentDetailPage() {
   // the siblings a vault buyer can compare without going back to the shelf. the
   // gate is the declared skill, so a page for an ordinary listing never asks
   const siblings = (vaultLinks ?? []).filter((v) => v.tokenId !== String(detail.token_id))
-  // a gated listing answers only behind its own wall, so a per-call hire would pay
-  // and reach nothing: the card says how to reach it instead of offering that button
-  const gatedOnly = !jobSeller && !mySession && detail.verification?.status === 'gated'
+  // a gated listing is handled where the rails are derived: no call or job is
+  // offered, because the marketplace holds none of the seller's credentials
 
   return (
-    <div className="relative mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-14">
+    <div className="agent-detail relative mx-auto min-h-screen px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-14">
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-[620px]"
         style={{
           background:
-            'radial-gradient(900px 600px at 78% 8%, rgba(136,222,235,0.10), transparent 60%), radial-gradient(700px 500px at 20% 0%, rgba(2,50,71,0.6), transparent 65%)',
+            'radial-gradient(900px 600px at 78% 8%, rgba(115,129,255,0.16), transparent 60%), radial-gradient(700px 500px at 20% 0%, rgba(91,108,255,0.22), transparent 65%)',
           maskImage:
             'linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%), linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%)',
           maskComposite: 'intersect',
@@ -677,14 +700,10 @@ export function AgentDetailPage() {
           )}
           <button
             type="button"
-            onClick={() =>
-              vaultCapable
-                ? setShowVaultHire(true)
-                : hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }
+            onClick={() => hirePanel?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             className={cx(button('primary', 'md'), 'flex w-full focus-visible:outline-souk-data')}
           >
-            {vaultCapable ? 'Hire on Vault' : mySession ? 'Run a task in your session' : jobSeller ? 'How this agent is hired' : `Hire ${detail.name}`}
+            {mySession ? 'Run a task in your session' : 'Choose how to hire'}
           </button>
         </div>
       )}
@@ -702,7 +721,7 @@ export function AgentDetailPage() {
               <img
                 src={detail.image_url ?? defaultAvatarFor(Number(chainId), detail.token_id)}
                 alt=""
-                className="h-[92px] w-[92px] rounded-[10px] object-cover"
+                className="h-[92px] w-[92px] rounded-[12px] object-cover"
                 onError={(e) => {
                   // same rule as the card: an image that answers nothing shows its
                   // own default glyph
@@ -798,7 +817,7 @@ export function AgentDetailPage() {
               href: null,
             },
           ].map((f) => (
-            <div key={f.k} className="border border-souk-hair bg-souk-surface1 px-3.5 py-3">
+            <div key={f.k} className="rounded-[16px] border border-souk-hair bg-souk-surface1 px-3.5 py-3">
               <div className="text-[10px] uppercase tracking-[0.06em] text-souk-muted">{f.k}</div>
               <div className="mt-1.5 truncate font-mono text-[12px] text-souk-data">
                 {f.href ? (
@@ -935,7 +954,7 @@ export function AgentDetailPage() {
           )}
           {ownSession && mySession && (
             <AsideCard>
-              <div className="score-strip rounded-[10px] p-4" role="status">
+              <div className="score-strip rounded-[12px] p-4" role="status">
               <div className="flex items-center justify-between gap-3">
                 <p className="micro text-souk-ink">Session active</p>
                 <button
@@ -957,7 +976,7 @@ export function AgentDetailPage() {
           )}
           {revokeOutcome && !mySession && (
             <AsideCard>
-              <div className="rounded-[10px] border border-souk-data/50 p-4" role="status">
+              <div className="rounded-[12px] border border-souk-data/50 p-4" role="status">
               <p className="micro text-souk-ink">
                 {revokeOutcome.error
                   ? `Revoke refused: ${revokeOutcome.error}`
@@ -989,146 +1008,23 @@ export function AgentDetailPage() {
             </AsideCard>
           )}
 
-          {/* the design's right column: the hire card and the quote are two cards
-              of the same shell, not one card holding a note */}
-          {(!vaultCapable || mySession) &&
-            !(takesJobsToo && !jobSeller && !mySession && !detail.x402_supported && !gatedOnly) && (
-          <GlassCard className="order-first">
-            {/* a job seller's panel carries its own head, so this card adds none:
-                one rail, one head, never the two stacked */}
-            {(!jobSeller || mySession) && (
-              <SoukRow justify="between" align="center">
-                <Txt size={18} lead={27} weight="bold" tone="ink">
-                  {mySession ? 'Run a task' : gatedOnly ? 'How this agent is hired' : 'Hire this agent'}
-                </Txt>
-                {gatedOnly ? null : vaultCapable ? <Pill variant="keep">Hire Vault</Pill> : <Pill variant="off">x402</Pill>}
-              </SoukRow>
-            )}
-          {/* A wallet that already holds a live session should land on the run
-              controls rather than on a second signature: the session is already
-              bought, so offering the hire again invites paying twice for it. */}
-          {mySession ? (
-            <div className="mt-6">
-              <DeliveryPanel
-                paymentId={mySession.paymentId}
-                onResult={setRunResult}
-                onClosed={() => setClosedPaymentId(mySession.paymentId)}
-                prefill={questPrefill}
-                skills={detail.skills}
-                guide={questStage === 'run' || questStage === 'complete' ? questStage : undefined}
-              />
-            </div>
-          ) : jobSeller ? (
-            showingKernelJob && selectedKernelJob ? (
-              <Jobs8183JobCard
-                job={selectedKernelJob}
-                surface={false}
-                onFundNew={() => setShowNewKernelJob(true)}
-              />
-            ) : (
-              <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
-            )
-          ) : gatedOnly ? (
-            /* a gated listing answers only behind its own wall, so a per-call hire
-               would pay and reach nothing. the card says how to reach it instead of
-               offering the button that cannot work */
-            <Stack gap={3}>
-              <Txt size={13} lead={20} tone="slate">
-                This agent answers only behind its own access gate, so the marketplace cannot
-                call it directly.
-              </Txt>
-              <Txt size={13} lead={20} tone="muted">
-                The way in is an ERC-8183 job: the seller signs a price, the settled hire funds
-                the job, and the release follows a verified delivery.
-              </Txt>
-            </Stack>
-          ) : detail.x402_supported ? (
-            <>
-              {hireWarning && (
-                <Txt size={12} lead={18} tone="muted" className="mt-4 block">
-                  {hireWarning}
-                </Txt>
-              )}
-              {/* the direct hire is this card's own action, so it leads; a job rail
-                  the agent also sells sits under it as its own block rather than
-                  pushing the primary button to the foot of the column */}
-              <HirePanel
-                chainId={chainId}
-                tokenId={detail.token_id}
-                name={detail.name}
-                onHired={refreshDetail}
-                onResult={setRunResult}
-                onClosed={setClosedPaymentId}
-                prefill={questPrefill}
-                skills={detail.skills}
-                guide={questStage ?? undefined}
-              />
-              {!jobSeller && !takesJobsToo && (
-                <Txt size={12} lead={18} tone="muted" className="mt-3 block">
-                  Hired per call. Escrowed jobs need this agent to publish the
-                  ERC-8183 job protocol.
-                </Txt>
-              )}
-            </>
-          ) : takesJobsToo ? (
-            <Stack gap={3}>
-              <Txt size={13} lead={20} tone="slate">
-                This agent does not take per-call payments; it is hired through an
-                ERC-8183 job, funded in escrow and paid on delivery.
-              </Txt>
-              <Txt size={13} lead={20} tone="muted">
-                Use the Fund job panel below to agree a quote and fund it.
-              </Txt>
-            </Stack>
-          ) : (
-            <Stack gap={3}>
-              <Txt size={13} lead={20} tone="slate">
-                This agent takes neither per-call payments nor escrow jobs.
-              </Txt>
-            </Stack>
-          )}
-          </GlassCard>
-          )}
-          {vaultCapable && (
-            <GlassCard className="order-first">
-              <SoukRow justify="between" align="center">
-                <Txt size={18} lead={27} weight="bold" tone="ink">
-                  Vault hire
-                </Txt>
-                <Pill variant="good">Vault</Pill>
-              </SoukRow>
-              <Txt size={13} lead={20} tone="slate" className="mt-3 block">
-                {detail.category === 'yield'
-                  ? 'The agent supplies it to a lending venue. The loss is capped and you withdraw whatever is left.'
-                  : 'The agent trades it inside the bounds. The loss is capped and you withdraw whatever is left.'}
-              </Txt>
-              <button
-                type="button"
-                onClick={() => setShowVaultHire(true)}
-                className="mt-3 w-full rounded-[6px] border border-souk-hair bg-souk-sky px-3 py-2 text-[12px] font-semibold text-souk-canvas transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
-              >
-                Hire on Vault
-              </button>
-            </GlassCard>
-          )}
-          {/* the second rail this agent sells is its own card, the way the drawing
-              keeps one rail per card rather than nesting one inside the other */}
-          {!vaultCapable && !mySession && !jobSeller && takesJobsToo && (
-            <GlassCard className="order-first">
-              {showingKernelJob && selectedKernelJob ? (
-                <Jobs8183JobCard
-                  job={selectedKernelJob}
-                  surface={false}
-                  onFundNew={() => setShowNewKernelJob(true)}
-                />
-              ) : (
-                <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
-              )}
-            </GlassCard>
-          )}
-          {/* the quote is its own card in the design, not a note inside the hire one.
-              a job seller's panel already draws that card, so only the x402 column
-              supplies one here */}
+          <AgentActionPanel
+            detail={detail}
+            chainId={chainId}
+            viewer={viewer}
+            mySession={mySession}
+            showingKernelJob={showingKernelJob}
+            selectedKernelJob={selectedKernelJob}
+            onFundNew={() => setShowNewKernelJob(true)}
+            onShowVault={() => setShowVaultHire(true)}
+            onHired={refreshDetail}
+            onResult={setRunResult}
+            onClosed={setClosedPaymentId}
+            prefill={questPrefill}
+            questStage={questStage ?? undefined}
+            warning={hireWarning}
+          />
+
           {/* owner-only, so it renders only for an owner */}
           {viewer && isListingOwner(viewer, detail) && (
             <AsideCard>
@@ -1256,7 +1152,7 @@ export function AgentDetailPage() {
                 chainOpen ? 'grid' : 'hidden lg:grid',
               )}
             >
-              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
+              <section className="rounded-[16px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                 <Txt size={13} lead={20} weight="bold" tone="ink">Registry record</Txt>
                 <dl className="mt-4 space-y-3">
                   {detail.agent_id && (
@@ -1319,7 +1215,7 @@ export function AgentDetailPage() {
                 </dl>
               </section>
 
-              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
+              <section className="rounded-[16px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                 <Txt size={13} lead={20} weight="bold" tone="ink">Reputation on the registry index</Txt>
                 <div className="mt-4 grid grid-cols-3 gap-3">
                   <Kpi value={formatScore(detail.total_score)} label="Score" />
@@ -1336,7 +1232,7 @@ export function AgentDetailPage() {
                 </div>
               </section>
 
-              <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
+              <section className="rounded-[16px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                 <Txt size={13} lead={20} weight="bold" tone="ink">
                   Marketplace liveness record
                 </Txt>
@@ -1392,7 +1288,7 @@ export function AgentDetailPage() {
               </section>
 
               {onchain.length > 0 && (
-                <section className="rounded-[14px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
+                <section className="rounded-[16px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                   <Txt size={13} lead={20} weight="bold" tone="ink">On-chain metadata</Txt>
                   <dl className="mt-4 space-y-3">
                     {onchain.map((m) => (
@@ -1513,7 +1409,7 @@ function GlassCard({ children, className }: { children: ReactNode; className?: s
   return (
     <div
       className={cx(
-        'relative overflow-hidden border border-souk-hair p-5 backdrop-blur-[18px]',
+        'relative overflow-hidden rounded-[16px] border border-souk-hair p-5 backdrop-blur-[18px]',
         className,
       )}
       style={{
@@ -1524,6 +1420,241 @@ function GlassCard({ children, className }: { children: ReactNode; className?: s
     >
       {children}
     </div>
+  )
+}
+
+// The public listing stays readable. The hire flow is one chosen rail at a
+// time: choose, connect, then the rail's own panel. An external claim never
+// opens our escrow or vault flow.
+function AgentActionPanel({
+  detail,
+  chainId,
+  viewer,
+  mySession,
+  showingKernelJob,
+  selectedKernelJob,
+  onFundNew,
+  onShowVault,
+  onHired,
+  onResult,
+  onClosed,
+  prefill,
+  questStage,
+  warning,
+}: {
+  detail: AgentDetail
+  chainId: string
+  viewer: string | null
+  mySession: { paymentId: string } | null
+  showingKernelJob: boolean
+  selectedKernelJob: Jobs8183Row | null
+  onFundNew: () => void
+  onShowVault: () => void
+  onHired: () => void
+  onResult: (result: { output: string | null; job: { id: string; status: JobStatus } | null; task: HireTask | null }) => void
+  onClosed: (paymentId: string) => void
+  prefill?: { task?: string; input?: string }
+  questStage?: QuestStage
+  warning?: string | null
+}) {
+  const [choice, setChoice] = useState<RailKind | null>(null)
+  const [connecting, setConnecting] = useState(false)
+  const [connectError, setConnectError] = useState<string | null>(null)
+  const openedVault = useRef(false)
+  const house =
+    isOperatedByAgentSouk(detail.owner_address) || isOperatedByAgentSouk(detail.agent_wallet)
+  const rails = agentRails(detail, house)
+  const gated = Boolean(detail.accessGated)
+  const selected = choice ? rails.find((rail) => rail.kind === choice) ?? null : null
+
+  useEffect(() => {
+    if (choice === 'vault' && viewer && !openedVault.current) {
+      openedVault.current = true
+      onShowVault()
+    }
+  }, [choice, viewer, onShowVault])
+
+  function reset() {
+    setChoice(null)
+    setConnectError(null)
+    openedVault.current = false
+  }
+
+  async function connect() {
+    setConnecting(true)
+    setConnectError(null)
+    try {
+      await connectWallet()
+    } catch (error) {
+      setConnectError(error instanceof Error ? error.message : 'Wallet connection was declined.')
+    } finally {
+      setConnecting(false)
+    }
+  }
+
+  if (mySession) {
+    return (
+      <GlassCard className="order-first">
+        <SoukRow justify="between" align="center">
+          <Txt size={18} lead={27} weight="bold" tone="ink">
+            Run a task
+          </Txt>
+          <Pill variant="keep">Session</Pill>
+        </SoukRow>
+        <div className="mt-4">
+          <DeliveryPanel
+            paymentId={mySession.paymentId}
+            onResult={onResult}
+            onClosed={() => onClosed(mySession.paymentId)}
+            prefill={prefill}
+            skills={detail.skills}
+            guide={questStage === 'run' || questStage === 'complete' ? questStage : undefined}
+          />
+        </div>
+      </GlassCard>
+    )
+  }
+
+  if (showingKernelJob && selectedKernelJob) {
+    return (
+      <GlassCard className="order-first">
+        <Jobs8183JobCard job={selectedKernelJob} surface={false} onFundNew={onFundNew} />
+      </GlassCard>
+    )
+  }
+
+  if (!selected) {
+    return (
+      <GlassCard className="order-first">
+        <SoukRow justify="between" align="center">
+          <Txt size={18} lead={27} weight="bold" tone="ink">
+            Hire this agent
+          </Txt>
+          {gated ? <Pill variant="warn">Gated</Pill> : <Pill variant="off">Public</Pill>}
+        </SoukRow>
+        <Txt size={12} lead={18} tone="muted" className="mt-1 block">
+          {gated
+            ? 'The seller gates this listing behind its own credentials. A call or job would reach that wall, so the marketplace does not sell one.'
+            : rails.length > 0
+              ? 'The listing is public. Choose a rail and connect when you are ready to start.'
+              : 'The listing is public, but it has not published an action the marketplace can run.'}
+        </Txt>
+        {rails.length > 0 || !gated ? (
+          <RailChooser
+            rails={rails}
+            viewer={viewer}
+            onChoose={setChoice}
+            className="mt-4"
+          />
+        ) : null}
+        {gated ? (
+          <Txt size={12} lead={18} tone="slate" className="mt-3 block">
+            {rails.some((rail) => rail.kind === 'vault')
+              ? "Ask the seller for access at its endpoint. The vault hire still runs, because the seller's own executor trades the deposit."
+              : 'Ask the seller for access at its endpoint before hiring it anywhere else.'}
+          </Txt>
+        ) : rails.length > 0 && rails.every((rail) => rail.kind === 'job') ? (
+          <Txt size={12} lead={18} tone="slate" className="mt-3 block">
+            This seller quotes ERC-8183 jobs only. A direct paid call would reach its wallet
+            without a delivery, so the marketplace refuses it; fund the job instead.
+          </Txt>
+        ) : null}
+        <Txt size={11} lead={16} mono tone="steel" className="mt-3 block">
+          Prefer a terminal? `agentsouk runbook &lt;intent&gt; {detail.chain_id}/{detail.token_id}` prints the
+          same live plan.
+        </Txt>
+      </GlassCard>
+    )
+  }
+
+  if (!viewer) {
+    return (
+      <GlassCard className="order-first">
+        <SoukRow justify="between" align="center">
+          <Txt size={18} lead={27} weight="bold" tone="ink">
+            {selected.title}
+          </Txt>
+          <RailBadge source={selected.source} />
+        </SoukRow>
+        <button
+          type="button"
+          onClick={reset}
+          className="micro mt-2 text-souk-slate underline transition hover:text-souk-ink"
+        >
+          Change action
+        </button>
+        <Txt size={13} lead={20} tone="slate" className="mt-3 block">
+          {selected.body}
+        </Txt>
+        <Txt size={12} lead={18} tone="muted" className="mt-2 block">
+          Connect a wallet to start. The marketplace never moves funds without your signature.
+        </Txt>
+        <button
+          type="button"
+          onClick={() => void connect()}
+          disabled={connecting}
+          className={cx(button('primary', 'md'), 'mt-4 w-full')}
+        >
+          {connecting ? 'Waiting for your wallet' : 'Connect wallet'}
+        </button>
+        {connectError ? (
+          <Txt size={12} lead={18} tone="peach" className="mt-2 block">
+            {connectError}
+          </Txt>
+        ) : null}
+      </GlassCard>
+    )
+  }
+
+  return (
+    <GlassCard className="order-first">
+      <SoukRow justify="between" align="center">
+        <RailBadge source={selected.source} />
+        <button
+          type="button"
+          onClick={reset}
+          className="micro text-souk-slate underline transition hover:text-souk-ink"
+        >
+          Change action
+        </button>
+      </SoukRow>
+      {selected.kind === 'job' ? (
+        <div className="mt-3">
+          <Jobs8183HirePanel tokenId={detail.token_id} chainId={Number(detail.chain_id)} category={detail.category} />
+        </div>
+      ) : selected.kind === 'vault' ? (
+        <Stack gap={8} className="mt-3">
+          <Txt size={18} lead={27} weight="bold" tone="ink">
+            Vault hire
+          </Txt>
+          <Txt size={13} lead={20} tone="slate">
+            {selected.body}
+          </Txt>
+          <button type="button" onClick={onShowVault} className={cx(button('primary', 'md'), 'w-full')}>
+            Open vault hire
+          </button>
+        </Stack>
+      ) : (
+        <div className="mt-3">
+          {warning ? (
+            <Txt size={12} lead={18} tone="muted" className="mb-2 block">
+              {warning}
+            </Txt>
+          ) : null}
+          <HirePanel
+            chainId={chainId}
+            tokenId={detail.token_id}
+            name={detail.name}
+            onHired={onHired}
+            onResult={onResult}
+            onClosed={onClosed}
+            prefill={prefill}
+            skills={detail.skills}
+            guide={questStage}
+          />
+        </div>
+      )}
+    </GlassCard>
   )
 }
 
@@ -1656,7 +1787,7 @@ function SkillBlock({ skill: s }: { skill: NonNullable<AgentDetail['skills']>[nu
             <p className="micro text-souk-slate">Example you can send as is</p>
             <CopyButton text={JSON.stringify(example)} />
           </div>
-          <pre className="mt-2 overflow-x-auto rounded-[10px] border border-souk-edge bg-souk-surface2 p-3 font-mono text-[12px] leading-relaxed text-souk-ink">
+          <pre className="mt-2 overflow-x-auto rounded-[12px] border border-souk-edge bg-souk-surface2 p-3 font-mono text-[12px] leading-relaxed text-souk-ink">
             {JSON.stringify(example, null, 2)}
           </pre>
         </div>
@@ -1730,7 +1861,7 @@ function CopyButton({ text }: { text: string }) {
           window.setTimeout(() => setCopied(false), 1500)
         })
       }}
-      className="micro shrink-0 rounded-[5px] border border-souk-hair px-2.5 py-1 text-souk-slate transition hover:border-souk-hair hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-souk-data"
+      className="micro shrink-0 rounded-[8px] border border-souk-hair px-2.5 py-1 text-souk-slate transition hover:border-souk-hair hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-souk-data"
     >
       {copied ? 'Copied' : 'Copy'}
     </button>
@@ -1842,7 +1973,7 @@ function BoostPanel({
 
   if (alreadyBoosted) {
     return (
-      <div className="mt-6 rounded-[10px] border border-souk-data/40 p-4">
+      <div className="mt-6 rounded-[12px] border border-souk-data/40 p-4">
         <p className="micro text-souk-data">Boosted listing</p>
         <p className="mt-2 text-[11px] leading-relaxed text-souk-slate">
           This agent sorts higher on the marketplace while the boost is active.
@@ -1852,7 +1983,7 @@ function BoostPanel({
   }
 
   return (
-    <div className="mt-6 rounded-[10px] border border-souk-hair p-4">
+    <div className="mt-6 rounded-[12px] border border-souk-hair p-4">
       <p className="micro text-souk-slate">Boost this listing</p>
       <p className="mt-2 text-[11px] leading-relaxed text-souk-slate">
         Owner-only. You must meet the verifier checklist, sign as the registered
@@ -1877,7 +2008,7 @@ function BoostPanel({
         type="button"
         onClick={() => void boost()}
         disabled={phase === 'busy' || (status !== null && !status.eligible)}
-        className="micro mt-3 w-full rounded-[5px] border border-souk-data/50 px-3 py-2 text-souk-data transition hover:bg-souk-data/10 disabled:opacity-50"
+        className="micro mt-3 w-full rounded-[8px] border border-souk-data/50 px-3 py-2 text-souk-data transition hover:bg-souk-data/10 disabled:opacity-50"
       >
         {phase === 'busy'
           ? 'Activating…'
@@ -2073,14 +2204,14 @@ function HirePanel({
         <button
           type="button"
           disabled
-          className="gloss micro w-full rounded-[5px] bg-souk-data px-6 py-5 text-souk-canvas"
+          className="gloss micro w-full rounded-[6px] bg-souk-accent px-6 py-5 text-souk-on-accent"
         >
           Connecting wallet…
         </button>
       )}
 
       {(step === 'preview' || step === 'signing' || step === 'settling') && option && preview && (
-        <div className="rounded-[10px] border border-souk-hair p-4">
+        <div className="rounded-[12px] border border-souk-hair p-4">
           <div className="space-y-2 text-xs">
             <Row label="Price" value={`$${option.amountUsd} ${option.tokenSymbol}`} mono />
             <Row label="To" value={shortAddress(option.payTo)} mono />
@@ -2112,7 +2243,7 @@ function HirePanel({
           {step === 'preview' ? (
             <div className="mt-4 space-y-2">
               {shortForHire && (
-                <p className="rounded-[10px] border border-souk-data/40 bg-souk-data/10 p-3 text-xs leading-relaxed text-souk-data">
+                <p className="rounded-[12px] border border-souk-data/40 bg-souk-data/10 p-3 text-xs leading-relaxed text-souk-data">
                   This wallet does not hold enough sUSD for the ${option.amountUsd} hire. Get 10
                   free below, then sign.
                 </p>
@@ -2126,8 +2257,8 @@ function HirePanel({
                   }
                   void signAndSettle()
                 }}
-                className={`micro w-full rounded-[5px] px-4 py-3 shadow transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
-                  shortForHire ? 'bg-souk-data/40 text-souk-ink' : 'bg-souk-data text-souk-canvas hover:brightness-95'
+                className={`micro w-full rounded-[8px] px-4 py-3 shadow transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data ${
+                  shortForHire ? 'bg-souk-data/40 text-souk-ink' : 'bg-souk-accent text-souk-on-accent hover:brightness-95'
                 }`}
               >
                 {shortForHire ? (
@@ -2142,7 +2273,7 @@ function HirePanel({
               <button
                 type="button"
                 onClick={reset}
-                className="micro w-full rounded-[5px] border border-souk-hair px-4 py-3 text-souk-slate transition hover:text-souk-ink"
+                className="micro w-full rounded-[8px] border border-souk-hair px-4 py-3 text-souk-slate transition hover:text-souk-ink"
               >
                 Cancel
               </button>
@@ -2184,7 +2315,7 @@ function HirePanel({
       )}
 
       {step === 'hired' && result && (
-        <div className="rounded-[10px] border border-souk-data/50 p-4">
+        <div className="rounded-[12px] border border-souk-data/50 p-4">
           {/* the money's own progression sits where the receipt lands: with the
               funder live the bar carries the held/payment story, so the headline
               only says activated when there is no escrow at all */}
@@ -2244,13 +2375,13 @@ function HirePanel({
 
       {error && (
         <>
-          <p className="mt-4 rounded-[10px] border border-souk-edge bg-souk-surface2 p-4 text-xs leading-relaxed text-souk-ink">
+          <p className="mt-4 rounded-[12px] border border-souk-edge bg-souk-surface2 p-4 text-xs leading-relaxed text-souk-ink">
             {error}
           </p>
           {/* 0xe450d38c is ERC20InsufficientBalance. A raw viem revert string is
               not an explanation, so name the cause and point at what fixes it. */}
           {/e450d38c|InsufficientBalance|insufficient balance/i.test(error) && (
-            <p className="mt-2 rounded-[10px] border border-souk-data/40 bg-souk-data/10 p-3 text-xs leading-relaxed text-souk-data">
+            <p className="mt-2 rounded-[12px] border border-souk-data/40 bg-souk-data/10 p-3 text-xs leading-relaxed text-souk-data">
               That failed because this wallet does not hold enough sUSD. Get 10 free below, then
               try again.
             </p>
@@ -2531,7 +2662,7 @@ function DeliveryPanel({
   // the next visit, or a reload, opens on a fresh hire
   if (job && jobClosed(job.status)) {
     return (
-      <div className="mt-4 rounded-[10px] border border-souk-data/50 p-4" role="status">
+      <div className="mt-4 rounded-[12px] border border-souk-data/50 p-4" role="status">
         <p className="micro text-souk-slate">Hire {job.status.toLowerCase()}</p>
         <p className="mt-2 text-[11px] leading-relaxed text-souk-data">
           {completeNote ??
@@ -2544,7 +2675,7 @@ function DeliveryPanel({
   }
 
   return (
-    <div className="mt-4 rounded-[10px] border border-souk-hair p-4">
+    <div className="mt-4 rounded-[12px] border border-souk-hair p-4">
       <p className="micro text-souk-slate">Run a task</p>
 
       {hireTask && (
@@ -2661,7 +2792,7 @@ function DeliveryPanel({
                   const t = tools.find((x) => x.name === e.target.value)
                   if (t) setArgsText(skeletonArgs(t.schema))
                 }}
-                className="w-full rounded-[5px] border border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-[11px] text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                className="w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-[11px] text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               >
                 {tools.map((t) => (
                   <option key={t.name} value={t.name}>
@@ -2678,7 +2809,7 @@ function DeliveryPanel({
                 rows={5}
                 spellCheck={false}
                 aria-label="Tool arguments as JSON"
-                className="w-full rounded-[5px] border border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                className="w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               />
               <button
                 type="button"
@@ -2719,11 +2850,11 @@ function DeliveryPanel({
                 rows={3}
                 placeholder="Describe the task for this agent…"
                 aria-label="Task description"
-                className="w-full rounded-[5px] border border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-xs leading-relaxed text-souk-ink placeholder:text-souk-slate/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                className="w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3 py-2 text-base sm:text-xs leading-relaxed text-souk-ink placeholder:text-souk-slate/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
               />
               {/* some agents read a structured data part instead of prose; this stays
                   collapsed and empty by default so the text-only flow is unchanged */}
-              <details open={prefill?.input ? true : undefined} className="rounded-[5px] border border-souk-hair p-3">
+              <details open={prefill?.input ? true : undefined} className="rounded-[8px] border border-souk-hair p-3">
                 <summary className="micro cursor-pointer text-souk-slate transition hover:text-souk-ink">
                   Add structured input (JSON)
                 </summary>
@@ -2738,7 +2869,7 @@ function DeliveryPanel({
                   spellCheck={false}
                   placeholder={'{"walletAddress":"0x..."}'}
                   aria-label="Structured input as JSON"
-                  className="mt-2 w-full rounded-[5px] border border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-souk-ink placeholder:text-souk-slate/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+                  className="mt-2 w-full rounded-[8px] border border-souk-hair bg-souk-surface2 px-3 py-2 font-mono text-base sm:text-[11px] leading-relaxed text-souk-ink placeholder:text-souk-slate/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
                 />
                 {!structured.ok && (
                   <p className="mt-2 text-[11px] leading-relaxed text-souk-ink">
@@ -2857,7 +2988,7 @@ function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
           ' Capture date unknown, so treat it as undated.'
         )}
       </p>
-      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-[10px] border border-souk-hair bg-souk-surface2 p-4 font-mono text-[11px] leading-relaxed text-souk-ink">
+      <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-[12px] border border-souk-hair bg-souk-surface2 p-4 font-mono text-[11px] leading-relaxed text-souk-ink">
         {truncated}
       </pre>
       {raw.length > 400 && (
@@ -2865,7 +2996,7 @@ function PerformanceSection({ probe }: { probe: PerformanceProbe }) {
           <summary className="micro cursor-pointer text-souk-slate transition hover:text-souk-ink">
             Full response from {probe.tool ?? 'the agent'}
           </summary>
-          <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[10px] border border-souk-hair bg-souk-surface2 p-4 font-mono text-[11px] leading-relaxed text-souk-ink">
+          <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-[12px] border border-souk-hair bg-souk-surface2 p-4 font-mono text-[11px] leading-relaxed text-souk-ink">
             {raw}
           </pre>
         </details>
@@ -2885,9 +3016,9 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
           {value > 0 ? formatScore(value) : 'not scored yet'}
         </span>
       </div>
-      <div className="mt-2 h-1 w-full overflow-hidden rounded-[3px] bg-souk-hair">
+      <div className="mt-2 h-1 w-full overflow-hidden rounded-[4px] bg-souk-hair">
         <div
-          className="h-full rounded-[3px] bg-souk-data"
+          className="h-full rounded-[4px] bg-souk-data"
           style={{ width: `${pct}%`, minWidth: pct > 0 ? 4 : 0 }}
         />
       </div>

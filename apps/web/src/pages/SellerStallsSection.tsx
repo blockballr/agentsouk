@@ -306,9 +306,9 @@ function CardAction({
   const warn = variant === 'warn'
   const tone = primary ? 'canvas' : warn ? 'peach' : 'slate'
   const cls = [
-    'inline-flex h-10 w-full items-center justify-center rounded-none px-2.5 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-souk-data',
+    'inline-flex h-10 w-full items-center justify-center rounded-[8px] px-2.5 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-souk-data',
     primary
-      ? 'bg-souk-data text-souk-canvas hover:bg-souk-data/90'
+      ? 'bg-souk-accent text-souk-on-accent hover:bg-souk-accent-hover'
       : warn
         ? 'bg-souk-surface1 hover:bg-souk-peach/10'
         : 'bg-souk-surface1 hover:bg-souk-surface2',
@@ -477,7 +477,7 @@ function StallCard({
   const jobsValue = jobsRead ? escrowNote(recentJobs) : 'not read this pass'
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-none border border-souk-edge bg-souk-surface1 text-souk-ink [overflow-wrap:anywhere] transition-colors hover:border-souk-hair">
+    <div className="min-w-0 overflow-hidden rounded-[8px] border border-souk-edge bg-souk-surface1 text-souk-ink [overflow-wrap:anywhere] transition-colors hover:border-souk-hair">
       <div className="flex items-start gap-3 px-4 pb-3 pt-4">
         <AgentAvatar size={40} name={agent.name} chainId={agent.chainId} tokenId={agent.tokenId} />
         <div className="min-w-0 flex-1">
@@ -578,9 +578,9 @@ function AddStallSlot() {
       </Txt>
       <Link
         to="/list"
-        className="mt-1 inline-flex h-11 w-fit items-center justify-center rounded-none border border-transparent bg-souk-data px-5 text-souk-canvas transition hover:opacity-90"
+        className="mt-1 inline-flex h-11 w-fit items-center justify-center rounded-[6px] border border-transparent bg-souk-accent px-5 text-souk-on-accent transition hover:opacity-90"
       >
-        <Txt size={14} lead={20} weight="semibold" tone="canvas">
+        <Txt size={14} lead={20} weight="semibold" tone="on-accent">
           List an agent
         </Txt>
       </Link>

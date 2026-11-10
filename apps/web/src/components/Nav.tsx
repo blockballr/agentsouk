@@ -36,7 +36,7 @@ const OFF_APP =
 const itemClass = (isActive: boolean): string =>
   `border-b-2 pb-[5px] text-[13px] uppercase leading-[18px] transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data ${
     isActive
-      ? 'border-souk-data font-semibold text-souk-ink'
+      ? 'border-souk-accent font-semibold text-souk-ink'
       : 'border-transparent text-souk-steel hover:text-souk-ink'
   }`
 
@@ -44,12 +44,12 @@ const itemClass = (isActive: boolean): string =>
 // rim. the square has to be stated in both axes, or a link sized to its icon collapses
 // to the glyph's width and reads as a sliver beside the real squares
 const controlClass =
-  'relative flex h-[38px] w-[38px] shrink-0 items-center justify-center gap-2 rounded-none border border-souk-hair text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
+  'relative flex h-[38px] w-[38px] shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
 
 // the profile chip: wider than a square, because the design puts the mark and the
 // connected address in it rather than an icon alone
 const profileClass =
-  'flex h-[38px] shrink-0 items-center gap-2 rounded-none border border-souk-hair pl-2.5 pr-3.5 text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
+  'flex h-[38px] shrink-0 items-center gap-2 rounded-full border border-souk-hair pl-2.5 pr-3.5 text-souk-steel transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data hover:border-souk-data/50'
 
 export function Nav() {
   const { t } = useI18n()
@@ -185,7 +185,7 @@ function ChainTag() {
   return (
     <span
       title={target ? `Settling on ${chainLabel(target.chainId)} · chain ${target.chainId}` : t('nav.chain.reading')}
-      className="inline-flex shrink-0 items-center gap-2 rounded-none border border-souk-hair px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase leading-[14px] text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+      className="inline-flex shrink-0 items-center gap-2 rounded-[8px] border border-souk-hair px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase leading-[14px] text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
       <Dot tone={on ? 'good' : test ? 'sky' : 'quiet'} size={6} />
       {target ? (on ? t('nav.chain.mainnet', { id: target.chainId }) : t('nav.chain.testnet', { id: target.chainId })) : t('nav.chain.reading')}
@@ -233,7 +233,7 @@ function AccountRow({ label, route, Icon }: { label: string; route: string; Icon
   return (
     <Link
       to={route}
-      className="flex h-[40px] items-center gap-2.5 rounded-none px-2 text-souk-ink transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+      className="flex h-[40px] items-center gap-2.5 rounded-[8px] px-2 text-souk-ink transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
       <Icon />
       <Stack gap={1}>
@@ -341,7 +341,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
                 setOpen(false)
                 window.location.reload()
               }}
-              className="flex h-[40px] w-full items-center gap-2.5 rounded-none px-2 text-[13px] font-bold text-souk-peach transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-peach transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
             >
               {/* the one row that never navigates */}
               <PowerGlyph />
@@ -354,7 +354,7 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
                 setOpen(false)
                 onConnect()
               }}
-              className="flex h-[40px] w-full items-center gap-2.5 rounded-none px-2 text-[13px] font-bold text-souk-data transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+              className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-bold text-souk-data transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
             >
               <PersonGlyph />
               {t('nav.account.connect')}
@@ -406,7 +406,7 @@ function ConnectNotice({ message, onDismiss }: { message: string | null; onDismi
     <p
       role="status"
       onClick={() => dismissRef.current()}
-      className={`fixed left-1/2 top-[76px] z-[60] w-max max-w-[min(92vw,560px)] -translate-x-1/2 cursor-pointer rounded-[10px] border border-souk-peach/40 bg-souk-surface2 px-4 py-3 text-center text-[13px] leading-[18px] text-souk-peach shadow-lg transition-opacity duration-300 motion-reduce:transition-none ${
+      className={`fixed left-1/2 top-[76px] z-[60] w-max max-w-[min(92vw,560px)] -translate-x-1/2 cursor-pointer rounded-[12px] border border-souk-peach/40 bg-souk-surface2 px-4 py-3 text-center text-[13px] leading-[18px] text-souk-peach shadow-lg transition-opacity duration-300 motion-reduce:transition-none ${
         visible ? 'opacity-100' : 'opacity-0'
       }`}
     >

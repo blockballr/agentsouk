@@ -21,7 +21,7 @@ export function PrimaryButton({
     <button
       type={type}
       className={cx(
-        'gloss group micro inline-flex items-center gap-2.5 rounded-none bg-souk-data px-[30px] py-5 text-souk-canvas shadow-lg motion-safe:transition-[transform,filter,box-shadow] motion-safe:duration-150 hover:scale-[1.03] hover:brightness-95 hover:shadow-[rgba(2,50,71,0.55)_1px_10px_26px_0px] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black',
+        'gloss group micro font-mono inline-flex items-center gap-2.5 rounded-[6px] bg-souk-accent px-[30px] py-5 text-souk-on-accent shadow-lg motion-safe:transition-[transform,filter,box-shadow] motion-safe:duration-150 hover:scale-[1.03] hover:bg-souk-accent-hover hover:shadow-[rgba(91,108,255,0.45)_1px_10px_26px_0px] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-press-black',
         className,
       )}
       {...rest}
@@ -45,7 +45,7 @@ export function GhostButton({
     <button
       type={type}
       className={cx(
-        'micro inline-flex items-center gap-2.5 rounded-none border border-bone-white text-bone-white motion-safe:transition-[transform,background-color,border-color] motion-safe:duration-150 hover:scale-[1.02] hover:bg-bone-white/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white',
+        'micro font-mono inline-flex items-center gap-2.5 rounded-[6px] border border-bone-white text-bone-white motion-safe:transition-[transform,background-color,border-color] motion-safe:duration-150 hover:scale-[1.02] hover:bg-bone-white/10 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bone-white',
         size === 'tall' ? 'px-5 py-[50px]' : 'px-5 py-3',
         className,
       )}

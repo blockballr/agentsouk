@@ -164,7 +164,7 @@ export function ScoutPage() {
             value={secret}
             onChange={(e) => setSecret(e.target.value)}
             placeholder="dev or your secret"
-            className="mt-2 block w-56 rounded-[5px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-xs text-press-black"
+            className="mt-2 block w-56 rounded-[8px] border hairline border-slate-verdant/50 bg-bone-white px-3 py-2 font-mono text-xs text-press-black"
           />
         </label>
         <button
@@ -186,14 +186,14 @@ export function ScoutPage() {
           type="button"
           onClick={() => void runVerify()}
           disabled={running === 'verify'}
-          className="micro rounded-[5px] border hairline border-highlighter-green/50 px-4 py-2.5 text-green-ink hover:bg-highlighter-green/10 disabled:opacity-60"
+          className="micro rounded-[8px] border hairline border-highlighter-green/50 px-4 py-2.5 text-green-ink hover:bg-highlighter-green/10 disabled:opacity-60"
         >
           {running === 'verify' ? 'Verifying…' : 'Run verify (8)'}
         </button>
       </div>
 
       {error && (
-        <p className="mt-6 rounded-[10px] border hairline border-press-black/20 bg-bone-white p-4 text-xs text-press-black">
+        <p className="mt-6 rounded-[12px] border hairline border-press-black/20 bg-bone-white p-4 text-xs text-press-black">
           {error}
         </p>
       )}
@@ -231,7 +231,7 @@ export function ScoutPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="mt-8 metal rounded-[14px] border hairline border-slate-verdant/40 p-10">
+        <div className="mt-8 souk-glass rounded-[16px] border hairline border-slate-verdant/40 p-10">
           <p className="text-[15px] text-newsprint-gray">No scout candidates loaded yet.</p>
           <p className="mt-2 text-[13px] text-newsprint-gray/80">
             Click Run discover (needs INDEX_SECRET), then Refresh. Candidates appear here.

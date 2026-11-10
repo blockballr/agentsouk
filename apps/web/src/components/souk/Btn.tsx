@@ -13,7 +13,7 @@ import type { Tone } from './tokens';
 export type BtnKind = 'primary' | 'keep' | 'off' | 'warn';
 
 const FILL: Record<BtnKind, string> = {
-  primary: 'bg-souk-data',
+  primary: 'bg-souk-accent',
   keep: 'bg-souk-data/40',
   off: 'bg-souk-surface1',
   warn: 'bg-souk-surface1',
@@ -27,7 +27,7 @@ const RIM: Record<BtnKind, string> = {
 };
 
 const TEXT: Record<BtnKind, Tone> = {
-  primary: 'canvas',
+  primary: 'on-accent',
   keep: 'ink',
   off: 'slate',
   warn: 'peach',
@@ -47,7 +47,7 @@ export function Btn({
       disabled={disabled}
       {...rest}
       className={[
-        'inline-flex h-11 shrink-0 items-center justify-center rounded-none border',
+        'inline-flex h-11 shrink-0 items-center justify-center rounded-[6px] border',
         FILL[kind],
         RIM[kind],
         disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer',
@@ -55,7 +55,7 @@ export function Btn({
       ].join(' ')}
       style={{ paddingLeft: 20, paddingRight: 20, ...style }}
     >
-      <Txt size={14} lead={20} weight="semibold" tone={TEXT[kind]}>
+      <Txt size={11} lead={14} mono upper weight="semibold" tone={TEXT[kind]} className="tracking-[0.1em]">
         {children}
       </Txt>
     </button>
@@ -74,7 +74,7 @@ export function IconBtn({
       title={label}
       aria-label={label}
       {...rest}
-      className="inline-flex h-[38px] w-[38px] shrink-0 cursor-pointer items-center justify-center rounded-none border border-souk-hair"
+      className="inline-flex h-[38px] w-[38px] shrink-0 cursor-pointer items-center justify-center rounded-[8px] border border-souk-hair"
     >
       {children}
     </button>
@@ -83,7 +83,7 @@ export function IconBtn({
 
 export function ProfileChip({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-[38px] items-center rounded-none border border-souk-hair pl-2.5 pr-3.5">
+    <span className="inline-flex h-[38px] items-center rounded-full border border-souk-hair pl-2.5 pr-3.5">
       {children}
     </span>
   );

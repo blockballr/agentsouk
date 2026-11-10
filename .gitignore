@@ -124,3 +124,6 @@ brag-output-*/
 
 # cli build output
 /packages/cli/dist
+
+# browser tool output
+/.playwright-mcp/

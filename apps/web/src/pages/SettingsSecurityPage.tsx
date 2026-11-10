@@ -194,7 +194,7 @@ export function SettingsSecurityPage() {
                   <button
                     type="button"
                     onClick={() => navigator.clipboard.writeText(secret)}
-                    className="shrink-0 rounded-[6px] border border-souk-hair px-2 py-1 text-[10px] font-bold uppercase text-souk-steel transition hover:text-souk-ink"
+                    className="shrink-0 rounded-[8px] border border-souk-hair px-2 py-1 text-[10px] font-bold uppercase text-souk-steel transition hover:text-souk-ink"
                   >
                     Copy
                   </button>
@@ -213,7 +213,7 @@ export function SettingsSecurityPage() {
                 type="button"
                 onClick={verify}
                 disabled={busy || code.length !== 6}
-                className="rounded-[8px] bg-souk-data px-5 py-3 text-souk-canvas transition hover:brightness-95 disabled:opacity-40"
+                className="rounded-[6px] bg-souk-accent px-5 py-3 text-souk-on-accent transition hover:bg-souk-accent-hover disabled:opacity-40"
               >
                 {busy ? 'Verifying...' : 'Verify and turn on'}
               </button>

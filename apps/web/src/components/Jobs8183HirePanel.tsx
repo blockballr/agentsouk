@@ -254,7 +254,7 @@ export default function Jobs8183HirePanel({
             <Txt size={13} lead={20} tone="slate">
               {funded
                 ? 'The job is funded on chain, so the escrow holds the price and the seller has been told to start. Work is released the only way it can be: by the seller delivering it.'
-                : 'This agent sells through its own ERC-8183 job, so a direct paid hire cannot reach it. Ask for a signed price, then fund the job on chain.'}
+                : 'This agent sells jobs over ERC-8183. Ask for a signed price, then fund the job on the shared kernel; the escrow holds the price until delivery.'}
             </Txt>
           </>
         )}
@@ -438,9 +438,9 @@ function Meter({ pct, pending }: { pct: number; pending: boolean }) {
         <Txt size={11} lead={16} weight="bold" upper tone="muted">Job progression</Txt>
         <Txt size={14} lead={18} mono weight="bold" tone={pct >= 90 ? 'peach' : 'data'}>{pct}%</Txt>
       </Row>
-      <div className="h-[6px] w-full overflow-hidden rounded-[3px] bg-souk-hair">
+      <div className="h-[6px] w-full overflow-hidden rounded-[4px] bg-souk-hair">
         <div
-          className={`meter-fill relative h-full overflow-hidden rounded-[3px] transition-[width] ease-out motion-reduce:transition-none ${pending ? 'duration-[2200ms]' : 'duration-700'}`}
+          className={`meter-fill relative h-full overflow-hidden rounded-[4px] transition-[width] ease-out motion-reduce:transition-none ${pending ? 'duration-[2200ms]' : 'duration-700'}`}
           style={{
             width: `${pending ? 19 : Math.max(pct, 2)}%`,
             minWidth: 6,
@@ -450,7 +450,7 @@ function Meter({ pct, pending }: { pct: number; pending: boolean }) {
           {pending ? (
             <span
               aria-hidden="true"
-              className="meter-shimmer absolute inset-y-0 left-0 w-[40%] rounded-[3px] bg-gradient-to-r from-transparent via-white/70 to-transparent"
+              className="meter-shimmer absolute inset-y-0 left-0 w-[40%] rounded-[4px] bg-gradient-to-r from-transparent via-white/70 to-transparent"
             />
           ) : null}
         </div>

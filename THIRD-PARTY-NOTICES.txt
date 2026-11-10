@@ -5,7 +5,8 @@ Fonts
 -----
 Inter, Fraunces and JetBrains Mono are distributed through Fontsource under the
 SIL Open Font License 1.1. The license text ships with each package under
-node_modules/@fontsource-variable/*/LICENSE.
+node_modules/@fontsource-variable/*/LICENSE. Space Grotesk is self-hosted from
+Google Fonts under the same license.
 
 Runtime and build
 -----------------

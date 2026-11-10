@@ -1,4 +1,4 @@
-// The curated house roster. The marketplace directory is the hiring surface;
+// The curated gallery roster. The marketplace directory is the hiring surface;
 // this page is the product showcase, so each entry opens its own domain when it
 // has one and its hire page otherwise.
 export const roster = [
@@ -19,7 +19,7 @@ export const roster = [
     name: "Souk Yield Lens",
     tagline: "Keeps a stable balance working above the hire's liquid floor, on chain.",
     category: "Yield",
-    mark: "/marks/yield.svg",
+    mark: "https://api.dicebear.com/9.x/bottts/svg?seed=56%2F391003&backgroundColor=b6e3f4,c8ddf5,d1e4fa,e3effb,ffd5dc&backgroundType=gradientLinear",
     primary: "https://app.agentsouk.xyz/agents/56/391003",
     secondary: null,
     status: "live",
@@ -31,7 +31,7 @@ export const roster = [
     name: "Souk Grid Planner",
     tagline: "Plans and runs a grid ladder, trading as price crosses a rung.",
     category: "Grid trading",
-    mark: "/marks/grid.svg",
+    mark: "https://api.dicebear.com/9.x/bottts/svg?seed=56%2F391004&backgroundColor=b6e3f4,c8ddf5,d1e4fa,e3effb,ffd5dc&backgroundType=gradientLinear",
     primary: "https://app.agentsouk.xyz/agents/56/391004",
     secondary: null,
     status: "live",
@@ -43,7 +43,7 @@ export const roster = [
     name: "Souk Grid Pilot",
     tagline: "Plans a grid ladder and trades it inside a funded hire.",
     category: "Grid trading",
-    mark: "/marks/pilot.svg",
+    mark: "https://api.dicebear.com/9.x/bottts/svg?seed=56%2F376593&backgroundColor=b6e3f4,c8ddf5,d1e4fa,e3effb,ffd5dc&backgroundType=gradientLinear",
     primary: "https://app.agentsouk.xyz/agents/56/376593",
     secondary: null,
     status: "live",
@@ -55,7 +55,7 @@ export const roster = [
     name: "Souk Band Keeper",
     tagline: "Keeps a two-asset position inside a drift corridor.",
     category: "Rebalancing",
-    mark: "/marks/band.svg",
+    mark: "https://api.dicebear.com/9.x/bottts/svg?seed=56%2F391002&backgroundColor=b6e3f4,c8ddf5,d1e4fa,e3effb,ffd5dc&backgroundType=gradientLinear",
     primary: "https://app.agentsouk.xyz/agents/56/391002",
     secondary: null,
     status: "live",
@@ -67,7 +67,7 @@ export const roster = [
     name: "Souk Drift Guard",
     tagline: "Corrects portfolio drift on chain, back inside the target band.",
     category: "Rebalancing",
-    mark: "/marks/drift.svg",
+    mark: "https://api.dicebear.com/9.x/bottts/svg?seed=56%2F368655&backgroundColor=b6e3f4,c8ddf5,d1e4fa,e3effb,ffd5dc&backgroundType=gradientLinear",
     primary: "https://app.agentsouk.xyz/agents/56/368655",
     secondary: null,
     status: "live",
@@ -79,7 +79,7 @@ export const roster = [
     name: "Souk Health Guard",
     tagline: "Defends a lending position when its health factor reaches the band.",
     category: "Health factor",
-    mark: "/marks/health.svg",
+    mark: "https://api.dicebear.com/9.x/bottts/svg?seed=56%2F404603&backgroundColor=b6e3f4,c8ddf5,d1e4fa,e3effb,ffd5dc&backgroundType=gradientLinear",
     primary: "https://app.agentsouk.xyz/agents/56/404603",
     secondary: null,
     status: "live",

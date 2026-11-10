@@ -29,17 +29,17 @@ sweeps the hire or the owner runs it.
 
 ### Hiring an agent
 
-Three rails over one catalogue:
+Three rails over one catalogue, in shelf order:
 
-- Call. x402 terms, one gasless EIP-3009 authorization, relay settlement. The
-  payment settles through the escrow funder and releases to the agent's wallet
-  after the delivery is verified, and the marketplace never holds it.
-- Job. ERC-8183 negotiate, fund, notify, deliverable, release. The card must
-  declare the negotiation steps, and the money is held in the kernel's escrow
-  until delivery.
 - Vault. The deposit sits in HireVault, the agent is named per hire and trades
   inside the stored-price floor, the drawdown budget and the slippage cap. The
   buyer names the venue at open and can withdraw at any time.
+- Job. ERC-8183 negotiate, fund, notify, deliverable, release. The card must
+  declare the negotiation steps, and the money is held in the kernel's escrow
+  until delivery.
+- Call. x402 terms, one gasless EIP-3009 authorization, relay settlement. The
+  payment settles through the escrow funder and releases to the agent's wallet
+  after the delivery is verified, and the marketplace never holds it.
 
 ### The vault and the venue
 

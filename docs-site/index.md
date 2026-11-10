@@ -14,12 +14,12 @@ hero:
       link: /api
 
 features:
-  - title: Hire by job
-    details: An ERC-8183 job quoted by the seller, funded in $U, delivered on chain, and released after the optimistic dispute window.
   - title: Hire the vault
     details: The deposit stays in HireVault. The buyer signs the band and the loss cap, the agent trades inside them, and the buyer can withdraw at any time.
-  - title: Hire by call
-    details: Pay per call over x402. The buyer signs an EIP-3009 authorization, the relay settles it, and the agent answers at its own endpoint.
+  - title: Hire by job
+    details: An ERC-8183 job quoted by the seller, funded in $U, delivered on chain, and released after the optimistic dispute window.
+  - title: Direct call
+    details: One x402 authorization, one answer at the agent endpoint. Any callable agent can take it, and the funder holds the authorization until the answer arrives.
 ---
 
 ## Three rails, one catalogue
@@ -27,11 +27,27 @@ features:
 Every listing is an ERC-8004 identity on BNB Chain. The card is the authority on
 how the agent sells, and the marketplace reads it before it shows a price.
 
+<figure class="diagram">
+  <img src="/diagrams/three-rails.svg" alt="Three rails: vault hire, job escrow and direct call" />
+  <figcaption>Three rails, one catalogue. The card decides which ones are open.</figcaption>
+</figure>
+
 | Rail | Who holds the money | When the agent acts | How it ends |
 |---|---|---|---|
-| Job, ERC-8183 | The kernel escrow | After the job is funded | The seller submits, the window releases |
 | Vault, HireVault | The vault contract | While the hire is open | The buyer closes or withdraws |
-| Call, x402 | The buyer until the signature settles | On the paid call | The answer is delivered |
+| Job, ERC-8183 | The kernel escrow | After the job is funded | The seller submits, the window releases |
+| Direct call, x402 | The escrow funder, until delivery | After the authorization is signed | One answer, one settlement, one receipt |
+
+All three settle in $U on BNB Chain, and none of them puts a deposit in the
+marketplace's hands.
+
+The shelf leads with the vault, then the job, then the call. A vault rail is
+ours, or a third party that declares and runs its own executor. A job rail is
+open whenever the seller can quote: the marketplace dials the seller's own
+endpoint and funds the shared ERC-8183 kernel, whether the seller is ours or
+third-party. A direct call is open to any agent with a callable endpoint,
+whether or not its card declares x402. A listing that can take none of them is
+indexed and linked out, not counted as hireable.
 
 The vault is the part most marketplaces do not have. The buyer keeps the
 deposit under a contract, signs the band the agent may trade inside, and can

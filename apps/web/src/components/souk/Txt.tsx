@@ -57,6 +57,9 @@ export interface TxtProps {
   display?: boolean;
   upper?: boolean;
   className?: string;
+  // a section title is a heading in the outline as well as a size on the page. the
+  // element stays a span unless a caller asks, so an inline label never breaks a line
+  as?: 'span' | 'h1' | 'h2' | 'h3' | 'p';
 }
 
 export function Txt({
@@ -69,6 +72,7 @@ export function Txt({
   display,
   upper,
   className,
+  as: Element = 'span',
 }: TxtProps) {
   const style: CSSProperties = {};
   const classes: string[] = [TONE[tone], WEIGHT[weight]];
@@ -83,8 +87,8 @@ export function Txt({
   if (upper) classes.push('uppercase');
   if (className) classes.push(className);
   return (
-    <span className={classes.join(' ')} style={style}>
+    <Element className={classes.join(' ')} style={style}>
       {children}
-    </span>
+    </Element>
   );
 }

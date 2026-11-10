@@ -127,7 +127,7 @@ export function ShareCard({
           height={CARD_HEIGHT}
           role="img"
           aria-label={`Your Souk passport, open: ${rank}, ${points.toLocaleString('en-US')} points, its stamps and the Set and Earn seal`}
-          className="h-auto w-full rounded-[10px] border hairline border-slate-verdant/40"
+          className="h-auto w-full rounded-[12px] border hairline border-slate-verdant/40"
         />
 
         <div className="flex flex-col gap-2">

@@ -1,5 +1,5 @@
-// the design ships two registers: the dark one and a light one for anyone who reads
-// on paper. The choice is stored, and "system" hands the decision to the OS.
+// the design ships two registers. Midnight is the house default; the light one is
+// there for anyone who reads on paper, and "system" hands the decision to the OS.
 export type ThemeChoice = 'light' | 'system' | 'dark'
 
 const KEY = 'agentsouk.theme'
@@ -7,9 +7,9 @@ const KEY = 'agentsouk.theme'
 export function getChoice(): ThemeChoice {
   try {
     const c = localStorage.getItem(KEY)
-    return c === 'light' || c === 'dark' || c === 'system' ? c : 'system'
+    return c === 'light' || c === 'dark' || c === 'system' ? c : 'dark'
   } catch {
-    return 'system'
+    return 'dark'
   }
 }
 

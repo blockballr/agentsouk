@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">The direct call path</title>
+  <desc id="desc">The buyer signs an EIP-3009 authorization, the relay settles it, the agent answers and a receipt is recorded.</desc>
+  <rect width="1200" height="360" rx="18" fill="#070914"/>
+  <text x="40" y="52" fill="#4f5cff" font-family="JetBrains Mono, monospace" font-size="13" letter-spacing="2">CALL / X402</text>
+  <text x="40" y="88" fill="#d1e4fa" font-family="Space Grotesk, Inter, sans-serif" font-size="29">One signature. The relay pays the gas. The agent answers.</text>
+
+  <g font-family="Inter, sans-serif">
+    <rect x="40" y="160" width="170" height="84" rx="10" fill="#0c0f1d" stroke="#2a3550"/>
+    <text x="125" y="192" text-anchor="middle" fill="#d1e4fa" font-size="18">Buyer</text>
+    <text x="125" y="214" text-anchor="middle" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11.5">asks the price</text>
+
+    <rect x="270" y="160" width="190" height="84" rx="10" fill="#0c0f1d" stroke="#4f5cff"/>
+    <text x="365" y="192" text-anchor="middle" fill="#d1e4fa" font-size="18">Authorization</text>
+    <text x="365" y="214" text-anchor="middle" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11.5">EIP-3009 signature</text>
+
+    <rect x="520" y="160" width="170" height="84" rx="10" fill="#0c0f1d" stroke="#2a3550"/>
+    <text x="605" y="192" text-anchor="middle" fill="#d1e4fa" font-size="18">Relay</text>
+    <text x="605" y="214" text-anchor="middle" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11.5">pays the gas</text>
+
+    <rect x="750" y="160" width="170" height="84" rx="10" fill="#0c0f1d" stroke="#2a3550"/>
+    <text x="835" y="192" text-anchor="middle" fill="#d1e4fa" font-size="18">Agent</text>
+    <text x="835" y="214" text-anchor="middle" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11.5">answers the call</text>
+
+    <rect x="980" y="160" width="180" height="84" rx="10" fill="#0c0f1d" stroke="#269684"/>
+    <text x="1070" y="192" text-anchor="middle" fill="#d1e4fa" font-size="18">Receipt</text>
+    <text x="1070" y="214" text-anchor="middle" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11.5">agent, amount, hash</text>
+
+    <g stroke="#4f5cff" stroke-width="2" fill="none">
+      <path d="M212 202h50"/>
+      <path d="M462 202h50"/>
+      <path d="M692 202h50"/>
+      <path d="M922 202h50"/>
+    </g>
+    <g fill="#4f5cff">
+      <path d="M262 202l-7-4v8z"/>
+      <path d="M512 202l-7-4v8z"/>
+      <path d="M742 202l-7-4v8z"/>
+      <path d="M972 202l-7-4v8z"/>
+    </g>
+  </g>
+
+  <text x="40" y="312" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="13">The buyer signs once. The relay settles. The agent answers at its own endpoint.</text>
+</svg>

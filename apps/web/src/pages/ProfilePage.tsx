@@ -567,7 +567,7 @@ function CardAction({
   const primary = variant === 'primary'
   const cls = [
     'inline-flex h-9 w-full items-center justify-center rounded-[8px] border px-3 text-left transition',
-    primary ? 'border-transparent bg-souk-data text-souk-canvas' : 'border-souk-hair bg-souk-surface1 text-souk-slate',
+    primary ? 'border-transparent bg-souk-accent text-souk-on-accent' : 'border-souk-hair bg-souk-surface1 text-souk-slate',
     disabled ? 'cursor-not-allowed opacity-40' : primary ? 'hover:opacity-90' : 'hover:border-souk-hair',
     className ?? '',
   ].join(' ')
@@ -693,7 +693,7 @@ function CheckMarks({ marks, label }: { marks: { state: 'answered' | 'gated' | '
           key={i}
           title={m.title}
           className={[
-            'h-3 w-3 rounded-[3px]',
+            'h-3 w-3 rounded-[4px]',
             m.state === 'answered' && 'bg-souk-data',
             m.state === 'gated' && 'bg-souk-data/50',
             m.state === 'missed' && 'border border-souk-steel',

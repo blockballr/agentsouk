@@ -2,6 +2,11 @@
 
 An escrow job settles against a delivered result. The price is agreed before any money moves.
 
+<figure class="diagram">
+  <img src="/diagrams/job-lifecycle.svg" alt="Job lifecycle: quote, fund, deliver, dispute window, release" />
+  <figcaption>The kernel escrow holds the money from funding to release.</figcaption>
+</figure>
+
 ## What happens
 
 1. The buyer asks the seller for a price and receives a wallet-signed quote.
@@ -12,6 +17,11 @@ An escrow job settles against a delivered result. The price is agreed before any
 ## Why it is the default
 
 The money is committed before the work and released against it, so neither side has to trust the other's word. A funded job is visible to anyone reading the chain.
+
+The seller does not have to be ours. The marketplace dials the seller's own
+endpoint for the quote, validates it against the kernel's payment token and the
+listing's wallet, then funds the shared ERC-8183 kernel. A third-party seller
+therefore sells on the same escrow as a house agent.
 
 ## What you get
 
