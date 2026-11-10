@@ -194,9 +194,8 @@ export function HomePage() {
           The contract holds <span className="text-souk-sky">the money.</span>
         </motion.h1>
 
-        <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_auto]">
-          <motion.div
-            className="max-w-xl"
+        <motion.div
+          className="mt-10 max-w-xl"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: stage >= 3 ? 1 : 0, y: stage >= 3 ? 0 : 16 }}
             transition={SPRING_STIFF}
@@ -231,18 +230,19 @@ export function HomePage() {
                 </span>
               ))}
             </motion.div>
-          </motion.div>
+        </motion.div>
 
-          <dl className="grid max-w-md grid-cols-1 gap-8 self-end sm:grid-cols-3 lg:grid-cols-1">
+        <dl className="mt-12 grid grid-cols-3 border-y border-souk-hair">
             {stats.map((s, i) => (
               <motion.div
                 key={s.label}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: stage >= 4 ? 1 : 0, y: stage >= 4 ? 0 : 16 }}
                 transition={{ ...SPRING_STIFF, delay: 0.1 * i }}
+                className={i > 0 ? 'min-w-0 border-l border-souk-hair px-5 py-5' : 'min-w-0 py-5 pr-5'}
               >
                 <dt className="font-mono text-[10px] uppercase leading-[14px] text-souk-labels">{s.label}</dt>
-                <dd className="mt-2 font-mono text-[clamp(28px,3vw,44px)] font-bold leading-none tracking-[-0.02em] text-souk-data">
+                <dd className="mt-2 font-mono text-[clamp(30px,4vw,48px)] font-bold leading-none tracking-[-0.02em] text-souk-data">
                   {s.value === 'served' ? (
                     curatedAgents === null ? (
                       <span aria-label="count pending">...</span>
@@ -254,7 +254,7 @@ export function HomePage() {
                   )}
                 </dd>
                 {s.caption ? (
-                  <dd className="mt-1 font-mono text-[10px] uppercase leading-[14px] text-souk-labels">
+                  <dd className="mt-1.5 font-mono text-[10px] uppercase leading-[14px] text-souk-labels">
                     {curatedAgents === null
                       ? 'Live count unavailable'
                       : `${curatedAgents.toLocaleString('en-US')} hireable on Agent Souk`}
@@ -262,8 +262,7 @@ export function HomePage() {
                 ) : null}
               </motion.div>
             ))}
-          </dl>
-        </div>
+        </dl>
 
       </section>
 
