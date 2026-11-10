@@ -63,6 +63,10 @@ export function agentRails(detail: AgentDetail, house: boolean): AgentRail[] {
   // so a job rail needs an A2A endpoint even when the card names our escrow
   const callable = detail.mcp_server ?? detail.a2a_endpoint
   const quotable = detail.a2a_endpoint
+  // a gated listing answers only behind the seller's own credentials. the
+  // marketplace holds none, so a call or job would be paid and reach a wall;
+  // the vault still runs because the seller's executor does the trading
+  const gated = detail.accessGated === true
   const namesOurEscrow = house || mentions(text, ESCROW_FUNDER_BY_CHAIN[detail.chain_id])
 
   // the shelf leads with the vault, then the job, then the call, and every
@@ -78,7 +82,7 @@ export function agentRails(detail: AgentDetail, house: boolean): AgentRail[] {
   // a third-party seller does not have to name our escrow for a job: the quote
   // route dials its own endpoint, validates the signed price against the kernel,
   // and funds the shared ERC-8183 job, so an endpoint is enough to open the rail
-  if (jobDeclared && quotable) {
+  if (!gated && jobDeclared && quotable) {
     rails.push({
       kind: 'job',
       source: house ? 'agent-souk' : namesOurEscrow ? 'verified' : 'agent',
@@ -89,7 +93,7 @@ export function agentRails(detail: AgentDetail, house: boolean): AgentRail[] {
   // a job-only seller publishes the job protocol at its endpoint, not a paid
   // call. offering one would take the money and reach no delivery, so the rail
   // is omitted; its bookable action is the job above.
-  if (callable && !jobOnly) {
+  if (!gated && callable && !jobOnly) {
     rails.push({
       kind: 'call',
       source: house ? 'agent-souk' : 'agent',

@@ -173,6 +173,30 @@ describe("agent rails", () => {
     expect(rails.map((r) => r.kind)).toEqual(["vault", "job", "call"]);
   });
 
+  it("does not sell a call or job to a gated listing", () => {
+    const rails = agentRails(
+      detail({
+        skills: JOB_SKILLS,
+        a2a_endpoint: "https://seller.example/a2a",
+        accessGated: true,
+      }),
+      false,
+    );
+    expect(rails).toEqual([]);
+  });
+
+  it("keeps the vault rail on a gated listing", () => {
+    const rails = agentRails(
+      detail({
+        skills: VAULT_SKILLS,
+        services: { vault: VAULT_BY_CHAIN[56] },
+        accessGated: true,
+      }),
+      false,
+    );
+    expect(rails.map((r) => r.kind)).toEqual(["vault"]);
+  });
+
   it("offers a call only when an endpoint exists", () => {
     const withEndpoint = agentRails(
       detail({ x402_supported: true, a2a_endpoint: "https://agent.example/a2a" }),

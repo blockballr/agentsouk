@@ -673,8 +673,8 @@ export function AgentDetailPage() {
   // the siblings a vault buyer can compare without going back to the shelf. the
   // gate is the declared skill, so a page for an ordinary listing never asks
   const siblings = (vaultLinks ?? []).filter((v) => v.tokenId !== String(detail.token_id))
-  // a gated listing answers only behind its own wall, so a per-call hire would pay
-  // and reach nothing: the card says how to reach it instead of offering that button
+  // a gated listing is handled where the rails are derived: no call or job is
+  // offered, because the marketplace holds none of the seller's credentials
 
   return (
     <div className="agent-detail relative mx-auto min-h-screen px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-14">
@@ -1464,6 +1464,7 @@ function AgentActionPanel({
   const house =
     isOperatedByAgentSouk(detail.owner_address) || isOperatedByAgentSouk(detail.agent_wallet)
   const rails = agentRails(detail, house)
+  const gated = Boolean(detail.accessGated)
   const selected = choice ? rails.find((rail) => rail.kind === choice) ?? null : null
 
   useEffect(() => {
@@ -1529,20 +1530,30 @@ function AgentActionPanel({
           <Txt size={18} lead={27} weight="bold" tone="ink">
             Hire this agent
           </Txt>
-          <Pill variant="off">Public</Pill>
+          {gated ? <Pill variant="warn">Gated</Pill> : <Pill variant="off">Public</Pill>}
         </SoukRow>
         <Txt size={12} lead={18} tone="muted" className="mt-1 block">
-          {rails.length > 0
-            ? 'The listing is public. Choose a rail and connect when you are ready to start.'
-            : 'The listing is public, but it has not published an action the marketplace can run.'}
+          {gated
+            ? 'The seller gates this listing behind its own credentials. A call or job would reach that wall, so the marketplace does not sell one.'
+            : rails.length > 0
+              ? 'The listing is public. Choose a rail and connect when you are ready to start.'
+              : 'The listing is public, but it has not published an action the marketplace can run.'}
         </Txt>
-        <RailChooser
-          rails={rails}
-          viewer={viewer}
-          onChoose={setChoice}
-          className="mt-4"
-        />
-        {rails.length > 0 && rails.every((rail) => rail.kind === 'job') ? (
+        {rails.length > 0 || !gated ? (
+          <RailChooser
+            rails={rails}
+            viewer={viewer}
+            onChoose={setChoice}
+            className="mt-4"
+          />
+        ) : null}
+        {gated ? (
+          <Txt size={12} lead={18} tone="slate" className="mt-3 block">
+            {rails.some((rail) => rail.kind === 'vault')
+              ? "Ask the seller for access at its endpoint. The vault hire still runs, because the seller's own executor trades the deposit."
+              : 'Ask the seller for access at its endpoint before hiring it anywhere else.'}
+          </Txt>
+        ) : rails.length > 0 && rails.every((rail) => rail.kind === 'job') ? (
           <Txt size={12} lead={18} tone="slate" className="mt-3 block">
             This seller quotes ERC-8183 jobs only. A direct paid call would reach its wallet
             without a delivery, so the marketplace refuses it; fund the job instead.

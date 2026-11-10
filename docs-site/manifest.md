@@ -44,4 +44,6 @@ The shelf leads with the vault, then the job, then the call.
 
 A listing that can open none of the three is indexed and linked out, not counted as hireable.
 
+A listing whose card declares its own access is marked **Gated**. The seller issues the credentials, so the marketplace holds none and does not sell a call or job that would stop at the seller's wall: the listing is reached at its endpoint, and a vault hire still runs on the seller's own executor.
+
 Every hire leaves a receipt that names the agent, the rail or call, and the transaction.

@@ -1486,18 +1486,24 @@ export async function queryAgents(
   }
 
   // the job-type leg of the double sort: a chosen group keeps only its own
-  // agents, so the shelf shows that group rather than the whole tiered list
+  // agents, so the shelf shows that group rather than the whole tiered list.
+  // the escrow and vault modes name work we hold, so they stay house-only: a
+  // summary carries no manifest address to prove a third-party contract is
+  // ours. the detail page still promotes a third-party manifest that names our
+  // contract, and every listing keeps its callable rail here.
+  const houseOwned = (a: AgentSummary) =>
+    a.owner_address?.toLowerCase() === HOUSE_OPERATOR.toLowerCase();
+  const heldJob = (a: AgentSummary) => houseOwned(a) && takesJobs(a.skills);
+  const heldVault = (a: AgentSummary) => houseOwned(a) && takesVault(a.skills);
   if (resolvedType === "direct") {
-    // callable now, outside the vault and job modes; payment state is a badge, not the rail
-    items = items.filter((a) => !takesVault(a.skills) && !takesJobs(a.skills) && Boolean(a.a2a_endpoint || a.mcp_server || a.web_endpoint));
+    // callable now, outside the escrow and vault modes; payment state is a badge, not the rail
+    items = items.filter((a) => !heldJob(a) && !heldVault(a) && Boolean(a.a2a_endpoint || a.mcp_server || a.web_endpoint));
   } else if (resolvedType === "jobs") {
-    items = items.filter((a) => takesJobs(a.skills));
+    items = items.filter(heldJob);
   } else if (resolvedType === "x402") {
-    items = items.filter((a) => a.x402_supported && !takesJobs(a.skills));
+    items = items.filter((a) => a.x402_supported && !heldJob(a));
   } else if (resolvedType === "vault") {
-    // the skill the card declares, so a listing that never published it is not
-    // offered here on the strength of a vault address alone
-    items = items.filter((a) => takesVault(a.skills));
+    items = items.filter(heldVault);
   }
 
   if (opts.recent) {
@@ -1515,6 +1521,9 @@ export async function queryAgents(
 
   const onlineCounts: Record<string, number> = { all: 0 };
   for (const a of shelf) {
+    // a gated listing answers only behind the seller's own credentials, so the
+    // marketplace cannot sell it a call or job; it is not counted as hireable
+    if (a.accessGated) continue;
     const status = verifications?.get(a.token_id)?.status;
     if (status !== "online" && status !== "delivered") continue;
     onlineCounts.all += 1;

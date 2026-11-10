@@ -191,7 +191,7 @@ export function MarketplacePage() {
     [result],
   )
 
-  // the shelf's strap: chain and registry size only; the hireable count and the
+  // the shelf's strap: chain and registry size only; the matching count and the
   // freshness move into the live stamp chip so the two facts read as state
   const strap = [
     'shelf',
@@ -214,7 +214,7 @@ export function MarketplacePage() {
                 aria-hidden="true"
                 className={`h-1.5 w-1.5 rounded-full ${result ? 'bg-souk-good animate-scale-pulse' : 'bg-souk-muted'}`}
               />
-              {result ? `${result.total.toLocaleString('en-US')} hireable · ${freshness}` : 'reading the shelf'}
+              {result ? `${result.total.toLocaleString('en-US')} listing${result.total === 1 ? '' : 's'} · ${freshness}` : 'reading the shelf'}
             </span>
             <div className="ml-auto flex flex-wrap items-center gap-2">
               {['ERC-8004', 'ERC-8183', 'x402', 'PancakeSwap'].map((rail) => (
@@ -682,6 +682,17 @@ function AgentCard({
     : agent.image_url ?? defaultAvatarFor(agent.chain_id, String(agent.token_id))
   const key = `${agent.chain_id}/${agent.token_id}`
   const verdict = verdictFor(agent.chain_id, agent.verification)
+  // a card that declares its own access is gated even when the last probe came
+  // back online: the marketplace holds no credentials, so it cannot be hired here
+  const gated = agent.accessGated === true || agent.verification?.status === 'gated'
+  const shown = gated
+    ? {
+        label: 'Gated',
+        tone: 'held' as const,
+        explain:
+          'The seller gates this listing behind credentials it issues. The marketplace holds none, so open the listing to ask for access.',
+      }
+    : verdict
   const jobOnly = sellsByJob(agent.skills)
   const score = agent.total_score > 0 ? formatScore(agent.total_score) : null
   const reviews = agent.total_feedbacks
@@ -752,14 +763,14 @@ function AgentCard({
           />
         </div>
 
-        <span title={verdict.explain} className="inline-flex">
+        <span title={shown.explain} className="inline-flex">
           <Row align="center" gap={7}>
             <Dot
-              tone={verdict.label === 'Verified' ? 'verified' : verdict.label === 'Online' ? 'online-fixed' : VERDICT_TONE[verdict.tone]}
+              tone={shown.label === 'Verified' ? 'verified' : shown.label === 'Online' ? 'online-fixed' : VERDICT_TONE[shown.tone]}
               size={7}
             />
             <Txt size={11} lead={16} tone="slate">
-              {verdict.label}
+              {shown.label}
             </Txt>
             {when ? (
               <Txt size={11} lead={16} tone="muted">
@@ -800,13 +811,15 @@ function AgentCard({
       <Link
         to={`/agents/${agent.chain_id}/${agent.token_id}`}
         title={
-          jobOnly
-            ? 'This agent sells by ERC-8183 job: it quotes a price, the job is funded in escrow, and it is paid on delivery.'
-            : undefined
+          gated
+            ? 'Gated listing: open it to ask the seller for the access it issues.'
+            : jobOnly
+              ? 'This agent sells by ERC-8183 job: it quotes a price, the job is funded in escrow, and it is paid on delivery.'
+              : undefined
         }
         className="micro font-mono mt-auto flex h-10 items-center justify-center gap-1.5 rounded-[6px] border border-souk-hair bg-souk-accent tracking-[0.08em] text-souk-on-accent transition hover:bg-souk-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
-        Hire
+        {gated ? 'View' : 'Hire'}
         <span
           aria-hidden="true"
           className="font-mono text-[13px] leading-none transition-transform group-hover:translate-x-1"
