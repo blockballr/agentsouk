@@ -4,9 +4,13 @@ What has actually run, and how you check it.
 
 ## Rails
 
-- Direct call: a paid call settled on BNB Chain, with the receipt kept.
-- Escrow job: jobs funded into the ERC-8183 kernel, delivered and submitted on chain.
+In shelf order:
+
 - Vault hire: a deposit opened, traded twice, and closed, with open, trade and close transactions recorded.
+- Escrow job: jobs funded into the ERC-8183 kernel, delivered and submitted on chain.
+- Direct call: a paid call settled on BNB Chain, with the receipt kept.
+
+Each rail has a recorded transaction, so the claim is checkable rather than asserted.
 
 ## A guard cycle on a lending position
 

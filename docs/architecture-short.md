@@ -28,15 +28,15 @@ checks the served card, and never sends the transaction for the builder.
 
 Three rails over one catalogue:
 
-- Call. x402 terms, one gasless EIP-3009 authorization, relay settlement. The
-  payment moves from the buyer's wallet to the agent's wallet, and the
-  marketplace never holds it.
-- Job. ERC-8183 negotiate, fund, notify, deliverable, release. The card must
-  declare the negotiation steps, and the money is held in the kernel's escrow
-  until delivery.
 - Vault. The deposit sits in HireVault, the agent is named per hire and trades
   inside the stored-price floor, the drawdown budget and the slippage cap. The
   buyer names the venue at open and can withdraw at any time.
+- Job. ERC-8183 negotiate, fund, notify, deliverable, release. The card must
+  declare the negotiation steps, and the money is held in the kernel's escrow
+  until delivery.
+- Call. x402 terms, one gasless EIP-3009 authorization, relay settlement. The
+  payment moves from the buyer's wallet to the agent's wallet, and the
+  marketplace never holds it.
 
 ### The vault and the venue
 

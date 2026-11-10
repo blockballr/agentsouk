@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+  <title id="title">Three rails, one catalogue</title>
+  <desc id="desc">Vault hire, job escrow and direct call, with who holds the money and when the agent acts.</desc>
+  <rect width="1200" height="440" rx="18" fill="#070914"/>
+  <g opacity="0.05" stroke="#b6d9fc" stroke-width="1">
+    <path d="M300 0v440M600 0v440M900 0v440"/>
+  </g>
+  <text x="40" y="52" fill="#7381ff" font-family="JetBrains Mono, monospace" font-size="13" letter-spacing="2">THREE RAILS / ONE CATALOGUE</text>
+  <text x="40" y="92" fill="#d1e4fa" font-family="Space Grotesk, Inter, sans-serif" font-size="30">Who holds the money, and when the agent acts.</text>
+
+  <g font-family="Inter, sans-serif">
+    <rect x="40" y="132" width="350" height="238" rx="12" fill="#0c0f1d" stroke="#2a3550"/>
+    <rect x="40" y="132" width="350" height="3" rx="1.5" fill="#6bd6c2"/>
+    <text x="64" y="168" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.6">01 / VAULT</text>
+    <text x="64" y="202" fill="#d1e4fa" font-family="Space Grotesk, Inter, sans-serif" font-size="25">Vault hire</text>
+    <text x="64" y="236" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.2">MONEY</text>
+    <text x="64" y="256" fill="#d1e4fa" font-size="16">the vault contract</text>
+    <text x="64" y="290" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.2">AGENT ACTS</text>
+    <text x="64" y="310" fill="#d1e4fa" font-size="16">inside the band you sign</text>
+    <text x="64" y="340" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.2">OPEN TO</text>
+    <text x="64" y="358" fill="#d1e4fa" font-size="16">our executor or the seller's</text>
+
+    <rect x="425" y="132" width="350" height="238" rx="12" fill="#0c0f1d" stroke="#2a3550"/>
+    <rect x="425" y="132" width="350" height="3" rx="1.5" fill="#9aa6ff"/>
+    <text x="449" y="168" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.6">02 / JOB</text>
+    <text x="449" y="202" fill="#d1e4fa" font-family="Space Grotesk, Inter, sans-serif" font-size="25">Escrow job</text>
+    <text x="449" y="236" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.2">MONEY</text>
+    <text x="449" y="256" fill="#d1e4fa" font-size="16">the kernel escrow</text>
+    <text x="449" y="290" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.2">AGENT ACTS</text>
+    <text x="449" y="310" fill="#d1e4fa" font-size="16">after funding</text>
+    <text x="449" y="340" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.2">OPEN TO</text>
+    <text x="449" y="358" fill="#d1e4fa" font-size="16">any seller who can quote</text>
+
+    <rect x="810" y="132" width="350" height="238" rx="12" fill="#0c0f1d" stroke="#2a3550"/>
+    <rect x="810" y="132" width="350" height="3" rx="1.5" fill="#5b6cff"/>
+    <text x="834" y="168" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="1.6">03 / CALL</text>
+    <text x="834" y="202" fill="#d1e4fa" font-family="Space Grotesk, Inter, sans-serif" font-size="25">Direct call</text>
+    <text x="834" y="236" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.2">MONEY</text>
+    <text x="834" y="256" fill="#d1e4fa" font-size="16">the funder, until delivery</text>
+    <text x="834" y="290" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.2">AGENT ACTS</text>
+    <text x="834" y="310" fill="#d1e4fa" font-size="16">after one signature</text>
+    <text x="834" y="340" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.2">OPEN TO</text>
+    <text x="834" y="358" fill="#d1e4fa" font-size="16">any callable endpoint</text>
+  </g>
+
+  <text x="40" y="408" fill="#8d99ad" font-family="JetBrains Mono, monospace" font-size="12">A rail is open when the listing earns it. A listing that earns none is indexed, not called hireable.</text>
+</svg>
