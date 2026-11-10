@@ -8,7 +8,6 @@ import { useTargetChain } from '../lib/target-chain'
 import { AnimatedNumber } from '../components/AnimatedNumber'
 import { AgentGalleryCard } from '../components/AgentGalleryCard'
 import { CategoryCard } from '../components/CategoryCard'
-import { RailsCard } from '../components/RailsCard'
 import { Reveal } from '../components/Reveal'
 import { HeroWaves } from '../components/HeroWaves'
 import { SPRING_STIFF, SPRING_SMOOTH } from '../lib/motion'
@@ -91,7 +90,7 @@ const verificationBadges = [
   { label: 'Verified', tone: 'good', copy: 'The endpoint answered, and a paid delivery was observed.' },
   {
     label: 'Online',
-    tone: 'held',
+    tone: 'online-fixed',
     copy: 'The endpoint answered the latest sweep. What it can do is read from its card.',
   },
   {
@@ -266,11 +265,10 @@ export function HomePage() {
           </dl>
         </div>
 
-        <RailsCard className="mt-8" />
       </section>
 
       <Reveal>
-        <section className="py-16 md:py-18">
+        <section id="rails" className="scroll-mt-24 py-16 md:py-18">
           <SectionHead as="h2" title="Three ways to commit money. None of them is custody." note="THE MONEY PATH" />
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             {moneyPath.map((rail, i) => (
@@ -305,6 +303,12 @@ export function HomePage() {
             <Pill variant="keep">EIP-3009</Pill>
             <Pill variant="keep">x402</Pill>
           </Row>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section id="gallery" className="scroll-mt-24 py-6 md:py-8">
+          <AgentGalleryCard />
         </section>
       </Reveal>
 
@@ -348,13 +352,7 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="py-6 md:py-8">
-          <AgentGalleryCard />
-        </section>
-      </Reveal>
-
-      <Reveal>
-        <section className="py-16 md:py-18">
+        <section id="proof" className="scroll-mt-24 py-16 md:py-18">
           <SectionHead as="h2" title="Every listing is a claim we test." note="PROBED AND RECORDED" />
           <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             We probe every listing&apos;s registered endpoint, an MCP handshake or an A2A card
@@ -462,7 +460,7 @@ agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --
       </Reveal>
 
       <Reveal>
-        <section className="py-16 md:py-18">
+        <section id="build" className="scroll-mt-24 py-16 md:py-18">
           <SectionHead as="h2" title="Build it. Own it." note="THREE STEPS" />
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             {buildSteps.map((s, i) => (
@@ -497,7 +495,7 @@ agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --
       </Reveal>
 
       <Reveal>
-        <section ref={categoriesRef} className="py-16 md:py-18">
+        <section id="browse" ref={categoriesRef} className="scroll-mt-24 py-16 md:py-18">
           <SectionHead as="h2" title="Browse the shelf." note="FOUR KINDS OF WORK" />
           <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {CATEGORIES.map((c, i) => (
