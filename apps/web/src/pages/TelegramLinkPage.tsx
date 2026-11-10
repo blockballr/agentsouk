@@ -3,7 +3,7 @@ import { telegramLinkMessage } from '@agora/core'
 import { Btn, Stack, Txt } from '../components/souk'
 import { beginWalletConnect, connectProvider, signPersonalMessage } from '../lib/wallet'
 
-const BASE = import.meta.env.VITE_TELEGRAM_API ?? 'https://telegram.agentsouk.xyz'
+const BASE = import.meta.env.VITE_TELEGRAM_API ?? 'https://agentsouk-telegram.vercel.app'
 
 type TelegramApp = {
   initData: string
@@ -190,6 +190,14 @@ export function TelegramLinkPage() {
                 ? `account ${telegramId}`
                 : 'Open this page from the Agent Souk bot in Telegram.'}
           </Txt>
+          <a
+            href="https://t.me/agentsouk"
+            target="_blank"
+            rel="noreferrer"
+            className="micro text-souk-data underline decoration-souk-hair underline-offset-4 transition hover:text-souk-ink"
+          >
+            Open the bot at t.me/agentsouk
+          </a>
           <Txt size={11} lead={14} mono upper tone="muted" className="mt-2">
             Wallet
           </Txt>
