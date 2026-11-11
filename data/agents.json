@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "snapshotTime": "2026-11-11T05:23:02.374Z",
+  "snapshotTime": "2026-11-11T19:25:03.140Z",
   "source": {
-    "fetched": 2717,
-    "upstreamTotal": 380582,
-    "deduped": 994,
-    "registryTotal": 380582,
+    "fetched": 2718,
+    "upstreamTotal": 383263,
+    "deduped": 947,
+    "registryTotal": 383263,
     "declarers": 131,
     "endpointsRecovered": 131,
     "seededApplied": 0
@@ -87,7 +87,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.38,
+      "total_score": 30.39,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -95,7 +95,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-12T09:16:05Z",
-      "updated_at": "2026-11-07T18:58:45.053116Z",
+      "updated_at": "2026-11-11T10:41:50.375894Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
@@ -216,56 +216,12 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T08:44:01Z",
-      "updated_at": "2026-11-08T17:01:30.991099Z",
+      "updated_at": "2026-11-11T08:38:50.816826Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
       },
       "a2a_endpoint": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A562333538205%3Aruntime%2Fsslprebalancer_sslprebalancer-H04NynHcX4/invocations/.well-known/agent-card.json"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "60c024b4-e2b4-407a-bba6-e9deb448d780",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:338475",
-      "token_id": "338475",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "5de60f4a-5966-4294-a4c0-17f47628de09",
-      "owner_address": "0x38c6fc4a5525b37f9545423a7132157f69ce08da",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "PancakeSwap v3 Range Keeper",
-      "description": "Watches a PancakeSwap v3 liquidity position, decides whether its range still earns, and resets it when it does not. There is no atomic rebalance on v3: closing and reopening a position is decreaseLiquidity → collect → burn → mint, plus a sw",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "MCP",
-        "A2A",
-        "Web"
-      ],
-      "x402_supported": true,
-      "total_score": 30.37,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-09-07T15:24:05Z",
-      "updated_at": "2026-11-04T07:44:21.090116Z",
-      "category": "rebalancing",
-      "categoryScores": {
-        "rebalancing": 5
-      },
-      "a2a_endpoint": "https://hallmark-agents.vercel.app/a2a/rebalancer",
-      "mcp_server": "https://hallmark-agents.vercel.app/mcp/rebalancer",
-      "web_endpoint": "https://hallmark-market.vercel.app"
     },
     {
       "token_agent_provider": null,
@@ -302,7 +258,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T04:27:58Z",
-      "updated_at": "2026-11-07T20:00:57.882240Z",
+      "updated_at": "2026-11-11T08:33:49.820121Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 5,
@@ -311,6 +267,50 @@
       "a2a_endpoint": "https://rangereset-deliverables-899042279537.s3.us-east-1.amazonaws.com/.well-known/agent-card.json",
       "mcp_server": "https://bedrock-agentcore.us-east-1.amazonaws.com/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A899042279537%3Aruntime%2Frangereset-ozY66A9He2/invocations?qualifier=DEFAULT",
       "web_endpoint": "https://rangereset-deliverables-899042279537.s3.us-east-1.amazonaws.com/status.json"
+    },
+    {
+      "token_agent_provider": null,
+      "id": "60c024b4-e2b4-407a-bba6-e9deb448d780",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:338475",
+      "token_id": "338475",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "5de60f4a-5966-4294-a4c0-17f47628de09",
+      "owner_address": "0x38c6fc4a5525b37f9545423a7132157f69ce08da",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "PancakeSwap v3 Range Keeper",
+      "description": "Watches a PancakeSwap v3 liquidity position, decides whether its range still earns, and resets it when it does not. There is no atomic rebalance on v3: closing and reopening a position is decreaseLiquidity → collect → burn → mint, plus a sw",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "MCP",
+        "A2A",
+        "Web"
+      ],
+      "x402_supported": true,
+      "total_score": 5.01,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-09-07T15:24:05Z",
+      "updated_at": "2026-11-11T11:35:14.903263Z",
+      "category": "rebalancing",
+      "categoryScores": {
+        "rebalancing": 5
+      },
+      "a2a_endpoint": "https://hallmark-agents.vercel.app/a2a/rebalancer",
+      "mcp_server": "https://hallmark-agents.vercel.app/mcp/rebalancer",
+      "web_endpoint": "https://hallmark-market.vercel.app"
     },
     {
       "token_agent_provider": null,
@@ -625,7 +625,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T15:16:36Z",
-      "updated_at": "2026-11-10T19:45:24.682163Z",
+      "updated_at": "2026-11-11T06:55:48.454905Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -1158,7 +1158,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-07T03:20:58Z",
-      "updated_at": "2026-11-09T18:06:09.378557Z",
+      "updated_at": "2026-11-11T16:36:20.246681Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2,
@@ -2498,7 +2498,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.39,
+      "total_score": 30.4,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -2506,7 +2506,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:19:09Z",
-      "updated_at": "2026-11-10T21:59:36.296264Z",
+      "updated_at": "2026-11-11T08:57:52.452926Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2701,7 +2701,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T11:35:42Z",
-      "updated_at": "2026-11-10T13:17:30.866294Z",
+      "updated_at": "2026-11-11T13:56:38.589721Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2909,7 +2909,7 @@
       "average_score": 60,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:46Z",
-      "updated_at": "2026-11-04T16:52:52.032873Z",
+      "updated_at": "2026-11-11T18:44:56.416519Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -3998,7 +3998,7 @@
       "average_score": 90,
       "cross_chain_versions": null,
       "created_at": "2026-08-26T06:46:48Z",
-      "updated_at": "2026-11-06T03:30:02.425907Z",
+      "updated_at": "2026-11-11T17:58:46.635572Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4,
@@ -4034,7 +4034,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 30.46,
+      "total_score": 30.45,
       "rank": null,
       "network_rank": null,
       "health_score": 100,
@@ -4042,7 +4042,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T12:05:55Z",
-      "updated_at": "2026-11-10T08:00:24.902827Z",
+      "updated_at": "2026-11-11T13:36:50.938652Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
@@ -4249,7 +4249,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T11:29:17Z",
-      "updated_at": "2026-11-11T02:12:42.574668Z",
+      "updated_at": "2026-11-11T17:18:24.133937Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4,
@@ -5358,7 +5358,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-15T06:45:21Z",
-      "updated_at": "2026-11-10T13:41:29.656435Z",
+      "updated_at": "2026-11-11T18:07:17.265911Z",
       "category": "yield",
       "categoryScores": {
         "yield": 3,
@@ -5558,7 +5558,7 @@
       "average_score": 80,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:49Z",
-      "updated_at": "2026-11-08T13:13:52.561829Z",
+      "updated_at": "2026-11-11T17:16:17.748781Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2,
@@ -5602,7 +5602,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-16T12:00:12Z",
-      "updated_at": "2026-11-11T05:10:45.677447Z",
+      "updated_at": "2026-11-11T18:10:51.846083Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2,
@@ -5725,7 +5725,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-02-19T05:18:52.234508Z",
-      "updated_at": "2026-11-08T05:51:05.136282Z",
+      "updated_at": "2026-11-11T18:54:53.246768Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2,
@@ -6364,7 +6364,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 46.42,
+      "total_score": 46.44,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6372,7 +6372,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T05:08:53Z",
-      "updated_at": "2026-11-09T16:13:39.986501Z",
+      "updated_at": "2026-11-11T15:35:39.557682Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6773,7 +6773,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T14:49:19Z",
-      "updated_at": "2026-11-10T17:46:23.230191Z",
+      "updated_at": "2026-11-11T06:14:49.253529Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -8188,7 +8188,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-06T07:54:56Z",
-      "updated_at": "2026-11-09T07:43:48.582118Z",
+      "updated_at": "2026-11-11T10:24:42.672325Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 2
@@ -8966,7 +8966,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-11T09:26:15Z",
-      "updated_at": "2026-11-07T07:18:47.051502Z",
+      "updated_at": "2026-11-11T10:01:49.012987Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks"
@@ -9004,7 +9004,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-08T10:02:57Z",
-      "updated_at": "2026-11-08T13:50:43.533933Z",
+      "updated_at": "2026-11-11T08:08:50.625847Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks"
@@ -9190,7 +9190,7 @@
         "Email"
       ],
       "x402_supported": false,
-      "total_score": 30.39,
+      "total_score": 30.42,
       "rank": null,
       "network_rank": null,
       "health_score": 76.67,
@@ -9198,7 +9198,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-28T20:51:45Z",
-      "updated_at": "2026-11-08T14:38:40.589405Z",
+      "updated_at": "2026-11-11T18:16:54.750316Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://app.singularry.org/agents/24/agent-card.json",
@@ -9408,7 +9408,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-26T05:31:52Z",
-      "updated_at": "2026-11-07T09:28:47.078793Z",
+      "updated_at": "2026-11-11T17:14:10.903691Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://agents.topazdex.com/.well-known/agent-card.json",
@@ -9449,7 +9449,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:34:23Z",
-      "updated_at": "2026-11-10T17:37:32.659757Z",
+      "updated_at": "2026-11-11T14:21:37.898953Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks",
@@ -9489,7 +9489,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:21:31Z",
-      "updated_at": "2026-11-10T12:51:31.904459Z",
+      "updated_at": "2026-11-11T06:32:51.621479Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks",
