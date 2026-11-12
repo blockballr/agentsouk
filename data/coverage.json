@@ -1,12 +1,12 @@
 {
   "chainId": 56,
-  "snapshotTime": "2026-11-12T06:27:11.660Z",
+  "snapshotTime": "2026-11-12T19:43:31.438Z",
   "funnel": {
-    "fetched": 2719,
-    "upstreamTotal": 384027,
-    "deduped": 1114,
+    "fetched": 2724,
+    "upstreamTotal": 384322,
+    "deduped": 1195,
     "selected": 239,
-    "registryTotal": 384027,
+    "registryTotal": 384322,
     "declarers": 131,
     "endpointsRecovered": 131,
     "seededApplied": 0

@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "snapshotTime": "2026-11-12T06:27:11.660Z",
+  "snapshotTime": "2026-11-12T19:43:31.438Z",
   "source": {
-    "fetched": 2719,
-    "upstreamTotal": 384027,
-    "deduped": 1114,
-    "registryTotal": 384027,
+    "fetched": 2724,
+    "upstreamTotal": 384322,
+    "deduped": 1195,
+    "registryTotal": 384322,
     "declarers": 131,
     "endpointsRecovered": 131,
     "seededApplied": 0
@@ -625,7 +625,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T15:16:36Z",
-      "updated_at": "2026-11-11T20:35:42.011273Z",
+      "updated_at": "2026-11-12T08:08:04.802322Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -706,7 +706,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-13T17:54:36Z",
-      "updated_at": "2026-11-10T02:20:59.827644Z",
+      "updated_at": "2026-11-12T06:38:35.291483Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -1072,7 +1072,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T03:14:51Z",
-      "updated_at": "2026-11-09T18:44:46.534135Z",
+      "updated_at": "2026-11-12T06:58:42.335277Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2,
@@ -4042,7 +4042,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T12:05:55Z",
-      "updated_at": "2026-11-11T13:36:50.938652Z",
+      "updated_at": "2026-11-12T09:35:52.546317Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
@@ -8026,7 +8026,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T07:11:37Z",
-      "updated_at": "2026-11-10T18:28:32.627221Z",
+      "updated_at": "2026-11-12T10:52:13.590721Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
@@ -8660,7 +8660,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-03T22:29:08Z",
-      "updated_at": "2026-11-11T05:16:49.751830Z",
+      "updated_at": "2026-11-12T09:16:14.574171Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/api/a2a/11188/card"
@@ -9368,7 +9368,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:32:34Z",
-      "updated_at": "2026-11-10T15:53:22.111513Z",
+      "updated_at": "2026-11-12T17:57:03.099832Z",
       "category": "general",
       "categoryScores": {},
       "mcp_server": "https://api.alpharc.app/v1/agents/56/0x8114046d17b42bbce7e06b52019397140bb4657d/mcp"
@@ -9400,7 +9400,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.51,
+      "total_score": 30.5,
       "rank": null,
       "network_rank": null,
       "health_score": 76.67,
@@ -9408,7 +9408,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-26T05:31:52Z",
-      "updated_at": "2026-11-11T17:14:10.903691Z",
+      "updated_at": "2026-11-12T19:03:06.549491Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://agents.topazdex.com/.well-known/agent-card.json",
