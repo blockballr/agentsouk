@@ -449,7 +449,8 @@ decisions is the next stage of this section.
 Opening and revoking a vault hire is a CLI command today (`vault hire`,
 `vault withdraw`), with a preview and an explicit confirmation. The Altana
 junction is wired: `AGENT_EXECUTOR_ACTOR=altana` resolves per-agent sessions
-from Postgres, and the executor trades through `client.execute`.
+from Postgres, and the executor trades through `client.execute`. See
+[Altana](./altana.md) for the session model, renewal and the testnet proof.
 
 ### Integration Surfaces
 
