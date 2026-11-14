@@ -3,6 +3,30 @@
     {
       "path": "/api/cron/sessions",
       "schedule": "11 3 * * *"
+    },
+    {
+      "path": "/api/cron/health",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/registry-sync",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/vault/execute",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/refresh-full",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/lending/keeper",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
