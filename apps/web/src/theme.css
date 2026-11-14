@@ -93,6 +93,11 @@ wcm-modal {
   --metal-face: linear-gradient(180deg, rgb(186 215 247 / 0.025), rgb(186 215 247 / 0) 35%);
   --metal-scan: rgb(186 215 247 / 0.014);
   --metal-glow: rgb(79 92 255 / 0.5);
+  color-scheme: dark;
+  accent-color: var(--color-souk-accent);
+  --scrollbar-thumb: #46536e;
+  --scrollbar-track: #0b0d19;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 /* the light register. Same names, redrawn for paper: the canvas turns to the
@@ -134,6 +139,11 @@ wcm-modal {
   --metal-face: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 35%);
   --metal-scan: rgb(11 13 20 / 0.012);
   --metal-glow: rgb(91 100 120 / 0.45);
+  color-scheme: light;
+  accent-color: var(--color-souk-accent);
+  --scrollbar-thumb: #7b8498;
+  --scrollbar-track: #eef1f8;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 [data-theme='light'] body {
@@ -192,7 +202,7 @@ wcm-modal {
     background: transparent;
   }
   html::-webkit-scrollbar-thumb {
-    background: var(--color-souk-metal0);
+    background: var(--scrollbar-thumb);
     border-radius: 3px;
   }
   html::-webkit-scrollbar-corner {
@@ -201,8 +211,26 @@ wcm-modal {
   @supports not selector(::-webkit-scrollbar) {
     html {
       scrollbar-width: thin;
-      scrollbar-color: var(--color-souk-metal0) transparent;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     }
+  }
+  /* short standalone text reads better balanced; paragraphs avoid orphans */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* a native modal already traps focus and inerts the page; contain its scroll
+     so a gesture over the backdrop cannot move the page underneath */
+  dialog:modal {
+    overscroll-behavior: contain;
+  }
+  dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
   }
   @media (prefers-reduced-motion: reduce) {
     html {
@@ -227,7 +255,7 @@ wcm-modal {
   background: transparent;
 }
 .souk-modal-scroll::-webkit-scrollbar-thumb {
-  background: var(--color-souk-metal0);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 .souk-modal-scroll::-webkit-scrollbar-corner {
@@ -235,7 +263,22 @@ wcm-modal {
 }
 .souk-modal-scroll {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-souk-metal0) transparent;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* the wallet chooser is a native modal: the browser centres it, traps focus
+   and paints the backdrop. Keep the dialog chrome out of the card. */
+dialog.souk-wallet-dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  width: min(420px, calc(100vw - 32px));
+  max-width: 420px;
+  color: var(--color-souk-ink);
+}
+dialog.souk-wallet-dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
 }
 
 @layer utilities {
