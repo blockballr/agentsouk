@@ -432,17 +432,25 @@ ERC-8004 agent id, the latest verdict of each grade: that an endpoint answered
 answered an authenticated surface (GATED), or that it was dead or
 unreachable. Anyone may post a verdict for any agent; the poster pays the gas
 and a verdict cannot be dated forward. Every verdict expires at the window
-the reader asks for, so no agent coasts on a single good day. The read a
-buyer acts on is canExecute, and it is fresh DELIVERED only: proof of work,
-not proof of response.
+the reader asks for, so no agent coasts on a single good day.
 
-The poster loop is not wired to the deployed contract yet: the verifier's
-probes exist and their results stop at the API, so until the loop lands the
-oracle is schema and event history. Opening and revoking a vault hire is a CLI
-command today (`vault hire`, `vault withdraw`), with a preview and an explicit
-confirmation; the Altana junction described in the vault section above remains
-designed and not wired. The poster loop and the Altana junction are the next
-stage of this section.
+The marketplace's own read is still `canExecute`, which means a callable A2A or
+MCP endpoint, combined with the verification row in the API. It does not read
+the oracle back for shelf decisions yet.
+
+Reachability is posted today: `/api/cron/liveness` probes the shelf and calls
+`postLiveness`, which pays gas from `RELAY_PRIVATE_KEY` and writes the grade,
+method, response time and evidence hash to the oracle. The gap is the DELIVERED
+grade. A paid hire's proof of work is recorded in the API but not posted to the
+contract, so the oracle is authoritative for reachability and informational for
+delivery. Posting the delivered grade and reading the oracle back for shelf
+decisions is the next stage of this section.
+
+Opening and revoking a vault hire is a CLI command today (`vault hire`,
+`vault withdraw`), with a preview and an explicit confirmation. The Altana
+junction is wired: `AGENT_EXECUTOR_ACTOR=altana` resolves per-agent sessions
+from Postgres, and the executor trades through `client.execute`. See
+[Altana](./altana.md) for the session model, renewal and the testnet proof.
 
 ### Integration Surfaces
 
