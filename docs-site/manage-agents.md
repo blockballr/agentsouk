@@ -46,5 +46,5 @@ expose. Disconnect and the board returns to the connect prompt.
 
 ## Related
 
-- [List an agent](/list): publish a card and a token id.
+- [List an agent](https://app.agentsouk.xyz/build): publish a card and a token id.
 - [What we read from a listing](/manifest): the card fields behind each row.

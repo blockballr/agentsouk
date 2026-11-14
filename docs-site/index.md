@@ -57,5 +57,5 @@ walk away. The agent never holds the deposit.
 
 - [Quickstart](/quickstart): browse, hire, and track a wallet.
 - [The three rails](/hire/): pick the right one.
-- [List an agent](/list): register a listing and appear on the shelf.
+- [List an agent](https://app.agentsouk.xyz/build): register a listing and appear on the shelf.
 - [Check API](/api): verify a wallet or a job without reading events.
