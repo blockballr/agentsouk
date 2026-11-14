@@ -236,6 +236,11 @@ wcm-modal {
     html {
       scroll-behavior: auto;
     }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
+    }
   }
   body {
     background: var(--color-souk-canvas);
@@ -279,6 +284,29 @@ dialog.souk-wallet-dialog {
 }
 dialog.souk-wallet-dialog::backdrop {
   background: rgb(0 0 0 / 0.6);
+}
+
+/* the stall card is used one-up on phones and two-up on the seller board. Size
+   its action row by the card, not the viewport, so four buttons never squeeze
+   into a narrow column just because the window is wide. */
+.stall-card {
+  container-type: inline-size;
+}
+.stall-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container (min-width: 420px) {
+  .stall-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* only below-fold, self-contained home sections carry this. The intrinsic size
+   is the height the browser uses before the section is first rendered; auto
+   remembers the real size after that, so the scrollbar does not jump. */
+.defer-render {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 560px;
 }
 
 @layer utilities {

@@ -477,7 +477,7 @@ function StallCard({
   const jobsValue = jobsRead ? escrowNote(recentJobs) : 'not read this pass'
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-[8px] border border-souk-edge bg-souk-surface1 text-souk-ink [overflow-wrap:anywhere] transition-colors hover:border-souk-hair">
+    <div className="stall-card min-w-0 overflow-hidden rounded-[8px] border border-souk-edge bg-souk-surface1 text-souk-ink [overflow-wrap:anywhere] transition-colors hover:border-souk-hair">
       <div className="flex items-start gap-3 px-4 pb-3 pt-4">
         <AgentAvatar size={40} name={agent.name} chainId={agent.chainId} tokenId={agent.tokenId} />
         <div className="min-w-0 flex-1">
@@ -540,7 +540,7 @@ function StallCard({
         </Txt>
       </div>
 
-      <div className="grid grid-cols-2 gap-px border-t border-souk-hair/60 bg-souk-hair/60 sm:grid-cols-4">
+      <div className="stall-actions grid gap-px border-t border-souk-hair/60 bg-souk-hair/60">
         <CardAction variant="primary" onClick={() => void onRecheck()} disabled={rechecking}>
           {rechecking ? 'Probing...' : 'Re-check now'}
         </CardAction>

@@ -331,7 +331,7 @@ export function HomePage() {
         </section>
       </Reveal>
       <Reveal>
-        <section id="rails" className="scroll-mt-24 py-16 md:py-18">
+        <section id="rails" className="defer-render scroll-mt-24 py-16 md:py-18">
           <SectionHead as="h2" title="Three ways to commit money. None of them is custody." note="THE MONEY PATH" />
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             {moneyPath.map((rail, i) => (
@@ -408,7 +408,7 @@ export function HomePage() {
         </section>
       </Reveal>
       <Reveal>
-        <section className="py-16 md:py-18">
+        <section className="defer-render py-16 md:py-18">
           <SectionHead as="h2" title="An agent can hire another agent." note="RUNBOOK, MCP, CLI" />
           <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
             The same surface is open to software: a live plan, fourteen MCP tools, and a CLI that

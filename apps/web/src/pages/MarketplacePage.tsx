@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import type { AgentSummary } from '../core/types'
 import { defaultAvatarFor } from '../lib/default-avatar'
@@ -681,6 +682,9 @@ function AgentCard({
     ? defaultAvatarFor(agent.chain_id, String(agent.token_id))
     : agent.image_url ?? defaultAvatarFor(agent.chain_id, String(agent.token_id))
   const key = `${agent.chain_id}/${agent.token_id}`
+  const to = `/agents/${agent.chain_id}/${agent.token_id}`
+  const navigate = useNavigate()
+  const imgRef = useRef<HTMLImageElement>(null)
   const verdict = verdictFor(agent.chain_id, agent.verification)
   // the server already assembled the verdict; read it rather than rebuilding the
   // same state from verification + the card. gated keeps its own label because
@@ -722,6 +726,25 @@ function AgentCard({
     .find((p): p is string => typeof p === 'string' && p.trim().length > 0)
   const price = declared ? declared.split(/\s+or\s+|,/)[0].trim() : takesJobs(agent.skills) ? 'Quote at hire' : 'Price at hire'
   const priceLabel = price.length > 26 ? `${price.slice(0, 25)}...` : price
+
+  function openAgent(event: ReactMouseEvent<HTMLAnchorElement>) {
+    // a modifier click belongs to the browser: new tab, new window, download
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+    const img = imgRef.current
+    const doc = document as Document & {
+      startViewTransition?: (update: () => void) => { finished: Promise<void> }
+    }
+    if (!img || !doc.startViewTransition) return
+    event.preventDefault()
+    img.style.viewTransitionName = 'agent-mark'
+    const transition = doc.startViewTransition(() => {
+      flushSync(() => navigate(to))
+    })
+    transition.finished.finally(() => {
+      img.style.viewTransitionName = ''
+    })
+  }
+
   return (
     <article
       className={`group relative flex flex-col gap-3 overflow-hidden rounded-[16px] border border-souk-hair souk-glass p-4 ${
@@ -729,13 +752,15 @@ function AgentCard({
       }`}
     >
       <Link
-        to={`/agents/${agent.chain_id}/${agent.token_id}`}
+        to={to}
+        onClick={openAgent}
         onMouseEnter={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
         onFocus={() => prefetchAgent(agent.chain_id, String(agent.token_id))}
         className="flex flex-col gap-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
         <div className="flex items-start gap-3">
           <img
+            ref={imgRef}
             src={img}
             alt=""
             loading="lazy"
@@ -822,7 +847,8 @@ function AgentCard({
         </button>
       </div>
       <Link
-        to={`/agents/${agent.chain_id}/${agent.token_id}`}
+        to={to}
+        onClick={openAgent}
         title={
           gated
             ? 'Gated listing: open it to ask the seller for the access it issues.'

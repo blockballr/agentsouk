@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { questStepFor, type QuestStep } from '../lib/quest'
 import { QuestStrip } from '../components/QuestStrip'
@@ -247,6 +247,17 @@ export function AgentDetailPage() {
   const [error, setError] = useState(false)
   // one impression per page open, even while the panel below keeps re-reading
   const viewed = useRef<string | null>(null)
+  // the h1 is where focus goes when a card opens this page: the card that was
+  // focused is removed by the route, so focus would otherwise be abandoned
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const focusedFor = useRef<string | null>(null)
+  useEffect(() => {
+    if (!detail) return
+    const key = `${detail.chain_id}:${detail.token_id}`
+    if (focusedFor.current === key) return
+    focusedFor.current = key
+    titleRef.current?.focus({ preventScroll: true })
+  }, [detail])
   useEffect(() => {
     if (!detail) return
     const key = `${detail.chain_id}:${detail.token_id}`
@@ -726,6 +737,7 @@ export function AgentDetailPage() {
               <img
                 src={detail.image_url ?? defaultAvatarFor(Number(chainId), detail.token_id)}
                 alt=""
+                style={{ viewTransitionName: 'agent-mark' } as CSSProperties}
                 className="h-[92px] w-[92px] rounded-[12px] object-cover"
                 onError={(e) => {
                   // same rule as the card: an image that answers nothing shows its
@@ -742,9 +754,11 @@ export function AgentDetailPage() {
               <Txt size={11} lead={14} weight="bold" upper tone="muted" className="tracking-[0.08em]">
                 {CATEGORIES.find((c) => c.key === detail.category)?.label ?? detail.category ?? 'Agent'}
               </Txt>
-              <Txt display size={46} lead={50} weight="semibold" tone="ink" className="mt-1 block tracking-[-0.02em]">
-                {detail.name}
-              </Txt>
+              <h1 className="m-0 mt-1" ref={titleRef} tabIndex={-1}>
+                <Txt display size={46} lead={50} weight="semibold" tone="ink" className="block tracking-[-0.02em]">
+                  {detail.name}
+                </Txt>
+              </h1>
               <p className={cx('mt-2 max-w-[52ch] text-[15px] leading-[1.55] text-souk-slate', !descOpen && 'line-clamp-2')}>
                 {detail.description || 'No description on-chain.'}
               </p>
