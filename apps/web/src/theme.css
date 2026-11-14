@@ -303,10 +303,24 @@ dialog.souk-wallet-dialog::backdrop {
 
 /* only below-fold, self-contained home sections carry this. The intrinsic size
    is the height the browser uses before the section is first rendered; auto
-   remembers the real size after that, so the scrollbar does not jump. */
+   remembers the real size after that, so the scrollbar does not jump. The
+   estimate is per breakpoint because both sections stack on phones and roughly
+   double: 560px is the desktop height, 950px the one-column height. */
 .defer-render {
   content-visibility: auto;
-  contain-intrinsic-size: auto none auto 560px;
+  contain-intrinsic-size: auto var(--defer-height, 560px);
+}
+
+@media (max-width: 63.99rem) {
+  .defer-render {
+    --defer-height: 620px;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  .defer-render {
+    --defer-height: 950px;
+  }
 }
 
 @layer utilities {
