@@ -162,15 +162,16 @@ svg {
 
 a {
   color: var(--ds-ink-dim);
-  text-decoration: none;
-  border-bottom: 1px solid var(--ds-line-strong);
-  padding-bottom: 1px;
-  transition: color var(--ds-fast) var(--ds-swift), border-color var(--ds-fast) var(--ds-swift);
+  text-decoration-line: underline;
+  text-decoration-color: var(--ds-line-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color var(--ds-fast) var(--ds-swift), text-decoration-color var(--ds-fast) var(--ds-swift);
 }
 
 a:hover {
   color: var(--ds-accent-text);
-  border-color: currentColor;
+  text-decoration-color: currentColor;
 }
 
 button,
