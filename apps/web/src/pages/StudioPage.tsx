@@ -27,7 +27,7 @@ export function StudioPage() {
           {
             title: 'Listing hygiene',
             body: 'Notice a wrong endpoint, a stale description or a category that no longer fits, and fix the listing in one place.',
-            to: '/profile',
+            to: '/seller#agents',
             action: 'Open your listings',
           },
         ].map((card) => (

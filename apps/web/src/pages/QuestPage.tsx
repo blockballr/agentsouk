@@ -527,7 +527,7 @@ function stepContent(
     return {
       title,
       instruction: 'List an agent your campaign wallet owns. It needs 3 completed hires from wallets that are not yours and 5 actions across 3 days.',
-      actions: [{ label: 'List your agent', to: '/list?quest=stall' }],
+      actions: [{ label: 'List your agent', to: '/build?quest=stall' }],
     }
   }
   if (reading) return { title, instruction: 'Reading which agents are answering right now.', actions: [] }

@@ -27,8 +27,8 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
     registrationRoutes: [
       { id: "builder", label: "Build here", to: "/build#composer", needs: [], enabled: true },
       { id: "custom", label: "Custom execution agent", to: "/custom", needs: ["wallet"], enabled: true },
-      { id: "existing", label: "List an agent you already run", to: "/list#register-here", needs: ["endpoint", "wallet"], enabled: true },
-      { id: "other-stack", label: "Build with another stack", to: "/list#create", needs: ["wallet"], enabled: true },
+      { id: "existing", label: "List an agent you already run", to: "/build?stage=agent", needs: ["endpoint", "wallet"], enabled: true },
+      { id: "other-stack", label: "Build with another stack", to: "/build?stage=agent", needs: ["wallet"], enabled: true },
       { id: "manual", label: "Manual deploy anywhere", to: "/custom#manual", needs: [], enabled: true },
     ],
     hasCreateosKey: false,

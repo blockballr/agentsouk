@@ -82,9 +82,12 @@ function StepCard({ number, title, body, code, action }: StepCardProps) {
 export function StudioSteps({
   chainId,
   onReveal,
+  onContinue,
 }: {
   chainId: number | null
   onReveal?: () => void
+  // inside the onboarding path the last step moves on in place instead of leaving the page
+  onContinue?: () => void
 }) {
   // the addresses we publish are the ones for the chain this deployment serves
   const chainName = chainId === null ? null : chainId === 97 ? 'BSC testnet' : 'BSC'
@@ -166,7 +169,9 @@ export function StudioSteps({
           .
         </>
       ),
-      action: { label: 'Continue to listing', href: '/list' },
+      action: onContinue
+        ? { label: 'My agent is deployed', onClick: onContinue }
+        : { label: 'Continue to listing', href: '/build?stage=identity' },
     },
   ]
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { connectWallet } from '../lib/wallet-session'
+import { signPersonalMessage } from '../lib/wallet'
 import { Stack, Row, Txt, Btn, Pill, NoteBox, SectionHead, Label } from '../components/souk'
 import { Turnstile } from '../components/Turnstile'
 
@@ -91,9 +92,11 @@ export function BuildPage() {
     setSaving(true)
     setSaveError(null)
     try {
+      const ts = Date.now().toString()
+      const sig = await signPersonalMessage(who, `soukdio:save-agent:${who.toLowerCase()}::${ts}`)
       const res = await fetch(`${API_BASE}/builder/agents`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'x-wallet-signature': sig, 'x-wallet-timestamp': ts },
         body: JSON.stringify({ owner: who, blueprint }),
       })
       const body = (await res.json()) as SaveResult
@@ -122,7 +125,7 @@ export function BuildPage() {
           you the endpoint to list on chain.
         </Txt>
         <Link
-          to="/list#register-here"
+          to="/build?stage=agent"
           className="shrink-0 font-mono text-[10px] uppercase leading-[14px] text-souk-labels hover:text-souk-ink"
         >
           Have one already? List it →
@@ -237,7 +240,7 @@ export function BuildPage() {
             </Txt>
           </Stack>
           <Row gap={8} align="center">
-            <Link to={`/list?endpoint=${encodeURIComponent(saved.card ?? '')}`}>
+            <Link to={`/build?stage=identity&endpoint=${encodeURIComponent(saved.card ?? '')}`}>
               <Btn kind="primary">Register on chain</Btn>
             </Link>
             <Btn kind="off" onClick={() => { setSaved(null); setBlueprint(null); setPrompt('') }}>

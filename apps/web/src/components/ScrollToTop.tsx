@@ -32,26 +32,6 @@ export function ScrollToTop() {
         return
       }
     }
-    if (pathname === '/list') {
-      const focusLookup = () => {
-        const el = document.getElementById('endpoint-input') as HTMLInputElement | null
-        if (el) {
-          el.scrollIntoView({ behavior: 'auto', block: 'center' })
-          el.focus()
-          return true
-        }
-        return false
-      }
-      if (!focusLookup()) {
-        const t = window.setTimeout(focusLookup, 120)
-        const t2 = window.setTimeout(focusLookup, 400)
-        return () => {
-          window.clearTimeout(t)
-          window.clearTimeout(t2)
-        }
-      }
-      return
-    }
     const doScroll = () => {
       withoutSmooth(() => {
         window.scrollTo(0, 0)

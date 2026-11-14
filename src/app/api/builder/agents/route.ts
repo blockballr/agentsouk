@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyWalletAuth } from "@/lib/builder/auth";
 import { validateBlueprint } from "@/lib/builder/blueprint";
 import { builtAgentAddresses } from "@/lib/builder/hosting";
 import { isRevoked } from "@/lib/builder/keys";
@@ -54,6 +55,8 @@ export async function POST(req: NextRequest) {
   if (typeof body?.owner !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(body.owner)) {
     return json({ success: false, error: "owner must be a wallet address" }, 400);
   }
+  const auth = await verifyWalletAuth(req, body.owner, "save-agent");
+  if (!auth.ok) return json({ success: false, error: auth.error }, 401);
   const owner = body.owner.toLowerCase();
 
   try {

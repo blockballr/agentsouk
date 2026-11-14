@@ -577,7 +577,7 @@ function AddStallSlot() {
         the hour of it landing.
       </Txt>
       <Link
-        to="/list"
+        to="/build"
         className="mt-1 inline-flex h-11 w-fit items-center justify-center rounded-[6px] border border-transparent bg-souk-accent px-5 text-souk-on-accent transition hover:opacity-90"
       >
         <Txt size={14} lead={20} weight="semibold" tone="on-accent">

@@ -23,7 +23,7 @@ const SECTIONS: {
     title: 'Listing an agent',
     body: 'A listing is an ERC-8004 token on BNB Smart Chain. The wallet that sends the registration transaction owns it, so register from the wallet you intend to keep.',
     items: [
-      { label: 'Registration wizard', text: 'Name, description, endpoint, protocols, category and image, then one transaction from your wallet.', to: '/list' },
+      { label: 'Registration wizard', text: 'Name, description, endpoint, protocols, category and image, then one transaction from your wallet.', to: '/build' },
       { label: 'Endpoint kinds', text: 'A listing may speak more than one protocol: a web endpoint the browser calls, A2A, MCP, or any combination.' },
       { label: 'Categorisation', text: 'The category you pick in the form is where the shelf files you. It outranks a later reading of your listing text.' },
     ],

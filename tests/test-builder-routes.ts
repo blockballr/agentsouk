@@ -25,20 +25,23 @@ vi.mock("../src/lib/builder/compose", async (original) => ({
 }));
 
 import { NextRequest } from "next/server";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { POST as composeRoute } from "../src/app/api/builder/compose/route";
 import { POST as saveRoute } from "../src/app/api/builder/agents/route";
+import * as keyExport from "../src/app/api/builder/keys/export/route";
 import { GET as cardRoute } from "../src/app/api/built/[id]/.well-known/agent-card.json/route";
 import { GET as a2aGet, POST as a2aRoute } from "../src/app/api/built/[id]/a2a/route";
 import { EXAMPLE_BLUEPRINT } from "../src/lib/builder/compose";
 import { resetBuiltAgentsForTests } from "../src/lib/builder/store";
 import { resetRateLimitsForTests } from "../src/lib/rate-limit";
 
-const OWNER = "0x4bb30e3b3bc22082c1935fe3be7c07448e69c862";
+const ACCOUNT = privateKeyToAccount(generatePrivateKey());
+const OWNER = ACCOUNT.address.toLowerCase();
 
-function post(path: string, body: unknown, ip = "203.0.113.7") {
+function post(path: string, body: unknown, ip = "203.0.113.7", extra: Record<string, string> = {}) {
   return new NextRequest(`https://api.agentsouk.xyz${path}`, {
     method: "POST",
-    headers: { "content-type": "application/json", "x-forwarded-for": ip },
+    headers: { "content-type": "application/json", "x-forwarded-for": ip, ...extra },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
@@ -50,8 +53,11 @@ async function compose(prompt: unknown, ip?: string) {
   return { status: res.status, body: await res.json() };
 }
 
-async function save(owner: unknown, blueprint: unknown = EXAMPLE_BLUEPRINT) {
-  const res = await saveRoute(post("/api/builder/agents", { owner, blueprint }));
+async function save(owner: unknown, blueprint: unknown = EXAMPLE_BLUEPRINT, signer = ACCOUNT) {
+  const ts = Date.now().toString();
+  const sig = await signer.signMessage({ message: `soukdio:save-agent:${String(owner).toLowerCase()}::${ts}` });
+  const auth = { "x-wallet-signature": sig, "x-wallet-timestamp": ts };
+  const res = await saveRoute(post("/api/builder/agents", { owner, blueprint }, undefined, auth));
   return { status: res.status, body: await res.json() };
 }
 
@@ -120,6 +126,13 @@ describe("hosting a built agent", () => {
     expect((await save("not a wallet")).status).toBe(400);
   });
 
+  it("refuses a save the owner did not sign", async () => {
+    const stranger = privateKeyToAccount(generatePrivateKey());
+    expect((await save(OWNER, EXAMPLE_BLUEPRINT, stranger)).status).toBe(401);
+    const unsigned = await saveRoute(post("/api/builder/agents", { owner: OWNER, blueprint: EXAMPLE_BLUEPRINT }));
+    expect(unsigned.status).toBe(401);
+  });
+
   it("keeps a wallet to one listed agent built here", async () => {
     state.listed = [{ owner_address: OWNER.toUpperCase().replace("0X", "0x"), a2a_endpoint: "https://api.agentsouk.xyz/api/built/0123456789abcdef/a2a" }];
     expect((await save(OWNER)).status).toBe(409);
@@ -165,5 +178,32 @@ describe("a hosted agent", () => {
     expect(a2aGet().status).toBe(405);
     const broken = await a2aRoute(post(`/api/built/${saved.id}/a2a`, "{not json"), at(saved.id));
     expect(broken.status).toBe(400);
+  });
+});
+
+describe("exporting a seller key", () => {
+  const agentId = "0123456789abcdef";
+  const signed = async (nonce: string) => {
+    const message = `Agent Souk key export
+agent: ${agentId}
+by: ${OWNER}
+nonce: ${nonce}`;
+    const signature = await ACCOUNT.signMessage({ message });
+    return keyExport.POST(post("/api/builder/keys/export", { owner: OWNER, agentId, signature, nonce }));
+  };
+
+  it("has no unsigned way to read a key", () => {
+    expect("GET" in keyExport).toBe(false);
+  });
+
+  it("refuses a signature that is not recent", async () => {
+    expect((await signed("deadbeefdeadbeef")).status).toBe(403);
+    expect((await signed(`${Date.now() - 10 * 60 * 1000}-deadbeef`)).status).toBe(403);
+  });
+
+  it("lets a recent signature through to the key store", async () => {
+    const res = await signed(`${Date.now()}-deadbeef`);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("store unavailable");
   });
 });

@@ -80,7 +80,7 @@ export function ManageAccountPage() {
   async function revealKey(agent: BuiltAgent) {
     if (!account) return
     setBusy(agent.id)
-    const nonce = crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+    const nonce = `${Date.now()}-${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`
     const message = exportMessage(agent.id, account, nonce)
     const signature = await sign(account, message)
     if (!signature) {
@@ -110,7 +110,7 @@ export function ManageAccountPage() {
   async function revokeKey(agent: BuiltAgent) {
     if (!account) return
     setBusy(agent.id)
-    const nonce = crypto.randomUUID().replace(/-/g, '').slice(0, 32)
+    const nonce = `${Date.now()}-${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`
     const message = revokeMessage(agent.id, account, nonce)
     const signature = await sign(account, message)
     if (!signature) {

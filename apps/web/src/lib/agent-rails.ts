@@ -116,6 +116,57 @@ export function agentRails(detail: AgentDetail, house: boolean): AgentRail[] {
   return rails
 }
 
+export interface RailGap {
+  kind: RailKind
+  title: string
+  // the one thing that keeps this rail closed, in the order the seller can fix it
+  missing: string
+}
+
+// The rails agentRails left out, each with the first thing it is missing, in
+// shelf order. It reads the same facts as agentRails so a seller is never told
+// a rail is closed for a reason the shelf does not apply.
+export function railGaps(detail: AgentDetail, house: boolean): RailGap[] {
+  const open = new Set(agentRails(detail, house).map((rail) => rail.kind))
+  const text = manifestText(detail)
+  const jobOnly = sellsByJob(detail.skills)
+  const phase = detail.availability?.phase
+  const ruledOut =
+    phase === 'failing' ||
+    phase === 'delisted' ||
+    phase === 'dead' ||
+    phase === 'unreachable' ||
+    phase === 'unresponsive' ||
+    phase === 'restricted'
+  const off = detail.availability?.reason || 'The listing is off the shelf, so no rail is open.'
+  const gated = 'The endpoint answers only behind your own credentials, which the marketplace does not hold.'
+
+  const why: Record<RailKind, () => string> = {
+    vault: () => {
+      if (ruledOut) return off
+      if (!takesVault(detail.skills)) return 'The card does not declare the vault skill.'
+      if (!mentions(text, VAULT_BY_CHAIN[detail.chain_id])) return 'The card does not name the HireVault address.'
+      return 'The vault rail is not open for this listing.'
+    },
+    job: () => {
+      if (ruledOut) return off
+      if (detail.accessGated === true) return gated
+      if (!jobOnly && !takesJobs(detail.skills)) return 'The card does not declare that it takes ERC-8183 jobs.'
+      return 'A job quote needs an A2A endpoint, and the card publishes none.'
+    },
+    call: () => {
+      if (ruledOut) return off
+      if (detail.accessGated === true) return gated
+      if (jobOnly) return 'The card sells by job only, so a paid call would reach no delivery.'
+      return 'The card publishes no MCP or A2A endpoint to call.'
+    },
+  }
+
+  return (['vault', 'job', 'call'] as const)
+    .filter((kind) => !open.has(kind))
+    .map((kind) => ({ kind, title: KIND[kind].title, missing: why[kind]() }))
+}
+
 export function railSourceLabel(source: RailSource): string {
   if (source === 'agent-souk') return 'Built by Agent Souk'
   if (source === 'verified') return 'Verified rail'

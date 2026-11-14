@@ -260,7 +260,7 @@ export function ManifestBuilderPage() {
     <Stack gap={20} pad={[24, 24, 24, 24]}>
       <SectionHead title="Generate a manifest" note="ADVANCED" />
       <Txt size={13} lead={20} tone="slate" className="max-w-[68ch]">
-        The primary lane: describe what the agent should do, or bring your own code. The builder
+        An advanced option: describe what the agent should do, or bring your own code. The builder
         generates the manifest and execution code, then gives you a runnable repo to download and
         deploy on any Node 20 host. The agent acts with its own wallet.
       </Txt>

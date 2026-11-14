@@ -20,7 +20,7 @@ const links = [
   { to: '/agents', key: 'nav.marketplace' },
   { to: '/discover', key: 'nav.discover' },
   { to: '/compare', key: 'nav.compare' },
-  { to: '/list', key: 'nav.list' },
+  { to: '/build', key: 'nav.list' },
   { to: '/ongoing', key: 'nav.ongoing' },
   { to: '/quest', key: 'nav.quest' },
 ]

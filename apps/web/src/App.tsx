@@ -17,10 +17,9 @@ const DiscoverPage = lazy(() => import('./pages/DiscoverPage').then((m) => ({ de
 const AgentDetailPage = lazy(() => import('./pages/AgentDetailPage').then((m) => ({ default: m.AgentDetailPage })))
 const ComparePage = lazy(() => import('./pages/ComparePage').then((m) => ({ default: m.ComparePage })))
 const AdvantagePage = lazy(() => import('./pages/AdvantagePage').then((m) => ({ default: m.AdvantagePage })))
-const ListAgentPage = lazy(() => import('./pages/ListAgentPage').then((m) => ({ default: m.ListAgentPage })))
 const BuildPage = lazy(() => import('./pages/BuildPage').then((m) => ({ default: m.BuildPage })))
 const ManifestBuilderPage = lazy(() => import('./pages/ManifestBuilderPage').then((m) => ({ default: m.ManifestBuilderPage })))
-const CustomBuilderPage = lazy(() => import('./pages/CustomBuilderPage').then((m) => ({ default: m.CustomBuilderPage })))
+const OpenStallPage = lazy(() => import('./pages/OpenStallPage').then((m) => ({ default: m.OpenStallPage })))
 const OngoingPage = lazy(() => import('./pages/OngoingPage').then((m) => ({ default: m.OngoingPage })))
 const StationPage = lazy(() => import('./pages/StationPage').then((m) => ({ default: m.StationPage })))
 const QuestPage = lazy(() => import('./pages/QuestPage').then((m) => ({ default: m.QuestPage })))
@@ -49,6 +48,15 @@ function DocsRedirect() {
     window.location.replace(`https://docs.agentsouk.xyz${rest || '/'}${search}`)
   }, [pathname, search])
   return null
+}
+
+// /list was the listing page; the same registration is the identity stage of
+// /build now, so old links, quest links and ?endpoint= land there
+function ListRedirect() {
+  const { search, hash } = useLocation()
+  const params = new URLSearchParams(search)
+  if (!params.has('stage')) params.set('stage', hash === '#token-lookup' ? 'rails' : 'identity')
+  return <Navigate to={`/build?${params.toString()}`} replace />
 }
 
 // the old bot link page is retired: a Telegram link belongs in the group, so
@@ -103,10 +111,10 @@ function App() {
               <Route path="/settings/profile" element={<SettingsProfilePage />} />
               <Route path="/settings/security" element={<SettingsSecurityPage />} />
               <Route path="/account" element={<ManageAccountPage />} />
-              <Route path="/build" element={<CustomBuilderPage />} />
+              <Route path="/build" element={<OpenStallPage />} />
               <Route path="/build/manifest" element={<ManifestBuilderPage />} />
             <Route path="/build/strategy" element={<BuildPage />} />
-              <Route path="/list" element={<ListAgentPage />} />
+              <Route path="/list" element={<ListRedirect />} />
               <Route path="/seller" element={<SellerConsolePage />} />
               <Route path="/seller/stalls" element={<Navigate to="/seller#agents" replace />} />
               <Route path="/seller/face" element={<Navigate to="/seller#market-face" replace />} />

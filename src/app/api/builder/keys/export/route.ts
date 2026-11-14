@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMessage } from "viem";
+import { nonceIsFresh } from "@/lib/builder/auth";
 import { requestExport, completeExport } from "@/lib/builder/keys";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (typeof body?.signature !== "string" || typeof body?.nonce !== "string") {
     return json({ success: false, error: "signature and nonce are required" }, 400);
   }
+  if (!nonceIsFresh(body.nonce)) return json({ success: false, error: "signature expired, reload the page and try again" }, 403);
   const owner = body.owner;
   const agentId = body.agentId;
   const message = exportMessage(agentId, owner, body.nonce);
@@ -38,17 +40,4 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const completed = await completeExport(owner, agentId);
   if (!completed.ok) return json({ success: false, error: completed.reason }, 400);
   return json({ success: true, key: completed.key });
-}
-
-// GET /api/builder/keys/export?owner=0x...&agentId=<id>
-// completes the export: returns the raw key if the delay has passed
-export async function GET(req: NextRequest): Promise<NextResponse> {
-  const owner = req.nextUrl.searchParams.get("owner") ?? "";
-  const agentId = req.nextUrl.searchParams.get("agentId") ?? "";
-  if (!/^0x[0-9a-fA-F]{40}$/.test(owner) || !/^[0-9a-f]{16}$/.test(agentId)) {
-    return json({ success: false, error: "owner and agentId are required" }, 400);
-  }
-  const result = await completeExport(owner, agentId);
-  if (!result.ok) return json({ success: false, error: result.reason, readyAt: result.readyAt }, 400);
-  return json({ success: true, key: result.key });
 }

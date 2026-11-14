@@ -4,8 +4,6 @@ import { verifyWalletAuth } from "@/lib/builder/auth";
 import { pickPublicOrigin } from "@/lib/house-agent";
 import { registryAddress, encodeRegister } from "@/lib/registry-write";
 import { targetChainId } from "@/lib/types";
-import { emitNotification } from "@/lib/notifications";
-import { enqueueSweep } from "@/lib/verifications-store";
 
 export const dynamic = "force-dynamic";
 
@@ -74,18 +72,5 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     registerCalldata: calldata,
     note: "Send register(agentUri) to registryAddress from your wallet. Other marketplaces will fetch live metadata from agentUri.",
   };
-  // enqueue for verification so the marketplace checks the endpoint and activity
-  void enqueueSweep(agent.id, manifest.name, manifest.category ?? "general").catch(() => {});
-
-  // notify the owner that their agent is registered
-  void emitNotification({
-    wallet: owner,
-    kind: "custom_registered",
-    eventKey: agent.id,
-    title: "Agent registered",
-    body: `${manifest.name} is registered on chain. The marketplace will verify the endpoint and activity proof before listing.`,
-    href: `/profile#signals`,
-  }).catch(() => {});
-
   return json({ success: true, ok: true, prepared: true, id: agent.id, registration }, 200);
 }

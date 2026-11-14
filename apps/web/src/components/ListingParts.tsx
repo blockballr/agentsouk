@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { VerdictTone } from '../lib/verdict'
 import { verdictFor } from '../lib/verdict'
 import type { AgentDetail } from '../core/types'
@@ -12,18 +12,15 @@ import {
 import { getProvider } from '../lib/wallet'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { connectWallet } from '../lib/wallet-session'
-import { useTargetChain } from '../lib/target-chain'
 import { FAUCET_URL, MINT_PER_CLICK, isTestnet, readNativeBalance } from '../lib/mint'
 import {
   chainLabel,
   explorerTxBase,
 } from '../lib/contracts'
 import { getAgentDetail } from '../lib/api'
-import { RegisterWizard, initialChecks, type WizardStep } from '../components/RegisterWizard'
+import type { WizardStep } from './RegisterWizard'
 
-import { VerificationLoop, type CheckLine, type GasReadiness } from '../components/VerificationLoop'
-import { QuestStrip } from '../components/QuestStrip'
-import { Turnstile } from '../components/Turnstile'
+import type { GasReadiness } from './VerificationLoop'
 import {
   Btn,
   Dot,
@@ -35,7 +32,7 @@ import {
   Stack,
   Txt,
   type DotTone,
-} from '../components/souk'
+} from './souk'
 
 // the dot beside a verdict, mapped from the shared verdict tone
 const VERDICT_DOTTONE: Record<VerdictTone, DotTone> = {
@@ -68,159 +65,33 @@ function formatNative(wei: bigint): string {
   return shown ? `${whole}.${shown}` : '<0.00000001'
 }
 
-export function ListAgentPage() {
-  const [foundTokenId, setFoundTokenId] = useState<string | null>(null)
-  // The chain comes from the shared store, which starts unknown and learns the
-  // deployment's chain once from the server, so a direct load cannot paint a
-  // compiled-in mainnet default and hand a testnet participant wrong advice.
-  const target = useTargetChain()
-  const chain = target?.chainId ?? null
-  // a passport link opens the page with the guide for its listing step
-  const [searchParams] = useSearchParams()
-  const questing = searchParams.get('quest') === 'stall'
-  const [wizardStep, setWizardStep] = useState<WizardStep>('form')
-  // the loop the wizard runs, carried up so the side rail can draw it as the design does
-  const [loopChecks, setLoopChecks] = useState<CheckLine[] | null>(() => initialChecks('call'))
-
-  // Where the eye should be once the form is sent: the verifier card is the only
-  // thing that answers after the continue, and on a wide screen it sits in the
-  // side rail where a click at the bottom of the form leaves it out of view.
-  const [gasState, setGasState] = useState<GasReadiness | null>(null)
-  const verifierFocused = useRef(false)
-  useEffect(() => {
-    if (wizardStep === 'form') {
-      verifierFocused.current = false
-      return
-    }
-    if (verifierFocused.current) return
-    const card = document.getElementById('verifier-check')
-    if (!card) return
-    verifierFocused.current = true
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    card.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' })
-    card.focus({ preventScroll: true })
-  }, [wizardStep])
-
-  // the listing flow is several screens long, so the page opens on the pitch and
-  // one action rather than on the wizard
-  const [started, setStarted] = useState(true)
-  const guide = questing ? LISTING_GUIDE[wizardStep] : null
-
+// a listing counts for the campaign only once the wallet and the agent are entered with BNB
+export function SetAndEarnNote() {
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-28">
-      {/* hero - sell on agent souk: kicker carries the intent, the campaign card
-          leads, and the actions follow beneath it */}
-      <Stack gap={12} className="w-full">
-        <Txt size={11} lead={16} mono upper tone="data">
-          Sell on Agent Souk
-        </Txt>
-        {!started ? null : (
-          <>
-            {/* a listing counts for the campaign only once the wallet and the agent are entered with BNB.
-                the quest card's own indigo surface: white-family copy and white-alpha lines, so it
-                reads the same on paper */}
-            <Stack bg="indigo" pad={[14, 22, 14, 22]} gap={4} className="mt-2 max-w-[768px] border border-white/15">
-              <Txt size={13} lead={20} weight="bold" tone="white">
-                Listing for Set and Earn?
-              </Txt>
-              <Txt size={12} lead={18} tone="white" className="opacity-75">
-                Register your wallet with{' '}
-                <a
-                  href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-white/30 underline-offset-4 hover:text-white hover:opacity-100"
-                >
-                  BNB Smart Chain Set and Earn Campaign
-                </a>
-                .
-              </Txt>
-            </Stack>
-          </>
-        )}
-        <Row gap={10} align="center" className="flex-wrap">
-          {!started ? (
-            <Btn kind="primary" onClick={() => setStarted(true)}>
-              Get Listed
-            </Btn>
-          ) : (
-            <>
-              <Btn
-                kind="primary"
-                onClick={() =>
-                  document.getElementById('register-here')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }
-              >
-                Start listing
-              </Btn>
-              <Btn
-                kind="off"
-                onClick={() =>
-                  document.getElementById('token-lookup')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }
-              >
-                Already registered? Look it up
-              </Btn>
-            </>
-          )}
-        </Row>
-      </Stack>
-      {/* while the form is untouched the guide sits where the visitor lands; once the wizard
-          moves, it follows the wizard */}
-      {!started ? null : (
-        <>
-          {guide && wizardStep === 'form' && (
-            <QuestStrip
-              label={`Open your stall · ${guide.count}`}
-              text={guide.text}
-              stamp="stall"
-              className="mt-8 max-w-[768px]"
-            />
-          )}
-
-          {/* the same registration the Studio path makes, sent from the browser. Both
-              routes end at the same registry record and the same checks. */}
-          <div id="register-here" className="mt-[30px] scroll-mt-4">
-            <SectionHead title="1. List your agent" note="ONE TRANSACTION" />
-            <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
-              <Stack gap={20}>
-                {chain === null ? (
-                  <Txt size={13} lead={20} tone="steel" className="block">
-                    Checking the network before the registration step.
-                  </Txt>
-                ) : (
-                  <>
-                    {guide && wizardStep !== 'form' && (
-                      <QuestStrip
-                        label={`Open your stall · ${guide.count}`}
-                        text={guide.text}
-                        done={wizardStep === 'listed'}
-                        stamp="stall"
-                        className="max-w-[768px]"
-                      />
-                    )}
-                    <RegisterWizard chainId={chain} onStep={setWizardStep} onChecks={setLoopChecks} />
-                  </>
-                )}
-              </Stack>
-              <Stack gap={20}>
-                {chain !== null && <GasRequirement chainId={chain} onState={setGasState} />}
-                {loopChecks && <VerificationLoop checks={loopChecks} gas={gasState} />}
-              </Stack>
-            </div>
-          </div>
-          <LookupSection chainId={chain} onFound={setFoundTokenId} />
-          <ReviewRequestSection key={foundTokenId ?? 'none'} defaultTokenId={foundTokenId ?? ''} />
-        </>
-      )}
-      <Turnstile onToken={() => {}} />
-    </div>
+    <Stack bg="indigo" pad={[14, 22, 14, 22]} gap={4} className="max-w-[768px] border border-white/15">
+      <Txt size={13} lead={20} weight="bold" tone="white">
+        Listing for Set and Earn?
+      </Txt>
+      <Txt size={12} lead={18} tone="white" className="opacity-75">
+        Register your wallet with{' '}
+        <a
+          href="https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn?tab=overview"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-white/30 underline-offset-4 hover:text-white hover:opacity-100"
+        >
+          BNB Smart Chain Set and Earn Campaign
+        </a>
+        .
+      </Txt>
+    </Stack>
   )
 }
-const LISTING_GUIDE: Record<WizardStep, { count: string; text: string }> = {
+
+export const LISTING_GUIDE: Record<WizardStep, { count: string; text: string }> = {
   form: {
     count: 'Registration 1 of 3',
-    text: 'List one agent of your own. If you already run an agent, paste its endpoint in the form below. If you need to build one, the BNB Agent Studio guide sits under the form.',
+    text: 'List one agent of your own. If you already run an agent, paste its endpoint in the form below. If you need to build one, the BNB Agent Studio guide is on the Agent stage.',
   },
   prepared: {
     count: 'Registration 2 of 3',
@@ -247,7 +118,7 @@ const GAS_FLOOR_WEI = 10n ** 15n
 // records them as owner. So the wallet, not the marketplace, pays the gas, and a
 // fresh testnet wallet has none. This states the cost and the ways to cover it
 // before the register button is reached.
-function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas: GasReadiness | null) => void }) {
+export function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas: GasReadiness | null) => void }) {
   const account = useConnectedAccount()
   const [balance, setBalance] = useState<bigint | null>(null)
   const [reading, setReading] = useState(false)
@@ -494,7 +365,6 @@ function GasRequirement({ chainId, onState }: { chainId: number; onState?: (gas:
   )
 }
 
-// the code block under a step: surface two at radius 8, mono lines
 
 
 type LookupState =
@@ -506,7 +376,7 @@ type LookupState =
   | { phase: 'error' }
 
 // pure client-side string building from the seller's inputs; no backend, no AI
-function LookupSection({
+export function LookupSection({
   chainId,
   onFound,
 }: {
@@ -540,8 +410,8 @@ function LookupSection({
   }
 
   return (
-    <Stack gap={20} className="mt-[30px]">
-      <SectionHead title="3. Instant lookup" note="WE CHECK THE LIVE REGISTRY" />
+    <Stack gap={20}>
+      <SectionHead title="Instant lookup" note="WE CHECK THE LIVE REGISTRY" />
       <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
         Paste your token id, or your whole registry agent URL. We check the live registry.
       </Txt>
@@ -595,7 +465,7 @@ function LookupSection({
         {state.phase === 'missing' && (
           <NoteBox title="Not in the registry yet." className="max-w-[768px]">
             <Txt size={12} lead={18} tone="steel" className="block">
-              No live listing for that token id. Finish the Agent Studio registration in step 1, or
+              No live listing for that token id. Finish the registration in the Identity stage, or
               check the number: it is the token your registration minted, also shown by the
               registry index.
             </Txt>
@@ -607,7 +477,7 @@ function LookupSection({
   )
 }
 
-function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
+export function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
   const [tokenId, setTokenId] = useState(defaultTokenId)
   const [email, setEmail] = useState('')
   const [telegram, setTelegram] = useState('')
@@ -639,8 +509,8 @@ function ReviewRequestSection({ defaultTokenId }: { defaultTokenId: string }) {
   }
 
   return (
-    <Stack gap={20} className="mt-[30px]">
-      <SectionHead title="4. Request a listing review" note="A PERSON READS EVERY REQUEST" />
+    <Stack gap={20}>
+      <SectionHead title="Request a listing review" note="A PERSON READS EVERY REQUEST" />
       <Txt size={15} lead={23} tone="slate" className="block max-w-[1180px]">
         Met the checklist and still not listed? Send the token id and your Telegram handle. A
         person reads every request.

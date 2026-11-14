@@ -143,17 +143,25 @@ export function RegisterWizard({
   chainId,
   onStep,
   onChecks,
+  initialEndpoint,
+  onListed,
 }: {
   chainId: number
   onStep?: (step: WizardStep) => void
   onChecks?: (checks: CheckLine[] | null) => void
+  // an endpoint the caller already holds, so the lister does not paste it twice
+  initialEndpoint?: string
+  // the registry id, once the chain agrees with the registration
+  onListed?: (agentId: string) => void
 }) {
   const [step, setStep] = useState<WizardStep>('form')
   // lets the page's quest guide follow where the wizard has got to
   useEffect(() => {
     onStep?.(step)
   }, [step, onStep])
-  const [draft, setDraft] = useState<RegistrationDraft>(EMPTY)
+  const [draft, setDraft] = useState<RegistrationDraft>(() =>
+    initialEndpoint?.trim() ? { ...EMPTY, endpoint: initialEndpoint.trim() } : EMPTY,
+  )
   const [declaredModel, setDeclaredModel] = useState<'job-scoped' | 'underwritten'>('job-scoped')
   const [bondUsd, setBondUsd] = useState('')
   const [importId, setImportId] = useState('')
@@ -190,7 +198,7 @@ export function RegisterWizard({
   // down to this field.
   const endpointRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => {
-    if (window.location.pathname !== '/list') return
+    if (window.location.pathname !== '/build') return
     const hash = window.location.hash
     if (hash && hash !== '#register-here') return
     endpointRef.current?.focus()
@@ -650,6 +658,7 @@ export function RegisterWizard({
     if (confirmed.status === 'confirmed') {
       mark('confirm', 'passed', confirmed.verification?.detail ?? 'The chain agrees with the registration.')
       setStep('listed')
+      onListed?.(confirmed.agentId)
       // no probe here: a fresh token is not indexed yet, so an instant probe finds no endpoint
       // and that verdict would stand for twenty hours; the sweep checks it once it is indexed
       if ((draft.endpointKinds ?? []).some((k) => k !== 'web')) {

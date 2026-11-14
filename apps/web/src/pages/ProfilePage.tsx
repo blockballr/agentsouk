@@ -327,7 +327,7 @@ export function ProfilePage() {
               </Stack>
             </Row>
             <Link
-              to="/list"
+              to="/build"
               className="inline-flex h-11 shrink-0 items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-5 transition hover:border-souk-hair"
             >
               <Txt size={14} lead={20} weight="semibold" tone="slate">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMessage } from "viem";
+import { nonceIsFresh } from "@/lib/builder/auth";
 import { revokeKey } from "@/lib/builder/keys";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (typeof body?.signature !== "string" || typeof body?.nonce !== "string") {
     return json({ success: false, error: "signature and nonce are required" }, 400);
   }
+  if (!nonceIsFresh(body.nonce)) return json({ success: false, error: "signature expired, reload the page and try again" }, 403);
   const owner = body.owner;
   const agentId = body.agentId;
   const message = `Agent Souk key revoke\nagent: ${agentId}\nby: ${owner.toLowerCase()}\nnonce: ${body.nonce}`;

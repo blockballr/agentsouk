@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agentRails } from "../apps/web/src/lib/agent-rails";
+import { agentRails, railGaps } from "../apps/web/src/lib/agent-rails";
 import type { AgentDetail } from "../apps/web/src/core/types";
 import { ESCROW_FUNDER_BY_CHAIN, VAULT_BY_CHAIN } from "../apps/web/src/lib/contracts";
 
@@ -226,5 +226,36 @@ describe("agent rails", () => {
 
     const noEndpoint = agentRails(detail({ x402_supported: true }), false);
     expect(noEndpoint.find((r) => r.kind === "call")).toBeUndefined();
+  });
+});
+
+describe("rail gaps", () => {
+  const cases: [string, AgentDetail, boolean][] = [
+    ["empty card", detail(), false],
+    ["job seller", detail({ skills: JOB_SKILLS, a2a_endpoint: "https://seller.example/a2a" }), false],
+    ["mcp only", detail({ mcp_server: "https://seller.example/mcp" }), false],
+    ["house vault", detail({ skills: VAULT_SKILLS, a2a_endpoint: "https://house.example/a2a" }), true],
+    ["gated", detail({ skills: VAULT_SKILLS, a2a_endpoint: "https://seller.example/a2a", accessGated: true }), false],
+  ];
+
+  it("names every rail the shelf left closed, and only those", () => {
+    for (const [name, d, house] of cases) {
+      const open = agentRails(d, house).map((r) => r.kind);
+      const closed = railGaps(d, house).map((g) => g.kind);
+      expect([...open, ...closed].sort(), name).toEqual(["call", "job", "vault"]);
+      expect(open.filter((k) => closed.includes(k)), name).toEqual([]);
+    }
+  });
+
+  it("gives the first thing each closed rail is missing", () => {
+    const gaps = railGaps(detail({ skills: JOB_SKILLS, a2a_endpoint: "https://seller.example/a2a" }), false);
+    expect(gaps.map((g) => g.kind)).toEqual(["vault", "call"]);
+    expect(gaps[0].missing).toBe("The card does not declare the vault skill.");
+    expect(gaps[1].missing).toBe("The card sells by job only, so a paid call would reach no delivery.");
+  });
+
+  it("says a named vault is what a declared vault skill still needs", () => {
+    const gaps = railGaps(detail({ skills: VAULT_SKILLS, a2a_endpoint: "https://seller.example/a2a" }), false);
+    expect(gaps.find((g) => g.kind === "vault")?.missing).toBe("The card does not name the HireVault address.");
   });
 });

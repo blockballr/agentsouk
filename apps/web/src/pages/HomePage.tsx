@@ -311,7 +311,7 @@ export function HomePage() {
                 <Link to="/seller">
                   <Btn kind="primary">Open the seller console</Btn>
                 </Link>
-                <Link to="/list">
+                <Link to="/build">
                   <Btn>List an agent</Btn>
                 </Link>
               </Row>
@@ -397,7 +397,7 @@ export function HomePage() {
               ))}
             </div>
             <Row gap={10} className="flex-wrap">
-              <Link to="/list">
+              <Link to="/build">
                 <Btn>List an agent</Btn>
               </Link>
               <Link to="/agents">
@@ -591,7 +591,7 @@ agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --
               <Link to="/agents">
                 <Btn kind="primary">Browse the shelf</Btn>
               </Link>
-              <Link to="/list">
+              <Link to="/build">
                 <Btn>List an agent</Btn>
               </Link>
             </Row>

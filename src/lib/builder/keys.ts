@@ -39,6 +39,7 @@ async function ensureTable(): Promise<boolean> {
       await sql!`alter table builder_seller_keys add column if not exists export_requested_at timestamptz`;
       await sql!`alter table builder_seller_keys add column if not exists exported_at timestamptz`;
       await sql!`alter table builder_seller_keys add column if not exists revoked_at timestamptz`;
+      await sql!`alter table builder_seller_keys add column if not exists updated_at timestamptz`;
       return true;
     } catch {
       tableReady = null;
@@ -178,7 +179,7 @@ export async function completeExport(owner: string, agentId: string): Promise<{ 
   if (!rows[0].export_requested_at) return { ok: false, reason: "no export requested" };
   let key: string;
   try { key = decrypt(rows[0].encrypted_key); } catch { return { ok: false, reason: "decrypt failed" }; }
-  await sql`update builder_seller_keys set exported_at = now(), updated_at = now() where agent_id = ${agentId}`;
+  await sql`update builder_seller_keys set exported_at = now(), export_requested_at = null, updated_at = now() where agent_id = ${agentId}`;
   return { ok: true, key };
 }
 

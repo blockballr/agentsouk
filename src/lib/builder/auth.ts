@@ -35,3 +35,10 @@ export async function verifyWalletAuth(
   }
   return { ok: true };
 }
+
+// a signed nonce is only good for a few minutes: it must lead with the time
+// it was made, so a captured signature cannot be replayed later
+export function nonceIsFresh(nonce: string): boolean {
+  const made = Number(nonce.split("-")[0]);
+  return Number.isFinite(made) && Math.abs(Date.now() - made) <= WINDOW_MS;
+}

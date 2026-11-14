@@ -34,8 +34,7 @@ const RAIL: { title: string; items: RailItem[] }[] = [
   {
     title: 'rail.listings',
     items: [
-      { to: '/build', key: 'rail.build' },
-      { to: '/list', key: 'rail.list' },
+      { to: '/build', key: 'rail.list' },
     ],
   },
   {
