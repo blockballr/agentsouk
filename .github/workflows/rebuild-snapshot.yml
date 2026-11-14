@@ -1,10 +1,11 @@
 name: Rebuild the catalogue snapshot
 
 # The committed snapshot (data/agents.json on chain 56) is a cold-start
-# fallback; the live shelf refreshes every 15 minutes via refresh-catalogue.yml.
-# This workflow rebuilds the committed file twice a day so a cold start never
-# serves a snapshot more than ~12 hours old. The rebuild runs the same route a
-# deployment uses, so a local rebuild cannot drift from what ships.
+# fallback; the live shelf refreshes every 15 minutes through the Vercel cron on
+# /api/cron/refresh. This workflow rebuilds the committed file twice a day so a
+# cold start never serves a snapshot more than ~12 hours old. The rebuild runs
+# the same route a deployment uses, so a local rebuild cannot drift from what
+# ships.
 
 permissions:
   contents: write

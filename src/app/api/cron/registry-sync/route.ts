@@ -24,7 +24,14 @@ async function sync(req: NextRequest): Promise<NextResponse> {
   const fromParam = Number(url.searchParams.get("from") ?? "");
   const from = Number.isInteger(fromParam) && fromParam > 0 ? fromParam : undefined;
   const blocksParam = Number(url.searchParams.get("blocks") ?? "");
-  const blocks = Number.isInteger(blocksParam) && blocksParam > 0 ? blocksParam : undefined;
+  // a Vercel cron cannot carry a query string, so the scheduled run uses the
+  // same 4000-block window the retired GitHub workflow passed explicitly
+  const envBlocks = Number(process.env.REGISTRY_SYNC_BLOCKS ?? 4000);
+  const blocks = Number.isInteger(blocksParam) && blocksParam > 0
+    ? blocksParam
+    : Number.isInteger(envBlocks) && envBlocks > 0
+      ? envBlocks
+      : undefined;
 
   try {
     const identity = await syncRegistryFromChain({
