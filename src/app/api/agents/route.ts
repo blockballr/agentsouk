@@ -181,7 +181,7 @@ export async function GET(req: NextRequest) {
 
   const headers: Record<string, string> = {
     "Cache-Control": "public, max-age=0, must-revalidate",
-    "Vercel-CDN-Cache-Control": "public, s-maxage=600, stale-while-revalidate=600",
+    "Vercel-CDN-Cache-Control": "public, s-maxage=600, stale-while-revalidate=86400",
   };
   if (sp.get("timing") === "1") {
     headers["Server-Timing"] = `verifications;dur=${timing.verifications}, custom;dur=${timing.custom}, query;dur=${timing.query}, skills;dur=${timing.skills}, enrich;dur=${timing.enrich}, total;dur=${timing.total}`;
