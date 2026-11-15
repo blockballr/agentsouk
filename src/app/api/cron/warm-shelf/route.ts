@@ -15,6 +15,12 @@ const PATHS = [
   "/api/network",
 ];
 
+// The CDN keys its entry by host, and a cron invocation arrives on the
+// deployment host, so warming `req.url` warms an entry no visitor reads. In
+// production the public host is the only one worth warming; a preview warms
+// itself.
+const PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
+
 const TIMEOUT_MS = 15_000;
 
 function authorized(req: NextRequest): boolean {
@@ -55,8 +61,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: { "cache-control": "no-store" } });
   }
 
-  // the deployed host, not a hardcoded one, so a preview warms itself
-  const origin = new URL(req.url).origin;
+  // production warms the host visitors use; a preview warms its own deployment
+  const origin =
+    process.env.WARM_ORIGIN ??
+    (process.env.VERCEL_ENV === "production" ? PUBLIC_ORIGIN : new URL(req.url).origin);
   const results = await Promise.all(PATHS.map((path) => warm(origin, path)));
   const failed = results.filter((r) => r.status !== 200);
 
