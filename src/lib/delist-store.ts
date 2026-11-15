@@ -4,17 +4,10 @@
 // instead of throwing.
 
 import "server-only";
-import postgres from "postgres";
+import { dbClient } from "./db";
 import { pickDelisted, type DelistedRow } from "./listing-control";
 
-let sql: ReturnType<typeof postgres> | null = null;
-if (process.env.DATABASE_URL) {
-  sql = postgres(process.env.DATABASE_URL, {
-    max: 1,
-    idle_timeout: 20,
-    connect_timeout: 5,
-  });
-}
+const sql = dbClient();
 
 const memory = new Set<string>();
 let tableReady: Promise<boolean> | null = null;

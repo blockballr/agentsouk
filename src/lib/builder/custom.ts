@@ -3,7 +3,7 @@
 
 import "server-only";
 import { randomBytes } from "node:crypto";
-import postgres from "postgres";
+import { dbClient, type DbClient } from "@/lib/db";
 import { isVaultPolicy, type VaultPolicy } from "@/lib/vault-service";
 
 export interface CustomAction {
@@ -225,10 +225,7 @@ export function customCardMetadata(
 
 const ID = /^[0-9a-f]{16}$/;
 
-let sql: ReturnType<typeof postgres> | null = null;
-if (process.env.DATABASE_URL) {
-  sql = postgres(process.env.DATABASE_URL, { max: 1, idle_timeout: 20, connect_timeout: 5 });
-}
+const sql = dbClient();
 
 const memory = new Map<string, CustomAgent>();
 let tableReady: Promise<boolean> | null = null;
@@ -262,7 +259,7 @@ async function ensureTable(): Promise<boolean> {
   return tableReady;
 }
 
-async function store(): Promise<ReturnType<typeof postgres> | null> {
+async function store(): Promise<DbClient | null> {
   if (!sql) return null;
   if (!(await ensureTable())) throw new Error("custom agents store unavailable");
   return sql;

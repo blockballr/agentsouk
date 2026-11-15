@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/warm-shelf",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/sessions",
       "schedule": "11 3 * * *"
     },

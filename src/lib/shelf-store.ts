@@ -3,13 +3,13 @@
 // exactly as it did before, so a missing database degrades instead of throwing.
 
 import "server-only";
-import postgres from "postgres";
+import { dbClient, type DbClient } from "./db";
 import type { AgentSummary } from "./types";
 import { FRESH_ADMISSION_MS, isShelfReady } from "./agent-index";
 
 export type ShelfStoreMode = "shared" | "per-process";
 
-type Sql = ReturnType<typeof postgres>;
+type Sql = DbClient;
 
 let sql: Sql | null = null;
 let sqlResolved = false;
@@ -19,13 +19,7 @@ let sqlResolved = false;
 function client(): Sql | null {
   if (!sqlResolved) {
     sqlResolved = true;
-    sql = process.env.DATABASE_URL
-      ? postgres(process.env.DATABASE_URL, {
-          max: 1,
-          idle_timeout: 20,
-          connect_timeout: 5,
-        })
-      : null;
+    sql = dbClient();
   }
   return sql;
 }

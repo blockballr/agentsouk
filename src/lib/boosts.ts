@@ -2,7 +2,7 @@
 // memory + optional postgres; x402 settlement is the payment proof
 
 import "server-only";
-import postgres from "postgres";
+import { dbClient, type DbClient } from "./db";
 
 export interface Boost {
   id: string;
@@ -18,23 +18,14 @@ export interface Boost {
 }
 
 const boosts = new Map<string, Boost>();
-let sql: ReturnType<typeof postgres> | null = null;
 let tableReady = false;
 
 function keyOf(chainId: number, tokenId: string): string {
   return `${chainId}/${tokenId}`;
 }
 
-function db(): ReturnType<typeof postgres> | null {
-  if (!process.env.DATABASE_URL) return null;
-  if (!sql) {
-    sql = postgres(process.env.DATABASE_URL, {
-      max: 1,
-      idle_timeout: 20,
-      connect_timeout: 5,
-    });
-  }
-  return sql;
+function db(): DbClient | null {
+  return dbClient();
 }
 
 async function ensureTable(): Promise<boolean> {
@@ -109,9 +100,10 @@ export async function recordBoost(input: {
   };
   boosts.set(keyOf(input.chainId, input.tokenId), boost);
   void (async () => {
+    const sql = db();
     if (!(await ensureTable()) || !sql) return;
     try {
-      await sql!`
+      await sql`
         insert into boosts (id, chain_id, token_id, agent_name, days, payment_id, contact, created_at, expires_at, active)
         values (
           ${boost.id}, ${boost.chainId}, ${boost.tokenId}, ${boost.agentName}, ${boost.days},
@@ -133,9 +125,10 @@ export async function recordBoost(input: {
 }
 
 export async function hydrateBoostsFromDb(limit = 200): Promise<void> {
+  const sql = db();
   if (!(await ensureTable()) || !sql) return;
   try {
-    const rows = await sql!`
+    const rows = await sql`
       select id, chain_id, token_id, agent_name, days, payment_id, contact, created_at, expires_at, active
       from boosts
       where active = true

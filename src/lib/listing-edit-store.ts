@@ -3,18 +3,11 @@
 // refused rather than answered as saved
 
 import "server-only";
-import postgres from "postgres";
+import { dbClient } from "./db";
 import { cached, invalidate } from "./short-cache";
 import type { ListingEdit, ListingExample, StoredListingEdit } from "./listing-edit";
 
-let sql: ReturnType<typeof postgres> | null = null;
-if (process.env.DATABASE_URL) {
-  sql = postgres(process.env.DATABASE_URL, {
-    max: 1,
-    idle_timeout: 20,
-    connect_timeout: 5,
-  });
-}
+const sql = dbClient();
 
 const memory = new Map<string, StoredListingEdit>();
 let tableReady: Promise<boolean> | null = null;

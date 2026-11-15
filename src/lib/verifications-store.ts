@@ -2,23 +2,14 @@
 // reads from postgres or falls back to data/verifications.json file
 
 import "server-only";
-import postgres from "postgres";
+import { dbClient } from "./db";
 import { recordCheck } from "./history-store";
 import type { Verification } from "@/lib/types";
 import { targetChainId } from "@/lib/types";
 import type { RecordedVerification } from "./verifications";
 
-let sql: ReturnType<typeof postgres> | null = null;
-
-if (process.env.DATABASE_URL) {
-  sql = postgres(process.env.DATABASE_URL, {
-    max: 1,
-    idle_timeout: 20,
-    connect_timeout: 5,
-    // keep a slow Neon/pooler from stalling every marketplace request
-    transform: { undefined: null },
-  });
-}
+// one connection for the whole instance, shared with every other store
+const sql = dbClient();
 
 let tableReady: Promise<boolean> | null = null;
 

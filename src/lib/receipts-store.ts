@@ -2,7 +2,7 @@
 // Only import from server code (it pulls in a node driver); wraps the in-memory ledger in x402.ts as a write-through cache.
 
 import "server-only";
-import postgres from "postgres";
+import { dbClient } from "./db";
 import {
   createPublicClient,
   createWalletClient,
@@ -19,9 +19,7 @@ import {
 import { BSC_TESTNET_CHAIN_ID, settlementAsset } from "./types";
 import { rpcTransport } from "./rpc";
 
-const sql = process.env.DATABASE_URL
-  ? postgres(process.env.DATABASE_URL, { max: 1, idle_timeout: 20, connect_timeout: 5 })
-  : null;
+const sql = dbClient();
 
 let initPromise: Promise<boolean> | null = null;
 
