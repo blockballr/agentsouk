@@ -36,7 +36,13 @@ async function warm(origin: string, path: string) {
   const started = Date.now();
   const abort = AbortSignal.timeout(TIMEOUT_MS);
   try {
-    const res = await fetch(origin + path, { cache: "no-store", signal: abort });
+    // no-cache asks the CDN to go to the function and store the answer, which
+    // keeps both the instance and the edge entry fresh; a plain request would
+    // be answered from the edge and warm nothing
+    const res = await fetch(origin + path, {
+      headers: { "cache-control": "no-cache" },
+      signal: abort,
+    });
     // drain the body so the function finishes its work and the edge stores it
     const body = await res.text();
     return {
