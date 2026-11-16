@@ -60,7 +60,7 @@ export function FluxLeadSection() {
           exits as the US session moves.
         </Txt>
         <Txt size={13} lead={20} tone="steel" className="mt-3 block max-w-[46ch]">
-          You keep the position. The operator can only decrease, collect and widen, under caps and a kill switch.
+          You keep the position. Flux LP can only take liquidity out, collect fees or widen the range, under caps and a kill switch.
         </Txt>
         <div className="mt-7 flex flex-wrap items-center gap-2.5">
           <a href={FLUX_URL}>
@@ -139,7 +139,7 @@ export function FluxLeadSection() {
           ) : null}
 
           <Txt size={11} lead={16} tone="steel" className="mt-3 block">
-            The pools' own figures, read live. Not Flux LP's results.
+            The pools' own figures, read live, shared by everyone providing liquidity. Not Flux LP's results, and a stock move can outweigh a day of fees.
           </Txt>
         </div>
       ) : null}

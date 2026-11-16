@@ -62,6 +62,6 @@ export function timeAgo(iso: string, now = Date.now()): string {
 
 export const RAIL_LABEL: Record<FeedItem['rail'], string> = {
   vault: 'Vault',
-  escrow: 'Escrow',
-  x402: 'Direct',
+  escrow: 'Pay on delivery',
+  x402: 'Pay per answer',
 }

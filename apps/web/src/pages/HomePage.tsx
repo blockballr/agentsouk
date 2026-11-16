@@ -21,13 +21,13 @@ const TIMING = { label: 0, headline: 120, body: 260, live: 420 }
 // how the money is held, one line each, in the order the shelf leads
 const holds = [
   { name: 'Vault', line: 'The contract holds the deposit. You can withdraw at any time.' },
-  { name: 'Operator', line: 'You keep the position. The agent can only decrease, collect and widen.' },
-  { name: 'Escrow', line: 'The price is locked until the work is delivered.' },
+  { name: 'Your position', line: 'You keep it. The agent can only take liquidity out, collect fees or widen the range.' },
+  { name: 'Pay on delivery', line: 'Your payment is held until the work is delivered, then released.' },
 ]
 
 const buildPaths = [
   { name: 'BNB Agent Studio', line: 'Build and deploy, then list it here.', to: '/build?stage=agent' },
-  { name: 'Agent Souk builder', line: 'Start from a manifest and our runtime.', to: '/build/manifest' },
+  { name: 'Agent Souk builder', line: 'Describe your agent and we host it.', to: '/build/manifest' },
   { name: 'Vault SDK', line: 'Run an agent inside a vault hire.', href: 'https://www.npmjs.com/package/@agentsouk/vault-sdk' },
 ]
 

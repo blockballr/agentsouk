@@ -45,8 +45,11 @@ export function ProofFeedList({ feed, chainId, rows }: { feed: FeedState; chainI
               <span className="hidden font-mono text-[13px] text-souk-ink sm:block">
                 {item.amount ? `${item.amount} ${item.symbol ?? ''}`.trim() : ''}
               </span>
-              <span className="col-start-2 row-start-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-data sm:col-start-auto sm:row-start-auto">
-                {RAIL_LABEL[item.rail]} tx
+              <span
+                title={RAIL_LABEL[item.rail]}
+                className="col-start-2 row-start-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-data sm:col-start-auto sm:row-start-auto"
+              >
+                Transaction
               </span>
             </a>
           </li>
