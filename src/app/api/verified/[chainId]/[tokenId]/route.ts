@@ -3,6 +3,7 @@ import { loadDelisted } from "@/lib/delist-store";
 import { firstPartyAgentsFor } from "@/lib/first-party-copy";
 import { registryAddress } from "@/lib/registry-write";
 import { getAgentByToken } from "@/lib/scanner";
+import { isTeamWallet } from "@/lib/team-wallets";
 import { decideMark, markMessage, signMark } from "@/lib/verified-mark";
 import { loadVerifications } from "@/lib/verifications";
 
@@ -36,7 +37,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ chainId
   const decision = decideMark({
     status: verifications.get(tokenId)?.status ?? null,
     delisted: delisted.has(tokenId),
-    house: firstPartyAgentsFor(chainId).some((a) => a.tokenId === tokenId),
+    // ours if it is on the house list, or owned by a wallet the team operates;
+    // agents built in their own repos, such as Flux LP, are only the second
+    house: firstPartyAgentsFor(chainId).some((a) => a.tokenId === tokenId) || isTeamWallet(agent?.owner_address),
     hosted: endpoint.includes("/api/built/"),
   });
 
