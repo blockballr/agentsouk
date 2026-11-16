@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { classifyAgent } from "@/lib/categories";
 import { recentChecks } from "@/lib/history-store";
 import { resultsFor, type AgentResult } from "@/lib/agent-results";
+import { firstPartyCategory } from "@/lib/first-party-copy";
 import { loadJobsByToken } from "@/lib/durable-store";
 import { indexedThrough, providerJobStats, providersOfJobs, type ProviderJobStats } from "@/lib/job-index";
 import { cardCompleteness, rankPeers, searchTermsFor, type PeerCandidate } from "@/lib/peer-rank";
-import { fetchAgentDetail, getAgentByToken, searchAgents } from "@/lib/scanner";
+import { fetchAgentDetail, getAgentByToken, queryAgents, searchAgents } from "@/lib/scanner";
 import { isTeamWallet } from "@/lib/team-wallets";
 import type { AgentCardSkill, AgentDetail, AgentSummary } from "@/lib/types";
 
@@ -168,7 +169,12 @@ export async function GET(req: NextRequest) {
   const subject = (await getAgentByToken(chainId, tokenId)) as AgentDetail | null;
   if (!subject) return NextResponse.json({ success: false, error: "agent not found" }, { status: 404 });
   const subjectCandidate = candidateFrom(subject as unknown as AgentSummary);
-  const listedCategory = (subject as { category?: string }).category;
+  // the shelf files every listing under a tab, and that beats a re-read of its
+  // text, which misses a description that never names its category
+  const shelved = (await queryAgents({ limit: 5000, includeHouse: true, includeDelisted: true }).catch(() => ({ items: [] as AgentSummary[] }))).items.find(
+    (a) => String(a.token_id) === tokenId,
+  );
+  const listedCategory = firstPartyCategory(chainId, tokenId) ?? shelved?.category ?? (subject as { category?: string }).category;
   if (listedCategory && listedCategory !== "general") subjectCandidate.category = listedCategory;
 
   const terms = searchTermsFor(subjectCandidate.category === "general" ? undefined : subjectCandidate.category, subject.name ?? "");
