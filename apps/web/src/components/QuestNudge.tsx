@@ -202,7 +202,10 @@ export function QuestNudge() {
   const mode = questModeFor(wallet)
   // the way back in belongs to the wallet that started; anyone else is still invited
   const started = wallet !== null && (mode === 'active' || mode === 'quit')
-  const hidden = pathname.startsWith('/quest') || pathname.startsWith('/agents/')
+  // the build path carries its own passport strip inside the flow, and a
+  // floating card over a five stage form is in the way
+  const hidden =
+    pathname.startsWith('/quest') || pathname.startsWith('/agents/') || pathname.startsWith('/build')
   // the pages that open on a grid of agent cards: the invitation docks at the
   // foot instead of hanging over the first row
   const onGrid = pathname === '/agents' || pathname === '/discover'

@@ -144,6 +144,7 @@ export function RegisterWizard({
   onStep,
   onChecks,
   initialEndpoint,
+  endpointLocked,
   onListed,
 }: {
   chainId: number
@@ -151,6 +152,9 @@ export function RegisterWizard({
   onChecks?: (checks: CheckLine[] | null) => void
   // an endpoint the caller already holds, so the lister does not paste it twice
   initialEndpoint?: string
+  // the caller collected the endpoint in an earlier stage, so the field is a
+  // read-only record here rather than a second ask
+  endpointLocked?: boolean
   // the registry id, once the chain agrees with the registration
   onListed?: (agentId: string) => void
 }) {
@@ -195,14 +199,16 @@ export function RegisterWizard({
 
   // Only the listing intent opens on the endpoint. Arriving from the build routes
   // leaves the page on the section that was asked for, rather than dragging it
-  // down to this field.
+  // down to this field. A locked endpoint was already given, so there is nothing
+  // to type and nothing to focus.
   const endpointRef = useRef<HTMLInputElement | null>(null)
   useEffect(() => {
+    if (endpointLocked) return
     if (window.location.pathname !== '/build') return
     const hash = window.location.hash
     if (hash && hash !== '#register-here') return
     endpointRef.current?.focus()
-  }, [])
+  }, [endpointLocked])
 
   // the list page draws the same panel in its side rail, so the wizard reports its
   // checks outward instead of holding the panel itself. Before the checks run it
@@ -746,8 +752,10 @@ export function RegisterWizard({
         <div className="min-w-0">
           <h3 className="font-serif text-2xl font-medium">List your agent</h3>
           <p className="mt-2 max-w-[56ch] text-sm leading-relaxed text-souk-muted">
-            Paste the endpoint first. We read the agent card it serves and fill the listing, then
-            you edit anything before paying gas. Registration is on {chainLabel(displayChain)}.
+            {endpointLocked
+              ? 'The endpoint is the one you gave in the previous stage. We read the agent card it serves and fill the listing, then you edit anything before paying gas.'
+              : 'Paste the endpoint first. We read the agent card it serves and fill the listing, then you edit anything before paying gas.'}{' '}
+            Registration is on {chainLabel(displayChain)}.
           </p>
         </div>
         <span className="micro shrink-0 rounded-full border border-souk-hair px-3 py-1 text-souk-muted">
@@ -758,7 +766,7 @@ export function RegisterWizard({
       <div className="mt-6 space-y-5">
         <ol className="grid gap-2 sm:grid-cols-3">
           {[
-            ['1', 'Paste the endpoint', 'or an existing token id'],
+            ['1', endpointLocked ? 'Endpoint' : 'Paste the endpoint', endpointLocked ? 'from stage 2' : 'or an existing token id'],
             ['2', 'Confirm the card', 'name, words, category'],
             ['3', 'Register on chain', 'one transaction'],
           ].map(([n, label, detail]) => (
@@ -780,36 +788,52 @@ export function RegisterWizard({
             <CardState state={cardState} />
           </div>
 
-          <label className="mt-3 block">
-            <span className="micro text-souk-muted">Endpoint</span>
-            <input
-              id="endpoint-input"
-              ref={endpointRef}
-              value={draft.endpoint}
-              onChange={(e) => {
-                set('endpoint', e.target.value)
-                setProbe(null)
-              }}
-              disabled={busy || step !== 'form'}
-              className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
-              placeholder="https://your-agent.example/.well-known/agent-card.json"
-            />
-            {endpointFault ? (
-              <span className="mt-1.5 block text-xs leading-relaxed text-souk-peach">
-                {endpointFault}
-              </span>
-            ) : (
+          {endpointLocked ? (
+            <div className="mt-3">
+              <span className="micro text-souk-muted">Endpoint</span>
+              <div className="mt-1.5 break-all rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-xs text-souk-ink">
+                {draft.endpoint}
+              </div>
               <span className="mt-1.5 block text-xs leading-relaxed text-souk-muted">
-                Paste the messaging endpoint buyers call, usually /a2a, not the card link. The card fills the next step either way.
+                Taken from the Agent stage. Go back there to change it.
               </span>
-            )}
-            {(draft.endpoint ?? '').trim().match(/\/(\.well-known\/)?agent-card\.json$/i) ? (
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 border border-souk-peach/40 bg-souk-peach/5 px-2.5 py-1.5">
-                {/* a card link answers html, and the verifier grades it dead; the
-                    messaging link lives beside the card on the same host */}
-                <span className="text-[11px] leading-4 text-souk-peach">
-                  That is a card link: buyers call the messaging endpoint instead. Paste the /a2a link beside it.
+            </div>
+          ) : (
+            <label className="mt-3 block">
+              <span className="micro text-souk-muted">Endpoint</span>
+              <input
+                id="endpoint-input"
+                ref={endpointRef}
+                value={draft.endpoint}
+                onChange={(e) => {
+                  set('endpoint', e.target.value)
+                  setProbe(null)
+                }}
+                disabled={busy || step !== 'form'}
+                className="mt-1.5 w-full rounded-[12px] border border-souk-hair bg-souk-surface2 px-3.5 py-2.5 font-mono text-base text-souk-ink outline-none transition focus:border-souk-sky focus-visible:outline-2 focus-visible:outline-souk-sky disabled:opacity-60 sm:text-xs"
+                placeholder="https://your-agent.example/.well-known/agent-card.json"
+              />
+              {endpointFault ? (
+                <span className="mt-1.5 block text-xs leading-relaxed text-souk-peach">
+                  {endpointFault}
                 </span>
+              ) : (
+                <span className="mt-1.5 block text-xs leading-relaxed text-souk-muted">
+                  Paste the messaging endpoint buyers call, usually /a2a, not the card link. The card fills the next step either way.
+                </span>
+              )}
+            </label>
+          )}
+          {(draft.endpoint ?? '').trim().match(/\/(\.well-known\/)?agent-card\.json$/i) ? (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2 border border-souk-peach/40 bg-souk-peach/5 px-2.5 py-1.5">
+              {/* a card link answers html, and the verifier grades it dead; the
+                  messaging link lives beside the card on the same host */}
+              <span className="text-[11px] leading-4 text-souk-peach">
+                {endpointLocked
+                  ? 'That is a card link: buyers call the messaging endpoint beside it. Go back to the Agent stage and paste the /a2a link.'
+                  : 'That is a card link: buyers call the messaging endpoint instead. Paste the /a2a link beside it.'}
+              </span>
+              {!endpointLocked && (
                 <button
                   type="button"
                   disabled={busy || step !== 'form'}
@@ -823,27 +847,29 @@ export function RegisterWizard({
                 >
                   Use the /a2a link beside it
                 </button>
-              </div>
-            ) : null}
-          </label>
+              )}
+            </div>
+          ) : null}
 
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-souk-hair pt-3">
-            <span className="micro text-souk-muted">Already on chain?</span>
-            <input
-              value={importId}
-              onChange={(e) => {
-                setImportId(e.target.value)
-                setImportErr(null)
-              }}
-              inputMode="numeric"
-              placeholder="ERC-8004 token id"
-              className="h-9 w-[170px] border border-souk-hair bg-souk-surface2 px-2.5 font-mono text-xs text-souk-ink outline-none focus:border-souk-sky"
-            />
-            <Btn kind="off" disabled={importing || importId.trim().length === 0} onClick={() => void importToken()}>
-              {importing ? 'Reading…' : 'Use its endpoint'}
-            </Btn>
-            {importErr ? <span className="text-xs text-souk-peach">{importErr}</span> : null}
-          </div>
+          {!endpointLocked && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-souk-hair pt-3">
+              <span className="micro text-souk-muted">Already on chain?</span>
+              <input
+                value={importId}
+                onChange={(e) => {
+                  setImportId(e.target.value)
+                  setImportErr(null)
+                }}
+                inputMode="numeric"
+                placeholder="ERC-8004 token id"
+                className="h-9 w-[170px] border border-souk-hair bg-souk-surface2 px-2.5 font-mono text-xs text-souk-ink outline-none focus:border-souk-sky"
+              />
+              <Btn kind="off" disabled={importing || importId.trim().length === 0} onClick={() => void importToken()}>
+                {importing ? 'Reading…' : 'Use its endpoint'}
+              </Btn>
+              {importErr ? <span className="text-xs text-souk-peach">{importErr}</span> : null}
+            </div>
+          )}
 
           <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
             <label className="block">
