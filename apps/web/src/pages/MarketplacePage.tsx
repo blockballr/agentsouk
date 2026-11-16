@@ -22,8 +22,8 @@ import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../compo
 // what replaces that order.
 const jobSorts = [
   { key: 'vault', label: 'VAULT' },
-  { key: 'jobs', label: 'ESCROW' },
-  { key: 'direct', label: 'DIRECT' },
+  { key: 'jobs', label: 'PAY ON DELIVERY' },
+  { key: 'direct', label: 'PAY PER ANSWER' },
 ] as const
 
 const defaultSorts = [
@@ -182,6 +182,9 @@ export function MarketplacePage() {
         }
         return true
       })
+      .map((a, i) => ({ a, i, rank: shelfRank(a) }))
+      .sort((x, y) => x.rank - y.rank || x.i - y.i)
+      .map((x) => x.a)
     : []
 
   // The catalogue's own freshness: the shared store's refresh time when it has
@@ -725,7 +728,8 @@ function AgentCard({
     .map((s) => (s as { price?: unknown }).price)
     .find((p): p is string => typeof p === 'string' && p.trim().length > 0)
   const price = declared ? declared.split(/\s+or\s+|,/)[0].trim() : takesJobs(agent.skills) ? 'Quote at hire' : 'Price at hire'
-  const priceLabel = price.length > 26 ? `${price.slice(0, 25)}...` : price
+  const plain = price.replace(/\s*\([^)]*\)\s*$/, '')
+  const priceLabel = plain.length > 26 ? `${plain.slice(0, 25)}...` : plain
 
   function openAgent(event: ReactMouseEvent<HTMLAnchorElement>) {
     // a modifier click belongs to the browser: new tab, new window, download
@@ -780,8 +784,15 @@ function AgentCard({
             <div className="truncate font-serif text-[19px] font-semibold leading-[26px] tracking-[-0.01em] text-souk-ink">
               {agent.name}
             </div>
-            <div className="truncate font-mono text-[10.5px] leading-4 text-souk-muted">
-              {firstParty ? OPERATED_BY_LABEL : shortAddress(agent.owner_address)}
+            <div className="flex min-w-0 items-center gap-2">
+              {hasMark(agent) ? (
+                <span className="shrink-0 rounded-full border border-souk-good/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[0.06em] text-souk-good">
+                  Verified
+                </span>
+              ) : null}
+              <span className="truncate font-mono text-[10.5px] leading-4 text-souk-muted">
+                {firstParty ? OPERATED_BY_LABEL : shortAddress(agent.owner_address)}
+              </span>
             </div>
           </div>
         </div>
@@ -790,11 +801,9 @@ function AgentCard({
           <span className="min-w-0 truncate font-mono text-[13px] text-souk-ink" title={price}>
             {priceLabel}
           </span>
-          {agent.x402_supported ? (
-            <span className="shrink-0 border border-souk-hair px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-souk-muted">
-              x402
-            </span>
-          ) : null}
+          <span className="shrink-0 text-[11px] text-souk-muted">
+            {jobOnly || takesJobs(agent.skills) ? 'pay on delivery' : takesVault(agent.skills) ? 'money stays in a vault' : 'pay per answer'}
+          </span>
           <OnChainBadge
             online={takesVault(agent.skills) || classifyExecution(agent.description ?? '').executes}
             className="ml-auto shrink-0"
@@ -824,15 +833,18 @@ function AgentCard({
 
       </Link>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-souk-hair pt-2 font-mono text-[10px] text-souk-muted">
-        <span className="whitespace-nowrap text-souk-data">{`#${agent.token_id}`}</span>
-        {score ? <span>{`score ${score}`}</span> : null}
-        {reviews > 0 ? <span>{`${formatNumber(reviews)} review${reviews === 1 ? '' : 's'}`}</span> : null}
+      <div className="mt-auto flex items-center gap-3 border-t border-souk-hair pt-2 font-mono text-[10px] text-souk-muted">
+        <span className="min-w-0 truncate">
+          <span className="text-souk-data">{`#${agent.token_id}`}</span>
+          {score ? ` · score ${score}` : ''}
+          {reviews > 0 ? ` · ${formatNumber(reviews)} review${reviews === 1 ? '' : 's'}` : ''}
+        </span>
         <button
           type="button"
           onClick={() => onToggle(key)}
           aria-pressed={checked}
           aria-label={`Compare: ${agent.name}`}
+          title="Add to compare"
           className="ml-auto inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-[10px] uppercase tracking-[0.06em] text-souk-muted transition hover:text-souk-data focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
         >
           <span
@@ -843,32 +855,36 @@ function AgentCard({
           >
             {checked ? <span className="h-1.5 w-1.5 bg-souk-data" /> : null}
           </span>
-          Compare
+          <span className="lg:hidden 2xl:inline">Compare</span>
         </button>
-      </div>
-      <Link
-        to={to}
-        onClick={openAgent}
-        title={
-          gated
-            ? 'Gated listing: open it to ask the seller for the access it issues.'
-            : jobOnly
-              ? 'This agent sells by ERC-8183 job: it quotes a price, the job is funded in escrow, and it is paid on delivery.'
-              : undefined
-        }
-        className="micro font-mono mt-auto flex h-10 items-center justify-center gap-1.5 rounded-[6px] border border-souk-hair bg-souk-accent tracking-[0.08em] text-souk-on-accent transition hover:bg-souk-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
-      >
-        {gated ? 'View' : 'Hire'}
-        <span
-          aria-hidden="true"
-          className="font-mono text-[13px] leading-none transition-transform group-hover:translate-x-1"
+        <Link
+          to={to}
+          onClick={openAgent}
+          className="inline-flex items-center gap-1 whitespace-nowrap rounded-[6px] border border-souk-hair px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.06em] text-souk-ink transition hover:border-souk-accent hover:text-souk-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
         >
-          →
-        </span>
-        <span className="sr-only">: {agent.name}</span>
-      </Link>
+          {gated ? 'View' : 'Hire'}
+          <span className="sr-only">: {agent.name}</span>
+        </Link>
+      </div>
     </article>
   )
+}
+
+// mirrors decideMark on the server for what a summary carries: a live check, then
+// built and run by us, or a paid delivery we watched; builder-hosted agents get
+// their mark on the agent page, where the server signs it
+export function hasMark(agent: Pick<AgentSummary, 'owner_address' | 'verification' | 'availability'>): boolean {
+  const phase = agent.availability?.phase
+  if (phase === 'delisted' || phase === 'dead') return false
+  const status = (agent.verification?.status ?? '').toLowerCase()
+  if (status !== 'online' && status !== 'delivered') return false
+  return isOperatedByAgentSouk(agent.owner_address) || status === 'delivered'
+}
+
+// ours first, then marked, then the rest; the server's order holds within each
+export function shelfRank(agent: Pick<AgentSummary, 'owner_address' | 'verification' | 'availability'>): number {
+  if (isOperatedByAgentSouk(agent.owner_address)) return 0
+  return hasMark(agent) ? 1 : 2
 }
 
 function categoryName(key: AgentSummary['category']): string {
