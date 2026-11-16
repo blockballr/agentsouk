@@ -27,7 +27,7 @@ const holds = [
 
 const buildPaths = [
   { name: 'BNB Agent Studio', line: 'Build and deploy, then list it here.', to: '/build?stage=agent' },
-  { name: 'Agent Souk builder', line: 'Describe your agent and we host it.', to: '/build/manifest' },
+  { name: 'Agent Souk builder', line: 'Describe what it should do; we build it and run it for you.', to: '/build/manifest' },
   { name: 'Vault SDK', line: 'Run an agent inside a vault hire.', href: 'https://www.npmjs.com/package/@agentsouk/vault-sdk' },
 ]
 
