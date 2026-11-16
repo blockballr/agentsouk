@@ -18,6 +18,7 @@ import {
 } from '../lib/station'
 import { Btn, Dot, Pill, Row, Rule, SectionHead, Stack, Txt } from '../components/souk'
 import { DataTable } from '../components/souk'
+import { StationDashboard } from '../components/StationDashboard'
 
 const TOKEN_KEY = 'agentsouk.station.token'
 
@@ -207,12 +208,26 @@ export function StationPage() {
       {/* the hero names the room and says what signs it */}
       <Stack gap={10} pad={[32, 0, 0, 0]} className="w-full">
         <Txt size={11} lead={16} mono upper tone="data">
-          {`Station · station.agentsouk.xyz · ${members.length} member${members.length === 1 ? '' : 's'}`}
+          {signedIn
+            ? `Station, ${members.length} member${members.length === 1 ? '' : 's'}`
+            : 'Station, read-only preview'}
         </Txt>
-        <Txt size={34} lead={42} weight="bold" tone="ink">
-          Control Room.
-        </Txt>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <Txt size={34} lead={42} weight="bold" tone="ink">
+            Control Room.
+          </Txt>
+          {!signedIn ? (
+            <div className="flex flex-col items-start gap-1.5 sm:items-end">
+              <Btn kind="primary" disabled={busy} onClick={() => void onSignIn()}>
+                {busy ? 'Waiting for signature' : 'Member sign in'}
+              </Btn>
+              <span className="text-[11px] text-souk-labels">Only wallets the owner added can sign in.</span>
+            </div>
+          ) : null}
+        </div>
       </Stack>
+
+      <StationDashboard preview={!signedIn} />
 
       {error ? (
         <div className="mt-6 rounded-[12px] border border-souk-peach/45 p-4" role="note">
@@ -300,18 +315,7 @@ export function StationPage() {
         </>
       )}
 
-      {!signedIn ? (
-        <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-6">
-          <SectionHead title="Sign in" note="A WALLET, NOT A PASSWORD" />
-          <Txt size={13} lead={20} tone="slate">
-            The station only answers a wallet the owner has already added. Sign in with one, and the
-            station issues a nonce, signs it, and opens a session against it.
-          </Txt>
-          <Btn kind="primary" className="w-fit" disabled={busy} onClick={() => void onSignIn()}>
-            {busy ? 'Waiting for signature..' : 'Sign in with a wallet'}
-          </Btn>
-        </Stack>
-      ) : (
+      {!signedIn ? null : (
         <>
           {/* the members: one row per wallet, its role, and the change the owner can
               make on it */}

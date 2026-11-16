@@ -48,6 +48,7 @@ const columns: { heading: string; links: FooterLink[] }[] = [
       { to: '/quest', label: 'nav.quest' },
       { to: '/advantage', label: 'footer.advantage' },
       { to: '/judge', label: 'footer.judge' },
+      { href: 'https://station.agentsouk.xyz', label: 'footer.station' },
       { to: '/profile', label: 'footer.listings' },
       { href: 'https://docs.agentsouk.xyz', label: 'footer.docs' },
       {

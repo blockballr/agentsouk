@@ -36,6 +36,7 @@ const moreGroups: { title: string; items: MoreItem[] }[] = [
       { label: 'Compare', to: '/compare', note: 'Agents side by side' },
       { label: 'Live proof', to: '/proof', note: 'Every confirmed action, with its transaction' },
       { label: 'Quest', to: '/quest', note: 'The Set and Earn passport' },
+      { label: 'Station', href: 'https://station.agentsouk.xyz', note: 'The live control room, open to read' },
     ],
   },
   {
