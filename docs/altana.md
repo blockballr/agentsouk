@@ -87,8 +87,14 @@ withdrawFromVenue(uint256,address,uint256)
 closeIfGoal(uint256,uint256)
 ```
 
-It also sets a spend limit (1 U by default, configurable through the setup scripts) and a 30 day
-expiry. The grant names functions rather than a vault address, so a vault redeploy does not
+It also sets a spend limit of 0.02 BNB a day and a 30 day expiry. The limit names no token, and
+the SDK reads an unnamed token as the chain's native one. That cap cannot be dropped: the relay
+takes each transaction's fee out of it, so a session without a native cap never executes. A cap in
+U would bound nothing, because the executor spends no U; trades move the buyer's funds inside the
+vault, which bounds them itself. Before 17 November the cap was 1 BNB a day, and sessions granted
+before then keep it until they are renewed. Grants made by the original setup scripts name the
+vault address instead of its functions, so until the daily renewal re-grants them they can call
+any function on the vault. The grant names functions rather than a vault address, so a vault redeploy does not
 invalidate it, and the vault still bounds every call it receives.
 
 Operational detail worth knowing, proved in `tests/altana-spend-scope.test.ts`:

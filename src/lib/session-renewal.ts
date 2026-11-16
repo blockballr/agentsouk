@@ -13,7 +13,10 @@ import { needsRenewal, readSessionScope } from "./session-scope";
 import { vaultFor } from "./vault";
 import { BSC_TESTNET_CHAIN_ID, targetChainId } from "./types";
 
-const SPEND_LIMIT = 1_000_000_000_000_000_000n;
+// native BNB a day. the relay takes each fee out of this cap, so it cannot be
+// dropped, and the executor spends nothing else: trades move the buyer's funds
+// inside the vault, which bounds them itself. 0.02 BNB covers the fees with room
+const SPEND_LIMIT = 20_000_000_000_000_000n;
 const EXPIRY_DAYS = 30;
 // the grant names the vault's functions, not its address, so a redeploy does not
 // break it. the vault still bounds every call it receives.
