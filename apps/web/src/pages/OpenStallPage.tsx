@@ -22,6 +22,7 @@ import { inputClass } from '../lib/form-classes'
 import { endpointRefusal, probeEndpoint, readAgentCard, type EndpointProbe } from '../lib/register'
 import { useTargetChain } from '../lib/target-chain'
 import { useConnectedAccount } from '../lib/use-connected-account'
+import { ConnectTimeoutError, connectWalletWithTimeout } from '../lib/wallet-session'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 
 const STAGES = [
@@ -469,6 +470,22 @@ function Fact({ label, value, note }: { label: string; value: React.ReactNode; n
 }
 
 function OwnerStage({ account }: { account: string | null }) {
+  const [connecting, setConnecting] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+
+  async function connect() {
+    setConnecting(true)
+    setNote(null)
+    try {
+      await connectWalletWithTimeout()
+    } catch (e) {
+      // a refusal in the wallet speaks for itself; only a connect that reached nobody needs words here
+      if (e instanceof ConnectTimeoutError) setNote(e.message)
+    } finally {
+      setConnecting(false)
+    }
+  }
+
   return (
     <Panel
       title="The wallet that owns the listing"
@@ -477,12 +494,12 @@ function OwnerStage({ account }: { account: string | null }) {
       {account ? (
         <Fact label="Owner" value={account} note="Switch wallets in your wallet app to list under another owner." />
       ) : (
-        <Row gap={8} align="start">
-          <span className="mt-[6px]">
-            <Dot tone="quiet" size={8} />
-          </span>
+        <Row gap={12} align="center" className="flex-wrap">
+          <Btn kind="primary" onClick={() => void connect()} disabled={connecting}>
+            {connecting ? 'Connecting' : 'Connect wallet'}
+          </Btn>
           <Txt size={12} lead={18} tone="steel">
-            No wallet yet. Use the Connect wallet button on this page, and this stage closes on its own.
+            {note ?? 'This step closes on its own once the wallet is connected.'}
           </Txt>
         </Row>
       )}

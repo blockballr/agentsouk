@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { chainLabel } from '../lib/contracts'
 import { shortAddress } from '@agora/core'
 import { ConnectTimeoutError, connectWalletWithTimeout } from '../lib/wallet-session'
@@ -59,6 +59,9 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
   // what a dead connect has to say for itself; set only by the connect timeout,
   // so the rail never claims a wallet it did not see
   const [connectNote, setConnectNote] = useState<string | null>(null)
+  // /build asks for the wallet inside its first step, so the rail does not
+  // offer a second button that pulls the eye away from it
+  const pageOwnsConnect = useLocation().pathname === '/build'
 
   async function onConnect() {
     setConnecting(true)
@@ -115,9 +118,11 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
                 <Txt size={11} lead={16} tone="muted">
                   {connectNote ?? t('rail.noWallet')}
                 </Txt>
-                <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting} className="mt-2 w-full">
-                  {connecting ? t('rail.connecting') : t('rail.connect')}
-                </Btn>
+                {pageOwnsConnect ? null : (
+                  <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting} className="mt-2 w-full">
+                    {connecting ? t('rail.connecting') : t('rail.connect')}
+                  </Btn>
+                )}
               </>
             )}
           </div>
@@ -137,7 +142,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
             className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-souk-canvas to-transparent"
           />
         </nav>
-        {!account && (
+        {!account && !pageOwnsConnect && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-souk-hair px-4 py-3 md:hidden">
             <Txt size={12} lead={18} tone="muted">
               {connectNote ?? t('rail.noWallet')}
