@@ -20,17 +20,17 @@ This package does not decide anything for you. It gives you the same view the fi
 
 ## Install
 
-The package is private in the monorepo today. Build it, then depend on it by path:
+```sh
+npm install @agentsouk/vault-sdk viem
+```
+
+`viem` is a peer dependency.
+
+To work on the SDK itself, build it inside this repository:
 
 ```sh
 npm run build --workspace @agentsouk/vault-sdk
 ```
-
-```json
-{ "dependencies": { "@agentsouk/vault-sdk": "file:../soukdio/packages/vault-sdk" } }
-```
-
-`viem` is a peer dependency.
 
 ## Quick start
 
