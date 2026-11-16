@@ -31,6 +31,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ de
 const SettingsProfilePage = lazy(() => import('./pages/SettingsProfilePage').then((m) => ({ default: m.SettingsProfilePage })))
 const SettingsSecurityPage = lazy(() => import('./pages/SettingsSecurityPage').then((m) => ({ default: m.SettingsSecurityPage })))
 const ManageAccountPage = lazy(() => import('./pages/ManageAccountPage').then((m) => ({ default: m.ManageAccountPage })))
+const SessionConsolePage = lazy(() => import('./pages/SessionConsolePage').then((m) => ({ default: m.SessionConsolePage })))
 const VaultHirePage = lazy(() => import('./pages/VaultHirePage'))
 const DesignPnlPage = lazy(() => import('./pages/DesignPnlPage').then((m) => ({ default: m.DesignPnlPage })))
 const ScoutPage = lazy(() => import('./pages/ScoutPage').then((m) => ({ default: m.ScoutPage })))
@@ -113,6 +114,7 @@ function App() {
               <Route path="/settings/profile" element={<SettingsProfilePage />} />
               <Route path="/settings/security" element={<SettingsSecurityPage />} />
               <Route path="/account" element={<ManageAccountPage />} />
+              <Route path="/account/sessions" element={<SessionConsolePage />} />
               <Route path="/build" element={<OpenStallPage />} />
               <Route path="/build/manifest" element={<ManifestBuilderPage />} />
             <Route path="/build/strategy" element={<BuildPage />} />

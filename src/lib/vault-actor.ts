@@ -25,6 +25,7 @@ export interface AltanaSessionRecord {
   sessionBlob: string;
   sessionKey: string;
   expiry?: number;
+  revokedAt?: string;
 }
 
 function chainFor(chainId: number) {
@@ -180,6 +181,7 @@ export async function resolveActors(
     if (perAgent.length > 0) {
       const actors: VaultActor[] = [];
       for (const rec of perAgent) {
+        if (rec.revokedAt) continue;
         try {
           actors.push(altanaActorFromSession(rec.sessionBlob, rec.sessionKey, chainId));
         } catch {
@@ -229,7 +231,7 @@ export async function configuredAgentWallets(chainId = targetChainId()): Promise
       }
     }
     const perAgent = await loadAltanaSessions(chainId);
-    if (perAgent.length > 0) return perAgent.map((r) => r.walletAddress);
+    if (perAgent.length > 0) return perAgent.filter((r) => !r.revokedAt).map((r) => r.walletAddress);
     return [];
   }
   if (preference === "rawkey") {

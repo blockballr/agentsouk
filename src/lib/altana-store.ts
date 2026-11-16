@@ -15,6 +15,8 @@ export interface AltanaSessionRecord {
   adminKey?: string;
   expiry?: number;
   createdAt: string;
+  // set when an operator revoked the grant on chain; renewal and the executor skip it
+  revokedAt?: string;
 }
 
 let sql: ReturnType<typeof postgres> | null = null;
@@ -55,6 +57,7 @@ function init(): Promise<boolean> {
           `,
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error("altana db timeout")), 4000)),
         ]);
+        await c`alter table altana_sessions add column if not exists revoked_at timestamptz`;
         return true;
       } catch (e) {
         console.error("[altana] could not create altana_sessions table:", e instanceof Error ? e.message : String(e));
@@ -71,7 +74,7 @@ export async function loadAltanaSessionsFromDb(chainId: number): Promise<AltanaS
   if (!c) return [];
   if (!(await init())) return [];
   try {
-    const rows = await c`select token_id, chain_id, label, wallet_address, session_blob, session_key, admin_key, expiry, created_at from altana_sessions where chain_id = ${chainId}`;
+    const rows = await c`select token_id, chain_id, label, wallet_address, session_blob, session_key, admin_key, expiry, created_at, revoked_at from altana_sessions where chain_id = ${chainId}`;
     const out: AltanaSessionRecord[] = [];
     for (const r of rows as Array<Record<string, unknown>>) {
       if (!r.wallet_address || !r.session_blob || !r.session_key) continue;
@@ -85,6 +88,7 @@ export async function loadAltanaSessionsFromDb(chainId: number): Promise<AltanaS
         adminKey: r.admin_key ? String(r.admin_key) : undefined,
         expiry: r.expiry != null ? Number(r.expiry) : undefined,
         createdAt: String(r.created_at ?? new Date().toISOString()),
+        revokedAt: r.revoked_at ? new Date(String(r.revoked_at)).toISOString() : undefined,
       });
     }
     return out;
@@ -99,8 +103,8 @@ export async function saveAltanaSession(rec: AltanaSessionRecord): Promise<boole
   if (!(await init())) return false;
   try {
     await c`
-      insert into altana_sessions (token_id, chain_id, label, wallet_address, session_blob, session_key, admin_key, expiry, created_at)
-      values (${rec.tokenId}, ${rec.chainId}, ${rec.label}, ${rec.walletAddress}, ${rec.sessionBlob}, ${rec.sessionKey}, ${rec.adminKey ?? null}, ${rec.expiry ?? null}, ${rec.createdAt})
+      insert into altana_sessions (token_id, chain_id, label, wallet_address, session_blob, session_key, admin_key, expiry, created_at, revoked_at)
+      values (${rec.tokenId}, ${rec.chainId}, ${rec.label}, ${rec.walletAddress}, ${rec.sessionBlob}, ${rec.sessionKey}, ${rec.adminKey ?? null}, ${rec.expiry ?? null}, ${rec.createdAt}, ${rec.revokedAt ?? null})
       on conflict (token_id, chain_id) do update set
         label = excluded.label,
         wallet_address = excluded.wallet_address,
@@ -108,9 +112,28 @@ export async function saveAltanaSession(rec: AltanaSessionRecord): Promise<boole
         session_key = excluded.session_key,
         admin_key = excluded.admin_key,
         expiry = excluded.expiry,
-        created_at = excluded.created_at
+        created_at = excluded.created_at,
+        revoked_at = excluded.revoked_at
     `;
     return true;
+  } catch {
+    return false;
+  }
+}
+
+// marks a grant revoked after the on-chain revoke landed, keeping the row so the
+// console can show it and grant it again
+export async function markAltanaSessionRevoked(tokenId: string, chainId: number): Promise<boolean> {
+  const c = client();
+  if (!c) return false;
+  if (!(await init())) return false;
+  try {
+    const rows = await c`
+      update altana_sessions set revoked_at = now()
+      where token_id = ${tokenId} and chain_id = ${chainId}
+      returning token_id
+    `;
+    return rows.length > 0;
   } catch {
     return false;
   }

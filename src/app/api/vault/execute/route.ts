@@ -77,7 +77,7 @@ async function run(req: NextRequest): Promise<NextResponse> {
   // before a sweep when every session is out of scope, so a vault redeploy shows
   // at the top of the response instead of hidden in a refused report.
   const vault = vaultFor(CHAIN_ID);
-  const scopeRows = await loadAltanaSessions(CHAIN_ID).catch(() => []);
+  const scopeRows = (await loadAltanaSessions(CHAIN_ID).catch(() => [])).filter((row) => !row.revokedAt);
   const scopes = scopeRows.map((row) =>
     readSessionScope(row.tokenId, row.walletAddress, row.sessionBlob, row.expiry ?? null, vault),
   );

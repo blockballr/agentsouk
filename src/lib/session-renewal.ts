@@ -64,13 +64,18 @@ export async function renewSessions(options: {
   windowDays?: number;
   dry?: boolean;
   force?: boolean;
+  // limit the run to these agents; the console renews one at a time
+  tokenIds?: string[];
+  // grant a revoked session again; without this a revoked row is left alone
+  regrantRevoked?: boolean;
 } = {}): Promise<RenewalRun> {
   const chainId = options.chainId ?? targetChainId();
   const windowDays = options.windowDays ?? 7;
   const dry = options.dry === true;
   const force = options.force === true;
   const vault = vaultFor(chainId);
-  const rows = await loadSessionsWithAdmin(chainId);
+  const only = options.tokenIds ? new Set(options.tokenIds) : null;
+  const rows = (await loadSessionsWithAdmin(chainId)).filter((row) => !only || only.has(row.tokenId));
   const outcomes: RenewalOutcome[] = [];
   const renewed: string[] = [];
 
@@ -95,6 +100,18 @@ export async function renewSessions(options: {
   const client = createClient({ chains: [chainId === BSC_TESTNET_CHAIN_ID ? BNB_TESTNET : BNB] });
 
   for (const row of rows) {
+    // a revoke is an operator's decision; the daily renewal must not undo it
+    if (row.revokedAt && !options.regrantRevoked) {
+      outcomes.push({
+        tokenId: row.tokenId,
+        walletAddress: row.walletAddress,
+        reason: null,
+        renewed: false,
+        expiry: row.expiry ?? null,
+        error: "revoked; grant it again from the session console",
+      });
+      continue;
+    }
     const scope = readSessionScope(
       row.tokenId,
       row.walletAddress,

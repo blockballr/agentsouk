@@ -43,6 +43,8 @@ Neither layer replaces the other.
 | `src/lib/session-scope.ts` | Reads the granted scope, checks expiry, and marks a session stale |
 | `src/lib/session-renewal.ts` | Re-grants sessions that are near expiry or stale after a vault redeploy |
 | `src/app/api/vault/sessions/route.ts` | Operator sync: writes sessions to the DB and reports scope without keys |
+| `src/app/api/vault/sessions/console/route.ts` | The session console: list, renew, revoke and grant again, each signed by a team wallet |
+| `apps/web/src/pages/SessionConsolePage.tsx` | The console page at `/account/sessions` |
 | `src/app/api/vault/executor/route.ts` | Public read of the executor kind, addresses, and vault |
 | `src/app/api/cron/sessions/route.ts` | Daily renewal run |
 | `src/lib/jobs8183.ts` | Reads ERC-8183 kernel addresses and the deliverable URL from the SDK |
@@ -68,6 +70,7 @@ The production store is the `altana_sessions` table in Postgres:
 | `admin_key` | Kept for renewal, server only |
 | `expiry` | Unix seconds |
 | `created_at` | Timestamp |
+| `revoked_at` | Set when the console revoked the grant on chain; cleared by a new grant |
 
 `GET /api/vault/sessions` never returns `session_key` or `admin_key`. It returns the token, the
 wallet, the expiry, and the scope, plus a `stale` list for the scheduler. The local file
@@ -111,7 +114,7 @@ and release steps itself so the flow can enforce its own seller checks and recei
 
 ## What is live
 
-As of 14 November 2026:
+As of 17 November 2026:
 
 - Production runs `AGENT_EXECUTOR_ACTOR=altana`. `GET /api/vault/executor` returns
   `kind: "altana"` and three executor addresses.
@@ -119,13 +122,18 @@ As of 14 November 2026:
 - `POST /api/vault/sessions` and `scripts/sync-altana-to-db.mjs` write records.
 - The daily `/api/cron/sessions` run renews sessions near expiry or stale after a vault redeploy.
 - The spend cap and price floor are proven on BSC testnet, not only described.
+- The session console at `/account/sessions` renews, revokes and grants again. A revoke from the
+  same SDK call was proven on testnet (agent 2533, 17 November); granting it again waits on
+  testnet BNB for the fee.
 
 ## What is not live
 
 - Custom agents composed in the builder do not receive an Altana session yet. `venue-adapter.ts`
   still supports only the vault swap, not LP or Altana execution.
-- There is no owner-facing UI to grant or revoke a session. The operator scripts and the
-  `/api/vault/sessions` endpoint are the current surface.
+- The session console covers the team's own executors, whose admin keys the database holds.
+  An agent owner cannot yet grant our executor a session from their own wallet. That needs a
+  passkey admin in the browser, since injected wallets such as MetaMask cannot sign the
+  delegation and raw digests the SDK needs, and it is the next step.
 - The SDK's x402 `fetchWithX402` helper is not used. The direct call rail uses its own EIP-3009
   authorization and the escrow funder.
 - The SDK's ERC-8183 buyer helper is not used, as above.
@@ -141,6 +149,27 @@ As of 14 November 2026:
 - A relay reply is not a transaction hash. `callsId` is a bundle handle. The executor refuses a
   trade with no `transactionHash`, and reports `FAILED` with the relay's status code.
 - One runner holds a hire through a lease, so two sweeps cannot trade the same hire at once.
+
+## The session console
+
+`/account/sessions` lists every stored session for the chain: the agent, the executor wallet, its
+BNB balance for relay fees, the functions it may call, its expiry, and whether it is active,
+expiring, stale for the live vault, or revoked. A team wallet (the list in
+`src/lib/team-wallets.ts`) signs every action, including the read. The signed text names the
+action, chain, agent, wallet and a timestamp, and the server refuses a signature older than five
+minutes.
+
+- Renew re-grants the session now, with the same scope, cap and a fresh 30 day expiry.
+- Revoke calls `revokeSession` on chain first and marks the record only after that lands, so a
+  failed revoke never reads as done. A revoked session is skipped by the executor, the vault
+  sweep and the daily renewal, so the cron cannot quietly undo it.
+- Grant again issues a new session to a revoked wallet and clears the mark.
+
+Every action is logged with the acting wallet. A grant costs relay fees paid by the executor
+wallet itself. When the wallet is short the relay refuses the bundle before sending it ("asset
+deficits"), and the console says to send it BNB. On testnet, at 1 gwei, a grant needed about
+0.0052 tBNB while a revoke cost less, so a wallet can afford a revoke and still be unable to
+grant again.
 
 ## Operating it
 
