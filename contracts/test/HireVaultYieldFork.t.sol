@@ -37,7 +37,7 @@ contract HireVaultYieldForkTest {
         vm.prank(lp);
         require(IERC20(USDT).transfer(address(this), 1_000e18), "fund");
 
-        vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 50e18, 100_000e18, 5_000, 1e18);
+        vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 50e18, 100_000e18, 5_000, 1e18, address(0), 0);
         adapter = new AaveV3VenueAdapter(address(vault), USDT, POOL, A_USDT);
 
         require(IERC20(USDT).approve(address(vault), 100e18), "approve");
@@ -86,7 +86,7 @@ contract HireVaultYieldForkTest {
         vm.prank(lp);
         require(IERC20(USDT).transfer(address(this), 1_000e18), "fund");
 
-        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 50e18, 100_000e18, 5_000, 1e18);
+        HireVault vault = new HireVault(ROUTER, FACTORY, WBNB, USDT, 50e18, 100_000e18, 5_000, 1e18, address(0), 0);
         AaveV3VenueAdapter adapter = new AaveV3VenueAdapter(address(vault), USDT, POOL, A_USDT);
         require(IERC20(USDT).approve(address(vault), 200e18), "approve");
 

@@ -168,7 +168,7 @@ contract HireVaultTest {
         factory = new MockFactory();
         factory.setPool(address(pool));
         router = new MockRouter();
-        vault = new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000, MIN_DEPOSIT);
+        vault = new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000, MIN_DEPOSIT, address(0), 0);
         // the router pays out of its own stock, as a pool would
         wbnb.mint(address(router), 1000e18);
         usdt.mint(address(router), 1000e18);
@@ -254,7 +254,7 @@ contract HireVaultTest {
 
     function testRefusesAZeroMinimumAtConstruction() public {
         vm.expectRevert(HireVault.BadAmount.selector);
-        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000, 0);
+        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000, 0, address(0), 0);
     }
 
     function testOpenRefusesATokenThatKeepsACut() public {
@@ -439,7 +439,7 @@ contract HireVaultTest {
     }
 
     function testDrawdownBudgetBindsWhenTheBuyerCapIsLooser() public {
-        HireVault drawdown = new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 6000, MIN_DEPOSIT);
+        HireVault drawdown = new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 6000, MIN_DEPOSIT, address(0), 0);
         uint256 id = _openOn(drawdown, 40e18, 1000, 5000);
 
         bool stopped;
@@ -578,16 +578,16 @@ contract HireVaultTest {
 
     function testItWillNotBeBuiltOnAnythingThatIsNotAContract() public {
         vm.expectRevert(HireVault.NotAContract.selector);
-        new HireVault(address(0x1234), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000, MIN_DEPOSIT);
+        new HireVault(address(0x1234), address(factory), address(wbnb), address(usdt), CAP, CAP, 5000, MIN_DEPOSIT, address(0), 0);
         vm.expectRevert(HireVault.UnknownToken.selector);
-        new HireVault(address(router), address(factory), address(wbnb), address(wbnb), CAP, CAP, 5000, MIN_DEPOSIT);
+        new HireVault(address(router), address(factory), address(wbnb), address(wbnb), CAP, CAP, 5000, MIN_DEPOSIT, address(0), 0);
     }
 
     function testItWillNotBuildWithADisabledOrRidiculousBudget() public {
         vm.expectRevert(HireVault.BadRetained.selector);
-        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 0, MIN_DEPOSIT);
+        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 0, MIN_DEPOSIT, address(0), 0);
         vm.expectRevert(HireVault.BadRetained.selector);
-        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 10001, MIN_DEPOSIT);
+        new HireVault(address(router), address(factory), address(wbnb), address(usdt), CAP, CAP, 10001, MIN_DEPOSIT, address(0), 0);
     }
 
     // a live queue is what a buyer can run and what the agent's sweep reads. the

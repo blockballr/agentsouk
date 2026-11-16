@@ -48,6 +48,29 @@ const capWbnb = parseUnits(process.env.HIRE_VAULT_CAP_WBNB ?? (Number(chainArg) 
 const capUsdt = parseUnits(process.env.HIRE_VAULT_CAP_USDT ?? (Number(chainArg) === 56 ? "100000" : "20"), 18);
 const retainedBps = Number(process.env.HIRE_VAULT_RETAINED_BPS ?? "5000");
 
+// the smallest deposit the vault takes, in whole units of the pool's token0 at
+// the open price. there is no default: it is fixed for the life of the vault
+const minDepositText = process.env.HIRE_VAULT_MIN_DEPOSIT_TOKEN0;
+if (!minDepositText) {
+  console.error("HIRE_VAULT_MIN_DEPOSIT_TOKEN0 is not set. Name the minimum deposit before deploying.");
+  process.exit(1);
+}
+const minDeposit = parseUnits(minDepositText, 18);
+
+// the marketplace's share of the agent's performance fee, in basis points of
+// that fee, and the wallet that receives it. both are fixed for the life of
+// the vault; the default is no share at all
+const marketShareBps = Number(process.env.HIRE_VAULT_MARKET_SHARE_BPS ?? "0");
+const feeRecipient = process.env.HIRE_VAULT_FEE_RECIPIENT ?? "0x0000000000000000000000000000000000000000";
+if (!Number.isInteger(marketShareBps) || marketShareBps < 0 || marketShareBps > 3000) {
+  console.error("HIRE_VAULT_MARKET_SHARE_BPS must be a whole number from 0 to 3000.");
+  process.exit(1);
+}
+if (!/^0x[0-9a-fA-F]{40}$/.test(feeRecipient) || (marketShareBps > 0 && /^0x0{40}$/.test(feeRecipient))) {
+  console.error("HIRE_VAULT_FEE_RECIPIENT must be a wallet address when the share is above zero.");
+  process.exit(1);
+}
+
 const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
 if (!privateKey) {
   console.error("DEPLOYER_PRIVATE_KEY is not set. Nothing to do.");
@@ -92,6 +115,8 @@ for (const [name, addr] of [["router", target.router], ["factory", target.factor
   }
 }
 console.log("all four constructor targets carry code on this chain");
+console.log(`min deposit: ${minDepositText} token0`);
+console.log(`market share: ${marketShareBps / 100}% of the agent fee to ${feeRecipient}`);
 
 const balance = await publicClient.getBalance({ address: account.address });
 console.log(`gas balance  : ${formatUnits(balance, 18)} BNB`);
@@ -107,7 +132,7 @@ if (DRY) {
 const hash = await walletClient.deployContract({
   abi: artifact.abi,
   bytecode: artifact.bytecode.object,
-  args: [target.router, target.factory, target.wbnb, target.usdt, capWbnb, capUsdt, retainedBps],
+  args: [target.router, target.factory, target.wbnb, target.usdt, capWbnb, capUsdt, retainedBps, minDeposit, feeRecipient, marketShareBps],
 });
 
 const receipt = await publicClient.waitForTransactionReceipt({ hash });

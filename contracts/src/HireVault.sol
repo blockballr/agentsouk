@@ -84,6 +84,12 @@ contract HireVault {
     uint32 public constant TWAP_WINDOW = 1800;
 
     uint16 public constant MAX_AGENT_FEE_BPS = 3000; // 30% max
+    // the marketplace's share of the agent's performance fee, fixed at deploy.
+    // it comes out of what the agent is paid, never out of the buyer's side,
+    // so a buyer pays the same whatever the share is
+    address public immutable feeRecipient;
+    uint16 public immutable marketShareBps;
+    uint16 public constant MAX_MARKET_SHARE_BPS = 3000; // 30% of the agent fee
     uint16 public constant MAX_LOSS_BPS = 5000; // 50% max loss
     // a live-hire queue is what a buyer can actually run, and what the agent's
     // sweep and the hire page read. a wallet holding more than this is a queue
@@ -105,6 +111,7 @@ contract HireVault {
     event WithdrawnFromVenue(uint256 indexed id, address indexed venue, uint256 amount);
     event Closed(uint256 indexed id, address indexed buyer, address indexed agent, uint256 amountA, uint256 amountB, uint256 deployedB, uint256 agentFee);
     event MaxLossBreached(uint256 indexed id, uint256 value, uint256 floor);
+    event MarketFee(uint256 indexed id, address indexed recipient, uint256 amount);
 
     error NotAContract();
     error UnknownToken();
@@ -113,6 +120,7 @@ contract HireVault {
     error BadSlippage();
     error BadRetained();
     error BadFee();
+    error BadShare();
     error BadLoss();
     error NoAgent();
     error NotOpen();
@@ -137,12 +145,14 @@ contract HireVault {
         _lock = 1;
     }
 
-    constructor(address router_, address factory_, address tokenA_, address tokenB_, uint256 capA_, uint256 capB_, uint16 minRetainedBps_, uint256 minDepositInToken0_) {
+    constructor(address router_, address factory_, address tokenA_, address tokenB_, uint256 capA_, uint256 capB_, uint16 minRetainedBps_, uint256 minDepositInToken0_, address feeRecipient_, uint16 marketShareBps_) {
         if (router_.code.length == 0 || factory_.code.length == 0 || tokenA_.code.length == 0 || tokenB_.code.length == 0) revert NotAContract();
         if (tokenA_ == tokenB_) revert UnknownToken();
         if (capA_ == 0 || capB_ == 0) revert BadAmount();
         if (minRetainedBps_ == 0 || minRetainedBps_ > MAX_SLIPPAGE_BPS * 10) revert BadRetained();
         if (minDepositInToken0_ == 0) revert BadAmount();
+        if (marketShareBps_ > MAX_MARKET_SHARE_BPS) revert BadShare();
+        if (marketShareBps_ != 0 && feeRecipient_ == address(0)) revert BadShare();
         router = router_;
         factory = factory_;
         tokenA = tokenA_;
@@ -151,6 +161,8 @@ contract HireVault {
         capB = capB_;
         minRetainedBps = minRetainedBps_;
         minDepositInToken0 = minDepositInToken0_;
+        feeRecipient = feeRecipient_;
+        marketShareBps = marketShareBps_;
     }
 
     function open(address agent, address token, uint256 amount, uint64 expiry, uint16 maxSlippageBps, uint24 fee, uint16 agentFeeBps_, uint16 maxLossBps_, address venue_)
@@ -361,7 +373,7 @@ contract HireVault {
         return isToken0 ? amount : _mulDiv(amount, Q96, uint256(ref));
     }
 
-    function _payAgentFee(Hire storage h, address pool) private returns (uint256 agentFeeTokenB) {
+    function _payAgentFee(uint256 id, Hire storage h, address pool) private returns (uint256 agentFeeTokenB) {
         if (h.agentFeeBps == 0) return 0;
         uint256 currentValue = _valueInToken0(h, pool);
         if (currentValue <= h.highWaterMark) return 0; // no new profit
@@ -381,12 +393,30 @@ contract HireVault {
             agentFeeTokenB = h.balanceB;
         }
         if (agentFeeTokenB > 0) {
-            h.balanceB -= agentFeeTokenB;
-            _call(tokenB, abi.encodeWithSignature("transfer(address,uint256)", h.agent, agentFeeTokenB));
+            // a fee is taken from the hire only as far as it is delivered: a part that
+            // cannot be paid stays in the hire and goes back to the buyer, so neither an
+            // agent wallet nor the market's can stand between the buyer and a withdrawal
+            uint256 marketCut = marketShareBps == 0 ? 0 : _mulDiv(agentFeeTokenB, marketShareBps, 10_000);
+            uint256 paid;
+            if (_tryTransfer(tokenB, h.agent, agentFeeTokenB - marketCut)) paid += agentFeeTokenB - marketCut;
+            if (marketCut > 0 && _tryTransfer(tokenB, feeRecipient, marketCut)) {
+                paid += marketCut;
+                emit MarketFee(id, feeRecipient, marketCut);
+            }
+            h.balanceB -= paid;
+            agentFeeTokenB = paid;
         }
         // update high-water mark
         h.highWaterMark = currentValue;
         return agentFeeTokenB;
+    }
+
+    // a transfer that reports failure instead of reverting, for payments that
+    // must never block a close; a zero amount counts as delivered
+    function _tryTransfer(address token, address to, uint256 amount) private returns (bool) {
+        if (amount == 0) return true;
+        (bool ok, bytes memory ret) = token.call(abi.encodeWithSignature("transfer(address,uint256)", to, amount));
+        return ok && (ret.length == 0 || (ret.length >= 32 && abi.decode(ret, (bool))));
     }
 
     // pull the whole venue position back before the hire closes, so accrued
@@ -412,7 +442,7 @@ contract HireVault {
         if (pool == address(0)) revert NoPool();
         uint256 d = h.deployedB;
         _pullVenue(id, h);
-        uint256 agentFee = _payAgentFee(h, pool);
+        uint256 agentFee = _payAgentFee(id, h, pool);
         uint256 a = h.balanceA;
         uint256 b = h.balanceB;
         h.open = false;
@@ -443,7 +473,7 @@ contract HireVault {
         _pullVenue(id, h);
         uint256 value = _valueInToken0(h, pool);
         if (value < goalValueInToken0) revert GoalNotMet();
-        uint256 agentFee = _payAgentFee(h, pool);
+        uint256 agentFee = _payAgentFee(id, h, pool);
         uint256 a = h.balanceA;
         uint256 b = h.balanceB;
         h.open = false;

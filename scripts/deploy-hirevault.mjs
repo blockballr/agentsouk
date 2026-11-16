@@ -27,6 +27,29 @@ const CAP_USDT = parseUnits(process.env.HIRE_VAULT_CAP_USDT ?? "20", 18);
 // bad agent's bleed stops at 50 percent rather than zero.
 const RETAINED_BPS = Number(process.env.HIRE_VAULT_RETAINED_BPS ?? "5000");
 
+// the smallest deposit the vault takes, in whole units of the pool's token0 at
+// the open price. there is no default: it is fixed for the life of the vault
+const minDepositText = process.env.HIRE_VAULT_MIN_DEPOSIT_TOKEN0;
+if (!minDepositText) {
+  console.error("HIRE_VAULT_MIN_DEPOSIT_TOKEN0 is not set. Name the minimum deposit before deploying.");
+  process.exit(1);
+}
+const minDeposit = parseUnits(minDepositText, 18);
+
+// the marketplace's share of the agent's performance fee, in basis points of
+// that fee, and the wallet that receives it. both are fixed for the life of
+// the vault; the default is no share at all
+const marketShareBps = Number(process.env.HIRE_VAULT_MARKET_SHARE_BPS ?? "0");
+const feeRecipient = process.env.HIRE_VAULT_FEE_RECIPIENT ?? "0x0000000000000000000000000000000000000000";
+if (!Number.isInteger(marketShareBps) || marketShareBps < 0 || marketShareBps > 3000) {
+  console.error("HIRE_VAULT_MARKET_SHARE_BPS must be a whole number from 0 to 3000.");
+  process.exit(1);
+}
+if (!/^0x[0-9a-fA-F]{40}$/.test(feeRecipient) || (marketShareBps > 0 && /^0x0{40}$/.test(feeRecipient))) {
+  console.error("HIRE_VAULT_FEE_RECIPIENT must be a wallet address when the share is above zero.");
+  process.exit(1);
+}
+
 const privateKey = process.env.DEPLOYER_PRIVATE_KEY;
 if (!privateKey) {
   console.error("DEPLOYER_PRIVATE_KEY is not set. Nothing to do.");
@@ -56,6 +79,8 @@ console.log(`rpc        : ${RPC}`);
 console.log(`deployer   : ${account.address}`);
 console.log(`caps       : ${formatUnits(CAP_WBNB, 18)} WBNB, ${formatUnits(CAP_USDT, 18)} USDT per deposit`);
 console.log(`drawdown   : a hire may never fall below ${RETAINED_BPS / 100}% of its deposit at open price`);
+console.log(`min deposit: ${minDepositText} token0`);
+console.log(`market share: ${marketShareBps / 100}% of the agent fee to ${feeRecipient}`);
 
 const balance = await publicClient.getBalance({ address: account.address });
 console.log(`gas balance: ${balance} wei`);
@@ -71,7 +96,7 @@ const hash = await walletClient.deployContract({
   bytecode,
   account,
   chain: CHAIN,
-  args: [ROUTER, FACTORY, WBNB, USDT, CAP_WBNB, CAP_USDT, RETAINED_BPS],
+  args: [ROUTER, FACTORY, WBNB, USDT, CAP_WBNB, CAP_USDT, RETAINED_BPS, minDeposit, feeRecipient, marketShareBps],
 });
 console.log(`tx         : ${hash}`);
 
