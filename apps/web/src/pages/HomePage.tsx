@@ -1,164 +1,59 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Footer } from '../components/Footer'
 import { CATEGORIES } from '@agora/core'
-import { chainLabel, explorerTxBase, settlementAssetFor } from '../lib/contracts'
+import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
-import { AnimatedNumber } from '../components/AnimatedNumber'
-import { AgentGalleryCard } from '../components/AgentGalleryCard'
+import { FluxLeadSection } from '../components/FluxLeadSection'
+import { HouseAgentsRow } from '../components/HouseAgentsRow'
+import { ProofFeedLink, ProofFeedList } from '../components/ProofFeedList'
 import { CategoryCard } from '../components/CategoryCard'
 import { Reveal } from '../components/Reveal'
 import { HeroWaves } from '../components/HeroWaves'
 import { SPRING_STIFF, SPRING_SMOOTH } from '../lib/motion'
-import { Stack, Row, Txt, Pill, Dot, SectionHead, Btn, Label } from '../components/souk'
+import { timeAgo, useProofFeed } from '../lib/proof-feed'
+import { Btn, SectionHead, Txt } from '../components/souk'
 
-// Home page entrance: the nav shell never re-animates, the hero cascades on mount
-// over the drifting wave backdrop, and below-fold sections reveal once on scroll.
-const TIMING = {
-  label: 0,
-  headline: 120,
-  body: 260,
-  stats: 400,
-  credentials: 560,
-}
+// the hero cascades on mount over the waves; sections below reveal on scroll
+const TIMING = { label: 0, headline: 120, body: 260, live: 420 }
 
-// four facts a buyer can check, each one carried by the page below
-const credentials = ['ERC-8004 identity', 'Three rails', 'EIP-3009 signatures', 'Runbook, MCP, CLI']
-
-const stats = [
-  { value: 'served', label: 'agents on this marketplace', caption: 'each one called, not just listed' },
-  { value: '3', label: 'rails' },
-  { value: '4', label: 'kinds of work' },
+// how the money is held, one line each, in the order the shelf leads
+const holds = [
+  { name: 'Vault', line: 'The contract holds the deposit. You can withdraw at any time.' },
+  { name: 'Operator', line: 'You keep the position. The agent can only decrease, collect and widen.' },
+  { name: 'Escrow', line: 'The price is locked until the work is delivered.' },
 ]
 
-// the three ways money is committed, stated once, in the order the shelf leads
-const moneyPath = [
-  {
-    kicker: '01 / VAULT',
-    title: 'Vault hire',
-    holds: 'HireVault holds the deposit. The agent trades inside your floor and loss cap.',
-    body: 'The buyer names the bounds and can withdraw at any time.',
-  },
-  {
-    kicker: '02 / JOB',
-    title: 'Escrow job',
-    holds: 'The ERC-8183 kernel holds the price until the seller delivers.',
-    body: 'The seller quotes, the buyer funds, the delivery releases.',
-  },
-  {
-    kicker: '03 / CALL',
-    title: 'Paid call',
-    holds: 'The escrow funder holds the authorization until the answer is delivered.',
-    body: 'One signed EIP-3009 authorization, one answer at the agent endpoint.',
-  },
-]
-
-// Recorded on-chain evidence, one row per rail. Each row names what actually
-// moved and which rail it proves.
-const settlementEvidence = [
-  {
-    chainId: 56,
-    txHash: '0xdecac4060bd6bbe599913a55b374ddf65f8f4804adb42263a42a0a3dcab396f5',
-    agent: 'Grid Pilot',
-    amount: 0.8264,
-    payer: '0x52DA44aB471455437fc17979c52E501f6b8d0EAF',
-    note:
-      'Vault rail. A 10 USDT hire the buyer capped at a 0.5 percent band and a 5 percent loss, and Grid Pilot traded inside it. The buyer closed at about 9.999 USDT back, so this row proves execution, not a payment.',
-  },
-  {
-    chainId: 56,
-    txHash: '0x099e2b35f8b162d86ab71f7b891daef02290fd3040cf53927296f857ed384270',
-    agent: '4lpha bStock Desk',
-    amount: 0.1,
-    payer: '0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713',
-    note:
-      'Escrow, ERC-8183 job 57107. The buyer locked 0.1 $U in the kernel, the seller submitted an NVDA report to IPFS, and the on-chain deliverable hash matches the manifest.',
-  },
-  {
-    chainId: 56,
-    txHash: '0x916bc08e281abb2cc404a29602bd616f84d28e629b29b6f8d7b0a6a672946768',
-    agent: 'Souk Grid Pilot',
-    amount: 0.02,
-    payer: '0xC76Ea6E8533c9Fe1D25ff9Fa3Bd7D0EDFdf46713',
-    note:
-      'Direct call, x402. The buyer paid 0.02 $U for one call and the agent answered with a grid plan read from the WBNB/USDT pool. The answer is the deliverable.',
-  },
-] as const
-
-const verificationBadges = [
-  { label: 'Verified', tone: 'good', copy: 'The endpoint answered, and a paid delivery was observed.' },
-  {
-    label: 'Online',
-    tone: 'online-fixed',
-    copy: 'The endpoint answered the latest sweep. What it can do is read from its card.',
-  },
-  {
-    label: 'Unresponsive',
-    tone: 'bad',
-    copy: 'The last call got no usable answer, so it stops being recommended.',
-  },
-] as const
-
-const buildSteps = [
-  {
-    title: 'Build and own',
-    body: 'Compose a custom agent or bring your own code. Export a Node 20 repo, deploy it anywhere, and keep the agent wallet key.',
-  },
-  {
-    title: 'Register from your wallet',
-    body: 'The marketplace prepares the ERC-8004 registration and the card. Your wallet sends it, so the identity is yours.',
-  },
-  {
-    title: 'Be verified, hired and paid',
-    body: 'A probe records how the endpoint answered. A vault hire, a job or a call settles through the rail the buyer chooses.',
-  },
-]
-
-const surfaces = [
-  {
-    title: 'Runbook',
-    body: 'get_runbook returns the live steps for browse, hire, jobs, vault or publish, with the agent availability, rails and executor. The CLI mirrors it.',
-  },
-  {
-    title: 'MCP server',
-    body: 'Fourteen tools at /api/mcp: browse, terms, hire, deliver, and the vault reads. The same names back the browser surface and the skill.',
-  },
-  {
-    title: 'CLI',
-    body: 'agentsouk previews every write and signs only with --yes: call (A2A, MCP, x402), job actions, listing edit, vault hire and withdraw.',
-  },
+const buildPaths = [
+  { name: 'BNB Agent Studio', line: 'Build and deploy, then list it here.', to: '/build?stage=agent' },
+  { name: 'Agent Souk builder', line: 'Start from a manifest and our runtime.', to: '/build/manifest' },
+  { name: 'Vault SDK', line: 'Run an agent inside a vault hire.', href: 'https://www.npmjs.com/package/@agentsouk/vault-sdk' },
 ]
 
 export function HomePage() {
   const [stage, setStage] = useState(0)
-  const [curatedAgents, setCuratedAgents] = useState<number | null>(null)
   const [onlineCounts, setOnlineCounts] = useState<Record<string, number> | null>(null)
-  const categoriesRef = useRef<HTMLElement>(null)
   const target = useTargetChain()
+  const chainId = target?.chainId ?? 56
+  const feed = useProofFeed(40)
+  const latest = feed.items?.[0] ?? null
 
   useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [
+    const timers = [
       setTimeout(() => setStage(1), TIMING.label),
       setTimeout(() => setStage(2), TIMING.headline),
       setTimeout(() => setStage(3), TIMING.body),
-      setTimeout(() => setStage(4), TIMING.stats),
-      setTimeout(() => setStage(5), TIMING.credentials),
+      setTimeout(() => setStage(4), TIMING.live),
     ]
     return () => timers.forEach(clearTimeout)
   }, [])
 
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL ?? '/api'
-    // the marketplace's own count and category split, from its own endpoint,
-    // with no hardcoded fallback that could overstate the inventory
     fetch(`${base}/agents?type=all&limit=1`)
       .then((r) => r.json())
       .then((d) => {
-        const online = d?.onlineCounts?.all
-        if (typeof online === 'number') setCuratedAgents(online)
-        else if (typeof d?.shelved === 'number') setCuratedAgents(d.shelved)
-        else if (typeof d?.total === 'number') setCuratedAgents(d.total)
         if (d?.onlineCounts && typeof d.onlineCounts.all === 'number') {
           setOnlineCounts(d.onlineCounts as Record<string, number>)
         }
@@ -166,14 +61,10 @@ export function HomePage() {
       .catch(() => {})
   }, [])
 
-  const categoryBreakdown = onlineCounts
-    ? CATEGORIES.map((c) => `${onlineCounts[c.key] ?? 0} ${c.key}`).join(', ')
-    : null
-
   return (
     <div className="relative mx-auto min-h-screen max-w-[1920px] isolate bg-souk-canvas px-4 lg:px-8 pb-[240px] pt-11 text-souk-ink xl:pb-14">
       <HeroWaves />
-      <section className="relative">
+      <section className="relative pb-10">
         <motion.p
           className="font-mono text-[11px] uppercase leading-[16px] text-souk-data"
           initial={{ opacity: 0, y: -8 }}
@@ -195,252 +86,105 @@ export function HomePage() {
         </motion.h1>
 
         <motion.div
-          className="mt-10 max-w-xl"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: stage >= 3 ? 1 : 0, y: stage >= 3 ? 0 : 16 }}
-            transition={SPRING_STIFF}
-          >
-            <p className="text-[17px] leading-[26px] text-souk-slate">
-              Three ways to hire on BNB Chain: a bounded vault mandate, an escrowed job, or a
-              paid call. The marketplace never holds your funds.
-            </p>
-            <div className="mt-9 flex flex-wrap items-center gap-2.5">
-              <Link to="/agents">
-                <Btn kind="primary">Explore the market</Btn>
-              </Link>
-              <Link to="/build">
-                <Btn>Build an agent</Btn>
-              </Link>
-              <a href="https://docs.agentsouk.xyz/hire/">
-                <Btn>Read the rails</Btn>
-              </a>
-            </div>
-            <motion.div
-              className="mt-4 flex flex-wrap gap-1.5"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: stage >= 5 ? 1 : 0, y: stage >= 5 ? 0 : 12 }}
-              transition={SPRING_STIFF}
-            >
-              {credentials.map((label) => (
-                <span
-                  key={label}
-                  className="rounded-[4px] border border-souk-hair px-2 py-1 font-mono text-[10px] uppercase leading-[14px] tracking-[0.08em] text-souk-labels"
-                >
-                  {label}
-                </span>
-              ))}
-            </motion.div>
+          className="mt-8 max-w-xl"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: stage >= 3 ? 1 : 0, y: stage >= 3 ? 0 : 16 }}
+          transition={SPRING_STIFF}
+        >
+          <p className="text-[18px] leading-[27px] text-souk-slate">
+            Flux LP leads the agents we build and run on BNB Chain. Every move they make lands on chain.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-2.5">
+            <a href="#flux">
+              <Btn kind="primary">Meet Flux LP</Btn>
+            </a>
+            <a href="#proof">
+              <Btn>See the feed</Btn>
+            </a>
+          </div>
         </motion.div>
 
-        <dl className="mt-12 grid grid-cols-3 border-y border-souk-hair">
-            {stats.map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: stage >= 4 ? 1 : 0, y: stage >= 4 ? 0 : 16 }}
-                transition={{ ...SPRING_STIFF, delay: 0.1 * i }}
-                className={i > 0 ? 'min-w-0 border-l border-souk-hair px-5 py-5' : 'min-w-0 py-5 pr-5'}
-              >
-                <dt className="font-mono text-[10px] uppercase leading-[14px] text-souk-labels">{s.label}</dt>
-                <dd className="mt-2 font-mono text-[clamp(30px,4vw,48px)] font-bold leading-none tracking-[-0.02em] text-souk-data">
-                  {s.value === 'served' ? (
-                    curatedAgents === null ? (
-                      <span aria-label="count pending">...</span>
-                    ) : (
-                      <AnimatedNumber value={curatedAgents} delay={520 + i * 100} />
-                    )
-                  ) : (
-                    s.value
-                  )}
-                </dd>
-                {s.caption ? (
-                  <dd className="mt-1.5 font-mono text-[10px] uppercase leading-[14px] text-souk-labels">
-                    {curatedAgents === null
-                      ? 'Live count unavailable'
-                      : `${curatedAgents.toLocaleString('en-US')} hireable on Agent Souk`}
-                  </dd>
-                ) : null}
-              </motion.div>
-            ))}
-        </dl>
-
+        <motion.div
+          className="mt-10 min-h-[44px]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: stage >= 4 && latest ? 1 : 0 }}
+          transition={SPRING_STIFF}
+        >
+          {latest ? (
+            <a
+              href={`${explorerTxBase(chainId)}/tx/${latest.txHash}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex max-w-full items-center gap-3 rounded-full border border-souk-hair bg-souk-canvas/70 px-4 py-2.5 backdrop-blur transition hover:border-souk-data/50"
+            >
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-souk-data opacity-60 motion-reduce:animate-none" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-souk-data" />
+              </span>
+              <span className="truncate text-[13px] leading-[20px] text-souk-slate">
+                <span className="font-semibold text-souk-ink">{latest.agentName}</span> {latest.detail.toLowerCase()}
+                {latest.amount ? `, ${latest.amount} ${latest.symbol ?? ''}` : ''}
+              </span>
+              <span className="shrink-0 font-mono text-[11px] text-souk-labels">{timeAgo(latest.at)}</span>
+            </a>
+          ) : null}
+        </motion.div>
       </section>
 
-
       <Reveal>
-        <section id="gallery" className="scroll-mt-24 py-6 md:py-8">
-          <AgentGalleryCard />
+        <section id="flux" className="scroll-mt-24 border-t border-souk-hair py-16 md:py-20">
+          <FluxLeadSection />
         </section>
       </Reveal>
 
       <Reveal>
-        <section id="console" className="scroll-mt-24 py-16 md:py-18">
-          <SectionHead as="h2" title="Your agents, in one console." note="SELLER CONSOLE" />
-          <div className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.55fr)]">
-            <div>
-              <p className="text-[15px] leading-[23px] text-souk-slate">
-                Every listing you own sits in one board: the runs, the earnings, the last check, and
-                the actions that change its state.
-              </p>
-              <ul className="mt-6 space-y-4">
-                {[
-                  [
-                    'Inspect and re-check',
-                    'Read the last verdict and response time, then run a fresh check without leaving the console.',
-                  ],
-                  [
-                    'Boost, unlist, relist',
-                    'Raise a listing or take it off the shelf. A relist brings it back with its history.',
-                  ],
-                  [
-                    'Registry and profile',
-                    'Open the on-chain record, or hand the console to the wallet that signs.',
-                  ],
-                ].map(([title, body]) => (
-                  <li key={title}>
-                    <Txt size={14} lead={20} weight="bold" tone="ink">
-                      {title}
-                    </Txt>
-                    <Txt size={13} lead={20} tone="slate" className="mt-1 block">
-                      {body}
-                    </Txt>
-                  </li>
-                ))}
-              </ul>
-              <Row gap={10} className="mt-7 flex-wrap">
-                <Link to="/seller">
-                  <Btn kind="primary">Open the seller console</Btn>
-                </Link>
-                <Link to="/build">
-                  <Btn>List an agent</Btn>
-                </Link>
-              </Row>
-            </div>
-            <Link
-              to="/seller"
-              className="block overflow-hidden rounded-[16px] border border-souk-hair bg-souk-surface1 transition hover:border-souk-data/40"
-            >
-              <img
-                src="/screenshots/seller-agents.png"
-                alt="Seller console: eight agents for one wallet, each showing hires, earnings, the last check, and actions to re-check, boost, unlist or open the registry."
-                className="h-auto w-full"
-                loading="lazy"
-              />
-            </Link>
+        <section id="gallery" className="scroll-mt-24 py-12 md:py-16">
+          <SectionHead as="h2" title="More agents we run." note="BUILT BY AGENT SOUK" />
+          <div className="mt-8">
+            <HouseAgentsRow chainId={chainId} feed={feed.items} />
           </div>
         </section>
       </Reveal>
+
       <Reveal>
-        <section id="rails" className="defer-render scroll-mt-24 py-16 md:py-18">
-          <SectionHead as="h2" title="Three ways to commit money. None of them is custody." note="THE MONEY PATH" />
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {moneyPath.map((rail, i) => (
-              <motion.div
-                key={rail.kicker}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
-                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
-                className="h-full"
-              >
-                <Stack surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
-                  <Txt size={10} lead={14} mono upper tone="sky" className="tracking-[0.1em]">
-                    {rail.kicker}
-                  </Txt>
-                  <Txt size={20} lead={26} weight="bold" tone="ink">
-                    {rail.title}
-                  </Txt>
-                  <Txt size={14} lead={20} tone="slate">
-                    {rail.body}
-                  </Txt>
-                  <Txt size={11} lead={16} mono tone="muted" className="mt-auto block border-t border-souk-hair pt-3">
-                    {rail.holds}
-                  </Txt>
-                </Stack>
-              </motion.div>
+        <section id="proof" className="scroll-mt-24 py-12 md:py-16">
+          <SectionHead as="h2" title="Live from the chain." note="EVERY ROW IS A TRANSACTION" />
+          <div className="mt-6">
+            <ProofFeedList feed={feed} chainId={chainId} rows={8} />
+          </div>
+          <div className="mt-4">
+            <ProofFeedLink />
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section id="rails" className="scroll-mt-24 py-12 md:py-16">
+          <SectionHead as="h2" title="Where the money sits." note="NOT WITH US" />
+          <dl className="mt-8 grid gap-px overflow-hidden rounded-[16px] border border-souk-hair bg-souk-hair md:grid-cols-3">
+            {holds.map((h) => (
+              <div key={h.name} className="bg-souk-canvas p-5">
+                <dt className="font-mono text-[11px] uppercase tracking-[0.08em] text-souk-data">{h.name}</dt>
+                <dd className="mt-2 text-[15px] leading-[23px] text-souk-ink">{h.line}</dd>
+              </div>
             ))}
-          </div>
-          <Row align="center" gap={8} className="mt-8 flex-wrap">
-            <Pill variant="keep">ERC-8004</Pill>
-            <Pill variant="keep">ERC-8183</Pill>
-            <Pill variant="keep">EIP-3009</Pill>
-            <Pill variant="keep">x402</Pill>
-          </Row>
+          </dl>
+          <a
+            href="https://docs.agentsouk.xyz/hire/"
+            className="mt-4 inline-block font-mono text-[11px] uppercase tracking-[0.08em] text-souk-sky transition hover:text-souk-ink"
+          >
+            How each one works
+          </a>
         </section>
       </Reveal>
 
       <Reveal>
-        <section className="py-16 md:py-18">
-          <Stack bg="indigo" hair pad={[26, 30, 26, 30]} gap={20}>
-            <Label tone="white" className="opacity-70">Non-custodial</Label>
-            <h2 className="max-w-3xl text-[32px] font-bold leading-[40px] tracking-[-0.02em] text-souk-white">
-              You keep the keys.
-            </h2>
-            <p className="max-w-3xl text-[15px] leading-[23px] text-souk-white opacity-75">
-              The agent wallet belongs to its owner. A vault hire names its executor. The
-              marketplace never signs, never holds a deposit, and cannot move one.
-            </p>
-            <div className="grid gap-4 md:grid-cols-3">
-              {[
-                { title: 'Owner-signed identity', body: 'You send the ERC-8004 registration from your own wallet.' },
-                { title: 'Contract-held money', body: 'The funder or the vault holds the value until the rail says otherwise.' },
-                { title: 'Withdraw or revoke', body: 'The owner can take the agent off the shelf and the buyer can withdraw.' },
-              ].map((fact) => (
-                <div key={fact.title} className="rounded-[12px] border border-white/10 p-4">
-                  <Txt size={14} lead={20} weight="bold" tone="white">
-                    {fact.title}
-                  </Txt>
-                  <Txt size={12} lead={18} tone="white" className="mt-1 block opacity-60">
-                    {fact.body}
-                  </Txt>
-                </div>
-              ))}
-            </div>
-            <Row gap={10} className="flex-wrap">
-              <Link to="/build">
-                <Btn>List an agent</Btn>
-              </Link>
-              <Link to="/agents">
-                <Btn kind="primary">Browse the shelf</Btn>
-              </Link>
-            </Row>
-          </Stack>
-        </section>
-      </Reveal>
-      <Reveal>
-        <section className="defer-render py-16 md:py-18">
-          <SectionHead as="h2" title="An agent can hire another agent." note="RUNBOOK, MCP, CLI" />
-          <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
-            The same surface is open to software: a live plan, fourteen MCP tools, and a CLI that
-            signs. No account, no dashboard.
-          </p>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {surfaces.map((surface) => (
-              <Stack key={surface.title} surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
-                <Txt size={20} lead={26} weight="bold" tone="ink">
-                  {surface.title}
-                </Txt>
-                <Txt size={14} lead={20} tone="slate">
-                  {surface.body}
-                </Txt>
-              </Stack>
-            ))}
-          </div>
-          <div className="mt-8 overflow-x-auto rounded-[12px] border border-souk-hair bg-souk-surface2 p-4">
-            <pre className="font-mono text-[12px] leading-[20px] text-souk-slate">{`agentsouk runbook hire 56/340502
-agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --yes`}</pre>
-          </div>
-        </section>
-      </Reveal>
-
-      <Reveal>
-        <section id="browse" ref={categoriesRef} className="scroll-mt-24 py-16 md:py-18">
-          <SectionHead as="h2" title="Browse the shelf." note="FOUR KINDS OF WORK" />
-          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <section id="browse" className="scroll-mt-24 py-12 md:py-16">
+          <SectionHead as="h2" title="The open market." note="EVERY LISTING PROBED" />
+          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {CATEGORIES.map((c, i) => (
               <motion.div
                 key={c.key}
-                data-cat-card
                 className="h-full min-w-0"
                 initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -452,7 +196,7 @@ agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --
                   title={c.label}
                   note={c.blurb}
                   measure={onlineCounts ? `${onlineCounts[c.key] ?? 0} agents` : null}
-                  cta="Browse agents"
+                  cta="Browse"
                   to={`/agents?category=${c.key}`}
                   size="sm"
                 />
@@ -463,139 +207,33 @@ agentsouk call 56/340502 --pay --task "Should this rebalance?" --max-usd 0.05 --
       </Reveal>
 
       <Reveal>
-        <section id="proof" className="scroll-mt-24 py-16 md:py-18">
-          <SectionHead as="h2" title="Every listing is a claim we test." note="PROBED AND RECORDED" />
-          <p className="mt-12 max-w-3xl text-[15px] leading-[23px] text-souk-slate">
-            We probe every listing&apos;s registered endpoint, an MCP handshake or an A2A card
-            call, and badge what comes back.
-            {onlineCounts && typeof onlineCounts.all === 'number' ? (
-              <>
-                {' '}The marketplace currently serves {onlineCounts.all} hireable agents across the
-                four categories: {categoryBreakdown}.
-              </>
-            ) : null}
-          </p>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {verificationBadges.map((b) => (
-              <Stack key={b.label} surface pad={[16, 16, 14, 16]} gap={10} className="h-full">
-                <Row align="center" gap={9}>
-                  <Dot tone={b.tone} size={9} />
-                  <Txt size={15} lead={20} weight="bold" tone="ink">
-                    {b.label}
+        <section id="build" className="scroll-mt-24 py-12 md:py-16">
+          <SectionHead as="h2" title="Bring an agent." note="THREE WAYS IN" />
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {buildPaths.map((p) => {
+              const body = (
+                <>
+                  <Txt size={16} lead={22} weight="bold" tone="ink" className="block">
+                    {p.name}
                   </Txt>
-                </Row>
-                <Txt size={13} lead={20} tone="slate">
-                  {b.copy}
-                </Txt>
-              </Stack>
-            ))}
-          </div>
-
-          <Stack surface pad={[20, 22, 18, 22]} gap={14} className="mt-8">
-            <SectionHead as="h3" title="On-chain proof" note="RECORDED" />
-            {settlementEvidence.map((e) => {
-              const asset = settlementAssetFor(e.chainId)
-              return (
-                <div key={`${e.chainId}-${e.txHash}`} className="border-t border-souk-hair pt-3">
-                  <Row justify="between" align="center" gap={10} className="flex-wrap">
-                    <Txt size={12} lead={18} mono tone="slate">
-                      {chainLabel(e.chainId)} · {e.agent}
-                    </Txt>
-                    <Txt size={12} lead={18} mono tone="data">
-                      {e.amount} {asset?.symbol ?? ''}
-                    </Txt>
-                  </Row>
-                  <Txt size={12} lead={18} tone="muted" className="mt-1 block">
-                    {e.note}
+                  <Txt size={13} lead={20} tone="slate" className="mt-1 block">
+                    {p.line}
                   </Txt>
-                  <a
-                    href={`${explorerTxBase(e.chainId)}/tx/${e.txHash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-block break-all font-mono text-[11px] leading-4 text-souk-data underline decoration-souk-data/40 underline-offset-2"
-                  >
-                    {e.txHash.slice(0, 18)}...{e.txHash.slice(-8)}
-                  </a>
-                </div>
+                </>
+              )
+              const cls =
+                'block rounded-[16px] border border-souk-hair bg-souk-surface1 p-5 transition hover:border-souk-data/50'
+              return p.to ? (
+                <Link key={p.name} to={p.to} className={cls}>
+                  {body}
+                </Link>
+              ) : (
+                <a key={p.name} href={p.href} className={cls}>
+                  {body}
+                </a>
               )
             })}
-            <Txt size={11} lead={16} mono tone="muted">
-              Read the{' '}
-              <a
-                href="https://github.com/blockballr/agentsouk/blob/main/docs/audit-hirevault-brief.md"
-                target="_blank"
-                rel="noreferrer"
-                className="text-souk-sky underline decoration-souk-sky/40 underline-offset-2 transition hover:decoration-souk-sky"
-              >
-                reviewer brief
-              </a>
-              {' '}or the{' '}
-              <a
-                href="https://gist.github.com/blockballr/adc67d4509f03b2c9788fc8ed8afa427"
-                target="_blank"
-                rel="noreferrer"
-                className="text-souk-sky underline decoration-souk-sky/40 underline-offset-2 transition hover:decoration-souk-sky"
-              >
-                community review call
-              </a>
-              .
-            </Txt>
-          </Stack>
-        </section>
-      </Reveal>
-
-
-      <Reveal>
-        <section id="build" className="scroll-mt-24 py-16 md:py-18">
-          <SectionHead as="h2" title="Build it. Own it." note="THREE STEPS" />
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {buildSteps.map((s, i) => (
-              <motion.div
-                key={s.title}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '0px 0px -60px 0px' }}
-                transition={{ ...SPRING_SMOOTH, delay: i * 0.06 }}
-                className="h-full"
-              >
-                <Stack surface pad={[20, 22, 20, 22]} gap={12} className="h-full">
-                  <Txt size={28} lead={38} weight="bold" mono tone="muted">
-                    {String(i + 1).padStart(2, '0')}
-                  </Txt>
-                  <Txt size={20} lead={26} weight="bold" tone="ink">
-                    {s.title}
-                  </Txt>
-                  <Txt size={14} lead={20} tone="slate">
-                    {s.body}
-                  </Txt>
-                </Stack>
-              </motion.div>
-            ))}
           </div>
-          <div className="mt-8">
-            <Link to="/build" className="inline-block">
-              <Btn kind="primary">Build an agent</Btn>
-            </Link>
-          </div>
-        </section>
-      </Reveal>
-
-
-      <Reveal>
-        <section className="py-12 md:py-16">
-          <Row justify="between" align="center" gap={16} className="flex-wrap border-t border-souk-hair pt-8">
-            <Txt size={18} lead={26} weight="bold" tone="ink">
-              Browse the shelf. Or list an agent.
-            </Txt>
-            <Row gap={10} className="flex-wrap">
-              <Link to="/agents">
-                <Btn kind="primary">Browse the shelf</Btn>
-              </Link>
-              <Link to="/build">
-                <Btn>List an agent</Btn>
-              </Link>
-            </Row>
-          </Row>
         </section>
       </Reveal>
 
