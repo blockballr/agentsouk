@@ -84,19 +84,25 @@ describe("quest card", () => {
     expect(html).toContain('<meta name="twitter:image" content="https://app.agentsouk.xyz/quest-og.png" />');
     expect(html).toContain("Every stamp is backed by a settled hire.");
     expect(html).toContain('<meta property="og:image:width" content="1200" />');
-    expect(html).not.toContain("https://agentsouk.xyz/og-image.png");
+    expect(html).not.toContain("https://app.agentsouk.xyz/og-card.png");
   });
 
   it("leaves every other page on the site card", async () => {
     const { response } = await call("https://app.agentsouk.xyz/agents", PAGE, "text/html; charset=utf-8");
     const html = await response.text();
     expect(html).toContain('<meta property="og:title" content="Agent Souk - the open market for working agents" />');
-    expect(html).toContain('<meta property="og:image" content="https://agentsouk.xyz/og-image.png" />');
+    expect(html).toContain('<meta property="og:image" content="https://app.agentsouk.xyz/og-card.png" />');
     expect(html).not.toContain("quest-og.png");
   });
 
   it("ships the card at the size the tags declare", () => {
     const png = readFileSync(new URL("../apps/web/public/quest-og.png", import.meta.url));
+    expect(png.readUInt32BE(16)).toBe(1200);
+    expect(png.readUInt32BE(20)).toBe(630);
+  });
+
+  it("ships the site card at the size the tags declare", () => {
+    const png = readFileSync(new URL("../apps/web/public/og-card.png", import.meta.url));
     expect(png.readUInt32BE(16)).toBe(1200);
     expect(png.readUInt32BE(20)).toBe(630);
   });
