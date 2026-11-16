@@ -99,6 +99,14 @@ async function verified(address: string): Promise<SignIn | null> {
   }
 }
 
+// when this browser's sign-in for the address stops being honoured, so the
+// account panel can say how long the silent reconnect lasts
+export async function signedInUntil(address: string): Promise<Date | null> {
+  const record = await verified(address)
+  if (!record) return null
+  return new Date(Date.parse(record.issued) + MAX_AGE_MS)
+}
+
 // the proof the notification API asks for: the same signed statement this
 // browser already holds, never a fresh prompt on every poll
 export async function sessionProof(address: string): Promise<SessionProof | null> {

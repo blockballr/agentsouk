@@ -22,14 +22,15 @@ import { inputClass } from '../lib/form-classes'
 import { endpointRefusal, probeEndpoint, readAgentCard, type EndpointProbe } from '../lib/register'
 import { useTargetChain } from '../lib/target-chain'
 import { useConnectedAccount } from '../lib/use-connected-account'
-import { ConnectTimeoutError, connectWalletWithTimeout } from '../lib/wallet-session'
+import { connectWalletWithTimeout } from '../lib/wallet-session'
+import { walletErrorText } from '../lib/wallet-errors'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 
 const STAGES = [
   { id: 'owner', title: 'Owner', note: 'The wallet that owns the listing' },
   { id: 'agent', title: 'Agent', note: 'An endpoint buyers can reach' },
   { id: 'identity', title: 'Identity', note: 'One registry transaction' },
-  { id: 'rails', title: 'Rails', note: 'What it can sell here' },
+  { id: 'rails', title: 'Payments', note: 'How buyers can pay it' },
   { id: 'live', title: 'Live', note: 'On the shelf' },
 ] as const
 
@@ -479,8 +480,7 @@ function OwnerStage({ account }: { account: string | null }) {
     try {
       await connectWalletWithTimeout()
     } catch (e) {
-      // a refusal in the wallet speaks for itself; only a connect that reached nobody needs words here
-      if (e instanceof ConnectTimeoutError) setNote(e.message)
+      setNote(walletErrorText(e))
     } finally {
       setConnecting(false)
     }
@@ -765,8 +765,8 @@ function RailsStage({
   if (!tokenId || chainId === null) {
     return (
       <Panel
-        title="Rails come after the registration"
-        lead="Once the agent has a registry id, the verifier calls its endpoint and this stage shows which of the three rails it can sell on."
+        title="Payments come after the registration"
+        lead="Once the agent has a registry id, the verifier calls its endpoint and this stage shows which of the three ways to pay it can take."
       />
     )
   }
@@ -881,9 +881,9 @@ function LiveStage({
       title={onShelf ? `${detail?.name ?? 'Your agent'} is on the shelf` : 'Registered, not on the shelf yet'}
       lead={
         onShelf
-          ? 'Buyers can find it and hire it on the rails shown in the last stage. The seller console is where hires and payouts appear.'
+          ? 'Buyers can find it and hire it in the ways shown in the Payments stage. The seller console is where hires and payouts appear.'
           : detail?.availability?.reason ??
-            'The verifier has not finished with this listing. The rails stage shows what it has found so far.'
+            'The verifier has not finished with this listing. The Payments stage shows what it has found so far.'
       }
     >
       <Row gap={10} align="center" className="flex-wrap">

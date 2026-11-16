@@ -2,7 +2,8 @@ import { useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { chainLabel } from '../lib/contracts'
 import { shortAddress } from '@agora/core'
-import { ConnectTimeoutError, connectWalletWithTimeout } from '../lib/wallet-session'
+import { connectWalletWithTimeout } from '../lib/wallet-session'
+import { walletErrorText } from '../lib/wallet-errors'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { Btn, Txt } from './souk'
 import { useI18n } from '../lib/i18n'
@@ -69,9 +70,7 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
     try {
       await connectWalletWithTimeout()
     } catch (e) {
-      // the wallet's own refusal is the useful message; the page stays as it
-      // was, and a connect that reached nobody says so rather than hanging
-      if (e instanceof ConnectTimeoutError) setConnectNote(e.message)
+      setConnectNote(walletErrorText(e))
     } finally {
       setConnecting(false)
     }

@@ -5,7 +5,8 @@ import { QuickSearch } from './QuickSearch'
 
 import { NotificationBell } from './NotificationBell'
 import { Wordmark } from './Wordmark'
-import { connectWallet, disconnectWallet, signOut } from '../lib/wallet-session'
+import { connectWallet, disconnectWallet, signedInUntil, signOut } from '../lib/wallet-session'
+import { walletErrorText } from '../lib/wallet-errors'
 import { useConnectedAccount } from '../lib/use-connected-account'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
@@ -13,29 +14,39 @@ import { useLocalProfile } from '../lib/profile'
 import { ThemeToggle } from './ThemeToggle'
 import { useLocation } from 'react-router-dom'
 import { useI18n } from '../lib/i18n'
-import { scrollToSection } from '../lib/scroll'
 import { Dot, Row, Rule, Stack, Txt } from './souk'
 
+// three primary destinations on every page; everything else sits under More,
+// so a first visit has one obvious place to start
 const links = [
   { to: '/agents', key: 'nav.marketplace' },
-  { to: '/discover', key: 'nav.discover' },
-  { to: '/compare', key: 'nav.compare' },
-  { to: '/build', key: 'nav.list' },
   { to: '/ongoing', key: 'nav.ongoing' },
-  { to: '/quest', key: 'nav.quest' },
+  { to: '/build', key: 'nav.list' },
 ]
 
-// on the home page the same row points at the page it is on, so a visitor can
-// jump to the part they came for instead of being sent to another surface
-const homeLinks = [
-  { href: '#rails', label: 'Rails' },
-  { href: '#gallery', label: 'Gallery' },
-  { href: '#browse', label: 'Browse' },
-  { href: '#proof', label: 'Proof' },
-  { href: '#build', label: 'Build' },
-]
+type MoreItem = { label: string; to?: string; href?: string; note: string }
 
 const DOCS_HREF = 'https://docs.agentsouk.xyz'
+
+const moreGroups: { title: string; items: MoreItem[] }[] = [
+  {
+    title: 'Market',
+    items: [
+      { label: 'New listings', to: '/discover', note: 'Agents listed most recently' },
+      { label: 'Compare', to: '/compare', note: 'Agents side by side' },
+      { label: 'Live proof', to: '/proof', note: 'Every confirmed action, with its transaction' },
+      { label: 'Quest', to: '/quest', note: 'The Set and Earn passport' },
+    ],
+  },
+  {
+    title: 'Build',
+    items: [
+      { label: 'Docs', href: DOCS_HREF, note: 'Hiring, listing and the API' },
+      { label: 'Skill', href: 'https://api.agentsouk.xyz/skill', note: 'For AI assistants and agents' },
+      { label: 'Flux LP', href: 'https://fluxlp.agentsouk.xyz', note: 'Our stock liquidity agent' },
+    ],
+  },
+]
 
 // the docs and station hosts are their own surfaces, so their primary links
 // point at the app origin instead of asking this host to render app routes
@@ -75,10 +86,6 @@ export function Nav() {
   // address or disconnects rather than moving the chip to whoever is active
   const wallet = useConnectedAccount()
   const onHome = location.pathname === '/' || location.pathname === '/about'
-  const jumpTo = (href: string) => {
-    scrollToSection(href.replace(/^#/, ''))
-    window.history.replaceState(null, '', href)
-  }
   return (
     <header className="relative z-10 border-b border-souk-hair bg-souk-canvas">
       <div className="site-frame flex h-[62px] items-center justify-between">
@@ -86,44 +93,18 @@ export function Nav() {
         <div className="flex items-center gap-[44px]">
           <Wordmark />
           <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
-            {onHome
-              ? homeLinks.map((l) => (
-                  <a
-                    key={l.href}
-                    href={l.href}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      jumpTo(l.href)
-                    }}
-                    className={itemClass(false)}
-                  >
-                    {l.label}
-                  </a>
-                ))
-              : links.map((l) =>
-                  OFF_APP ? (
-                    <a key={l.to} href={`https://app.agentsouk.xyz${l.to}`} className={itemClass(false)}>
-                      {t(l.key)}
-                    </a>
-                  ) : (
-                    <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => itemClass(isActive)}>
-                      {t(l.key)}
-                    </NavLink>
-                  ),
-                )}
-            {onHome ? (
-              <NavLink to="/quest" className={({ isActive }) => itemClass(isActive)}>
-                Quest
-              </NavLink>
-            ) : null}
-            <a
-              href={DOCS_HREF}
-              target="_blank"
-              rel="noreferrer"
-              className={itemClass(false)}
-            >
-              Docs
-            </a>
+            {links.map((l) =>
+              OFF_APP ? (
+                <a key={l.to} href={`https://app.agentsouk.xyz${l.to}`} className={itemClass(false)}>
+                  {t(l.key)}
+                </a>
+              ) : (
+                <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => itemClass(isActive)}>
+                  {t(l.key)}
+                </NavLink>
+              ),
+            )}
+            <MoreMenu />
             {/* the plain text links belong in this one row: a group that also holds
                 the boxed controls is taller, so its text centres against a different
                 box height and the row reads misaligned */}
@@ -155,11 +136,7 @@ export function Nav() {
             onConnect={() => {
               connectWallet()
                 .then(() => setConnectError(null))
-                .catch((e) =>
-                  setConnectError(
-                    e instanceof Error ? e.message : 'Sign-in was declined, connect again to sign in.',
-                  ),
-                )
+                .catch((e) => setConnectError(walletErrorText(e)))
             }}
           />
         </div>
@@ -181,63 +158,39 @@ export function Nav() {
       {menuOpen && (
         <div className="border-b border-souk-hair bg-souk-canvas lg:hidden">
           <nav aria-label="Mobile" className="site-frame flex flex-col gap-1 py-4">
-            {onHome
-              ? homeLinks.map((l) => (
-                  <a
-                    key={l.href}
-                    href={l.href}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      jumpTo(l.href)
-                      setMenuOpen(false)
-                    }}
-                    className="py-3 text-[15px] uppercase text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
-                  >
-                    {l.label}
-                  </a>
-                ))
-              : links.map((l) =>
-                  OFF_APP ? (
-                    <a
-                      key={l.to}
-                      href={`https://app.agentsouk.xyz${l.to}`}
-                      className="py-3 text-[15px] uppercase text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
-                    >
-                      {t(l.key)}
-                    </a>
-                  ) : (
-                    <NavLink
-                      key={l.to}
-                      to={l.to}
-                      end={l.to === '/'}
-                      onClick={() => setMenuOpen(false)}
-                      className={({ isActive }) =>
-                        `py-3 text-[15px] uppercase ${
-                          isActive ? 'font-semibold text-souk-ink' : 'text-souk-steel'
-                        } focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data`
-                      }
-                    >
-                      {t(l.key)}
-                    </NavLink>
-                  ),
-                )}
-            {onHome ? (
-              <NavLink
-                to="/quest"
-                onClick={() => setMenuOpen(false)}
-                className="py-3 text-[15px] uppercase text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
-              >
-                Quest
-              </NavLink>
-            ) : null}
-            <a
-              href={DOCS_HREF}
-              target="_blank"
-              rel="noreferrer"
-              className="py-3 text-[15px] uppercase text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
-            >
-              Docs
-            </a>
+            {links.map((l) =>
+              OFF_APP ? (
+                <a
+                  key={l.to}
+                  href={`https://app.agentsouk.xyz${l.to}`}
+                  className="py-3 text-[15px] uppercase text-souk-steel focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data"
+                >
+                  {t(l.key)}
+                </a>
+              ) : (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  end={l.to === '/'}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `py-3 text-[15px] uppercase ${
+                      isActive ? 'font-semibold text-souk-ink' : 'text-souk-steel'
+                    } focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data`
+                  }
+                >
+                  {t(l.key)}
+                </NavLink>
+              ),
+            )}
+            {moreGroups.map((group) => (
+              <div key={group.title} className="mt-3 border-t border-souk-hair pt-3">
+                <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-souk-labels">{group.title}</span>
+                {group.items.map((item) => (
+                  <MoreLink key={item.label} item={item} onPick={() => setMenuOpen(false)} compact />
+                ))}
+              </div>
+            ))}
             {onHome ? (
               <Link
                 to="/agents"
@@ -266,6 +219,98 @@ export function Nav() {
         </div>
       )}
     </header>
+  )
+}
+
+function MoreLink({ item, onPick, compact }: { item: MoreItem; onPick: () => void; compact?: boolean }) {
+  const body = (
+    <>
+      <span className={compact ? 'text-[15px] uppercase text-souk-steel' : 'text-[14px] leading-[20px] text-souk-ink'}>
+        {item.label}
+      </span>
+      {compact ? null : <span className="text-[12px] leading-[17px] text-souk-steel">{item.note}</span>}
+    </>
+  )
+  const cls = compact
+    ? 'flex py-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-souk-data'
+    : 'flex flex-col gap-0.5 rounded-[8px] px-3 py-2.5 transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data'
+  if (item.to && !OFF_APP) {
+    return (
+      <Link to={item.to} onClick={onPick} className={cls} role={compact ? undefined : 'menuitem'}>
+        {body}
+      </Link>
+    )
+  }
+  const href = item.to ? `https://app.agentsouk.xyz${item.to}` : item.href
+  const external = Boolean(item.href)
+  return (
+    <a
+      href={href}
+      onClick={onPick}
+      className={cls}
+      role={compact ? undefined : 'menuitem'}
+      {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+    >
+      {body}
+    </a>
+  )
+}
+
+// the secondary pages, grouped, opened from one word in the bar
+function MoreMenu() {
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLDivElement | null>(null)
+  const location = useLocation()
+
+  useEffect(() => setOpen(false), [location.pathname])
+  useEffect(() => {
+    if (!open) return
+    const onDown = (ev: MouseEvent) => {
+      if (box.current && !box.current.contains(ev.target as Node)) setOpen(false)
+    }
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div ref={box} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={`${itemClass(open)} inline-flex items-center gap-1.5`}
+      >
+        More
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" className={`transition-transform ${open ? 'rotate-180' : ''}`}>
+          <path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute left-0 top-[calc(100%+12px)] z-30 grid w-[520px] grid-cols-2 gap-4 rounded-[14px] border border-souk-hair bg-souk-canvas p-3 shadow-2xl"
+        >
+          {moreGroups.map((group) => (
+            <div key={group.title} className="flex flex-col gap-0.5">
+              <span className="px-3 pb-1 pt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-labels">
+                {group.title}
+              </span>
+              {group.items.map((item) => (
+                <MoreLink key={item.label} item={item} onPick={() => setOpen(false)} />
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
   )
 }
 
@@ -354,6 +399,19 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
   // the panel names the chain the deployment actually serves, read from the server
   // rather than compiled in, so it cannot claim a chain the instance is not on
   const target = useTargetChain()
+  // a returning visitor reconnects without a prompt while this lasts, so the
+  // panel says so instead of leaving a silent connect unexplained
+  const [until, setUntil] = useState<Date | null>(null)
+  useEffect(() => {
+    if (!open || !wallet) return
+    let alive = true
+    void signedInUntil(wallet).then((d) => {
+      if (alive) setUntil(d)
+    })
+    return () => {
+      alive = false
+    }
+  }, [open, wallet])
   useEffect(() => {
     if (!open) return
     const onAway = (e: MouseEvent) => {
@@ -419,6 +477,13 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
               </Txt>
             </Stack>
           </Row>
+          {wallet && until ? (
+            <Txt size={11} lead={16} tone="steel" className="block px-2 pb-2">
+              Signed in on this browser until{' '}
+              {until.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}. Until then it reconnects without
+              asking you to sign again.
+            </Txt>
+          ) : null}
           <Rule hair />
           <AccountRow label={t('nav.account.profile')} route="/profile" Icon={PersonGlyph} />
           <AccountRow label={t('nav.account.vault')} route="/vault" Icon={VaultGlyph} />
