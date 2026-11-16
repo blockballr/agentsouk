@@ -23,15 +23,15 @@ export interface AgentRail {
 const KIND = {
   vault: {
     title: 'Vault hire',
-    body: 'The deposit stays in HireVault. The agent trades inside the band you sign.',
+    body: 'Your deposit stays in the vault contract. The agent trades it only inside the limits you sign, and you can withdraw what is left at any time.',
   },
   job: {
     title: 'Escrow job',
-    body: 'Agree a price, fund the ERC-8183 job, and release against the delivery.',
+    body: 'Agree a price first. Your payment is held until the work is delivered, then released to the seller.',
   },
   call: {
     title: 'Direct call',
-    body: 'One x402 payment, one answer at the agent endpoint.',
+    body: 'Pay once, get one answer. The payment goes straight to the agent.',
   },
 } as const
 

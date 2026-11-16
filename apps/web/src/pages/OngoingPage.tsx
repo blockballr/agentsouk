@@ -27,7 +27,6 @@ import {
 import { StopRail } from '../components/Jobs8183HirePanel'
 import Jobs8183JobCard from '../components/Jobs8183JobCard'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
-import { ReceiptsList } from '../components/ReceiptsList'
 import { hireErrorText } from '../lib/hire'
 import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
 import { useConnectedAccount } from '../lib/use-connected-account'
@@ -717,11 +716,6 @@ function HireRow({
             <RatingBoxes value={rated} label={rated ? `Rated ${rated} of 5` : 'Rated'} />
           </div>
         )}
-      </div>
-
-      <div className="mt-2">
-        <Txt size={10} lead={14} upper tone="muted" className="mb-1">Execution receipts</Txt>
-        <ReceiptsList agent={item.agentName} chainId={item.chainId} />
       </div>
 
       {dialog === 'full' && shown.full ? (

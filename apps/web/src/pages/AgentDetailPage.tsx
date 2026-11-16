@@ -21,6 +21,8 @@ import Jobs8183JobCard from '../components/Jobs8183JobCard'
 import Jobs8183HirePanel from '../components/Jobs8183HirePanel'
 import { EscrowFlowCard } from '../components/EscrowFlowCard'
 import { ReceiptsList } from '../components/ReceiptsList'
+import { ProofFeedList } from '../components/ProofFeedList'
+import { useProofFeed, timeAgo as feedAgo } from '../lib/proof-feed'
 import VaultHirePage from './VaultHirePage'
 import { escrowLifecycle, hireItems, hireState, type HireItem } from '../lib/hire-state'
 import { RateAgent } from '../components/RateAgent'
@@ -300,6 +302,44 @@ export function AgentDetailPage() {
   // push the hire card off the screen
   const [chainOpen, setChainOpen] = useState(false)
   const [descOpen, setDescOpen] = useState(false)
+  // one page, three tabs: what it does, what it has done, and the record
+  const [tab, setTab] = useState<'overview' | 'activity' | 'technical'>('overview')
+  const agentFeed = useProofFeed(20, tokenId)
+  const [mark, setMark] = useState<{ verified: boolean; reason: string } | null>(null)
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_URL ?? '/api'
+    let alive = true
+    fetch(`${base}/verified/${chainId}/${tokenId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => {
+        if (alive && body?.success) setMark({ verified: Boolean(body.verified), reason: String(body.reason ?? '') })
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [chainId, tokenId])
+  // a vault agent's record: hires its executor has run. the endpoint's receipt
+  // counts cover only its last 12 hours, so trades are not taken from it
+  const [record, setRecord] = useState<{ hires: number } | null>(null)
+  const recordWallet = detail?.agent_wallet ?? null
+  useEffect(() => {
+    if (!recordWallet) return
+    const base = import.meta.env.VITE_API_URL ?? '/api'
+    let alive = true
+    fetch(`${base}/vault/executor/activity`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => {
+        const row = (body?.executors ?? []).find(
+          (x: { address?: string }) => x.address?.toLowerCase() === recordWallet.toLowerCase(),
+        )
+        if (alive && row) setRecord({ hires: Number(row.hires) || 0 })
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [recordWallet])
 
   // the viewer's session, watched rather than read once: a switch inside the
   // wallet adopts a recorded address or disconnects instead of reading the
@@ -731,7 +771,7 @@ export function AgentDetailPage() {
       </Link>
       {/* the design's own column split: 1316 of work and 520 of hire, 20 between */}
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_520px] lg:grid-rows-[auto_1fr]">
-        <div className="min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1">
+        <div className="min-w-0 lg:col-start-1 lg:row-start-1">
           <header className="flex flex-col gap-6 sm:flex-row sm:items-start">
             <div className="relative shrink-0 self-start">
               <img
@@ -803,135 +843,61 @@ export function AgentDetailPage() {
                 {' · '}Listed {formatDate(detail.created_at)}
               </Txt>
               <SoukRow align="center" gap={8} className="mt-4 flex-wrap">
-                <Pill>{chainLabel(Number(chainId))}</Pill>
-                {detail.a2a_endpoint ? <Pill>A2A</Pill> : null}
-                {detail.mcp_server ? <Pill>MCP</Pill> : null}
-                {jobSeller ? <Pill variant="keep">ERC-8183</Pill> : vaultCapable ? <Pill variant="keep">Hire Vault</Pill> : <Pill>x402</Pill>}
-                {detail.is_verified ? <Tag title="Verified on the ERC-8004 registry index">Registry verified</Tag> : null}
-                {detail.is_endpoint_verified ? <Tag title="The endpoint's domain is verified">Domain verified</Tag> : null}
-                {detail.pcs ? <Tag title="Its own registration says it works with PancakeSwap; not yet checked on-chain">PancakeSwap</Tag> : null}
-                {(detail as { boosted?: boolean }).boosted ? <Tag title="Paid boost: sorted higher on the marketplace">Boosted</Tag> : null}
-                {detail.category ? <Tag title="The shelf category this listing is filed under">{CATEGORIES.find((c) => c.key === detail.category)?.label ?? detail.category}</Tag> : null}
+                {mark?.verified ? (
+                  <span title={mark.reason}>
+                    <Pill variant="good">Verified by Agent Souk</Pill>
+                  </span>
+                ) : null}
+                <Pill>{jobSeller ? 'Pay on delivery' : vaultCapable ? 'Your money stays in a vault' : 'Pay per answer'}</Pill>
                 {builtWith ? (
                   <Tag href={builtWith.href ?? undefined} title="From the BUILT_WITH record on-chain">
                     Built with {builtWith.label}
                   </Tag>
                 ) : null}
-                {detail.pancakeswapPositions ? (
-                  <Tag
-                    href={`${explorer}/token/${detail.pancakeswapPositions.positionManager}?a=${detail.pancakeswapPositions.wallet}`}
-                    title={`Read on chain: ${detail.pancakeswapPositions.held} in the agent's wallet, which the link lists, and ${detail.pancakeswapPositions.staked} staked in PancakeSwap's farm`}
-                  >
-                    {positionsLabel(detail.pancakeswapPositions.held, detail.pancakeswapPositions.staked)}
-                  </Tag>
-                ) : null}
+                <Link
+                  to={`/compare?agent=${chainId}/${tokenId}`}
+                  className="text-[12px] text-souk-sky underline-offset-2 transition hover:text-souk-ink hover:underline"
+                >
+                  Compare with similar agents
+                </Link>
               </SoukRow>
+              {agentFeed.items && agentFeed.items.length > 0 ? (
+                <Txt size={12} lead={18} tone="steel" className="mt-3 block">
+                  Last on chain: {agentFeed.items[0].detail.toLowerCase()}, {feedAgo(agentFeed.items[0].at)}
+                </Txt>
+              ) : null}
+              {vaultCapable && record && record.hires > 0 ? (
+                <Txt size={12} lead={18} tone="steel" className="mt-2 block">
+                  Track record: {record.hires} {record.hires === 1 ? 'hire' : 'hires'} run in the vault.
+                  Its trades are in the Activity tab.
+                </Txt>
+              ) : null}
+              {vaultCapable ? (
+                // the terms a buyer agrees to, before any wallet is asked for; the fee and the
+                // loss default mirror what the vault hire form sends
+                <dl className="mt-4 grid max-w-[640px] grid-cols-2 gap-px overflow-hidden rounded-[12px] border border-souk-hair bg-souk-hair sm:grid-cols-4">
+                  {[
+                    { k: 'Pair', v: 'WBNB / USDT' },
+                    {
+                      k: 'Minimum',
+                      v:
+                        typeof (detail as { vaultMinDepositUsd?: number }).vaultMinDepositUsd === 'number'
+                          ? `$${(detail as { vaultMinDepositUsd?: number }).vaultMinDepositUsd}`
+                          : 'n/a',
+                    },
+                    { k: 'Agent fee', v: '0%, waived' },
+                    { k: 'Loss cap', v: 'You set it, 20% default' },
+                  ].map((t) => (
+                    <div key={t.k} className="bg-souk-canvas px-3 py-2.5">
+                      <dt className="text-[10px] uppercase tracking-[0.06em] text-souk-labels">{t.k}</dt>
+                      <dd className="mt-1 text-[13px] leading-[18px] text-souk-ink">{t.v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
             </div>
           </header>
 
-        <div className="mt-6 grid gap-2.5 sm:grid-cols-3">
-          {[
-            { k: 'Registry', v: `#${detail.token_id}`, href: bscScan },
-            {
-              k: 'Agent wallet',
-              v: detail.agent_wallet ? shortAddress(detail.agent_wallet) : 'none declared',
-              href: detail.agent_wallet ? `${explorer}/address/${detail.agent_wallet}` : null,
-            },
-            {
-              k: 'Last check',
-              v: detail.verification?.checkedAt ? timeAgo(detail.verification.checkedAt) : 'not checked',
-              href: null,
-            },
-          ].map((f) => (
-            <div key={f.k} className="rounded-[16px] border border-souk-hair bg-souk-surface1 px-3.5 py-3">
-              <div className="text-[10px] uppercase tracking-[0.06em] text-souk-muted">{f.k}</div>
-              <div className="mt-1.5 truncate font-mono text-[12px] text-souk-data">
-                {f.href ? (
-                  <a href={f.href} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">
-                    {f.v}
-                  </a>
-                ) : (
-                  f.v
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-5">
-          <AsideCard>
-            <div className="flex items-baseline justify-between gap-3">
-              <p className="micro text-souk-ink">On-chain evidence</p>
-              <p className="micro text-souk-muted">BNB chain {chainId}</p>
-            </div>
-            <div className="mt-3 space-y-2 text-xs">
-              <Row
-                label="Registry"
-                value={
-                  <a
-                    href={`${explorer}/address/${detail.contract_address}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono underline-offset-2 hover:underline"
-                  >
-                    {shortAddress(detail.contract_address)}
-                  </a>
-                }
-              />
-              <Row label="Token id" value={`#${detail.token_id}`} />
-              <Row
-                label="Owner"
-                value={
-                  <a
-                    href={`${explorer}/address/${detail.owner_address}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono underline-offset-2 hover:underline"
-                  >
-                    {shortAddress(detail.owner_address)}
-                  </a>
-                }
-              />
-              <Row
-                label="Agent wallet"
-                value={
-                  detail.agent_wallet ? (
-                    <a
-                      href={`${explorer}/address/${detail.agent_wallet}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-mono underline-offset-2 hover:underline"
-                    >
-                      {shortAddress(detail.agent_wallet)}
-                    </a>
-                  ) : (
-                    'none declared'
-                  )
-                }
-              />
-              <Row
-                label="Created"
-                value={
-                  detail.created_tx_hash ? (
-                    <a
-                      href={`${explorerTxBase(Number(chainId))}/${detail.created_tx_hash}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-mono underline-offset-2 hover:underline"
-                    >
-                      {shortAddress(detail.created_tx_hash)}
-                    </a>
-                  ) : (
-                    'no tx recorded'
-                  )
-                }
-              />
-            </div>
-            <p className="micro mt-3 text-souk-muted">
-              Every figure here is read from BNB Chain; the links open the record on BscScan.
-            </p>
-          </AsideCard>
-        </div>
 
 
         {/* the viewer's own trail with this agent, ended failures included: the
@@ -971,7 +937,7 @@ export function AgentDetailPage() {
 
         <aside
           ref={setHirePanel}
-          className="flex h-fit scroll-mt-4 flex-col gap-5 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-start-2"
+          className="flex h-fit scroll-mt-4 flex-col gap-5 self-start lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1"
         >
           {quest && questStage && (
             <AsideCard>
@@ -1068,23 +1034,6 @@ export function AgentDetailPage() {
         </aside>
 
         <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-2">
-          {/* the drawn body band opens with the check panel level with the hire
-              column, so it leads this column rather than sitting under the title */}
-          <ProofStrip
-            verdict={verdict}
-            checkedAt={detail.verification?.checkedAt ?? null}
-            parallel={detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok'}
-            payment={
-              jobSeller
-                ? { value: 'By ERC-8183 job', note: 'The settled hire funds the job on the record; delivery attested' }
-                : vaultCapable
-                  ? { value: 'Vault hire', note: 'Fund a bounded deposit; the agent trades it and you withdraw the rest' }
-                  : { value: 'Per call', note: `Paid over x402 in ${asset}, straight to its wallet` }
-            }
-            network={chainLabel(detail.chain_id)}
-            score={detail.total_score > 0 ? formatScore(detail.total_score) : null}
-            reviews={detail.total_feedbacks}
-          />
           {/* the answer sits directly under the check panel, so a buyer sees it
               the moment it lands instead of scrolling past what it does and how
               to reach it */}
@@ -1099,9 +1048,30 @@ export function AgentDetailPage() {
               }
             />
           )}
+          <div role="tablist" aria-label="About this agent" className="flex gap-1 border-b border-souk-hair">
+            {([
+              ['overview', 'Overview'],
+              ['activity', 'Activity'],
+              ['technical', 'Technical'],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={tab === key}
+                onClick={() => setTab(key)}
+                className={cx(
+                  '-mb-px border-b-2 px-3 py-2.5 text-[13px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data',
+                  tab === key ? 'border-souk-accent text-souk-ink' : 'border-transparent text-souk-steel hover:text-souk-ink',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {tab === 'overview' ? (
+            <>
           <UsageSection skills={detail.skills ?? []} jobSeller={jobSeller} vault={vaultCapable} />
-          <HowToReachCard detail={detail} jobSeller={jobSeller} />
-
           {vaultCapable && siblings.length > 0 ? (
             <Stack surface pad={[18, 20, 18, 20]} gap={10}>
               <SectionHead title="Other vault agents" note="SAME VAULT" />
@@ -1125,23 +1095,161 @@ export function AgentDetailPage() {
           ) : null}
 
           {perfProbe && <PerformanceSection probe={perfProbe} />}
-
-        </div>
-      </div>
-
-      {detail.agent_wallet && (
-        <Stack gap={8} surface pad={[16, 18, 16, 18]} className="mt-4">
-          <SectionHead title="Execution receipts" note="ON-CHAIN TRACK RECORD" />
+            </>
+          ) : null}
+          {tab === 'activity' ? (
+            <>
+              {/* a vault agent's trades are told in full below, so the feed here keeps its paid calls */}
+              {!vaultCapable || (agentFeed.items ?? []).some((i) => i.kind === 'hire') ? (
+                <Stack surface pad={[18, 20, 18, 20]} gap={10}>
+                  <SectionHead title={vaultCapable ? 'Paid calls' : 'Confirmed on chain'} note="EVERY ROW IS A TRANSACTION" />
+                  <ProofFeedList
+                    feed={vaultCapable ? { ...agentFeed, items: (agentFeed.items ?? []).filter((i) => i.kind === 'hire') } : agentFeed}
+                    chainId={Number(chainId)}
+                    rows={20}
+                  />
+                </Stack>
+              ) : null}
+      {vaultCapable && detail.agent_wallet && (
+        <Stack gap={8} surface pad={[16, 18, 16, 18]}>
+          <SectionHead title="Trades in hires" note="FROM THE VAULT'S RECEIPTS" />
           <ReceiptsList agent={detail.agent_wallet} chainId={Number(detail.chain_id)} />
         </Stack>
       )}
+
+            </>
+          ) : null}
+          {tab === 'technical' ? (
+            <>
+          <ProofStrip
+            verdict={verdict}
+            checkedAt={detail.verification?.checkedAt ?? null}
+            parallel={detail.verification?.status === 'delivered' && detail.verification.concurrency === 'parallel-ok'}
+            payment={
+              jobSeller
+                ? { value: 'By ERC-8183 job', note: 'The settled hire funds the job on the record; delivery attested' }
+                : vaultCapable
+                  ? { value: 'Vault hire', note: 'Fund a bounded deposit; the agent trades it and you withdraw the rest' }
+                  : { value: 'Per call', note: `Paid over x402 in ${asset}, straight to its wallet` }
+            }
+            network={chainLabel(detail.chain_id)}
+            score={detail.total_score > 0 ? formatScore(detail.total_score) : null}
+            reviews={detail.total_feedbacks}
+          />
+          <HowToReachCard detail={detail} jobSeller={jobSeller} />
+
+              <SoukRow align="center" gap={8} className="flex-wrap">
+                <Pill>{chainLabel(Number(chainId))}</Pill>
+                {detail.a2a_endpoint ? <Pill>A2A</Pill> : null}
+                {detail.mcp_server ? <Pill>MCP</Pill> : null}
+                {jobSeller ? <Pill variant="keep">ERC-8183</Pill> : vaultCapable ? <Pill variant="keep">Hire Vault</Pill> : <Pill>x402</Pill>}
+                {detail.is_verified ? <Tag title="Verified on the ERC-8004 registry index">Registry verified</Tag> : null}
+                {detail.is_endpoint_verified ? <Tag title="The endpoint's domain is verified">Domain verified</Tag> : null}
+                {detail.pcs ? <Tag title="Its own registration says it works with PancakeSwap; not yet checked on-chain">PancakeSwap</Tag> : null}
+                {(detail as { boosted?: boolean }).boosted ? <Tag title="Paid boost: sorted higher on the marketplace">Boosted</Tag> : null}
+                {detail.category ? <Tag title="The shelf category this listing is filed under">{CATEGORIES.find((c) => c.key === detail.category)?.label ?? detail.category}</Tag> : null}
+                {builtWith ? (
+                  <Tag href={builtWith.href ?? undefined} title="From the BUILT_WITH record on-chain">
+                    Built with {builtWith.label}
+                  </Tag>
+                ) : null}
+                {detail.pancakeswapPositions ? (
+                  <Tag
+                    href={`${explorer}/token/${detail.pancakeswapPositions.positionManager}?a=${detail.pancakeswapPositions.wallet}`}
+                    title={`Read on chain: ${detail.pancakeswapPositions.held} in the agent's wallet, which the link lists, and ${detail.pancakeswapPositions.staked} staked in PancakeSwap's farm`}
+                  >
+                    {positionsLabel(detail.pancakeswapPositions.held, detail.pancakeswapPositions.staked)}
+                  </Tag>
+                ) : null}
+              </SoukRow>
+        <div>
+          <AsideCard>
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="micro text-souk-ink">On-chain evidence</p>
+              <p className="micro text-souk-muted">BNB chain {chainId}</p>
+            </div>
+            <div className="mt-3 space-y-2 text-xs">
+              <Row
+                label="Registry"
+                value={
+                  <a
+                    href={`${explorer}/address/${detail.contract_address}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono underline-offset-2 hover:underline"
+                  >
+                    {shortAddress(detail.contract_address)}
+                  </a>
+                }
+              />
+              <Row
+                label="Token id"
+                value={
+                  <a href={bscScan} target="_blank" rel="noreferrer" className="font-mono underline-offset-2 hover:underline">
+                    #{detail.token_id}
+                  </a>
+                }
+              />
+              <Row
+                label="Owner"
+                value={
+                  <a
+                    href={`${explorer}/address/${detail.owner_address}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono underline-offset-2 hover:underline"
+                  >
+                    {shortAddress(detail.owner_address)}
+                  </a>
+                }
+              />
+              <Row
+                label="Agent wallet"
+                value={
+                  detail.agent_wallet ? (
+                    <a
+                      href={`${explorer}/address/${detail.agent_wallet}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono underline-offset-2 hover:underline"
+                    >
+                      {shortAddress(detail.agent_wallet)}
+                    </a>
+                  ) : (
+                    'none declared'
+                  )
+                }
+              />
+              <Row
+                label="Created"
+                value={
+                  detail.created_tx_hash ? (
+                    <a
+                      href={`${explorerTxBase(Number(chainId))}/${detail.created_tx_hash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono underline-offset-2 hover:underline"
+                    >
+                      {shortAddress(detail.created_tx_hash)}
+                    </a>
+                  ) : (
+                    'no tx recorded'
+                  )
+                }
+              />
+            </div>
+            <p className="micro mt-3 text-souk-muted">
+              Every figure here is read from BNB Chain; the links open the record on BscScan.
+            </p>
+          </AsideCard>
+        </div>
 
           {/* the design draws this band across the full run, under both columns,
               opened rather than folded behind a disclosure. the twenty is the chain
               band's own top padding, without which the cards above sit on its rim.
               on a phone it folds, because four boxes stacked push the hire card off
               the screen */}
-          <Stack surface pad={[20, 22, 20, 22]} gap={14} className="mt-5 @container">
+          <Stack surface pad={[20, 22, 20, 22]} gap={14} className="@container">
             <button
               type="button"
               onClick={() => setChainOpen((open) => !open)}
@@ -1175,7 +1283,7 @@ export function AgentDetailPage() {
             <div
               className={cx(
                 'gap-5 grid-cols-1 @[900px]:grid-cols-2 @[1600px]:grid-cols-[660fr_380fr_430fr_282fr]',
-                chainOpen ? 'grid' : 'hidden lg:grid',
+                'grid',
               )}
             >
               <section className="rounded-[16px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
@@ -1241,6 +1349,7 @@ export function AgentDetailPage() {
                 </dl>
               </section>
 
+              {detail.total_feedbacks > 0 || detail.total_score > 0 ? (
               <section className="rounded-[16px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                 <Txt size={13} lead={20} weight="bold" tone="ink">Reputation on the registry index</Txt>
                 <div className="mt-4 grid grid-cols-3 gap-3">
@@ -1257,7 +1366,9 @@ export function AgentDetailPage() {
                   ))}
                 </div>
               </section>
+              ) : null}
 
+              {liveness?.exists ? (
               <section className="rounded-[16px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
                 <Txt size={13} lead={20} weight="bold" tone="ink">
                   Marketplace liveness record
@@ -1312,6 +1423,7 @@ export function AgentDetailPage() {
                   </p>
                 )}
               </section>
+              ) : null}
 
               {onchain.length > 0 && (
                 <section className="rounded-[16px] border border-souk-edge bg-souk-surface2 p-5 @container @[240px]:[&_dd]:text-[11px]">
@@ -1330,6 +1442,12 @@ export function AgentDetailPage() {
               )}
             </div>
           </Stack>
+            </>
+          ) : null}
+
+        </div>
+      </div>
+
       {showVaultHire ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
@@ -1562,7 +1680,7 @@ function AgentActionPanel({
           {gated
             ? 'The seller gates this listing behind its own credentials. A call or job would reach that wall, so the marketplace does not sell one.'
             : rails.length > 0
-              ? 'The listing is public. Choose a rail and connect when you are ready to start.'
+              ? rails.length > 1 ? 'Pick how you want to pay, then connect when you are ready.' : 'Connect when you are ready to start.'
               : detail.availability?.reason ?? 'The listing is public, but it has not published an action the marketplace can run.'}
         </Txt>
         {rails.length > 0 || !gated ? (
@@ -1714,7 +1832,11 @@ function UsageSection({ skills, jobSeller, vault }: { skills: NonNullable<AgentD
 // labelled over its value, rather than folded inside the on-chain record
 function HowToReachCard({ detail, jobSeller }: { detail: DetailWithSession; jobSeller: boolean }) {
   const rows: { label: string; value: string }[] = []
-  if (detail.a2a_endpoint) rows.push({ label: 'A2A endpoint', value: detail.a2a_endpoint })
+  // some registrations put the card file in the A2A slot; name it for what it is
+  if (detail.a2a_endpoint) {
+    const isCard = /\/(\.well-known\/)?agent(-card)?\.json$/i.test(detail.a2a_endpoint)
+    rows.push({ label: isCard ? 'Agent card (registered as the A2A endpoint)' : 'A2A endpoint', value: detail.a2a_endpoint })
+  }
   if (detail.mcp_server) rows.push({ label: 'MCP server', value: detail.mcp_server })
   if (detail.web_endpoint) rows.push({ label: 'Web endpoint', value: detail.web_endpoint })
   if (detail.agent_url) rows.push({ label: 'Agent URL', value: detail.agent_url })
