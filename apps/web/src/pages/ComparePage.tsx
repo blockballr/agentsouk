@@ -13,6 +13,7 @@ import {
   timeAgo,
 } from '@agora/core'
 import { getAgentDetail, getAgents, getVaultExecutor } from '../lib/api'
+import { ComparePeers } from '../components/ComparePeers'
 import { bestByCategory } from '../lib/compare'
 import { getShortlist, setShortlist as persistShortlist } from '../lib/shortlist'
 import { ensureBscChain } from '../lib/wallet'
@@ -70,6 +71,8 @@ function railsFor(a: AgentDetail): string[] {
 
 export function ComparePage() {
   const [sp, setSp] = useSearchParams()
+  // ?agent=56/391004 compares one agent with its closest peers on the registry
+  const peerOf = /^(\d+)\/(\d+)$/.exec(sp.get('agent') ?? '')
   const urlIds = useMemo(
     () =>
       (sp.get('ids') ?? '')
@@ -149,7 +152,7 @@ export function ComparePage() {
         .at(-1) ?? null,
     [agents],
   )
-  const strapParts = ['compare', `${selectedIds.length} selected`]
+  const strapParts = peerOf ? ['compare', 'similar agents on the registry'] : ['compare', `${selectedIds.length} selected`]
   if (newestCheck) {
     const stamp = utcStamp(newestCheck)
     if (stamp) strapParts.push(`read ${stamp}`)
@@ -169,7 +172,9 @@ export function ComparePage() {
           </div>
         </Stack>
 
-        {selectedIds.length === 0 ? (
+        {peerOf ? (
+          <ComparePeers chainId={Number(peerOf[1])} tokenId={peerOf[2]} />
+        ) : selectedIds.length === 0 ? (
           <Picker selected={selectedIds} onToggle={toggleId} onClear={clearSelection} />
         ) : (
           <>

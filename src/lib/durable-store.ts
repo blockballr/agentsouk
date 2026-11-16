@@ -496,6 +496,17 @@ export async function saveNotification(
   }
 }
 
+// how many notifications of one kind were ever sent, across every wallet; null without a database
+export async function countNotificationsByKind(kind: string): Promise<number | null> {
+  if (!(await init()) || !sql) return null;
+  try {
+    const rows = await sql`select count(*)::int as n from notifications where payload->>'kind' = ${kind}`;
+    return Number(rows[0]?.n ?? 0);
+  } catch {
+    return null;
+  }
+}
+
 export async function loadNotifications(
   wallet: string,
   limit = 30,

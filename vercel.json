@@ -21,6 +21,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/job-index",
+      "schedule": "7,37 * * * *"
+    },
+    {
       "path": "/api/vault/execute",
       "schedule": "*/10 * * * *"
     },
