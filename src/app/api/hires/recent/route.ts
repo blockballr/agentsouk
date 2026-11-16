@@ -20,7 +20,9 @@ export async function GET(req: NextRequest) {
         agentName: p.agent.name,
         tokenId: p.agent.tokenId,
         chainId: p.agent.chainId,
-        rail: p.mode === "b402" ? "x402" : "escrow",
+        // every stored payment is a paid call settled over x402; the mode names
+        // the facilitator that settled it, not the rail
+        rail: "x402",
         amount: settledAmount(p.amount),
         symbol: p.symbol,
         txHash: p.txHash ?? null,
