@@ -15,7 +15,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/blockballr/agentsouk.git",
+    "url": "git+https://github.com/blockballr/agentsouk.git",
     "directory": "packages/seller-sdk"
   },
   "files": [
