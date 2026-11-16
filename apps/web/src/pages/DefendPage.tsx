@@ -253,7 +253,7 @@ export function DefendPage() {
         functionName: 'setMandate',
         args: [AGENT, USDT, triggerBps, targetBps, callCap, cap, expiry, [{ account: account as `0x${string}`, vTokenDebt: VUSDT }]],
       })
-      say(`set the mandate ${await send(OPERATOR, data, 'setMandate')}`)
+      say(`set your limits ${await send(OPERATOR, data, 'setMandate')}`)
       await refresh()
     } catch (e) {
       setError((e as Error).message)
@@ -382,12 +382,12 @@ export function DefendPage() {
 
         {!account ? (
           <Txt size={13} lead={20} tone="slate">
-            Connect a wallet to read or write a mandate.
+            Connect a wallet to read or set your limits.
           </Txt>
         ) : (
           <>
             <Stack gap={8} surface pad={[16, 16, 14, 16]}>
-              <Label tone="muted">Your mandate</Label>
+              <Label tone="muted">Your guard</Label>
               {mandate ? (
                 <Stack gap={6}>
                   <Txt size={13} lead={20} tone="ink">
@@ -402,13 +402,13 @@ export function DefendPage() {
                   </Txt>
                   <Row gap={8}>
                     <Btn kind="off" onClick={revoke} disabled={busy !== null}>
-                      {busy === 'revoke' ? 'Revoking' : 'Revoke the mandate'}
+                      {busy === 'revoke' ? 'Stopping' : 'Stop the guard'}
                     </Btn>
                   </Row>
                 </Stack>
               ) : (
                 <Txt size={13} lead={20} tone="slate">
-                  No mandate yet. The agent cannot touch anything until you write one.
+                  Nothing set yet. The agent cannot touch anything until you set your limits.
                 </Txt>
               )}
             </Stack>
@@ -416,7 +416,7 @@ export function DefendPage() {
             <Rule />
 
             <Stack gap={14} surface pad={[16, 16, 16, 16]}>
-              <Label tone="muted">Write the mandate</Label>
+              <Label tone="muted">Set your limits</Label>
               <Txt size={12} lead={18} tone="steel">
                 Supply and borrow on Venus first. The guard only repays debt; it never borrows, redeems or moves your
                 position.
@@ -445,7 +445,7 @@ export function DefendPage() {
               </div>
               <Row gap={8} className="flex-wrap">
                 <Btn kind="primary" onClick={saveMandate} disabled={busy !== null}>
-                  {busy === 'mandate' ? 'Writing' : 'Approve and set the mandate'}
+                  {busy === 'mandate' ? 'Setting' : 'Approve and set the limits'}
                 </Btn>
                 <Txt size={11} lead={16} mono tone="steel">
                   wallet balance {balance === null ? '-' : formatUnits(balance, 18)} USDT
@@ -467,7 +467,7 @@ export function DefendPage() {
                 </Txt>
               )}
               <Txt size={11} lead={16} mono tone="steel">
-                The plan runs for the same {days} day{days === '1' ? '' : 's'} as the mandate. Unspent balance stays
+                The plan runs for the same {days} day{days === '1' ? '' : 's'} as your limits. Unspent balance stays
                 yours.
               </Txt>
               <div className="grid gap-4 sm:grid-cols-2">

@@ -8,7 +8,7 @@ const AGENTS = [
     tokenId: '404603',
     name: 'Souk Health Guard',
     job: 'Repays a Venus loan before it can be liquidated.',
-    control: 'Capped mandate, revoked in one transaction.',
+    control: 'You set the limits; stop it in one transaction.',
   },
   {
     tokenId: '391003',

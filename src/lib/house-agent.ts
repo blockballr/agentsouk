@@ -10,7 +10,7 @@ export const HOUSE_AGENT_NAME = "Souk Health Guard";
 export const HOUSE_AGENT_VERSION = "1.1.0";
 export const HOUSE_AGENT_CATEGORY = "health-factor";
 export const HOUSE_AGENT_DESCRIPTION =
-  "Defends a lending position on-chain. Reads the positions in the buyer's HealthOperator mandate, ranks them by collateral coverage, and repays the one closest to liquidation inside the per-call and per-day caps the buyer wrote. The position stays in the buyer's wallet, the agent can only repay debt, and the buyer can revoke at any time. The ERC-8183 deliverable carries the repay transaction and the coverage before and after.";
+  "Defends a lending position on-chain. Reads the positions the buyer registered with the guard, ranks them by collateral coverage, and repays the one closest to liquidation inside the per-call and per-day limits the buyer set. The position stays in the buyer's wallet, the agent can only repay debt, and the buyer can revoke at any time. The ERC-8183 deliverable carries the repay transaction and the coverage before and after.";
 export const HOUSE_AGENT_PUBLIC_ORIGIN = "https://api.agentsouk.xyz";
 export const HOUSE_AGENT_CARD_PATH = "/api/house-agent/.well-known/agent-card.json";
 export const HOUSE_AGENT_MESSAGING_PATH = "/api/house-agent/a2a";
@@ -79,7 +79,7 @@ const NEGOTIATE_SKILL: HouseAgentSkill = {
   id: "negotiate",
   name: "Quote an ERC-8183 job",
   description:
-    "ERC-8183 job selling: answers a negotiate step with a wallet-signed quote priced in the kernel's payment token, naming this listing's registered wallet as provider. The job buys a health factor read, or a defence executed inside the buyer's own mandate.",
+    "ERC-8183 job selling: answers a negotiate step with a wallet-signed quote priced in the kernel's payment token, naming this listing's registered wallet as provider. The job buys a health factor read, or a defence executed inside the limits the buyer set.",
   tags: ["erc-8183", "job", "negotiate", "quote"],
   examples: [],
   inputModes: ["application/json"],
@@ -99,10 +99,10 @@ const NOTIFY_SKILL: HouseAgentSkill = {
 
 const DEFEND_SKILL: HouseAgentSkill = {
   id: "defend-position",
-  name: "Repay a position under a mandate",
+  name: "Repay a position inside your limits",
   description:
-    "Reads the positions the buyer registered in their HealthOperator mandate, ranks them by collateral coverage, repays the one closest to liquidation inside the per-call and per-day caps, and returns the transaction hash with the coverage before and after. The mandate, not this endpoint, bounds what the agent may do, and the buyer can revoke it at any time.",
-  tags: ["health-factor", "repay", "mandate", "on-chain"],
+    "Reads the positions the buyer registered with the guard, ranks them by collateral coverage, repays the one closest to liquidation inside the per-call and per-day limits, and returns the transaction hash with the coverage before and after. The limits the buyer set on chain, not this endpoint, bound what the agent may do, and the buyer can stop it at any time.",
+  tags: ["health-factor", "repay", "limits", "on-chain"],
   examples: ["Defend my Venus portfolio. buyer 0x0000000000000000000000000000000000000001 operator 0x0000000000000000000000000000000000000002"],
   inputModes: ["text/plain", "application/json"],
   outputModes: ["application/json"],
