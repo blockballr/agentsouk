@@ -17,6 +17,7 @@ const DiscoverPage = lazy(() => import('./pages/DiscoverPage').then((m) => ({ de
 const AgentDetailPage = lazy(() => import('./pages/AgentDetailPage').then((m) => ({ default: m.AgentDetailPage })))
 const ComparePage = lazy(() => import('./pages/ComparePage').then((m) => ({ default: m.ComparePage })))
 const AdvantagePage = lazy(() => import('./pages/AdvantagePage').then((m) => ({ default: m.AdvantagePage })))
+const ProofPage = lazy(() => import('./pages/ProofPage').then((m) => ({ default: m.ProofPage })))
 const BuildPage = lazy(() => import('./pages/BuildPage').then((m) => ({ default: m.BuildPage })))
 const ManifestBuilderPage = lazy(() => import('./pages/ManifestBuilderPage').then((m) => ({ default: m.ManifestBuilderPage })))
 const OpenStallPage = lazy(() => import('./pages/OpenStallPage').then((m) => ({ default: m.OpenStallPage })))
@@ -93,6 +94,7 @@ function App() {
             <Route path="/agents/:chainId/:tokenId" element={<AgentDetailPage />} />
             <Route path="/compare" element={<ComparePage />} />
             <Route path="/advantage" element={<AdvantagePage />} />
+            <Route path="/proof" element={<ProofPage />} />
             {/* Everything a wallet manages sits inside one rail: profile, vault,
                 ongoing, quest, studio and docs for now, plus the seller and
                 station consoles. The marketplace and compare stay rail-free. */}
