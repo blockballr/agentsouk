@@ -12,6 +12,7 @@ import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from 
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
 import { OPERATED_BY_LABEL, isOperatedByAgentSouk } from '../lib/first-party'
+import { MarketTerminal } from '../components/MarketTerminal'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../components/souk'
 
@@ -57,6 +58,22 @@ const LEGEND: { tone: DotTone; label: string }[] = [
 
 export function MarketplacePage() {
   const [sp, setSp] = useSearchParams()
+  // the market view is a terminal for judges and power users; the link carries it, and the
+  // last choice on this browser is the default when the link does not say
+  const viewParam = sp.get('view')
+  const view: 'shelf' | 'market' =
+    viewParam === 'pro' || viewParam === 'market' ? 'market' : viewParam === 'shelf' ? 'shelf' : readStoredView()
+  function setView(next: 'shelf' | 'market') {
+    try {
+      localStorage.setItem(VIEW_KEY, next)
+    } catch {
+      // storage can be blocked; the url still carries the choice
+    }
+    const nextSp = new URLSearchParams(sp)
+    if (next === 'market') nextSp.set('view', 'pro')
+    else nextSp.delete('view')
+    setSp(nextSp, { replace: true })
+  }
   const navigate = useNavigate()
 
   // persist the marketplace filters so they survive a trip to an agent's detail
@@ -248,13 +265,16 @@ export function MarketplacePage() {
           </div>
         </div>
 
+        {view === 'shelf' ? (
         <Section pad="pt-2 pb-6">
           <AgentGalleryCard />
         </Section>
+        ) : null}
 
         {/* the control band: two rows, sticky. categories first, then find, rail,
             order and the count together; the toggles and the state key fold away
             until asked for, so the shelf is not four rows of chrome before a card */}
+        {view === 'shelf' ? (
         <Section pad="py-0">
         <div className="sticky top-0 z-20 -mx-8 border-y border-souk-hair bg-souk-canvas/90 px-8 backdrop-blur-[14px]">
           <Row align="center" gap={16} className="flex-wrap border-b border-souk-hair py-3">
@@ -439,6 +459,7 @@ export function MarketplacePage() {
           ) : null}
         </div>
         </Section>
+        ) : null}
 
         {/* the grid band: the state key folded into the control bar above, so the
             cards start directly under it and the pagination closes the same band */}
@@ -446,6 +467,20 @@ export function MarketplacePage() {
         <Stack gap={24}>
         {result ? (
           <Row align="center" gap={12} className="flex-wrap">
+            <div role="tablist" aria-label="View" className="flex gap-1 rounded-[10px] border border-souk-hair p-1">
+              {(['shelf', 'market'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === v}
+                  onClick={() => setView(v)}
+                  className={`rounded-[7px] px-3 py-1 text-[12px] font-semibold transition-colors ${view === v ? 'bg-souk-surface2 text-souk-ink' : 'text-souk-steel hover:text-souk-ink'}`}
+                >
+                  {v === 'shelf' ? 'Shelf' : 'Pro'}
+                </button>
+              ))}
+            </div>
             {/* new admissions moved to their own page, so the shelf keeps one
                 disclosed placement and the strip has room to grow. the link
                 stays even when there is no placement to show */}
@@ -463,6 +498,8 @@ export function MarketplacePage() {
             <UnavailableState onRetry={() => setSp(new URLSearchParams(sp))} />
           ) : error ? (
             <ErrorState onRetry={() => setSp(new URLSearchParams(sp))} />
+          ) : view === 'market' ? (
+            <MarketTerminal chainId={chainId ?? 56} />
           ) : loading ? (
             <GridSkeleton />
           ) : result && visibleItems.length > 0 ? (
@@ -480,7 +517,7 @@ export function MarketplacePage() {
           )}
         </Stack>
 
-        {result && totalPages > 1 ? (
+        {result && totalPages > 1 && view === 'shelf' ? (
           <nav aria-label="Pagination">
             <Row justify="center" align="center" gap={20} className="flex-wrap">
               <Btn kind="off" disabled={page <= 1} onClick={() => setParam('page', String(page - 1))}>
@@ -885,6 +922,16 @@ export function hasMark(agent: Pick<AgentSummary, 'owner_address' | 'verificatio
 export function shelfRank(agent: Pick<AgentSummary, 'owner_address' | 'verification' | 'availability'>): number {
   if (isOperatedByAgentSouk(agent.owner_address)) return 0
   return hasMark(agent) ? 1 : 2
+}
+
+const VIEW_KEY = 'souk.shelf-view'
+
+function readStoredView(): 'shelf' | 'market' {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'market' ? 'market' : 'shelf'
+  } catch {
+    return 'shelf'
+  }
 }
 
 function categoryName(key: AgentSummary['category']): string {

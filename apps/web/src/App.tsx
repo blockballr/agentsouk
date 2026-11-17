@@ -89,6 +89,8 @@ function App() {
             />
             <Route path="/about" element={<HomePage />} />
             <Route path="/agents" element={<MarketplacePage />} />
+            <Route path="/pro" element={<Navigate to="/agents?view=pro" replace />} />
+            <Route path="/market" element={<Navigate to="/agents?view=pro" replace />} />
             <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/telegram/link" element={<TelegramRedirect />} />
         <Route path="/judge" element={<JudgePage />} />
