@@ -18,6 +18,20 @@ function tool(name: string, description: string) {
 }
 
 export const LOCAL_TOOLS = [
+  {
+    type: "function" as const,
+    function: {
+      name: "lookup_address",
+      description:
+        "Public lookup of any address: the agents it lists and what buyers paid it. Use when the user pastes an address instead of linking a wallet. Describe the result as this address's agents, never as the user's own.",
+      parameters: {
+        type: "object",
+        properties: { address: { type: "string", description: "a 0x address of 40 hex characters" } },
+        required: ["address"],
+        additionalProperties: false,
+      },
+    },
+  },
   tool("my_listings", "The agents the user's own wallet lists for sale, with whether each answers its checks. For sellers asking how their agents are doing."),
   tool("my_earnings", "What buyers paid the user's own wallet for its agents: totals per token and the latest payments."),
   tool("my_hires", "The agents the user's own wallet has hired, newest first."),
@@ -125,7 +139,31 @@ export function summarisePools(body: Row | null): unknown {
   };
 }
 
-export async function callLocalTool(name: string, wallet: string | null | undefined, fetchImpl: typeof fetch): Promise<string> {
+export async function callLocalTool(
+  name: string,
+  wallet: string | null | undefined,
+  fetchImpl: typeof fetch,
+  args: Record<string, unknown> = {},
+): Promise<string> {
+  if (name === "lookup_address") {
+    const address = typeof args.address === "string" ? args.address.trim() : "";
+    if (!/^0x[0-9a-fA-F]{40}$/.test(address)) return JSON.stringify({ error: "that is not a full 0x address" });
+    const a = encodeURIComponent(address);
+    try {
+      const [listings, earnings] = await Promise.all([
+        getJson(`${API}/agents/by-owner?owner=${a}`, fetchImpl),
+        getJson(`${API}/hires/by-payee?payee=${a}`, fetchImpl),
+      ]);
+      return JSON.stringify({
+        note: "Public data for this address. It is not known to be the user's own wallet; say 'this address', not 'your'.",
+        address,
+        listings: summariseListings(listings),
+        earnings: summariseEarnings(earnings),
+      });
+    } catch {
+      return JSON.stringify({ error: "that read did not answer just now" });
+    }
+  }
   const mine = name.startsWith("my_");
   if (mine && !(wallet && /^0x[0-9a-fA-F]{40}$/.test(wallet))) return JSON.stringify(NO_WALLET);
   const w = encodeURIComponent(wallet ?? "");

@@ -94,3 +94,27 @@ describe("the assistant's own reads", () => {
     expect(out.pools[0]!.endedAgainstHoldingPer1000).toBe(12.55);
   });
 });
+
+describe("looking up a pasted address", () => {
+  it("reads the address it was given, and labels it as not the user's own", async () => {
+    const { callLocalTool } = await import("../src/lib/assistant/local-tools");
+    const address = "0x52DA44aB471455437fc17979c52E501f6b8d0EAF";
+    const fetchImpl = vi.fn(async (url: string) =>
+      new Response(JSON.stringify(url.includes("by-owner") ? { agents: [{ name: "Keel", tokenId: "2238", chainId: 97 }] } : { hires: [] })),
+    );
+    const out = JSON.parse(await callLocalTool("lookup_address", null, fetchImpl as never, { address }));
+    expect(fetchImpl.mock.calls.map((c) => String(c[0]))).toEqual(
+      expect.arrayContaining([expect.stringContaining(`owner=${address}`), expect.stringContaining(`payee=${address}`)]),
+    );
+    expect(out.note).toMatch(/not known to be the user's own/);
+    expect(out.listings.agents[0]).toMatchObject({ name: "Keel", network: "testnet" });
+  });
+
+  it("refuses anything that is not a full address", async () => {
+    const { callLocalTool } = await import("../src/lib/assistant/local-tools");
+    const fetchImpl = vi.fn();
+    const out = JSON.parse(await callLocalTool("lookup_address", null, fetchImpl as never, { address: "0x84FE" }));
+    expect(out.error).toMatch(/not a full 0x address/);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});

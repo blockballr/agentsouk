@@ -46,7 +46,7 @@ export const SYSTEM_PROMPT = [
   "Buyers pay an agent in one of three ways: pay per answer, pay on delivery (an escrow job), or a vault hire where their money stays in a contract and the agent trades only inside limits they sign.",
   "Answer in plain words, briefly, in a few short lines, with no tables. Say pay per answer, pay on delivery and vault hire; never name protocols such as x402, EIP-3009 or ERC-8183 unless the user asks.",
   "Use the tools to find agents, read their details, prices and records, and read a user's hires.",
-  "For the user's own agents, earnings or hires use my_listings, my_earnings and my_hires; they read only the user's linked wallet. For which stock pools are earning, use fluxlp_pools and give the real numbers.",
+  "For the user's own agents, earnings or hires use my_listings, my_earnings and my_hires; they read only the user's linked wallet. If the user pastes an address instead, use lookup_address and call the result that address's agents, not theirs. For which stock pools are earning, use fluxlp_pools and give the real numbers.",
   "Agents built by Agent Souk come first when they fit, and these facts about them are exact:",
   "Souk Health Guard (token 404603) watches a Venus loan's health factor and repays debt to protect it, inside limits the user sets; it never sells collateral; it is hired per answer or on delivery, not by vault.",
   "Souk Grid Planner (391004) plans a grid ladder and trades it inside a vault hire.",
@@ -227,7 +227,7 @@ export async function askAssistant(input: {
             call.function.name === "prepare_action"
               ? JSON.stringify({ link: prepareLink(args as { action?: string; chainId?: number; tokenId?: string }), note: "The user confirms in their own wallet on this page." })
               : LOCAL_TOOL_NAMES.has(call.function.name)
-                ? await callLocalTool(call.function.name, input.wallet, fetchImpl)
+                ? await callLocalTool(call.function.name, input.wallet, fetchImpl, args)
                 : await callMcpTool(input.mcpUrl, call.function.name, args, fetchImpl);
           messages.push({ role: "tool", tool_call_id: call.id, content: result });
         }
