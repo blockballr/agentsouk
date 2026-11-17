@@ -15,7 +15,7 @@ export function Wordmark() {
     return (
       <a href="https://agentsouk.xyz/" aria-label="Agent Souk home" className={className}>
         <SoukMark size={22} />
-        <span className="relative inline-block font-serif text-[27px] font-semibold leading-[0.9] tracking-[-0.04em] text-typesetter-ink">
+        <span className="relative inline-block whitespace-nowrap font-serif text-[22px] font-semibold leading-[0.9] tracking-[-0.04em] text-typesetter-ink sm:text-[27px]">
           Agent S<span className="relative">o<span aria-hidden="true" className="absolute bottom-[0.065em] left-[15%] h-[0.055em] w-[66%] bg-souk-logo" /></span>uk
         </span>
       </a>
@@ -28,7 +28,7 @@ export function Wordmark() {
       className={className}
     >
       <SoukMark size={22} />
-      <span className="relative inline-block font-serif text-[27px] font-semibold leading-[0.9] tracking-[-0.04em] text-typesetter-ink">
+      <span className="relative inline-block whitespace-nowrap font-serif text-[22px] font-semibold leading-[0.9] tracking-[-0.04em] text-typesetter-ink sm:text-[27px]">
         Agent S<span className="relative">o<span aria-hidden="true" className="absolute bottom-[0.065em] left-[15%] h-[0.055em] w-[66%] bg-souk-logo" /></span>uk
       </span>
     </Link>

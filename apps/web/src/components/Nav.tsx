@@ -3,7 +3,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { shortAddress } from '@agora/core'
 import { QuickSearch } from './QuickSearch'
 
-import { NotificationBell } from './NotificationBell'
+import { NotificationBell, openAlertCenter } from './NotificationBell'
 import { AssistantChat } from './AssistantChat'
 import { Wordmark } from './Wordmark'
 import { connectWallet, disconnectWallet, signedInUntil, signOut } from '../lib/wallet-session'
@@ -16,7 +16,7 @@ import { formatBalance, useWalletBalances } from '../lib/wallet-balances'
 import { ThemeToggle } from './ThemeToggle'
 import { useLocation } from 'react-router-dom'
 import { useI18n } from '../lib/i18n'
-import { Dot, Row, Rule, Stack, Txt } from './souk'
+import { Dot, IconBell, Row, Rule, Stack, Txt } from './souk'
 
 // three primary destinations on every page; everything else sits under More,
 // so a first visit has one obvious place to start
@@ -147,6 +147,7 @@ export function Nav() {
 
         <div className="flex items-center gap-2 lg:hidden">
           <AssistantChat />
+          <NotificationBell />
           <QuickSearch large />
         </div>
         <button
@@ -562,6 +563,19 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
           <AccountRow label={t('rail.home')} route="/home" Icon={HomeGlyph} />
           <AccountRow label={t('rail.myHires')} route="/ongoing" Icon={VaultGlyph} />
           <AccountRow label={t('rail.myAgents')} route="/seller" Icon={ListGlyph} />
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false)
+              openAlertCenter()
+            }}
+            className="flex h-[40px] w-full items-center gap-2.5 rounded-[8px] px-2 text-souk-ink transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+          >
+            <IconBell />
+            <Txt size={13} lead={18} weight="bold" tone="ink">
+              Alerts
+            </Txt>
+          </button>
           <AccountRow label={t('rail.accountPage')} route="/account" Icon={PersonGlyph} />
           <Rule hair />
           {wallet ? (

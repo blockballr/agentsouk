@@ -1295,3 +1295,32 @@ export async function getRecentHires(limit = 6): Promise<RecentHire[]> {
   const body = (await res.json()) as { items?: RecentHire[] }
   return body.items ?? []
 }
+// Telegram delivery for the alert center; every call carries the wallet's signed sign-in
+export interface TelegramDelivery {
+  linked: boolean
+  username: string | null
+  muted: boolean
+}
+
+export async function getTelegramDelivery(wallet: string, proof: SessionProof): Promise<TelegramDelivery | null> {
+  const res = await fetch(`${BASE}/alerts/telegram?wallet=${encodeURIComponent(wallet)}`, { headers: proofHeaders(proof) })
+  if (!res.ok) return null
+  const body = (await res.json().catch(() => null)) as Partial<TelegramDelivery> | null
+  return body ? { linked: Boolean(body.linked), username: body.username ?? null, muted: Boolean(body.muted) } : null
+}
+
+export async function startTelegramLink(wallet: string, proof: SessionProof): Promise<string | null> {
+  const res = await fetch(`${BASE}/alerts/telegram`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...proofHeaders(proof) },
+    body: JSON.stringify({ wallet }),
+  })
+  if (!res.ok) return null
+  const body = (await res.json().catch(() => null)) as { url?: string } | null
+  return body?.url ?? null
+}
+
+export async function unlinkTelegram(wallet: string, proof: SessionProof): Promise<boolean> {
+  const res = await fetch(`${BASE}/alerts/telegram?wallet=${encodeURIComponent(wallet)}`, { method: 'DELETE', headers: proofHeaders(proof) })
+  return res.ok
+}

@@ -152,10 +152,15 @@ export function AssistantChat() {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex h-[38px] shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair px-3 font-mono text-[11px] uppercase tracking-[0.08em] text-souk-steel transition-colors hover:border-souk-data/50 hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+        aria-label="Ask Agent Souk"
+        className="flex h-[38px] min-w-[38px] shrink-0 items-center justify-center gap-2 rounded-[8px] border border-souk-hair px-2 sm:px-3 font-mono text-[11px] uppercase tracking-[0.08em] text-souk-steel transition-colors hover:border-souk-data/50 hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
       >
-        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-souk-data" />
-        Ask
+        <span aria-hidden="true" className="hidden h-1.5 w-1.5 rounded-full bg-souk-data sm:inline-block" />
+        {/* on a phone the bar is tight, so the button is a chat mark alone */}
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" className="sm:hidden">
+          <path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2v-7Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+        </svg>
+        <span className="hidden sm:inline">Ask</span>
       </button>
 
       {/* rendered on the body: the navbar's blur would otherwise trap a fixed panel inside it */}
