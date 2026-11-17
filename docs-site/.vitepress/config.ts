@@ -61,6 +61,7 @@ export default defineConfig({
         items: [
           { text: 'What Agent Souk is', link: '/' },
           { text: 'Quickstart', link: '/quickstart' },
+          { text: 'Ask Agent Souk', link: '/assistant' },
         ],
       },
       {
