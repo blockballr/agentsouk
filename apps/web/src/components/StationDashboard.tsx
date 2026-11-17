@@ -8,7 +8,7 @@ interface Preview {
   generatedAt: string
   overview: {
     chainId: number
-    windows: { key: 'today' | 'week' | 'all'; buyerHires: number; ownChecks: number; settled: { symbol: string; amount: string }[] }[]
+    windows: { key: 'today' | 'week' | 'all'; buyerHires: number; ownChecks: number; settled: { chainId: number; symbol: string; amount: string }[] }[]
     categories: { key: string; listed: number; answering: number }[]
     agentsListed: number
     agentsAnswering: number
@@ -188,7 +188,12 @@ export function StationDashboard({ preview }: { preview: boolean }) {
 
   const o = data.overview
   const win = (k: 'today' | 'week' | 'all') => o.windows.find((w) => w.key === k)
-  const settled = win('all')?.settled[0]
+  // mainnet money leads; testnet totals are named as testnet, never added in
+  const settledAll = [...(win('all')?.settled ?? [])].sort((a, b) => (a.chainId === 56 ? -1 : 0) - (b.chainId === 56 ? -1 : 0))
+  const settled = settledAll[0]
+  const settledSub = settledAll.length
+    ? settledAll.map((t, i) => `${i ? `${Number(t.amount).toLocaleString('en-US', { maximumFractionDigits: 2 })} ` : ''}${t.symbol} on ${t.chainId === 56 ? 'mainnet' : 'testnet'}`).join(', ') + ', all time'
+    : 'nothing settled yet'
   const failingJobs = data.operations.jobs.filter((j) => j.ok === false).length
   const explorer = explorerTxBase(o.chainId)
 
@@ -207,7 +212,7 @@ export function StationDashboard({ preview }: { preview: boolean }) {
         <Stat
           label="Settled by buyers"
           value={settled ? `${Number(settled.amount).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '0'}
-          sub={settled ? `${settled.symbol}, all time` : 'nothing settled yet'}
+          sub={settledSub}
         />
         <Stat
           label="Needs attention"

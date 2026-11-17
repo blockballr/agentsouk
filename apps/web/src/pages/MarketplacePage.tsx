@@ -22,6 +22,7 @@ import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../compo
 // capability leads all of it. Picking a metric names what leads the chain, not
 // what replaces that order.
 const jobSorts = [
+  { key: 'all', label: 'ALL' },
   { key: 'vault', label: 'VAULT' },
   { key: 'jobs', label: 'PAY ON DELIVERY' },
   { key: 'direct', label: 'PAY PER ANSWER' },
@@ -74,6 +75,23 @@ export function MarketplacePage() {
     else nextSp.delete('view')
     setSp(nextSp, { replace: true })
   }
+  const viewToggle = (
+    <div role="tablist" aria-label="View" className="flex shrink-0 gap-1 rounded-[10px] border border-souk-hair p-1">
+      {(['shelf', 'market'] as const).map((v) => (
+        <button
+          key={v}
+          type="button"
+          role="tab"
+          aria-selected={view === v}
+          onClick={() => setView(v)}
+          className={`cursor-pointer rounded-[7px] px-3 py-1 text-[12px] font-semibold transition-colors ${view === v ? 'bg-souk-surface2 text-souk-ink' : 'text-souk-steel hover:text-souk-ink'}`}
+        >
+          {v === 'shelf' ? 'Shelf' : 'Pro'}
+        </button>
+      ))}
+    </div>
+  )
+
   const navigate = useNavigate()
 
   // persist the marketplace filters so they survive a trip to an agent's detail
@@ -299,6 +317,7 @@ export function MarketplacePage() {
               ))}
             </div>
             <Row align="center" gap={16} className="w-full justify-end sm:w-auto">
+              {viewToggle}
               <button
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
@@ -467,20 +486,7 @@ export function MarketplacePage() {
         <Stack gap={24}>
         {result ? (
           <Row align="center" gap={12} className="flex-wrap">
-            <div role="tablist" aria-label="View" className="flex gap-1 rounded-[10px] border border-souk-hair p-1">
-              {(['shelf', 'market'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  role="tab"
-                  aria-selected={view === v}
-                  onClick={() => setView(v)}
-                  className={`rounded-[7px] px-3 py-1 text-[12px] font-semibold transition-colors ${view === v ? 'bg-souk-surface2 text-souk-ink' : 'text-souk-steel hover:text-souk-ink'}`}
-                >
-                  {v === 'shelf' ? 'Shelf' : 'Pro'}
-                </button>
-              ))}
-            </div>
+            {view === 'market' ? viewToggle : null}
             {/* new admissions moved to their own page, so the shelf keeps one
                 disclosed placement and the strip has room to grow. the link
                 stays even when there is no placement to show */}
