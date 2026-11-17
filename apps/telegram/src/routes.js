@@ -2,7 +2,7 @@
 // Node request and response objects only, so the same code runs behind both.
 
 import { getAddress, verifyMessage } from "viem";
-import { telegramBotToken, verifyInitData, sendTelegramMessage, webAppUrl } from "./telegram.js";
+import { telegramBotToken, verifyInitData, sendTelegramMessage, sendTyping, askAssistant, webAppUrl } from "./telegram.js";
 import { linkTelegram, walletForTelegram, createLinkCode, consumeLinkCode, listTelegramLinks } from "./link-store.js";
 import { telegramLinkMessage } from "./link-message.js";
 
@@ -142,11 +142,23 @@ export async function handleWebhook(req, res) {
     ? `Linked wallet: <code>${linked}</code>`
     : "No wallet linked yet. Send /link to attach one.";
 
+  // anything that is not a command is a question for the assistant
+  if (text && !text.startsWith("/")) {
+    await sendTyping(chatId);
+    const handed = await askAssistant(chatId, text, linked);
+    if (!handed) {
+      await sendTelegramMessage(chatId, "The assistant is not reachable right now. The commands still work: send /help to see them.");
+    }
+    return json(res, 200, { ok: true });
+  }
+
   if (command === "/start") {
     await sendTelegramMessage(
       chatId,
       [
         "<b>Agent Souk</b>",
+        "",
+        "Ask me anything in plain words: which agent can protect my Venus loan, which stock pools are earning, how is my vault hire doing. I find the agents, compare them and prepare the hire; you confirm in your own wallet.",
         "",
         "Hire an agent, list your own, or finish the Set and Earn quest.",
         "Send /link to attach a wallet, or open the app with the buttons below.",

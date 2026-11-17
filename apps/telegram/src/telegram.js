@@ -66,6 +66,40 @@ export function verifyInitData(initData, opts = {}) {
   };
 }
 
+// shows "typing..." in the chat while the assistant works; it fades on its own after a few seconds
+export async function sendTyping(chatId) {
+  const token = telegramBotToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendChatAction`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, action: "typing" }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// hands a plain message to the assistant on the main API, which answers the chat itself, so this
+// webhook returns within telegram's time limit however long the model takes
+export async function askAssistant(chatId, text, wallet) {
+  const secret = process.env.ASSISTANT_SECRET?.trim();
+  const url = process.env.ASSISTANT_API_URL?.trim() || "https://api.agentsouk.xyz/api/assistant/telegram";
+  if (!secret) return false;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-assistant-secret": secret },
+      body: JSON.stringify({ chatId, text, wallet: wallet ?? null }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function sendTelegramMessage(chatId, text, keyboard) {
   const token = telegramBotToken();
   if (!token) return false;

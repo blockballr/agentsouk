@@ -22,3 +22,5 @@ export function sendTelegramMessage(
   text: string,
   keyboard?: unknown,
 ): Promise<boolean>;
+export function sendTyping(chatId: string | number): Promise<boolean>;
+export function askAssistant(chatId: string | number, text: string, wallet?: string | null): Promise<boolean>;
