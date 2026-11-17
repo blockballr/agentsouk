@@ -22,3 +22,7 @@ export function createLinkCode(
 export function consumeLinkCode(code: string): Promise<string | null>;
 export function setMuted(telegramId: string, muted: boolean): Promise<void>;
 export function isMuted(telegramId: string): Promise<boolean>;
+export function createWalletCode(wallet: string): Promise<{ code: string; expiresAt: string } | null>;
+export function consumeWalletCode(code: string): Promise<string | null>;
+export function linkForWallet(wallet: string): Promise<{ telegramId: string; username: string | null } | null>;
+export function unlinkWallet(wallet: string): Promise<number>;

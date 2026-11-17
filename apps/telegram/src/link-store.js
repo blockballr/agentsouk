@@ -180,3 +180,86 @@ export async function consumeLinkCode(code) {
   row.usedAt = new Date().toISOString();
   return row.telegramId;
 }
+
+// the other direction: the website asks for a code bound to a wallet, the user opens the bot with
+// it, and /start <code> links that chat. a code works once, for fifteen minutes
+const walletCodeMemory = new Map();
+
+async function ensureWalletCodes() {
+  if (!(await ensureTables())) return false;
+  try {
+    await sql`
+      create table if not exists telegram_wallet_code (
+        code text primary key,
+        wallet text not null,
+        expires_at timestamptz not null,
+        used_at timestamptz
+      )`;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function createWalletCode(wallet) {
+  const code = randomBytes(12).toString("base64url");
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const address = wallet.toLowerCase();
+  if (sql) {
+    if (!(await ensureWalletCodes())) return null;
+    await sql`insert into telegram_wallet_code (code, wallet, expires_at) values (${code}, ${address}, ${expiresAt})`;
+    return { code, expiresAt };
+  }
+  walletCodeMemory.set(code, { wallet: address, expiresAt, usedAt: null });
+  return { code, expiresAt };
+}
+
+export async function consumeWalletCode(code) {
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(code)) return null;
+  const now = Date.now();
+  if (sql) {
+    if (!(await ensureWalletCodes())) return null;
+    const rows = await sql`
+      update telegram_wallet_code set used_at = now()
+      where code = ${code} and used_at is null and expires_at > now()
+      returning wallet`;
+    return rows[0]?.wallet ?? null;
+  }
+  const row = walletCodeMemory.get(code);
+  if (!row || row.usedAt || Date.parse(row.expiresAt) < now) return null;
+  row.usedAt = new Date().toISOString();
+  return row.wallet;
+}
+
+export async function linkForWallet(wallet) {
+  const address = wallet.toLowerCase();
+  if (sql && (await ensureTables())) {
+    const rows = await sql`
+      select telegram_id, username from telegram_link
+      where lower(wallet) = ${address}
+      order by linked_at desc
+      limit 1`;
+    const row = rows[0];
+    return row ? { telegramId: row.telegram_id, username: row.username ?? null } : null;
+  }
+  for (const row of memory.values()) {
+    if (row.wallet === address) return { telegramId: row.telegramId, username: row.username ?? null };
+  }
+  return null;
+}
+
+export async function unlinkWallet(wallet) {
+  const address = wallet.toLowerCase();
+  if (sql && (await ensureTables())) {
+    const rows = await sql`delete from telegram_link where lower(wallet) = ${address} returning telegram_id`;
+    return rows.length;
+  }
+  let removed = 0;
+  for (const [id, row] of memory) {
+    if (row.wallet === address) {
+      memory.delete(id);
+      removed += 1;
+    }
+  }
+  return removed;
+}

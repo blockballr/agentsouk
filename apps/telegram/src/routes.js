@@ -13,6 +13,10 @@ import {
   telegramForWallet,
   setMuted,
   isMuted,
+  createWalletCode,
+  consumeWalletCode,
+  linkForWallet,
+  unlinkWallet,
 } from "./link-store.js";
 import { telegramLinkMessage } from "./link-message.js";
 
@@ -185,6 +189,26 @@ export async function handleWebhook(req, res) {
     return json(res, 200, { ok: true });
   }
 
+  // a link opened from the website carries a one-time code bound to a wallet: /start <code>
+  const startCode = command === "/start" ? (text.split(/\s+/)[1] ?? "") : "";
+  const codeWallet = startCode ? await consumeWalletCode(startCode).catch(() => null) : null;
+  if (startCode && codeWallet) {
+    const username = update?.message?.from?.username ?? null;
+    const saved = await linkTelegram({ telegramId, wallet: codeWallet, username });
+    await sendTelegramMessage(
+      chatId,
+      saved.ok
+        ? `Linked to <code>${codeWallet}</code>. Alerts for this wallet now arrive here too. Send /mute to pause them, or ask me anything.`
+        : "The link could not be saved just now. Try Connect Telegram again from the website.",
+      saved.ok ? STARTERS : undefined,
+    );
+    return json(res, 200, { ok: true });
+  }
+  if (startCode && !codeWallet) {
+    await sendTelegramMessage(chatId, "That link has expired or was already used. Open Connect Telegram on the website again for a fresh one.");
+    return json(res, 200, { ok: true });
+  }
+
   if (command === "/start") {
     await sendTelegramMessage(
       chatId,
@@ -313,6 +337,33 @@ export async function handleWebhook(req, res) {
 
 // the main API calls this for every notification it records; the message goes to the chat linked
 // to that wallet, unless the chat muted them. nothing is sent for a wallet with no linked chat
+// the website's delivery settings, through the main API with the shared secret: start a link,
+// read whether the wallet is linked and to whom, or remove the link
+export async function handleWalletLink(req, res) {
+  if (req.method !== "POST") return json(res, 405, { ok: false, error: "POST only" });
+  if (!secretMatches(req.headers["x-assistant-secret"])) return json(res, 401, { ok: false, error: "unauthorized" });
+  const body = await parseJson(req);
+  const wallet = typeof body?.wallet === "string" && /^0x[0-9a-fA-F]{40}$/.test(body.wallet) ? body.wallet : null;
+  const action = typeof body?.action === "string" ? body.action : "";
+  if (!wallet) return json(res, 400, { ok: false, error: "wallet is required" });
+  if (action === "start") {
+    const created = await createWalletCode(wallet).catch(() => null);
+    if (!created) return json(res, 503, { ok: false, error: "could not create a code" });
+    const bot = (process.env.TELEGRAM_BOT_USERNAME ?? "agentsouk_bot").replace(/^@/, "");
+    return json(res, 200, { ok: true, url: `https://t.me/${bot}?start=${created.code}`, expiresAt: created.expiresAt });
+  }
+  if (action === "status") {
+    const link = await linkForWallet(wallet).catch(() => null);
+    const muted = link ? await isMuted(link.telegramId).catch(() => false) : false;
+    return json(res, 200, { ok: true, linked: Boolean(link), username: link?.username ?? null, muted });
+  }
+  if (action === "unlink") {
+    const removed = await unlinkWallet(wallet).catch(() => 0);
+    return json(res, 200, { ok: true, removed });
+  }
+  return json(res, 400, { ok: false, error: "action must be start, status or unlink" });
+}
+
 export async function handleNotify(req, res) {
   if (req.method !== "POST") return json(res, 405, { ok: false, error: "POST only" });
   if (!telegramBotToken()) return json(res, 503, { ok: false, error: "telegram is not configured" });
