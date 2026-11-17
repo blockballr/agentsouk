@@ -4,6 +4,7 @@ import { shortAddress } from '@agora/core'
 import { QuickSearch } from './QuickSearch'
 
 import { NotificationBell } from './NotificationBell'
+import { AssistantChat } from './AssistantChat'
 import { Wordmark } from './Wordmark'
 import { connectWallet, disconnectWallet, signedInUntil, signOut } from '../lib/wallet-session'
 import { walletErrorText } from '../lib/wallet-errors'
@@ -130,6 +131,7 @@ export function Nav() {
             </Link>
           ) : null}
           <QuickSearch />
+          <AssistantChat />
           <NotificationBell />
           <ThemeToggle />
           <ProfileChip
@@ -142,7 +144,8 @@ export function Nav() {
           />
         </div>
 
-        <div className="lg:hidden">
+        <div className="flex items-center gap-2 lg:hidden">
+          <AssistantChat />
           <QuickSearch large />
         </div>
         <button
