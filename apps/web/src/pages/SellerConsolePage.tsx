@@ -7,6 +7,7 @@ import { SellerBoardSection } from './SellerBoardSection'
 import { SellerStallsSection } from './SellerStallsSection'
 import { MarketFaceSection } from './MarketFaceSection'
 import { SellerDataProvider } from '../lib/seller-data'
+import { JobsToDeliver } from '../components/JobsToDeliver'
 import { useConnectedAccount } from '../lib/use-connected-account'
 
 const BOARDS = [
@@ -101,6 +102,7 @@ export function SellerConsolePage() {
         {/* before connecting there is nothing to read, so one card stands in for the three boards */}
         {account ? (
           <div>
+            <JobsToDeliver />
             <BoardNav active={active} />
             <SellerBoardSection />
             <SellerStallsSection />

@@ -6,6 +6,7 @@ import { loadDelisted } from "@/lib/delist-store";
 import { targetChainId } from "@/lib/types";
 import { erc8183Stack, kernelJob, kernelJobResult, notifySeller } from "@/lib/jobs8183";
 import { recordOnchainJob, findOnchainJobForClient } from "@/lib/jobs";
+import { emitNotification } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +103,19 @@ export async function POST(req: NextRequest) {
     client: onchain.client,
     budget: onchain.budget.toString(),
   });
+
+  // the seller hears about it too, in the bell and in a linked Telegram chat; the job id keys the
+  // alert, so a repeated record never sends it twice
+  const seller = detail.owner_address ?? onchain.provider;
+  const budget = Number(formatUnits(onchain.budget, 18)).toFixed(2);
+  await emitNotification({
+    wallet: seller,
+    kind: "job_funded",
+    eventKey: `${chainId}_${kernelJobId}`,
+    title: "A buyer funded a job",
+    body: `${detail.name}: $${budget} is in escrow for job ${kernelJobId}. It reaches you when the buyer accepts the delivered work.`,
+    href: "/seller",
+  }).catch(() => {});
 
   return NextResponse.json({
     success: true,
