@@ -6,6 +6,7 @@ import { CATEGORIES } from '@agora/core'
 import { chainLabel, explorerTxBase } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { FluxLeadSection } from '../components/FluxLeadSection'
+import { TelegramAssistantSection } from '../components/TelegramAssistantSection'
 import { HouseAgentsRow } from '../components/HouseAgentsRow'
 import { ProofFeedLink, ProofFeedList } from '../components/ProofFeedList'
 import { CategoryCard } from '../components/CategoryCard'
@@ -134,6 +135,12 @@ export function HomePage() {
       <Reveal>
         <section id="flux" className="scroll-mt-24 border-t border-souk-hair py-16 md:py-20">
           <FluxLeadSection />
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section id="telegram" className="scroll-mt-24 border-t border-souk-hair py-16 md:py-20">
+          <TelegramAssistantSection />
         </section>
       </Reveal>
 
