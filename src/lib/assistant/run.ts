@@ -9,8 +9,9 @@ const MCP_URL = process.env.ASSISTANT_MCP_URL ?? "https://api.agentsouk.xyz/api/
 // the larger groq model first, the smaller one on the same key when the larger is at its
 // minute limit, then gemini, whose free tier is small and only a last resort
 export function assistantEndpoints(env: NodeJS.ProcessEnv = process.env): ModelEndpoint[] {
-  const groqBase = env.BUILDER_LLM_BASE_URL ?? "";
-  const groqKey = env.BUILDER_LLM_API_KEY ?? "";
+  // the assistant's own settings come first, so the builder keeps whatever model it is given
+  const groqBase = env.ASSISTANT_LLM_BASE_URL ?? env.BUILDER_LLM_BASE_URL ?? "";
+  const groqKey = env.ASSISTANT_LLM_API_KEY ?? env.BUILDER_LLM_API_KEY ?? "";
   const geminiBase = env.LLM_EVAL_BASE_URL ?? "";
   const geminiKey = env.LLM_EVAL_API_KEY ?? "";
   return [
