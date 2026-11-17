@@ -49,3 +49,48 @@ describe("telegram formatting", () => {
     );
   });
 });
+
+describe("the assistant's own reads", () => {
+  it("never reads a wallet the conversation did not link", async () => {
+    const { callLocalTool } = await import("../src/lib/assistant/local-tools");
+    const fetchImpl = vi.fn();
+    const out = JSON.parse(await callLocalTool("my_earnings", null, fetchImpl as never));
+    expect(out.error).toBe("no wallet");
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("reads the linked wallet's own listings, and nobody else's", async () => {
+    const { callLocalTool } = await import("../src/lib/assistant/local-tools");
+    const wallet = "0x84FEDaBd1B83443Ad86796C15619494878B64180";
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ agents: [{ name: "Souk Health Guard", tokenId: "404603", chainId: 56, category: "health-factor", verification: { status: "online" } }] })));
+    const out = JSON.parse(await callLocalTool("my_listings", wallet, fetchImpl as never));
+    expect(String(fetchImpl.mock.calls[0]![0])).toContain(`owner=${wallet}`);
+    expect(out.agents[0]).toMatchObject({ name: "Souk Health Guard", network: "mainnet", answering: "yes" });
+  });
+
+  it("adds earnings per token and chain, and leaves out our own probes", async () => {
+    const { summariseEarnings } = await import("../src/lib/assistant/local-tools");
+    const out = summariseEarnings({
+      hires: [
+        { paymentId: "req_1", amount: "20000000000000000", decimals: 18, symbol: "U", chainId: 56, agentName: "A", payer: "buyer" },
+        { paymentId: "req_2", amount: "30000000000000000", decimals: 18, symbol: "U", chainId: 56, agentName: "A", payer: "buyer" },
+        { paymentId: "verify_1", amount: "10000000000000000000", decimals: 18, symbol: "sUSD", chainId: 97, agentName: "A" },
+      ],
+    }) as { payments: number; totals: { asset: string; amount: number }[] };
+    expect(out.payments).toBe(2);
+    expect(out.totals).toEqual([{ asset: "U on mainnet", amount: 0.05 }]);
+  });
+
+  it("ranks Flux LP pools by their result against holding", async () => {
+    const { summarisePools } = await import("../src/lib/assistant/local-tools");
+    const out = summarisePools({
+      pools: [
+        { symbol: "NVDAB/USDT", venue: "pancake", result: { vsHoldPer1k: -43.96, feesPer1k: 14, priceMovePct: -16.3, coveredDays: 11, label: "trending" } },
+        { symbol: "AAPLB/USDT", venue: "uniswap", result: { vsHoldPer1k: 12.55, feesPer1k: 12.6, priceMovePct: -0.3, coveredDays: 13, label: "earning" } },
+        { symbol: "NEWB/USDT", venue: "pancake", result: null },
+      ],
+    }) as { pools: { pair: string; endedAgainstHoldingPer1000?: number }[] };
+    expect(out.pools.map((p) => p.pair)).toEqual(["AAPLB/USDT", "NVDAB/USDT", "NEWB/USDT"]);
+    expect(out.pools[0]!.endedAgainstHoldingPer1000).toBe(12.55);
+  });
+});

@@ -3,6 +3,7 @@
 // has no tool that signs, pays or changes anything, so a bad answer can never move money
 
 import { MCP_TOOLS } from "../mcp-tools";
+import { LOCAL_TOOLS, LOCAL_TOOL_NAMES, callLocalTool } from "./local-tools";
 
 export interface AssistantMessage {
   role: "user" | "assistant";
@@ -45,6 +46,7 @@ export const SYSTEM_PROMPT = [
   "Buyers pay an agent in one of three ways: pay per answer, pay on delivery (an escrow job), or a vault hire where their money stays in a contract and the agent trades only inside limits they sign.",
   "Answer in plain words, briefly, in a few short lines, with no tables. Say pay per answer, pay on delivery and vault hire; never name protocols such as x402, EIP-3009 or ERC-8183 unless the user asks.",
   "Use the tools to find agents, read their details, prices and records, and read a user's hires.",
+  "For the user's own agents, earnings or hires use my_listings, my_earnings and my_hires; they read only the user's linked wallet. For which stock pools are earning, use fluxlp_pools and give the real numbers.",
   "Agents built by Agent Souk come first when they fit, and these facts about them are exact:",
   "Souk Health Guard (token 404603) watches a Venus loan's health factor and repays debt to protect it, inside limits the user sets; it never sells collateral; it is hired per answer or on delivery, not by vault.",
   "Souk Grid Planner (391004) plans a grid ladder and trades it inside a vault hire.",
@@ -100,7 +102,7 @@ export function assistantTools() {
     type: "function" as const,
     function: { name: t.name, description: t.description.slice(0, 280), parameters: t.inputSchema },
   }));
-  return [...read, PREPARE_TOOL];
+  return [...read, ...LOCAL_TOOLS, PREPARE_TOOL];
 }
 
 type ChatMsg =
@@ -198,7 +200,7 @@ export async function askAssistant(input: {
   retryWaitMs?: number;
 }): Promise<AssistantReply> {
   const fetchImpl = input.fetchImpl ?? fetch;
-  const system = SYSTEM_PROMPT + (input.wallet ? ` The user's connected wallet is ${input.wallet}; use it when they ask about their own hires.` : " The user has not linked a wallet yet.");
+  const system = SYSTEM_PROMPT + (input.wallet ? ` The user's linked wallet is ${input.wallet}; the my_ tools read it.` : " The user has not linked a wallet yet, so the my_ tools cannot answer until they do.");
   const errors: string[] = [];
   for (const endpoint of input.endpoints.filter((e) => e.key && e.model)) {
     const messages: ChatMsg[] = [
@@ -224,7 +226,9 @@ export async function askAssistant(input: {
           const result =
             call.function.name === "prepare_action"
               ? JSON.stringify({ link: prepareLink(args as { action?: string; chainId?: number; tokenId?: string }), note: "The user confirms in their own wallet on this page." })
-              : await callMcpTool(input.mcpUrl, call.function.name, args, fetchImpl);
+              : LOCAL_TOOL_NAMES.has(call.function.name)
+                ? await callLocalTool(call.function.name, input.wallet, fetchImpl)
+                : await callMcpTool(input.mcpUrl, call.function.name, args, fetchImpl);
           messages.push({ role: "tool", tool_call_id: call.id, content: result });
         }
       }

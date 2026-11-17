@@ -3,6 +3,7 @@
 import "server-only";
 import { askAssistant, type ModelEndpoint } from "./brain";
 import { appendHistory, loadHistory } from "./history";
+import { enforceRateLimit } from "../rate-limit";
 
 const MCP_URL = process.env.ASSISTANT_MCP_URL ?? "https://api.agentsouk.xyz/api/mcp";
 
@@ -21,7 +22,22 @@ export function assistantEndpoints(env: NodeJS.ProcessEnv = process.env): ModelE
   ].filter((e) => e.base && e.key && e.model);
 }
 
+// one cap on model calls across every user and door, so the free tier is never run dry by one day
+export const DAILY_CAP = Number(process.env.ASSISTANT_DAILY_CAP ?? 500);
+export const RESTING = "The assistant has answered all it can for today and is resting until tomorrow. The commands and the website still work.";
+
+async function underDailyCap(): Promise<boolean> {
+  try {
+    const verdict = await enforceRateLimit({ table: "rate_assistant_daily", limit: DAILY_CAP, windowMs: 86_400_000 }, { keys: ["all"] });
+    return verdict.allowed;
+  } catch {
+    // a store that cannot count refuses rather than run uncapped
+    return false;
+  }
+}
+
 export async function assistantTurn(conversation: string, message: string, wallet: string | null): Promise<string> {
+  if (!(await underDailyCap())) return RESTING;
   const history = await loadHistory(conversation);
   const user = { role: "user" as const, content: message.slice(0, 1500) };
   let text: string;
