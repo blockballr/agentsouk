@@ -486,3 +486,21 @@ textarea {
   border-radius: var(--radius-field);
 }
 
+
+/* the on-chain tape: two copies of the row slide left by one copy's width, so the loop has no seam */
+@keyframes tape-slide {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.tape-track {
+  animation: tape-slide var(--tape-duration, 60s) linear infinite;
+}
+.tape-viewport:hover .tape-track,
+.tape-viewport:focus-within .tape-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tape-track {
+    animation: none;
+  }
+}

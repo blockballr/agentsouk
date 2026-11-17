@@ -370,27 +370,40 @@ export function MarketTerminal({ chainId }: { chainId: number }) {
         </aside>
       </div>
 
-      {/* the tape */}
-      <section className="mt-3 overflow-hidden rounded-[14px] border border-souk-hair bg-souk-surface1/60" aria-label="Confirmed on chain">
-        <div className="flex items-center gap-4 overflow-x-auto px-4 py-2.5 [scrollbar-width:thin]">
-          <span className={`${HEAD} shrink-0 text-souk-data`}>On chain</span>
-          {(tape.items ?? []).slice(0, 20).map((item) => (
-            <a
-              key={item.txHash + item.kind}
-              href={`${explorer}/tx/${item.txHash}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex shrink-0 items-center gap-2 text-[12px] text-souk-slate hover:text-souk-ink"
+      {/* the tape: it slides on its own and pauses under the pointer; with reduced motion it stands still */}
+      <section className="mt-3 flex items-center overflow-hidden rounded-[14px] border border-souk-hair bg-souk-surface1/60" aria-label="Confirmed on chain">
+        <span className={`${HEAD} relative z-10 shrink-0 self-stretch border-r border-souk-hair bg-souk-surface1 px-4 py-2.5 text-souk-data`}>On chain</span>
+        {tape.items && tape.items.length === 0 ? (
+          <span className="px-4 text-[12px] text-souk-steel">Nothing confirmed yet.</span>
+        ) : (
+          <div className="tape-viewport min-w-0 flex-1 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_32px,black_calc(100%-32px),transparent)]">
+            <div
+              className="tape-track flex w-max items-center py-2.5"
+              style={{ '--tape-duration': `${Math.max(30, Math.min(20, tape.items?.length ?? 0) * 6)}s` } as React.CSSProperties}
             >
-              <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${item.kind === 'trade' ? 'bg-souk-data' : 'bg-souk-good'}`} />
-              <span className="font-semibold text-souk-ink">{item.agentName}</span>
-              <span>{item.detail.toLowerCase()}</span>
-              {item.amount ? <span className="font-mono">{item.amount} {item.symbol ?? ''}</span> : null}
-              <span className="font-mono text-souk-labels">{timeAgo(item.at)}</span>
-            </a>
-          ))}
-          {tape.items && tape.items.length === 0 ? <span className="text-[12px] text-souk-steel">Nothing confirmed yet.</span> : null}
-        </div>
+              {[0, 1].map((copy) => (
+                <div key={copy} className="flex shrink-0 items-center gap-6 pr-6" aria-hidden={copy === 1 ? true : undefined}>
+                  {(tape.items ?? []).slice(0, 20).map((item) => (
+                    <a
+                      key={item.txHash + item.kind}
+                      href={`${explorer}/tx/${item.txHash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      tabIndex={copy === 1 ? -1 : undefined}
+                      className="flex shrink-0 items-center gap-2 text-[12px] text-souk-slate hover:text-souk-ink"
+                    >
+                      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${item.kind === 'trade' ? 'bg-souk-data' : 'bg-souk-good'}`} />
+                      <span className="font-semibold text-souk-ink">{item.agentName}</span>
+                      <span>{item.detail.toLowerCase()}</span>
+                      {item.amount ? <span className="font-mono">{item.amount} {item.symbol ?? ''}</span> : null}
+                      <span className="font-mono text-souk-labels">{timeAgo(item.at)}</span>
+                    </a>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     </div>
   )

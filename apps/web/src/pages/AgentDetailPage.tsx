@@ -794,7 +794,7 @@ export function AgentDetailPage() {
               <Txt size={11} lead={14} weight="bold" upper tone="muted" className="tracking-[0.08em]">
                 {CATEGORIES.find((c) => c.key === detail.category)?.label ?? detail.category ?? 'Agent'}
               </Txt>
-              <h1 className="m-0 mt-1" ref={titleRef} tabIndex={-1}>
+              <h1 className="m-0 mt-1 outline-none" ref={titleRef} tabIndex={-1}>
                 <Txt display size={46} lead={50} weight="semibold" tone="ink" className="block tracking-[-0.02em]">
                   {detail.name}
                 </Txt>

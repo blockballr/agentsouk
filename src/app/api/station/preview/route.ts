@@ -58,6 +58,7 @@ export async function GET(): Promise<NextResponse> {
       hires: hires.filter((h) => h.payer === "buyer").slice(0, 15).map((h) => ({
         createdAt: h.createdAt,
         agentName: h.agentName,
+        chainId: h.chainId,
         tokenId: h.tokenId,
         amount: h.amount,
         symbol: h.symbol,

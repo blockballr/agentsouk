@@ -12,6 +12,7 @@ import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from 
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
 import { OPERATED_BY_LABEL, isOperatedByAgentSouk } from '../lib/first-party'
+import { readStoredView, viewFromParam } from '../lib/shelf-view'
 import { MarketTerminal } from '../components/MarketTerminal'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
 import { Section, Stack, Row, Txt, Dot, Rule, Btn, type DotTone } from '../components/souk'
@@ -61,36 +62,7 @@ export function MarketplacePage() {
   const [sp, setSp] = useSearchParams()
   // the market view is a terminal for judges and power users; the link carries it, and the
   // last choice on this browser is the default when the link does not say
-  const viewParam = sp.get('view')
-  const view: 'shelf' | 'market' =
-    viewParam === 'pro' || viewParam === 'market' ? 'market' : viewParam === 'shelf' ? 'shelf' : readStoredView()
-  function setView(next: 'shelf' | 'market') {
-    try {
-      localStorage.setItem(VIEW_KEY, next)
-    } catch {
-      // storage can be blocked; the url still carries the choice
-    }
-    const nextSp = new URLSearchParams(sp)
-    if (next === 'market') nextSp.set('view', 'pro')
-    else nextSp.delete('view')
-    setSp(nextSp, { replace: true })
-  }
-  const viewToggle = (
-    <div role="tablist" aria-label="View" className="flex shrink-0 gap-1 rounded-[10px] border border-souk-hair p-1">
-      {(['shelf', 'market'] as const).map((v) => (
-        <button
-          key={v}
-          type="button"
-          role="tab"
-          aria-selected={view === v}
-          onClick={() => setView(v)}
-          className={`cursor-pointer rounded-[7px] px-3 py-1 text-[12px] font-semibold transition-colors ${view === v ? 'bg-souk-surface2 text-souk-ink' : 'text-souk-steel hover:text-souk-ink'}`}
-        >
-          {v === 'shelf' ? 'Shelf' : 'Pro'}
-        </button>
-      ))}
-    </div>
-  )
+  const view = viewFromParam(sp.get('view')) ?? readStoredView()
 
   const navigate = useNavigate()
 
@@ -317,7 +289,6 @@ export function MarketplacePage() {
               ))}
             </div>
             <Row align="center" gap={16} className="w-full justify-end sm:w-auto">
-              {viewToggle}
               <button
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
@@ -486,7 +457,6 @@ export function MarketplacePage() {
         <Stack gap={24}>
         {result ? (
           <Row align="center" gap={12} className="flex-wrap">
-            {view === 'market' ? viewToggle : null}
             {/* new admissions moved to their own page, so the shelf keeps one
                 disclosed placement and the strip has room to grow. the link
                 stays even when there is no placement to show */}
@@ -928,16 +898,6 @@ export function hasMark(agent: Pick<AgentSummary, 'owner_address' | 'verificatio
 export function shelfRank(agent: Pick<AgentSummary, 'owner_address' | 'verification' | 'availability'>): number {
   if (isOperatedByAgentSouk(agent.owner_address)) return 0
   return hasMark(agent) ? 1 : 2
-}
-
-const VIEW_KEY = 'souk.shelf-view'
-
-function readStoredView(): 'shelf' | 'market' {
-  try {
-    return localStorage.getItem(VIEW_KEY) === 'market' ? 'market' : 'shelf'
-  } catch {
-    return 'shelf'
-  }
 }
 
 function categoryName(key: AgentSummary['category']): string {

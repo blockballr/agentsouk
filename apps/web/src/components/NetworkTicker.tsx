@@ -3,9 +3,9 @@ import { latestQuestProgress, questModeFor, requiredDone } from '../lib/quest'
 import { sessionAccount } from '../lib/wallet-session'
 import { getNetwork } from '../lib/api'
 import { SwapTicker } from './SwapTicker'
-import { ThemeToggle } from './ThemeToggle'
 import { LanguagePicker } from './LanguagePicker'
 import { SupportButton } from './SupportButton'
+import { ViewSwitch } from './ViewSwitch'
 import { IconDocs } from './souk'
 import { useI18n } from '../lib/i18n'
 
@@ -126,6 +126,8 @@ export function NetworkTicker({
         )}
 
         <span className="ml-auto flex items-center gap-4">
+          <ViewSwitch />
+          <span className="text-souk-muted">|</span>
           <span className="hidden items-center gap-1.5 sm:flex">
             <span className="text-souk-muted">BNB/$U</span>
             <span className="flex items-center gap-1">
@@ -158,7 +160,6 @@ export function NetworkTicker({
           <span className="text-souk-muted">|</span>
           <span className="flex items-center gap-2">
             <LanguagePicker />
-            <ThemeToggle />
           </span>
           <span className="hidden text-souk-muted sm:inline">|</span>
           <a

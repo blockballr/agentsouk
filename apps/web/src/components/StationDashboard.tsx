@@ -32,7 +32,7 @@ interface Preview {
     relay: { address: string | null; balance: string | null }
     stores: { name: string; mode: string; durable: boolean }[]
   }
-  hires: { createdAt: string; agentName: string; tokenId: string; amount: string; symbol: string; txHash: string | null; buyer: string | null }[]
+  hires: { createdAt: string; agentName: string; chainId?: number; tokenId: string; amount: string; symbol: string; txHash: string | null; buyer: string | null }[]
 }
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -195,7 +195,6 @@ export function StationDashboard({ preview }: { preview: boolean }) {
     ? settledAll.map((t, i) => `${i ? `${Number(t.amount).toLocaleString('en-US', { maximumFractionDigits: 2 })} ` : ''}${t.symbol} on ${t.chainId === 56 ? 'mainnet' : 'testnet'}`).join(', ') + ', all time'
     : 'nothing settled yet'
   const failingJobs = data.operations.jobs.filter((j) => j.ok === false).length
-  const explorer = explorerTxBase(o.chainId)
 
   return (
     <div className="mt-6 space-y-4">
@@ -332,9 +331,10 @@ export function StationDashboard({ preview }: { preview: boolean }) {
                   <tr key={`${h.txHash ?? h.createdAt}-${i}`}>
                     <td className="py-2 pr-3 font-mono text-[11px] text-souk-labels">{ago(h.createdAt)}</td>
                     <td className="py-2 pr-3">
-                      <Link to={`/agents/${o.chainId}/${h.tokenId}`} className="text-souk-ink hover:underline">
+                      <Link to={`/agents/${h.chainId ?? o.chainId}/${h.tokenId}`} className="text-souk-ink hover:underline">
                         {h.agentName}
                       </Link>
+                      {(h.chainId ?? o.chainId) !== 56 ? <span className="ml-1.5 font-mono text-[10px] uppercase text-souk-labels">testnet</span> : null}
                     </td>
                     <td className="py-2 pr-3 font-mono text-[11px] text-souk-steel">{h.buyer}</td>
                     <td className="py-2 pr-3 text-right font-mono text-souk-ink">
@@ -342,7 +342,7 @@ export function StationDashboard({ preview }: { preview: boolean }) {
                     </td>
                     <td className="py-2 text-right">
                       {h.txHash ? (
-                        <a href={`${explorer}/tx/${h.txHash}`} target="_blank" rel="noreferrer" className="text-[11px] text-souk-sky hover:underline">
+                        <a href={`${explorerTxBase(h.chainId ?? o.chainId)}/tx/${h.txHash}`} target="_blank" rel="noreferrer" className="text-[11px] text-souk-sky hover:underline">
                           Transaction
                         </a>
                       ) : null}

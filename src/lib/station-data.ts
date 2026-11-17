@@ -246,6 +246,7 @@ export interface StationHire {
   paymentId: string;
   createdAt: string;
   agentName: string;
+  chainId: number;
   tokenId: string;
   client: string;
   payer: string;
@@ -280,6 +281,7 @@ export async function stationHires(limit = 200): Promise<StationHire[]> {
       paymentId: p.paymentId,
       createdAt: p.createdAt,
       agentName: p.agentName,
+      chainId: p.chainId,
       tokenId: p.tokenId,
       client: p.client,
       payer: payerKind(p),
