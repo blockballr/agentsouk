@@ -2,6 +2,7 @@
 // available so it survives device and browser changes; localStorage is the
 // fallback when the store is offline, so nothing is lost in the meantime.
 import { useEffect, useState } from 'react'
+import { sessionProof } from './wallet-session'
 
 export interface StoredProfile {
   username: string
@@ -37,11 +38,21 @@ export function saveProfile(address: string, profile: StoredProfile): void {
   try { window.localStorage.setItem(KEY, JSON.stringify(all)) } catch {}
   window.dispatchEvent(new Event(EVENT))
   // also persist server-side, best effort
-  fetch(`${BASE}/profiles/${address}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ username: profile.username, avatar: profile.avatar }),
-  }).catch(() => {})
+  // the server only accepts a change from the wallet itself, proven by its signed sign-in
+  void sessionProof(address)
+    .then((proof) => {
+      if (!proof) return
+      return fetch(`${BASE}/profiles/${address}`, {
+        method: 'PUT',
+        headers: {
+          'content-type': 'application/json',
+          'x-agentsouk-message': btoa(proof.message),
+          'x-agentsouk-signature': proof.signature,
+        },
+        body: JSON.stringify({ username: profile.username, avatar: profile.avatar }),
+      })
+    })
+    .catch(() => {})
 }
 
 // async read from the server; falls back to localStorage

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadProfile, saveProfile } from "@/lib/profile-store";
+import { proofFromHeaders, verifyWalletProof } from "@/lib/wallet-proof";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,11 @@ export async function GET(
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ wallet: string }> }): Promise<NextResponse> {
   const { wallet } = await params;
   if (!isWallet(wallet)) return json({ success: false, error: "wallet required" }, 400);
+  // only the wallet itself may change its name and picture: the caller replays its signed sign-in
+  const { message, signature } = proofFromHeaders(req.headers);
+  if (!(await verifyWalletProof({ wallet, message, signature }))) {
+    return json({ success: false, error: "sign in with this wallet to change its profile" }, 401);
+  }
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) return json({ success: false, error: "body required" }, 400);
   const username = typeof body.username === "string" ? body.username.trim().slice(0, 32) : "";
