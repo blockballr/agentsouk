@@ -158,14 +158,13 @@ export function SellerStallsSection() {
 
   const kicker = account
     ? [
-        'seller / agents',
+        'agents',
         `${stalls.length} of ${agents.length} listings`,
         chainId !== null ? chainLabel(chainId) : null,
-        'board b',
       ]
         .filter((part): part is string => Boolean(part))
         .join(' · ')
-    : 'seller / agents'
+    : 'agents'
 
   return (
     <section id="agents" className="mt-16 scroll-mt-24 border-t border-souk-hair pt-12 text-souk-ink">
@@ -173,11 +172,8 @@ export function SellerStallsSection() {
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
-        <h2 className="m-0">
-          <Txt size={28} lead={36} display weight="bold" tone="ink">
-            Your agents.
-          </Txt>
-        </h2>
+        <h2 className="m-0 text-[22px] font-semibold leading-[28px] text-souk-ink">Your agents</h2>
+        <p className="m-0 text-[14px] leading-[21px] text-souk-slate">Each agent's checks, hires and earnings, and what you can do with it.</p>
       </Stack>
 
       {account && (

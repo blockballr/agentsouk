@@ -24,13 +24,11 @@ const OpenStallPage = lazy(() => import('./pages/OpenStallPage').then((m) => ({ 
 const OngoingPage = lazy(() => import('./pages/OngoingPage').then((m) => ({ default: m.OngoingPage })))
 const StationPage = lazy(() => import('./pages/StationPage').then((m) => ({ default: m.StationPage })))
 const QuestPage = lazy(() => import('./pages/QuestPage').then((m) => ({ default: m.QuestPage })))
+const ConsoleHomePage = lazy(() => import('./pages/ConsoleHomePage').then((m) => ({ default: m.ConsoleHomePage })))
+const AccountPage = lazy(() => import('./pages/AccountPage').then((m) => ({ default: m.AccountPage })))
 const SellerConsolePage = lazy(() => import('./pages/SellerConsolePage').then((m) => ({ default: m.SellerConsolePage })))
 const StudioPage = lazy(() => import('./pages/StudioPage').then((m) => ({ default: m.StudioPage })))
 const DocsPage = lazy(() => import('./pages/DocsPage').then((m) => ({ default: m.DocsPage })))
-const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
-const SettingsProfilePage = lazy(() => import('./pages/SettingsProfilePage').then((m) => ({ default: m.SettingsProfilePage })))
-const SettingsSecurityPage = lazy(() => import('./pages/SettingsSecurityPage').then((m) => ({ default: m.SettingsSecurityPage })))
-const ManageAccountPage = lazy(() => import('./pages/ManageAccountPage').then((m) => ({ default: m.ManageAccountPage })))
 const SessionConsolePage = lazy(() => import('./pages/SessionConsolePage').then((m) => ({ default: m.SessionConsolePage })))
 const VaultHirePage = lazy(() => import('./pages/VaultHirePage'))
 const DesignPnlPage = lazy(() => import('./pages/DesignPnlPage').then((m) => ({ default: m.DesignPnlPage })))
@@ -108,14 +106,16 @@ function App() {
               <Route path="/vault/c/:category" element={<VaultHirePage categoryMode />} />
               <Route path="/vault/:chainId/:tokenId" element={<VaultHirePage />} />
               <Route path="/defend" element={<DefendPage />} />
-              <Route path="/profile" element={<Navigate to="/seller" replace />} />
+              <Route path="/home" element={<ConsoleHomePage />} />
+              <Route path="/profile" element={<Navigate to="/home" replace />} />
               <Route path="/studio" element={<StudioPage />} />
               <Route path="/docs" element={DOCS_HOST ? <Navigate to="/" replace /> : <DocsRedirect />} />
               <Route path="/docs/*" element={DOCS_HOST ? <Navigate to="/" replace /> : <DocsRedirect />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/settings/profile" element={<SettingsProfilePage />} />
-              <Route path="/settings/security" element={<SettingsSecurityPage />} />
-              <Route path="/account" element={<ManageAccountPage />} />
+              {/* settings, profile and keys are one Account page now; security waits for a real second factor */}
+              <Route path="/settings" element={<Navigate to="/account?tab=preferences" replace />} />
+              <Route path="/settings/profile" element={<Navigate to="/account" replace />} />
+              <Route path="/settings/security" element={<Navigate to="/account?tab=preferences" replace />} />
+              <Route path="/account" element={<AccountPage />} />
               <Route path="/account/sessions" element={<SessionConsolePage />} />
               <Route path="/build" element={<OpenStallPage />} />
               <Route path="/build/manifest" element={<ManifestBuilderPage />} />

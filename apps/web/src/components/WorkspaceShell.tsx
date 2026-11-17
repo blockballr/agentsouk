@@ -15,39 +15,21 @@ import { useI18n } from '../lib/i18n'
 
 type RailItem = { to: string; key: string; soon?: boolean; end?: boolean; accent?: 'indigo' }
 
+// what a person came to do, in their words
+// starting a vault hire, a guard or a listing lives next to what it creates, and docs sit in the status bar
+// the executor sessions page is a team tool reached by its address, so it is not offered here
 const RAIL: { title: string; items: RailItem[] }[] = [
   {
     title: 'rail.console',
     items: [
-      // the board is the profile, rebuilt: one surface, not a listings page plus a board
-      { to: '/seller', key: 'rail.overview', end: true },
-      { to: '/quest', key: 'rail.quest' },
+      { to: '/home', key: 'rail.home', end: true },
+      { to: '/ongoing', key: 'rail.myHires' },
+      { to: '/seller', key: 'rail.myAgents', end: true },
     ],
-  },
-  {
-    title: 'rail.hires',
-    items: [
-      { to: '/vault', key: 'rail.vault' },
-      { to: '/defend', key: 'rail.defend' },
-      { to: '/ongoing', key: 'rail.ongoing' },
-    ],
-  },
-  {
-    title: 'rail.listings',
-    items: [
-      { to: '/build', key: 'rail.list' },
-    ],
-  },
-  {
-    title: 'rail.reference',
-    items: [{ to: '/docs', key: 'rail.docs', accent: 'indigo' }],
   },
   {
     title: 'rail.account',
-    items: [
-      { to: '/account', key: 'rail.manage' },
-      { to: '/settings', key: 'rail.settings' },
-    ],
+    items: [{ to: '/account', key: 'rail.accountPage', end: true }],
   },
 ]
 
@@ -60,9 +42,10 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
   // what a dead connect has to say for itself; set only by the connect timeout,
   // so the rail never claims a wallet it did not see
   const [connectNote, setConnectNote] = useState<string | null>(null)
-  // /build asks for the wallet inside its first step, so the rail does not
-  // offer a second button that pulls the eye away from it
-  const pageOwnsConnect = useLocation().pathname === '/build'
+  // /build asks for the wallet inside its first step and Home leads with its own connect card,
+  // so the rail does not offer a second button that pulls the eye away from it
+  const pathname = useLocation().pathname
+  const pageOwnsConnect = pathname === '/build' || pathname === '/home'
 
   async function onConnect() {
     setConnecting(true)
@@ -80,13 +63,32 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
     <div className="mx-auto flex w-full gap-8 pb-24 pt-8">
       <aside className="hidden w-[236px] shrink-0 md:block">
         <div className="sticky top-24">
+          {/* the wallet sits first: every page here asks for it, so it is never below the fold */}
           <div className="souk-glass rounded-[16px] border border-souk-hair px-3 py-3">
-            <Txt size={13} lead={18} weight="bold" tone="ink">
-              Agent Souk
+            <Txt size={11} lead={16} mono tone="muted" className="block">
+              Agent Souk, {chainLabel(CHAIN)}
             </Txt>
-            <Txt size={11} lead={16} mono tone="muted" className="mt-0.5 block">
-              {chainLabel(CHAIN)}
-            </Txt>
+            {account ? (
+              <>
+                <Txt size={10} lead={14} mono upper tone="labels" className="mt-2 block">
+                  {t('rail.connected')}
+                </Txt>
+                <Txt size={12} lead={18} mono tone="slate" className="mt-1 block">
+                  {shortAddress(account)}
+                </Txt>
+              </>
+            ) : (
+              <>
+                <Txt size={11} lead={16} tone="muted" className="mt-2 block">
+                  {connectNote ?? t('rail.noWallet')}
+                </Txt>
+                {pageOwnsConnect ? null : (
+                  <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting} className="mt-2 w-full">
+                    {connecting ? t('rail.connecting') : t('rail.connect')}
+                  </Btn>
+                )}
+              </>
+            )}
           </div>
 
           <nav className="mt-6 grid gap-6">
@@ -102,29 +104,6 @@ export function WorkspaceShell({ children }: { children?: ReactNode }) {
             ))}
           </nav>
 
-          <div className="mt-8 souk-glass rounded-[16px] border border-souk-hair px-3 py-3">
-            {account ? (
-              <>
-                <Txt size={10} lead={14} mono upper tone="labels">
-                  {t('rail.connected')}
-                </Txt>
-                <Txt size={12} lead={18} mono tone="slate" className="mt-1 block">
-                  {shortAddress(account)}
-                </Txt>
-              </>
-            ) : (
-              <>
-                <Txt size={11} lead={16} tone="muted">
-                  {connectNote ?? t('rail.noWallet')}
-                </Txt>
-                {pageOwnsConnect ? null : (
-                  <Btn kind="primary" onClick={() => void onConnect()} disabled={connecting} className="mt-2 w-full">
-                    {connecting ? t('rail.connecting') : t('rail.connect')}
-                  </Btn>
-                )}
-              </>
-            )}
-          </div>
         </div>
       </aside>
 

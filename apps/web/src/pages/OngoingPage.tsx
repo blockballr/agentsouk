@@ -1,4 +1,5 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Portfolio } from '../components/Portfolio'
 import { Link } from 'react-router-dom'
 import {
   actOnJob,
@@ -34,7 +35,7 @@ import { encodeFunctionData, keccak256, toBytes } from 'viem'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { ratedHires } from '../lib/rating'
 import { RateAgent } from '../components/RateAgent'
-import { Action, Dialog, LABEL, RatingBoxes, ResultBox, TextSlot } from '../components/ui'
+import { Action, Dialog, LABEL, RatingBoxes, ResultBox } from '../components/ui'
 import { revokeSessionWithCancel, type RevokeOutcome } from '../lib/sessions'
 import {
   AgentAvatar,
@@ -44,8 +45,6 @@ import {
   Pill,
   Row,
   Rule,
-  Section,
-  SectionHead,
   Stack,
   Txt,
 } from '../components/souk'
@@ -82,6 +81,8 @@ function stopIndexFor(item: HireItem): number {
   return 2
 }
 
+type Filter = 'all' | 'money' | 'waiting' | 'progress' | 'finished'
+
 export function OngoingPage() {
   // the buyer's wallet, watched so a switch inside the wallet re-reads the board
   // and the escrows that wallet holds
@@ -97,6 +98,7 @@ export function OngoingPage() {
   const [escrowBusyId, setEscrowBusyId] = useState<string | null>(null)
   const [kernelJobs, setKernelJobs] = useState<Jobs8183Row[]>([])
   const inFlight = useRef(false)
+  const [filter, setFilter] = useState<Filter>('all')
 
   // kernel jobs are a slower loop: the escrow holds days, so one read per
   // connect plus one after each load is plenty
@@ -309,11 +311,6 @@ export function OngoingPage() {
   }
 
   const items = hireItems(data).map((i) => ({ ...i, escrow: escrowById[i.key] ?? null }))
-  const groups: { key: HireGroup; title: string; empty?: string }[] = [
-    { key: 'needs', title: 'Needs you' },
-    { key: 'progress', title: 'In progress' },
-    { key: 'finished', title: 'Finished' },
-  ]
   // within a group the most pressing action leads: an OK to give, then a retry, then a first run
   const ACTION_ORDER = { complete: 0, retry: 1, run: 2 } as const
   const byGroup = (g: HireGroup) =>
@@ -332,141 +329,169 @@ export function OngoingPage() {
   // since a wallet can hold jobs on more than one
   const chainLine = items.length > 0 ? chainLabel(items[0].chainId) : null
   const kicker = account
-    ? ['Ongoing', shortAddr(account), chainLine, data ? `${liveCount} live` : null].filter(Boolean).join(' · ')
-    : 'Ongoing'
+    ? ['My hires', shortAddr(account), chainLine, data ? `${liveCount} live` : null].filter(Boolean).join(', ')
+    : 'My hires'
+
+  const FILTERS: { key: Filter; label: string; count: number | null }[] = [
+    { key: 'all', label: 'All', count: null },
+    { key: 'money', label: 'Money working', count: null },
+    { key: 'waiting', label: 'Waiting on you', count: byGroup('needs').length },
+    { key: 'progress', label: 'In progress', count: byGroup('progress').length + kernelJobs.length },
+    { key: 'finished', label: 'Finished', count: byGroup('finished').length },
+  ]
+  const shows = (f: Filter) => filter === 'all' || filter === f
+  const hireList = (g: HireGroup) => (
+    <ul className="grid gap-3">
+      {byGroup(g).map((it) => (
+        <li key={it.key}>
+          <HireRow
+            item={it}
+            state={hireState(it)}
+            busy={jobBusy === it.job?.id || retryingId === it.task?.id || revokingId === it.key}
+            revoking={revokingId === it.key}
+            revoke={revokeResults[it.key]}
+            account={account}
+            escrowBusy={escrowBusyId === it.key}
+            onComplete={() => it.job && onJob(it.job.id, 'complete')}
+            onReject={() => onJobReject(it)}
+            onRetry={() => it.task && onRetry(it.task.id)}
+            onRevoke={() => onRevoke(it.key)}
+            onEscrow={(kind) => onEscrow(it.key, it.chainId, kind)}
+          >
+            {/* the task's own steps and the payment's figures, folded under the row they belong to */}
+            {it.task?.history && it.task.history.length > 0 ? <OpenTaskCard item={it} at={stopIndexFor(it)} /> : null}
+            {it.escrow ? (
+              <EscrowFacts
+                escrow={it.escrow}
+                item={it}
+                onReject={onJobReject}
+                busy={jobBusy === (it.job?.id ?? '')}
+                canAct={Boolean(account) && Boolean(it.escrow.buyer) && account?.toLowerCase() === it.escrow.buyer.toLowerCase()}
+              />
+            ) : null}
+          </HireRow>
+        </li>
+      ))}
+    </ul>
+  )
+  const empty = account && data && items.length === 0 && kernelJobs.length === 0 && !error
 
   return (
-    <div className="mx-auto min-h-screen bg-souk-canvas px-4 lg:px-8 pb-28 pt-10 text-souk-ink lg:pb-16">
-      {/* the hero owns its own top padding, so the band carries only the lower half of the rhythm */}
-      <Section pad="pb-16 md:pb-18">
-        <header className="flex w-full flex-col gap-2.5">
-          <Txt size={11} lead={16} mono upper tone="data">
-            {kicker}
-          </Txt>
-          <h1 className="m-0">
-            <Txt size={34} lead={42} display weight="bold" tone="ink">
-              Work in flight.
-            </Txt>
-          </h1>
-          <Txt size={15} lead={23} tone="slate">
-            Released is the only stop that pays the seller.
-          </Txt>
-        </header>
+    <div className="grid max-w-[1040px] gap-8 pb-16 text-souk-ink">
+      <header>
+        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-souk-data">{kicker}</p>
+        <h1 className="mt-1 text-[30px] font-bold leading-[36px] text-souk-ink">My hires</h1>
+        <p className="mt-2 text-[15px] leading-[23px] text-souk-slate">Where your money is working, and the work you hired.</p>
+      </header>
 
-        {!account && (
-          <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
-            <Txt size={15} lead={22} tone="ink">
-              Connect the wallet you hired with.
-            </Txt>
-            <Txt size={12} lead={18} tone="steel">
-              Connect from the rail on the left, or the bar above on a narrow screen.
-            </Txt>
-          </Stack>
-        )}
-
-        {error && (
-          <div role="alert" className="mt-6">
-            <Stack pad={[14, 16, 14, 16]} radius={14} hair>
-              <Txt size={13} lead={20} tone="peach">
-                {error}
-              </Txt>
-            </Stack>
-          </div>
-        )}
-
-        {account && data && items.length === 0 && kernelJobs.length === 0 && !error && (
-          <Stack surface pad={[28, 28, 28, 28]} gap={8} className="mt-8 max-w-[680px]">
-            <Txt size={15} lead={22} tone="ink">
-              Nothing hired with this wallet yet.
-            </Txt>
-            <Txt size={13} lead={20} tone="muted">
-              Hire an agent and it shows up here while you use it.
-            </Txt>
-            <Link
-              to="/agents"
-              className="mt-2 inline-flex h-11 w-fit items-center justify-center rounded-[6px] bg-souk-accent px-5"
+      {!account ? (
+        <section className="rounded-[16px] border border-souk-hair bg-souk-surface1/60 px-5 py-6">
+          <h2 className="m-0 text-[18px] font-semibold text-souk-ink">Connect the wallet you hired with.</h2>
+          <p className="mt-2 max-w-[60ch] text-[14px] leading-[21px] text-souk-slate">
+            Your vault hires, jobs and answers show here, with what each is worth and where it stands. Connect from the menu on the
+            left, or the bar above on a narrow screen.
+          </p>
+        </section>
+      ) : (
+        <div role="tablist" aria-label="Show" className="flex flex-wrap gap-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              role="tab"
+              aria-selected={filter === f.key}
+              onClick={() => setFilter(f.key)}
+              className={`rounded-full border px-3 py-1.5 text-[13px] transition-colors ${
+                filter === f.key ? 'border-souk-data/60 bg-souk-surface2 text-souk-ink' : 'border-souk-hair text-souk-slate hover:text-souk-ink'
+              }`}
             >
-              <Txt size={14} lead={20} weight="semibold" tone="on-accent">
-                Browse agents
-              </Txt>
-            </Link>
-          </Stack>
-        )}
-      </Section>
-
-      {account &&
-        groups.map((g) => {
-          const list = byGroup(g.key)
-          if (list.length === 0) return null
-          return (
-            <Section key={g.key}>
-              <SectionHead title={g.title} note={`${list.length}`} />
-              <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                {list.map((it) => (
-                  <HireRow
-                    key={it.key}
-                    item={it}
-                    state={hireState(it)}
-                    busy={jobBusy === it.job?.id || retryingId === it.task?.id || revokingId === it.key}
-                    revoking={revokingId === it.key}
-                    revoke={revokeResults[it.key]}
-                    account={account}
-                    escrowBusy={escrowBusyId === it.key}
-                    onComplete={() => it.job && onJob(it.job.id, 'complete')}
-                    onReject={() => onJobReject(it)}
-                    onRetry={() => it.task && onRetry(it.task.id)}
-                    onRevoke={() => onRevoke(it.key)}
-                    onEscrow={(kind) => onEscrow(it.key, it.chainId, kind)}
-                  />
-                ))}
-                {/* the drawing's task and escrow cards, alongside the row: the stop the
-                    job sits on and its event stream come from the task's own history,
-                    and the escrow's figures from the payment rather than the job */}
-                {list.map((it) => (
-                  <Fragment key={`${it.key}-cards`}>
-                    {it.task?.history && it.task.history.length > 0 ? (
-                      <OpenTaskCard item={it} at={stopIndexFor(it)} />
-                    ) : null}
-                    {it.escrow ? (
-                      <EscrowFacts
-                        escrow={it.escrow}
-                        item={it}
-                        onReject={onJobReject}
-                        busy={jobBusy === (it.job?.id ?? '')}
-                        canAct={Boolean(account) && Boolean(it.escrow.buyer) && account?.toLowerCase() === it.escrow.buyer.toLowerCase()}
-                      />
-                    ) : null}
-                  </Fragment>
-                ))}
-              </div>
-            </Section>
-          )
-        })}
-
-      {account && kernelJobs.length > 0 && (
-        <Section>
-          <SectionHead title="ERC-8183 jobs" note={`${kernelJobs.length}`} />
-          <Txt size={13} lead={20} tone="muted" className="mt-3 block max-w-[760px]">
-            Funded on the shared kernel; the status below is read from the chain, not from a promise.
-          </Txt>
-          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {kernelJobs.map((row) => (
-              <Jobs8183JobCard key={row.id} job={row} />
-            ))}
-          </div>
-        </Section>
+              {f.label}
+              {f.count ? <span className="ml-1.5 font-mono text-[11px] text-souk-labels">{f.count}</span> : null}
+            </button>
+          ))}
+        </div>
       )}
 
-      {account && items.length > 0 && (
-        <Section>
-          <SectionHead title="Every task, one ledger" note="same order as the board" />
-          <div className="mt-12">
-            {/* six columns as the drawing lays them out. the money column reads the
-                figure the buyer committed in dollars, since the escrow's own amount
+      {error ? (
+        <p role="alert" className="rounded-[14px] border border-souk-hair px-4 py-3 text-[13px] leading-[20px] text-souk-peach">
+          {error}
+        </p>
+      ) : null}
+
+      {account && shows('money') ? <Portfolio account={account} /> : null}
+
+      {empty ? (
+        <section className="rounded-[16px] border border-souk-hair px-5 py-6">
+          <h2 className="m-0 text-[16px] font-semibold text-souk-ink">No jobs or answers hired with this wallet yet.</h2>
+          <p className="mt-1 text-[13px] leading-[20px] text-souk-steel">Hire an agent and it shows up here while you use it.</p>
+          <Link to="/agents" className="mt-4 inline-flex h-10 items-center rounded-[8px] bg-souk-accent px-4 text-[13px] font-semibold text-souk-on-accent">
+            Browse agents
+          </Link>
+        </section>
+      ) : null}
+
+      {account && shows('waiting') && byGroup('needs').length > 0 ? (
+        <section className="grid gap-3">
+          <h2 className="m-0 text-[18px] font-semibold text-souk-ink">Waiting on you</h2>
+          {hireList('needs')}
+        </section>
+      ) : null}
+
+      {account && shows('progress') && (byGroup('progress').length > 0 || kernelJobs.length > 0) ? (
+        <section className="grid gap-3">
+          <h2 className="m-0 text-[18px] font-semibold text-souk-ink">In progress</h2>
+          {byGroup('progress').length > 0 ? hireList('progress') : null}
+          {kernelJobs.length > 0 ? (
+            <>
+              <p className="m-0 mt-2 text-[13px] leading-[19px] text-souk-steel">
+                Pay-on-delivery jobs. Each status is read from the chain; the seller is paid only when you accept.
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                {kernelJobs.map((row) => (
+                  <Jobs8183JobCard key={row.id} job={row} />
+                ))}
+              </div>
+            </>
+          ) : null}
+        </section>
+      ) : null}
+
+      {account && shows('finished') && byGroup('finished').length > 0 ? (
+        filter === 'finished' ? (
+          <section className="grid gap-3">
+            <h2 className="m-0 text-[18px] font-semibold text-souk-ink">Finished</h2>
+            {hireList('finished')}
+          </section>
+        ) : (
+          <details className="rounded-[14px] border border-souk-hair">
+            <summary className="cursor-pointer px-4 py-3 text-[14px] font-semibold text-souk-ink">
+              Finished <span className="ml-1 font-mono text-[11px] font-normal text-souk-labels">{byGroup('finished').length}</span>
+            </summary>
+            <div className="border-t border-souk-hair p-3">{hireList('finished')}</div>
+          </details>
+        )
+      ) : null}
+
+      {account && standaloneRevocations.length > 0 && filter === 'all' ? (
+        <section className="grid gap-3">
+          <h2 className="m-0 text-[18px] font-semibold text-souk-ink">Stopped hires</h2>
+          {standaloneRevocations.map(([paymentId, outcome]) => (
+            <div key={paymentId} className="rounded-[14px] border border-souk-hair px-4 py-4">
+              <RevokeNote outcome={outcome} chainId={outcome.chainId ?? 0} />
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      {account && items.length > 0 && filter === 'all' ? (
+        <details className="rounded-[14px] border border-souk-hair">
+          <summary className="cursor-pointer px-4 py-3 text-[14px] font-semibold text-souk-ink">Full history, newest first</summary>
+          <div className="overflow-x-auto border-t border-souk-hair p-3">
+            {/* the money column reads the figure the buyer committed in dollars, since the escrow's own amount
                 is a raw string with no unit this page can prove */}
             <DataTable
               cols={[420, 330, 250, 280, 240, 336]}
-              header={['Task', 'Agent', 'State', 'Committed', 'Age', 'Last event']}
+              header={['Task', 'Agent', 'Where it is', 'Committed', 'Started', 'Last change']}
               rows={items.map((i) => {
                 const committed = i.job
                   ? `$${i.job.budgetUsd.toFixed(2)}`
@@ -487,31 +512,15 @@ export function OngoingPage() {
               })}
             />
           </div>
-        </Section>
-      )}
+        </details>
+      ) : null}
 
-      {account && standaloneRevocations.length > 0 && (
-        <Section>
-          <SectionHead title="Revoked" note={`${standaloneRevocations.length}`} />
-          <Stack gap={8} className="mt-12">
-            {standaloneRevocations.map(([paymentId, outcome]) => (
-              <Stack key={paymentId} pad={[16, 16, 16, 16]} radius={14} hair>
-                <RevokeNote outcome={outcome} chainId={outcome.chainId ?? 0} />
-              </Stack>
-            ))}
-          </Stack>
-        </Section>
-      )}
-
-      {account && (
-        <Section>
-          <Rule />
-          <Txt size={12} lead={18} tone="muted" className="mt-3 block max-w-[1180px]">
-            A retry keeps the task id and the escrow it was funded with. A revoke is unconditional and
-            returns the escrow in one transaction, and only a released job counts as earned.
-          </Txt>
-        </Section>
-      )}
+      {account ? (
+        <p className="text-[12px] leading-[18px] text-souk-labels">
+          A retry keeps the task and the payment it was funded with. Stopping a hire returns what is left in one transaction, and
+          only a job you accept pays the seller.
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -552,7 +561,9 @@ function HireRow({
   onRetry,
   onRevoke,
   onEscrow,
+  children,
 }: {
+  children?: ReactNode
   item: HireItem
   state: HireState
   busy: boolean
@@ -591,86 +602,77 @@ function HireRow({
     job ? `$${job.budgetUsd} job` : null,
   ]
     .filter(Boolean)
-    .join(' · ')
+    .join(', ')
   return (
     <article
-      className={`flex h-[520px] min-w-0 flex-col rounded-[20px] border bg-souk-surface1 p-5 [overflow-wrap:anywhere] ${
-        state.group === 'needs' ? 'border-souk-data/40' : 'border-souk-edge'
+      className={`min-w-0 rounded-[14px] border bg-souk-surface1/60 p-4 [overflow-wrap:anywhere] ${
+        state.group === 'needs' ? 'border-souk-data/50' : 'border-souk-hair'
       }`}
     >
-      <Row justify="between" align="center" gap={12}>
-        <Row align="center" gap={11} className="min-w-0">
-          <AgentAvatar size={34} name={item.agentName} chainId={item.chainId} tokenId={item.tokenId} />
-          <Link to={agentHref} className="min-w-0 truncate">
-            <Txt size={16} lead={24} weight="bold" tone="ink">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,230px)_minmax(0,1fr)_minmax(0,210px)]">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <AgentAvatar size={32} name={item.agentName} chainId={item.chainId} tokenId={item.tokenId} />
+            <Link to={agentHref} className="min-w-0 truncate text-[15px] font-semibold text-souk-ink hover:underline">
               {item.agentName}
-            </Txt>
-          </Link>
-        </Row>
-        {/* the buyer's control over a live session, so it is the plainest button on the card; an
-            ended session has nothing left to spend and shows none */}
-        {item.live && (
-          <button
-            type="button"
-            onClick={onRevoke}
-            disabled={busy}
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-[8px] border border-souk-hair bg-souk-surface1 px-3 transition hover:border-souk-hair disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Txt size={12} lead={18} weight="semibold" tone="slate">
-              {revoking ? 'Revoking…' : 'Revoke session'}
-            </Txt>
-          </button>
-        )}
-      </Row>
-      <Row align="center" gap={8} className="mt-1 min-w-0">
-        <Dot tone={STATE_DOT[state.group]} size={9} />
-        <Txt size={14} lead={20} tone="slate" className="truncate">
-          {state.label}
-        </Txt>
-      </Row>
-      {/* the money's own progression, collapsed to a bar until the buyer clicks
-          it open; the stops that already passed are filled, and the money's
-          current stop pulses */}
-      {spine && <EscrowFlowCard spine={spine} agentName={item.agentName} />}
-      <TextSlot lines={2} className="mt-1">{state.note ?? ''}</TextSlot>
-      <TextSlot lines={1} className="mt-1 text-[12px]">{meta}</TextSlot>
-      <TextSlot lines={2} className="mt-3">
-        {asked ? (
-          <>
-            You asked: <span className="text-souk-ink">{asked}</span>
-          </>
-        ) : (
-          'No task sent yet.'
-        )}
-      </TextSlot>
+            </Link>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <Dot tone={STATE_DOT[state.group]} size={8} />
+            <span className="text-[13.5px] text-souk-ink">{state.label}</span>
+          </div>
+          {meta ? <p className="mt-1 text-[12px] leading-[17px] text-souk-labels">{meta}</p> : null}
+          {/* the buyer's control over a live session; an ended session has nothing left to spend */}
+          {item.live ? (
+            <button
+              type="button"
+              onClick={onRevoke}
+              disabled={busy}
+              className="mt-3 h-8 rounded-[8px] border border-souk-hair px-3 text-[12px] font-semibold text-souk-slate transition hover:text-souk-ink disabled:opacity-40"
+            >
+              {revoking ? 'Stopping...' : 'Stop this hire'}
+            </button>
+          ) : null}
+        </div>
 
-      <ResultBox
-        className="mt-3 flex-1"
-        label={shown.label}
-        preview={shown.preview}
-        moreLabel={shown.full ? `View full ${shown.label === 'Result' ? 'result' : 'reply'}` : undefined}
-        onMore={shown.full ? () => setDialog('full') : undefined}
-      />
+        <div className="min-w-0">
+          {state.note ? <p className="m-0 text-[13px] leading-[19px] text-souk-slate">{state.note}</p> : null}
+          <p className="m-0 mt-2 text-[13px] leading-[19px] text-souk-steel">
+            {asked ? (
+              <>
+                You asked: <span className="text-souk-ink">{asked}</span>
+              </>
+            ) : (
+              'No task sent yet.'
+            )}
+          </p>
+          <ResultBox
+            className="mt-3"
+            label={shown.label}
+            preview={shown.preview}
+            moreLabel={shown.full ? `View full ${shown.label === 'Result' ? 'result' : 'reply'}` : undefined}
+            onMore={shown.full ? () => setDialog('full') : undefined}
+          />
+          {/* the money's own progression; the stops already passed are filled and the current one pulses */}
+          {spine ? <EscrowFlowCard spine={spine} agentName={item.agentName} /> : null}
+        </div>
 
-      {/* the actions in an even two-column grid, then the rating on its own line; the result box
-          above takes whatever height is left, which always holds its four lines */}
-      <div className="mt-3 flex shrink-0 flex-col gap-2">
-        <div className="grid grid-cols-2 gap-2 empty:hidden">
-          {state.action === 'complete' && (
+        <div className="flex min-w-0 flex-col gap-2">
+          {state.action === 'complete' ? (
             <>
               <Action variant="primary" onClick={onComplete} disabled={busy} className="w-full">
-                {escrowed ? 'Complete · releases the payment' : 'Complete job'}
+                {escrowed ? 'Accept and pay the seller' : 'Accept the work'}
               </Action>
               <Action onClick={onReject} disabled={busy} className="w-full">
-                {escrowed ? 'Reject · refunds you' : 'Reject'}
+                {escrowed ? 'Reject and get refunded' : 'Reject'}
               </Action>
             </>
-          )}
-          {state.action === 'retry' && (
+          ) : null}
+          {state.action === 'retry' ? (
             <Action variant="primary" onClick={onRetry} disabled={busy} className="w-full">
               Retry delivery
             </Action>
-          )}
+          ) : null}
           {state.action === 'run' ? (
             <Action variant="primary" to={agentHref} className="w-full">
               Run a task
@@ -680,62 +682,58 @@ function HireRow({
               Open agent
             </Action>
           ) : null}
-          {rateable && rated === undefined && (
-            <Action onClick={() => setDialog('rate')} className="w-full">
-              Rate agent
-            </Action>
-          )}
-          {revoke && (
-            <Action onClick={() => setDialog('revoke')} className="w-full">
-              Revoke details
-            </Action>
-          )}
-        </div>
-        {/* the buyer's own money moves: release pays the agent now, refund takes
-            the payment back while no verified delivery exists yet */}
-        {escrowRow?.status === 0 && isBuyer && (
-          <div className="flex gap-2">
-            <Action
-              variant="primary"
-              onClick={() => onEscrow('approve')}
-              disabled={busy || escrowBusy}
-              className="flex-1"
-            >
-              Release now
-            </Action>
-            {escrowRow.verifiedAt === 0 && (
-              <Action onClick={() => onEscrow('refund')} disabled={busy || escrowBusy} className="flex-1">
-                Refund
+          {/* the buyer's own money moves: release pays the agent now, refund takes the payment back
+              while no verified delivery exists yet */}
+          {escrowRow?.status === 0 && isBuyer ? (
+            <>
+              <Action variant="primary" onClick={() => onEscrow('approve')} disabled={busy || escrowBusy} className="w-full">
+                Release the payment now
               </Action>
-            )}
-          </div>
-        )}
-        {rateable && rated !== undefined && (
-          <div className="flex h-7 items-center gap-3">
-            <span className={LABEL}>Rated</span>
-            <RatingBoxes value={rated} label={rated ? `Rated ${rated} of 5` : 'Rated'} />
-          </div>
-        )}
+              {escrowRow.verifiedAt === 0 ? (
+                <Action onClick={() => onEscrow('refund')} disabled={busy || escrowBusy} className="w-full">
+                  Refund me
+                </Action>
+              ) : null}
+            </>
+          ) : null}
+          {rateable && rated === undefined ? (
+            <Action onClick={() => setDialog('rate')} className="w-full">
+              Rate the agent
+            </Action>
+          ) : null}
+          {rateable && rated !== undefined ? (
+            <div className="flex h-7 items-center gap-3">
+              <span className={LABEL}>Rated</span>
+              <RatingBoxes value={rated} label={rated ? `Rated ${rated} of 5` : 'Rated'} />
+            </div>
+          ) : null}
+          {revoke ? (
+            <Action onClick={() => setDialog('revoke')} className="w-full">
+              What stopping did
+            </Action>
+          ) : null}
+        </div>
       </div>
 
+      {children ? (
+        <details className="mt-4 border-t border-souk-hair pt-3">
+          <summary className="cursor-pointer text-[12.5px] text-souk-sky">Steps and payment</summary>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">{children}</div>
+        </details>
+      ) : null}
+
       {dialog === 'full' && shown.full ? (
-        <Dialog title={`${item.agentName} · ${shown.label}`} onClose={() => setDialog(null)}>
+        <Dialog title={`${item.agentName}, ${shown.label.toLowerCase()}`} onClose={() => setDialog(null)}>
           <pre className="whitespace-pre-wrap break-words font-mono text-[12px] leading-relaxed text-press-black">{shown.full}</pre>
         </Dialog>
       ) : null}
       {dialog === 'rate' ? (
         <Dialog title={`Rate ${item.agentName}`} onClose={() => setDialog(null)}>
-          <RateAgent
-            chainId={item.chainId}
-            tokenId={item.tokenId}
-            agentName={item.agentName}
-            paymentId={item.key}
-            onRated={setRated}
-          />
+          <RateAgent chainId={item.chainId} tokenId={item.tokenId} agentName={item.agentName} paymentId={item.key} onRated={setRated} />
         </Dialog>
       ) : null}
       {dialog === 'revoke' && revoke ? (
-        <Dialog title={`${item.agentName} · revoke`} onClose={() => setDialog(null)}>
+        <Dialog title={`${item.agentName}, stopped`} onClose={() => setDialog(null)}>
           <RevokeNote outcome={revoke} chainId={item.chainId} />
         </Dialog>
       ) : null}
@@ -883,16 +881,16 @@ function EscrowFacts({
   const move = escrowRejectMove(escrow)
   const rows: { label: string; value: string; tone: 'ink' | 'data' | 'muted' | 'slate' }[] = [
     { label: 'Quoted', value: amount, tone: 'ink' },
-    { label: 'Funded', value: held ? amount : released ? amount : 'nothing yet', tone: held || released ? 'data' : 'muted' },
-    { label: 'Released', value: released ? amount : 'nothing yet', tone: released ? 'data' : 'muted' },
+    { label: 'Paid in', value: held ? amount : released ? amount : 'nothing yet', tone: held || released ? 'data' : 'muted' },
+    { label: 'Paid out to the seller', value: released ? amount : 'nothing yet', tone: released ? 'data' : 'muted' },
     { label: 'Payment', value: shortAddr(escrow.paymentId), tone: 'slate' },
     { label: 'Timeout', value: escrow.windowEndsAt ? formatExpiry(new Date(escrow.windowEndsAt * 1000).toISOString()) : 'none set', tone: 'slate' },
-    { label: 'Status', value: held ? 'held by the funder' : released ? 'settled' : 'closed', tone: 'ink' },
+    { label: 'Where it is', value: held ? 'held in escrow until you accept' : released ? 'paid out' : 'closed', tone: 'ink' },
   ]
   return (
     <article className="flex min-w-0 flex-col rounded-[8px] border border-souk-edge bg-souk-surface1 p-4 pb-[14px]">
       <Row justify="between" align="center" className="pb-[9px]">
-        <Txt size={18} lead={27} weight="bold" tone="ink">The escrow</Txt>
+        <Txt size={18} lead={27} weight="bold" tone="ink">Your payment</Txt>
         <Txt size={10} lead={14} mono upper tone="labels">{`chain ${item.chainId}`}</Txt>
       </Row>
       <Rule />

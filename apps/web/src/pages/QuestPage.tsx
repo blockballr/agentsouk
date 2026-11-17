@@ -207,6 +207,10 @@ export function QuestPage() {
   return (
     <div className="min-h-screen bg-souk-canvas text-souk-ink">
       <div className="px-4 lg:px-8 pb-28 pt-10 lg:pb-16">
+        {/* the campaign is over; the page stays so old links still show where a wallet finished */}
+        <p role="status" className="mb-6 rounded-[12px] border border-souk-hair bg-souk-surface1/60 px-4 py-3 text-[13px] leading-[19px] text-souk-slate">
+          Set and Earn closed on 5 November 2026. BNB Chain reviews the entries and its decision is final. This page shows where your wallet finished; nothing here counts toward the campaign any more.
+        </p>
         <Stack gap={10}>
           <Txt size={11} lead={16} mono upper tone="data">
             {`Set and Earn · wallet ${wallet ? shortAddress(wallet) : 'not connected'} · ${chainLine}`}

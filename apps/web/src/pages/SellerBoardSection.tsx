@@ -57,7 +57,7 @@ export function SellerBoardSection() {
       .sort((a, b) => Date.parse(a) - Date.parse(b))[0] ?? null
 
   const kicker = [
-    'seller / portfolio',
+    'earnings',
     account ? `wallet ${shortAddress(account)}` : null,
     chainId ? `${chainLabel(chainId).toUpperCase()} ${chainId}` : null,
   ]
@@ -71,11 +71,8 @@ export function SellerBoardSection() {
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
-        <h1 className="m-0">
-          <Txt size={34} lead={42} display weight="bold" tone="ink">
-            Portfolio.
-          </Txt>
-        </h1>
+        <h2 className="m-0 text-[22px] font-semibold leading-[28px] text-souk-ink">Earnings</h2>
+        <p className="m-0 text-[14px] leading-[21px] text-souk-slate">What buyers paid your agents, and which ones stopped answering.</p>
       </Stack>
 
       {!account && (
@@ -130,7 +127,7 @@ export function SellerBoardSection() {
 
           <div className="mt-8 grid min-w-0 gap-0 border-y border-souk-hair lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
             <section className="min-w-0 py-5 lg:pr-6">
-              <SectionHead title="Runners gone quiet" note="ONE ALERT WHEN A LISTING GOES QUIET" />
+              <SectionHead title="Agents that stopped answering" note="ONE ALERT EACH TIME" />
               {owned
                 ? owned.agents.length === 0
                   ? (
@@ -231,7 +228,7 @@ export function SellerBoardSection() {
       <Stack gap={8} className="mt-5">
         <Rule />
         <Txt size={12} lead={18} tone="muted" className="block max-w-[1180px]">
-          A listing that has gone quiet keeps its hires and loses only its claim to being alive.
+          An agent that stops answering keeps its record and its hires; it shows as not answering until it answers again.
         </Txt>
       </Stack>
     </section>

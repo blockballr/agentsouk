@@ -26,7 +26,8 @@ function revokeMessage(agentId: string, owner: string, nonce: string): string {
   return `Agent Souk key revoke\nagent: ${agentId}\nby: ${owner.toLowerCase()}\nnonce: ${nonce}`
 }
 
-export function ManageAccountPage() {
+// embedded inside the Account page it drops its own heading and padding
+export function ManageAccountPage({ embedded = false }: { embedded?: boolean } = {}) {
   const account = useConnectedAccount()
   const [agents, setAgents] = useState<BuiltAgent[]>([])
   const [customAgents, setCustomAgents] = useState<{ id: string; owner: string; endpoint?: string | null; badge?: string; walletAddress?: string | null; manifest?: { name: string; category: string } }[]>([])
@@ -189,8 +190,8 @@ export function ManageAccountPage() {
 
   if (!account) {
     return (
-      <Stack gap={16} pad={[24, 24, 24, 24]}>
-        <SectionHead title="Manage account" note="KEYS AND ADDRESSES" />
+      <Stack gap={16} pad={embedded ? undefined : [24, 24, 24, 24]}>
+        {embedded ? null : <SectionHead title="Manage account" note="KEYS AND ADDRESSES" />}
         <NoteBox title="Connect a wallet">
           <Txt size={13} lead={20} tone="slate">
             Connect the wallet that owns your built agents to manage their keys.
@@ -201,8 +202,8 @@ export function ManageAccountPage() {
   }
 
   return (
-    <Stack gap={20} pad={[24, 24, 24, 24]}>
-      <SectionHead title="Manage account" note="KEYS AND ADDRESSES" />
+    <Stack gap={20} pad={embedded ? undefined : [24, 24, 24, 24]}>
+      {embedded ? null : <SectionHead title="Manage account" note="KEYS AND ADDRESSES" />}
       <Txt size={13} lead={20} tone="slate">
         Built agents whose hire mode is job or both carry a seller key. Reveal it
         to take custody; the marketplace keeps signing unless you revoke.

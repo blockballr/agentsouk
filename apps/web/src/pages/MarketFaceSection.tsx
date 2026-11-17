@@ -71,8 +71,8 @@ export function MarketFaceSection() {
   const chains = new Set(all.map((h) => h.chainId))
   const chain = chains.size === 1 && all.length > 0 ? chainLabel([...chains][0]) : null
   const kicker = account
-    ? ['seller / market face', shortAddress(account), chain].filter(Boolean).join(' · ')
-    : 'seller / market face'
+    ? ['how buyers see you', shortAddress(account), chain].filter(Boolean).join(', ')
+    : 'how buyers see you'
 
   return (
     <section
@@ -83,11 +83,8 @@ export function MarketFaceSection() {
         <Txt size={11} lead={16} mono upper tone="data">
           {kicker}
         </Txt>
-        <h2 className="m-0">
-          <Txt size={28} lead={36} display weight="bold" tone="ink">
-            People and hires.
-          </Txt>
-        </h2>
+        <h2 className="m-0 text-[22px] font-semibold leading-[28px] text-souk-ink">How buyers see you</h2>
+        <p className="m-0 text-[14px] leading-[21px] text-souk-slate">Your agents as they appear on the shelf, and the hires buyers made.</p>
       </header>
 
       <SellerStatsStrip />

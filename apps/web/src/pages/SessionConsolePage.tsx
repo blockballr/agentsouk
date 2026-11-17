@@ -98,7 +98,7 @@ export function SessionConsolePage() {
   }
 
   return (
-    <section className="min-h-screen bg-souk-canvas pb-24 pt-8 text-souk-ink">
+    <section className="max-w-[1040px] pb-24 text-souk-ink">
       <Stack gap={8}>
         <Txt size={11} lead={16} mono upper tone="data">
           account, executor sessions

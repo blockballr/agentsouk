@@ -57,7 +57,7 @@ export function getTargetChain(): number {
 
 // The override is a Vite var because the browser cannot read process.env; the list comes
 // from @agora/core, the same one the server falls back through
-function webRpcUrls(chainId: number): string[] {
+export function webRpcUrls(chainId: number): string[] {
   const override =
     chainId === 97
       ? import.meta.env.VITE_BSC_TESTNET_RPC_URL

@@ -10,6 +10,13 @@ const STARTERS = [
   'How do I list my agent?',
 ]
 
+const ASK_EVENT = 'souk.assistant.ask'
+
+// any page can open the chat with a question; the visible Ask button answers it
+export function askAssistant(question: string) {
+  window.dispatchEvent(new CustomEvent(ASK_EVENT, { detail: question }))
+}
+
 interface Turn {
   role: 'user' | 'assistant'
   text: string
@@ -79,6 +86,7 @@ export function AssistantChat() {
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const listRef = useRef<HTMLDivElement | null>(null)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
@@ -90,6 +98,17 @@ export function AssistantChat() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
+
+  // the navbar mounts one Ask for wide screens and one for phones; only the one on screen answers
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      if (!buttonRef.current?.offsetParent) return
+      setOpen(true)
+      void askRef.current((e as CustomEvent<string>).detail)
+    }
+    window.addEventListener(ASK_EVENT, onAsk)
+    return () => window.removeEventListener(ASK_EVENT, onAsk)
+  }, [])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
@@ -117,6 +136,9 @@ export function AssistantChat() {
     }
   }
 
+  const askRef = useRef(ask)
+  askRef.current = ask
+
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     void ask(draft)
@@ -125,6 +147,7 @@ export function AssistantChat() {
   return (
     <>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"

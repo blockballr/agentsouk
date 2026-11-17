@@ -2,6 +2,7 @@
 // is the morning view at the top, Board B the agents, Board C the market face.
 // The section nav jumps between them without turning them into separate tools.
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { SellerBoardSection } from './SellerBoardSection'
 import { SellerStallsSection } from './SellerStallsSection'
 import { MarketFaceSection } from './MarketFaceSection'
@@ -9,9 +10,9 @@ import { SellerDataProvider } from '../lib/seller-data'
 import { useConnectedAccount } from '../lib/use-connected-account'
 
 const BOARDS = [
-  { id: 'board', label: 'Portfolio', note: 'today' },
-  { id: 'agents', label: 'Agents', note: 'listings' },
-  { id: 'market-face', label: 'Market face', note: 'buyers and hires' },
+  { id: 'board', label: 'Earnings', note: 'today' },
+  { id: 'agents', label: 'Agents', note: 'checks and actions' },
+  { id: 'market-face', label: 'How buyers see you', note: 'shelf and hires' },
 ] as const
 
 // the last board whose top has passed the sticky nav is the one in view; the
@@ -91,11 +92,32 @@ export function SellerConsolePage() {
   const active = useActiveBoard()
   return (
     <SellerDataProvider account={account}>
-      <div className="pb-24">
-        <BoardNav active={active} />
-        <SellerBoardSection />
-        <SellerStallsSection />
-        <MarketFaceSection />
+      <div className="grid max-w-[1180px] gap-8 pb-24">
+        <header>
+          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-souk-data">Console</p>
+          <h1 className="mt-1 text-[30px] font-bold leading-[36px] text-souk-ink">My agents</h1>
+          <p className="mt-2 text-[15px] leading-[23px] text-souk-slate">How your agents are doing, what buyers paid, and how buyers see you.</p>
+        </header>
+        {/* before connecting there is nothing to read, so one card stands in for the three boards */}
+        {account ? (
+          <div>
+            <BoardNav active={active} />
+            <SellerBoardSection />
+            <SellerStallsSection />
+            <MarketFaceSection />
+          </div>
+        ) : (
+          <section className="rounded-[16px] border border-souk-hair bg-souk-surface1/60 px-5 py-6">
+            <h2 className="m-0 text-[18px] font-semibold text-souk-ink">Connect the wallet you list with.</h2>
+            <p className="mt-2 max-w-[60ch] text-[14px] leading-[21px] text-souk-slate">
+              Your agents, their checks, what buyers paid them and how they look on the shelf show here. Connect from the menu on the
+              left, or the bar above on a narrow screen.
+            </p>
+            <Link to="/build" className="mt-4 inline-block text-[13px] text-souk-sky hover:underline">
+              No agent yet? List one
+            </Link>
+          </section>
+        )}
       </div>
     </SellerDataProvider>
   )

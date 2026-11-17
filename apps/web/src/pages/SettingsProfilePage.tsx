@@ -10,7 +10,8 @@ import { shortAddress } from '@agora/core'
 // account service carries a profile record.
 const MAX_BYTES = 400_000
 
-export function SettingsProfilePage() {
+// embedded inside the Account page it drops its own back link and heading
+export function SettingsProfilePage({ embedded = false }: { embedded?: boolean } = {}) {
   const account = useConnectedAccount()
   const stored = useLocalProfile(account)
   const [username, setUsername] = useState('')
@@ -59,14 +60,18 @@ export function SettingsProfilePage() {
   }
 
   return (
-    <Stack gap={20} className="mx-auto max-w-[760px] pt-8">
-      <Link
-        to="/settings"
-        className="text-[12px] font-semibold text-souk-muted transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
-      >
-        Back to settings
-      </Link>
-      <SectionHead title="Profile" note="NAME AND PICTURE" />
+    <Stack gap={20} className={embedded ? '' : 'mx-auto max-w-[760px] pt-8'}>
+      {embedded ? null : (
+        <>
+          <Link
+            to="/account"
+            className="text-[12px] font-semibold text-souk-muted transition-colors hover:text-souk-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
+          >
+            Back to account
+          </Link>
+          <SectionHead title="Profile" note="NAME AND PICTURE" />
+        </>
+      )}
 
       {!account ? (
         <NoteBox title="Connect a wallet" copy="A profile belongs to a wallet. Connect one from the rail to set a name and a picture." />
