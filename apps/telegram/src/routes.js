@@ -1,9 +1,19 @@
 // The route logic, shared by the standalone server and the Vercel functions.
 // Node request and response objects only, so the same code runs behind both.
 
+import { timingSafeEqual } from "node:crypto";
 import { getAddress, verifyMessage } from "viem";
 import { telegramBotToken, verifyInitData, sendTelegramMessage, sendTyping, askAssistant, webAppUrl } from "./telegram.js";
-import { linkTelegram, walletForTelegram, createLinkCode, consumeLinkCode, listTelegramLinks } from "./link-store.js";
+import {
+  linkTelegram,
+  walletForTelegram,
+  createLinkCode,
+  consumeLinkCode,
+  listTelegramLinks,
+  telegramForWallet,
+  setMuted,
+  isMuted,
+} from "./link-store.js";
 import { telegramLinkMessage } from "./link-message.js";
 
 const MAX_BODY = 64 * 1024;
@@ -101,6 +111,29 @@ async function agentDetail(chain, token) {
   }
 }
 
+// tapping one sends it as a message, which goes to the assistant like anything typed
+const STARTERS = {
+  keyboard: [
+    [{ text: "Which agent can protect my Venus loan?" }],
+    [{ text: "Which stock pools are earning on Flux LP?" }],
+    [{ text: "How do I list my agent?" }],
+  ],
+  resize_keyboard: true,
+  one_time_keyboard: true,
+};
+
+function escapeHtml(value) {
+  return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function secretMatches(given) {
+  const expected = process.env.ASSISTANT_SECRET?.trim();
+  if (!expected || typeof given !== "string") return false;
+  const a = Buffer.from(expected);
+  const b = Buffer.from(given.trim());
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 function pageLink(path) {
   return `https://app.agentsouk.xyz${path}`;
 }
@@ -168,6 +201,13 @@ export async function handleWebhook(req, res) {
       ].join("\n"),
       HIRE,
     );
+    await sendTelegramMessage(chatId, "Try one of these, or type your own question:", STARTERS);
+  } else if (command === "/mute") {
+    await setMuted(telegramId, true);
+    await sendTelegramMessage(chatId, "Notifications are off for this chat. You can still ask anything. Send /unmute to turn them back on.");
+  } else if (command === "/unmute") {
+    await setMuted(telegramId, false);
+    await sendTelegramMessage(chatId, "Notifications are on. You will hear here when something happens to your linked wallet's hires and agents.");
   } else if (command === "/link") {
     const created = await createLinkCode(telegramId).catch(() => null);
     const link = created ? webAppUrl(`/telegram/link?code=${created.code}`) : null;
@@ -259,7 +299,9 @@ export async function handleWebhook(req, res) {
         "/list  list your own agent",
         "/link  attach a wallet",
         "/wallet  the attached wallet",
+        "/mute  stop notifications here, /unmute to resume",
         "",
+        "Or just ask a question in plain words.",
         linkedLine,
       ].join("\n"),
       HIRE,
@@ -267,6 +309,26 @@ export async function handleWebhook(req, res) {
   }
 
   return json(res, 200, { ok: true });
+}
+
+// the main API calls this for every notification it records; the message goes to the chat linked
+// to that wallet, unless the chat muted them. nothing is sent for a wallet with no linked chat
+export async function handleNotify(req, res) {
+  if (req.method !== "POST") return json(res, 405, { ok: false, error: "POST only" });
+  if (!telegramBotToken()) return json(res, 503, { ok: false, error: "telegram is not configured" });
+  if (!secretMatches(req.headers["x-assistant-secret"])) return json(res, 401, { ok: false, error: "unauthorized" });
+  const body = await parseJson(req);
+  const wallet = typeof body?.wallet === "string" && /^0x[0-9a-fA-F]{40}$/.test(body.wallet) ? body.wallet : null;
+  const title = typeof body?.title === "string" ? body.title.slice(0, 200) : "";
+  if (!wallet || !title) return json(res, 400, { ok: false, error: "wallet and title are required" });
+  const chatId = await telegramForWallet(wallet).catch(() => null);
+  if (!chatId) return json(res, 200, { ok: true, sent: false, reason: "not linked" });
+  if (await isMuted(chatId).catch(() => false)) return json(res, 200, { ok: true, sent: false, reason: "muted" });
+  const text = typeof body?.body === "string" ? body.body.slice(0, 600) : "";
+  const href = typeof body?.href === "string" && /^\/[^\s]*$/.test(body.href) ? pageLink(body.href) : null;
+  const lines = [`<b>${escapeHtml(title)}</b>`, text ? escapeHtml(text) : null, href ? `<a href="${href}">Open it</a>` : null];
+  const sent = await sendTelegramMessage(chatId, lines.filter(Boolean).join("\n"));
+  return json(res, 200, { ok: true, sent });
 }
 
 export async function handleLinkCode(req, res) {

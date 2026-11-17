@@ -482,17 +482,21 @@ export async function loadJobsByClient(
 // The notification outbox: written by whatever pipeline causes the event, read
 // by the bell. Rows are keyed by the wallet they belong to; nothing here holds
 // money state itself, it only records what already happened.
+// true only when this call wrote the row, so a retried event is never announced twice
 export async function saveNotification(
   notification: Notification,
-): Promise<void> {
-  if (!(await init()) || !sql) return;
+): Promise<boolean> {
+  if (!(await init()) || !sql) return false;
   try {
-    await sql`
+    const rows = await sql`
       insert into notifications (id, wallet, payload, created_at)
       values (${notification.id}, ${notification.wallet.toLowerCase()}, ${sql.json(notification as never)}, now())
       on conflict (id) do nothing
+      returning id
     `;
+    return rows.length > 0;
   } catch {
+    return false;
   }
 }
 

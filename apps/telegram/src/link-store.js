@@ -29,6 +29,7 @@ async function ensureTables() {
           linked_at timestamptz not null default now()
         )`;
       await sql`create index if not exists telegram_link_wallet_idx on telegram_link (lower(wallet))`;
+      await sql`create table if not exists telegram_mute (telegram_id text primary key, muted_at timestamptz not null default now())`;
       await sql`
         create table if not exists telegram_link_code (
           code text primary key,
@@ -83,6 +84,29 @@ export async function walletForTelegram(telegramId) {
     }
   }
   return memory.get(telegramId)?.wallet ?? null;
+}
+
+const muteMemory = new Set();
+
+// a muted chat still talks to the assistant; it only stops receiving notifications
+export async function setMuted(telegramId, muted) {
+  const id = String(telegramId);
+  if (sql && (await ensureTables())) {
+    if (muted) await sql`insert into telegram_mute (telegram_id) values (${id}) on conflict do nothing`;
+    else await sql`delete from telegram_mute where telegram_id = ${id}`;
+    return;
+  }
+  if (muted) muteMemory.add(id);
+  else muteMemory.delete(id);
+}
+
+export async function isMuted(telegramId) {
+  const id = String(telegramId);
+  if (sql && (await ensureTables())) {
+    const rows = await sql`select 1 from telegram_mute where telegram_id = ${id}`;
+    return rows.length > 0;
+  }
+  return muteMemory.has(id);
 }
 
 export async function telegramForWallet(wallet) {

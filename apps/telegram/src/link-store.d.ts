@@ -20,3 +20,5 @@ export function createLinkCode(
 ): Promise<{ code: string; expiresAt: string } | null>;
 
 export function consumeLinkCode(code: string): Promise<string | null>;
+export function setMuted(telegramId: string, muted: boolean): Promise<void>;
+export function isMuted(telegramId: string): Promise<boolean>;

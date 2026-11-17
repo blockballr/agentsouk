@@ -75,8 +75,27 @@ export async function emitNotification(input: {
     ...(input.txHash ? { txHash: input.txHash } : {}),
     createdAt: new Date().toISOString(),
   };
-  await saveNotification(notification);
+  const fresh = await saveNotification(notification);
+  if (fresh) await forwardToTelegram(notification);
   return notification;
+}
+
+// a linked Telegram chat hears about the event too. the bot decides whether the wallet is linked
+// and not muted; a bot that cannot be reached never fails the event itself
+async function forwardToTelegram(n: Notification): Promise<void> {
+  const secret = process.env.ASSISTANT_SECRET?.trim();
+  if (!secret) return;
+  const url = process.env.TELEGRAM_NOTIFY_URL ?? "https://agentsouk-telegram.vercel.app/telegram/notify";
+  try {
+    await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-assistant-secret": secret },
+      body: JSON.stringify({ wallet: n.wallet, title: n.title, body: n.body, href: n.href }),
+      signal: AbortSignal.timeout(4000),
+    });
+  } catch {
+    // the bell still has it
+  }
 }
 
 export async function notificationsFor(wallet: string): Promise<Notification[]> {

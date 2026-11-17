@@ -7,6 +7,7 @@
     { "source": "/telegram/webhook", "destination": "/api/webhook" },
     { "source": "/telegram/link", "destination": "/api/link" },
     { "source": "/telegram/link-code", "destination": "/api/link-code" },
+    { "source": "/telegram/notify", "destination": "/api/notify" },
     { "source": "/cron/remind", "destination": "/api/remind" },
     { "source": "/health", "destination": "/api/health" }
   ],
