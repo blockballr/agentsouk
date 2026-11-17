@@ -12,6 +12,7 @@ import { useConnectedAccount } from '../lib/use-connected-account'
 import { chainLabel } from '../lib/contracts'
 import { useTargetChain } from '../lib/target-chain'
 import { useLocalProfile } from '../lib/profile'
+import { formatBalance, useWalletBalances } from '../lib/wallet-balances'
 import { ThemeToggle } from './ThemeToggle'
 import { useLocation } from 'react-router-dom'
 import { useI18n } from '../lib/i18n'
@@ -354,10 +355,18 @@ function VaultGlyph() {
   )
 }
 
-function PlusGlyph() {
+function HomeGlyph() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2.5 7.5 8 3l5.5 4.5V13H9.75v-3h-3.5v3H2.5V7.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ListGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 4h10M3 8h10M3 12h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   )
 }
@@ -379,14 +388,9 @@ function AccountRow({ label, route, Icon }: { label: string; route: string; Icon
       className="flex h-[40px] items-center gap-2.5 rounded-[8px] px-2 text-souk-ink transition-colors hover:bg-souk-surface2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-souk-data"
     >
       <Icon />
-      <Stack gap={1}>
-        <Txt size={13} lead={18} weight="bold" tone="ink">
-          {label}
-        </Txt>
-        <Txt size={10} lead={14} mono tone="ink">
-          {route}
-        </Txt>
-      </Stack>
+      <Txt size={13} lead={18} weight="bold" tone="ink">
+        {label}
+      </Txt>
     </Link>
   )
 }
@@ -403,6 +407,36 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
   // the panel names the chain the deployment actually serves, read from the server
   // rather than compiled in, so it cannot claim a chain the instance is not on
   const target = useTargetChain()
+  const balances = useWalletBalances(wallet, target?.chainId ?? null)
+  // hiding the figures is a choice for this browser, so it is remembered here and nowhere else
+  const [hidden, setHidden] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('souk.hide-balance') === '1'
+    } catch {
+      return false
+    }
+  })
+  const [copied, setCopied] = useState(false)
+  function toggleHidden() {
+    setHidden((v) => {
+      try {
+        localStorage.setItem('souk.hide-balance', v ? '0' : '1')
+      } catch {
+        // storage can be blocked; the choice then lasts until the page reloads
+      }
+      return !v
+    })
+  }
+  async function copyAddress() {
+    if (!wallet) return
+    try {
+      await navigator.clipboard.writeText(wallet)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // a blocked clipboard leaves the address on screen to copy by hand
+    }
+  }
   // a returning visitor reconnects without a prompt while this lasts, so the
   // panel says so instead of leaving a silent connect unexplained
   const [until, setUntil] = useState<Date | null>(null)
@@ -446,9 +480,18 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
           <PersonGlyph />
         )}
         {wallet ? (
-          <Txt size={12} lead={18} mono tone="ink">
-            {shortAddress(wallet)}
-          </Txt>
+          balances ? (
+            <span className="flex flex-col items-start leading-none">
+              <span className="font-mono text-[12.5px] font-semibold text-souk-ink">
+                {hidden ? 'hidden' : `${formatBalance(balances.native.amount)} ${balances.native.symbol}`}
+              </span>
+              <span className="mt-0.5 font-mono text-[10px] text-souk-labels">{shortAddress(wallet)}</span>
+            </span>
+          ) : (
+            <Txt size={12} lead={18} mono tone="ink">
+              {shortAddress(wallet)}
+            </Txt>
+          )
         ) : null}
       </button>
 
@@ -469,9 +512,20 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
               <PersonGlyph />
             )}
             <Stack gap={2}>
-              <Txt size={12} lead={18} mono tone="ink">
-                {profile?.username || (wallet ? shortAddress(wallet) : t('nav.account.notConnected'))}
-              </Txt>
+              <Row align="center" gap={6}>
+                <Txt size={12} lead={18} mono tone="ink">
+                  {profile?.username || (wallet ? shortAddress(wallet) : t('nav.account.notConnected'))}
+                </Txt>
+                {wallet ? (
+                  <button
+                    type="button"
+                    onClick={() => void copyAddress()}
+                    className="rounded-[6px] px-1.5 py-0.5 text-[10px] font-semibold text-souk-sky hover:bg-souk-surface2"
+                  >
+                    {copied ? 'Copied' : 'Copy'}
+                  </button>
+                ) : null}
+              </Row>
               <Txt size={10} lead={14} weight="bold" upper tone="ink">
                 {wallet
                   ? target
@@ -481,6 +535,22 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
               </Txt>
             </Stack>
           </Row>
+          {wallet && balances ? (
+            <div className="mx-2 mb-2 rounded-[10px] border border-souk-hair px-3 py-2">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-souk-labels">Balances</span>
+                <button type="button" onClick={toggleHidden} className="text-[11px] text-souk-sky hover:underline">
+                  {hidden ? 'Show' : 'Hide'}
+                </button>
+              </div>
+              {[balances.native, ...balances.tokens].map((b) => (
+                <div key={b.symbol} className="mt-1 flex justify-between font-mono text-[12px]">
+                  <span className="text-souk-steel">{b.symbol}</span>
+                  <span className="text-souk-ink">{hidden ? 'hidden' : formatBalance(b.amount)}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {wallet && until ? (
             <Txt size={11} lead={16} tone="steel" className="block px-2 pb-2">
               Signed in on this browser until{' '}
@@ -489,9 +559,10 @@ function ProfileChip({ wallet, onConnect }: { wallet: string | null; onConnect: 
             </Txt>
           ) : null}
           <Rule hair />
-          <AccountRow label={t('nav.account.profile')} route="/profile" Icon={PersonGlyph} />
-          <AccountRow label={t('nav.account.vault')} route="/vault" Icon={VaultGlyph} />
-          <AccountRow label={t('nav.account.build')} route="/build" Icon={PlusGlyph} />
+          <AccountRow label={t('rail.home')} route="/home" Icon={HomeGlyph} />
+          <AccountRow label={t('rail.myHires')} route="/ongoing" Icon={VaultGlyph} />
+          <AccountRow label={t('rail.myAgents')} route="/seller" Icon={ListGlyph} />
+          <AccountRow label={t('rail.accountPage')} route="/account" Icon={PersonGlyph} />
           <Rule hair />
           {wallet ? (
             <button
