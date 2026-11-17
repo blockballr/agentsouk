@@ -85,3 +85,4 @@ the mode and the timestamps.
 | Owner of the marketplace's own listings | `0x84fedaBd1b83443aD86796C15619494878B64180` |
 | Retired deployer | `0x52DA44aB471455437fc17979c52E501f6b8d0EAF` |
 | Declared team identity, unused | `0x5188d3b15271bD0eD56B1dE86B50198d4497c4e5` |
+| Testnet hire tester | `0x85203E9725C9bCCd7301b719DA32063cB674Bb44` |

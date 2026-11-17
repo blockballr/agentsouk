@@ -7,6 +7,7 @@ export const TEAM_WALLETS: ReadonlySet<string> = new Set(
     "0x84FEDaBd1B83443Ad86796C15619494878B64180", // agent owner, holds our five listings
     "0x52DA44aB471455437fc17979c52E501f6b8d0EAF", // retired deployer
     "0x5188d3b15271bD0eD56B1dE86B50198d4497c4e5", // declared agent identity
+    "0x85203E9725C9bCCd7301b719DA32063cB674Bb44", // testnet hire tester
   ].map((a) => a.toLowerCase()),
 );
 
