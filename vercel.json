@@ -25,6 +25,10 @@
       "schedule": "7,37 * * * *"
     },
     {
+      "path": "/api/cron/agent-id",
+      "schedule": "17,47 * * * *"
+    },
+    {
       "path": "/api/vault/execute",
       "schedule": "*/10 * * * *"
     },
