@@ -123,7 +123,6 @@ export function MarketplacePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [shortlist, setShortlist] = useState<string[]>(() => getShortlist())
-  const [showFilters, setShowFilters] = useState(false)
   const [showLegend, setShowLegend] = useState(false)
 
   function handleToggle(key: string) {
@@ -292,14 +291,6 @@ export function MarketplacePage() {
             <Row align="center" gap={16} className="w-full justify-end sm:w-auto">
               <button
                 type="button"
-                onClick={() => setShowFilters((v) => !v)}
-                aria-expanded={showFilters}
-                className="inline-flex min-h-[32px] cursor-pointer items-center rounded-[6px] border border-souk-hair px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-souk-slate transition hover:text-souk-ink"
-              >
-                Filters{pcs || owned || hide || verifiedOnly || sector === 'stocks' ? ' ·' : ''}
-              </button>
-              <button
-                type="button"
                 onClick={() => setShowLegend((v) => !v)}
                 aria-expanded={showLegend}
                 title="The five states, in the order they cost you"
@@ -379,8 +370,8 @@ export function MarketplacePage() {
             </select>
           </Row>
 
-          {showFilters ? (
-            <Row align="center" gap={20} className="flex-wrap border-t border-souk-hair py-3">
+          {/* every filter stays in view: a switch nobody can find filters nothing */}
+            <Row align="center" gap={20} className="flex-wrap gap-y-3 border-t border-souk-hair py-3">
               <Switch
                 checked={pcs}
                 label="Show only agents that say they work with PancakeSwap"
@@ -423,15 +414,16 @@ export function MarketplacePage() {
                   Verified only
                 </span>
               </Switch>
-              <button
-                type="button"
-                onClick={() => setSp(new URLSearchParams(), { replace: true })}
-                className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.08em] text-souk-muted transition hover:text-souk-ink"
-              >
-                Clear
-              </button>
+              {pcs || owned || hide || verifiedOnly || sector === 'stocks' ? (
+                <button
+                  type="button"
+                  onClick={() => setSp(new URLSearchParams(), { replace: true })}
+                  className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.08em] text-souk-muted transition hover:text-souk-ink"
+                >
+                  Clear
+                </button>
+              ) : null}
             </Row>
-          ) : null}
 
           {showLegend ? (
             <Row align="center" gap={20} className="flex-wrap border-t border-souk-hair py-3">
