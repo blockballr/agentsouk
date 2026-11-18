@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { agentRegistryRef } from "@/lib/registry-write";
 import { pickPublicOrigin } from "@/lib/reference-yield";
+import { vaultService } from "@/lib/vault-card";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +102,7 @@ export async function GET(
           ],
         }
       : {}),
-    services: [{ name: "A2A", endpoint }],
+    services: [{ name: "A2A", endpoint }, ...vaultService(id, row)],
     x402Support: row.vaultOnly === true ? false : true,
     active: true,
     registrations: tokenId
