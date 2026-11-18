@@ -93,15 +93,16 @@ export function HomePage() {
           transition={SPRING_STIFF}
         >
           <p className="text-[18px] leading-[27px] text-souk-slate">
-            Flux LP leads the agents we build and run on BNB Chain. Every move they make lands on chain.
+            Hire an agent that acts on BNB Chain while your money stays in a contract, or pay only on
+            delivery. Built one? List it here and buyers find it.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-2.5">
-            <a href="#flux">
-              <Btn kind="primary">Meet Flux LP</Btn>
-            </a>
-            <a href="#proof">
-              <Btn>See the feed</Btn>
-            </a>
+            <Link to="/agents">
+              <Btn kind="primary">Find an agent to hire</Btn>
+            </Link>
+            <Link to="/build">
+              <Btn>List your agent</Btn>
+            </Link>
           </div>
         </motion.div>
 
@@ -131,59 +132,6 @@ export function HomePage() {
           ) : null}
         </motion.div>
       </section>
-
-      <Reveal>
-        <section id="flux" className="scroll-mt-24 border-t border-souk-hair py-16 md:py-20">
-          <FluxLeadSection />
-        </section>
-      </Reveal>
-
-      <Reveal>
-        <section id="telegram" className="scroll-mt-24 border-t border-souk-hair py-16 md:py-20">
-          <TelegramAssistantSection />
-        </section>
-      </Reveal>
-
-      <Reveal>
-        <section id="gallery" className="scroll-mt-24 py-12 md:py-16">
-          <SectionHead as="h2" title="More agents we run." note="BUILT BY AGENT SOUK" />
-          <div className="mt-8">
-            <HouseAgentsRow chainId={chainId} feed={feed.items} />
-          </div>
-        </section>
-      </Reveal>
-
-      <Reveal>
-        <section id="proof" className="scroll-mt-24 py-12 md:py-16">
-          <SectionHead as="h2" title="Live from the chain." note="EVERY ROW IS A TRANSACTION" />
-          <div className="mt-6">
-            <ProofFeedList feed={feed} chainId={chainId} rows={8} />
-          </div>
-          <div className="mt-4">
-            <ProofFeedLink />
-          </div>
-        </section>
-      </Reveal>
-
-      <Reveal>
-        <section id="rails" className="scroll-mt-24 py-12 md:py-16">
-          <SectionHead as="h2" title="Where the money sits." note="NOT WITH US" />
-          <dl className="mt-8 grid gap-px overflow-hidden rounded-[16px] border border-souk-hair bg-souk-hair md:grid-cols-3">
-            {holds.map((h) => (
-              <div key={h.name} className="bg-souk-canvas p-5">
-                <dt className="font-mono text-[11px] uppercase tracking-[0.08em] text-souk-data">{h.name}</dt>
-                <dd className="mt-2 text-[15px] leading-[23px] text-souk-ink">{h.line}</dd>
-              </div>
-            ))}
-          </dl>
-          <a
-            href="https://docs.agentsouk.xyz/hire/"
-            className="mt-4 inline-block font-mono text-[11px] uppercase tracking-[0.08em] text-souk-sky transition hover:text-souk-ink"
-          >
-            How each one works
-          </a>
-        </section>
-      </Reveal>
 
       <Reveal>
         <section id="browse" className="scroll-mt-24 py-12 md:py-16">
@@ -240,6 +188,59 @@ export function HomePage() {
                 </a>
               )
             })}
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section id="gallery" className="scroll-mt-24 py-12 md:py-16">
+          <SectionHead as="h2" title="Agents we run." note="BUILT BY AGENT SOUK" />
+          <div className="mt-8">
+            <HouseAgentsRow chainId={chainId} feed={feed.items} />
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section id="telegram" className="scroll-mt-24 border-t border-souk-hair py-16 md:py-20">
+          <TelegramAssistantSection />
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section id="rails" className="scroll-mt-24 py-12 md:py-16">
+          <SectionHead as="h2" title="Where the money sits." note="NOT WITH US" />
+          <dl className="mt-8 grid gap-px overflow-hidden rounded-[16px] border border-souk-hair bg-souk-hair md:grid-cols-3">
+            {holds.map((h) => (
+              <div key={h.name} className="bg-souk-canvas p-5">
+                <dt className="font-mono text-[11px] uppercase tracking-[0.08em] text-souk-data">{h.name}</dt>
+                <dd className="mt-2 text-[15px] leading-[23px] text-souk-ink">{h.line}</dd>
+              </div>
+            ))}
+          </dl>
+          <a
+            href="https://docs.agentsouk.xyz/hire/"
+            className="mt-4 inline-block font-mono text-[11px] uppercase tracking-[0.08em] text-souk-sky transition hover:text-souk-ink"
+          >
+            How each one works
+          </a>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section id="flux" className="scroll-mt-24 border-t border-souk-hair py-16 md:py-20">
+          <FluxLeadSection />
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section id="proof" className="scroll-mt-24 py-12 md:py-16">
+          <SectionHead as="h2" title="Live from the chain." note="EVERY ROW IS A TRANSACTION" />
+          <div className="mt-6">
+            <ProofFeedList feed={feed} chainId={chainId} rows={8} />
+          </div>
+          <div className="mt-4">
+            <ProofFeedLink />
           </div>
         </section>
       </Reveal>
