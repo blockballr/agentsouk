@@ -1,11 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse, after } from "next/server";
 import { assistantTurn } from "@/lib/assistant/run";
+import type { AssistantAction } from "@/lib/assistant/brain";
 import { toTelegramHtml } from "@/lib/assistant/telegram-format";
 import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // POST /api/assistant/telegram {chatId, text, wallet?} - called by the telegram service with the
 // shared ASSISTANT_SECRET. it answers at once, so the bot's webhook never waits on the model, and
@@ -21,13 +22,20 @@ function secretOk(given: string | null): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-async function sendToChat(chatId: number | string, text: string): Promise<void> {
+async function sendToChat(chatId: number | string, text: string, actions: AssistantAction[] = []): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) return;
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: toTelegramHtml(text), parse_mode: "HTML", disable_web_page_preview: true }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: toTelegramHtml(text),
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+      // each prepared action as its own button under the answer
+      ...(actions.length ? { reply_markup: { inline_keyboard: actions.map((a) => [{ text: a.label, url: a.url }]) } } : {}),
+    }),
   }).catch(() => {});
 }
 
@@ -49,7 +57,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   after(async () => {
     const reply = await assistantTurn(`tg:${chatId}`, text, wallet);
-    await sendToChat(chatId as number | string, reply);
+    await sendToChat(chatId as number | string, reply.text, reply.actions);
   });
   return NextResponse.json({ ok: true, queued: true }, { status: 202 });
 }

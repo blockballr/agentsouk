@@ -16,10 +16,17 @@ export interface ModelEndpoint {
   model: string;
 }
 
+export interface AssistantAction {
+  label: string;
+  url: string;
+}
+
 export interface AssistantReply {
   text: string;
   model: string;
   toolCalls: string[];
+  // each prepared action, shown under the answer as a button rather than a pasted link
+  actions: AssistantAction[];
 }
 
 // every tool here only reads; start_hire, deliver_task and vault_track write, so they are left out
@@ -56,7 +63,7 @@ export const SYSTEM_PROMPT = [
   "Flux LP (406220) manages liquidity in tokenized stock pools on PancakeSwap and Uniswap; its pools and their results are at fluxlp.agentsouk.xyz.",
   "Mention one or two outside agents only when they clearly fit better.",
   "State only the ways to pay that the tools show for an agent. Give prices with the unit the tool gives: U is the payment token, not BNB. If a fact is not in the tool results or above, say you do not know.",
-  "You cannot sign, pay, hire or change anything. When the user wants to act, call prepare_action and give them the link it returns; they confirm in their own wallet. To list or sell an agent, give the sell link at once; it needs no token id.",
+  "You cannot sign, pay, hire or change anything. When the user wants to act, call prepare_action with a short button label such as Hire Souk Band Keeper; the link appears as a button under your answer, so do not write the link yourself. They confirm in their own wallet. To list or sell an agent, prepare the sell action at once; it needs no token id.",
   "Never invent agents, prices, numbers or transactions: say what the tools returned, or that you could not find it.",
   "Never give personal investment advice. You may describe what an agent does and what its record shows.",
 ].join(" ");
@@ -73,12 +80,36 @@ const PREPARE_TOOL = {
         action: { type: "string", enum: ["hire", "compare", "open_agent", "my_hires", "sell"] },
         chainId: { type: "number", description: "56 for BNB Chain mainnet" },
         tokenId: { type: "string", description: "the agent's token id, for hire, compare and open_agent" },
+        label: { type: "string", description: "the button text, a few words, such as Hire Souk Band Keeper" },
       },
       required: ["action"],
       additionalProperties: false,
     },
   },
 };
+
+const DEFAULT_LABEL: Record<string, string> = {
+  hire: "Open the hire page",
+  compare: "Compare agents",
+  open_agent: "Open the agent",
+  my_hires: "Open My hires",
+  sell: "List an agent",
+};
+
+// the model's label, kept short and plain, or a fixed one for the action
+export function actionLabel(action: string | undefined, label: unknown): string {
+  const given = typeof label === "string" ? label.replace(/[^\p{L}\p{N} .,'&-]/gu, "").replace(/\s+/g, " ").trim().slice(0, 40) : "";
+  return given || DEFAULT_LABEL[action ?? ""] || "Open Agent Souk";
+}
+
+// the answer without anything already shown as a button: a bracketed label, or the link itself
+export function withoutButtons(text: string, actions: AssistantAction[]): string {
+  let out = text;
+  for (const a of actions) {
+    out = out.split(`[${a.label}](${a.url})`).join("").split(`[${a.label}]`).join("").split(a.url).join("");
+  }
+  return out.replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
+}
 
 export function prepareLink(args: { action?: string; chainId?: number; tokenId?: string }): string {
   const chain = args.chainId ?? 56;
@@ -132,22 +163,60 @@ class ModelError extends Error {
 }
 
 // a free tier answers 429 when its minute is used up; one wait and retry usually clears it
-async function completeWithRetry(endpoint: ModelEndpoint, messages: ChatMsg[], fetchImpl: typeof fetch, waitMs: number) {
-  try {
-    return await complete(endpoint, messages, fetchImpl);
-  } catch (e) {
-    if (!(e instanceof ModelError) || e.status !== 429 || waitMs <= 0) throw e;
-    await new Promise((r) => setTimeout(r, waitMs));
-    return complete(endpoint, messages, fetchImpl);
+// one model reply, trying each endpoint in turn. a rate limit or an outage moves straight to the next
+// model rather than waiting, and the conversation so far, lookups included, carries over. only when
+// every model is rate limited does it wait once, and never past the time left
+async function completeAny(
+  endpoints: ModelEndpoint[],
+  messages: ChatMsg[],
+  fetchImpl: typeof fetch,
+  opts: { waitMs: number; deadline: number; tools: boolean },
+): Promise<{ msg: ModelMessage; model: string }> {
+  const errors: string[] = [];
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let limited = false;
+    for (const [i, endpoint] of endpoints.entries()) {
+      try {
+        // a backup model gets the lookups as plain text: some refuse tool calls another model made
+        const sent = i === 0 ? messages : flattenLookups(messages);
+        return { msg: await complete(endpoint, sent, fetchImpl, opts.tools), model: endpoint.model };
+      } catch (e) {
+        errors.push(`${endpoint.model}: ${(e as Error).message}`);
+        if (e instanceof ModelError && (e.status === 429 || e.status === 503)) limited = true;
+      }
+    }
+    const wait = Math.min(opts.waitMs, opts.deadline - Date.now() - 8_000);
+    if (!limited || wait <= 0) break;
+    await new Promise((r) => setTimeout(r, wait));
   }
+  throw new Error(`no model answered (${errors.join("; ") || "none configured"})`);
 }
 
-async function complete(endpoint: ModelEndpoint, messages: ChatMsg[], fetchImpl: typeof fetch) {
+// the conversation with each lookup written out as text, for a model that did not make the calls
+export function flattenLookups(messages: ChatMsg[]): ChatMsg[] {
+  const out: ChatMsg[] = [];
+  for (const m of messages) {
+    if (m.role === "tool") {
+      out.push({ role: "user", content: `Lookup result: ${m.content}` });
+    } else if (m.role === "assistant" && m.tool_calls?.length) {
+      const asked = m.tool_calls.map((c) => `${c.function.name} ${c.function.arguments || "{}"}`).join("; ");
+      out.push({ role: "assistant", content: [m.content, `I looked up: ${asked}`].filter(Boolean).join("\n") });
+    } else {
+      out.push(m);
+    }
+  }
+  return out;
+}
+
+type ModelMessage = { content?: string | null; tool_calls?: ToolCall[]; [extra: string]: unknown };
+
+async function complete(endpoint: ModelEndpoint, messages: ChatMsg[], fetchImpl: typeof fetch, tools = true): Promise<ModelMessage> {
   const url = chatUrl(endpoint.base);
   const res = await fetchImpl(url, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${endpoint.key}` },
-    body: JSON.stringify({ model: endpoint.model, messages, tools: assistantTools(), tool_choice: "auto", temperature: 0.2 }),
+    // with tools off the model has to answer from what it already looked up
+    body: JSON.stringify({ model: endpoint.model, messages, tools: assistantTools(), tool_choice: tools ? "auto" : "none", temperature: 0.2 }),
   });
   if (!res.ok) throw new ModelError(res.status);
   const body = (await res.json()) as { choices?: { message?: { content?: string | null; tool_calls?: ToolCall[]; [extra: string]: unknown } }[] };
@@ -207,43 +276,47 @@ export async function askAssistant(input: {
   fetchImpl?: typeof fetch;
   // how long to wait before one retry after a rate limit; tests pass 0
   retryWaitMs?: number;
+  // how long the assistant may spend looking things up before it must answer
+  budgetMs?: number;
 }): Promise<AssistantReply> {
   const fetchImpl = input.fetchImpl ?? fetch;
   const system = SYSTEM_PROMPT + walletNote(input.wallet ?? null, input.surface ?? "web");
-  const errors: string[] = [];
-  for (const endpoint of input.endpoints.filter((e) => e.key && e.model)) {
-    const messages: ChatMsg[] = [
-      { role: "system", content: system },
-      ...input.history.slice(-12).map((m): ChatMsg => (m.role === "user" ? { role: "user", content: m.content } : { role: "assistant", content: m.content })),
-    ];
-    const toolCalls: string[] = [];
-    try {
-      for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-        const msg = await completeWithRetry(endpoint, messages, fetchImpl, input.retryWaitMs ?? 20_000);
-        if (!msg.tool_calls?.length || round === MAX_TOOL_ROUNDS) {
-          return { text: (msg.content ?? "").trim() || "I could not find an answer to that.", model: endpoint.model, toolCalls };
-        }
-        messages.push({ ...msg, role: "assistant", content: msg.content ?? null, tool_calls: msg.tool_calls });
-        for (const call of msg.tool_calls) {
-          toolCalls.push(call.function.name);
-          let args: Record<string, unknown> = {};
-          try {
-            args = JSON.parse(call.function.arguments || "{}");
-          } catch {
-            // a malformed argument string runs the tool with none, and the tool says what it needs
-          }
-          const result =
-            call.function.name === "prepare_action"
-              ? JSON.stringify({ link: prepareLink(args as { action?: string; chainId?: number; tokenId?: string }), note: "The user confirms in their own wallet on this page." })
-              : LOCAL_TOOL_NAMES.has(call.function.name)
-                ? await callLocalTool(call.function.name, input.wallet, fetchImpl, args)
-                : await callMcpTool(input.mcpUrl, call.function.name, args, fetchImpl);
-          messages.push({ role: "tool", tool_call_id: call.id, content: result });
-        }
+  const endpoints = input.endpoints.filter((e) => e.key && e.model);
+  if (endpoints.length === 0) throw new Error("no model answered (none configured)");
+  // the routes stop a request at 120 seconds; past the budget the assistant answers from what it has
+  const deadline = Date.now() + (input.budgetMs ?? 40_000);
+  const messages: ChatMsg[] = [
+    { role: "system", content: system },
+    ...input.history.slice(-12).map((m): ChatMsg => (m.role === "user" ? { role: "user", content: m.content } : { role: "assistant", content: m.content })),
+  ];
+  const toolCalls: string[] = [];
+  const actions: AssistantAction[] = [];
+  for (let round = 0; ; round++) {
+    const lookups = round < MAX_TOOL_ROUNDS && Date.now() < deadline;
+    const { msg, model } = await completeAny(endpoints, messages, fetchImpl, { waitMs: input.retryWaitMs ?? 20_000, deadline: deadline + 30_000, tools: lookups });
+    if (!msg.tool_calls?.length || !lookups) {
+      return { text: withoutButtons((msg.content ?? "").trim(), actions) || "I could not find an answer to that.", model, toolCalls, actions };
+    }
+    messages.push({ ...msg, role: "assistant", content: msg.content ?? null, tool_calls: msg.tool_calls });
+    for (const call of msg.tool_calls) {
+      toolCalls.push(call.function.name);
+      let args: Record<string, unknown> = {};
+      try {
+        args = JSON.parse(call.function.arguments || "{}");
+      } catch {
+        // a malformed argument string runs the tool with none, and the tool says what it needs
       }
-    } catch (e) {
-      errors.push(`${endpoint.model}: ${(e as Error).message}`);
+      if (call.function.name === "prepare_action") {
+        const url = prepareLink(args as { action?: string; chainId?: number; tokenId?: string });
+        if (!actions.some((a) => a.url === url)) actions.push({ label: actionLabel(args.action as string | undefined, args.label), url });
+      }
+      const result =
+        call.function.name === "prepare_action"
+          ? JSON.stringify({ link: prepareLink(args as { action?: string; chainId?: number; tokenId?: string }), note: "Shown to the user as a button under your answer; they confirm in their own wallet on this page." })
+          : LOCAL_TOOL_NAMES.has(call.function.name)
+            ? await callLocalTool(call.function.name, input.wallet, fetchImpl, args)
+            : await callMcpTool(input.mcpUrl, call.function.name, args, fetchImpl);
+      messages.push({ role: "tool", tool_call_id: call.id, content: result });
     }
   }
-  throw new Error(`no model answered (${errors.join("; ") || "none configured"})`);
 }

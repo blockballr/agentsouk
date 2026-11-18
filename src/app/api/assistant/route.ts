@@ -3,7 +3,7 @@ import { assistantTurn } from "@/lib/assistant/run";
 import { clientIpFrom, enforceRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // POST /api/assistant {message, conversation?, wallet?} - the web door to the Souk Assistant.
 // it reads and prepares only; any action comes back as a link the user confirms in their wallet
@@ -21,6 +21,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   const conversation = typeof body?.conversation === "string" && /^[a-z0-9-]{8,64}$/i.test(body.conversation) ? `web:${body.conversation}` : `web:ip:${ip}`;
   const wallet = typeof body?.wallet === "string" && /^0x[0-9a-fA-F]{40}$/.test(body.wallet) ? body.wallet : null;
-  const reply = await assistantTurn(conversation, message, wallet);
-  return NextResponse.json({ success: true, reply });
+  const { text, actions } = await assistantTurn(conversation, message, wallet);
+  return NextResponse.json({ success: true, reply: text, actions });
 }

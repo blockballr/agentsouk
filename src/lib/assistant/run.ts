@@ -1,7 +1,7 @@
 // one assistant turn for any door: read the conversation, ask the brain, keep both sides
 
 import "server-only";
-import { askAssistant, type ModelEndpoint } from "./brain";
+import { askAssistant, type AssistantAction, type ModelEndpoint } from "./brain";
 import { appendHistory, loadHistory } from "./history";
 import { enforceRateLimit } from "../rate-limit";
 
@@ -36,11 +36,12 @@ async function underDailyCap(): Promise<boolean> {
   }
 }
 
-export async function assistantTurn(conversation: string, message: string, wallet: string | null): Promise<string> {
-  if (!(await underDailyCap())) return RESTING;
+export async function assistantTurn(conversation: string, message: string, wallet: string | null): Promise<{ text: string; actions: AssistantAction[] }> {
+  if (!(await underDailyCap())) return { text: RESTING, actions: [] };
   const history = await loadHistory(conversation);
   const user = { role: "user" as const, content: message.slice(0, 1500) };
   let text: string;
+  let actions: AssistantAction[] = [];
   try {
     const reply = await askAssistant({
       history: [...history, user],
@@ -50,9 +51,12 @@ export async function assistantTurn(conversation: string, message: string, walle
       surface: conversation.startsWith("tg:") ? "telegram" : "web",
     });
     text = reply.text;
+    actions = reply.actions;
   } catch {
     text = "I could not answer just now; the assistant is busy. Please try again in a minute.";
   }
-  await appendHistory(conversation, [user, { role: "assistant", content: text }]).catch(() => {});
-  return text;
+  // the history keeps the links as text, so a later turn still knows what was offered
+  const remembered = actions.length ? [text, ...actions.map((a) => `${a.label}: ${a.url}`)].join("\n") : text;
+  await appendHistory(conversation, [user, { role: "assistant", content: remembered }]).catch(() => {});
+  return { text, actions };
 }

@@ -20,6 +20,17 @@ export function askAssistant(question: string) {
 interface Turn {
   role: 'user' | 'assistant'
   text: string
+  // what the assistant prepared, shown as buttons under its answer
+  actions?: { label: string; url: string }[]
+}
+
+// only links into our own sites become buttons
+function safeActions(raw: unknown): { label: string; url: string }[] {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .filter((a): a is { label: string; url: string } => typeof a?.label === 'string' && typeof a?.url === 'string')
+    .filter((a) => /^https:\/\/([a-z0-9-]+\.)?agentsouk\.xyz(\/|$)/.test(a.url))
+    .slice(0, 3)
 }
 
 function conversationId(): string {
@@ -126,9 +137,9 @@ export function AssistantChat() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ message, conversation: conversationId(), wallet: wallet ?? undefined }),
       })
-      const body = (await res.json().catch(() => null)) as { reply?: string; error?: string } | null
+      const body = (await res.json().catch(() => null)) as { reply?: string; error?: string; actions?: unknown } | null
       const reply = body?.reply ?? body?.error ?? 'The assistant did not answer. Try again in a minute.'
-      setTurns((t) => [...t, { role: 'assistant', text: reply }])
+      setTurns((t) => [...t, { role: 'assistant', text: reply, actions: safeActions(body?.actions) }])
     } catch {
       setTurns((t) => [...t, { role: 'assistant', text: 'The assistant could not be reached. Check your connection and try again.' }])
     } finally {
@@ -220,6 +231,15 @@ export function AssistantChat() {
                 ) : (
                   <div key={i} className="max-w-[92%] rounded-[14px] rounded-bl-[4px] border border-souk-hair bg-souk-surface1 px-3 py-2 text-[13.5px] leading-[20px] text-souk-slate">
                     <Answer text={t.text} />
+                    {t.actions?.map((a) => (
+                      <a
+                        key={a.url}
+                        href={a.url}
+                        className="mt-2 block rounded-[10px] border border-souk-hair px-3 py-1.5 text-center text-[12.5px] font-semibold text-souk-sky transition-colors hover:border-souk-data/50 hover:text-souk-ink"
+                      >
+                        {a.label}
+                      </a>
+                    ))}
                   </div>
                 ),
               )}
