@@ -44,6 +44,7 @@ const MAX_TOOL_TEXT = 2500;
 export const SYSTEM_PROMPT = [
   "You are the Souk Assistant for Agent Souk, a marketplace on BNB Chain where AI agents act on chain.",
   "Buyers pay an agent in one of three ways: pay per answer, pay on delivery (an escrow job), or a vault hire where their money stays in a contract and the agent trades only inside limits they sign.",
+  "Never mention your tools, their names, queries or calls, or how you work inside; talk only about what the user sees and does.",
   "Answer in plain words, briefly, in a few short lines, with no tables. Say pay per answer, pay on delivery and vault hire; never name protocols such as x402, EIP-3009 or ERC-8183 unless the user asks.",
   "Use the tools to find agents, read their details, prices and records, and read a user's hires.",
   "For the user's own agents, earnings or hires use my_listings, my_earnings and my_hires; they read only the user's linked wallet. If the user pastes an address instead, use lookup_address and call the result that address's agents, not theirs. For which stock pools are earning, use fluxlp_pools and give the real numbers.",
@@ -55,7 +56,7 @@ export const SYSTEM_PROMPT = [
   "Flux LP (406220) manages liquidity in tokenized stock pools on PancakeSwap and Uniswap; its pools and their results are at fluxlp.agentsouk.xyz.",
   "Mention one or two outside agents only when they clearly fit better.",
   "State only the ways to pay that the tools show for an agent. Give prices with the unit the tool gives: U is the payment token, not BNB. If a fact is not in the tool results or above, say you do not know.",
-  "You cannot sign, pay, hire or change anything. When the user wants to act, call prepare_action and give them the link it returns; they confirm in their own wallet.",
+  "You cannot sign, pay, hire or change anything. When the user wants to act, call prepare_action and give them the link it returns; they confirm in their own wallet. To list or sell an agent, give the sell link at once; it needs no token id.",
   "Never invent agents, prices, numbers or transactions: say what the tools returned, or that you could not find it.",
   "Never give personal investment advice. You may describe what an agent does and what its record shows.",
 ].join(" ");
@@ -190,17 +191,25 @@ export async function callMcpTool(mcpUrl: string, name: string, args: unknown, f
 
 // the conversation loop: the model asks for tools, we run them, until it answers in words.
 // each endpoint is tried in order, so a free tier at its limit falls through to the next
+// what the model is told about the user's wallet, worded so its reply can repeat it to the user as is
+export function walletNote(wallet: string | null, surface: "web" | "telegram"): string {
+  if (wallet) return ` The user's linked wallet is ${wallet}; the my_ tools read it.`;
+  const how = surface === "telegram" ? "send /link here" : "connect your wallet with the Connect button at the top of the page";
+  return ` No wallet is linked yet. When the user asks about their own agents, earnings or hires, reply in one short line: "Please ${how}, then ask again and I will check." Do not list steps.`;
+}
+
 export async function askAssistant(input: {
   history: AssistantMessage[];
   endpoints: ModelEndpoint[];
   mcpUrl: string;
   wallet?: string | null;
+  surface?: "web" | "telegram";
   fetchImpl?: typeof fetch;
   // how long to wait before one retry after a rate limit; tests pass 0
   retryWaitMs?: number;
 }): Promise<AssistantReply> {
   const fetchImpl = input.fetchImpl ?? fetch;
-  const system = SYSTEM_PROMPT + (input.wallet ? ` The user's linked wallet is ${input.wallet}; the my_ tools read it.` : " The user has not linked a wallet yet, so the my_ tools cannot answer until they do.");
+  const system = SYSTEM_PROMPT + walletNote(input.wallet ?? null, input.surface ?? "web");
   const errors: string[] = [];
   for (const endpoint of input.endpoints.filter((e) => e.key && e.model)) {
     const messages: ChatMsg[] = [

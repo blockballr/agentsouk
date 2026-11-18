@@ -42,7 +42,13 @@ export async function assistantTurn(conversation: string, message: string, walle
   const user = { role: "user" as const, content: message.slice(0, 1500) };
   let text: string;
   try {
-    const reply = await askAssistant({ history: [...history, user], endpoints: assistantEndpoints(), mcpUrl: MCP_URL, wallet });
+    const reply = await askAssistant({
+      history: [...history, user],
+      endpoints: assistantEndpoints(),
+      mcpUrl: MCP_URL,
+      wallet,
+      surface: conversation.startsWith("tg:") ? "telegram" : "web",
+    });
     text = reply.text;
   } catch {
     text = "I could not answer just now; the assistant is busy. Please try again in a minute.";
