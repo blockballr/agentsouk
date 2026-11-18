@@ -5,6 +5,7 @@ import path from "node:path";
 // deployment's file tracing includes them; the route only ever serves this map.
 const FILES: Record<string, string> = {
   "SKILL.md": path.join(process.cwd(), "skill", "SKILL.md"),
+  "reference/agentic-wallet.md": path.join(process.cwd(), "skill", "reference", "agentic-wallet.md"),
   "reference/browse.md": path.join(process.cwd(), "skill", "reference", "browse.md"),
   "reference/hire-x402.md": path.join(process.cwd(), "skill", "reference", "hire-x402.md"),
   "reference/jobs.md": path.join(process.cwd(), "skill", "reference", "jobs.md"),

@@ -14,7 +14,7 @@ import { vaultAgents } from "./vault";
 const FACTORY = "0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865" as const;
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
 const FEE_TIERS = [100, 500, 2500, 10000] as const;
-const MAX_SLIPPAGE_BPS = 1000;
+export const MAX_SLIPPAGE_BPS = 1000;
 const MAX_TERM_DAYS = 90;
 
 interface VaultToken {
@@ -34,7 +34,7 @@ const TOKENS: Record<number, { A: VaultToken; B: VaultToken }> = {
   },
 };
 
-const VAULT_ABI = [
+export const VAULT_ABI = [
   {
     name: "open",
     type: "function",
@@ -84,7 +84,7 @@ const VAULT_ABI = [
   },
 ] as const;
 
-const TOKEN_ABI = [
+export const TOKEN_ABI = [
   { name: "approve", type: "function", stateMutability: "nonpayable", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ type: "bool" }] },
   { name: "allowance", type: "function", stateMutability: "view", inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], outputs: [{ type: "uint256" }] },
   { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ type: "uint256" }] },
@@ -188,6 +188,10 @@ export function tokenFor(chainId: number, choice: string | undefined): VaultToke
   if (!match) throw new CliError(`${raw} is not one of the vault's bound tokens (${pair.A.symbol}, ${pair.B.symbol})`, "bad_token");
   return match;
 }
+
+// defaults are percents, the same unit a flag carries
+export const DEFAULT_SLIPPAGE_PCT = 5;
+export const DEFAULT_MAX_LOSS_PCT = 20;
 
 export function percentToBps(raw: string | undefined, fallback: number, what: string): number {
   const value = raw === undefined ? fallback : Number(raw);
@@ -356,12 +360,12 @@ export async function planVaultHire(
   }
 
   const expiry = expiryFor(options.days);
-  const slippageBps = percentToBps(options.slippage, 500, "slippage");
+  const slippageBps = percentToBps(options.slippage, DEFAULT_SLIPPAGE_PCT, "slippage");
   if (slippageBps < 1 || slippageBps > MAX_SLIPPAGE_BPS) {
     throw new CliError(`slippage is 0.01 to ${MAX_SLIPPAGE_BPS / 100} percent`, "bad_slippage");
   }
   const agentFeeBps = percentToBps(options.agentFee, 0, "the agent fee");
-  const maxLossBps = percentToBps(options.maxLoss, 2000, "the max loss");
+  const maxLossBps = percentToBps(options.maxLoss, DEFAULT_MAX_LOSS_PCT, "the max loss");
   if (agentFeeBps > 10_000 || maxLossBps > 10_000) throw new CliError("fees and loss are at most 100 percent", "bad_percent");
 
   let venue: `0x${string}` = ZERO;

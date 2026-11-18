@@ -65,7 +65,7 @@ function pick<T>(values: (T | undefined | null)[]): T | undefined {
 
 // precedence is flag, environment, file, built-in default, in that order
 export function resolveConfig(inputs: ConfigInputs): CliConfig {
-  const env = inputs.env ?? {};
+  const env: Partial<NodeJS.ProcessEnv> = inputs.env ?? {};
   const file = inputs.file ?? {};
   const flags = inputs.flags;
   const apiUrl =

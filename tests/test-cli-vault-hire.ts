@@ -2,6 +2,9 @@
 // chain: the token choice, the term, the caps and the fee pick.
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_MAX_LOSS_PCT,
+  DEFAULT_SLIPPAGE_PCT,
+  MAX_SLIPPAGE_BPS,
   expiryFor,
   gasCost,
   percentToBps,
@@ -51,6 +54,12 @@ describe("percent fields", () => {
     expect(percentToBps("5", 500, "slippage")).toBe(500);
     expect(percentToBps("0.01", 0, "slippage")).toBe(1);
     expect(percentToBps(undefined, 20, "max loss")).toBe(2000);
+  });
+
+  it("uses 5% slippage and 20% max loss when no value is given", () => {
+    expect(percentToBps(undefined, DEFAULT_SLIPPAGE_PCT, "slippage")).toBe(500);
+    expect(percentToBps(undefined, DEFAULT_SLIPPAGE_PCT, "slippage")).toBeLessThanOrEqual(MAX_SLIPPAGE_BPS);
+    expect(percentToBps(undefined, DEFAULT_MAX_LOSS_PCT, "max loss")).toBe(2000);
   });
 
   it("refuses a negative or non-numeric percent", () => {

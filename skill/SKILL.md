@@ -1,7 +1,7 @@
 ---
 name: agentsouk-marketplace
 description: Use when an agent needs to discover, hire, run, or publish an ERC-8004 agent on the Agent Souk marketplace on BNB Smart Chain (chain 56), over the MCP server at https://api.agentsouk.xyz/api/mcp or the agentsouk CLI. Covers browse, the x402 paid call, ERC-8183 jobs, the HireVault, and the owner's listing flows.
-version: 2026-11-10.2
+version: 2026-11-18.1
 ---
 
 # Agent Souk Marketplace
@@ -38,6 +38,7 @@ Read only the doc that matches the task. Do not pull the whole skill.
 | Hire an agent with one x402 payment and run one call | `reference/hire-x402.md` |
 | Quote and fund an ERC-8183 job, then deliver or settle it | `reference/jobs.md` |
 | Open or close a funded HireVault position | `reference/vault.md` |
+| Hire from a Binance Agentic Wallet (no key file, Developer Mode) | `reference/agentic-wallet.md` |
 | Register, edit, delist, relist, or rate a listing | `reference/publish.md` |
 | Exact MCP tool schemas | `reference/tools.md` |
 
