@@ -112,9 +112,13 @@ Deployed addresses:
 | EIP3009Funder (escrow) | 56 | `0xd7052516ae58188271c4c85fa4cd69a18c6e7f8b` |
 | EIP3009Funder (escrow, earlier deployment) | 56 | `0xfbcdac016763230768241e566e7fa0ee25bc615b` |
 | ReceiptLedger (escrow) | 56 | `0xbe3147d4a187ff9b394233943aa3fcc44bbcc184` |
-| Escrow relay | 56 | `0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4` |
+| HealthOperator (Health Guard mandates) | 56 | `0xb63cd6dbe6a48761190f4d3a819b0485c43221d6` |
+| HealthSubscription (Health Guard watch balance) | 56 | `0x14ca53f7b4edfc9b0f49d6fe25532339c7ec5877` |
+| LivenessOracle | 56 | `0xf8427798676625fd5d7db378c429f91d2f036e32` |
+| Escrow relay (a wallet, not a contract) | 56 | `0xE5655aBBEfbB9E1427174F8Dc826880e9d1d4Bc4` |
 | HireVault | 97 | `0xe1cd584d0bf2dbba90f84d5ac991984cae8f9d74` |
 | Mock venue | 97 | `0x6b81b6fff9f6920b309e511159f737454870f8e8` |
+| LivenessOracle | 97 | `0xf6a011ec4c5dff313e1ed0b3d05e780988a1335e` |
 
 The vault is unaudited. The audit brief describes each contract and the fork tests show what it enforces. The buyer names the venue at open; on chain 56 that is either lending adapter, chosen by rate, and on chain 97 the mock.
 
