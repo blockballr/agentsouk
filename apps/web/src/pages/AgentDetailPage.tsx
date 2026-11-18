@@ -52,6 +52,7 @@ import {
 } from '../lib/hire'
 import { button, card, cx, Action } from '../components/ui'
 import { Row as SoukRow, Stack, Txt, Dot, Pill, SectionHead, DataTable, Kpi, IconChevron } from '../components/souk'
+import { useAgentIdHolders } from '../lib/agent-id-holders'
 
 // the listing stays on the shelf, so a buyer about to sign is told what the last
 // check found, because settlement does not wait for the agent to answer
@@ -306,6 +307,7 @@ export function AgentDetailPage() {
   const [tab, setTab] = useState<'overview' | 'activity' | 'technical'>('overview')
   const agentFeed = useProofFeed(20, tokenId)
   const [mark, setMark] = useState<{ verified: boolean; reason: string } | null>(null)
+  const sellerHolders = useAgentIdHolders([detail?.owner_address])
   useEffect(() => {
     const base = import.meta.env.VITE_API_URL ?? '/api'
     let alive = true
@@ -846,6 +848,11 @@ export function AgentDetailPage() {
                 {mark?.verified ? (
                   <span title={mark.reason}>
                     <Pill variant="good">Verified by Agent Souk</Pill>
+                  </span>
+                ) : null}
+                {detail.owner_address && sellerHolders.has(detail.owner_address.toLowerCase()) ? (
+                  <span title="The seller's wallet holds a Binance Agent ID, one per person">
+                    <Pill>Seller has an Agent ID</Pill>
                   </span>
                 ) : null}
                 <Pill>{jobSeller ? 'Pay on delivery' : vaultCapable ? 'Your money stays in a vault' : 'Pay per answer'}</Pill>

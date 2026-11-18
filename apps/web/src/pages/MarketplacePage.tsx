@@ -12,6 +12,7 @@ import { chainLabel, explorerAddressUrl, registryFor, settlementAssetFor } from 
 import { getShortlist, setShortlist as persistShortlist, toggleShortlist } from '../lib/shortlist'
 
 import { OPERATED_BY_LABEL, isOperatedByAgentSouk } from '../lib/first-party'
+import { useAgentIdHolders } from '../lib/agent-id-holders'
 import { readStoredView, viewFromParam } from '../lib/shelf-view'
 import { MarketTerminal } from '../components/MarketTerminal'
 import { verdictFor, type VerdictTone } from '../lib/verdict'
@@ -669,6 +670,7 @@ export function AgentGrid({
   shortlist: string[]
   onToggle: (key: string) => void
 }) {
+  const holders = useAgentIdHolders(items.map((a) => a.owner_address))
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((a) => (
@@ -677,6 +679,7 @@ export function AgentGrid({
           agent={a}
           checked={shortlist.includes(`${a.chain_id}/${a.token_id}`)}
           onToggle={onToggle}
+          idHolder={Boolean(a.owner_address && holders.has(a.owner_address.toLowerCase()))}
         />
       ))}
     </div>
@@ -687,10 +690,12 @@ function AgentCard({
   agent,
   checked,
   onToggle,
+  idHolder = false,
 }: {
   agent: AgentSummary
   checked: boolean
   onToggle: (key: string) => void
+  idHolder?: boolean
 }) {
   const firstParty = isOperatedByAgentSouk(agent.owner_address)
   // our own agents carry a dicebear face, so the card shows it rather than the registry image
@@ -801,6 +806,14 @@ function AgentCard({
               {hasMark(agent) ? (
                 <span className="shrink-0 rounded-full border border-souk-good/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[0.06em] text-souk-good">
                   Verified
+                </span>
+              ) : null}
+              {idHolder ? (
+                <span
+                  title="The seller's wallet holds a Binance Agent ID"
+                  className="shrink-0 rounded-full border border-souk-data/40 px-1.5 py-px text-[9.5px] font-semibold uppercase tracking-[0.06em] text-souk-data"
+                >
+                  Agent ID
                 </span>
               ) : null}
               <span className="truncate font-mono text-[10.5px] leading-4 text-souk-muted">
