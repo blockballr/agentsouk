@@ -7,6 +7,7 @@ import {
   getHiresByWallet,
   getJobs8183Jobs,
   getOngoing,
+  getOwnAgentId,
   retryTask,
   type EscrowStatus,
   type Jobs8183Row,
@@ -31,6 +32,7 @@ import { EscrowFlowCard } from '../components/EscrowFlowCard'
 import { hireErrorText } from '../lib/hire'
 import { chainIdToHex, ensureBscChain, getProvider, setTargetChain } from '../lib/wallet'
 import { useConnectedAccount } from '../lib/use-connected-account'
+import { sessionProof } from '../lib/wallet-session'
 import { encodeFunctionData, keccak256, toBytes } from 'viem'
 import { waitForTransactionReceipt, withSendTimeout, type TransactionReceipt } from '../lib/register'
 import { ratedHires } from '../lib/rating'
@@ -99,6 +101,23 @@ export function OngoingPage() {
   const [kernelJobs, setKernelJobs] = useState<Jobs8183Row[]>([])
   const inFlight = useRef(false)
   const [filter, setFilter] = useState<Filter>('all')
+  // the wallet's own Agent ID, read with its signed sign-in; nobody else's is ever shown
+  const [agentId, setAgentId] = useState<{ holder: boolean; name: string | null } | null>(null)
+  useEffect(() => {
+    setAgentId(null)
+    if (!account) return
+    let alive = true
+    void sessionProof(account).then((proof) =>
+      proof
+        ? getOwnAgentId(account, proof).then((r) => {
+            if (alive) setAgentId(r)
+          })
+        : undefined,
+    )
+    return () => {
+      alive = false
+    }
+  }, [account])
 
   // kernel jobs are a slower loop: the escrow holds days, so one read per
   // connect plus one after each load is plenty
@@ -381,6 +400,12 @@ export function OngoingPage() {
       <header>
         <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-souk-data">{kicker}</p>
         <h1 className="mt-1 text-[30px] font-bold leading-[36px] text-souk-ink">My hires</h1>
+        {agentId?.holder ? (
+          <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-souk-hair px-3 py-1 text-[12.5px] text-souk-slate">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-souk-data" />
+            Agent ID{agentId.name ? <span className="font-mono text-souk-ink">{agentId.name}</span> : ' holder'}
+          </p>
+        ) : null}
         <p className="mt-2 text-[15px] leading-[23px] text-souk-slate">Where your money is working, and the work you hired.</p>
       </header>
 

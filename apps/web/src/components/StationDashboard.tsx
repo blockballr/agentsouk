@@ -14,6 +14,7 @@ interface Preview {
     agentsAnswering: number
     offMarket: number
     passports: number | null
+    agentId?: { holders: number; hires: number; since: string } | null
     failedChecksToday: number
     hiresByDay: { day: string; count: number }[]
     checksByDay: { day: string; passed: number; failed: number }[]
@@ -205,13 +206,18 @@ export function StationDashboard({ preview }: { preview: boolean }) {
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Stat label="Agents answering" value={`${o.agentsAnswering}`} sub={`of ${o.agentsListed} listed, ${o.offMarket} off the market`} />
         <Stat label="Buyer hires" value={`${win('all')?.buyerHires ?? 0}`} sub={`${win('today')?.buyerHires ?? 0} today, ${win('week')?.buyerHires ?? 0} this week`} />
         <Stat
           label="Settled by buyers"
           value={settled ? `${Number(settled.amount).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '0'}
           sub={settledSub}
+        />
+        <Stat
+          label="Agent ID holders"
+          value={o.agentId ? `${o.agentId.holders}` : '0'}
+          sub={o.agentId ? `${o.agentId.hires} vault hires since 18 Nov` : 'not counted yet'}
         />
         <Stat
           label="Needs attention"

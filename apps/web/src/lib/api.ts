@@ -1324,3 +1324,11 @@ export async function unlinkTelegram(wallet: string, proof: SessionProof): Promi
   const res = await fetch(`${BASE}/alerts/telegram?wallet=${encodeURIComponent(wallet)}`, { method: 'DELETE', headers: proofHeaders(proof) })
   return res.ok
 }
+
+// the signed-in wallet's own Agent ID (a .ai name); the server answers only the wallet itself
+export async function getOwnAgentId(wallet: string, proof: SessionProof): Promise<{ holder: boolean; name: string | null } | null> {
+  const res = await fetch(`${BASE}/agent-id/me?wallet=${encodeURIComponent(wallet)}`, { headers: proofHeaders(proof) })
+  if (!res.ok) return null
+  const body = (await res.json().catch(() => null)) as { holder?: boolean; name?: string | null } | null
+  return body ? { holder: Boolean(body.holder), name: body.name ?? null } : null
+}

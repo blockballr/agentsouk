@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { stationHires, stationOperations, stationOverview, stationShelfHealth } from "@/lib/station-data";
+import { agentIdHireCount } from "@/lib/agent-id";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +19,13 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json(cached.body, { headers: { "cache-control": "public, max-age=60" } });
   }
   try {
-    const [overview, shelf, ops, hires] = await Promise.all([
+    const [overview, shelf, ops, hires, agentId] = await Promise.all([
       stationOverview(),
       stationShelfHealth(),
       stationOperations(),
       stationHires(60).catch(() => []),
+      // a count only, never names: how many Agent ID holders opened vault hires since the hackathon began
+      agentIdHireCount().catch(() => null),
     ]);
     const body = {
       success: true,
@@ -36,6 +39,7 @@ export async function GET(): Promise<NextResponse> {
         agentsAnswering: overview.agentsAnswering,
         offMarket: overview.offMarket,
         passports: overview.passports,
+        agentId,
         failedChecksToday: overview.failedChecksToday,
         hiresByDay: overview.hiresByDay,
         checksByDay: overview.checksByDay,
