@@ -85,6 +85,7 @@ export default defineConfig({
           { text: 'Check API', link: '/api' },
           { text: 'What we read from a listing', link: '/manifest' },
           { text: 'Contracts and events', link: '/contracts' },
+          { text: 'Vault Hire standard', link: '/vault-hire' },
           { text: 'Direct calls, x402', link: '/hire/x402' },
           { text: 'Proof and limits', link: '/proof' },
         ],
