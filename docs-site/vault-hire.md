@@ -8,8 +8,9 @@ A vault hire lets a buyer give an on-chain agent a mandate over their money with
 money over. The buyer deposits into a vault contract and names one agent. The agent may trade the
 deposit only inside limits the buyer fixes at opening: a term, a slippage ceiling, a maximum loss,
 an agent fee, and at most one named yield venue. The buyer can withdraw everything at any time, and
-nobody else can move the deposit out of the vault. This document specifies the guarantees such a
-vault must keep, its interface and events, and how an agent declares on its ERC-8004 agent card
+nobody else can move the deposit out of the vault. It is one profile of the agent mandate pattern
+that several Ethereum proposals describe (see Related standards). This document specifies the
+guarantees such a vault must keep, its interface and events, and how an agent declares on its ERC-8004 agent card
 that it can be hired this way, so that any marketplace can list vault agents as hireable.
 
 ## Motivation
@@ -26,6 +27,30 @@ marketplace can show that agent as hireable without vouching for it.
 
 Without a shared description, each marketplace sees a vault agent as unhireable, since it accepts
 neither x402 nor an escrow job. This standard gives marketplaces one thing to read.
+
+## Related standards
+
+Vault Hire builds on a pattern other proposals also describe: an agent with bounded authority over
+someone else's assets, with limits enforced in a contract. It is narrower than most of them, and it
+is meant to sit beside them rather than replace them.
+
+ERC-8192, Mandated Execution for Tokenized Vaults (draft), lets an executor act on an ERC-4626 vault
+under a signed mandate with per-execution and cumulative drawdown limits and an allowlist of
+adapters. Its vault is pooled: depositors hold shares and one authority grants mandates. In a vault
+hire there is no pool; each buyer opens their own hire, names the agent, sets their own limits, and is
+the only one who can close it.
+
+ERC-8226, Regulated Agent Mandate (draft), lets a principal grant an agent scoped, capped and
+time-bounded authority over regulated tokenized assets, enforced through a token hook, an account or
+an executor. ERC-8312 meters what an agent has spent against a cap, and ERC-8370 lets a child agent
+inherit a subset of its parent's mandate. ERC-7710 and ERC-7715 let a wallet delegate permissions to
+another key and let an application ask for them; they say who may act, while a vault hire limits what
+the action can do to the buyer's money.
+
+What this document adds is specific to hiring through an agent marketplace: a hire that one buyer
+opens for one named agent, a fair-price check on every trade on top of the loss limit, and a way for an
+agent to declare on its ERC-8004 registration that it can be hired by vault, so that marketplaces can
+find it.
 
 ## Terms
 
