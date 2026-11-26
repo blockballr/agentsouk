@@ -1,13 +1,13 @@
 {
   "version": 2,
-  "snapshotTime": "2026-11-26T07:31:25.874Z",
+  "snapshotTime": "2026-11-26T21:09:42.947Z",
   "source": {
     "fetched": 2729,
-    "upstreamTotal": 388366,
-    "deduped": 1716,
-    "registryTotal": 388366,
-    "declarers": 128,
-    "endpointsRecovered": 128,
+    "upstreamTotal": 388578,
+    "deduped": 1590,
+    "registryTotal": 388578,
+    "declarers": 129,
+    "endpointsRecovered": 129,
     "seededApplied": 0
   },
   "counts": {
@@ -167,7 +167,7 @@
         "A2A"
       ],
       "x402_supported": false,
-      "total_score": 46.48,
+      "total_score": 46.5,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -175,7 +175,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-15T06:45:35Z",
-      "updated_at": "2026-11-25T17:45:40.179857Z",
+      "updated_at": "2026-11-26T20:12:58.954556Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
@@ -216,7 +216,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T08:44:01Z",
-      "updated_at": "2026-11-26T06:22:48.530600Z",
+      "updated_at": "2026-11-26T20:59:59.901404Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 6
@@ -258,7 +258,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-01T04:27:58Z",
-      "updated_at": "2026-11-24T05:19:37.982231Z",
+      "updated_at": "2026-11-26T10:12:10.634599Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 5,
@@ -425,7 +425,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T07:11:31Z",
-      "updated_at": "2026-11-25T04:25:00.242220Z",
+      "updated_at": "2026-11-26T14:47:52.249880Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 4
@@ -625,7 +625,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T15:16:36Z",
-      "updated_at": "2026-11-25T20:41:39.161843Z",
+      "updated_at": "2026-11-26T10:01:34.730384Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -666,7 +666,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T21:56:03Z",
-      "updated_at": "2026-11-25T08:36:56.473157Z",
+      "updated_at": "2026-11-26T16:05:53.989475Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -907,7 +907,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-07T16:46:34Z",
-      "updated_at": "2026-11-25T19:13:33.684681Z",
+      "updated_at": "2026-11-26T17:54:55.568739Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -981,7 +981,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 46.51,
+      "total_score": 46.49,
       "rank": null,
       "network_rank": null,
       "health_score": 100,
@@ -989,7 +989,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-07T14:56:29Z",
-      "updated_at": "2026-11-25T06:56:07.311194Z",
+      "updated_at": "2026-11-26T10:57:50.331964Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -1110,7 +1110,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.36,
+      "total_score": 30.37,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -1118,7 +1118,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-07T03:20:58Z",
-      "updated_at": "2026-11-25T08:59:10.567215Z",
+      "updated_at": "2026-11-26T16:02:53.973176Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2,
@@ -1547,7 +1547,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T12:28:18Z",
-      "updated_at": "2026-11-23T17:06:32.908164Z",
+      "updated_at": "2026-11-26T07:44:49.033774Z",
       "category": "rebalancing",
       "categoryScores": {
         "rebalancing": 2
@@ -2464,7 +2464,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-08-25T11:09:14Z",
-      "updated_at": "2026-11-26T03:03:13.646220Z",
+      "updated_at": "2026-11-26T07:47:49.041377Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 6
@@ -2743,7 +2743,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-02T17:54:25Z",
-      "updated_at": "2026-11-24T07:45:38.968137Z",
+      "updated_at": "2026-11-26T17:21:55.019595Z",
       "category": "grid-trading",
       "categoryScores": {
         "rebalancing": 5,
@@ -2911,7 +2911,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:31:06Z",
-      "updated_at": "2026-11-26T02:29:44.821588Z",
+      "updated_at": "2026-11-26T20:26:59.144326Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -2943,7 +2943,7 @@
         "A2A"
       ],
       "x402_supported": false,
-      "total_score": 48.14,
+      "total_score": 48.15,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -2951,7 +2951,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-10-15T06:45:47Z",
-      "updated_at": "2026-11-25T13:58:21.431241Z",
+      "updated_at": "2026-11-26T20:36:07.049195Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -2991,7 +2991,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-25T22:08:59Z",
-      "updated_at": "2026-11-25T18:46:32.615356Z",
+      "updated_at": "2026-11-26T20:05:58.030945Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 4
@@ -3520,7 +3520,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:38:02Z",
-      "updated_at": "2026-11-25T03:45:59.425770Z",
+      "updated_at": "2026-11-26T14:20:52.086091Z",
       "category": "grid-trading",
       "categoryScores": {
         "grid-trading": 2
@@ -3759,7 +3759,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T13:23:49Z",
-      "updated_at": "2026-11-25T03:17:58.789876Z",
+      "updated_at": "2026-11-26T08:54:49.923933Z",
       "category": "yield",
       "categoryScores": {
         "yield": 6,
@@ -4165,7 +4165,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-02-19T10:37:33.688265Z",
-      "updated_at": "2026-11-25T19:19:33.958327Z",
+      "updated_at": "2026-11-26T08:24:49.332206Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
@@ -4207,7 +4207,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-02-19T09:14:23.280669Z",
-      "updated_at": "2026-11-25T06:19:06.130543Z",
+      "updated_at": "2026-11-26T10:24:50.201684Z",
       "category": "yield",
       "categoryScores": {
         "yield": 4
@@ -5562,7 +5562,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-16T12:00:12Z",
-      "updated_at": "2026-11-25T18:25:40.525631Z",
+      "updated_at": "2026-11-26T19:40:02.379896Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2,
@@ -5805,7 +5805,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-19T14:38:56Z",
-      "updated_at": "2026-11-25T10:40:15.726838Z",
+      "updated_at": "2026-11-26T20:42:42.353226Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2
@@ -5883,7 +5883,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 5.01,
+      "total_score": 5,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -5891,7 +5891,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T07:11:35Z",
-      "updated_at": "2026-11-25T04:26:00.235854Z",
+      "updated_at": "2026-11-26T10:15:50.050513Z",
       "category": "yield",
       "categoryScores": {
         "yield": 2,
@@ -5964,7 +5964,7 @@
         "Web"
       ],
       "x402_supported": true,
-      "total_score": 70.4,
+      "total_score": 70.45,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -5972,7 +5972,7 @@
       "average_score": 90,
       "cross_chain_versions": null,
       "created_at": "2026-08-25T11:09:12Z",
-      "updated_at": "2026-11-26T02:47:45.429562Z",
+      "updated_at": "2026-11-26T16:20:54.061523Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 8
@@ -6096,7 +6096,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-22T07:16:53Z",
-      "updated_at": "2026-11-26T06:46:48.439662Z",
+      "updated_at": "2026-11-26T13:46:51.832156Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 8
@@ -6169,7 +6169,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 71.01,
+      "total_score": 70.92,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6177,7 +6177,7 @@
       "average_score": 91.11,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T20:09:04Z",
-      "updated_at": "2026-11-25T10:33:13.337176Z",
+      "updated_at": "2026-11-26T08:55:53.435541Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 7
@@ -6217,7 +6217,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T20:32:11Z",
-      "updated_at": "2026-11-24T17:28:45.927158Z",
+      "updated_at": "2026-11-26T08:47:49.517010Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 7
@@ -6323,7 +6323,7 @@
         "A2A"
       ],
       "x402_supported": true,
-      "total_score": 30.34,
+      "total_score": 30.36,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6331,7 +6331,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-17T19:43:11Z",
-      "updated_at": "2026-11-23T21:48:34.142802Z",
+      "updated_at": "2026-11-26T20:40:27.708690Z",
       "category": "health-factor",
       "categoryScores": {
         "rebalancing": 2,
@@ -6372,7 +6372,7 @@
       "average_score": 100,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T05:08:53Z",
-      "updated_at": "2026-11-24T22:09:50.778188Z",
+      "updated_at": "2026-11-26T10:44:50.238428Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6413,7 +6413,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-18T11:43:14Z",
-      "updated_at": "2026-11-25T11:20:36.087248Z",
+      "updated_at": "2026-11-26T12:38:18.512542Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6494,7 +6494,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:19:16Z",
-      "updated_at": "2026-11-25T13:54:21.135190Z",
+      "updated_at": "2026-11-26T20:17:58.855622Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6614,7 +6614,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-01T15:24:50Z",
-      "updated_at": "2026-11-25T09:44:12.051179Z",
+      "updated_at": "2026-11-26T13:38:51.808126Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 6
@@ -6807,7 +6807,7 @@
         "Web"
       ],
       "x402_supported": false,
-      "total_score": 30.36,
+      "total_score": 30.37,
       "rank": null,
       "network_rank": null,
       "health_score": null,
@@ -6815,7 +6815,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-08T04:53:48Z",
-      "updated_at": "2026-11-25T18:18:31.972071Z",
+      "updated_at": "2026-11-26T17:47:55.327795Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -6941,7 +6941,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-08-14T05:15:36Z",
-      "updated_at": "2026-11-25T08:52:10.176235Z",
+      "updated_at": "2026-11-26T10:15:50.050513Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -7025,7 +7025,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-07T15:26:21Z",
-      "updated_at": "2026-11-23T18:49:33.287668Z",
+      "updated_at": "2026-11-26T11:00:55.794206Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -7106,7 +7106,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-27T00:06:18Z",
-      "updated_at": "2026-11-25T10:51:13.837949Z",
+      "updated_at": "2026-11-26T20:20:58.961174Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 5
@@ -7942,7 +7942,7 @@
       "average_score": 86.67,
       "cross_chain_versions": null,
       "created_at": "2026-09-11T04:11:53Z",
-      "updated_at": "2026-11-25T07:17:07.765487Z",
+      "updated_at": "2026-11-26T07:58:49.116222Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
@@ -8026,7 +8026,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-03T07:11:37Z",
-      "updated_at": "2026-11-25T03:53:59.544971Z",
+      "updated_at": "2026-11-26T08:51:49.544239Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 3
@@ -8188,7 +8188,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-09-06T07:54:56Z",
-      "updated_at": "2026-11-25T12:43:18.143192Z",
+      "updated_at": "2026-11-26T17:01:18.756395Z",
       "category": "health-factor",
       "categoryScores": {
         "health-factor": 2
@@ -8419,7 +8419,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-10T03:23:35Z",
-      "updated_at": "2026-11-24T13:20:42.375250Z",
+      "updated_at": "2026-11-26T17:55:55.486158Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks",
@@ -8497,7 +8497,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-01T16:32:34Z",
-      "updated_at": "2026-11-25T12:54:18.353190Z",
+      "updated_at": "2026-11-26T10:16:50.170774Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/api/a2a/11187/card"
@@ -8575,7 +8575,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-03-19T09:21:59Z",
-      "updated_at": "2026-11-26T03:15:53.519449Z",
+      "updated_at": "2026-11-26T17:58:55.551875Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://aliasai.io/solana/.well-known/agent-card.json"
@@ -8689,7 +8689,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-07-25T10:33:58Z",
-      "updated_at": "2026-11-24T22:27:51.042234Z",
+      "updated_at": "2026-11-26T14:30:56.924191Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
@@ -8765,7 +8765,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-11T09:26:15Z",
-      "updated_at": "2026-11-21T13:38:55.310314Z",
+      "updated_at": "2026-11-26T10:15:50.050513Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks"
@@ -8811,44 +8811,6 @@
       "a2a_endpoint": "https://x402-bazaar-rank.x402-bazaar-rank-worker.workers.dev/.well-known/agent-card.json",
       "mcp_server": "https://x402-bazaar-rank.x402-bazaar-rank-worker.workers.dev/mcp",
       "web_endpoint": "https://x402-bazaar-rank.x402-bazaar-rank-worker.workers.dev/"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "8e8df888-dbc3-457d-a7b7-eeb13071172e",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:420535",
-      "token_id": "420535",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "a08f5795-afdb-4b28-8683-cbde7cc49189",
-      "owner_address": "0x0d8c9ad8eebb6879fefa218f0799219bcaabe999",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "Optimus",
-      "description": "Plans PancakeSwap V3 ranges on valid ticks for its positions",
-      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/420535/image",
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "A2A"
-      ],
-      "x402_supported": true,
-      "total_score": 12.03,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-11-20T22:39:50Z",
-      "updated_at": "2026-11-24T22:57:52.027986Z",
-      "category": "general",
-      "categoryScores": {},
-      "a2a_endpoint": "https://jump-really-yen-learn.trycloudflare.com/.well-known/agent-card.json"
     },
     {
       "token_agent_provider": null,
@@ -8966,6 +8928,44 @@
     },
     {
       "token_agent_provider": null,
+      "id": "9dafae55-e8cc-45e1-9767-511e4808c4ee",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:421630",
+      "token_id": "421630",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "4ab5c957-9712-4de0-8ba1-94e5cb3a3e3a",
+      "owner_address": "0x97e8f3b4bffc1982b2791b21609c3b2542c5eb50",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "PAWS 🐾🐾",
+      "description": "Active ",
+      "image_url": null,
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "A2A"
+      ],
+      "x402_supported": true,
+      "total_score": 12.01,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-11-26T03:46:22Z",
+      "updated_at": "2026-11-26T16:51:54.509496Z",
+      "category": "general",
+      "categoryScores": {},
+      "a2a_endpoint": "https://api.bortagent.xyz/.well-known/agent-card.json"
+    },
+    {
+      "token_agent_provider": null,
       "id": "b6094867-298e-4b3d-9d07-5bf07835748d",
       "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:421480",
       "token_id": "421480",
@@ -9073,43 +9073,6 @@
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://bedford-enormous-fountain-edwards.trycloudflare.com/.well-known/agent-card.json"
-    },
-    {
-      "token_agent_provider": null,
-      "id": "00ebaf18-0770-4395-92de-dea668ce6782",
-      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:420531",
-      "token_id": "420531",
-      "chain_id": 56,
-      "chain_type": "evm",
-      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
-      "is_testnet": false,
-      "owner_id": "943fc1ee-5301-47ea-b801-e567e6ac0542",
-      "owner_address": "0xd21f31b9cdfd1a943fd990022d0e87006543d6b2",
-      "owner_ens": null,
-      "owner_username": null,
-      "owner_avatar_url": null,
-      "owner_publisher_tier": null,
-      "owner_certified_name": null,
-      "name": "yinko",
-      "description": "Pre-signature guard for humans and AI agents on BNB Chain. POST https://yinko.vercel.app/check before paying or approving: returns allow, warn or block with plain-language reasons (address poisoning, risky approvals, lookalike .ai names, one-way agent links).",
-      "image_url": null,
-      "is_verified": false,
-      "star_count": 0,
-      "supported_protocols": [
-        "Web"
-      ],
-      "x402_supported": true,
-      "total_score": 12.01,
-      "rank": null,
-      "network_rank": null,
-      "health_score": null,
-      "total_feedbacks": 0,
-      "average_score": 0,
-      "cross_chain_versions": null,
-      "created_at": "2026-11-20T21:42:03Z",
-      "updated_at": "2026-11-20T23:48:57.032259Z",
-      "category": "general",
-      "categoryScores": {}
     },
     {
       "token_agent_provider": null,
@@ -9394,7 +9357,7 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-05-28T10:42:16Z",
-      "updated_at": "2026-11-25T06:03:06.028300Z",
+      "updated_at": "2026-11-26T13:56:52.026662Z",
       "category": "general",
       "categoryScores": {},
       "a2a_endpoint": "https://app.singularry.org/agents/20/agent-card.json",
@@ -9516,11 +9479,51 @@
       "average_score": 0,
       "cross_chain_versions": null,
       "created_at": "2026-10-13T01:34:23Z",
-      "updated_at": "2026-11-24T01:57:35.322242Z",
+      "updated_at": "2026-11-26T13:35:52.328847Z",
       "category": "general",
       "categoryScores": {},
       "sector": "stocks",
       "mcp_server": "https://api.alpharc.app/v1/agents/56/0x91ea54a8a5426c0a0bea55968dd71abce7b92751/mcp"
+    },
+    {
+      "token_agent_provider": "alpharc",
+      "id": "e0b322d5-cff7-479b-b8c3-c49a02227e14",
+      "agent_id": "56:0x8004a169fb4a3325136eb29fa0ceb6d2e539a432:372383",
+      "token_id": "372383",
+      "chain_id": 56,
+      "chain_type": "evm",
+      "contract_address": "0x8004a169fb4a3325136eb29fa0ceb6d2e539a432",
+      "is_testnet": false,
+      "owner_id": "a8d5ff11-f201-4873-8a56-a3b964fe4bbf",
+      "owner_address": "0x72bb8416eefe38fe76a4568ed826359ac5253db1",
+      "owner_ens": null,
+      "owner_username": null,
+      "owner_avatar_url": null,
+      "owner_publisher_tier": null,
+      "owner_certified_name": null,
+      "name": "LSEGx",
+      "description": "Explore market data for London Stock Exchange xStock (LSEGx) on BNB Chain, including price, market cap, top holders, recent trades, and liquidity pools. Powered by AlphaArc.\n\nToken contract: 0x29c5eea19a55bc5946a188ae766d635410f5c726",
+      "image_url": "https://api.8004scan.io/api/v1/media/agents/56/372383/image",
+      "is_verified": false,
+      "star_count": 0,
+      "supported_protocols": [
+        "MCP",
+        "OASF"
+      ],
+      "x402_supported": false,
+      "total_score": 30.25,
+      "rank": null,
+      "network_rank": null,
+      "health_score": null,
+      "total_feedbacks": 0,
+      "average_score": 0,
+      "cross_chain_versions": null,
+      "created_at": "2026-10-13T01:21:31Z",
+      "updated_at": "2026-11-26T03:43:46.349648Z",
+      "category": "general",
+      "categoryScores": {},
+      "sector": "stocks",
+      "mcp_server": "https://api.alpharc.app/v1/agents/56/0x29c5eea19a55bc5946a188ae766d635410f5c726/mcp"
     }
   ]
 }
